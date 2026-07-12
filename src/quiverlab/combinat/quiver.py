@@ -72,6 +72,23 @@ class Quiver:
                     stack.append((nxt, iter(adj[nxt])))
         return True
 
+    def algebra(self, relations=(), field=None):
+        """Build kQ/I over the field (default CC). Monomial presentations are
+        certified and lowered; general relations arrive with the Groebner engine."""
+        from quiverlab.combinat.relations import parse_relations
+        from quiverlab.core.monomial import build_monomial_algebra
+
+        if field is None:
+            from quiverlab.fields import CC
+            field = CC
+        rels = parse_relations(list(relations), self)
+        if all(r.is_monomial for r in rels):
+            return build_monomial_algebra(self, rels, field)
+        raise NotImplementedError(
+            "general (non-monomial) relations arrive with the Groebner engine "
+            "(Plan 03); this build certifies monomial presentations only"
+        )
+
     def __repr__(self):
         lines = [f"Quiver with vertices {self.vertices} and arrows:"]
         lines += [f"  {s} --{a}--> {t}" for a, (s, t) in self.arrows.items()]
