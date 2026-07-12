@@ -75,3 +75,24 @@ def test_unit_adapted_transform():
     e0 = [dom.one()] + [dom.zero()] * (B.dim - 1)
     v = [dom.coerce(3), dom.coerce(-2)]
     assert B.multiply(e0, v) == v and B.multiply(v, e0) == v
+
+
+def test_singular_change_of_basis_rejected():
+    A = _dual_numbers()
+    dom = A.domain
+    one, zero = dom.one(), dom.zero()
+    P = [[one, one], [zero, zero]]  # rank 1: columns do not form a basis
+    with pytest.raises(QuiverlabError) as ei:
+        A.change_of_basis(P)
+    assert "singular" in str(ei.value)
+
+
+def test_genuinely_nonassociative_with_good_unit_rejected():
+    T = [
+        [[1, 0, 0], [0, 1, 0], [0, 0, 1]],
+        [[0, 1, 0], [0, 0, 1], [0, 0, 0]],
+        [[0, 0, 1], [0, 1, 0], [0, 0, 0]],
+    ]
+    with pytest.raises(QuiverlabError) as ei:
+        Algebra.from_structure_constants(T, unit=[1, 0, 0], field=CC)
+    assert "associative" in str(ei.value)

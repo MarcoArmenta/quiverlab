@@ -2,7 +2,7 @@
 T[i][j] is the coordinate vector of b_i * b_j. 'Unit-adapted' means b_0 = 1_A
 (hanlab's convention), which the bar complex requires."""
 from quiverlab.errors import QuiverlabError
-from quiverlab.fields.linalg import solve
+from quiverlab.fields.linalg import rank, solve
 
 
 class Algebra:
@@ -92,6 +92,9 @@ class Algebra:
         """New algebra in the basis whose j-th vector has old coordinates column j of P."""
         dom = self.domain
         m = self.dim
+        if rank(P, dom) != self.dim:
+            raise QuiverlabError("change of basis matrix is singular",
+                                 hint="columns must form a basis")
         cols = [[P[i][j] for i in range(m)] for j in range(m)]
         newT = []
         for i in range(m):
