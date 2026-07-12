@@ -53,3 +53,14 @@ def test_user_modulus_and_bad_modulus():
 def test_beyond_table_needs_modulus():
     with pytest.raises(FieldError):
         GF(101**3)
+
+
+def test_inexact_tuple_inputs_fail_loudly():
+    from quiverlab.errors import ExactnessError
+    with pytest.raises(ExactnessError):
+        GF(9, modulus=[1.0, 0, 1])
+    F4 = GF(4)
+    with pytest.raises(ExactnessError):
+        F4.coerce((1.5, 0))
+    with pytest.raises(ExactnessError):
+        F4.coerce((True, 0))

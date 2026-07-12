@@ -7,7 +7,7 @@ import sympy
 
 from quiverlab.errors import FieldError
 from quiverlab.fields.conway import CONWAY
-from quiverlab.fields.domain import Domain, parse_rational
+from quiverlab.fields.domain import Domain
 from quiverlab.fields.primefield import PrimeField
 
 
@@ -63,7 +63,8 @@ class FiniteField(Domain):
                     hint=f"pass an irreducible monic modulus: GF({p}**{n}, modulus=[c0, ..., 1])",
                 )
             modulus = CONWAY[(p, n)]
-        modulus = [c % p for c in modulus]
+        self._prime = PrimeField(p)
+        modulus = [self._prime.coerce(c) for c in modulus]
         if len(modulus) != n + 1 or modulus[-1] != 1:
             raise FieldError(f"modulus must be monic of degree {n} over GF({p})",
                              hint="little-endian coefficients [c0, ..., 1]")
@@ -74,11 +75,10 @@ class FiniteField(Domain):
         self.modulus = list(modulus)
         self.characteristic = p
         self.name = f"GF({p}^{n})"
-        self._prime = PrimeField(p)
 
     def _tup(self, coeffs):
         c = list(coeffs)[: self.n] + [0] * max(0, self.n - len(coeffs))
-        return tuple(x % self.p for x in c)
+        return tuple(self._prime.coerce(x) for x in c)
 
     def gen(self):
         return self._tup([0, 1])
