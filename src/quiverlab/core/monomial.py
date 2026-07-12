@@ -5,7 +5,7 @@ automaton; an infinite family is reported with an explicit arrow cycle."""
 from collections import deque
 
 from quiverlab.core.algebra import Algebra
-from quiverlab.errors import AdmissibilityError, NotFiniteDimensionalError
+from quiverlab.errors import AdmissibilityError, NotFiniteDimensionalError, RelationError
 
 
 def _contains_forbidden(word, forbidden):
@@ -106,6 +106,16 @@ def build_monomial_algebra(quiver, relations, field):
                 "not inside the square of the arrow ideal",
                 hint="admissible relations use paths of length >= 2",
             )
+    parsed_pool = [field.parse_entry(0), field.parse_entry(1)]
+    dom = field.make_domain(parsed_pool)
+    for rel in relations:
+        (coeff, word), = rel.terms  # monomial: exactly one term
+        if dom.is_zero(dom.coerce(coeff)):
+            raise RelationError(
+                f"coefficient {coeff} of {rel!r} vanishes in {dom.name}, so the relation is 0 = 0",
+                hint="a monomial relation's coefficient must be nonzero in the chosen field; "
+                     "drop the relation or change the field",
+            )
     forbidden = [w for rel in relations for _, w in rel.terms]  # monomial: one word each
     words = irreducible_paths(quiver, forbidden)
     trivial = [("e", v) for v in quiver.vertices]
@@ -131,8 +141,6 @@ def build_monomial_algebra(quiver, relations, field):
             return None
         return ("p", w)
 
-    parsed_pool = [field.parse_entry(0), field.parse_entry(1)]
-    dom = field.make_domain(parsed_pool)
     zero, one = dom.zero(), dom.one()
     T = [[[zero] * m for _ in range(m)] for _ in range(m)]
     for i, bi in enumerate(basis):

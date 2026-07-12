@@ -30,3 +30,10 @@ def test_no_float_literals_or_calls_in_src():
     assert SRC.is_dir(), "src/quiverlab missing"
     bad = [v for f in SRC.rglob("*.py") for v in _violations(f)]
     assert bad == [], "floats are banned in quiverlab core:\n" + "\n".join(bad)
+
+
+def test_gate_detects_planted_violations(tmp_path):
+    bad = tmp_path / "planted.py"
+    bad.write_text("x = 0.5\ny = float('2')\nz = 1j\n")
+    found = _violations(bad)
+    assert len(found) == 3

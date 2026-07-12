@@ -31,3 +31,11 @@ def test_characteristic_sweep_dual_numbers():
     assert table["GF(2)"] == [2, 2, 2, 2, 2]      # the char-2 pathology, exactly
     assert table["GF(3)"] == [2, 1, 1, 1, 1]
     assert table["GF(4)"] == [2, 2, 2, 2, 2]
+
+
+def test_star_import_surface():
+    import quiverlab
+    ns = {}
+    exec("from quiverlab import *", ns)
+    assert "Quiver" in ns and "CC" in ns and "GF" in ns
+    assert "fields" not in ns and "core" not in ns  # submodules not leaked

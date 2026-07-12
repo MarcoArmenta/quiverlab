@@ -74,6 +74,9 @@ class ComplexField:
     name = "CC"
     characteristic = 0
 
+    def __repr__(self):
+        return self.name
+
     def parse_entry(self, x):
         if isinstance(x, sympy.Expr):
             expr = x

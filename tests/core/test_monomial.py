@@ -69,3 +69,17 @@ def test_multiplication_table_is_path_concatenation():
     vb = [dom.one() if i == ib else dom.zero() for i in range(6)]
     assert A.multiply(va, vb)[iab] == dom.one()
     assert all(dom.is_zero(c) for i, c in enumerate(A.multiply(vb, va)))
+
+
+def test_vanishing_coefficient_rejected_loudly():
+    from quiverlab.errors import RelationError
+    Q = Quiver(vertices=[1], arrows={"x": (1, 1)})
+    with pytest.raises(RelationError) as ei:
+        Q.algebra(relations=["2*x^2"], field=GF(2))
+    assert "vanishes" in str(ei.value)
+
+
+def test_nonvanishing_coefficient_still_works():
+    Q = Quiver(vertices=[1], arrows={"x": (1, 1)})
+    A = Q.algebra(relations=["3*x^2"], field=GF(2))  # 3 = 1 in GF(2): kills x^2
+    assert A.dim == 2

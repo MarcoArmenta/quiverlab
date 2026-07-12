@@ -58,3 +58,7 @@ def test_transcendental_entries_fail_loudly():
 def test_bare_E_fails_loudly():
     with pytest.raises(FieldError):
         CC.parse_entry("E")
+
+
+def test_cc_repr():
+    assert repr(CC) == "CC"
