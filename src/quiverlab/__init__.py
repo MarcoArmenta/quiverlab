@@ -8,3 +8,4 @@ from quiverlab.errors import (  # noqa: E402,F401
 )
 from quiverlab.fields import GF  # noqa: E402,F401
 from quiverlab.fields import CC, E  # noqa: E402,F401
+from quiverlab.combinat import Quiver  # noqa: E402,F401
