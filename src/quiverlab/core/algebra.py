@@ -140,6 +140,11 @@ class Algebra:
         out.is_unit_adapted = True
         return out
 
+    def hochschild_cohomology(self, top, max_cells=4_000_000):
+        """Dimensions of HH^0..HH^top via the normalized bar complex (exact)."""
+        from quiverlab.hochschild.bar import hochschild_cohomology_dims
+        return hochschild_cohomology_dims(self, top, max_cells=max_cells)
+
     def __repr__(self):
         base = f"Algebra of dimension {self.dim} over {self.domain.name}"
         if self.basis_labels:
