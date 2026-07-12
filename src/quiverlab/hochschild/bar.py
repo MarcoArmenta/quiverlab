@@ -82,3 +82,55 @@ def hochschild_cohomology_dims(A, top, max_cells=4_000_000):
         prev = ranks[n - 1] if n >= 1 else 0
         dims.append(cn - ranks[n] - prev)
     return HHTable(dims, "HH^", repr(A).splitlines()[0])
+
+
+def boundary_matrix(A, n, max_cells):
+    """Matrix of b: C_n -> C_{n-1}, n >= 1, for unit-adapted A.
+    C_n basis: (s, J) with s in 0..m-1 (the A slot), J in Abar^{⊗n}."""
+    dom = A.domain
+    m = A.dim
+    cols = _cochain_basis(m, n)        # same index shape: (s, J)
+    rows = _cochain_basis(m, n - 1)
+    _check_cells(len(rows), len(cols), max_cells, f"bar boundary b_{n}")
+    row_index = {b: i for i, b in enumerate(rows)}
+    D = [[dom.zero()] * len(cols) for _ in range(len(rows))]
+
+    def bump(t, K, ci, val):
+        if not dom.is_zero(val):
+            r = row_index[(t, K)]
+            D[r][ci] = dom.add(D[r][ci], val)
+
+    for ci, (s, J) in enumerate(cols):
+        # term 0 (+): (b_s b_{J0}) ⊗ J[1:]
+        vec = A.T[s][J[0]]
+        for t in range(m):
+            bump(t, J[1:], ci, vec[t])
+        # middle terms i = 1..n-1, sign (-1)^i: merge J[i-1], J[i], project to Abar
+        for i in range(1, n):
+            merged = A.T[J[i - 1]][J[i]]
+            for x in range(1, m):
+                coef = merged[x]
+                if not dom.is_zero(coef):
+                    val = coef if i % 2 == 0 else dom.neg(coef)
+                    bump(s, J[: i - 1] + (x,) + J[i + 1:], ci, val)
+        # last term, sign (-1)^n: (b_{J[n-1]} b_s) ⊗ J[:n-1]
+        vec = A.T[J[n - 1]][s]
+        for t in range(m):
+            val = vec[t] if n % 2 == 0 else dom.neg(vec[t])
+            bump(t, J[: n - 1], ci, val)
+    return D, len(cols), len(rows)
+
+
+def hochschild_homology_dims(A, top, max_cells=4_000_000):
+    B = A.unit_adapted()
+    dom = B.domain
+    m = B.dim
+    ranks = [0]  # rank of b_n, with b_0 = 0
+    for n in range(1, top + 2):
+        D, ncols, nrows = boundary_matrix(B, n, max_cells)
+        ranks.append(rank(D, dom) if nrows and ncols else 0)
+    dims = []
+    for n in range(top + 1):
+        cn = m * (m - 1) ** n
+        dims.append(cn - ranks[n] - ranks[n + 1])
+    return HHTable(dims, "HH_", repr(A).splitlines()[0])

@@ -145,6 +145,11 @@ class Algebra:
         from quiverlab.hochschild.bar import hochschild_cohomology_dims
         return hochschild_cohomology_dims(self, top, max_cells=max_cells)
 
+    def hochschild_homology(self, top, max_cells=4_000_000):
+        """Dimensions of HH_0..HH_top via the normalized bar complex (exact)."""
+        from quiverlab.hochschild.bar import hochschild_homology_dims
+        return hochschild_homology_dims(self, top, max_cells=max_cells)
+
     def __repr__(self):
         base = f"Algebra of dimension {self.dim} over {self.domain.name}"
         if self.basis_labels:
