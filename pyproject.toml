@@ -10,10 +10,11 @@ readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "Marco Armenta", email = "drmarcoarmenta@gmail.com" }]
-dependencies = ["sympy>=1.12"]
+dependencies = ["numpy>=1.21", "sympy>=1.12"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+fast = ["numba>=0.64"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
