@@ -94,6 +94,9 @@ class ComplexField:
             else:
                 raise FieldError(f"cannot read {type(x).__name__} {x!r} as an exact scalar",
                                  hint=_FLOAT_HINT)
+        if not isinstance(expr, sympy.Basic):
+            raise FieldError(f"cannot read {x!r} as an exact complex number",
+                             hint="examples: '1/3', 'i', 'sqrt(2)', 'E(3)'")
         if expr.atoms(sympy.Float):
             raise ExactnessError(f"{expr} contains a floating-point number", hint=_FLOAT_HINT)
         if not expr.is_number:
@@ -110,6 +113,12 @@ class ComplexField:
                 "(spec §4.2: transcendental or unsupported entries fail loudly)",
                 hint="stick to rationals, i, radicals and roots of unity E(n)",
             ) from exc
+        if not (sdom.is_Field and getattr(sdom, "is_Numerical", False) and sdom.is_Exact):
+            raise FieldError(
+                f"entries generate {sdom}, not an exact numerical field; genuinely "
+                "transcendental entries are out of scope for v1 (spec §4.2)",
+                hint="stick to rationals, i, radicals and roots of unity E(n)",
+            )
         return SympyExactDomain(sdom)
 
 

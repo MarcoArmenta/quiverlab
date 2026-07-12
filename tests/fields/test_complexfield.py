@@ -46,3 +46,15 @@ def test_floats_fail_loudly_everywhere():
 def test_non_number_rejected():
     with pytest.raises(FieldError):
         CC.parse_entry("x + 1")
+
+
+def test_transcendental_entries_fail_loudly():
+    with pytest.raises(FieldError):
+        CC.make_domain(["pi"])
+    with pytest.raises(FieldError):
+        CC.make_domain(["exp(2)"])
+
+
+def test_bare_E_fails_loudly():
+    with pytest.raises(FieldError):
+        CC.parse_entry("E")
