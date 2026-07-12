@@ -12,11 +12,10 @@ import numpy as np
 import pytest
 
 # This oracle exercises the multi-vertex unit-adaptation end-to-end against the
-# coxeter2 cyclic-Nakayama builder (Task 11), the Bardzell resolution oracle
-# (Task 10), and the bar-homology backend in quiverlab.engine.resolutions
-# (Task 9) -- and the parametrize builds cyclic_nakayama algebras. It self-heals
-# as a whole once all three land.
-pytest.importorskip("quiverlab.engine.resolutions")           # homology backend (Task 9)
+# coxeter2 cyclic-Nakayama builder (Task 11) and the Bardzell resolution oracle
+# (Task 10) -- and the parametrize builds cyclic_nakayama algebras -- so it
+# self-heals as a whole once both land. (The bar-homology backend
+# quiverlab.engine.resolutions was pulled forward into Task 3.)
 pytest.importorskip("quiverlab.engine.resolutions_bardzell")  # Bardzell oracle (Task 10)
 pytest.importorskip("quiverlab.engine.coxeter2")              # cyclic_nakayama (Task 11)
 

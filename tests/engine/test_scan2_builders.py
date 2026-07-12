@@ -20,9 +20,9 @@ from quiverlab.engine.scan2 import (
 )
 
 # hanlab __init__ alias, reproduced locally. hochschild_homology_dims routes through
-# quiverlab.engine.resolutions (Task 9); cohomology_dims lives in scan3 (Task 4). The
-# HH-computing tests below self-heal per-test once those land; the module-builder
-# axiom tests run now.
+# quiverlab.engine.resolutions (pulled forward into Task 3), so the homology tests run
+# now; cohomology_dims lives in scan3 (Task 4), so the symmetric-cohomology test still
+# self-heals once scan3 lands. The module-builder axiom tests need neither.
 homology_dims = hochschild_homology_dims
 PRIME = 32003
 P = PRIME
@@ -36,7 +36,6 @@ P = PRIME
 ])
 def test_trivial_extension_is_symmetric(Bfn, N):
     scan3 = pytest.importorskip("quiverlab.engine.scan3")   # cohomology_dims (Task 4)
-    pytest.importorskip("quiverlab.engine.resolutions")     # homology backend (Task 9)
     cohomology_dims = scan3.hochschild_cohomology_dims
     TB = trivial_extension(Bfn(), "T(B)")
     ok, _ = check_associative(TB)
@@ -45,7 +44,6 @@ def test_trivial_extension_is_symmetric(Bfn, N):
 
 
 def test_trivial_extension_of_kx2_matches_commutative_ci():
-    pytest.importorskip("quiverlab.engine.resolutions")     # homology backend (Task 9)
     # T(k[x]/(x^2)) is the dim-4 symmetric algebra with the same HH as k[x,y]/(x^2,y^2).
     TB = trivial_extension(truncated_polynomial(2), "T(k[x]/(x^2))")
     assert homology_dims(TB, 6)[P] == [4, 4, 5, 6, 7, 8, 9]
@@ -53,7 +51,6 @@ def test_trivial_extension_of_kx2_matches_commutative_ci():
 
 # ---- one-point (triangular) extension: NOT self-injective, frozen oracle ----
 def test_triangular_extension_frontier_homology():
-    pytest.importorskip("quiverlab.engine.resolutions")     # homology backend (Task 9)
     # k[x]/(x^3)[k]: the Search II frontier (no 2-truncated cycle, non-self-injective).
     a3 = truncated_polynomial(3)
     acts, d = module_simple(3)
@@ -65,7 +62,6 @@ def test_triangular_extension_frontier_homology():
 
 
 def test_triangular_extension_kx2_simple():
-    pytest.importorskip("quiverlab.engine.resolutions")     # homology backend (Task 9)
     a2 = truncated_polynomial(2)
     acts, d = module_simple(2)
     T = triangular_extension(a2, acts, d, "k[x]/(x^2)[k]")

@@ -7,12 +7,10 @@ These tests are expected to PASS against the current bar-complex engine.
 """
 import pytest
 
-# hochschild_homology_dims routes through the pluggable resolution backend in
-# quiverlab.engine.resolutions (ported in Task 9); cohomology_dims and quantum_ci
-# live in scan3 (Task 4). Every test in this oracle computes HH_* or HH^*, so the
-# whole module self-heals once both land.
+# cohomology_dims and quantum_ci live in scan3 (Task 4); every test in this oracle
+# computes HH_* or HH^*, so the whole module self-heals once scan3 lands. (The
+# homology backend quiverlab.engine.resolutions was pulled forward into Task 3.)
 pytest.importorskip("quiverlab.engine.scan3")        # cohomology_dims, quantum_ci (Task 4)
-pytest.importorskip("quiverlab.engine.resolutions")  # bar-complex homology backend (Task 9)
 
 from quiverlab.engine.hh_engine import (
     truncated_polynomial,
