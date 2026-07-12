@@ -45,9 +45,6 @@ def test_large_sparse_known_rank():
     assert sparse_rank_mod_p(cols, p, nrows) == n - 1
 
 
-# enabled in Task 3 (hh_engine); the bar-differential case below also needs
-# cyclic_nakayama from coxeter2 (Task 11), evaluated in its parametrize at collection.
-pytest.importorskip("quiverlab.engine.hh_engine")
 from quiverlab.engine.hh_engine import (
     rank_mod_p,
     cn_basis,
@@ -55,7 +52,6 @@ from quiverlab.engine.hh_engine import (
     truncated_polynomial,
     two_gen_local,
 )
-from quiverlab.engine.coxeter2 import cyclic_nakayama
 
 
 @pytest.mark.parametrize("seed", range(25))
@@ -71,12 +67,19 @@ def test_sparse_matches_dense_random(seed):
     assert sparse_rank_mod_p(cols, p, nrows) == rank_mod_p(M, p)
 
 
-@pytest.mark.parametrize("alg", [
-    truncated_polynomial(3),
-    two_gen_local([0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -3], "qci3"),
-    cyclic_nakayama(3, 2)[0],
-], ids=lambda a: a.name)
-def test_sparse_matches_dense_on_bar_differentials(alg):
+@pytest.mark.parametrize("alg_key", ["k[x]/(x^3)", "qci3", "cyclic_nakayama(3,2)"])
+def test_sparse_matches_dense_on_bar_differentials(alg_key):
+    # enabled in Task 11 (coxeter2): the cyclic_nakayama case needs coxeter2;
+    # gating the whole test keeps the bar-differential parity check together and
+    # avoids building cyclic_nakayama in the parametrize at collection time.
+    pytest.importorskip("quiverlab.engine.coxeter2")
+    from quiverlab.engine.coxeter2 import cyclic_nakayama
+    builders = {
+        "k[x]/(x^3)": lambda: truncated_polynomial(3),
+        "qci3": lambda: two_gen_local([0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, -3], "qci3"),
+        "cyclic_nakayama(3,2)": lambda: cyclic_nakayama(3, 2)[0],
+    }
+    alg = builders[alg_key]()
     for n in range(1, 4):
         bn = cn_basis(alg, n)
         idx = {g: i for i, g in enumerate(cn_basis(alg, n - 1))}
