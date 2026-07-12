@@ -22,6 +22,13 @@ def test_floats_fail_loudly():
         QQ.coerce("0.5")
 
 
+def test_scientific_notation_fails_loudly():
+    with pytest.raises(ExactnessError):
+        QQ.coerce("15e-1")
+    with pytest.raises(ExactnessError):
+        QQ.coerce("1E-3")
+
+
 def test_bool_rejected():
     with pytest.raises(ExactnessError):
         QQ.coerce(True)

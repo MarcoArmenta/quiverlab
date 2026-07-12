@@ -1,9 +1,12 @@
 """The Domain protocol: exact field arithmetic behind one interface (spec §5, component 1)."""
+import re
 from fractions import Fraction
 
 from quiverlab.errors import ExactnessError
 
 _FLOAT_HINT = "quiverlab is exact-only: write '1/3' or Fraction(1, 3), never 0.333"
+# digit-E-digit run: catches exponent notation like "15e-1" that Fraction() silently parses.
+_SCI_NOTATION = re.compile(r"\d[eE][+-]?\d")
 
 
 def reject_inexact(x):
@@ -12,11 +15,14 @@ def reject_inexact(x):
         raise ExactnessError(f"{x!r} is a bool, not a scalar", hint="use 0 or 1")
     if isinstance(x, (float, complex)):
         raise ExactnessError(f"{x!r} is a float", hint=_FLOAT_HINT)
-    if isinstance(x, str) and any(
-        ch == "." and (i + 1 < len(x) and x[i + 1].isdigit() or i > 0 and x[i - 1].isdigit())
-        for i, ch in enumerate(x)
-    ):
-        raise ExactnessError(f"decimal literal in {x!r}", hint=_FLOAT_HINT)
+    if isinstance(x, str):
+        if any(
+            ch == "." and (i + 1 < len(x) and x[i + 1].isdigit() or i > 0 and x[i - 1].isdigit())
+            for i, ch in enumerate(x)
+        ):
+            raise ExactnessError(f"decimal literal in {x!r}", hint=_FLOAT_HINT)
+        if _SCI_NOTATION.search(x):
+            raise ExactnessError(f"scientific notation in {x!r}", hint=_FLOAT_HINT)
     return x
 
 
