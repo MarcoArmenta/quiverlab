@@ -51,6 +51,19 @@ def test_unknown_arrow():
         parse_relation("a*z", _q())
 
 
-def test_decimal_coefficient_fails():
-    with pytest.raises(Exception):  # ExactnessError via parse_rational
+def test_decimal_coefficient_fails_loudly():
+    from quiverlab.errors import ExactnessError
+    with pytest.raises(ExactnessError):
         parse_relation("0.5*a*b", _q())
+
+
+def test_cancelling_relation_rejected():
+    with pytest.raises(RelationError) as ei:
+        parse_relation("a*b - a*b", _q())
+    assert "zero" in str(ei.value)
+
+
+def test_like_terms_combined():
+    from fractions import Fraction as F
+    r = parse_relation("a*b + a*b", _q())
+    assert r.terms == ((F(2), ("a", "b")),)

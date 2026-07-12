@@ -9,6 +9,10 @@ from quiverlab.errors import RelationError
 from quiverlab.fields.domain import parse_rational
 
 _COEFF = re.compile(r"^[+-]?\d+(/\d+)?$")
+# Arrow names start with a letter or underscore; a factor beginning with a
+# digit, dot, or sign is numeric-intent and must go through the exact parser
+# (so float-style input fails loudly instead of being mistaken for an arrow).
+_NUMERIC_INTENT = re.compile(r"^[+-]?[.\d]")
 _POW = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\^(\d+)$")
 
 
@@ -76,6 +80,15 @@ def _parse_term(term: str, quiver):
                                     hint="write coefficients first: '2*a*b'")
             coeff = coeff * parse_rational(f)
             continue
+        if _NUMERIC_INTENT.match(f):
+            # Numeric-intent but not a plain rational: let the exact parser
+            # decide. '0.5' raises ExactnessError (loud); an exotic exact form
+            # returns a Fraction, handled just like the _COEFF branch above.
+            if word:
+                raise RelationError(f"coefficient {f!r} appears after arrows in {term!r}",
+                                    hint="write coefficients first: '2*a*b'")
+            coeff = coeff * parse_rational(f)
+            continue
         m = _POW.match(f)
         if m:
             name, k = m.group(1), int(m.group(2))
@@ -105,8 +118,13 @@ def parse_relation(s: str, quiver) -> Relation:
     if not isinstance(s, str):
         raise RelationError(f"relations are strings, got {type(s).__name__}",
                             hint="e.g. 'a*b - c'")
-    terms = [_parse_term(t, quiver) for t in _split_terms(s)]
-    terms = [(c, w) for c, w in terms if c != 0]
+    parsed = [_parse_term(t, quiver) for t in _split_terms(s)]
+    # Combine like terms (sum coefficients per word, first-occurrence order),
+    # then drop zero-sum words so full cancellation is caught as zero below.
+    combined: dict[tuple, Fraction] = {}
+    for c, w in parsed:
+        combined[w] = combined.get(w, Fraction(0)) + c
+    terms = [(c, w) for w, c in combined.items() if c != 0]
     if not terms:
         raise RelationError(f"relation {s!r} is identically zero", hint="remove it")
     srcs = {quiver.word_source(w) for _, w in terms}
