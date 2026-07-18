@@ -72,22 +72,35 @@ class Quiver:
                     stack.append((nxt, iter(adj[nxt])))
         return True
 
-    def algebra(self, relations=(), field=None):
-        """Build kQ/I over the field (default CC). Monomial presentations are
-        certified and lowered; general relations arrive with the Groebner engine."""
+    def algebra(self, relations=(), field=None, degree_bound=None, trace=None):
+        """Build kQ/I over the field (default CC). Monomial presentations route
+        through the Plan-01 monomial path; general (non-monomial) relations route
+        through the Groebner engine (Plan 03). Paths compose LEFT TO RIGHT.
+
+        degree_bound: cap on ambiguity length during completion (default: adaptive).
+        trace: optional list; step events (Dispatch, ReductionStep) are appended
+        (inert hooks -- formal trace rendering is Plan 07)."""
         from quiverlab.combinat.relations import parse_relations
-        from quiverlab.core.monomial import build_monomial_algebra
 
         if field is None:
             from quiverlab.fields import CC
             field = CC
         rels = parse_relations(list(relations), self)
         if all(r.is_monomial for r in rels):
+            if trace is not None:
+                from quiverlab.groebner.events import Dispatch
+                trace.append(Dispatch(route="monomial",
+                                      reason="every relation is a single monomial",
+                                      n_relations=len(rels)))
+            from quiverlab.core.monomial import build_monomial_algebra
             return build_monomial_algebra(self, rels, field)
-        raise NotImplementedError(
-            "general (non-monomial) relations arrive with the Groebner engine "
-            "(Plan 03); this build certifies monomial presentations only"
-        )
+        if trace is not None:
+            from quiverlab.groebner.events import Dispatch
+            trace.append(Dispatch(route="groebner",
+                                  reason="at least one relation is non-monomial",
+                                  n_relations=len(rels)))
+        from quiverlab.groebner.lower import groebner_algebra
+        return groebner_algebra(self, rels, field, degree_bound=degree_bound, trace=trace)
 
     def __repr__(self):
         lines = [f"Quiver with vertices {self.vertices} and arrows:"]

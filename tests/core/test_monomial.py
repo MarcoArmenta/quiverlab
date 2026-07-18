@@ -51,10 +51,13 @@ def test_short_relation_not_admissible():
         Q.algebra(relations=["a"])
 
 
-def test_nonmonomial_waits_for_plan03():
+def test_nonmonomial_routes_through_groebner_and_checks_admissibility():
+    # Plan 03: non-monomial relations now lower through the Groebner engine. A
+    # summand of length 1 (here `c`) is not admissible -- the ideal is not inside
+    # the square of the arrow ideal -- so the gateway raises AdmissibilityError.
     Q = Quiver(vertices=[1, 2, 3],
                arrows={"a": (1, 2), "b": (2, 3), "c": (1, 3)})
-    with pytest.raises(NotImplementedError):
+    with pytest.raises(AdmissibilityError):
         Q.algebra(relations=["a*b - c"])
 
 
