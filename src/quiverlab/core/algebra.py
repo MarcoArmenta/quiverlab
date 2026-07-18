@@ -140,14 +140,41 @@ class Algebra:
         out.is_unit_adapted = True
         return out
 
-    def hochschild_cohomology(self, top, max_cells=4_000_000):
-        """Dimensions of HH^0..HH^top via the normalized bar complex (exact)."""
+    def _use_fast_engine(self, engine):
+        from quiverlab.fields.primefield import PrimeField
+        return engine == "fast" or (
+            engine == "auto" and isinstance(self.domain, PrimeField)
+        )
+
+    def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto"):
+        """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
+        bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise)."""
         from quiverlab.hochschild.bar import hochschild_cohomology_dims
+        from quiverlab.hochschild.table import HHTable
+
+        if engine not in ("auto", "bar", "fast"):
+            raise QuiverlabError(f"unknown engine {engine!r}",
+                                 hint="choose 'auto', 'bar', or 'fast'")
+        if self._use_fast_engine(engine):
+            from quiverlab.engine.adapter import engine_cohomology_dims
+            dims = engine_cohomology_dims(self, top, max_cells=max_cells)
+            return HHTable(dims, "HH^", repr(self).splitlines()[0],
+                           engine="hanlab engine (F_p fast rank)")
         return hochschild_cohomology_dims(self, top, max_cells=max_cells)
 
-    def hochschild_homology(self, top, max_cells=4_000_000):
-        """Dimensions of HH_0..HH_top via the normalized bar complex (exact)."""
+    def hochschild_homology(self, top, max_cells=4_000_000, engine="auto"):
+        """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology."""
         from quiverlab.hochschild.bar import hochschild_homology_dims
+        from quiverlab.hochschild.table import HHTable
+
+        if engine not in ("auto", "bar", "fast"):
+            raise QuiverlabError(f"unknown engine {engine!r}",
+                                 hint="choose 'auto', 'bar', or 'fast'")
+        if self._use_fast_engine(engine):
+            from quiverlab.engine.adapter import engine_homology_dims
+            dims = engine_homology_dims(self, top, max_cells=max_cells)
+            return HHTable(dims, "HH_", repr(self).splitlines()[0],
+                           engine="hanlab engine (F_p fast rank)")
         return hochschild_homology_dims(self, top, max_cells=max_cells)
 
     def __repr__(self):
