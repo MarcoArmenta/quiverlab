@@ -127,7 +127,20 @@ floating IP; Caddy handles TLS automatically. `webapp/deploy/PROVISIONING.md` wa
 the OpenStack steps (flavor, security groups, floating IP, volume, compose up).
 Optional config-flagged backups: nightly SQLite `.backup` + artifact sync to object
 storage. The design is host-generic: any Linux box with Docker runs the same compose
-file. **v2+ burst tier** (recorded, not built): dispatch oversized jobs to
+file.
+
+**VM security baseline (DRAC "Security considerations" doc, added 2026-07-18) —
+PROVISIONING.md encodes each as a concrete step:**
+- Security groups: ONLY 80/443 open to the world (a public web service is the
+  sanctioned use of those ports). SSH 22 restricted to Marco's own IP/CIDR —
+  never 0.0.0.0, never in the default security group. No RDP/VNC/database/other
+  ports, no port ranges.
+- SSH: key authentication only (cloud default stays), password auth never enabled;
+  fail2ban installed and enabled.
+- OS: current Ubuntu LTS image; weekly security updates via unattended-upgrades
+  (+ documented manual `apt-get dist-upgrade && reboot` cadence).
+- Web: HTTPS only; port 80 exists solely as Caddy's redirect-to-443. No mail
+  server, no BitTorrent, nothing else listening. **v2+ burst tier** (recorded, not built): dispatch oversized jobs to
 short-lived RAS compute instances (80 vCPU / 300 GB, 1-month wall-time) via the
 OpenStack API.
 
