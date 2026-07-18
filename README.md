@@ -43,10 +43,39 @@ for field in (CC, GF(2), GF(3)):
 
 ## Status
 
-Foundations phase (Plan 01). Monomial presentations, exact fields, bar-complex
-Hochschild (co)homology. Coming next (see `docs/plans/ROADMAP.md`): the hanlab
-deep engines, general relations via noncommutative Groebner bases, the first
-full Chouhy–Solotar resolution, cup products and Gerstenhaber brackets, module
-Ext, drawing and TikZ export, worked-steps PDFs, and an optional QPA backend.
+Engine phase (Plans 01–02 delivered). On top of the foundations — monomial
+presentations, exact fields, bar-complex Hochschild (co)homology — the hanlab
+deep engine is now ported and wired in:
+
+- **A fast GF(p) engine** behind the field interface: `hochschild_cohomology`
+  and `hochschild_homology` take `engine="auto" | "bar" | "fast"`. `auto` picks
+  the numpy mod-p rank engine over prime fields and the exact bar path
+  everywhere else; both agree exactly where both can run. The fast engine still
+  builds the exponential bar basis, so it guards its depth loudly (raise
+  `max_cells` deliberately) — the depth *unlock* lives in the resolutions below.
+- **Deep monomial resolutions.** The minimal (Bardzell) and periodic bimodule
+  resolutions reach degrees the bar complex never could — k[x]/(x^a) and cyclic
+  Nakayama to depth 40 instantly — and certify structural facts (a finite global
+  dimension shows up as vanishing generators), cross-checked exactly against the
+  bar oracle over primes {32003, 2, 3, 5} on the overlap range.
+- **Tamarkin–Tsygan calculus** at the engine level: cup product, cap product,
+  and the Gerstenhaber bracket; plus **cyclic homology** (Connes' mixed complex).
+- **Invariants:** the integer **Cartan** matrix, the **Coxeter** matrix and its
+  characteristic polynomial (all fields, exact via sympy); and, over GF(p), the
+  **Nakayama** automorphism with the **Frobenius** and **symmetric** tests
+  (loud `FieldError` off a prime field).
+
+Everything is exact — no floating point, ever — and the full test suite runs
+green on both the numba kernel path and the pure-Python path
+(`QUIVERLAB_NO_NUMBA=1`).
+
+Honest scope note: the calculus lives at the *engine* level today. A classy
+`A.cup(u, v)` on named cohomology classes awaits the cohomology-classes
+machinery of a later phase (see `docs/plans/ROADMAP.md`).
+
+Coming next (see `docs/plans/ROADMAP.md`): general relations via noncommutative
+Groebner bases, the first full Chouhy–Solotar resolution and operation
+transport, module Ext and the remaining invariants, family catalogs and batch,
+drawing and TikZ export, worked-steps PDFs, and an optional QPA backend.
 
 MIT © 2026 Marco Armenta

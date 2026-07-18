@@ -140,15 +140,108 @@ class Algebra:
         out.is_unit_adapted = True
         return out
 
-    def hochschild_cohomology(self, top, max_cells=4_000_000):
-        """Dimensions of HH^0..HH^top via the normalized bar complex (exact)."""
+    def _use_fast_engine(self, engine):
+        from quiverlab.fields.primefield import PrimeField
+        return engine == "fast" or (
+            engine == "auto" and isinstance(self.domain, PrimeField)
+        )
+
+    def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto"):
+        """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
+        bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise)."""
         from quiverlab.hochschild.bar import hochschild_cohomology_dims
+        from quiverlab.hochschild.table import HHTable
+
+        if engine not in ("auto", "bar", "fast"):
+            raise QuiverlabError(f"unknown engine {engine!r}",
+                                 hint="choose 'auto', 'bar', or 'fast'")
+        if self._use_fast_engine(engine):
+            from quiverlab.engine.adapter import engine_cohomology_dims
+            dims = engine_cohomology_dims(self, top, max_cells=max_cells)
+            return HHTable(dims, "HH^", repr(self).splitlines()[0],
+                           engine="hanlab engine (F_p fast rank)")
         return hochschild_cohomology_dims(self, top, max_cells=max_cells)
 
-    def hochschild_homology(self, top, max_cells=4_000_000):
-        """Dimensions of HH_0..HH_top via the normalized bar complex (exact)."""
+    def hochschild_homology(self, top, max_cells=4_000_000, engine="auto"):
+        """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology."""
         from quiverlab.hochschild.bar import hochschild_homology_dims
+        from quiverlab.hochschild.table import HHTable
+
+        if engine not in ("auto", "bar", "fast"):
+            raise QuiverlabError(f"unknown engine {engine!r}",
+                                 hint="choose 'auto', 'bar', or 'fast'")
+        if self._use_fast_engine(engine):
+            from quiverlab.engine.adapter import engine_homology_dims
+            dims = engine_homology_dims(self, top, max_cells=max_cells)
+            return HHTable(dims, "HH_", repr(self).splitlines()[0],
+                           engine="hanlab engine (F_p fast rank)")
         return hochschild_homology_dims(self, top, max_cells=max_cells)
+
+    # -- invariants -----------------------------------------------------------
+    def cartan_matrix(self):
+        """Integer Cartan matrix from the quiver presentation (any field)."""
+        from quiverlab.invariants.cartan import cartan_matrix
+        return cartan_matrix(self)
+
+    def coxeter_matrix(self):
+        """Coxeter matrix -C^{-T} C (exact; loud if the Cartan matrix is singular)."""
+        from quiverlab.invariants.cartan import coxeter_matrix
+        return coxeter_matrix(self)
+
+    def coxeter_polynomial(self):
+        """Characteristic polynomial of the Coxeter matrix, as an exact sympy Poly."""
+        from quiverlab.invariants.cartan import coxeter_polynomial
+        return coxeter_polynomial(self)
+
+    def _require_prime_field(self, what):
+        from quiverlab.errors import FieldError
+        from quiverlab.fields.primefield import PrimeField
+        if not isinstance(self.domain, PrimeField):
+            raise FieldError(
+                f"{what} is available over GF(p) today (fast engine); "
+                f"this algebra is over {self.domain.name}",
+                hint="construct the algebra over a prime field, or wait for the "
+                     "later phase that generalizes this invariant",
+            )
+
+    def cyclic_homology(self, top):
+        """Dimensions of HC_0..HC_top (Connes mixed complex; GF(p) via the engine)."""
+        self._require_prime_field("cyclic homology")
+        from quiverlab.engine.adapter import to_engine
+        from quiverlab.engine.cyclic import cyclic_homology_dims
+        from quiverlab.hochschild.table import HHTable
+        p = self.domain.p
+        out = cyclic_homology_dims(to_engine(self.unit_adapted()), top, primes=(p,))
+        dims = [int(d) for d in out[p]]
+        return HHTable(dims, "HC_", repr(self).splitlines()[0],
+                       engine="hanlab engine (F_p fast rank)")
+
+    def nakayama_automorphism(self):
+        """Nakayama automorphism nu as an integer matrix (columns = images) in the
+        unit-adapted basis, over GF(p); loud if not Frobenius / not GF(p)."""
+        self._require_prime_field("the Nakayama automorphism")
+        from quiverlab.engine.adapter import to_engine
+        from quiverlab.engine.coxeter import nakayama_automorphism
+        S, _ = nakayama_automorphism(to_engine(self.unit_adapted()), self.domain.p)
+        return [[int(S[i, j]) for j in range(S.shape[1])] for i in range(S.shape[0])]
+
+    def is_frobenius(self):
+        """Is the algebra Frobenius? (GF(p) via the engine.)"""
+        self._require_prime_field("the Frobenius test")
+        from quiverlab.engine.adapter import to_engine
+        from quiverlab.engine.coxeter import is_frobenius
+        return bool(is_frobenius(to_engine(self.unit_adapted()), self.domain.p))
+
+    def is_symmetric(self):
+        """Is the algebra symmetric? (Frobenius with identity Nakayama automorphism; GF(p).)"""
+        self._require_prime_field("the symmetry test")
+        if not self.is_frobenius():
+            return False
+        from quiverlab.engine.adapter import to_engine
+        from quiverlab.engine.coxeter import is_identity, nakayama_automorphism
+        E = to_engine(self.unit_adapted())
+        S, _ = nakayama_automorphism(E, self.domain.p)
+        return bool(is_identity(S, self.domain.p))
 
     def __repr__(self):
         base = f"Algebra of dimension {self.dim} over {self.domain.name}"
