@@ -26,3 +26,14 @@ Interface freeze between plans: later plans consume `Domain`
 (`coerce/add/sub/neg/mul/inv/is_zero/eq/characteristic`), `linalg.rank/nullspace/rref/solve`,
 `Quiver`, `Relation`, `Algebra` (`.domain, .dim, .T, .unit, .multiply, .unit_adapted,
 .basis_labels`), and `HHTable` exactly as defined in Plan 01.
+
+**Standing constraint added 2026-07-18 (Marco):** `docs/internals/` — "under the
+hood for algebraists" — explains at low coding level how each object is
+represented and how each computation runs (chapters for Plans 01–02 exist; the
+format is fixed there). Every subsequent plan's acceptance task adds/updates the
+chapters for what that plan introduces (Plan 03: groebner + ReductionSystem;
+Plan 04: CS resolution + comparison maps; Plan 05: modules — module
+representation and module resolutions; Plan 06: families/batch; Plan 07:
+viz/trace; Plan 09: webapp). Plans 03/04/09 were committed before this rule:
+their executors receive the obligation at dispatch. Chapters ship on the Plan 08
+docs site as an "Under the hood" section.
