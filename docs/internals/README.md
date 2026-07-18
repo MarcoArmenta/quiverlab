@@ -49,18 +49,23 @@ by running the code.
   engine-backed GF(p) extras (Nakayama automorphism, Frobenius/symmetric tests).
 - **07 — Dispatch.** How `engine="auto"|"bar"|"fast"` chooses a path, and the
   cross-check philosophy that two independent implementations gives correctness.
+- **08 — Gröbner.** General (non-monomial) relations: how a relation becomes a
+  reduction rule, Buchberger–Mora completion, the finiteness certificate
+  (2L−1 ≤ D plus the forbidden-word automaton), and how a general kQ/I becomes
+  structure constants.
 
 ## Honest coverage statement
 
-This tree is the **Plan 02 (hanlab port)** checkout. What is documented here is what is
+This tree is the **Plan 03 (Gröbner)** checkout. What is documented here is what is
 on disk *now*:
 
 - The **fast GF(p) engine** (`engine/`) is ported and live: bar homology/cohomology over
   a prime field, the minimal and Bardzell resolutions, cyclic homology, and the
   Coxeter/Nakayama layer.
-- **General (non-monomial) relations** are not yet built: `Quiver.algebra` certifies and
-  lowers *monomial* presentations only and raises `NotImplementedError` otherwise. The
-  Gröbner engine that handles general relations **arrives with Plan 03**.
+- **General (non-monomial) relations** are built (Chapter 08): `Quiver.algebra` routes a
+  monomial presentation through the Plan-01 path and a non-monomial one through the
+  noncommutative Gröbner engine (`groebner/`), which completes the relations, certifies
+  finite-dimensionality, and lowers kQ/I to a structure-constant `Algebra`.
 - The **Chouhy–Solotar closed-form resolution** (`resolutions_cs`) is referenced by the
   periodic backends but **excluded from this port**; it **arrives with Plan 04**. The
   `QuantumCIResolution` wrapper is therefore dormant until then.
