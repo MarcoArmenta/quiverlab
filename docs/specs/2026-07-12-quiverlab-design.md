@@ -217,7 +217,29 @@ product cocycle and its reduction. Renderers: LaTeX→PDF when `pdflatex`/`tecto
 is on PATH; otherwise HTML+MathJax with a loud one-line explanation of both facts.
 Golden-file tests assert trace claims equal computed values (§10).
 
-### 3.9 Moving variables (D2 "all of the moving variables")
+### 3.9 Citations (added 2026-07-18, Marco)
+
+Every computation knows the literature it stands on. A curated BibTeX file
+(`src/quiverlab/citations/references.bib`) is the canonical bibliography; a light
+registry maps its keys to algorithms (Bardzell 1997; Chouhy–Solotar 2015;
+Negron–Witherspoon / Volkov homotopy liftings; Green–Solberg–Zacharia 2001;
+Connes; Gerstenhaber) and to families (BGMS quantum CIs; Gerstenhaber–Schack
+incidence algebras; Happel hereditary; …).
+
+```python
+A.citations()            # keys relevant to A's family/presentation
+table = A.hochschild_cohomology(6)
+table.references         # keys actually used by THIS computation (engine + family + ops)
+quiverlab.bibliography() # the full curated list, BibTeX and formatted
+```
+
+Worked-steps trace documents (§3.8) end with a **References** section rendered
+from `result.references`. Implementation: registry core + family refs in the
+families plan (06); PDF bibliography in the trace plan (07); the web surface in
+the webapp plan (09). Suggestions for new literature arrive through the webapp's
+feedback channel and are curated by Marco as normal reviewed commits.
+
+### 3.10 Moving variables (D2 "all of the moving variables")
 
 ```python
 sweep(NakayamaAlgebra, [3, 2, 2], fields=[CC, GF(2), GF(3), GF(5)])

@@ -37,3 +37,9 @@ representation and module resolutions; Plan 06: families/batch; Plan 07:
 viz/trace; Plan 09: webapp). Plans 03/04/09 were committed before this rule:
 their executors receive the obligation at dispatch. Chapters ship on the Plan 08
 docs site as an "Under the hood" section.
+
+**Standing constraint added 2026-07-18 (Marco):** citations subsystem (spec §3.9).
+Plan 06 ships the registry core + `references.bib` + family refs; Plan 07 renders
+the References section in worked-steps PDFs; Plan 09 surfaces `result.references`
+on result pages and ships `/literature` + the `literature` feedback category
+(web spec §16). Plan writers for 06/07 inherit this at plan-writing time.

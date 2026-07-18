@@ -192,3 +192,20 @@ A public, no-account channel to report problems and suggest features.
   PROVISIONING.md documents both this and the raw `sqlite3` query alternative.
 - **Developers' path:** the page also links to the GitHub repo's Issues for users
   who prefer that; the form is the primary, no-account channel.
+
+
+## 16. Literature — added 2026-07-18
+
+- **Result pages and `result.json`** carry `references`: the BibTeX keys the
+  computation actually used (from the library's citations subsystem, spec §3.9),
+  rendered as a short bibliography under the results with DOI/arXiv links.
+  The worked-steps PDF carries the same references as a final section (library-side).
+- **`/literature` (+ `/es/literature`):** the full curated bibliography rendered
+  from the library's `references.bib`, grouped by topic (resolutions, operations,
+  families, foundations), with a one-line "why it matters here" annotation per entry.
+- **Suggesting literature:** the feedback form (§15) gains a third category
+  `literature` with structured fields: reference (DOI / arXiv id / free-form
+  BibTeX), and "why relevant" (10–2000 chars). Same abuse controls as §15.
+  Suggestions land in the feedback table; Marco curates; accepted entries become
+  ordinary reviewed commits to `references.bib` — the organized path from user
+  suggestion to shipped bibliography.
