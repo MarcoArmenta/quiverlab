@@ -42,10 +42,13 @@ the queue (SQLite WAL supports the single-writer/many-reader pattern this needs)
 - `/job/{id}` — permalink: queued/running (live progress, §7) → results (dims tables,
   polynomials in LaTeX via KaTeX, download buttons) or failure (§9).
 - `/about` — what this is, citation (JOSS), library version, local-install pointer.
+- `/feedback` — report a problem or suggest a feature (§15): category, message,
+  optional contact; no account needed. Footer of every page links here.
 - `/api/…` — the same functionality as documented JSON endpoints:
   `POST /api/compute` (sync tier; 422 with `{queued_hint: true}` if too big),
   `POST /api/jobs`, `GET /api/jobs/{id}`, `GET /api/catalog` (families + parameter
-  schemas + field constraints, generated from the library, never hand-maintained).
+  schemas + field constraints, generated from the library, never hand-maintained),
+  `POST /api/feedback` (§15).
 
 ## 4. Two-tier compute
 
@@ -152,3 +155,40 @@ OpenStack API.
 Accounts/auth, the canvas editor (v2, schema-ready), burst compute (v2+), GPU
 anything, result sharing beyond permalinks, non-catalog algebras (v2), HPC/SLURM
 integration.
+
+## 14. Internationalization (EN/ES) — added 2026-07-18
+
+The UI ships bilingual from v1: English and Spanish.
+
+- **Routing:** URL prefix — `/…` is English, `/es/…` is Spanish (`/es`, `/es/job/{id}`,
+  `/es/about`, `/es/feedback`). No cookies (§11 stands); the language toggle in the
+  header links to the same page under the other prefix. First-visit default: English
+  (simple, cache-friendly; `Accept-Language` sniffing deliberately omitted).
+- **Mechanism:** JSON string catalogs (`webapp/server/i18n/en.json`, `es.json`) loaded
+  at startup; Jinja2 `t(key)` helper; a missing key renders the English string and
+  logs a warning (never a blank page). API JSON stays language-neutral (keys/values
+  as today); only page chrome translates.
+- **What is NOT translated:** mathematical output from the library (polynomials,
+  dimension tables, `HHTable` renderings) and library error messages (§9) — they are
+  quoted verbatim as mathematical content, with a translated framing line around them.
+- **Completeness gate:** a test asserts `en.json` and `es.json` have identical key
+  sets, and a page-render test asserts no untranslated key leaks into `/es/` HTML.
+  Spanish copy is reviewed by Marco before deploy (he is the native-speaker gate).
+
+## 15. Feedback — added 2026-07-18
+
+A public, no-account channel to report problems and suggest features.
+
+- **Page:** `/feedback` (and `/es/feedback`): category (`problem` | `feature`),
+  message (10–4000 chars), optional contact field (free text, e.g. email), and an
+  invisible honeypot field; successful submit shows a thank-you with a reference id.
+- **Storage:** `feedback` table in the same SQLite (ULID id, category, message,
+  contact, hashed IP, created, `job_ref` optional — a job page's "report a problem
+  with this computation" link pre-fills it). No emails sent in v1.
+- **Abuse control:** per-IP (hashed) limit — 5 submissions/day; honeypot-filled
+  submissions dropped silently; message length capped; same CSP/no-cookie stance.
+- **Reading feedback:** `GET /admin/feedback?token=…` (constant-time token compare,
+  token from env, absent token disables the route entirely) renders a plain table;
+  PROVISIONING.md documents both this and the raw `sqlite3` query alternative.
+- **Developers' path:** the page also links to the GitHub repo's Issues for users
+  who prefer that; the form is the primary, no-account channel.
