@@ -230,8 +230,14 @@ Anonymous use is untouched: everything in §4–§6 works with no login. Jobs wh
 cost estimate exceeds the anonymous caps can run as **big jobs**, gated by
 per-submission email verification — no password, no session, no cookie.
 
-- **Flow:** the form detects a big job (estimator over anonymous caps but within
-  big-job caps) → asks for an email → server emails a single-use signed link
+- **Flow (explicit warning UX, Marco 2026-07-18):** on submit, if the estimate
+  exceeds the anonymous caps, the form does NOT reject — it shows an inline
+  warning stating the honest cost ("this computation builds ~N-cell matrices /
+  ~M minutes estimated — beyond the anonymous limit") with the email field
+  revealed right there: "verify an email address and we'll run it as a big job,
+  and email you when it finishes." Beyond even the big-job caps: the warning
+  states that too, with the `pip install quiverlab` route. Both messages in
+  EN/ES via the §14 catalogs. The flow proper: → asks for an email → server emails a single-use signed link
   (HMAC token, ~1 h expiry) → clicking it queues the job with big-job caps and
   returns the `/job/{id}` permalink → a completion email is sent when it finishes.
 - **Caps (env-configurable defaults):** anonymous wall 15 min / 4 GB stays;
