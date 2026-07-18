@@ -222,3 +222,29 @@ A public, no-account channel to report problems and suggest features.
   Suggestions land in the feedback table; Marco curates; accepted entries become
   ordinary reviewed commits to `references.bib` — the organized path from user
   suggestion to shipped bibliography.
+
+
+## 17. Big jobs — email magic-link (added 2026-07-18, Marco)
+
+Anonymous use is untouched: everything in §4–§6 works with no login. Jobs whose
+cost estimate exceeds the anonymous caps can run as **big jobs**, gated by
+per-submission email verification — no password, no session, no cookie.
+
+- **Flow:** the form detects a big job (estimator over anonymous caps but within
+  big-job caps) → asks for an email → server emails a single-use signed link
+  (HMAC token, ~1 h expiry) → clicking it queues the job with big-job caps and
+  returns the `/job/{id}` permalink → a completion email is sent when it finishes.
+- **Caps (env-configurable defaults):** anonymous wall 15 min / 4 GB stays;
+  big-job wall up to 4 h / 16 GB; per-email 1 running big job + 5 per week.
+  Global big-job queue cap separate from the anonymous one.
+- **Email handling:** used solely for verification + completion notice; stored
+  with the job and **deleted at artifact retention or right after the completion
+  email** (whichever first); never listed in the admin feedback view; hashed form
+  used for rate-limiting. Sending goes through an authenticated **outbound SMTP
+  relay** configured via env (`QLWEB_SMTP_*`) — the VM never runs a mail server
+  (§10 security baseline); if SMTP is unconfigured the big-job tier is disabled
+  with an honest "run locally" message.
+- **Token discipline:** single-use, job-spec-bound (token signs the spec hash),
+  expiring; a used/expired link says so plainly. No account object is ever
+  created — this is verification, not registration.
+- **i18n:** all new strings through the §14 catalogs, EN/ES parity enforced.
