@@ -41,6 +41,23 @@ for field in (CC, GF(2), GF(3)):
 # GF(3)  [2, 1, 1, 1, 1]
 ```
 
+## General quivers with relations (kQ/I)
+
+```python
+from quiverlab import Quiver, CC
+
+Q = Quiver(vertices=[1, 2, 3, 4],
+           arrows={"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)})
+A = Q.algebra(relations=["a*b - c*d"], field=CC)   # commutative square, exact
+print(A.dim)                                        # 9
+print(A.hochschild_cohomology(1))                   # HH^0 = 1  HH^1 = 0
+```
+
+Non-monomial relations are completed with an exact noncommutative Gröbner
+(Buchberger–Mora overlap) engine and certified finite-dimensional; a
+non-admissible or infinite presentation fails loudly with `AdmissibilityError`
+or `NotFiniteDimensionalError`, never a hang.
+
 ## Status
 
 Engine phase (Plans 01–02 delivered). On top of the foundations — monomial
