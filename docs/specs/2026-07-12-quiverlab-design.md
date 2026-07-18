@@ -431,7 +431,11 @@ values). Tutorials execute in CI (§11).
 ## 10. Documentation
 
 Docs site (mkdocs-material) with auto-generated API reference and
-CI-executed tutorial notebooks, non-coder first:
+CI-executed tutorial notebooks, non-coder first. **Hosting (added 2026-07-18):
+GitHub Pages, built and deployed by GitHub Actions on every push to main** —
+canonical docs URL independent of the DRAC VM; the web GUI links it prominently
+(header nav + footer, spec 2026-07-18 §3). Contents include the "Under the hood"
+internals chapters (docs/internals/) alongside:
 
 1. Your first algebra in 5 minutes (install → build → draw → HH table).
 2. The families tour.

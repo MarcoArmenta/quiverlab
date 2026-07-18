@@ -44,6 +44,10 @@ the queue (SQLite WAL supports the single-writer/many-reader pattern this needs)
 - `/about` — what this is, citation (JOSS), library version, local-install pointer.
 - `/feedback` — report a problem or suggest a feature (§15): category, message,
   optional contact; no account needed. Footer of every page links here.
+- **Docs link (added 2026-07-18):** header nav + footer carry "Docs" /
+  "Documentación" pointing at the GitHub-Pages docs site (URL from config
+  `QLWEB_DOCS_URL`; link hidden if unset) — the one-click path for users who
+  prefer the library/GitHub route: API reference, tutorials, internals chapters.
 - `/api/…` — the same functionality as documented JSON endpoints:
   `POST /api/compute` (sync tier; 422 with `{queued_hint: true}` if too big),
   `POST /api/jobs`, `GET /api/jobs/{id}`, `GET /api/catalog` (families + parameter
