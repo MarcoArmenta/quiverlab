@@ -1,6 +1,6 @@
 import pytest
 from quiverlab import CC, GF, Quiver, truncated_polynomial
-from quiverlab.errors import FieldError
+from quiverlab.errors import FieldError, QuiverlabError
 
 
 def _zoo(field):
@@ -55,3 +55,23 @@ def test_gf4_still_works_via_bar_auto():
     A = truncated_polynomial(2, field=GF(4))
     assert A.hochschild_cohomology(2).dims == [2, 2, 2]
     assert "bar" in A.hochschild_cohomology(2).engine
+
+
+def test_unknown_engine_string_raises():
+    # anything outside {'auto', 'bar', 'fast'} is refused loudly on both wrappers
+    A = truncated_polynomial(2, field=GF(2))
+    with pytest.raises(QuiverlabError):
+        A.hochschild_cohomology(2, engine="qpa")
+    with pytest.raises(QuiverlabError):
+        A.hochschild_homology(2, engine="qpa")
+
+
+def test_fast_engine_field_error_precedes_depth_guard():
+    # Ordering lock: engine='fast' on a non-prime field must raise FieldError,
+    # NOT DepthLimitError, even when top is large enough to trip the bar-size
+    # guard. Uses dim 3 (m-1=2) so the guard genuinely fires without the fix.
+    A = truncated_polynomial(3, field=CC)
+    with pytest.raises(FieldError):
+        A.hochschild_cohomology(40, engine="fast")
+    with pytest.raises(FieldError):
+        A.hochschild_homology(40, engine="fast")

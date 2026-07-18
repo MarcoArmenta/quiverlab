@@ -55,9 +55,12 @@ def engine_cohomology_dims(A, top, max_cells=4_000_000):
     semantics as the pure bar oracle (coboundary d^n: C^n -> C^{n+1})."""
     from quiverlab.engine.scan3 import hochschild_cohomology_dims
     m = A.dim
+    # Field check first: an explicit engine='fast' on a non-prime field must
+    # raise FieldError (from to_engine) before the size _guard can raise
+    # DepthLimitError -- the field is the hard refusal, the depth is advisory.
+    E = to_engine(A.unit_adapted())
     _guard(m, [(f"d^{n}", m * (m - 1) ** (n + 1), m * (m - 1) ** n)
                for n in range(top + 1)], "coboundary", max_cells)
-    E = to_engine(A.unit_adapted())
     p = A.domain.p
     out = hochschild_cohomology_dims(E, top, primes=(p,))
     return [int(d) for d in out[p]]
@@ -70,9 +73,12 @@ def engine_homology_dims(A, top, max_cells=4_000_000):
     semantics as the pure bar oracle (boundary b_n: C_n -> C_{n-1})."""
     from quiverlab.engine.hh_engine import hochschild_homology_dims
     m = A.dim
+    # Field check first (see engine_cohomology_dims): FieldError precedes the
+    # advisory DepthLimitError so engine='fast' on a non-prime field is refused
+    # for the right reason regardless of top.
+    E = to_engine(A.unit_adapted())
     _guard(m, [(f"b_{n}", m * (m - 1) ** (n - 1), m * (m - 1) ** n)
                for n in range(1, top + 2)], "boundary", max_cells)
-    E = to_engine(A.unit_adapted())
     p = A.domain.p
     out = hochschild_homology_dims(E, top, primes=(p,))
     return [int(d) for d in out[p]]
