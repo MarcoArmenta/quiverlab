@@ -6,22 +6,43 @@ from quiverlab.combinat import Quiver
 from quiverlab.combinat.relations import parse_relations
 from quiverlab.core.monomial import build_monomial_algebra
 from quiverlab.fields import CC, GF, QQ
-from quiverlab.groebner.order import path_order
-from quiverlab.groebner.reduction import first_factor, lc_add
+from quiverlab.groebner.reduction import lc_add
 from quiverlab.groebner.system import build_reduction_system
 from quiverlab.groebner.lower import groebner_algebra
 
 
-def _random_reduce(comb, rules, order, dom, rng):
-    """Reduce by applying rules at RANDOMLY chosen reducible occurrences. For a
-    confluent system this must reach the same normal form as reduce_comb."""
+def _reduction_sites(work, rules):
+    """Every reduction SITE of the combination: each (word, rule, position)
+    triple where a rule's lead occurs at that position in that word. Scans ALL
+    positions and ALL rules (not just the leftmost, as first_factor would) so the
+    caller can pick uniformly among the genuine branch points of the rewriting
+    system rather than following one forced path."""
+    sites = []
+    for w in work:
+        for rule in rules:
+            lead = rule.lead
+            n = len(lead)
+            for i in range(len(w) - n + 1):
+                if w[i:i + n] == lead:
+                    sites.append((w, rule, i))
+    return sites
+
+
+def _random_reduce(comb, rules, dom, rng):
+    """Reduce by rewriting at a RANDOMLY chosen site among ALL available
+    (word, rule, position) triples. For a confluent system every such sequence of
+    choices reaches the same normal form as the deterministic reducer. Returns
+    (normal_form, max_sites), where max_sites is the largest number of
+    simultaneously-available sites seen during the run — a witness that the walk
+    actually faced multi-way order choices rather than a single forced move."""
     work = {w: c for w, c in comb.items() if not dom.is_zero(c)}
+    max_sites = 0
     while True:
-        reducible = [w for w in work if first_factor(w, rules) is not None]
-        if not reducible:
-            return work
-        w = rng.choice(reducible)
-        rule, i = first_factor(w, rules)
+        sites = _reduction_sites(work, rules)
+        max_sites = max(max_sites, len(sites))
+        if not sites:
+            return work, max_sites
+        w, rule, i = rng.choice(sites)
         coeff = work.pop(w)
         u, v = w[:i], w[i + len(rule.lead):]
         for tc, tw in rule.tail:
@@ -34,11 +55,21 @@ def test_unique_normal_form_random_orders_agree():
     rng = random.Random(20260718)
     letters = ["x", "y"]
     words = [tuple(p) for n in range(1, 6) for p in itertools.product(letters, repeat=n)]
+    max_sites_seen = 0
     for w in words:
         deterministic = rs.reduce({w: QQ.coerce(1)})
         for _ in range(5):
-            assert _random_reduce({w: QQ.coerce(1)}, rs.rules, rs.order, rs.domain, rng) \
-                == deterministic
+            nf, max_sites = _random_reduce({w: QQ.coerce(1)}, rs.rules, rs.domain, rng)
+            assert nf == deterministic
+            max_sites_seen = max(max_sites_seen, max_sites)
+    # Permanent anti-tautology guard: the random walk must have faced a genuine
+    # branch point (>= 2 simultaneously-available reduction sites) at least once.
+    # If it never did, every move was forced and the test proves nothing about
+    # confluence -- fail loudly rather than pass vacuously.
+    print(f"\nmax simultaneous reduction sites seen: {max_sites_seen}")
+    assert max_sites_seen >= 2, (
+        f"confluence test degenerated into a tautology: never saw >= 2 reduction "
+        f"sites (max={max_sites_seen}); it is not exercising reduction-order choices")
 
 
 def test_monomial_route_equivalence_family():
