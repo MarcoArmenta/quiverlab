@@ -26,10 +26,10 @@ def _validate_cyclic(K):
         if K[i] < 2:
             raise AdmissibilityError(f"cyclic Kupisch entry c_{i+1} = {K[i]} < 2 in {K}",
                                      hint="every cyclic projective has length >= 2")
-        if K[i] > K[(i - 1) % n] + 1:
+        if K[i] > K[(i + 1) % n] + 1:
             raise AdmissibilityError(
-                f"cyclic admissibility fails at index {i+1}: {K[i]} > {K[(i-1)%n]} + 1",
-                hint="need c_i <= c_{i-1} + 1 cyclically")
+                f"cyclic admissibility fails at index {i+1}: {K[i]} > {K[(i+1)%n]} + 1",
+                hint="need c_i <= c_{i+1} + 1 cyclically")
 
 
 def NakayamaAlgebra(kupisch=None, *, n=None, l=None, cyclic=False, field=None):
