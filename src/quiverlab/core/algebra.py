@@ -193,6 +193,11 @@ class Algebra:
         from quiverlab.modules.builders import injective
         return injective(self, v)
 
+    def hom(self, M, N):
+        """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
+        from quiverlab.modules.hom import hom_dim
+        return hom_dim(M, N)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
