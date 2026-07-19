@@ -28,6 +28,10 @@ def test_phi_is_chain_map():
     Comparison(_square_gf()).assert_chain_map(upto=2)                 # b_bar ∘ Φ = Φ ∘ d_cs
 
 
+def test_phi_is_chain_map_kx2_two_sided_iso():
+    Comparison(_kx2_gf()).assert_chain_map(upto=2)                    # Φ*Ψ*=Ψ*Φ*=id on nonzero HH^n
+
+
 def test_transport_roundtrip_identity_on_cohomology():
     Comparison(_kx2_gf()).assert_transport_roundtrip_identity(upto=3)  # Ψ*Φ* = id on HH^n
 
