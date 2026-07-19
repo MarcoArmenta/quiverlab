@@ -1,11 +1,21 @@
 """Relation strings -> exact linear combinations of parallel paths (spec §3.3).
-Grammar (this phase): terms joined by + and -; term = [rational*] arrows;
-'p^k' repeats an arrow k times. Paths read LEFT TO RIGHT."""
+Grammar (this phase): terms joined by + and -; term = [coeff*] arrows;
+'p^k' repeats an arrow k times. Paths read LEFT TO RIGHT.
+
+A coefficient factor is either a plain rational ('2', '-1/3') or a sanctioned
+exact non-rational scalar token -- the imaginary unit 'i', a root of unity
+'E(n)', a radical 'sqrt(k)', or a parenthesised rational '(2)' -- parsed exactly
+via sympy (Plan 06 Task 4, spec §3.3). Rational factors continue to yield
+``Fraction`` (Plan-03/04 byte-compatible); non-rational scalars yield a sympy
+``Expr``. The parser stays field-agnostic: it never picks a field. Floats fail
+loudly (``ExactnessError``)."""
 import re
 from dataclasses import dataclass
 from fractions import Fraction
 
-from quiverlab.errors import RelationError
+import sympy
+
+from quiverlab.errors import ExactnessError, RelationError
 from quiverlab.fields.domain import parse_rational
 
 _COEFF = re.compile(r"^[+-]?\d+(/\d+)?$")
@@ -16,9 +26,34 @@ _NUMERIC_INTENT = re.compile(r"^[+-]?[.\d]")
 _POW = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\^(\d+)$")
 
 
+def _E(n):
+    """Primitive n-th root of unity exp(2*pi*i/n), exact (GAP's E(n) convention)."""
+    return sympy.exp(2 * sympy.pi * sympy.I / int(n))
+
+
+def _exact_scalar(tok):
+    """Parse an exact non-rational coefficient token (i, E(n), sqrt(k), rationals).
+    Returns Fraction for rationals, a sympy exact Expr otherwise. Loud on floats.
+    Returns None when the token is not an exact scalar at all (e.g. an arrow name
+    or an unknown symbol), leaving the caller to raise the usual RelationError."""
+    try:
+        expr = sympy.sympify(tok, locals={"i": sympy.I, "E": _E},
+                             rational=False, evaluate=True)
+    except (sympy.SympifyError, TypeError, SyntaxError, ValueError):
+        return None
+    if not getattr(expr, "is_number", False):
+        return None
+    if expr.atoms(sympy.Float):
+        raise ExactnessError(f"coefficient {tok!r} contains a floating-point number",
+                             hint="write exact scalars: '1/2', 'i', 'sqrt(2)', 'E(3)'")
+    if expr.is_rational:
+        return Fraction(int(sympy.numer(expr)), int(sympy.denom(expr)))
+    return expr
+
+
 @dataclass(frozen=True)
 class Relation:
-    terms: tuple  # tuple[tuple[Fraction, tuple[str, ...]], ...]
+    terms: tuple  # tuple[tuple[Fraction | sympy.Expr, tuple[str, ...]], ...]
     source: object
     target: object
 
@@ -96,6 +131,19 @@ def _parse_term(term: str, quiver):
         else:
             name, reps = f, [f]
         if name not in quiver.arrows:
+            # Not an arrow: a factor may instead be a sanctioned exact non-rational
+            # scalar (i, E(n), sqrt(k), a parenthesised rational). Try that before
+            # failing; only a token that is neither an arrow nor an exact scalar is
+            # a genuine RelationError (a float token still fails loudly, inside
+            # _exact_scalar, as an ExactnessError).
+            scalar = _exact_scalar(f)
+            if scalar is not None:
+                if word:
+                    raise RelationError(
+                        f"coefficient {f!r} appears after arrows in {term!r}",
+                        hint="write coefficients first: '2*a*b'")
+                coeff = coeff * scalar
+                continue
             raise RelationError(f"unknown arrow {name!r} in relation term {term!r}",
                                 hint=f"arrows are {sorted(quiver.arrows)}")
         word.extend(reps)
@@ -121,7 +169,9 @@ def parse_relation(s: str, quiver) -> Relation:
     parsed = [_parse_term(t, quiver) for t in _split_terms(s)]
     # Combine like terms (sum coefficients per word, first-occurrence order),
     # then drop zero-sum words so full cancellation is caught as zero below.
-    combined: dict[tuple, Fraction] = {}
+    # Summing starts from Fraction(0): all-rational words stay Fraction (byte
+    # compatible); any sympy Expr summand promotes that word's coefficient.
+    combined: dict[tuple, "Fraction | sympy.Expr"] = {}
     for c, w in parsed:
         combined[w] = combined.get(w, Fraction(0)) + c
     terms = [(c, w) for w, c in combined.items() if c != 0]
