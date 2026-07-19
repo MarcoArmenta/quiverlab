@@ -7,7 +7,7 @@ from quiverlab.fields.linalg import rank, solve
 
 class Algebra:
     def __init__(self, domain, T, unit, basis_labels=None, is_unit_adapted=None, _quiver=None,
-                 _relations=None):
+                 _relations=None, _family_citations=()):
         self.domain = domain
         self.T = T
         self.unit = unit
@@ -15,6 +15,7 @@ class Algebra:
         self.basis_labels = basis_labels
         self.quiver = _quiver
         self.relations = _relations
+        self._family_citations = tuple(_family_citations)
         if is_unit_adapted is None:
             one = domain.one()
             is_unit_adapted = (
@@ -146,6 +147,25 @@ class Algebra:
             engine == "auto" and isinstance(self.domain, PrimeField)
         )
 
+    # -- citations ------------------------------------------------------------
+    def _engine_citations(self):
+        # HH^*/HH_* dimensions are produced by the (normalized/fast-rank) bar complex,
+        # whatever the presentation -- so the engine key is always "bar" (Hochschild1945).
+        # Resolution-specific keys (bardzell / chouhy_solotar) are carried by the family
+        # stamp where the family author declares them relevant (e.g. QuantumCI), and by
+        # the Plan-04/05 resolution/ops result objects that actually run those engines.
+        return ("bar",)
+
+    def citations(self):
+        """Registry keys relevant to this algebra: its family stamp plus the HH engine
+        (spec §3.9). Every key resolves via quiverlab.citations."""
+        seen, out = set(), []
+        for k in tuple(getattr(self, "_family_citations", ())) + self._engine_citations():
+            if k not in seen:
+                seen.add(k)
+                out.append(k)
+        return tuple(out)
+
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto"):
         """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
         bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise)."""
@@ -159,8 +179,11 @@ class Algebra:
             from quiverlab.engine.adapter import engine_cohomology_dims
             dims = engine_cohomology_dims(self, top, max_cells=max_cells)
             return HHTable(dims, "HH^", repr(self).splitlines()[0],
-                           engine="hanlab engine (F_p fast rank)")
-        return hochschild_cohomology_dims(self, top, max_cells=max_cells)
+                           engine="hanlab engine (F_p fast rank)",
+                           references=self.citations())
+        table = hochschild_cohomology_dims(self, top, max_cells=max_cells)
+        table.references = self.citations()
+        return table
 
     def hochschild_homology(self, top, max_cells=4_000_000, engine="auto"):
         """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology."""
@@ -174,8 +197,11 @@ class Algebra:
             from quiverlab.engine.adapter import engine_homology_dims
             dims = engine_homology_dims(self, top, max_cells=max_cells)
             return HHTable(dims, "HH_", repr(self).splitlines()[0],
-                           engine="hanlab engine (F_p fast rank)")
-        return hochschild_homology_dims(self, top, max_cells=max_cells)
+                           engine="hanlab engine (F_p fast rank)",
+                           references=self.citations())
+        table = hochschild_homology_dims(self, top, max_cells=max_cells)
+        table.references = self.citations()
+        return table
 
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
