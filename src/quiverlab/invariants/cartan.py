@@ -48,6 +48,18 @@ def coxeter_matrix(A):
 
 
 def coxeter_polynomial(A):
+    """Characteristic polynomial of the Coxeter matrix Phi = -C^{-T} C, as an exact
+    sympy Poly in t (no numerical root-finding; the exact spectral_radius / mahler_measure
+    invariants live in invariants/spectral.py).
+
+    DOMAIN CAVEAT (det C not in {0, +-1}): when the Cartan is non-unimodular, Phi may have
+    rational entries, so the Coxeter polynomial can be over QQ (e.g. t^2 + 3t/2 + 1 for
+    C = [[2,1],[0,1]]). It is still EXACT, but such a rational Phi is NOT the classical
+    integral Coxeter transformation -- a caveat the coxeter_matrix() sibling surfaces via
+    its rational-entry branch. The domain follows the actual COEFFICIENTS, not det C: a
+    non-unimodular Cartan may still be integral (k[x]/(x^2) -> t+1 over ZZ; diag(1,2) ->
+    (t+1)^2 over ZZ). A singular Cartan (det C == 0) has no Coxeter transformation and
+    raises loudly."""
     C = sympy.Matrix(cartan_matrix(A))
     if C.det() == 0:
         raise QuiverlabError(
@@ -56,4 +68,4 @@ def coxeter_polynomial(A):
         )
     Phi = -C.inv().T * C
     t = sympy.Symbol("t")
-    return sympy.Poly(Phi.charpoly(t).as_expr(), t)
+    return sympy.Poly(Phi.charpoly(t).as_expr(), t)   # domain inferred from coefficients
