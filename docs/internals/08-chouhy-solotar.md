@@ -63,4 +63,5 @@ so `HH_0 = 4 ≠ 1 = HH^0`.
 - General `kQ/I`: computed, certified per instance by `d²=0` + order gate + bar window,
   **restricted to quadratic tips or monomial presentations**; a non-quadratic non-monomial
   presentation raises `NotImplementedError` (the `right_decomposition` stretch item lifts this).
-- Operations (cup/cap/bracket): transported to bar; certified only in the bar window.
+- Operations (cup/bracket): transported to bar; certified only in the bar window.
+  (Cap products exist on the bar engine `engine/tt_calculus.py` only — no CS transport wrapper yet.)

@@ -1,5 +1,5 @@
 """Comparison morphisms CS <-> bar, and windowed transport of the Tamarkin-Tsygan
-cup/cap/bracket classes (spec Plan-04 Task 12).
+cup/bracket classes (spec Plan-04 Task 12).
 
 The Chouhy-Solotar resolution P_* is a retract of the (reduced) normalized bar
 resolution B_*: an inclusion Phi: P -> B and a projection Psi: B -> P with
@@ -15,9 +15,10 @@ Applying Hom_{A^e}(-, A) turns the covariant inclusion into the contravariant
 comparison COCHAIN map that this module works with,
     Phi# : C^n_bar -> C^n_cs ,   (Phi# g)(sigma) = g(Phi_n sigma),
 a genuine cochain map (delta_cs Phi# = Phi# delta_bar) and a quasi-isomorphism.
-Its inverse on HH^* transports classes the other way; cup/cap/bracket are computed
+Its inverse on HH^* transports classes the other way; cup/bracket are computed
 on the bar side with engine.tt_calculus (the GF(p) facade) and pulled back through
-Phi#.  Everything is exact over GF(p); the transport is delivered only inside the
+Phi#.  (Cap products live on the bar engine, engine.tt_calculus, only; there is no
+CS transport wrapper for them yet.)  Everything is exact over GF(p); the transport is delivered only inside the
 bar-comparison WINDOW (a cup at degree n needs bar cochains up to degree 2n+1).
 
 Bases.  The bar side uses the engine's cochain basis engine.scan3.cochain_basis

@@ -17,6 +17,11 @@ from quiverlab.engine.resolutions import Resolution
 
 
 class CSResolution(Resolution):
+    """Test-only surface: gate-free by design. It enforces admissibility and prime-field
+    scope but does NOT run the two binding gates (assert_dd_zero / assert_order_condition)
+    that the public path in homology.py runs; its certificate is the cross-check batteries
+    instead. The public Algebra dispatch always routes to the gated homology.py, never here."""
+
     def __init__(self, A, max_cells=4_000_000):
         from quiverlab.errors import FieldError
         from quiverlab.fields.primefield import PrimeField
