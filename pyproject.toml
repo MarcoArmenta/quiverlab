@@ -19,5 +19,9 @@ fast = ["numba>=0.64"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"quiverlab.citations" = ["references.bib"]
+"quiverlab.families" = ["zoo_catalog.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
