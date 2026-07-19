@@ -38,6 +38,9 @@ class ChouhySolotarResolution:
 
     # -- leading map δ_n (CS f_{n-1}), quiverlab index ----------------------
     def delta_terms(self, n, chain):
+        self._require_in_scope()      # public + ungated (edit #1): a direct odd-n≥3 call on a
+        # non-quadratic non-monomial presentation would return silently-wrong even-δ terms
+        # (left-vs-right decomposition divergence); refuse at the same boundary as _d_general.
         if n == 1:
             return self._d1_terms(chain)
         one, none = self._one(), self._neg(self._one())

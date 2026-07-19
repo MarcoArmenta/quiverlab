@@ -63,6 +63,31 @@ def test_qci_d3_correction_matches_paper():
     }
 
 
+def _kx3(field=CC):
+    """k<x>/(x³): single vertex, loop x, MONOMIAL relation x*x*x. Non-quadratic (cubic tip)
+    but monomial, so _require_in_scope ADMITS it (no correction; collapsed = Bardzell)."""
+    Q = Quiver([1], {"x": (1, 1)})
+    return ChouhySolotarResolution(Q.algebra(relations=["x*x*x"], field=field),
+                                   build_reduction_system(Q, ["x*x*x"], field), max_degree=5)
+
+
+def test_kx3_monomial_nonquadratic_gates_pass():
+    """RESTRICT-boundary regression (edit #1): a MONOMIAL non-quadratic algebra k<x>/(x³)
+    passes the guard legitimately (monomial admission) and both CS gates close on both sides.
+    Pins the monomial-non-quadratic corner the loud backstops otherwise rest on, uncommitted."""
+    for field in (CC, GF(2)):
+        res = _kx3(field=field)
+        res.assert_dd_zero(upto=5, side="hom")           # d²=0, homology side
+        res.assert_dd_zero(upto=5, side="coh")           # d²=0, cohomology side
+        res.assert_order_condition(upto=5)               # CS Theorem 4.1 condition (2)
+        # guard ADMITS monomial: delta_terms/d_terms must NOT raise (contrast the cubic-tip
+        # NON-monomial case below, which does).
+        for n in range(1, 6):
+            for c in res.ss.S(n):
+                res.delta_terms(n, c)                    # no NotImplementedError
+                res.d_terms(n, c)                        # no NotImplementedError
+
+
 def test_cubic_tip_nonmonomial_raises_notimplemented():
     """RESTRICT boundary (edit #1): a non-quadratic (cubic tip) NON-monomial presentation
     raises NotImplementedError at the exact degree-≥3 differential. A = k<x,y>/(x²,y²,xyx−yxy)
