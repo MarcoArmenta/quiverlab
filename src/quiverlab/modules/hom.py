@@ -3,6 +3,7 @@
 phi: M -> N is a right-module map iff N.action[b] @ phi = phi @ M.action[b] for every
 generator b (arrows and idempotents). Column-stacking vec: the constraint per b is
 (I_{dimM} (x) N.action[b] - M.action[b]^T (x) I_{dimN}) vec(phi) = 0. dim Hom = dim ker."""
+from quiverlab.errors import QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 
 
@@ -24,7 +25,17 @@ def hom_space(M, N):
         right = lm.kron(lm.transpose(Mb), In, dom)      # M.action[b]^T (x) I_dn
         blocks.append([[dom.sub(left[i][j], right[i][j]) for j in range(dm * dn)]
                        for i in range(dm * dn)])
-    stacked = lm.vstack(blocks) if blocks else lm.zeros(0, dm * dn, dom)
+    if not blocks:
+        # _generators(M) always yields the vertex idempotents (every quiver has at
+        # least one vertex) plus the arrows, so `blocks` is never empty. If it is,
+        # the constraint matrix is missing entirely and the "no constraints" answer
+        # would be the FULL space (dim dm*dn), not dim 0 -- returning zeros(0, ...)
+        # here would silently understate Hom. Raise loudly instead of guessing.
+        raise QuiverlabError(
+            "hom_space: generator list unexpectedly empty (no idempotents or arrows)",
+            hint="every quiver has at least one vertex, so this branch is unreachable; "
+                 "if it fires, the module's algebra/quiver is malformed")
+    stacked = lm.vstack(blocks)
     ker = lm.kernel_columns(stacked, dom)
     # reshape each kernel vector (length dm*dn, column-stacked) into a dn x dm matrix
     homs = []
