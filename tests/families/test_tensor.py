@@ -12,6 +12,7 @@ def _kA2(field=CC):
 def test_kA2_tensor_kA2_is_commutative_square_dim9():
     A = TensorProduct(_kA2(), _kA2())
     assert A.dim == 9
+    A._validate()                                          # regression guard: T-table stays associative + two-sided unit (raises on failure)
     assert A.hochschild_cohomology(2).dims == [1, 0, 0]     # == Plan-03 square == diamond
 
 
