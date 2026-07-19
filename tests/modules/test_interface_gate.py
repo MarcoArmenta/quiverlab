@@ -16,10 +16,11 @@ def test_algebra_surface_present_and_module_methods_absent():
                  "nakayama_automorphism", "is_frobenius", "is_symmetric"):
         assert callable(getattr(Algebra, meth)), meth
     # Plan-05 adds these; they must NOT pre-exist (else a rebase duplicated work).
-    # simple/projective/injective (Task 3), hom (Task 5) and now ext/global_dimension/
-    # is_selfinjective (Task 7) have since LANDED and are intentionally dropped from this
-    # list; the remaining names stay guarded until their tasks land.
-    for new in ("loewy_length", "complexity", "center"):
+    # simple/projective/injective (Task 3), hom (Task 5), ext/global_dimension/
+    # is_selfinjective (Task 7) and now loewy_length/complexity/center (Task 11) have
+    # since LANDED and are intentionally dropped from this list; any remaining names stay
+    # guarded until their tasks land.
+    for new in ():
         assert not hasattr(Algebra, new), f"{new} already exists -- reconcile"
 
 

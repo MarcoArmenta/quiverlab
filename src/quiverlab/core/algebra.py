@@ -230,6 +230,21 @@ class Algebra:
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
 
+    def loewy_length(self):
+        """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
+        from quiverlab.invariants.scalar import loewy_length
+        return loewy_length(self)
+
+    def center(self):
+        """(dim, basis) of the center Z(A), exact over any field (spec §3.5)."""
+        from quiverlab.invariants.scalar import center
+        return center(self)
+
+    def complexity(self, n):
+        """Apparent complexity from the minimal A^e resolution's growth (GF(p) only)."""
+        from quiverlab.invariants.scalar import complexity
+        return complexity(self, n)
+
     def _require_prime_field(self, what):
         from quiverlab.errors import FieldError
         from quiverlab.fields.primefield import PrimeField
