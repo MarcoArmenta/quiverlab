@@ -177,6 +177,22 @@ class Algebra:
                            engine="hanlab engine (F_p fast rank)")
         return hochschild_homology_dims(self, top, max_cells=max_cells)
 
+    # -- modules --------------------------------------------------------------
+    def simple(self, v):
+        """The simple right module S_v (spec §3.6)."""
+        from quiverlab.modules.builders import simple
+        return simple(self, v)
+
+    def projective(self, v):
+        """The indecomposable projective right module P_v = e_v A (spec §3.6)."""
+        from quiverlab.modules.builders import projective
+        return projective(self, v)
+
+    def injective(self, v):
+        """The indecomposable injective right module I_v = D(A e_v) (spec §3.6)."""
+        from quiverlab.modules.builders import injective
+        return injective(self, v)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
