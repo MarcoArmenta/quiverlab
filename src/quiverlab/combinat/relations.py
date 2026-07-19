@@ -27,8 +27,15 @@ _POW = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)\^(\d+)$")
 
 
 def _E(n):
-    """Primitive n-th root of unity exp(2*pi*i/n), exact (GAP's E(n) convention)."""
-    return sympy.exp(2 * sympy.pi * sympy.I / int(n))
+    """Primitive n-th root of unity exp(2*pi*i/n), exact (GAP's E(n) convention).
+    Reject a non-integer index loudly: E(3.0)/E(3.5) reach here as sympy Floats
+    that int() would silently accept (E(3.0)) or truncate (E(3.5)->E(3)), slipping
+    past the atoms(Float) backstop. Match the module's loud-exactness idiom."""
+    m = sympy.sympify(n)
+    if not m.is_Integer:
+        raise ExactnessError(f"E({n}) index must be an exact integer, not {n}",
+                             hint="write E(3), E(8); floats like E(3.0) are inexact")
+    return sympy.exp(2 * sympy.pi * sympy.I / int(m))
 
 
 def _exact_scalar(tok):

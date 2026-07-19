@@ -40,6 +40,22 @@ def test_root_of_unity_and_radical_tokens():
     assert coeffs[("y", "x")] == sympy.exp(2 * sympy.pi * sympy.I / 3)
 
 
+def test_float_root_of_unity_index_fails_loudly():
+    # E(n) reaches _E as a sympy number; a Float index (E(3.0)) must not be
+    # silently consumed by int(), and E(3.5) must not be truncated to E(3).
+    # The int() there slips a Float past the atoms(Float) backstop, so _E itself
+    # rejects a non-integer index with the module's loud-exactness idiom.
+    Q = _two_loops()
+    with pytest.raises(ExactnessError):
+        parse_relation("E(3.0)*x*y", Q)
+    with pytest.raises(ExactnessError):
+        parse_relation("E(3.5)*x*y", Q)
+    # The sanctioned integer index still parses exactly.
+    r = parse_relation("E(3)*x*y", Q)
+    coeffs = {w: c for c, w in r.terms}
+    assert coeffs[("x", "y")] == sympy.exp(2 * sympy.pi * sympy.I / 3)
+
+
 def test_float_coefficient_still_fails_loudly():
     Q = _two_loops()
     with pytest.raises((ExactnessError, RelationError)):
