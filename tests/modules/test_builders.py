@@ -13,6 +13,9 @@ def test_a2_simples():
     assert A.simple(1).dimension_vector() == {1: 1, 2: 0}
     assert A.simple(2).dimension_vector() == {1: 0, 2: 1}
     assert A.simple(1).dim == 1
+    for v in (1, 2):
+        ok, why = A.simple(v).check_module()   # each S_v is a genuine module
+        assert ok, why
 
 
 def test_a2_projectives():
@@ -29,8 +32,14 @@ def test_a2_injectives():
     I1, I2 = A.injective(1), A.injective(2)
     assert I1.dim == 1 and I1.dimension_vector() == {1: 1, 2: 0}   # I_1 = S_1
     assert I2.dim == 2 and I2.dimension_vector() == {1: 1, 2: 1}
-    ok, _ = I2.check_module()
-    assert ok
+    ok, why = I2.check_module()
+    assert ok, why
+    # check_module alone cannot pin the genuine I_2: a ZERO arrow action has the
+    # same dimvec {1:1, 2:1} AND passes check_module -- but that module is the
+    # decomposable S_1 (+) S_2, not the indecomposable injective. Pin the arrow
+    # action as NONZERO to kill that impostor.
+    dom = I2.domain
+    assert not all(dom.is_zero(x) for row in I2.action["a1"] for x in row)
 
 
 def test_square_projectives_match_cartan_rows():
@@ -52,11 +61,16 @@ def test_injective_dimvec_is_cartan_column():
     for j, v in enumerate(verts):
         Iv = A.injective(v)
         assert Iv.dimension_vector() == {verts[i]: C[i][j] for i in range(4)}
+        ok, why = Iv.check_module()   # relational (Groebner-route) injective is a genuine module
+        assert ok, why
 
 
 def test_builders_over_gfp():
     A = linear_path_algebra(2, field=GF(7))
-    assert A.projective(1).dimension_vector() == {1: 1, 2: 1}
+    P1 = A.projective(1)
+    assert P1.dimension_vector() == {1: 1, 2: 1}
+    ok, why = P1.check_module()   # builder is a genuine module over GF(7) too
+    assert ok, why
 
 
 def test_builders_need_provenance():
