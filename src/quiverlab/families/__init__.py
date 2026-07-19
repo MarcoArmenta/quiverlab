@@ -7,4 +7,6 @@ from quiverlab.families.path_algebra import PathAlgebra  # noqa: F401
 from quiverlab.families.preprojective import PreprojectiveAlgebra  # noqa: F401
 from quiverlab.families.quantum import QuantumCI  # noqa: F401
 from quiverlab.families.radical_square_zero import RadicalSquareZero  # noqa: F401
+from quiverlab.families.tensor import TensorProduct  # noqa: F401
+from quiverlab.families.trivial_extension import TrivialExtension  # noqa: F401
 from quiverlab.families.truncated import TruncatedPathAlgebra  # noqa: F401
