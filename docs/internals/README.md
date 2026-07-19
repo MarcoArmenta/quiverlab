@@ -53,6 +53,17 @@ by running the code.
   reduction rule, Buchberger–Mora completion, the finiteness certificate
   (2L−1 ≤ D plus the forbidden-word automaton), and how a general kQ/I becomes
   structure constants.
+<!-- MERGE NOTE (Plan 04 T14): the Chouhy–Solotar chapter below is filed as
+     08-chouhy-solotar.md and headed "08" to match the shipped code references
+     (src/quiverlab/resolutions_cs/__init__.py and the plan doc). It therefore
+     shares the number "08" with Gröbner above — a cross-plan numbering clash
+     (Plan 03 took 08 for Gröbner; Plan 05 took 09 for Modules). Reconcile at
+     merge, e.g. Gröbner=08, Chouhy–Solotar=09, Modules=10 (roadmap order). -->
+- **08 — The Chouhy–Solotar resolution.** The general CS projective bimodule resolution
+  for admissible kQ/I: the ambiguity S-sequence (Bardzell associated paths of the tip
+  monomial algebra), the CS differential (Bardzell leading map + order-condition-pinned
+  correction), the two collapse maps, and why it reaches Hochschild degrees the bar
+  complex cannot. Landed with Plan 04.
 
 ## Honest coverage statement
 
@@ -66,9 +77,11 @@ on disk *now*:
   monomial presentation through the Plan-01 path and a non-monomial one through the
   noncommutative Gröbner engine (`groebner/`), which completes the relations, certifies
   finite-dimensionality, and lowers kQ/I to a structure-constant `Algebra`.
-- The **Chouhy–Solotar closed-form resolution** (`resolutions_cs`) is referenced by the
-  periodic backends but **excluded from this port**; it **arrives with Plan 04**. The
-  `QuantumCIResolution` wrapper is therefore dormant until then.
+- The **Chouhy–Solotar resolution** (`resolutions_cs`) has **landed with Plan 04**
+  (Chapter 08 — The Chouhy–Solotar resolution): the domain-generic CS bimodule
+  resolution, its HH•/HH^• dimensions and representative (co)cycles, the CS↔bar
+  comparison maps, and the `engine="cs"` dispatch path (which reaches Hochschild
+  degrees the bar oracle cannot).
 - The starter algebra **families** are deliberately minimal (`families/basic.py`); the
   full catalogue, plus exact spectral-radius / Mahler-measure invariants, **arrive with
   Plan 05**. Those modules will get their own chapters when they land.
