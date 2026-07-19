@@ -37,18 +37,36 @@ rule; DEVIATES from the brief's predicted "6 passed, 6 xfailed"):
   matrices differ from the bank's hand-derived closed forms.  Measured on THIS branch,
   it does not: for BOTH families, EVERY degree n = 1..N, and EVERY prime in
   {32003, 2, 3, 5}, the aligned quiverlab and bank differential matrices are equal
-  entry-by-entry mod p (0 mismatches).  The reason is that on these quadratic/monomial
-  families the correction gamma is trivially pinned (the lower-generator solve is
-  empty or forced), so the Plan-04 differential coincides with the canonical CS
-  closed form the bank encodes -- there is no nullspace freedom to exploit here.
+  entry-by-entry mod p (0 mismatches).  But the MECHANISM is NOT the same for the two
+  families, and the naive "gamma is trivially pinned everywhere" story is FALSE:
 
-  The `xfail(strict=False)` marker is RETAINED verbatim per the brief (faithful
-  transcription): (a) strict=False means an xpass is reported, never a failure, so the
-  suite stays green either way; (b) the marker's REASON stays mathematically honest --
-  byte-exactness is a property of these two simple families, NOT a general guarantee;
-  for an admissible algebra whose correction has genuine nullspace freedom these pins
-  could legitimately xfail, and the net absorbs that without a red suite.  The
-  load-bearing guarantee is tier 1 (HH-dim equality), which is a hard pass.
+    * truncpoly / monomial family k[x]/(x^a) -- byte identity is FORCED.  The
+      order-condition correction gamma is genuinely 0 here (the lower-generator solve
+      is empty/degenerate on a monomial algebra), so the Plan-04 leading map delta_n
+      already IS the canonical CS closed form.  Nothing to choose; no nullspace.
+
+    * quantum-CI family k<x,y>/(x^2,y^2,yx - xi xy) -- byte identity is a SOLVER-CHOICE
+      COINCIDENCE, not uniqueness.  Here the correction system has genuine nullspace
+      freedom: its nullity GROWS WITH DEGREE (measured up to 6), gamma is NONZERO, and
+      DISTINCT valid solutions yield DISTINCT byte matrices that ALL still satisfy the
+      order condition / d^2 = 0 locally.  The pins pass only because quiverlab's
+      deterministic particular solution -- RREF with free variables set to 0
+      (fields/linalg.py `solve`) -- happens to land on the SAME representative as the
+      bank's minimal hand-derived closed form.  This is a canonical-representative
+      COINCIDENCE (two independent tie-breakers agreeing), NOT a mathematical
+      guarantee of uniqueness.
+
+  *** WARNING: do NOT flip these markers to xfail(strict=True). ***
+  The byte identity on the qci family is TIE-BREAKING-DEPENDENT: it holds only while
+  quiverlab's solver keeps its current free-variable convention AND that convention
+  keeps matching the bank's hand-derived choice.  Any change to the linear-solve
+  representative (a different RREF pivot order, a non-zero free-variable assignment, a
+  future canonicalization pass) can legitimately move gamma to another equally-valid
+  point of the nullspace and break byte-exactness WITHOUT any real bug.  Keep
+  strict=False until an explicit canonicalization step lands that PINS the
+  representative on both sides; only then may a strict pin be justified.  The
+  load-bearing guarantee remains tier 1 (HH-dim equality), which is rank-based, hence
+  nullspace-invariant, and is a hard pass.
 ===========================================================================
 """
 import functools
@@ -81,14 +99,23 @@ def _bank():
     builders (truncated_polynomial, quantum_ci) and homology_dims; the closed-form
     `ChouhySolotarResolution` + reduction-system factories are loaded straight from
     the bank file by spec (per the brief's `_bank_cs`)."""
-    for p in (str(BANK), str(BANK / "hanlab")):
-        if p not in sys.path:
-            sys.path.insert(0, p)
-    import hanlab as H
-    spec = importlib.util.spec_from_file_location(
-        "bank_cs", BANK / "hanlab/resolutions_cs.py")
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
+    added = [p for p in (str(BANK), str(BANK / "hanlab")) if p not in sys.path]
+    for p in added:
+        sys.path.insert(0, p)
+    try:
+        import hanlab as H
+        spec = importlib.util.spec_from_file_location(
+            "bank_cs", BANK / "hanlab/resolutions_cs.py")
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+    finally:
+        # Pop only the path entries WE added; the loaded modules stay in
+        # sys.modules (needed by callers) -- only the sys.path pollution is undone.
+        for p in added:
+            try:
+                sys.path.remove(p)
+            except ValueError:
+                pass
     return H, m
 
 
