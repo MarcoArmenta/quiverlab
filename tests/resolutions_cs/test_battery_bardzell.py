@@ -17,9 +17,9 @@ chain enumeration IS shared -- CS's SSequence reuses MonomialPresentation's
 associated_paths on the tip algebra's leading words -- so term-count agreement is
 partly structural; the rank and HH agreement is the load-bearing part.)
 """
-import pytest, numpy as np
+import pytest
 from quiverlab.engine.resolutions_bardzell import BardzellResolution, MonomialPresentation
-from quiverlab.engine.hh_engine import hochschild_homology_dims
+from quiverlab.engine.hh_engine import hochschild_homology_dims, rank_mod_p
 from quiverlab.engine.adapter import to_engine
 from quiverlab.resolutions_cs.engine_facade import CSResolution
 pytest.importorskip("quiverlab.groebner")
@@ -27,8 +27,8 @@ pytest.importorskip("quiverlab.groebner")
 # ---------------------------------------------------------------------------
 # TRANSCRIPTION DEVIATION (flagged per brief): the brief's third case is
 # ("local_radsq", 3, 10). local_radsq(3) is radical-square-zero, so dim C_n grows
-# as 4*3^n: at N=10 the differential C_9 -> C_10 is 78732 x 236196 (~1.5e11 int64
-# entries, ~148 GB dense), np.linalg.matrix_rank (float SVD) on it is infeasible,
+# as 4*3^n: at N=10 the differential C_9 -> C_10 is 78732 x 236196 (~1.86e10 int64
+# entries, ~1.5e11 bytes = ~148 GB dense), computing its rank is infeasible,
 # and the CS differential BUILD alone costs 146 s at n=6 and explodes past it
 # (the HH test at depth N builds degree N+1). N=10 therefore fails its own
 # transcribed test on memory AND time. Per the brief's minimal-fix clause, N is
@@ -82,7 +82,7 @@ def test_cs_equals_bardzell_terms_and_ranks(name, param, N):
                                     {g: i for i, g in enumerate(cs.term_basis(E, n - 1))})
         Mb = bd.differential_matrix(E, n, bd.term_basis(E, n),
                                     {g: i for i, g in enumerate(bd.term_basis(E, n - 1))})
-        assert np.linalg.matrix_rank(Mc % 32003) == np.linalg.matrix_rank(Mb % 32003)
+        assert rank_mod_p(Mc, 32003) == rank_mod_p(Mb, 32003)
 
 
 @pytest.mark.parametrize("name,param,N", CASES)
