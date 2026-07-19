@@ -76,6 +76,50 @@ def han_verdict(seq):
 
 
 # ---------------------------------------------------------------------------
+# open-zoo -> spec adapter -- ported verbatim from hanlab.cluster.make_shards (MIT)
+# ---------------------------------------------------------------------------
+def _reduction_system_args(entry):
+    """Catalog entry -> the ``reduction_system`` builder's args ``[ngen, rules, name]``.
+
+    Matches ``builders._reduction_system(ngen, rules, name)``; if the builder's arg
+    shape ever changes, this is the only line to touch."""
+    return [entry["ngen"], entry["rules"], entry["name"]]
+
+
+def open_zoo_to_specs(catalog, primes=(PRIME,), max_dim=None, min_dim=None, limit=None,
+                      max_transient_bytes=None):
+    """Convert open-zoo catalog entries to ``reduction_system`` specs, using the same
+    depth/budget policy as the scan_open helpers (so a cluster sweep matches the local one).
+
+    ``min_dim``/``max_dim`` keep only algebras with min_dim <= catalog dim <= max_dim (a
+    dim band -- the cheap-first curriculum); ``limit`` caps the number of specs (after
+    filtering).  ``max_transient_bytes`` (bytes; None = off) is baked into each spec as the
+    per-worker peak-memory budget for the minimal-resolution radK transient, so the spec
+    list stays a pure function of its inputs (sharded == serial).  When None the key is
+    omitted, so existing specs/records are byte-unchanged (back-compat)."""
+    specs = []
+    for e in catalog:
+        d = e["dim"]
+        if max_dim is not None and d > max_dim:
+            continue
+        if min_dim is not None and d < min_dim:
+            continue
+        spec = {
+            "builder": "reduction_system",
+            "args": _reduction_system_args(e),
+            "N": depth_for_dim(d),
+            "primes": list(primes),
+            "max_term_dim": max_term_dim_for_dim(d),
+        }
+        if max_transient_bytes is not None:
+            spec["max_transient_bytes"] = int(max_transient_bytes)
+        specs.append(spec)
+        if limit is not None and len(specs) >= limit:
+            break
+    return specs
+
+
+# ---------------------------------------------------------------------------
 # The pure unit of work
 # ---------------------------------------------------------------------------
 def analyze(spec):

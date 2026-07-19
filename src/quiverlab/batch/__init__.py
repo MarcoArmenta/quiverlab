@@ -12,4 +12,5 @@ Han counterexample-search queries.
   quiverlab.batch.PRIME              -- the char-0 proxy prime, 32003
 """
 from quiverlab.batch import builders, db, scan  # noqa: F401
-from quiverlab.batch.scan import PRIME  # noqa: F401
+from quiverlab.batch.scan import (  # noqa: F401
+    PRIME, depth_for_dim, han_verdict, max_term_dim_for_dim, open_zoo_to_specs)
