@@ -198,6 +198,22 @@ class Algebra:
         from quiverlab.modules.hom import hom_dim
         return hom_dim(M, N)
 
+    def ext(self, M, N, n):
+        """dim Ext^n_A(M, N) for right A-modules M, N (spec §3.6)."""
+        from quiverlab.modules.ext import ext
+        return ext(self, M, N, n)
+
+    def global_dimension(self):
+        """Global dimension: exact value or a labeled certified lower bound (spec §3.5)."""
+        from quiverlab.modules.ext import global_dimension
+        return global_dimension(self)
+
+    def is_selfinjective(self):
+        """True iff every indecomposable projective is injective (self-injective =
+        Frobenius for a f.d. algebra); exact over any field (spec §3.5)."""
+        from quiverlab.modules.ext import is_selfinjective
+        return is_selfinjective(self)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
