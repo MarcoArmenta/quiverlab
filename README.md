@@ -58,6 +58,26 @@ Non-monomial relations are completed with an exact noncommutative Gröbner
 non-admissible or infinite presentation fails loudly with `AdmissibilityError`
 or `NotFiniteDimensionalError`, never a hang.
 
+## Modules and invariants
+
+```python
+from quiverlab import Quiver, CC
+
+A = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)}
+           ).algebra(relations=["a*b - c*d"], field=CC)   # commutative square
+
+S1, S4 = A.simple(1), A.simple(4)
+A.projective(1).dimension_vector()      # {1: 1, 2: 1, 3: 1, 4: 1}
+A.ext(S1, S4, 2)                        # 1     (Ext^2 of simples)
+int(A.global_dimension())              # 2
+A.loewy_length()                       # 3
+A.simple(1).projective_resolution(4)   # P_1 <- P_2(+)P_3 <- P_4 <- 0
+```
+
+Every module is a right A-module over the stated exact field; Ext, Hom, and the
+projective resolution are exact. Exact `spectral_radius`/`mahler_measure`, `center()`,
+`complexity()`, and `sweep()` (invariant × field) round out the invariant surface.
+
 ## Status
 
 Engine phase (Plans 01–02 delivered). On top of the foundations — monomial

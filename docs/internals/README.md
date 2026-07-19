@@ -53,11 +53,15 @@ by running the code.
   reduction rule, Buchberger–Mora completion, the finiteness certificate
   (2L−1 ≤ D plus the forbidden-word automaton), and how a general kQ/I becomes
   structure constants.
+- **09 — Modules.** How a finite-dimensional right A-module is stored (the `action`
+  dict, column-vector / anti-homomorphism convention), simples / projectives /
+  injectives read off the multiplication table, radical / top / socle, Hom and Ext,
+  and the minimal projective resolution by iterated projective covers.
 
 ## Honest coverage statement
 
-This tree is the **Plan 03 (Gröbner)** checkout. What is documented here is what is
-on disk *now*:
+This tree is the **Plan 05 (Modules + invariants)** checkout. What is documented here is
+what is on disk *now*:
 
 - The **fast GF(p) engine** (`engine/`) is ported and live: bar homology/cohomology over
   a prime field, the minimal and Bardzell resolutions, cyclic homology, and the
@@ -69,8 +73,12 @@ on disk *now*:
 - The **Chouhy–Solotar closed-form resolution** (`resolutions_cs`) is referenced by the
   periodic backends but **excluded from this port**; it **arrives with Plan 04**. The
   `QuantumCIResolution` wrapper is therefore dormant until then.
-- The starter algebra **families** are deliberately minimal (`families/basic.py`); the
-  full catalogue, plus exact spectral-radius / Mahler-measure invariants, **arrive with
-  Plan 05**. Those modules will get their own chapters when they land.
+- The **module + invariants surface** has **landed with Plan 05**: right A-modules with
+  simples / projectives / injectives, radical / top / socle, Hom / Ext, minimal
+  projective resolutions and global dimension (Chapter 09), plus the exact
+  **spectral-radius / Mahler-measure** layer, `loewy_length`, `center`, `complexity`, and
+  the `sweep` (invariant × field) table (documented in the "exact spectral layer" section
+  of Chapter 06). The starter algebra **families** remain deliberately minimal
+  (`families/basic.py`); the full catalogue **arrives with Plan 06**.
 
 Where a chapter describes something whose full form is still to come, it says so inline.
