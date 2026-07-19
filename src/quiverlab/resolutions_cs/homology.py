@@ -17,7 +17,20 @@ def _require_admissible(rs):
                                  hint="Groebner completion did not certify confluence / a finite basis")
 
 
-def cs_cohomology_dims(A, top, max_cells=4_000_000):
+def _emit_resolution_trace(trace, res, top, side):
+    """Append one ResolutionTerm per degree 0..top to a caller-supplied list (Plan-07
+    renders these; here we only populate them). Inert when trace is None. Each event's
+    collapsed_dim is the computed dim C_n / dim C^n and n_generators is |S_n|, so a
+    consumer can re-derive the (co)chain sizes the dimension formula used."""
+    if trace is None:
+        return
+    from quiverlab.resolutions_cs.trace import ResolutionTerm
+    for n in range(top + 1):
+        trace.append(ResolutionTerm(degree=n, n_generators=len(res.ss.S(n)),
+                                    collapsed_dim=res.dim_C(n, side)))
+
+
+def cs_cohomology_dims(A, top, max_cells=4_000_000, trace=None):
     from quiverlab.fields.linalg import rank
     from quiverlab.hochschild.table import HHTable
     from quiverlab.resolutions_cs.build import reduction_system_of
@@ -28,10 +41,11 @@ def cs_cohomology_dims(A, top, max_cells=4_000_000):
     dom = A.domain
     r = [rank(res.matrix(n, "coh"), dom) for n in range(top + 1)]
     dims = [res.dim_C(n, "coh") - r[n] - (r[n - 1] if n else 0) for n in range(top + 1)]
+    _emit_resolution_trace(trace, res, top, "coh")
     return HHTable(dims, "HH^", repr(A).splitlines()[0], engine="Chouhy-Solotar")
 
 
-def cs_homology_dims(A, top, max_cells=4_000_000):
+def cs_homology_dims(A, top, max_cells=4_000_000, trace=None):
     from quiverlab.fields.linalg import rank
     from quiverlab.hochschild.table import HHTable
     from quiverlab.resolutions_cs.build import reduction_system_of
@@ -43,6 +57,7 @@ def cs_homology_dims(A, top, max_cells=4_000_000):
     # rk[n] = rank(b_{n+1}) = rank(matrix(n+1, "hom")); b_0 = 0 (no map out of C_0).
     rk = [rank(res.matrix(n + 1, "hom"), dom) for n in range(top + 1)]
     dims = [res.dim_C(n, "hom") - (rk[n - 1] if n else 0) - rk[n] for n in range(top + 1)]
+    _emit_resolution_trace(trace, res, top, "hom")
     return HHTable(dims, "HH_", repr(A).splitlines()[0], engine="Chouhy-Solotar")
 
 
