@@ -70,6 +70,16 @@ say so.
   the identity exactly when G is symmetric — i.e. when A is *symmetric*.
 - `is_symmetric` is "Frobenius **and** the Nakayama automorphism is the identity mod p".
 
+`complexity(A, n)` (`invariants/scalar.py`) is engine-backed the same way — it reads the
+minimal A^e resolution's term-dimension growth through `complexity_of`, so it too calls
+`_require_prime_field` and is GF(p)-only — but the number it returns can silently
+**under-report**, exact only on local / single-vertex inputs. Two unguarded caveats travel
+with it: the resolution's radical logic is **local-only**, so a multi-vertex algebra of
+genuinely *infinite* complexity can still come back *finite* (read it as a lower bound), and
+a memory-truncated build adds a silent prefix because the truncation marker is not consulted.
+No vertex-count guard is added on purpose — it would break the correct
+`linear_path_algebra(2) → 0`.
+
 ## A worked micro-example — A_2 and k[x]/(x^2)
 
 For `linear_path_algebra(2)` (vertices 1, 2, arrow a: 1 → 2), the basis labels are

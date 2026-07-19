@@ -72,7 +72,24 @@ def center(A):
 def complexity(A, n):
     """Apparent complexity of A from the minimal A^e (bimodule) resolution's term-
     dimension growth up to degree n (fast GF(p) engine). Returns complexity_of's honest
-    label (int / None / '>=2')."""
+    label (int / None / '>=2').
+
+    CAVEAT — this can UNDER-REPORT; treat the number as a lower-bound estimate,
+    trustworthy as EXACT only on local / single-vertex inputs:
+
+    (a) LOCAL-ONLY radical. The growth sequence is read from
+        ``engine.resolutions_minimal``, whose radical logic is LOCAL-ONLY. On a
+        multi-vertex algebra of genuinely INFINITE complexity this can still return a
+        FINITE value. So the result is exact only for local / single-vertex algebras;
+        elsewhere read it as a lower bound. (No vertex-count guard is imposed on
+        purpose — one would wrongly break the correct ``linear_path_algebra(2) -> 0``
+        pin.)
+
+    (b) SILENT TRUNCATION PREFIX. A memory-truncated resolution build contributes a
+        silent prefix to the growth sequence: the build's truncation marker
+        (``truncated_at`` / the discarded fourth return value below) is NOT consulted
+        here, so a run that stopped early for memory reasons is read as if complete.
+    """
     from quiverlab.engine.adapter import to_engine
     from quiverlab.engine.resolutions_minimal import minimal_resolution
     from quiverlab.engine.scan3 import complexity_of
