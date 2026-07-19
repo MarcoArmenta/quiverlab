@@ -61,7 +61,14 @@ def projective(A, v):
             for gj in sub:
                 Mb[pos[gj]][k] = prod[gj]
         action[blab] = Mb
-    return Module(A, n, action, name=f"P_{v}")
+    mod = Module(A, n, action, name=f"P_{v}")
+    # Representation hooks for the resolution engine (private surface, leading
+    # underscore): the ordered basis labels (paths starting at v) and this summand's
+    # vertex. The canonical generator of P_v is its e_v basis vector = the trivial
+    # path, the first entry of _pv_basis_labels.
+    mod._pv_basis_labels = [A.basis_labels[i] for i in sub]
+    mod._pv_vertex = v
+    return mod
 
 
 def injective(A, v):
