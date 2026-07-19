@@ -31,5 +31,5 @@ def IncidenceAlgebra(poset_or_covers, elements=None, field=None):
         for other in group[1:]:                       # base == other (commutativity)
             rels.append("*".join(base) + " - " + "*".join(other))
     A = Q.algebra(relations=rels, field=field)
-    A._family_citations = ("incidence", "assem_book", "hodge")   # hodge: GS1987 for incidence
+    A._family_citations = ("incidence", "assem_book")
     return A

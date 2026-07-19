@@ -7,6 +7,11 @@ from quiverlab.errors import RelationError
 class Poset:
     def __init__(self, covers, elements=None):
         self.covers = [tuple(c) for c in covers]
+        for x, y in self.covers:
+            if x == y:
+                raise RelationError(
+                    f"{x} covers {x}: not a poset (self-cover, reflexivity is implicit)",
+                    hint="cover data must not contain a loop (x, x)")
         elems = set(elements or [])
         for x, y in self.covers:
             elems.add(x)

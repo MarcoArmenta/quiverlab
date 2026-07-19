@@ -32,3 +32,12 @@ def test_directed_cycle_is_not_a_poset():
 
 def test_citations():
     assert "incidence" in IncidenceAlgebra(DIAMOND).citations()
+
+
+def test_self_cover_rejected_at_construction():
+    # A degenerate self-cover (x, x) would build a loop arrow and hang _all_paths;
+    # the guard must fire loudly at Poset construction, never reaching that path.
+    with pytest.raises(RelationError, match="1"):
+        Poset([(1, 2), (1, 1)])
+    with pytest.raises(RelationError, match="1"):
+        IncidenceAlgebra([(1, 2), (1, 1)])
