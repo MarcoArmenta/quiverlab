@@ -15,10 +15,11 @@ def test_algebra_surface_present_and_module_methods_absent():
                  "coxeter_polynomial", "hochschild_cohomology", "hochschild_homology",
                  "nakayama_automorphism", "is_frobenius", "is_symmetric"):
         assert callable(getattr(Algebra, meth)), meth
-    # Plan-05 adds these; they must NOT pre-exist (else a rebase duplicated work)
-    for new in ("simple", "projective", "injective", "hom", "ext",
-                "global_dimension", "loewy_length", "complexity", "center",
-                "is_selfinjective"):
+    # Plan-05 adds these; they must NOT pre-exist (else a rebase duplicated work).
+    # simple/projective/injective have since LANDED (Task 3) and are intentionally
+    # dropped from this list; the remaining names stay guarded until their tasks land.
+    for new in ("hom", "ext", "global_dimension", "loewy_length", "complexity",
+                "center", "is_selfinjective"):
         assert not hasattr(Algebra, new), f"{new} already exists -- reconcile"
 
 
