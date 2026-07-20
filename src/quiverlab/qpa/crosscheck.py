@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quiverlab.errors import QpaUnavailableError
+from quiverlab.errors import QpaUnavailableError, QuiverlabError
 from quiverlab.qpa import scripts, session
 
 
@@ -55,5 +55,6 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_hochschild(algebra, *args, **kwargs)
     if what == "module_ext":
         return crosscheck_module_ext(algebra, *args, **kwargs)
-    raise QpaUnavailableError(f"unknown cross-check {what!r}",
-                              hint='use "hochschild" or "module_ext"')
+    # An unrecognized `what` is a usage error, NOT "QPA unavailable".
+    raise QuiverlabError(f"unknown cross-check {what!r}",
+                         hint='use "hochschild" or "module_ext"')

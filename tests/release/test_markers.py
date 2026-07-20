@@ -3,13 +3,18 @@ disjoint and exhaustive; slow implies deep; no unknown-marker warnings (Task 2).
 
 Marked `deep` so it runs once on the deep leg, not on all 12 fast matrix cells
 (it shells out four collections)."""
+import pathlib
 import subprocess
+import sys
 
 import pytest
 
 pytestmark = pytest.mark.deep
-ROOT = "/Users/marco/Desktop/HomologicalNetworks/quiverlab"
-VENV = f"{ROOT}/.venv/bin/python"
+# Portable -- NEVER hardcode a laptop path here: CI runners check out under a
+# different root and would FileNotFoundError on `cwd=ROOT`, turning the deep leg
+# and lint job red on the first push. parents[2] = repo root (tests/release/<file>).
+ROOT = str(pathlib.Path(__file__).resolve().parents[2])
+VENV = sys.executable
 
 
 def _ids(expr):
