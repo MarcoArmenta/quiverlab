@@ -51,7 +51,7 @@ class Trace:
 
 def rankstep(degree, side, D, nrows, ncols, rank, dom):
     """Build a RankStep from a domain-element matrix D (list of lists, row-major
-    D[row][col]). Param order (nrows, ncols) matches the RankStep field order and
+    `D[row][col]`). Param order (nrows, ncols) matches the RankStep field order and
     D's indexing. Elide the matrix body (keep shape + rank) when it exceeds
     MATRIX_ELISION_CELLS."""
     cells = nrows * ncols

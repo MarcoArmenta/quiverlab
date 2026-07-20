@@ -1,5 +1,5 @@
 """The structure-constant Algebra: quiverlab's internal currency (spec §5).
-T[i][j] is the coordinate vector of b_i * b_j. 'Unit-adapted' means b_0 = 1_A
+`T[i][j]` is the coordinate vector of b_i * b_j. 'Unit-adapted' means b_0 = 1_A
 (hanlab's convention), which the bar complex requires."""
 from quiverlab.errors import QuiverlabError
 from quiverlab.fields.linalg import rank, solve

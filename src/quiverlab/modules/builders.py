@@ -74,7 +74,7 @@ def projective(A, v):
 def injective(A, v):
     """I_v = D(A e_v). Left projective A e_v has basis the labels whose path ENDS at v.
     Left multiplication L_b (b * p) gives the left action; the right action on the dual
-    is its transpose. dim e_w I_v = # basis paths w -> v = C[w][v]."""
+    is its transpose. dim e_w I_v = # basis paths w -> v = `C[w][v]`."""
     _require_provenance(A, "injective(v)")
     dom = A.domain
     sub = [i for i, lab in enumerate(A.basis_labels) if _label_vertex_target(A, lab) == v]

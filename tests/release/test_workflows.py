@@ -36,3 +36,11 @@ def test_qpa_workflow_is_linux_and_mandatory():
     assert "schedule:" in qpa
     assert "pull_request:" not in qpa
     assert "@master" not in qpa                          # pinned action versions
+
+
+def test_docs_workflow_deploys_pages():
+    d = _read("docs.yml")
+    assert "actions/upload-pages-artifact@v5" in d
+    assert "actions/deploy-pages@v5" in d
+    assert "mkdocs build --strict" in d
+    assert "pages: write" in d and "id-token: write" in d
