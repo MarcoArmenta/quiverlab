@@ -37,8 +37,13 @@ class SSequence:
     def S(self, n):
         if n in self._cache:
             return self._cache[n]
-        if n < 0 or n > self.max_degree:
-            return []
+        if n > self.max_degree:                                   # GO-LOUD (open-item #1): an
+            raise DepthLimitError(                                # out-of-range page is a contract
+                f"S-sequence degree {n} exceeds the certified range "  # error, not a silent [].
+                f"0..{self.max_degree}",
+                hint="raise max_degree / top to reach this degree")
+        if n < 0:                                                 # negative degrees are empty by
+            return []                                             # convention (out of scope here)
         if n == 0:
             out = [Chain((), (), v, v, 0) for v in self._vertices]
         else:

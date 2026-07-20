@@ -31,3 +31,24 @@ def test_depth_guard_loud(qci_rs):
     with pytest.raises(DepthLimitError) as e:
         ss.S(40)
     assert "certified" in str(e.value).lower()
+
+
+def test_out_of_range_degree_raises_loud(kx2_rs):
+    """GO-LOUD (open-item #1): a degree strictly above max_degree must raise
+    DepthLimitError naming the certified range, not silently return []."""
+    ss = SSequence(kx2_rs, max_degree=3)
+    for n in (4, 5):
+        with pytest.raises(DepthLimitError) as e:
+            ss.S(n)
+        msg = str(e.value)
+        assert "certified" in msg.lower()          # names the certified range
+        assert "0..3" in msg                        # the range 0..max_degree
+        assert str(n) in msg                        # the offending degree
+
+
+def test_in_range_empties_and_negative_unchanged(square_rs):
+    """In-range genuinely-empty cochain spaces (S(3), S(4) at max_degree=5 for the
+    commutative square) and the n<0 convention are untouched by the loud guard."""
+    ss = SSequence(square_rs, max_degree=5)
+    assert ss.S(3) == [] and ss.S(4) == []          # in-range, genuinely empty: still []
+    assert ss.S(-1) == []                            # negative degree convention: still []

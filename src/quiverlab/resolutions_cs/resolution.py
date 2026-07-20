@@ -154,8 +154,17 @@ class ChouhySolotarResolution:
             return [self.dom.zero()] * ncols
         return solve(M, rhs, self.dom)                   # returns a solution or None (inconsistent)
 
+    def _cochains(self, n):
+        # cochains beyond the certified resolution range are empty by construction; the
+        # differential into them is the zero map. The coh differential deliberately reads
+        # one degree past max_degree (matrix(max_degree,"coh") touches S(max_degree+1)); make
+        # that empty cochain space explicit here so SSequence.S can raise loudly out of range.
+        if n > self.ss.max_degree:
+            return []
+        return self.ss.S(n)
+
     def _basis(self, n, side):
-        return [(ch, j) for ch in self.ss.S(n) for j in self.ar.corner(ch.o, ch.t, side)]
+        return [(ch, j) for ch in self._cochains(n) for j in self.ar.corner(ch.o, ch.t, side)]
 
     def dim_C(self, n, side):
         return len(self._basis(n, side))
@@ -183,7 +192,7 @@ class ChouhySolotarResolution:
         else:
             for cj, (sigma, j) in enumerate(cols):                       # δ^n: C^n -> C^{n+1}
                 ej = self.ar.A._basis_vec(j)
-                for tau in self.ss.S(n + 1):
+                for tau in self._cochains(n + 1):                        # empty beyond cap (see _cochains)
                     for (coeff, a_word, tw, c_word) in self.d_terms(n + 1, tau):
                         if _resolve_chain(self, tw).word != sigma.word:
                             continue
