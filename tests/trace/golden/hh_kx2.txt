@@ -1,0 +1,28 @@
+Worked steps: HH^ of Algebra of dimension 2 over CC (computing exactly in QQ)
+
+Chosen resolution: normalized bar complex
+  reason: domain is not a prime field; the exact bar oracle is used
+  defining relations: 1
+
+Degree 0: term with 2 generators (dim C = 2)
+  differential d^0 (cochain), 2 x 2 over CC (computing exactly in QQ):
+    [ 0  0 ]
+    [ 0  0 ]
+  rank = 0
+
+Degree 1: term with 2 generators (dim C = 2)
+  differential d^1 (cochain), 2 x 2 over CC (computing exactly in QQ):
+    [ 0  0 ]
+    [ 2  0 ]
+  rank = 1
+
+Degree 2: term with 2 generators (dim C = 2)
+  differential d^2 (cochain), 2 x 2 over CC (computing exactly in QQ):
+    [ 0  0 ]
+    [ 0  0 ]
+  rank = 0
+
+Result: HH^0 = 2   HH^1 = 1   HH^2 = 1
+
+References:
+  [Hochschild1945] __BAR_FORMATTED__
