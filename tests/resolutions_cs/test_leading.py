@@ -29,6 +29,20 @@ def test_d2_quantum_ci_yx_matches_paper_no_swap():
     }
 
 
+def test_d1_terms_arrows_to_vertices_on_qci():
+    """CS §6 d_1^{CS}: an arrow α maps to α⊗e_t⊗1 − 1⊗e_o⊗α (arrows → vertices), on the
+    Happel-counterexample QCI k<x,y>/(x²,y²,y·x−2·x·y). Pins _d1_terms via the PUBLIC
+    d_terms(1, ·): test_d2/test_delta above pin d_terms(2,·) and delta_terms(3,·) but NOT
+    d_terms(1,·). Single vertex 1, so o(α)=t(α)=1 and the vertex word is ("__v__", 1)."""
+    res = _res()
+    for name in ("x", "y"):
+        alpha = next(c for c in res.ss.S(1) if c.word == (name,))
+        assert _norm(res, res.d_terms(1, alpha)) == {
+            ( 1, (name,), ("__v__", 1), ()),        #  α ⊗ e_t ⊗ 1
+            (-1, (),      ("__v__", 1), (name,)),    # −1 ⊗ e_o ⊗ α
+        }
+
+
 def test_delta_leading_x3_not_mirror_reversed():
     """CS §6: δ for x³ = x⊗x²⊗1 − 1⊗x²⊗x. a=x LEFT of the +term, c=x RIGHT of the −term
     (the exact positions my earlier draft had reversed)."""

@@ -103,6 +103,9 @@ algebra. Asking `A_2` (not self-injective) for its Nakayama automorphism raises
 | public method wrappers + GF(p) gate | `core/algebra.py` | `cartan_matrix`, `coxeter_matrix`, `_require_prime_field`, `nakayama_automorphism`, `is_frobenius`, `is_symmetric` |
 | Frobenius form / Nakayama over F_p | `engine/coxeter.py` | `frobenius_form`, `is_frobenius`, `nakayama_automorphism` |
 | cyclic homology (GF(p)) | `core/algebra.py`, `engine/cyclic.py` | `cyclic_homology`, `cyclic_homology_dims` |
+| exact spectral radius / Mahler measure | `invariants/spectral.py` | `spectral_radius`, `mahler_measure` |
+| scalar invariants (Loewy, complexity, center) | `invariants/scalar.py` | `loewy_length`, `complexity`, `center` |
+| invariant × field sweep | `invariants/sweep.py` | `sweep` |
 | the field-gate exception | `errors.py` | `FieldError`, `QuiverlabError` |
 
 ## The exact spectral layer (Plan 05)

@@ -2,6 +2,7 @@ import pytest
 from quiverlab import Quiver, CC, GF
 from quiverlab.groebner import build_reduction_system
 from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+from quiverlab.resolutions_cs import cs_cohomology_dims, cs_homology_dims
 from quiverlab.fields.linalg import rank
 pytest.importorskip("quiverlab.groebner")
 
@@ -100,3 +101,21 @@ def test_cubic_tip_nonmonomial_raises_notimplemented():
     with pytest.raises(NotImplementedError) as e:
         res.d_terms(3, res.ss.S(3)[0])                   # first degree-3 differential trips the guard
     assert "quadratic" in str(e.value).lower() and "right_decomposition" in str(e.value)
+
+
+def test_cubic_tip_nonmonomial_refuses_at_battery_level():
+    """RESTRICT boundary (edit #1), END-TO-END: the same cubic-tip NON-monomial presentation
+    A = k<x,y>/(x²,y²,xyx−yxy) must refuse through the FULL HH pipeline, not only at the raw
+    res.d_terms(3,·) level (test_cubic_tip_nonmonomial_raises_notimplemented pins that). The
+    public entry points cs_cohomology_dims / cs_homology_dims and A.hochschild_cohomology(
+    engine="cs") each build the resolution and drive the degree-≥3 differential, so the guard's
+    NotImplementedError surfaces battery-level, confirming the refusal is not swallowed."""
+    Q = Quiver([1], {"x": (1, 1), "y": (1, 1)})
+    rels = ["x*x", "y*y", "x*y*x - y*x*y"]
+    A = Q.algebra(relations=rels, field=CC)
+    for call in (lambda: cs_cohomology_dims(A, 3),
+                 lambda: cs_homology_dims(A, 3),
+                 lambda: A.hochschild_cohomology(3, engine="cs")):
+        with pytest.raises(NotImplementedError) as e:
+            call()
+        assert "quadratic" in str(e.value).lower()
