@@ -1,4 +1,4 @@
-# 09 — Modules: representation and resolutions
+# 10 — Modules: representation and resolutions
 
 ## The mathematics
 

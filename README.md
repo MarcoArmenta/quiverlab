@@ -80,9 +80,10 @@ projective resolution are exact. Exact `spectral_radius`/`mahler_measure`, `cent
 
 ## Status
 
-Engine and module phase (Plans 01–05 delivered). On top of the foundations —
-monomial presentations, exact fields, bar-complex Hochschild (co)homology — the
-hanlab deep engine is now ported and wired in:
+Engine and module phase (Plans 01–05 delivered, together with the Plan-04
+Chouhy–Solotar resolution). On top of the foundations — monomial presentations,
+exact fields, bar-complex Hochschild (co)homology — the hanlab deep engine is now
+ported and wired in:
 
 - **A fast GF(p) engine** behind the field interface: `hochschild_cohomology`
   and `hochschild_homology` take `engine="auto" | "bar" | "fast"`. `auto` picks
@@ -95,6 +96,12 @@ hanlab deep engine is now ported and wired in:
   Nakayama to depth 40 instantly — and certify structural facts (a finite global
   dimension shows up as vanishing generators), cross-checked exactly against the
   bar oracle over primes {32003, 2, 3, 5} on the overlap range.
+- **The Chouhy–Solotar resolution** (`resolutions_cs`, `engine="cs"`). The
+  domain-generic CS projective bimodule resolution for admissible kQ/I — its
+  HH•/HH^• dimensions and representative (co)cycles reach Hochschild degrees the
+  bar oracle cannot, with CS↔bar comparison maps; it specializes to Bardzell's
+  minimal resolution on monomial algebras (operation transport is certified
+  inside the bar-buildable window).
 - **Tamarkin–Tsygan calculus** at the engine level: cup product, cap product,
   and the Gerstenhaber bracket; plus **cyclic homology** (Connes' mixed complex).
 - **Invariants:** the integer **Cartan** matrix, the **Coxeter** matrix and its
@@ -115,8 +122,8 @@ Honest scope note: the calculus lives at the *engine* level today. A classy
 `A.cup(u, v)` on named cohomology classes awaits the cohomology-classes
 machinery of a later phase (see `docs/plans/ROADMAP.md`).
 
-Coming next (see `docs/plans/ROADMAP.md`): the Chouhy–Solotar resolution engine
-and operation transport, and algebra families/citations (parallel branches);
-plus drawing and TikZ export, worked-steps PDFs, and an optional QPA backend.
+Coming next (see `docs/plans/ROADMAP.md`): algebra families and citations; plus
+full operation transport, drawing and TikZ export, worked-steps PDFs, and an
+optional QPA backend.
 
 MIT © 2026 Marco Armenta
