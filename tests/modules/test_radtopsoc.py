@@ -1,5 +1,7 @@
 """Radical / top / socle and the radical series (spec §3.6). Fixtures A & B."""
 from quiverlab import Quiver, GF, linear_path_algebra
+from quiverlab.modules import linalg_mod as lm
+from quiverlab.modules.radtopsoc import quotient, _rad_image_cols
 
 
 def _square(field=None):
@@ -39,6 +41,18 @@ def test_simple_is_its_own_top_and_socle_zero_radical():
     assert S1.radical().dim == 0
     assert S1.top().dim == 1
     assert S1.socle().dim == 1
+
+
+def test_quotient_direct_on_genuine_submodule_solves_and_is_a_module():
+    # Fix 1a: quotient() now asserts its coset solve is not None before indexing [0] /
+    # slicing. On a genuine submodule (rad P_1) the solve must succeed, the assert must
+    # NOT fire, and the result must be a genuine A-module (top P_1 = S_1 here).
+    A = _square()
+    P1 = A.projective(1)
+    Q = quotient(P1, _rad_image_cols(P1), name="q")
+    ok, why = Q.check_module()
+    assert ok, why
+    assert Q.dimension_vector() == {1: 1, 2: 0, 3: 0, 4: 0}   # top P_1 = S_1
 
 
 def test_radtopsoc_outputs_are_genuine_modules():

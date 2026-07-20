@@ -87,3 +87,23 @@ def test_selfinjective_agrees_with_frobenius_over_gfp():
 def test_ext_over_gfp():
     A = _square(field=GF(7))
     assert A.ext(A.simple(1), A.simple(4), 2) == 1
+
+
+def test_no_quiver_provenance_is_unified_quiverlab_error():
+    # A structure-constant algebra carries no quiver/path basis. Every module-homology
+    # surface that needs the presentation must fail with the SAME QuiverlabError shape:
+    #   - global_dimension (Fix 1c: previously a raw AttributeError -> now guarded),
+    #   - is_selfinjective (Fix 1b: previously a bespoke divergent QuiverlabError),
+    #   - a builders-routed method (simple/projective/injective, the reference shape).
+    from quiverlab import Algebra
+    from quiverlab.errors import QuiverlabError
+    T = [[[1, 0], [0, 1]], [[0, 1], [0, 0]]]
+    A = Algebra.from_structure_constants(T, unit=[1, 0], field=CC)
+    with pytest.raises(QuiverlabError):
+        A.global_dimension()
+    with pytest.raises(QuiverlabError):
+        A.is_selfinjective()
+    with pytest.raises(QuiverlabError):
+        A.simple(1)
+    with pytest.raises(QuiverlabError):
+        A.projective(1)

@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from quiverlab.modules import linalg_mod as lm
+from quiverlab.modules.builders import _require_provenance
 from quiverlab.modules.hom import hom_space
 from quiverlab.modules.resolution import minimal_resolution
 
@@ -74,6 +75,7 @@ class GlobalDimension:
 def global_dimension(A, bound=32):
     """sup over simples of projective dimension. Exact if every simple resolves within
     `bound`; otherwise a certified lower bound (some simple has pd >= bound)."""
+    _require_provenance(A, "global_dimension")
     best, exact = 0, True
     for v in A.quiver.vertices:
         res = A.simple(v).projective_resolution(bound)
@@ -91,10 +93,7 @@ def is_selfinjective(A):
     soc(P_v) is SIMPLE for every v and v -> (socle vertex) is a BIJECTION (the Nakayama
     permutation). Exact over any field (uses the socle, not the GF(p) engine); for a
     finite-dimensional algebra self-injective == Frobenius (spec section 3.5)."""
-    if A.quiver is None:
-        from quiverlab.errors import QuiverlabError
-        raise QuiverlabError("is_selfinjective needs the quiver presentation",
-                             hint="construct via Quiver.algebra(...)")
+    _require_provenance(A, "is_selfinjective")
     socle_vertex = {}
     for v in A.quiver.vertices:
         soc = A.projective(v).socle()

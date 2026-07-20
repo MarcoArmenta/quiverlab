@@ -73,6 +73,21 @@ def test_kx3_depth_limit_error_certifies_length():
     assert "certified through length 0" in str(exc.value)
 
 
+def test_kx3_depth_limit_error_via_facade():
+    # Fix 2: Module.projective_resolution now threads max_term_dim through to
+    # minimal_resolution, so the DepthLimitError guard is reachable from the facade
+    # (previously only from a direct minimal_resolution call). Default path unchanged.
+    import pytest
+    from quiverlab.errors import DepthLimitError
+    S = _kx3().simple(1)
+    with pytest.raises(DepthLimitError) as exc:
+        S.projective_resolution(6, max_term_dim=1)     # dim-2 syzygy overshoots the bound
+    assert "certified through length 0" in str(exc.value)
+    # default path is unchanged (still resolves periodically to the requested length)
+    res = S.projective_resolution(4)
+    assert res.betti(0) == 1
+
+
 def test_kx3_simple_has_infinite_pd():
     # k[x]/(x^3) is self-injective and non-semisimple: S resolves periodically forever.
     # pd() is None (never resolved), is_finite() is False, and every term is a single P_1.

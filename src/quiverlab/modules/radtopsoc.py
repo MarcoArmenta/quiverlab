@@ -64,7 +64,11 @@ def quotient(M, sub_cols, name="quot"):
         cols = []
         for r in reps:
             img = lm.matvec(Ab, r, dom)
-            x = lm.solve_columns(W, lm.cols_to_matrix([img]), dom)[0]
+            sol = lm.solve_columns(W, lm.cols_to_matrix([img]), dom)
+            assert sol is not None, (
+                f"quotient: coset image under {label} not in span(sub_cols | reps); "
+                "the passed sub_cols do not form a submodule")
+            x = sol[0]
             cols.append(x[s:])                 # drop the submodule part -> class in quotient
         action[label] = lm.cols_to_matrix(cols) if cols else lm.zeros(n, n, dom)
     return Module(M.algebra, n, action, name=name)

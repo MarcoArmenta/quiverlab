@@ -31,6 +31,14 @@ _T = sp.symbols("t")
 _Y = sp.symbols("y_spec")
 
 
+def _degree_below_one(poly):
+    """True for a constant or zero polynomial (degree < 1). Such an input has no
+    reciprocal-root structure (the y = z + 1/z machinery assumes even degree >= 2), so
+    both public entry points guard on it (mirrors coxeter_spectrum's `P.degree() == 0`
+    branch); sp.Poly(0, _T).degree() is -oo, also < 1."""
+    return sp.Poly(sp.expand(poly), _T).degree() < 1
+
+
 def _noncyclotomic_part(poly):
     """Product (with multiplicity) of the non-cyclotomic irreducible factors of poly, or
     None if poly is a product of cyclotomics."""
@@ -80,8 +88,11 @@ def _off_circle_roots(qp):
 
 
 def spectral_radius(poly):
-    """max_i |alpha_i| over the roots of poly, EXACT. 1 on cyclotomic input."""
+    """max_i |alpha_i| over the roots of poly, EXACT. 1 on cyclotomic input; None on a
+    constant/zero polynomial (degree < 1), matching the poly-is-None convention."""
     if poly is None:
+        return None
+    if _degree_below_one(poly):
         return None
     if is_cyclotomic_product(poly):
         return sp.Integer(1)
@@ -96,8 +107,11 @@ def spectral_radius(poly):
 
 
 def mahler_measure(poly):
-    """|lc| * prod over roots with |alpha| > 1 of |alpha|, EXACT. 1 on cyclotomic input."""
+    """|lc| * prod over roots with |alpha| > 1 of |alpha|, EXACT. 1 on cyclotomic input;
+    None on a constant/zero polynomial (degree < 1), matching the poly-is-None convention."""
     if poly is None:
+        return None
+    if _degree_below_one(poly):
         return None
     if is_cyclotomic_product(poly):
         return sp.Integer(1)
