@@ -1,4 +1,4 @@
-# 08 — The Chouhy–Solotar resolution
+# 09 — The Chouhy–Solotar resolution
 
 ## What this computes
 Given `A = kQ/I` (any admissible presentation, any exact field), the CS engine builds a

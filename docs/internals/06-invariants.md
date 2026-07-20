@@ -45,7 +45,11 @@ genuine rational entries; rather than round or lie, the code detects non-integer
 (`x.q != 1`) and returns the *exact rationals* (via `sympy.nsimplify`), falling back to ints
 only when every entry really is integral. `coxeter_polynomial(A)` likewise refuses a
 singular C, then returns `Phi.charpoly(t)` as an exact `Poly` — no numerical root-finding
-(exact spectral-radius and Mahler-measure invariants arrive with Plan 05).
+(the exact spectral-radius and Mahler-measure layer lands with Plan 05; see "The exact
+spectral layer" below). As of Plan 05 this is documented on `coxeter_polynomial` itself:
+the domain follows the coefficients (ZZ when integral, QQ when genuinely rational), so a
+non-unimodular Cartan that yields a rational Coxeter transformation is called out, not
+silent (see below).
 
 ### The engine-backed GF(p) extras
 
@@ -65,6 +69,16 @@ say so.
   matrix (columns = images); it raises `ValueError` if the algebra is not Frobenius. N is
   the identity exactly when G is symmetric — i.e. when A is *symmetric*.
 - `is_symmetric` is "Frobenius **and** the Nakayama automorphism is the identity mod p".
+
+`complexity(A, n)` (`invariants/scalar.py`) is engine-backed the same way — it reads the
+minimal A^e resolution's term-dimension growth through `complexity_of`, so it too calls
+`_require_prime_field` and is GF(p)-only — but the number it returns can silently
+**under-report**, exact only on local / single-vertex inputs. Two unguarded caveats travel
+with it: the resolution's radical logic is **local-only**, so a multi-vertex algebra of
+genuinely *infinite* complexity can still come back *finite* (read it as a lower bound), and
+a memory-truncated build adds a silent prefix because the truncation marker is not consulted.
+No vertex-count guard is added on purpose — it would break the correct
+`linear_path_algebra(2) → 0`.
 
 ## A worked micro-example — A_2 and k[x]/(x^2)
 
@@ -90,3 +104,29 @@ algebra. Asking `A_2` (not self-injective) for its Nakayama automorphism raises
 | Frobenius form / Nakayama over F_p | `engine/coxeter.py` | `frobenius_form`, `is_frobenius`, `nakayama_automorphism` |
 | cyclic homology (GF(p)) | `core/algebra.py`, `engine/cyclic.py` | `cyclic_homology`, `cyclic_homology_dims` |
 | the field-gate exception | `errors.py` | `FieldError`, `QuiverlabError` |
+
+## The exact spectral layer (Plan 05)
+
+`invariants/spectral.py` computes the **spectral radius** and **Mahler measure** of the
+Coxeter polynomial exactly, reimplementing the hanlab float layer (which used mpmath
+`nroots`) with exact sympy algebraic numbers. `spectral_radius(p)` is `max_i |α_i|` and
+`mahler_measure(p)` is `|lc|·∏_{|α|>1}|α|`; both short-circuit to the exact integer 1 when
+`is_cyclotomic_product(p)` (all roots on the unit circle). No floats are used — magnitudes
+are `sympy.Abs` of `CRootOf` roots and comparisons are `.is_positive`. The subtle part is
+**soundness for complex roots**: `real_roots` alone is unsound (real-roots-suffice is a
+theorem only for hereditary quivers), so the code forms the non-cyclotomic part `q` and,
+via the self-inversive `y = z + 1/z` substitution, uses a Sturm real-root count of `Q(y)` —
+with no complex-root isolation — to decide between fast `real_roots(q)` (Branch A:
+hereditary/Salem/Lehmer) and correct `all_roots(q)` (Branch B: non-hereditary,
+complex-dominant). The Lehmer star T(2,3,7) = `star_quiver([1,2,6])` carries Lehmer's
+polynomial (Branch A), whose spectral radius is Lehmer's number 1.17628…, the smallest known
+Mahler measure > 1; the trivial extension T(A) = A ⋉ DA collapses the Coxeter polynomial to
+(t+1)^v regardless of representation type (Cartan C ↦ C + Cᵀ, Φ = −I).
+
+The **non-unimodular caveat** (§ "Coxeter matrix and polynomial") is now **documented**:
+`coxeter_polynomial`'s docstring names the `det C ∉ {0, ±1}` case, where Φ may be rational
+so the Coxeter polynomial is over **QQ** (e.g. t² + 3t/2 + 1 for C = [[2,1],[0,1]]) — exact,
+but not the classical integral Coxeter transformation. The domain follows the actual
+**coefficients** (sympy's inference), not det C: a non-unimodular Cartan can still be integral
+(k[x]/(x²) → t+1 over ZZ; diag(1,2) → (t+1)² over ZZ). The `coxeter_matrix` sibling surfaces
+the same fact via its rational-entry branch.

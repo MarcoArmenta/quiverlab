@@ -53,22 +53,22 @@ by running the code.
   reduction rule, Buchberger–Mora completion, the finiteness certificate
   (2L−1 ≤ D plus the forbidden-word automaton), and how a general kQ/I becomes
   structure constants.
-<!-- MERGE NOTE (Plan 04 T14): the Chouhy–Solotar chapter below is filed as
-     08-chouhy-solotar.md and headed "08" to match the shipped code references
-     (src/quiverlab/resolutions_cs/__init__.py and the plan doc). It therefore
-     shares the number "08" with Gröbner above — a cross-plan numbering clash
-     (Plan 03 took 08 for Gröbner; Plan 05 took 09 for Modules). Reconcile at
-     merge, e.g. Gröbner=08, Chouhy–Solotar=09, Modules=10 (roadmap order). -->
-- **08 — The Chouhy–Solotar resolution.** The general CS projective bimodule resolution
+- **09 — The Chouhy–Solotar resolution.** The general CS projective bimodule resolution
   for admissible kQ/I: the ambiguity S-sequence (Bardzell associated paths of the tip
   monomial algebra), the CS differential (Bardzell leading map + order-condition-pinned
   correction), the two collapse maps, and why it reaches Hochschild degrees the bar
   complex cannot. Landed with Plan 04.
+- **10 — Modules.** How a finite-dimensional right A-module is stored (the `action`
+  dict, column-vector / anti-homomorphism convention), simples / projectives /
+  injectives read off the multiplication table, radical / top / socle, Hom and Ext,
+  and the minimal projective resolution by iterated projective covers.
+- **11 — Families & citations.** *(Pending — arrives with Plan 06: the full algebra
+  catalogue and the citation registry. The chapter lands when Plan 06 does.)*
 
 ## Honest coverage statement
 
-This tree is the **Plan 03 (Gröbner)** checkout. What is documented here is what is
-on disk *now*:
+This tree carries **Plans 01–05** together with the **Plan-04 Chouhy–Solotar
+resolution**. What is documented here is what is on disk *now*:
 
 - The **fast GF(p) engine** (`engine/`) is ported and live: bar homology/cohomology over
   a prime field, the minimal and Bardzell resolutions, cyclic homology, and the
@@ -78,12 +78,16 @@ on disk *now*:
   noncommutative Gröbner engine (`groebner/`), which completes the relations, certifies
   finite-dimensionality, and lowers kQ/I to a structure-constant `Algebra`.
 - The **Chouhy–Solotar resolution** (`resolutions_cs`) has **landed with Plan 04**
-  (Chapter 08 — The Chouhy–Solotar resolution): the domain-generic CS bimodule
+  (Chapter 09 — The Chouhy–Solotar resolution): the domain-generic CS bimodule
   resolution, its HH•/HH^• dimensions and representative (co)cycles, the CS↔bar
   comparison maps, and the `engine="cs"` dispatch path (which reaches Hochschild
   degrees the bar oracle cannot).
-- The starter algebra **families** are deliberately minimal (`families/basic.py`); the
-  full catalogue, plus exact spectral-radius / Mahler-measure invariants, **arrive with
-  Plan 05**. Those modules will get their own chapters when they land.
+- The **module + invariants surface** has **landed with Plan 05**: right A-modules with
+  simples / projectives / injectives, radical / top / socle, Hom / Ext, minimal
+  projective resolutions and global dimension (Chapter 10), plus the exact
+  **spectral-radius / Mahler-measure** layer, `loewy_length`, `center`, `complexity`, and
+  the `sweep` (invariant × field) table (documented in the "exact spectral layer" section
+  of Chapter 06). The starter algebra **families** remain deliberately minimal
+  (`families/basic.py`); the full catalogue **arrives with Plan 06**.
 
 Where a chapter describes something whose full form is still to come, it says so inline.

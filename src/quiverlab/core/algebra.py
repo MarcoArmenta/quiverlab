@@ -216,6 +216,43 @@ class Algebra:
                            engine="hanlab engine (F_p fast rank)")
         return hochschild_homology_dims(self, top, max_cells=max_cells)
 
+    # -- modules --------------------------------------------------------------
+    def simple(self, v):
+        """The simple right module S_v (spec §3.6)."""
+        from quiverlab.modules.builders import simple
+        return simple(self, v)
+
+    def projective(self, v):
+        """The indecomposable projective right module P_v = e_v A (spec §3.6)."""
+        from quiverlab.modules.builders import projective
+        return projective(self, v)
+
+    def injective(self, v):
+        """The indecomposable injective right module I_v = D(A e_v) (spec §3.6)."""
+        from quiverlab.modules.builders import injective
+        return injective(self, v)
+
+    def hom(self, M, N):
+        """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
+        from quiverlab.modules.hom import hom_dim
+        return hom_dim(M, N)
+
+    def ext(self, M, N, n):
+        """dim Ext^n_A(M, N) for right A-modules M, N (spec §3.6)."""
+        from quiverlab.modules.ext import ext
+        return ext(self, M, N, n)
+
+    def global_dimension(self):
+        """Global dimension: exact value or a labeled certified lower bound (spec §3.5)."""
+        from quiverlab.modules.ext import global_dimension
+        return global_dimension(self)
+
+    def is_selfinjective(self):
+        """True iff every indecomposable projective is injective (self-injective =
+        Frobenius for a f.d. algebra); exact over any field (spec §3.5)."""
+        from quiverlab.modules.ext import is_selfinjective
+        return is_selfinjective(self)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
@@ -231,6 +268,21 @@ class Algebra:
         """Characteristic polynomial of the Coxeter matrix, as an exact sympy Poly."""
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
+
+    def loewy_length(self):
+        """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
+        from quiverlab.invariants.scalar import loewy_length
+        return loewy_length(self)
+
+    def center(self):
+        """(dim, basis) of the center Z(A), exact over any field (spec §3.5)."""
+        from quiverlab.invariants.scalar import center
+        return center(self)
+
+    def complexity(self, n):
+        """Apparent complexity from the minimal A^e resolution's growth (GF(p) only)."""
+        from quiverlab.invariants.scalar import complexity
+        return complexity(self, n)
 
     def _require_prime_field(self, what):
         from quiverlab.errors import FieldError
