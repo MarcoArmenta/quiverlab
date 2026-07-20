@@ -19,7 +19,7 @@ from quiverlab.families import basic
 from quiverlab.families.nakayama import NakayamaAlgebra
 from quiverlab.families.path_algebra import PathAlgebra
 from quiverlab.families.quantum import QuantumCI
-from quiverlab.families import zoo as _zoo
+from quiverlab.families.zoo import build_from_record as _build_from_record
 
 
 def _truncated_polynomial(a, field=None):
@@ -45,7 +45,7 @@ def _dynkin(typ, n, field=None):
 def _reduction_system(ngen, rules, name, field=None):
     """Open-zone builder: materialise A = k<g>/I from a confluent reduction system,
     routed through quiverlab's zoo reduction-system -> Algebra path."""
-    return _zoo.build_from_record(
+    return _build_from_record(
         {"ngen": ngen, "rules": rules, "name": name, "dim": None}, field=field)
 
 

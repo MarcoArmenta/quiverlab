@@ -1,13 +1,20 @@
 """Re-port of the bank tests/test_periodic_symmetric_family.py (LEDGER OBLIGATION).
 The family k<x,y>/(x^3, y^b - x^2, yx + xy): periodic, symmetric. Fixture Z1."""
 import importlib
+import os
 
 import numpy as np
 import pytest
 
-pytestmark = pytest.mark.skipif(
-    importlib.util.find_spec("quiverlab.resolutions_cs") is None,
-    reason="periodic-symmetric family needs the Plan 04 CS/reduction-system backend")
+pytestmark = [
+    pytest.mark.skipif(
+        importlib.util.find_spec("quiverlab.resolutions_cs") is None,
+        reason="periodic-symmetric family needs the Plan 04 CS/reduction-system backend"),
+    pytest.mark.skipif(
+        os.environ.get("QLAB_RUN_HEAVY_GOLDENS") != "1",
+        reason="needs ~2.5GB+ RSS; run with QLAB_RUN_HEAVY_GOLDENS=1 on a machine "
+               "with memory headroom"),
+]
 
 from quiverlab.engine.coxeter import is_frobenius, nakayama_automorphism
 from quiverlab.engine.resolutions_minimal import minimal_homology_dims

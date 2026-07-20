@@ -12,7 +12,7 @@ import numpy as np
 import sympy as sp
 import pytest
 
-# spectral_radius, mahler_measure not ported: exact reimplementation in Plan 05
+from quiverlab.invariants.spectral import spectral_radius, mahler_measure
 from quiverlab.engine.coxeter_spectrum import (is_cyclotomic_product,
                               cartan_of_quiver, trivial_extension_cartan, star_quiver,
                               nakayama_charpoly_hh, column_degeneration,
@@ -40,13 +40,26 @@ def test_cyclotomic_detection():
     assert is_cyclotomic_product(None) is None
 
 
-# test_spectral_radius_and_mahler: not ported (calls spectral_radius / mahler_measure);
-# exact reimplementation in Plan 05.
+def test_spectral_radius_and_mahler():
+    # restored (was deferred to Plan 05); now against the exact reimplementation
+    rho = spectral_radius(t**2 - 3 * t + 1)
+    assert abs(float(rho.evalf(30)) - (3 + 5**0.5) / 2) < 1e-9
+    assert sp.simplify(mahler_measure(t**2 - 3 * t + 1) - rho) == 0
+    assert spectral_radius((t + 1)**3 * (t - 1)**2) == 1        # exact, cyclotomic
+    m = mahler_measure((t + 1)**4 * (t**2 - 3 * t + 1))
+    assert abs(float(m.evalf(30)) - (3 + 5**0.5) / 2) < 1e-9
 
 
-# test_lehmer_star_237: not ported (calls spectral_radius); exact reimplementation in
-# Plan 05. The exact Lehmer-polynomial identity for star_quiver([1,2,6]) it also pinned
-# (coxeter_polynomial_from_cartan(C) == LEHMER) returns with the Plan 05 spectral layer.
+def test_lehmer_star_237():
+    # T(2,3,7) = star_quiver([1,2,6]); Coxeter poly is Lehmer's polynomial; spectral
+    # radius is Lehmer's number 1.176280818259917...  (ledger: exact half restored)
+    n, arrows = star_quiver([1, 2, 6])
+    assert n == 10
+    C, _alg = cartan_of_quiver(n, arrows)
+    poly, _Phi = coxeter_polynomial_from_cartan(C)
+    assert sp.expand(poly - LEHMER) == 0
+    assert is_cyclotomic_product(poly) is False
+    assert abs(float(spectral_radius(poly).evalf(30)) - 1.17628081825991) < 1e-9
 
 
 # --------------------------------------------------------------------
@@ -79,10 +92,25 @@ def test_local_algebras_constant_coxeter():
         assert Phi == -sp.eye(1)
 
 
-# test_trivial_extension_collapse: not ported (calls spectral_radius to distinguish the
-# hereditary inputs); exact reimplementation in Plan 05. Its exact half -- the (t+1)^v
-# collapse of the trivial extensions and the singular-Euclidean case -- returns with the
-# Plan 05 spectral layer.
+def test_trivial_extension_collapse():
+    # rep-finite input vs wild input: K0 spectra of T(A) are identically (t+1)^v
+    C2, _ = cartan_of_quiver(2, [(0, 1)])                # kA_2 (rep-finite)
+    nW, aW = star_quiver([1, 1, 1, 1, 1])                # 5-subspace (wild)
+    CW, _ = cartan_of_quiver(nW, aW)
+    pA, _ = coxeter_polynomial_from_cartan(C2)
+    pW, _ = coxeter_polynomial_from_cartan(CW)
+    assert spectral_radius(pA) == 1
+    assert (spectral_radius(pW) - sp.Rational(26, 10)).is_positive       # > 2.6, exact
+    for C, v in ((C2, 2), (CW, nW)):
+        CT = trivial_extension_cartan(C)
+        polyT, PhiT = coxeter_polynomial_from_cartan(CT)
+        assert PhiT == -sp.eye(v)
+        assert sp.expand(polyT - (t + 1)**v) == 0
+    # Euclidean D~4: symmetrized Cartan is singular -> Coxeter undefined
+    nE, aE = star_quiver([1, 1, 1, 1])
+    CE, _ = cartan_of_quiver(nE, aE)
+    polyE, PhiE = coxeter_polynomial_from_cartan(trivial_extension_cartan(CE))
+    assert polyE is None and PhiE is None
 
 
 def test_nakayama_singular_cartan_theta_still_defined():

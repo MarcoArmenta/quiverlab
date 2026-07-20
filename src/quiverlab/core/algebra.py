@@ -166,15 +166,51 @@ class Algebra:
                 out.append(k)
         return tuple(out)
 
-    def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto"):
+    def _auto_cs_routes(self):
+        """True iff this is a NON-MONOMIAL admissible presentation — the ONLY case the
+        opt-in auto_cs mode hands to the Chouhy-Solotar engine. Monomial presentations
+        (Bardzell already covers them via the fast engine) and anything whose reduction
+        system cannot be certified admissible fall through to the frozen auto dispatch,
+        so enabling auto_cs never changes a result the shipped 'auto' already produces."""
+        if self.quiver is None or self.relations is None:
+            return False
+        try:
+            from quiverlab.resolutions_cs.build import reduction_system_of
+            rs = reduction_system_of(self)
+        except QuiverlabError:
+            return False
+        if not rs.is_confluent or not rs.irreducibles:
+            return False
+        return not all(len(r.tail) == 0 for r in rs.rules)
+
+    def _route_to_cs(self, engine, auto_cs):
+        """Explicit engine='cs' always routes to CS; engine='auto' routes ONLY when the
+        caller opts in with auto_cs=True AND the algebra is non-monomial admissible.
+        Default engine='auto' (auto_cs=False) can never reach CS — the shipped dispatch
+        is UNCHANGED (Pillar-4: no silent 'auto' redefinition)."""
+        if engine == "cs":
+            return True
+        return engine == "auto" and auto_cs and self._auto_cs_routes()
+
+    def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
+                              auto_cs=False, trace=None):
         """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
-        bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise)."""
+        bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise),
+        'cs' (Chouhy-Solotar, any admissible presentation over any field). Set
+        auto_cs=True to let engine='auto' route non-monomial admissible algebras to CS
+        (the default engine='auto' behaviour is unchanged). trace: an optional list the
+        CS path fills with resolution events (ignored by the other engines)."""
         from quiverlab.hochschild.bar import hochschild_cohomology_dims
         from quiverlab.hochschild.table import HHTable
 
-        if engine not in ("auto", "bar", "fast"):
+        if engine not in ("auto", "bar", "fast", "cs"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', or 'fast'")
+                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+        if self._route_to_cs(engine, auto_cs):
+            from quiverlab.resolutions_cs.homology import cs_cohomology_dims
+            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=trace)
+            table.references = self.citations()
+            return table
         if self._use_fast_engine(engine):
             from quiverlab.engine.adapter import engine_cohomology_dims
             dims = engine_cohomology_dims(self, top, max_cells=max_cells)
@@ -185,14 +221,21 @@ class Algebra:
         table.references = self.citations()
         return table
 
-    def hochschild_homology(self, top, max_cells=4_000_000, engine="auto"):
-        """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology."""
+    def hochschild_homology(self, top, max_cells=4_000_000, engine="auto",
+                            auto_cs=False, trace=None):
+        """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology
+        (including 'cs', auto_cs, and the CS-only trace list)."""
         from quiverlab.hochschild.bar import hochschild_homology_dims
         from quiverlab.hochschild.table import HHTable
 
-        if engine not in ("auto", "bar", "fast"):
+        if engine not in ("auto", "bar", "fast", "cs"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', or 'fast'")
+                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+        if self._route_to_cs(engine, auto_cs):
+            from quiverlab.resolutions_cs.homology import cs_homology_dims
+            table = cs_homology_dims(self, top, max_cells=max_cells, trace=trace)
+            table.references = self.citations()
+            return table
         if self._use_fast_engine(engine):
             from quiverlab.engine.adapter import engine_homology_dims
             dims = engine_homology_dims(self, top, max_cells=max_cells)
@@ -202,6 +245,43 @@ class Algebra:
         table = hochschild_homology_dims(self, top, max_cells=max_cells)
         table.references = self.citations()
         return table
+
+    # -- modules --------------------------------------------------------------
+    def simple(self, v):
+        """The simple right module S_v (spec §3.6)."""
+        from quiverlab.modules.builders import simple
+        return simple(self, v)
+
+    def projective(self, v):
+        """The indecomposable projective right module P_v = e_v A (spec §3.6)."""
+        from quiverlab.modules.builders import projective
+        return projective(self, v)
+
+    def injective(self, v):
+        """The indecomposable injective right module I_v = D(A e_v) (spec §3.6)."""
+        from quiverlab.modules.builders import injective
+        return injective(self, v)
+
+    def hom(self, M, N):
+        """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
+        from quiverlab.modules.hom import hom_dim
+        return hom_dim(M, N)
+
+    def ext(self, M, N, n):
+        """dim Ext^n_A(M, N) for right A-modules M, N (spec §3.6)."""
+        from quiverlab.modules.ext import ext
+        return ext(self, M, N, n)
+
+    def global_dimension(self):
+        """Global dimension: exact value or a labeled certified lower bound (spec §3.5)."""
+        from quiverlab.modules.ext import global_dimension
+        return global_dimension(self)
+
+    def is_selfinjective(self):
+        """True iff every indecomposable projective is injective (self-injective =
+        Frobenius for a f.d. algebra); exact over any field (spec §3.5)."""
+        from quiverlab.modules.ext import is_selfinjective
+        return is_selfinjective(self)
 
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
@@ -218,6 +298,21 @@ class Algebra:
         """Characteristic polynomial of the Coxeter matrix, as an exact sympy Poly."""
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
+
+    def loewy_length(self):
+        """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
+        from quiverlab.invariants.scalar import loewy_length
+        return loewy_length(self)
+
+    def center(self):
+        """(dim, basis) of the center Z(A), exact over any field (spec §3.5)."""
+        from quiverlab.invariants.scalar import center
+        return center(self)
+
+    def complexity(self, n):
+        """Apparent complexity from the minimal A^e resolution's growth (GF(p) only)."""
+        from quiverlab.invariants.scalar import complexity
+        return complexity(self, n)
 
     def _require_prime_field(self, what):
         from quiverlab.errors import FieldError

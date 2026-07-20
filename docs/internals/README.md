@@ -53,9 +53,15 @@ by running the code.
   reduction rule, Buchberger–Mora completion, the finiteness certificate
   (2L−1 ≤ D plus the forbidden-word automaton), and how a general kQ/I becomes
   structure constants.
-<!-- MERGE NOTE (Plan 06): 09 (Chouhy–Solotar, Plan 04) and 10 (modules, Plan 05)
-     are reserved by the Plan-04 renumber proposal; Plan 06 files its chapter at 11.
-     If 09/10 land in a different order, keep this bullet and renumber the file. -->
+- **09 — The Chouhy–Solotar resolution.** The general CS projective bimodule resolution
+  for admissible kQ/I: the ambiguity S-sequence (Bardzell associated paths of the tip
+  monomial algebra), the CS differential (Bardzell leading map + order-condition-pinned
+  correction), the two collapse maps, and why it reaches Hochschild degrees the bar
+  complex cannot. Landed with Plan 04.
+- **10 — Modules.** How a finite-dimensional right A-module is stored (the `action`
+  dict, column-vector / anti-homomorphism convention), simples / projectives /
+  injectives read off the multiplication table, radical / top / socle, Hom and Ext,
+  and the minimal projective resolution by iterated projective covers.
 - **11 — Families and citations.** The v1 family catalogue (Nakayama through
   trivial extension), the three construction routes (monomial / general /
   structure-constant), the curated zoo, and the citation registry that stamps
@@ -63,8 +69,8 @@ by running the code.
 
 ## Honest coverage statement
 
-This tree is the **Plan 03 (Gröbner)** checkout. What is documented here is what is
-on disk *now*:
+This tree carries **Plans 01–06** together with the **Plan-04 Chouhy–Solotar
+resolution**. What is documented here is what is on disk *now*:
 
 - The **fast GF(p) engine** (`engine/`) is ported and live: bar homology/cohomology over
   a prime field, the minimal and Bardzell resolutions, cyclic homology, and the
@@ -73,16 +79,20 @@ on disk *now*:
   monomial presentation through the Plan-01 path and a non-monomial one through the
   noncommutative Gröbner engine (`groebner/`), which completes the relations, certifies
   finite-dimensionality, and lowers kQ/I to a structure-constant `Algebra`.
-- The **Chouhy–Solotar closed-form resolution** (`resolutions_cs`) is referenced by the
-  periodic backends but **excluded from this port**; it **arrives with Plan 04**. The
-  `QuantumCIResolution` wrapper is therefore dormant until then.
+- The **Chouhy–Solotar resolution** (`resolutions_cs`) has **landed with Plan 04**
+  (Chapter 09 — The Chouhy–Solotar resolution): the domain-generic CS bimodule
+  resolution, its HH•/HH^• dimensions and representative (co)cycles, the CS↔bar
+  comparison maps, and the `engine="cs"` dispatch path (which reaches Hochschild
+  degrees the bar oracle cannot).
+- The **module + invariants surface** has **landed with Plan 05**: right A-modules with
+  simples / projectives / injectives, radical / top / socle, Hom / Ext, minimal
+  projective resolutions and global dimension (Chapter 10), plus the exact
+  **spectral-radius / Mahler-measure** layer, `loewy_length`, `center`, `complexity`, and
+  the `sweep` (invariant × field) table (documented in the "exact spectral layer" section
+  of Chapter 06).
 - The full algebra **family catalogue** (`families/`) and the **citation registry**
-  (`citations/`) are live (Chapter 11): Nakayama through trivial extension, the
-  curated zoo, and `bibliography()`. The exact spectral-radius / Mahler-measure
-  invariants and the modules layer still **arrive with Plan 05** and will get their
-  own chapter when they land.
-<!-- MERGE NOTE (Plan 06): this bullet supersedes the earlier "families are minimal"
-     coverage line; the catalogue landed in Plan 06. -->
-
+  (`citations/`) have **landed with Plan 06** (Chapter 11): Nakayama through trivial
+  extension, the three construction routes (monomial / general / structure-constant),
+  the curated zoo, and `bibliography()`.
 
 Where a chapter describes something whose full form is still to come, it says so inline.

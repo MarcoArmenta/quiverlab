@@ -17,6 +17,7 @@ from quiverlab.families import (  # noqa: E402,F401
     TrivialExtension, TensorProduct, zoo, families,
 )
 from quiverlab.citations import bibliography  # noqa: E402,F401
+from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 
 __all__ = [
     "__version__",
@@ -29,4 +30,5 @@ __all__ = [
     "IncidenceAlgebra", "QuantumCI", "ExteriorAlgebra", "PreprojectiveAlgebra",
     "TrivialExtension", "TensorProduct", "zoo", "families",
     "bibliography",
+    "sweep",
 ]
