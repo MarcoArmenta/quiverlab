@@ -322,6 +322,18 @@ class Algebra:
         from quiverlab.invariants.scalar import complexity
         return complexity(self, n)
 
+    def draw(self, file=None):
+        """Draw the quiver (matplotlib): vertices by depth, loops as self-arcs,
+        parallel arrows fanned out, the relation list below (spec §3.7). Returns
+        the Figure; pass file="A.png"/"A.svg" to also save it."""
+        if self.quiver is None:
+            from quiverlab.errors import QuiverlabError
+            raise QuiverlabError(
+                "this Algebra has no quiver to draw",
+                hint="build it via Quiver.algebra(...) rather than from_structure_constants")
+        from quiverlab.viz.draw import draw_quiver
+        return draw_quiver(self.quiver, self.relations or [], file=file)
+
     def _require_prime_field(self, what):
         from quiverlab.errors import FieldError
         from quiverlab.fields.primefield import PrimeField
