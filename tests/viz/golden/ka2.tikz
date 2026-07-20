@@ -1,0 +1,5 @@
+\begin{tikzpicture}[>=stealth]
+  \node[draw, circle] (v1) at (0, 0) {$1$};
+  \node[draw, circle] (v2) at (1, 0) {$2$};
+  \draw[->] (v1) -- (v2) node[midway, above] {$a$};
+\end{tikzpicture}

@@ -334,6 +334,17 @@ class Algebra:
         from quiverlab.viz.draw import draw_quiver
         return draw_quiver(self.quiver, self.relations or [], file=file)
 
+    def tikz(self):
+        """TikZ source for the quiver, sharing draw()'s exact layout coordinates
+        (spec §3.7). Paste into a LaTeX document."""
+        if self.quiver is None:
+            from quiverlab.errors import QuiverlabError
+            raise QuiverlabError(
+                "this Algebra has no quiver to render as TikZ",
+                hint="build it via Quiver.algebra(...) rather than from_structure_constants")
+        from quiverlab.viz.tikz import tikz_quiver
+        return tikz_quiver(self.quiver, self.relations or [])
+
     def _require_prime_field(self, what):
         from quiverlab.errors import FieldError
         from quiverlab.fields.primefield import PrimeField
