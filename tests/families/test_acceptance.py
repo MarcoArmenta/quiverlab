@@ -24,11 +24,12 @@ def test_triple_crosscheck_dim9_commutative_square():
 
 
 def test_catalog_dims_char_independent_and_exact():
-    for A in (NakayamaAlgebra([3, 2, 2], field=GF(32003)),
-              PathAlgebra("D4", field=GF(7)),
-              QuantumCI(q=2, field=GF(32003)),
-              ExteriorAlgebra(3, field=GF(32003))):
-        assert A.dim in (7, 9, 4, 8)
+    cases = [(NakayamaAlgebra([3, 2, 2], field=GF(32003)), 7),
+             (PathAlgebra("D4", field=GF(7)), 9),
+             (QuantumCI(q=2, field=GF(32003)), 4),
+             (ExteriorAlgebra(3, field=GF(32003)), 8)]
+    for A, expected in cases:
+        assert A.dim == expected
 
 
 def test_exterior2_equals_quantumci1():

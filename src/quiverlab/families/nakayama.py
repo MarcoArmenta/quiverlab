@@ -63,8 +63,6 @@ def NakayamaAlgebra(kupisch=None, *, n=None, l=None, cyclic=False, field=None):
             if i + length > m - 1:                                   # runs off the sink (arrows a1..a_{m-1}): already zero
                 continue
             path = [order[i + k] for k in range(length)]             # a_{i+1} .. (length arrows)
-            if len(path) < length:
-                continue
         if len(path) >= 2:
             rels.append("*".join(path))
     A = Q.algebra(relations=rels, field=field)

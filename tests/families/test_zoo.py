@@ -36,7 +36,7 @@ def test_periodic_symmetric_member_present_dim9():
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("quiverlab.engine.resolutions_cs") is None,
+    importlib.util.find_spec("quiverlab.resolutions_cs") is None,
     reason="open-zone HH golden gated on the Plan 04 CS backend, consistent with Tasks 1/13")
 def test_zoo_algebra_hh_matches_open_zone_golden():
     # Build needs the Plan-03 Groebner route (a hard Plan-06 prereq); the depth-16

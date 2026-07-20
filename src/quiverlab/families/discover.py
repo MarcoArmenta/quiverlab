@@ -25,7 +25,7 @@ CATALOG = (
                "monomial", ("path_algebra", "bardzell"),
                "kQ / rad^2 from any quiver."),
     FamilyInfo("IncidenceAlgebra", "IncidenceAlgebra(covers)",
-               "general", ("incidence", "assem_book", "hodge"),
+               "general", ("incidence", "assem_book"),
                "Incidence algebra of a finite poset (Hasse quiver + commutativity)."),
     FamilyInfo("QuantumCI", "QuantumCI(q=...)",
                "general", ("quantum_ci", "qci_hh_oracle", "bardzell", "chouhy_solotar"),

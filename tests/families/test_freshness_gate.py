@@ -46,7 +46,7 @@ def test_groebner_reduction_system_surface_present():
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("quiverlab.engine.resolutions_cs") is None,
+    importlib.util.find_spec("quiverlab.resolutions_cs") is None,
     reason="Plan 04 CS backend not yet delivered",
 )
 def test_cs_periodic_backend_present_for_zoo_and_quantum():

@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 
 pytestmark = pytest.mark.skipif(
-    importlib.util.find_spec("quiverlab.engine.resolutions_cs") is None,
+    importlib.util.find_spec("quiverlab.resolutions_cs") is None,
     reason="periodic-symmetric family needs the Plan 04 CS/reduction-system backend")
 
 from quiverlab.engine.coxeter import is_frobenius, nakayama_automorphism
