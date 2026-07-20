@@ -44,4 +44,4 @@ def test_bib_covers_registry():
     bib_ids = set(re.findall(r"@\w+\{([^,]+),", text))
     for key in citations.all_keys():
         assert citations.reference(key).bibtex_key in bib_ids
-    assert len(re.findall(r"@\w+\{", text)) >= 16       # floor; Plan 08 raises it
+    assert len(re.findall(r"@\w+\{", text)) >= 20       # floor; Plan 08 appended qpa/gap4/sagemath/quiverlab (16 -> 20)

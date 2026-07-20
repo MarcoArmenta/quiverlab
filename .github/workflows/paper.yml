@@ -1,0 +1,27 @@
+name: JOSS draft PDF
+
+on:
+  push:
+    paths:
+      - "paper/**"
+      - "src/quiverlab/citations/references.bib"     # the single packaged bib
+      - ".github/workflows/paper.yml"
+  workflow_dispatch:
+
+jobs:
+  paper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Assemble single-source bibliography
+        # one bib, packaged; paper.bib is a build-time copy (gitignored)
+        run: cp src/quiverlab/citations/references.bib paper/paper.bib
+      - name: Build draft PDF
+        uses: openjournals/openjournals-draft-action@master   # moving ref; pin a SHA if needed
+        with:
+          journal: joss
+          paper-path: paper/paper.md
+      - uses: actions/upload-artifact@v7
+        with:
+          name: paper
+          path: paper/paper.pdf

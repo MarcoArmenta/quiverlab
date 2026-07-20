@@ -3,3 +3,7 @@ __pycache__/
 *.egg-info/
 .superpowers/
 .pytest_cache/
+site/
+.cache/
+docs/tutorials/quiverlab_traces/
+paper/paper.bib

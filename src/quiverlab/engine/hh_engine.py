@@ -78,10 +78,12 @@ class Algebra:
     f-basis (`B` is required unimodular, so the inverse is integral).
 
     Attributes:
-      `m`    -- dimension; `t` -- index of the unit basis vector;
-      `T`    -- structure constants in the f-basis, shape `(m, m, m)`;
-      `R`    -- reduced basis indices (all but `t`); `Rpos` -- index -> reduced
-      position; `mr` -- reduced dimension `m - 1`.
+        m: Dimension over k.
+        t: Index of the unit basis vector.
+        T: Structure constants in the f-basis, shape `(m, m, m)`.
+        R: Reduced basis indices (all but `t`).
+        Rpos: Map from index to reduced position in the reduced basis.
+        mr: Reduced dimension `m - 1`.
     """
 
     def __init__(self, m, T, unit, name="A"):

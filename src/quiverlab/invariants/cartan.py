@@ -1,7 +1,7 @@
 """Cartan and Coxeter data from the quiver presentation (any field).
 
 For a monomial bound quiver algebra with basis the irreducible paths,
-C[i][j] = dim e_i A e_j = #(basis paths from vertex i to vertex j) -- an
+`C[i][j]` = dim e_i A e_j = #(basis paths from vertex i to vertex j) -- an
 integer matrix independent of the ground field. The Coxeter matrix is
 Phi = -C^{-T} C (requires C invertible over Q, e.g. finite global dimension);
 the Coxeter polynomial is charpoly(Phi)."""

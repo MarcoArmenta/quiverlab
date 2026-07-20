@@ -70,7 +70,9 @@
 
 **Interfaces:**
 - Consumes: the public library surface (`quiverlab`), the repo tree.
-- Produces: a hard STOP if a prerequisite is missing. This task writes **no** release infrastructure — it verifies the ground is solid before Tasks 2–13 build on it. **If the gate fails, STOP the plan and report which prerequisite plan is incomplete.** (Run against today's repo — mid-Plan-03 — it WILL stop: CS, modules, families/`bibliography`, viz are not yet delivered. That is correct: Plan 08 is not executable until Plans 03–07 land.)
+- Produces: a hard STOP if a prerequisite is missing. This task writes **no** release infrastructure — it verifies the ground is solid before Tasks 2–13 build on it. **If the gate fails, STOP the plan and report which prerequisite plan is incomplete.** (Reconciled to merged reality: Plans 03–07 are all merged to `main`, so the gate now exits **0** — it prints an informational NOTE that the license is not yet SPDX-fixed, which is a Task-3 TODO, not a STOP. The task is therefore near-vacuous on current `main`; its load-bearing content is the **exit-code contract**: STOP only on genuine prerequisite drift, never on the deferred-license line.)
+
+**Exit-code reconciliation (binding).** The gate separates two concerns: (1) genuine **prerequisite** drift (Plans 03–07 surfaces + docs sources) — the only thing that returns exit 1; and (2) the deprecated `license = { text = "MIT" }` table, which is a Task-3 fix-it **TODO** surfaced by `license_todo()` as an **informational** note that does NOT force exit 1. Without this split the gate would exit 1 on current `main` (license not SPDX-fixed until Task 3), contradicting Step 2's "exit=0" and Task 13's "release_freshness.py exits 0" checklist item. With it, Step 2's exit=0 holds today and Task 3 still fixes the license.
 
 - [ ] **Step 1: Write the gate (test + script share one checker)**
 
@@ -94,7 +96,10 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 
 def check() -> list[str]:
-    """Return a list of drift messages; empty list == fresh."""
+    """Return a list of PREREQUISITE drift messages (Plans 03-07 library surfaces +
+    docs sources); empty list == fresh. The deprecated-license line is NOT included
+    here -- it is an informational Task-3 TODO returned by license_todo() -- so a
+    not-yet-SPDX license never forces a STOP."""
     drift: list[str] = []
 
     # --- prerequisite library surfaces (Plans 03-07) -----------------------
@@ -150,16 +155,30 @@ def check() -> list[str]:
     if len(internals) < 7:
         drift.append(f"expected >=7 internals chapters, found {len(internals)}")
 
-    # --- pyproject state this plan modernizes (informational STOP guards) ---
+    # The deprecated license={text=...} table is NOT prerequisite drift -- it is a
+    # Task-3 fix-it TODO, reported separately by license_todo() as an INFORMATIONAL
+    # note and never a STOP. Keeping it out of `drift` is what lets this gate exit 0
+    # on current `main` (where the license is not SPDX-fixed until Task 3 runs), so
+    # Step 2's "exit=0" and Task 13's "release_freshness.py exits 0" both hold.
+    return drift
+
+
+def license_todo() -> list[str]:
+    """Informational only (never a STOP): the deprecated PEP-639 license={text=...}
+    table that Task 3 replaces with the SPDX `license = "MIT"` string. main() prints
+    these notes but they do NOT affect the exit code."""
+    notes: list[str] = []
     pp = (ROOT / "pyproject.toml").read_text()
     if 'license = { text = "MIT" }' in pp or 'license = {text = "MIT"}' in pp:
-        drift.append("pyproject still uses deprecated license={text=...} "
-                     "(Task 3 fixes this) -- expected before Task 3 runs")
-    return drift
+        notes.append("pyproject still uses the deprecated license={text=...} table "
+                     "(Task 3 replaces it with the PEP 639 SPDX string)")
+    return notes
 
 
 def main() -> int:
     drift = check()
+    for note in license_todo():
+        print(f"PLAN 08 FRESHNESS GATE: NOTE (informational, not a STOP) -- {note}")
     if drift:
         print("PLAN 08 FRESHNESS GATE: STOP -- prerequisites drifted:\n")
         for d in drift:
@@ -178,9 +197,11 @@ if __name__ == "__main__":
 `tests/release/test_freshness.py`:
 
 ```python
-"""Plan 08 freshness gate as a test. The deprecated-license line is expected
-BEFORE Task 3 runs and removed AFTER; this test tolerates both by treating the
-license drift as informational, but STOPS on any missing library surface."""
+"""Plan 08 freshness gate as a test. `check()` returns only PREREQUISITE drift
+(Plans 03-07 surfaces + docs sources); the deprecated-license line is an
+informational Task-3 TODO handled by `license_todo()` and never a STOP, so this
+test asserts prerequisite freshness directly and is agnostic to whether the license
+has been SPDX-fixed yet."""
 import pathlib
 import sys
 
@@ -189,14 +210,14 @@ import release_freshness as rf  # noqa: E402
 
 
 def test_prerequisite_surfaces_present():
-    drift = [d for d in rf.check() if "pyproject still uses deprecated" not in d]
+    drift = rf.check()
     assert drift == [], "Plan 08 prerequisites drifted:\n" + "\n".join(drift)
 ```
 
 - [ ] **Step 2: Run the gate**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 /Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python scripts/release_freshness.py; echo "exit=$?"`
-Expected (against a repo where Plans 03–07 are delivered): `PLAN 08 FRESHNESS GATE: OK`, `exit=0`. **If it prints STOP, halt the plan** and report the listed missing prerequisites to Marco — Plan 08 cannot proceed until they land.
+Expected (Plans 03–07 merged to `main`): `PLAN 08 FRESHNESS GATE: OK`, `exit=0`. On current `main` it also prints one informational line — `NOTE (informational, not a STOP) -- pyproject still uses the deprecated license={text=...} table` — which Task 3 clears; this NOTE does **not** change the exit code (still 0). **If it prints STOP (exit 1), halt the plan** and report the listed missing prerequisites to Marco — Plan 08 cannot proceed until they land.
 
 - [ ] **Step 3: (no implementation — this is the gate)**
 
@@ -220,8 +241,10 @@ Claude-Session: https://claude.ai/code/session_01R7bMM4JBnSWUHbUV1DFoMd"
 ### Task 2: pytest markers + `conftest.py` — the CI-split foundation
 
 **Files:**
-- Create: `tests/conftest.py`, `tests/release/test_markers.py`
-- Modify: `pyproject.toml` (`[tool.pytest.ini_options].markers`)
+- Create: `tests/release/test_markers.py`
+- Modify: `tests/conftest.py` (**MERGE** the bucket hook into the existing Plan-07 conftest — do NOT overwrite it), `pyproject.toml` (`[tool.pytest.ini_options].markers`)
+
+> **Load-bearing (do NOT regress `main`):** Plan 07 already shipped `tests/conftest.py` with a `pytest_configure` that registers the `verbose_default` marker **and** an autouse `_quiet_traces` fixture that forces `quiverlab.verbose = False` for the whole suite. **The Plan-07 `_quiet_traces` autouse fixture + `verbose_default` marker registration MUST be preserved** — overwriting the file would delete them, breaking 5+ trace tests, un-quieting the suite (stray `./quiverlab_traces/` writes), and re-introducing a `PytestUnknownMarkWarning` that fails this task's own `test_markers.py`. This task therefore **modifies** the existing conftest: it ADDS `pytest_collection_modifyitems` (and its `_bucket`/`_DEEP_*` helpers) while KEEPING the existing `pytest_configure` and `_quiet_traces` verbatim. The CI-split markers (`fast`/`deep`/`qpa`/`slow`) are registered in `pyproject.toml` (below), so `pytest_configure` only needs to keep registering `verbose_default`; if a future revision registers markers via `pytest_configure` instead, it must APPEND to the existing body (register `verbose_default` **and** the new markers), never replace it.
 
 **Interfaces:**
 - Consumes: the collected test tree.
@@ -230,29 +253,64 @@ Claude-Session: https://claude.ai/code/session_01R7bMM4JBnSWUHbUV1DFoMd"
 **Marker plan (exact).** The suite has ~615 tests today (Plan 03 state) and grows through Plans 04–07. Heavy time lives in `tests/engine/` (32 files), the Chouhy–Solotar suite (Plan 04), deep groebner completion, module resolutions (Plan 05), and the families/batch scans (Plan 06). `conftest.py` assigns buckets by top-level test directory / filename, with per-test overrides:
 
 - `tests/qpa/**` → `qpa`
-- `tests/{engine,resolutions_cs,chouhy_solotar,modules,families,batch}/**` and named heavy files (`test_complete.py`, `test_deepen.py`, `test_properties.py`, `test_acceptance.py`, `test_cs_*`, `test_bardzell*`, `test_minimal*`) → `deep`
+- `tests/{engine,resolutions_cs,modules,families,batch}/**` and named heavy files (`test_complete.py`, `test_deepen.py`, `test_properties.py`, `test_acceptance.py`, `test_cs_*`, `test_bardzell*`, `test_minimal*`) → `deep`
 - everything else (incl. `tests/viz/**` — small drawings, worth cross-platform coverage) → `fast`
 - any test explicitly marked `slow` (with no bucket) → promoted to `deep`
 
 **Future-heavy-dir policy:** when Plans 05–07 add heavy top-level dirs, add them to `_DEEP_DIRS`. If one is forgotten, `test_buckets_partition_the_suite` still passes (it only checks disjoint+exhaustive, not wall-time) but its docstring names the triage; the freshness-gate note (Task 1) is the standing reminder. A genuinely slow test that slips into `fast` is caught by the fast-matrix wall-time, and can be pinned with `@pytest.mark.slow` (→ deep).
 
-`tests/conftest.py`:
+`tests/conftest.py` — **MERGE** the following into the EXISTING Plan-07 conftest. Keep its module docstring, `import quiverlab`, the `pytest_configure` that registers `verbose_default`, and the autouse `_quiet_traces` fixture EXACTLY as shipped; only ADD the bucket helpers + `pytest_collection_modifyitems`. The complete merged file (Plan-07 parts preserved verbatim, Plan-08 additions marked) is:
 
 ```python
-"""Auto-assign CI buckets by test location so the suite can be split across the
-GitHub Actions matrix (Plan 08 Task 2). Explicit bucket markers on a test win.
+"""Global test fixtures + CI-bucket auto-assignment.
 
+Plan 07: the worked-steps trace subsystem is ON by default (quiverlab.verbose =
+True, spec D9); force it OFF for the whole suite so that unrelated computations do
+not write ./quiverlab_traces/ files. Trace tests that need it opt back in explicitly
+(set quiverlab.verbose = True or pass verbose=True / trace=[...]).
+
+Plan 08 Task 2: auto-assign CI buckets by test location so the suite can be split
+across the GitHub Actions matrix. Explicit bucket markers on a test win.
 Buckets (exactly one per test; disjoint + exhaustive, enforced by the partition test):
   qpa  -- needs the [qpa] extra (passagemath-gap + QPA); CI QPA job only.
-  deep -- heavy engine / resolution / CS / module / families / batch suites; one Linux leg.
+  deep -- heavy engine / resolution / module / families / batch suites; one Linux leg.
   fast -- everything else; runs on every OS x Python matrix cell.
 Orthogonal sub-tag:
   slow -- an individually long test; IMPLIES deep (never runs in the fast matrix).
 """
 import pytest
 
+import quiverlab
+
+
+# --- Plan 07 (PRESERVE VERBATIM) -------------------------------------------
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "verbose_default: observe the shipped quiverlab.verbose default "
+        "(opt out of the quiet-suite fixture)",
+    )
+
+
+@pytest.fixture(autouse=True)
+def _quiet_traces(request):
+    # Always capture + restore, so even a `verbose_default`-marked test that mutates
+    # quiverlab.verbose cannot leak state into the next test (review hardening).
+    prev = getattr(quiverlab, "verbose", True)
+    if request.node.get_closest_marker("verbose_default") is None:
+        # Force the trace subsystem OFF so unrelated tests don't write ./quiverlab_traces/.
+        quiverlab.verbose = False
+    # else: leave the shipped default (quiverlab.verbose = True) observable.
+    try:
+        yield
+    finally:
+        quiverlab.verbose = prev
+
+
+# --- Plan 08 Task 2 (ADD) --------------------------------------------------
 # Top-level dirs (relative to tests/) whose tests are heavy -> the deep leg.
-_DEEP_DIRS = ("engine", "resolutions_cs", "chouhy_solotar", "modules", "families", "batch")
+# (resolutions_cs is the Chouhy-Solotar suite; there is NO tests/chouhy_solotar dir.)
+_DEEP_DIRS = ("engine", "resolutions_cs", "modules", "families", "batch")
 # Individually heavy files that may live outside the deep dirs.
 _DEEP_FILES = ("test_complete.py", "test_deepen.py", "test_properties.py",
                "test_acceptance.py", "test_cs_", "test_bardzell", "test_minimal")
@@ -350,7 +408,7 @@ def test_known_anchors():
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 /Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pytest tests/release/test_markers.py -q`
 Expected: FAIL — markers not registered yet (`PytestUnknownMarkWarning`) / `conftest.py` absent.
 
-- [ ] **Step 3: Write `tests/conftest.py` and register markers in `pyproject.toml`** (both above).
+- [ ] **Step 3: MERGE the bucket hook into the existing `tests/conftest.py` and register markers in `pyproject.toml`** (both above). Preserve Plan 07's `pytest_configure` (`verbose_default`) and the `_quiet_traces` autouse fixture verbatim; only add the bucket helpers + `pytest_collection_modifyitems`. Do NOT overwrite the file.
 
 - [ ] **Step 4: Verify the split by hand + run the suite**
 
@@ -420,10 +478,10 @@ classifiers = [
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
-dependencies = ["numpy>=1.21", "sympy>=1.12", "matplotlib>=3.6"]
+dependencies = ["numpy>=1.21", "sympy>=1.12", "matplotlib>=3.7"]
 
 [project.optional-dependencies]
-fast = ["numba>=0.60"]
+fast = ["numba>=0.64"]
 # [qpa]: passagemath-gap 10.8.x ships prebuilt GAP + (via its own [qpa] sub-extra)
 # QPA v1.37 + GBNP, in manylinux/musllinux + macOS wheels (Python 3.11-3.14). No
 # Windows wheel -> the `sys_platform != 'win32'` marker makes the extra installable-
@@ -452,6 +510,15 @@ Changelog = "https://github.com/MarcoArmenta/quiverlab/blob/main/CHANGELOG.md"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# LOAD-BEARING -- do NOT drop. citations/registry.py loads references.bib and
+# families/zoo.py loads zoo_catalog.json by __file__-relative path; without this
+# block both files are absent from the built wheel/sdist and bibliography()/zoo()
+# break in an installed environment (Plan 06). See the sdist/wheel data-file
+# packaging check in Task 10 (test_build.py, open item #4).
+[tool.setuptools.package-data]
+"quiverlab.citations" = ["references.bib"]
+"quiverlab.families" = ["zoo_catalog.json"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
@@ -463,8 +530,9 @@ markers = [
 ```
 
 Notes:
-- **`matplotlib>=3.6`** is a **hard** dependency by Plan 07 (viz, spec §9). If Plan 07 already added it, this is a no-op; if the freshness gate showed it absent, this restores spec §9.
-- **`numba>=0.60`** (not `0.64`) — 0.64 does not exist as of 2026; the ported engine runs on 0.66 in this venv. (**VERIFY** the floor against the numba the port actually needs.)
+- **`package-data` + `matplotlib>=3.7` are load-bearing (Plan 06 bib/zoo, Plan 07 viz) — never drop or downgrade them.** This modernization PRESERVES the merged-`main` `dependencies` (incl. `matplotlib>=3.7`) and the entire `[tool.setuptools.package-data]` block verbatim; it only ADDS the SPDX license, classifiers, urls, and extras. Dropping the package-data block regresses `main` (built wheels would ship without `references.bib`/`zoo_catalog.json`); downgrading matplotlib below `3.7` regresses the Plan-07 viz floor.
+- **`matplotlib>=3.7`** is a **hard** dependency by Plan 07 (viz, spec §9); kept identical to merged `main`.
+- **`numba>=0.64`** — kept identical to merged `main` (the venv runs numba 0.66, which satisfies `>=0.64`); this modernization deliberately does NOT change the numba floor.
 - `Development Status :: 4 - Beta` matches semver 0.x battle-testing (§9); bumped to `5 - Production/Stable` at 1.0 / JOSS acceptance.
 
 `tests/release/test_packaging_metadata.py`:
@@ -519,6 +587,7 @@ def test_extras_and_urls_present():
   NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest tests/release/test_packaging_metadata.py tests/test_no_floats.py -q
   ```
   Expected: the build emits **no** license/classifier deprecation warning; the metadata test and float gate pass. (If `build`/`setuptools>=77` is not yet installed, `pip install build` first; the release env installs `.[dev]`.)
+  **Env note:** the `python -m build` verify needs `build` in the venv — `/Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pip install build` (it is in the `[dev]` extra this task adds; install it into `.venv` if not already present).
 - [ ] **Step 5: Commit**
   ```bash
   git add pyproject.toml tests/release/test_packaging_metadata.py
@@ -1380,7 +1449,11 @@ markdown_extensions:
 
 extra_javascript:
   - javascripts/mathjax.js
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  # PINNED third-party CDN (never a floating @3 tag) from a reputable source, same
+  # supply-chain hygiene as stripping polyfill.io from the trace HTML. Fully-offline
+  # option (Marco's call): vendor this asset under docs/javascripts/ and reference the
+  # local path instead, so the published docs load no third-party JS at all.
+  - https://cdn.jsdelivr.net/npm/mathjax@3.2.2/es5/tex-mml-chtml.js
 
 # Keep the plan/spec markdown out of the site (they live under docs/). The
 # bibliography is NOT in docs/ (it is packaged in src/quiverlab/citations/); the
@@ -1602,6 +1675,7 @@ def test_docs_workflow_deploys_pages():
   NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest tests/release/test_docs.py tests/release/test_workflows.py tests/test_no_floats.py -q
   ```
   Expected: `mkdocs build --strict` exits 0 — the three tutorials execute, the API reference generates, the internals chapters render, no strict warnings. Docs + workflow tests pass. (If a tutorial fails to execute under the current library, fix the notebook or the library — do not set `allow_errors: true`.)
+  **Env note:** the docs build needs the `[docs]` toolchain (mkdocs-material, mkdocstrings[python], mkdocs-jupyter, gen-files, literate-nav, section-index, mike) in the venv — `/Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pip install -e ".[docs]"` before running `mkdocs build`.
 - [ ] **Step 5: Commit**
   ```bash
   git add mkdocs.yml scripts/gen_ref_pages.py scripts/gen_bibliography.py docs/index.md docs/javascripts .github/workflows/docs.yml tests/release/test_docs.py tests/release/test_workflows.py
@@ -1927,7 +2001,7 @@ Claude-Session: https://claude.ai/code/session_01R7bMM4JBnSWUHbUV1DFoMd"
 
 **Interfaces:**
 - Consumes: the modernized `pyproject.toml` (Task 3), `build`/`twine` (`[dev]` extra).
-- Produces: a tag-gated OIDC **trusted-publishing** workflow (no API token ever committed), a name-availability check, and a local build + `twine check`. **Nothing is uploaded to real PyPI during this plan** — the workflow triggers only on a pushed `v*` tag, which is Marco's action.
+- Produces: a tag-gated OIDC **trusted-publishing** workflow (no API token ever committed), a name-availability check, a local build + `twine check`, and the **sdist/wheel data-file packaging check (open item #4)** — `test_build.py::test_wheel_and_sdist_contain_package_data` asserts the built wheel and sdist actually CONTAIN `quiverlab/citations/references.bib` and `quiverlab/families/zoo_catalog.json` (a `twine check` PASS does not verify archive contents, so a dropped `[tool.setuptools.package-data]` block would otherwise ship silently and break `bibliography()`/`zoo()`). **Nothing is uploaded to real PyPI during this plan** — the workflow triggers only on a pushed `v*` tag, which is Marco's action.
 
 **Name availability (research, point-in-time 2026-07-18):** both **`quiverlab`** and **`quiver-lab`** return HTTP 404 on the PyPI JSON API → **both AVAILABLE** (they are distinct under PEP 503 normalization). D8: register **`quiverlab`** (primary); optionally also register `quiver-lab` to defend the namespace. Re-check immediately before registering — availability is point-in-time. Use the **JSON API** (`https://pypi.org/pypi/<name>/json`), not the project-page URL (Cloudflare-challenges `curl`, returning 200 for every name).
 
@@ -2029,6 +2103,8 @@ import importlib.util
 import pathlib
 import subprocess
 import sys
+import tarfile
+import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 
@@ -2051,6 +2127,46 @@ def test_build_and_twine_check(tmp_path):
                         capture_output=True, text=True)
     assert r2.returncode == 0, r2.stdout + r2.stderr
     assert "PASSED" in r2.stdout
+
+
+# Data-file (package-data) files loaded at runtime by __file__-relative path.
+_DATA_FILES = ("quiverlab/citations/references.bib",
+               "quiverlab/families/zoo_catalog.json")
+
+
+def test_wheel_and_sdist_contain_package_data(tmp_path):
+    """sdist/wheel data-file packaging check (open item #4).
+
+    The BUILT wheel and sdist must CONTAIN the packaged data files that
+    citations/registry.py (references.bib) and families/zoo.py (zoo_catalog.json)
+    load by __file__-relative path -- otherwise bibliography()/zoo() break in an
+    installed environment even though `twine check` still PASSES (twine checks
+    metadata/readme rendering, never archive contents). This test FAILS if the
+    [tool.setuptools.package-data] block is removed from pyproject.toml."""
+    if not _have("build"):
+        import pytest
+        pytest.skip("build not installed; acceptance task runs the real build")
+    out = tmp_path / "dist"
+    r = subprocess.run([sys.executable, "-m", "build", "--outdir", str(out)],
+                       cwd=ROOT, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr[-3000:]
+
+    # wheel is a zip; package-data lands at quiverlab/<subpkg>/<file> (no src/ prefix).
+    wheels = list(out.glob("quiverlab-*.whl"))
+    assert wheels, [p.name for p in out.glob("*")]
+    with zipfile.ZipFile(wheels[0]) as zf:
+        wheel_names = set(zf.namelist())
+    for rel in _DATA_FILES:
+        assert rel in wheel_names, f"{rel} missing from the wheel (package-data dropped?)"
+
+    # sdist is a tar.gz; entries are under <name-version>/src/quiverlab/...
+    sdists = list(out.glob("quiverlab-*.tar.gz"))
+    assert sdists, [p.name for p in out.glob("*")]
+    with tarfile.open(sdists[0]) as tf:
+        sdist_names = tf.getnames()
+    for rel in _DATA_FILES:
+        assert any(m.endswith(rel) for m in sdist_names), \
+            f"{rel} missing from the sdist (package-data dropped?)"
 ```
 
 Add to `tests/release/test_workflows.py`:
@@ -2076,7 +2192,8 @@ def test_release_workflow_trusted_publishing():
   .venv/bin/python scripts/check_pypi_name.py            # advisory (needs network)
   NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest tests/release/test_build.py tests/release/test_workflows.py tests/test_no_floats.py -q
   ```
-  Expected: `python -m build` produces `quiverlab-<ver>.tar.gz` + `.whl`; `twine check` reports `PASSED`; the workflow test confirms trusted publishing + tag gating + no token. **No upload happens.**
+  Expected: `python -m build` produces `quiverlab-<ver>.tar.gz` + `.whl`; `twine check` reports `PASSED`; the package-data check confirms `references.bib` + `zoo_catalog.json` are inside both artifacts (open item #4); the workflow test confirms trusted publishing + tag gating + no token. **No upload happens.**
+  **Env note:** this step needs `build` + `twine` in the venv — `/Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pip install build twine` (both are in the `[dev]` extra).
 - [ ] **Step 5: Commit**
   ```bash
   git add .github/workflows/release.yml CHANGELOG.md scripts/check_pypi_name.py tests/release/test_build.py tests/release/test_workflows.py
@@ -2459,6 +2576,7 @@ def test_qpa_backend_optional_not_imported_by_core():
 
 - [ ] **Step 1: Write `tests/release/test_acceptance.py`** (above).
 - [ ] **Step 2: Run the acceptance test + the release runbook**
+  **Env note:** the runbook needs `build`, `twine`, and the `[docs]` toolchain (mkdocs) in the venv — `/Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pip install -e ".[dev,docs]"` installs all three (build/twine from `[dev]`, mkdocs stack from `[docs]`) before running steps (c)–(e).
   ```bash
   cd /Users/marco/Desktop/HomologicalNetworks/quiverlab
   # a) freshness gate is green (prerequisites intact)

@@ -1,0 +1,71 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MPLBACKEND: "Agg"          # headless matplotlib on every job (matplotlib is a hard dep)
+
+jobs:
+  fast:
+    name: fast · ${{ matrix.os }} · py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    env:
+      NUMBA_NUM_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"          # pure path; numba is a separate deep leg
+      - run: python -m pytest -m fast -q
+
+  deep:
+    name: deep · linux · py3.12 · ${{ matrix.leg }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { leg: numba, extras: ".[dev,fast]", no_numba: "0" }
+          - { leg: pure,  extras: ".[dev]",      no_numba: "1" }
+    env:
+      NUMBA_NUM_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+      QUIVERLAB_NO_NUMBA: ${{ matrix.no_numba }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e "${{ matrix.extras }}"
+      - run: python -m pytest -q              # full suite (fast + deep); qpa skips (no GAP)
+
+  lint:
+    name: float-gate + metadata
+    runs-on: ubuntu-latest
+    env:
+      NUMBA_NUM_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest tests/test_no_floats.py tests/release -q

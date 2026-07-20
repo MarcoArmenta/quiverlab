@@ -1,5 +1,5 @@
 """The structure-constant Algebra: quiverlab's internal currency (spec §5).
-T[i][j] is the coordinate vector of b_i * b_j. 'Unit-adapted' means b_0 = 1_A
+`T[i][j]` is the coordinate vector of b_i * b_j. 'Unit-adapted' means b_0 = 1_A
 (hanlab's convention), which the bar complex requires."""
 from quiverlab.errors import QuiverlabError
 from quiverlab.fields.linalg import rank, solve
@@ -324,6 +324,16 @@ class Algebra:
         """dim Ext^n_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.ext import ext
         return ext(self, M, N, n)
+
+    def crosscheck(self, what="hochschild", *args, **kwargs):
+        """Independently recompute an invariant via the optional QPA backend and
+        compare (spec §5 c.12). Requires `pip install quiverlab[qpa]`; raises
+        QpaUnavailableError otherwise. Examples:
+            A.crosscheck("hochschild", 3)          # HH^0..HH^3 vs QPA enveloping route
+            A.crosscheck("module_ext", M, 4)       # Ext^0..Ext^4(M,M) vs QPA (self-Ext)
+        Returns a CrosscheckReport; call .assert_agree() to fail loudly on mismatch."""
+        from quiverlab.qpa.crosscheck import crosscheck as _cc
+        return _cc(self, what, *args, **kwargs)
 
     def global_dimension(self):
         """Global dimension: exact value or a labeled certified lower bound (spec §3.5)."""

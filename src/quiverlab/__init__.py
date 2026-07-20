@@ -9,6 +9,7 @@ verbose = True
 from quiverlab.errors import (  # noqa: E402,F401
     QuiverlabError, ExactnessError, FieldError, RelationError,
     AdmissibilityError, NotFiniteDimensionalError, DepthLimitError,
+    QpaUnavailableError,
 )
 from quiverlab.fields import GF  # noqa: E402,F401
 from quiverlab.fields import CC, E  # noqa: E402,F401
@@ -29,6 +30,7 @@ __all__ = [
     "verbose",
     "QuiverlabError", "ExactnessError", "FieldError", "RelationError",
     "AdmissibilityError", "NotFiniteDimensionalError", "DepthLimitError",
+    "QpaUnavailableError",
     "GF", "CC", "E", "QQi",
     "Quiver", "Algebra",
     "truncated_polynomial", "linear_path_algebra",

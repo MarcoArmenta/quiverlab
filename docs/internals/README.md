@@ -106,3 +106,11 @@ resolution**. What is documented here is what is on disk *now*:
   dimensions are derived from the recorded ranks and cite through `bibliography()`.
 
 Where a chapter describes something whose full form is still to come, it says so inline.
+
+## Release infrastructure and the QPA cross-check
+
+Plan 08 (release) adds **no internals chapter**: CI, packaging, the docs site, and
+the JOSS paper are infrastructure, not core mathematics. The one mathematical addition
+— the optional QPA cross-check that recomputes Hochschild dimensions via the
+enveloping algebra `HH^n(A) = Ext^n_{A^e}(A,A)` — is documented on the docs
+[Development page](../development/release.md), not here.

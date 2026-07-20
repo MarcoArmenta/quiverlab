@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use quiverlab in your research, please cite it as below."
+title: "quiverlab: exact Hochschild theory for quivers with relations"
+type: software
+authors:
+  - family-names: Armenta
+    given-names: Marco
+    email: drmarcoarmenta@gmail.com
+    orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO(Marco): real ORCID before release (placeholder is valid ORCID format only)
+version: 0.1.0
+date-released: "2026-07-18"
+license: MIT
+repository-code: "https://github.com/MarcoArmenta/quiverlab"
+url: "https://marcoarmenta.github.io/quiverlab/"
+keywords:
+  - quivers with relations
+  - Hochschild cohomology
+  - Gerstenhaber bracket
+  - representation theory
+  - exact arithmetic
+# At JOSS acceptance, add the preferred-citation (type: article) with the JOSS DOI:
+# preferred-citation:
+#   type: article
+#   title: "quiverlab: exact Hochschild theory for quivers with relations"
+#   authors: [{family-names: Armenta, given-names: Marco}]
+#   journal: "Journal of Open Source Software"
+#   doi: "10.21105/joss.XXXXX"
+#   year: 2026

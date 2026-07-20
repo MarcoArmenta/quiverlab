@@ -1,33 +1,44 @@
 # quiverlab
 
+[![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
+[![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
+[![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
+[![Python](https://img.shields.io/pypi/pyversions/quiverlab.svg)](https://pypi.org/project/quiverlab/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+<!-- [![DOI](https://joss.theoj.org/papers/<id>/status.svg)](https://doi.org/<doi>) -- added at JOSS acceptance -->
+
 **Quivers with relations and Hochschild theory, exactly, for algebraists.**
 
-quiverlab computes with finite-dimensional algebras presented by quivers with
-relations, over the complex numbers (exactly — no floating point, ever) and
-over all finite fields. Floats fail loudly by design.
+quiverlab computes with finite-dimensional algebras `kQ/I` over the complex numbers
+(exactly — no floating point, ever) and over all finite fields: certified
+finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhaber
+brackets, the first full Chouhy–Solotar resolution, module Ext, and Cartan/Coxeter
+invariants. Floats fail loudly by design.
 
-## Install (development preview)
+## Install
 
 ```bash
-pip install -e '.[dev]'
+pip install quiverlab                 # pure-Python core, no external systems
+pip install "quiverlab[fast]"         # + numba GF(p) acceleration (optional)
+pip install "quiverlab[qpa]"          # + GAP/QPA cross-check backend (macOS/Linux)
 ```
 
 ## Three lines to a Hochschild table
 
 ```python
-from quiverlab import Quiver, CC, GF
+from quiverlab import Quiver, CC
 
 Q = Quiver(vertices=[1, 2, 3], arrows={"a": (1, 2), "b": (2, 3), "c": (1, 3)})
-A = Q.algebra(relations=["a*b"], field=CC)
-print(A.hochschild_cohomology(3))
+print(Q.algebra(relations=["a*b"], field=CC).hochschild_cohomology(3))
 ```
 
-Change one word to move the characteristic:
+## Learn more
 
-```python
-A2 = Q.algebra(relations=["a*b"], field=GF(2))
-print(A2.hochschild_cohomology(3))
-```
+- **Documentation:** <https://marcoarmenta.github.io/quiverlab/>
+- **Tutorials:** [executable notebooks](docs/tutorials/) — start here.
+- **Under the hood:** [internals chapters](docs/internals/) — how each number is produced.
+- **Web GUI:** compute without installing (Plan 09; linked from the docs when live).
+- **Cite:** see the JOSS paper (`paper/paper.md`) and [`CITATION.cff`](CITATION.cff).
 
 ## The classic characteristic pathology, in one loop
 
