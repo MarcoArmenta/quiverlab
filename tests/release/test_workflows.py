@@ -19,3 +19,20 @@ def test_ci_matrix_covers_os_and_python():
     assert "QUIVERLAB_NO_NUMBA" in ci            # pure engine leg
     assert 'NUMBA_NUM_THREADS: "2"' in ci        # thread throttle
     assert "test_no_floats.py" in ci             # float gate in lint
+
+
+def test_qpa_workflow_is_linux_and_mandatory():
+    qpa = _read("qpa.yml")
+    assert "ubuntu-latest" in qpa                       # Linux only (GAP wheels)
+    assert "macos-latest" not in qpa                    # no macOS/Windows legs
+    assert "windows-latest" not in qpa
+    assert 'QUIVERLAB_REQUIRE_QPA: "1"' in qpa          # absent QPA = HARD failure
+    assert "[dev,qpa]" in qpa                            # installs the [qpa] extra
+    assert "-m qpa" in qpa                               # runs the qpa-marked suite
+    assert "gap_available()" in qpa                      # explicit second hard gate
+    assert 'NUMBA_NUM_THREADS: "2"' in qpa               # thread throttle
+    # separate from ci.yml: push-to-main + manual + weekly, NOT on pull_request
+    assert "workflow_dispatch:" in qpa
+    assert "schedule:" in qpa
+    assert "pull_request:" not in qpa
+    assert "@master" not in qpa                          # pinned action versions

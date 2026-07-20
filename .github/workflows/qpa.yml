@@ -1,0 +1,36 @@
+name: QPA cross-check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "0 6 * * 1"          # weekly (Mon 06:00 UTC); GAP install is heavy
+
+jobs:
+  qpa:
+    name: QPA cross-check · linux · py3.12
+    runs-on: ubuntu-latest
+    env:
+      NUMBA_NUM_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+      MPLBACKEND: "Agg"
+      QUIVERLAB_REQUIRE_QPA: "1"   # absent/broken QPA is a HARD failure in this job
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"   # passagemath-gap wheels: py3.11-3.14, linux
+          cache: pip               # cache the heavy passagemath-gap wheel between runs
+          cache-dependency-path: pyproject.toml
+      - name: Install GAP + QPA (passagemath-gap) and quiverlab[dev,qpa]
+        run: |
+          python -m pip install --upgrade pip
+          # passagemath-gap[qpa] pulls prebuilt GAP + QPA v1.37 + GBNP (manylinux wheel).
+          # Fallback if the [qpa] sub-extra name drifts: pip install "passagemath-gap[full]"
+          pip install -e ".[dev,qpa]" \
+            || { pip install "passagemath-gap[full]" && pip install -e ".[dev]"; }
+      - name: Sanity — libgap imports and QPA loads
+        run: python -c "from quiverlab.qpa import gap_available; assert gap_available(), 'QPA failed to load'"
+      - name: Run the QPA cross-check suite (mandatory)
+        run: python -m pytest -m qpa -q
