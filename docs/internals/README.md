@@ -66,6 +66,11 @@ by running the code.
   trivial extension), the three construction routes (monomial / general /
   structure-constant), the curated zoo, and the citation registry that stamps
   every algorithm and family with the paper behind it.
+- **12 — Visualization and worked-steps traces (viz + trace).** The exact
+  `int`/`Fraction` layered layout shared by `A.draw()` and `A.tikz()`, the typed
+  trace-event taxonomy, the recorder and its elision guards, and how a verbose
+  computation renders a LaTeX→PDF (or self-contained no-JS HTML) worked-steps
+  document whose dimensions are *derived* from the recorded ranks. Landed with Plan 07.
 
 ## Honest coverage statement
 
@@ -94,5 +99,10 @@ resolution**. What is documented here is what is on disk *now*:
   (`citations/`) have **landed with Plan 06** (Chapter 11): Nakayama through trivial
   extension, the three construction routes (monomial / general / structure-constant),
   the curated zoo, and `bibliography()`.
+- The **visualization and worked-steps trace** surface (`viz/`, `trace/`) has
+  **landed with Plan 07** (Chapter 12): the exact `int`/`Fraction` layout shared by
+  `A.draw()` and `A.tikz()`, the typed trace-event taxonomy and bounded recorder, and
+  the LaTeX→PDF (else self-contained no-JS HTML) worked-steps documents whose
+  dimensions are derived from the recorded ranks and cite through `bibliography()`.
 
 Where a chapter describes something whose full form is still to come, it says so inline.
