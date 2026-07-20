@@ -26,15 +26,15 @@ loosened):
       Parens removed, matching the documented workaround in this package's
       conftest.qci_rs.  (Grammar extension is Plan-06 territory.)
 
-  (2) qci xi = "i" (the intended Q(i) number-field case) is UNBUILDABLE via the
-      public relation surface.  Coefficients flow through parse_rational and are
-      stored as fractions.Fraction (relations.Relation.terms); the grammar has no
-      hook for field-specific literals, so 'i' parses as an (unknown) arrow name,
-      and no relation-derived Algebra can ever carry Q(i)-valued structure
-      constants in this phase.  The case is kept VISIBLE as an xfail-style skip
-      documenting the intended coverage and its Plan-06 blocker; it is NOT
-      silently dropped and NOT faked with a rational stand-in.  (Computing the
-      other qci cases over CC still exercises the exact-complex CC domain.)
+  (2) qci xi = "i" (the intended Q(i) number-field case) is NOW REACHABLE and the
+      former skip is LIFTED.  The stale premise ("Q(i) unreachable, rationals
+      only") no longer holds: the Plan-06 relation grammar parses 'i' exactly
+      (relations._exact_scalar yields a sympy Expr coefficient), and
+      CC.make_domain places entries containing i in sympy's exact Gaussian-
+      rationals domain QQ_I by flat base change.  So "y*x - i*x*y" builds and the
+      case runs over CC exactly in Q(i) = QQ_I -- no rational stand-in, no fake.
+      (A dedicated public field-spec quiverlab.fields.QQi pins the same QQ_I and
+      is exercised end-to-end in tests/fields/test_gaussian.py.)
 
   (3) qci xi = "-1".  The bare form "y*x - -1*x*y" is a double sign the grammar
       rejects ("malformed term ''").  Rewritten to the identical relation
@@ -54,7 +54,7 @@ loosened):
       non-monomial content is carried by the square (binomial a*b - c*d) and the
       qci (binomial y*x -/+ x*y).
 
-Net count: 4 (square) + 2 run + 1 skip (qci) + 2 (kx2) = 8 passed, 1 skipped.
+Net count: 4 (square) + 3 run (qci; skip lifted, note 2) + 2 (kx2) = 9 passed, 0 skipped.
 ===========================================================================
 """
 import pytest
@@ -80,8 +80,10 @@ def _kx2(field):
     return Q.algebra(relations=["x*x"], field=field)
 
 
-# Buildable quantum parameters (see deviation notes 2 and 3).
-_QCI_REL = {"2": "y*x - 2*x*y", "-1": "y*x + x*y"}
+# Buildable quantum parameters (see deviation notes 2 and 3).  xi="i" is the
+# Q(i) number-field case, now reachable: the grammar parses 'i' exactly and CC
+# yields the exact Gaussian-rationals domain QQ_I (see deviation note 2).
+_QCI_REL = {"2": "y*x - 2*x*y", "-1": "y*x + x*y", "i": "y*x - i*x*y"}
 
 
 @pytest.mark.parametrize("field", [CC, GF(2), GF(3), GF(5)])
@@ -93,10 +95,8 @@ def test_cs_equals_bar_square(field):
 
 @pytest.mark.parametrize("xi", ["2", "i", "-1"])
 def test_cs_equals_bar_qci(xi):
-    if xi == "i":                            # deviation (2): Q(i) unreachable, Plan-06
-        pytest.skip("Q(i) coefficients unreachable via the Plan-03 relation grammar "
-                    "(rationals only); number-field literals are Plan-06 territory")
     A = _qci(CC, _QCI_REL[xi])               # CC exact-complex domain exercised
+                                             # (xi="i" -> exact Q(i)=QQ_I; note 2)
     assert cs_homology_dims(A, 3).dims == hochschild_homology_dims(A, 3).dims
     assert cs_cohomology_dims(A, 3).dims == hochschild_cohomology_dims(A, 3).dims
 
