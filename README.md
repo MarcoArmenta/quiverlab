@@ -58,6 +58,19 @@ Non-monomial relations are completed with an exact noncommutative Gröbner
 non-admissible or infinite presentation fails loudly with `AdmissibilityError`
 or `NotFiniteDimensionalError`, never a hang.
 
+## Families and citations
+
+```python
+from quiverlab import NakayamaAlgebra, QuantumCI, families, bibliography
+
+A = NakayamaAlgebra([3, 2, 2])          # cyclic Nakayama, dim 7
+print(A.hochschild_cohomology(0))       # HH^0 = 1
+print(A.citations())                    # ('nakayama', 'assem_book', 'bar')
+
+print(families())                       # the whole v1 catalog with signatures
+print(bibliography(A.citations()))      # grouped, annotated references
+```
+
 ## Status
 
 Engine phase (Plans 01–02 delivered). On top of the foundations — monomial

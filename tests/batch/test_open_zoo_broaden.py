@@ -19,3 +19,6 @@ def test_open_zoo_to_specs_band_and_probe():
         assert s["builder"] == "reduction_system"
         assert s["N"] == depth_for_dim(9)
         assert s["max_term_dim"] == max_term_dim_for_dim(9)
+    # limit branch: cap after filtering -> exactly the band's first entry (bank parity, lines 62-64)
+    probe = open_zoo_to_specs(load_catalog(), min_dim=9, max_dim=9, limit=1)
+    assert len(probe) == 1 and probe[0] == specs[0]

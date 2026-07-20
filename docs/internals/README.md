@@ -53,6 +53,13 @@ by running the code.
   reduction rule, Buchberger–Mora completion, the finiteness certificate
   (2L−1 ≤ D plus the forbidden-word automaton), and how a general kQ/I becomes
   structure constants.
+<!-- MERGE NOTE (Plan 06): 09 (Chouhy–Solotar, Plan 04) and 10 (modules, Plan 05)
+     are reserved by the Plan-04 renumber proposal; Plan 06 files its chapter at 11.
+     If 09/10 land in a different order, keep this bullet and renumber the file. -->
+- **11 — Families and citations.** The v1 family catalogue (Nakayama through
+  trivial extension), the three construction routes (monomial / general /
+  structure-constant), the curated zoo, and the citation registry that stamps
+  every algorithm and family with the paper behind it.
 
 ## Honest coverage statement
 
@@ -69,8 +76,13 @@ on disk *now*:
 - The **Chouhy–Solotar closed-form resolution** (`resolutions_cs`) is referenced by the
   periodic backends but **excluded from this port**; it **arrives with Plan 04**. The
   `QuantumCIResolution` wrapper is therefore dormant until then.
-- The starter algebra **families** are deliberately minimal (`families/basic.py`); the
-  full catalogue, plus exact spectral-radius / Mahler-measure invariants, **arrive with
-  Plan 05**. Those modules will get their own chapters when they land.
+- The full algebra **family catalogue** (`families/`) and the **citation registry**
+  (`citations/`) are live (Chapter 11): Nakayama through trivial extension, the
+  curated zoo, and `bibliography()`. The exact spectral-radius / Mahler-measure
+  invariants and the modules layer still **arrive with Plan 05** and will get their
+  own chapter when they land.
+<!-- MERGE NOTE (Plan 06): this bullet supersedes the earlier "families are minimal"
+     coverage line; the catalogue landed in Plan 06. -->
+
 
 Where a chapter describes something whose full form is still to come, it says so inline.
