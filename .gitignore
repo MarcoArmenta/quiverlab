@@ -6,3 +6,4 @@ __pycache__/
 site/
 .cache/
 docs/tutorials/quiverlab_traces/
+paper/paper.bib

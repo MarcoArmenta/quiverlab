@@ -44,3 +44,10 @@ def test_docs_workflow_deploys_pages():
     assert "actions/deploy-pages@v5" in d
     assert "mkdocs build --strict" in d
     assert "pages: write" in d and "id-token: write" in d
+
+
+def test_paper_workflow_builds_pdf():
+    p = _read("paper.yml")
+    assert "openjournals/openjournals-draft-action@master" in p
+    assert "paper-path: paper/paper.md" in p
+    assert "cp src/quiverlab/citations/references.bib paper/paper.bib" in p   # packaged single-source bib
