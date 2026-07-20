@@ -325,6 +325,16 @@ class Algebra:
         from quiverlab.modules.ext import ext
         return ext(self, M, N, n)
 
+    def crosscheck(self, what="hochschild", *args, **kwargs):
+        """Independently recompute an invariant via the optional QPA backend and
+        compare (spec §5 c.12). Requires `pip install quiverlab[qpa]`; raises
+        QpaUnavailableError otherwise. Examples:
+            A.crosscheck("hochschild", 3)          # HH^0..HH^3 vs QPA enveloping route
+            A.crosscheck("module_ext", M, 4)       # Ext^0..Ext^4(M,M) vs QPA (self-Ext)
+        Returns a CrosscheckReport; call .assert_agree() to fail loudly on mismatch."""
+        from quiverlab.qpa.crosscheck import crosscheck as _cc
+        return _cc(self, what, *args, **kwargs)
+
     def global_dimension(self):
         """Global dimension: exact value or a labeled certified lower bound (spec §3.5)."""
         from quiverlab.modules.ext import global_dimension

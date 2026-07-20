@@ -33,3 +33,8 @@ class DepthLimitError(QuiverlabError):
 
 class CitationError(QuiverlabError):
     """A citation key is unknown, or the bibliography is inconsistent."""
+
+
+class QpaUnavailableError(QuiverlabError):
+    """The optional [qpa] GAP backend is not available (not installed, wrong
+    platform, or QPA failed to load). The pure-Python core does not need it."""
