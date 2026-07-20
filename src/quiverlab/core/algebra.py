@@ -193,57 +193,88 @@ class Algebra:
         return engine == "auto" and auto_cs and self._auto_cs_routes()
 
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
-                              auto_cs=False, trace=None):
+                              auto_cs=False, verbose=None, trace=None):
         """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
         bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise),
         'cs' (Chouhy-Solotar, any admissible presentation over any field). Set
         auto_cs=True to let engine='auto' route non-monomial admissible algebras to CS
-        (the default engine='auto' behaviour is unchanged). trace: an optional list the
-        CS path fills with resolution events (ignored by the other engines)."""
+        (the default engine='auto' behaviour is unchanged). verbose: per-call override
+        of quiverlab.verbose (None defers to it); when on, a recorder captures the
+        worked steps. trace: an explicit event sink (list or Trace) the engines fill
+        with resolution/rank/dispatch events; passing it is programmatic and does not
+        by itself request a file."""
+        import quiverlab
         from quiverlab.hochschild.bar import hochschild_cohomology_dims
         from quiverlab.hochschild.table import HHTable
+        from quiverlab.trace.events import Dispatch
+        from quiverlab.trace.recorder import Trace, resolve_verbose
 
         if engine not in ("auto", "bar", "fast", "cs"):
             raise QuiverlabError(f"unknown engine {engine!r}",
                                  hint="choose 'auto', 'bar', 'fast', or 'cs'")
+        want = resolve_verbose(verbose, quiverlab.verbose)
+        rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
             from quiverlab.resolutions_cs.homology import cs_cohomology_dims
-            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=trace)
-            table.references = self.citations()
-            return table
-        if self._use_fast_engine(engine):
+            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
+        elif self._use_fast_engine(engine):
             from quiverlab.engine.adapter import engine_cohomology_dims
-            dims = engine_cohomology_dims(self, top, max_cells=max_cells)
-            return HHTable(dims, "HH^", repr(self).splitlines()[0],
-                           engine="hanlab engine (F_p fast rank)",
-                           references=self.citations())
-        table = hochschild_cohomology_dims(self, top, max_cells=max_cells)
-        table.references = self.citations()
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="hanlab fast GF(p) rank",
+                    reason="domain is a prime field; the exact mod-p rank engine applies",
+                    n_relations=len(self.relations or ())))
+            dims = engine_cohomology_dims(self, top, max_cells=max_cells)   # plain list[int]
+            table = HHTable(dims, "HH^", repr(self).splitlines()[0],
+                            engine="hanlab engine (F_p fast rank)")         # WRAP the list
+        else:
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="normalized bar complex",
+                    reason="domain is not a prime field; the exact bar oracle is used",
+                    n_relations=len(self.relations or ())))
+            table = hochschild_cohomology_dims(self, top, max_cells=max_cells, trace=rec)
+        table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
+        # NOTE: the verbose worked-steps FILE is written in Task 11 (write_trace); here we only record/return.
         return table
 
     def hochschild_homology(self, top, max_cells=4_000_000, engine="auto",
-                            auto_cs=False, trace=None):
+                            auto_cs=False, verbose=None, trace=None):
         """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology
-        (including 'cs', auto_cs, and the CS-only trace list)."""
+        (including 'cs', auto_cs, verbose, and the trace event sink)."""
+        import quiverlab
         from quiverlab.hochschild.bar import hochschild_homology_dims
         from quiverlab.hochschild.table import HHTable
+        from quiverlab.trace.events import Dispatch
+        from quiverlab.trace.recorder import Trace, resolve_verbose
 
         if engine not in ("auto", "bar", "fast", "cs"):
             raise QuiverlabError(f"unknown engine {engine!r}",
                                  hint="choose 'auto', 'bar', 'fast', or 'cs'")
+        want = resolve_verbose(verbose, quiverlab.verbose)
+        rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
             from quiverlab.resolutions_cs.homology import cs_homology_dims
-            table = cs_homology_dims(self, top, max_cells=max_cells, trace=trace)
-            table.references = self.citations()
-            return table
-        if self._use_fast_engine(engine):
+            table = cs_homology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
+        elif self._use_fast_engine(engine):
             from quiverlab.engine.adapter import engine_homology_dims
-            dims = engine_homology_dims(self, top, max_cells=max_cells)
-            return HHTable(dims, "HH_", repr(self).splitlines()[0],
-                           engine="hanlab engine (F_p fast rank)",
-                           references=self.citations())
-        table = hochschild_homology_dims(self, top, max_cells=max_cells)
-        table.references = self.citations()
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="hanlab fast GF(p) rank",
+                    reason="domain is a prime field; the exact mod-p rank engine applies",
+                    n_relations=len(self.relations or ())))
+            dims = engine_homology_dims(self, top, max_cells=max_cells)   # plain list[int]
+            table = HHTable(dims, "HH_", repr(self).splitlines()[0],
+                            engine="hanlab engine (F_p fast rank)")       # WRAP the list
+        else:
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="normalized bar complex",
+                    reason="domain is not a prime field; the exact bar oracle is used",
+                    n_relations=len(self.relations or ())))
+            table = hochschild_homology_dims(self, top, max_cells=max_cells, trace=rec)
+        table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
+        # NOTE: the verbose worked-steps FILE is written in Task 11 (write_trace); here we only record/return.
         return table
 
     # -- modules --------------------------------------------------------------
