@@ -25,3 +25,9 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "fast: quick tests; run on every CI matrix cell (OS x Python)",
+    "deep: heavy engine/resolution/Chouhy-Solotar suites; one Linux cell (~19 min)",
+    "qpa: requires the [qpa] extra (passagemath-gap + QPA); the CI QPA job only",
+    "slow: individually long tests; opt-in via -m slow",
+]
