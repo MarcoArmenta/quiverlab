@@ -5,6 +5,8 @@ import itertools
 from quiverlab.errors import DepthLimitError
 from quiverlab.fields.linalg import rank
 from quiverlab.hochschild.table import HHTable
+from quiverlab.trace.events import ResolutionTerm
+from quiverlab.trace.recorder import rankstep
 
 _GUARD_HINT = ("the bar oracle is exponential; deeper engines (Bardzell, minimal, "
                "Chouhy-Solotar) arrive in later phases — raise max_cells only if you "
@@ -68,19 +70,24 @@ def coboundary_matrix(A, n, max_cells):
     return D, len(cols), len(rows)
 
 
-def hochschild_cohomology_dims(A, top, max_cells=4_000_000):
+def hochschild_cohomology_dims(A, top, max_cells=4_000_000, trace=None):
     B = A.unit_adapted()
     dom = B.domain
     m = B.dim
-    ranks = []  # rank of d^n for n = 0..top
-    for n in range(top + 1):
-        D, ncols, nrows = coboundary_matrix(B, n, max_cells)
-        ranks.append(rank(D, dom) if nrows and ncols else 0)
+    # dim HH^n = dim C^n - rank(d^n) - rank(d^{n-1}) (d^{-1} = 0); single pass carries
+    # the previous rank so only one differential matrix is live at a time. When
+    # trace is not None, record one ResolutionTerm + one RankStep per cochain degree.
+    prev = 0
     dims = []
     for n in range(top + 1):
+        D, ncols, nrows = coboundary_matrix(B, n, max_cells)
+        r = rank(D, dom) if nrows and ncols else 0
         cn = m * (m - 1) ** n
-        prev = ranks[n - 1] if n >= 1 else 0
-        dims.append(cn - ranks[n] - prev)
+        dims.append(cn - r - prev)
+        if trace is not None:
+            trace.append(ResolutionTerm(degree=n, n_generators=cn, collapsed_dim=cn))
+            trace.append(rankstep(n, "cochain", D, nrows, ncols, r, dom))
+        prev = r
     return HHTable(dims, "HH^", repr(A).splitlines()[0])
 
 
@@ -121,16 +128,23 @@ def boundary_matrix(A, n, max_cells):
     return D, len(cols), len(rows)
 
 
-def hochschild_homology_dims(A, top, max_cells=4_000_000):
+def hochschild_homology_dims(A, top, max_cells=4_000_000, trace=None):
     B = A.unit_adapted()
     dom = B.domain
     m = B.dim
     ranks = [0]  # rank of b_n, with b_0 = 0
     for n in range(1, top + 2):
         D, ncols, nrows = boundary_matrix(B, n, max_cells)
-        ranks.append(rank(D, dom) if nrows and ncols else 0)
+        r = rank(D, dom) if nrows and ncols else 0
+        # RankStep for the degree-n boundary b_n: C_n -> C_{n-1} (chain side). Emitted
+        # as each matrix is built, so only one differential is live at a time.
+        if trace is not None:
+            trace.append(rankstep(n, "chain", D, nrows, ncols, r, dom))
+        ranks.append(r)
     dims = []
     for n in range(top + 1):
         cn = m * (m - 1) ** n
         dims.append(cn - ranks[n] - ranks[n + 1])
+        if trace is not None:
+            trace.append(ResolutionTerm(degree=n, n_generators=cn, collapsed_dim=cn))
     return HHTable(dims, "HH_", repr(A).splitlines()[0])

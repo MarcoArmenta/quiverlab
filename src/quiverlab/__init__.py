@@ -2,6 +2,10 @@
 
 __version__ = "0.1.0.dev0"
 
+# Worked-steps traces are ON by default (spec D9). Flip per-call via
+# A.hochschild_cohomology(..., verbose=False) or globally via quiverlab.verbose.
+verbose = True
+
 from quiverlab.errors import (  # noqa: E402,F401
     QuiverlabError, ExactnessError, FieldError, RelationError,
     AdmissibilityError, NotFiniteDimensionalError, DepthLimitError,
@@ -22,6 +26,7 @@ from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 
 __all__ = [
     "__version__",
+    "verbose",
     "QuiverlabError", "ExactnessError", "FieldError", "RelationError",
     "AdmissibilityError", "NotFiniteDimensionalError", "DepthLimitError",
     "GF", "CC", "E", "QQi",

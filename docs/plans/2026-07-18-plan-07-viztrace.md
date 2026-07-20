@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A user draws any `kQ/I` (`A.draw()` → PNG/SVG, `A.tikz()` → paste-into-paper TikZ sharing the *same* computed coordinates), and every computation — by default (`quiverlab.verbose = True`, D9) — writes a human-readable worked-steps document (`./quiverlab_traces/<name>_<hash>.pdf`, HTML+MathJax when no LaTeX toolchain, plain text on demand) whose every claim is a golden-file-tested equality with the value the engine actually computed, closing with a **References** section drawn from Plan 06's citation registry.
+**Goal:** A user draws any `kQ/I` (`A.draw()` → PNG/SVG, `A.tikz()` → paste-into-paper TikZ sharing the *same* computed coordinates), and every computation — by default (`quiverlab.verbose = True`, D9) — writes a human-readable worked-steps document (`./quiverlab_traces/<name>_<hash>.pdf`, a self-contained no-JS HTML showing TeX source when no LaTeX toolchain, plain text on demand) whose every claim is a golden-file-tested equality with the value the engine actually computed, closing with a **References** section drawn from Plan 06's citation registry.
 
-**Architecture:** Two new pure-Python packages. `src/quiverlab/viz/` computes a layered layout in **exact integers/Fractions** (`layout()` → `LayoutData`), then renders it with matplotlib (`draw()`) or as TikZ (`tikz()`) from the identical coordinates — matplotlib becomes a **hard** dependency here (spec §9). `src/quiverlab/trace/` unifies the typed step-event taxonomy already scattered across `groebner.events` (shipped) and `resolutions_cs.trace` (Plan 04), adds the one genuinely new event `RankStep`, threads a `trace`/`verbose` recorder through the Hochschild engines, and renders the recorded events three ways (LaTeX→PDF, HTML+MathJax, text) with size-eliding rules and a bibliography pulled from Plan 06's `bibliography()` registry.
+**Architecture:** Two new pure-Python packages. `src/quiverlab/viz/` computes a layered layout in **exact integers/Fractions** (`layout()` → `LayoutData`), then renders it with matplotlib (`draw()`) or as TikZ (`tikz()`) from the identical coordinates — matplotlib becomes a **hard** dependency here (spec §9). `src/quiverlab/trace/` unifies the typed step-event taxonomy already scattered across `groebner.events` (shipped) and `resolutions_cs.trace` (Plan 04), adds the one genuinely new event `RankStep`, threads a `trace`/`verbose` recorder through the Hochschild engines, and renders the recorded events three ways (LaTeX→PDF as the primary math output, a no-JS HTML fallback showing TeX source, text) with size-eliding rules and a bibliography pulled from Plan 06's `bibliography()` registry.
 
 **Tech Stack:** Python ≥ 3.10; **matplotlib ≥ 3.7 (new hard dep)**; the Plan-01 stack (numpy, sympy); pytest. No floats anywhere (§ the AST-gate decision below): viz layout is computed in `int`/`fractions.Fraction` and handed to matplotlib, which coerces to float *inside the library, never in our source*. LaTeX compilation via `pdflatex`/`tectonic` if on PATH (optional, graceful HTML fallback).
 
@@ -22,7 +22,7 @@
 - **Commits:** conventional prefixes (`feat:`, `test:`, `docs:`, `chore:`); every commit message ends with the trailer line
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`.
 - **Left-to-right path composition** (Assem–Simson–Skowroński): `a*b` = "first `a`, then `b`", `target(a) == source(b)`; a word is an arrow-name tuple read left to right. Layout arrows point source→target.
-- **Frozen upstream interfaces consumed verbatim** (do not modify their signatures): `Domain` (`coerce/add/sub/neg/mul/inv/is_zero/eq/zero/one/characteristic/name`); `combinat.Quiver` (`.vertices` list, `.arrows` dict name→(src,tgt) insertion-ordered, `.source/.target/.word_source/.word_target/.compose_ok/.is_acyclic`); `combinat.Relation` (`.terms`, `.source`, `.target`, `.is_monomial`, `__repr__` → e.g. `a*b - c*d`); `core.Algebra` (`.domain/.dim/.T/.unit/.basis_labels/.is_unit_adapted`, **public** `.quiver`, **public** `.relations`, `.unit_adapted()`, `.multiply`); `hochschild.table.HHTable(dims, kind, algebra_repr, engine=...)` with `.dims/.kind/.top/.algebra_repr/.engine`; `hochschild.bar.coboundary_matrix/boundary_matrix/hochschild_cohomology_dims/hochschild_homology_dims`; `groebner.events.{Dispatch, ReductionStep}`; `resolutions_cs.trace.{AmbiguityEvent, ResolutionTerm, DifferentialEvent, LiftStep}` (Plan 04); `bibliography()` and `families()` (Plan 06). **This plan makes compatible extensions only:** `HHTable` gains a post-hoc `.references` attribute; `Algebra.hochschild_cohomology/homology` gain `verbose=None, trace=None` kwargs; `Algebra` gains `.draw()`/`.tikz()` methods and an appended (line-0-preserving) `__repr__`.
+- **Frozen upstream interfaces consumed verbatim** (do not modify their signatures): `Domain` (`coerce/add/sub/neg/mul/inv/is_zero/eq/zero/one/characteristic/name`); `combinat.Quiver` (`.vertices` list, `.arrows` dict name→(src,tgt) insertion-ordered, `.source/.target/.word_source/.word_target/.compose_ok/.is_acyclic`); `combinat.Relation` (`.terms`, `.source`, `.target`, `.is_monomial`, `__repr__` → e.g. `a*b - c*d`); `core.Algebra` (`.domain/.dim/.T/.unit/.basis_labels/.is_unit_adapted`, **public** `.quiver`, **public** `.relations`, `.unit_adapted()`, `.multiply`); `hochschild.table.HHTable(dims, kind, algebra_repr, engine=...)` with `.dims/.kind/.top/.algebra_repr/.engine`; `hochschild.bar.coboundary_matrix/boundary_matrix/hochschild_cohomology_dims/hochschild_homology_dims`; `groebner.events.{Dispatch, ReductionStep}`; `resolutions_cs.trace.{AmbiguityEvent, ResolutionTerm, DifferentialEvent, LiftStep}` (Plan 04); `bibliography()` and `families()` (Plan 06). **This plan makes compatible extensions only:** `HHTable` **already carries** a `.references` attribute and `Algebra.hochschild_cohomology/homology` **already take** `engine` (including `"cs"`), `auto_cs`, and `trace=None` — all merged (Plans 04–06), with the engine methods setting `.references = self.citations()` (family + engine keys). Plan 07 therefore **adds only** the `verbose=None` kwarg and **extends** trace-filling — today only the CS path fills `trace` — to the bar and fast engines as well. It does **not** modify the `.references = self.citations()` contract, and does **not** drop `engine="cs"`/`auto_cs`. `Algebra` also gains `.draw()`/`.tikz()` methods and an appended (line-0-preserving) `__repr__`.
 
 ---
 
@@ -142,6 +142,35 @@ def test_hhtable_shape():
     assert t.references == ("X",)
 
 
+# --- Hochschild method contract Plan 07 EXTENDS (must not regress) ------------
+def test_hochschild_method_contract_is_frozen():
+    """Plan 07 only ADDS `verbose=` to hochschild_cohomology/homology; the merged
+    `engine='cs'`/`auto_cs`/`trace` routing, the unknown-engine QuiverlabError, and
+    the `.references = self.citations()` (family+engine) union are contracts it must
+    PRESERVE (Tasks 8 & 11). Pinned here so a regression (dropping 'cs', raising
+    ValueError, clobbering .references engine-only, or un-wrapping the fast list)
+    fails at Task 1, not silently at Task 13."""
+    import inspect
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.core.algebra import Algebra
+    params = inspect.signature(Algebra.hochschild_cohomology).parameters
+    assert "auto_cs" in params and "trace" in params, params
+    # unknown engine raises QuiverlabError (NOT a bare ValueError; QuiverlabError is
+    # not a ValueError subclass), and its guidance still names 'cs' as a valid engine.
+    A = ql.truncated_polynomial(2, field=ql.CC)
+    with pytest.raises(QuiverlabError) as ei:
+        A.hochschild_cohomology(1, engine="definitely-not-an-engine")
+    assert "cs" in str(ei.value)
+    # .references is the family+engine union (== citations()), not engine-only: use a
+    # stamped catalog family (NakayamaAlgebra stamps ("nakayama","assem_book")).
+    N = ql.NakayamaAlgebra(n=3, l=2)
+    refs = N.hochschild_cohomology(2).references
+    assert refs == N.citations() and "nakayama" in refs and "bar" in refs
+    # the fast GF(p) path returns an HHTable whose `.engine` is a string (list wrapped).
+    fast = ql.truncated_polynomial(2, field=ql.GF(2)).hochschild_cohomology(2)
+    assert isinstance(fast.engine, str) and fast.engine
+
+
 # --- bar-complex entry points Plan 07 instruments ----------------------------
 def test_bar_entry_points_exist():
     from quiverlab.hochschild import bar
@@ -184,7 +213,8 @@ def test_bibliography_registry_has_needed_keys():
 def test_family_catalog_exists():
     assert hasattr(ql, "families"), "Plan 06 must export families() (catalog discovery)"
     cat = ql.families()
-    assert cat, "families() returned nothing"
+    # FamilyListing is always truthy; assert the catalog actually enumerates names.
+    assert cat.names(), "families() catalog is empty (FamilyListing.names() returned nothing)"
 
 
 # --- verbose flag is a plain module attribute Plan 07/09 toggle --------------
@@ -430,12 +460,14 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 def test_matplotlib_is_a_hard_dependency():
     import matplotlib  # must import without any extra
-    assert matplotlib is not None
+    assert hasattr(matplotlib, "__version__")
+    major, minor = (int(x) for x in matplotlib.__version__.split(".")[:2])
+    assert (major, minor) >= (3, 7)   # the pinned floor (pyproject: matplotlib>=3.7)
 
 
 def test_viz_package_imports():
     import quiverlab.viz as viz
-    assert viz is not None
+    assert hasattr(viz, "__all__")   # the package exposes its public surface
 ```
 
 `tests/core/test_repr_polish.py`:
@@ -1347,14 +1379,14 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Files:**
 - Modify: `src/quiverlab/hochschild/bar.py` (emit `ResolutionTerm` + `RankStep` per degree; add `trace=None`)
-- Modify: `src/quiverlab/core/algebra.py` (`hochschild_cohomology`/`hochschild_homology` gain `verbose=None, trace=None`; emit the engine-choice `Dispatch`; set `.references = ()` for now — Task 11 fills it; **no file writing yet**)
+- Modify: `src/quiverlab/core/algebra.py` (`hochschild_cohomology`/`hochschild_homology` gain **only** `verbose=None` — `engine` incl. `"cs"`, `auto_cs`, and `trace` are ALREADY merged and are KEPT; emit the engine-choice `Dispatch` on the bar/fast paths; **preserve** the `_route_to_cs` CS branch, the `QuiverlabError` unknown-engine guard, and `.references = self.citations()`; **no file writing yet** — Task 11 wires `write_trace`)
 - Create: `tests/trace/test_emit.py`
 
 **Interfaces:**
 - Consumes: `Trace`, `rankstep`, `resolve_verbose`, `ResolutionTerm`, `Dispatch`, `quiverlab.verbose`.
 - Produces:
   - `hochschild_cohomology_dims(A, top, max_cells=..., trace=None)` / `hochschild_homology_dims(A, top, max_cells=..., trace=None)` — when `trace is not None`, record one `ResolutionTerm(degree=n, n_generators=cn, collapsed_dim=cn)` and one `RankStep` per degree (side `"cochain"`/`"chain"`).
-  - `Algebra.hochschild_cohomology(self, top, max_cells=..., engine="auto", verbose=None, trace=None)` (and `_homology` mirror): resolve verbose, build/receive a recorder, record the engine-choice `Dispatch`, run the engine with `trace=rec`, return the `HHTable`. (Writing the PDF is Task 10; setting real `.references` is Task 11.)
+  - `Algebra.hochschild_cohomology(self, top, max_cells=..., engine="auto", auto_cs=False, verbose=None, trace=None)` (and `_homology` mirror): KEEP the merged `("auto","bar","fast","cs")` `QuiverlabError` guard, the `_route_to_cs`/`_use_fast_engine` routing, and `.references = self.citations()`; ADD `verbose` resolution, build/receive a recorder, record the engine-choice `Dispatch` on the bar/fast paths, thread `trace=rec` into the bar/fast/CS engines, return the `HHTable`. (Writing the file is Task 11; `.references` stays `self.citations()`.)
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1455,46 +1487,54 @@ def hochschild_cohomology_dims(A, top, max_cells=4_000_000, trace=None):
 
 Mirror in `hochschild_homology_dims` (side `"chain"`, `boundary_matrix`, its existing `ranks=[0]`/dim arithmetic preserved; emit `ResolutionTerm(degree=n, n_generators=cn, collapsed_dim=cn)` and `trace.append(rankstep(n, "chain", D, ncols, nrows, r, dom))` inside the loop).
 
-In `src/quiverlab/core/algebra.py`, replace the bodies of `hochschild_cohomology` and `hochschild_homology`. Cohomology:
+In `src/quiverlab/core/algebra.py`, **start from the CURRENT merged bodies** of `hochschild_cohomology`/`hochschild_homology` (which already route `engine="cs"`/`auto_cs` to Chouhy–Solotar, wrap the fast `engine_cohomology_dims` `list[int]` in an `HHTable`, and set `.references = self.citations()`) and **add only** `verbose=None` plus engine-side trace recording. Do **not** drop the `_route_to_cs` CS branch, the `QuiverlabError` unknown-engine guard, the `auto_cs` kwarg, or the `self.citations()` references — all merged. Cohomology becomes:
 
 ```python
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
-                              verbose=None, trace=None):
+                              auto_cs=False, verbose=None, trace=None):
         import quiverlab
+        from quiverlab.hochschild.bar import hochschild_cohomology_dims
+        from quiverlab.hochschild.table import HHTable
         from quiverlab.trace.events import Dispatch
         from quiverlab.trace.recorder import Trace, resolve_verbose
-        if engine not in ("auto", "bar", "fast"):
-            raise ValueError(f"engine must be 'auto', 'bar', or 'fast'; got {engine!r}")
+        if engine not in ("auto", "bar", "fast", "cs"):
+            raise QuiverlabError(f"unknown engine {engine!r}",
+                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
         want = resolve_verbose(verbose, quiverlab.verbose)
         rec = trace if trace is not None else (Trace() if want else None)
-        use_fast = self._use_fast_engine(engine)
-        engine_name = "hanlab fast GF(p) rank" if use_fast else "normalized bar complex"
-        if rec is not None:
-            rec.append(Dispatch(
-                route=engine_name,
-                reason=("domain is a prime field; the exact mod-p rank engine applies"
-                        if use_fast else
-                        "domain is not a prime field; the exact bar oracle is used"),
-                n_relations=len(self.relations or ())))
-        if use_fast:
+        if self._route_to_cs(engine, auto_cs):
+            from quiverlab.resolutions_cs.homology import cs_cohomology_dims
+            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
+        elif self._use_fast_engine(engine):
             from quiverlab.engine.adapter import engine_cohomology_dims
-            table = engine_cohomology_dims(self, top, max_cells)   # fast path: Dispatch only
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="hanlab fast GF(p) rank",
+                    reason="domain is a prime field; the exact mod-p rank engine applies",
+                    n_relations=len(self.relations or ())))
+            dims = engine_cohomology_dims(self, top, max_cells=max_cells)   # plain list[int]
+            table = HHTable(dims, "HH^", repr(self).splitlines()[0],
+                            engine="hanlab engine (F_p fast rank)")         # WRAP the list
         else:
-            from quiverlab.hochschild.bar import hochschild_cohomology_dims
-            table = hochschild_cohomology_dims(self, top, max_cells, trace=rec)
-        table.references = ()  # replaced by references_for(rec) in Task 11
-        # NOTE: PDF/HTML writing is wired in Task 10/11; here we only record/return.
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="normalized bar complex",
+                    reason="domain is not a prime field; the exact bar oracle is used",
+                    n_relations=len(self.relations or ())))
+            table = hochschild_cohomology_dims(self, top, max_cells=max_cells, trace=rec)
+        table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
+        # NOTE: the verbose worked-steps FILE is written in Task 11 (write_trace); here we only record/return.
         return table
 ```
 
-`hochschild_homology` mirrors this exactly: its own `engine`/`_use_fast_engine` branch, `engine_name`/`Dispatch` recorded identically, the fast branch calls `engine.adapter.engine_homology_dims(self, top, max_cells)` (no `trace`), the exact branch calls `hochschild.bar.hochschild_homology_dims(self, top, max_cells, trace=rec)`, `table.references = ()`, `return table`.
+`hochschild_homology` mirrors this exactly with `HH_`/`hochschild_homology_dims`/`cs_homology_dims`/`engine_homology_dims`: the same `("auto","bar","fast","cs")` guard raising `QuiverlabError`; the same `_route_to_cs` CS branch (`cs_homology_dims(self, top, max_cells=max_cells, trace=rec)`); the fast branch recording the fast `Dispatch` then wrapping `engine_homology_dims(self, top, max_cells=max_cells)` in `HHTable(dims, "HH_", repr(self).splitlines()[0], engine="hanlab engine (F_p fast rank)")`; the bar branch recording the bar `Dispatch` and calling `hochschild_homology_dims(self, top, max_cells=max_cells, trace=rec)`; then `table.references = self.citations()` and `return table`.
 
 **Fast path is Dispatch-only, on purpose.** The `engine.adapter` fast GF(p) engine is left UNCHANGED (no new `trace=` kwarg): it works over several primes at once and surfaces no single exact matrix, so recording a per-degree matrix there would be dishonest. The engine-choice `Dispatch` (recorded above, in `algebra.py`) is enough for `table.references` and a short prime-field trace; the *rich* worked example (terms + matrices + ranks) is the exact bar/CS path, which is what the golden fixture (F5) and every worked-steps test exercise.
 
 - [ ] **Step 4: Run the focused suite**
 
-Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 /Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pytest tests/trace/test_emit.py tests/hochschild tests/test_no_floats.py -q`
-Expected: pass (bar path emits terms + ranks `[0,1,0]`, matrix for `d^1` = `[["0","0"],["2","0"]]`, dims `[2,1,1]`; prime-field path routes fast; `trace=[]` writes no file; existing hochschild tests unaffected).
+Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 /Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pytest tests/trace/test_emit.py tests/hochschild tests/resolutions_cs/test_dispatch.py tests/engine/test_adapter_dispatch.py tests/test_no_floats.py -q`
+Expected: pass (bar path emits terms + ranks `[0,1,0]`, matrix for `d^1` = `[["0","0"],["2","0"]]`, dims `[2,1,1]`; prime-field path routes fast; `trace=[]` writes no file; existing hochschild tests unaffected). The added `tests/resolutions_cs/test_dispatch.py` and `tests/engine/test_adapter_dispatch.py` confirm the PRESERVED merged contracts in-task — `engine="cs"`/`auto_cs` CS routing, the unknown-engine `QuiverlabError`, and the fast-engine HHTable wrap — instead of only at Task 13.
 
 - [ ] **Step 5: Commit**
 
@@ -1737,7 +1777,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 10: LaTeX→PDF + HTML+MathJax renderers, renderer selection, output path, printed one-liner
+### Task 10: LaTeX→PDF (primary) + no-JS HTML fallback renderers, renderer selection, output path, printed one-liner
 
 **Files:**
 - Create: `src/quiverlab/trace/render_latex.py`, `src/quiverlab/trace/render_html.py`, `src/quiverlab/trace/writer.py`, `tests/trace/test_writer.py`
@@ -1746,7 +1786,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 - Consumes: `render_text.derive_dims`, all events, `Trace`.
 - Produces:
   - `render_latex(events, title="", references=()) -> str` (standalone `article`; matrices as `pmatrix`; References as `thebibliography`).
-  - `render_html(events, title="", references=()) -> str` (MathJax `<script>` CDN; matrices as `\begin{pmatrix}`; References as an ordered list).
+  - `render_html(events, title="", references=()) -> str` — **NO JavaScript, NO external resource** (Marco's decision): a self-contained, offline `.html` whose formulas are shown as **plain TeX source** (matrices as `\begin{pmatrix}` text inside `<pre>`/`<code>`, NOT typeset); References as an ordered list. LaTeX→PDF is the primary math output; this HTML is the no-toolchain fallback.
   - `have_latex() -> str | None` (`"pdflatex"`/`"tectonic"` via `shutil.which`, else `None`).
   - `write_trace(events, table, algebra, kind, top, references=(), out_dir=None) -> str` — chooses PDF (compile LaTeX with the found engine) else HTML (loud one-line explanation), writes to `<out_dir or ./quiverlab_traces>/<kind>_<hash>.<ext>`, **prints** the spec §3.8 one-liner, returns the path.
 
@@ -1788,10 +1828,15 @@ def test_latex_has_matrices_dims_and_bibliography():
     assert src.startswith(r"\documentclass")
 
 
-def test_html_has_mathjax_and_dims():
+def test_html_is_self_contained_no_js_tex_source():
     A, ev, table = _events()
     html = render_html(ev, title="HH", references=REFS)
-    assert "MathJax" in html and "<html" in html.lower()
+    assert "<html" in html.lower()
+    # Marco's decision: the HTML fallback is JavaScript-free and self-contained.
+    assert "<script" not in html.lower() and "mathjax" not in html.lower()
+    assert "polyfill.io" not in html and "jsdelivr" not in html
+    # math is shown as readable TeX source (not typeset)
+    assert r"\begin{pmatrix}" in html and r"\operatorname{rank}" in html
     assert "HH" in html and "Refkey2020" in html
 
 
@@ -1924,14 +1969,19 @@ def _tex_escape(s):
 `src/quiverlab/trace/render_html.py`:
 
 ```python
-"""HTML+MathJax worked-steps renderer (spec §3.8 fallback when no LaTeX toolchain).
-A standalone local HTML file (MathJax from a CDN <script>); matrices in \\pmatrix."""
+"""HTML worked-steps renderer -- NO JavaScript, NO external resources (Marco's
+decision). LaTeX->PDF (pdflatex/tectonic) is the PRIMARY, typeset math output;
+this HTML is the self-contained, offline fallback for when no LaTeX toolchain is on
+PATH. Math is shown as readable *TeX source* (inside <pre><code>), NOT typeset --
+there is no MathJax, no CDN <script>, and no external <link>, so the file renders
+identically in any browser with the network off. Float-free: all numbers come from
+event fields (ints/strings)."""
 from quiverlab.trace.events import Dispatch, ResolutionTerm, RankStep
 from quiverlab.trace.render_text import derive_dims
 
-_MATHJAX = ("<script src=\"https://polyfill.io/v3/polyfill.min.js?features=es6\"></script>"
-            "<script id=\"MathJax-script\" async "
-            "src=\"https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js\"></script>")
+# Inline-only styling (no external stylesheet); keeps the file fully self-contained.
+_STYLE = ("<style>body{font-family:sans-serif}"
+          "pre{background:#f4f4f4;padding:6px;overflow-x:auto}</style>")
 
 
 def _pmatrix(rs):
@@ -1942,11 +1992,18 @@ def _pmatrix(rs):
     return r"\begin{pmatrix} %s \end{pmatrix}" % rows
 
 
+def _math(expr):
+    """Show the TeX SOURCE as text (no MathJax); escape HTML metachars only."""
+    return "<pre><code>%s</code></pre>" % _esc(expr)
+
+
 def render_html(events, title="", references=()):
     events = list(events)
-    body = ["<!doctype html><html><head><meta charset='utf-8'>", _MATHJAX,
+    body = ["<!doctype html><html><head><meta charset='utf-8'>", _STYLE,
             "<title>Worked steps: %s</title></head><body>" % _esc(title),
-            "<h1>Worked steps: %s</h1>" % _esc(title)]
+            "<h1>Worked steps: %s</h1>" % _esc(title),
+            "<p><i>Math is shown as TeX source (no JavaScript); compile the PDF with "
+            "pdflatex/tectonic for typeset output.</i></p>"]
     for e in events:
         if isinstance(e, Dispatch):
             body.append("<p><b>Chosen resolution:</b> %s<br><i>%s</i><br>"
@@ -1960,14 +2017,14 @@ def render_html(events, title="", references=()):
         if n in ranks:
             rs = ranks[n]
             sym = "d^{%d}" % n if rs.side == "cochain" else "b_{%d}" % n
-            body.append(r"<p>\( %s = %s \qquad \operatorname{rank} = %d \)</p>"
-                        % (sym, _pmatrix(rs), rs.rank))
+            body.append(_math(r"%s = %s \qquad \operatorname{rank} = %d"
+                              % (sym, _pmatrix(rs), rs.rank)))
     dims = derive_dims(events)
     if dims:
         kind = "HH^" if any(getattr(e, "side", "") == "cochain"
                             for e in events if isinstance(e, RankStep)) else "HH_"
         cells = ",\\quad ".join(r"%s{%d} = %d" % (kind, i, d) for i, d in enumerate(dims))
-        body.append(r"<h2>Result</h2><p>\( %s \)</p>" % cells)
+        body.append("<h2>Result</h2>" + _math(cells))
     if references:
         body.append("<h2>References</h2><ol>")
         for key, entry in references:
@@ -1987,8 +2044,9 @@ def _esc(s):
 """Renderer selection + output-path contract + the printed one-liner (spec §3.8).
 
 Selection: pdflatex or tectonic on PATH -> compile LaTeX to PDF; otherwise (or if a
-found toolchain fails to compile) write HTML+MathJax and print a LOUD, HONEST
-one-liner distinguishing "no toolchain found" from "compilation failed". Output:
+found toolchain fails to compile) write the self-contained no-JS HTML (TeX source)
+and print a LOUD, HONEST one-liner distinguishing "no toolchain found" from
+"compilation failed". Output:
 ./quiverlab_traces/HHc_<hash>.<ext> (cohomology) / HHh_<hash>.<ext> (homology)
 (Plan 09 collects the newest *.pdf, else *.html, from this directory -- the glob is
 extension-based, so the safe stem does not affect it)."""
@@ -2054,7 +2112,7 @@ def write_trace(events, table, algebra, kind, top, references=(), out_dir=None):
             html_note = "LaTeX compilation failed (%s); wrote HTML fallback" % engine
     html = out / (stem + ".html")
     html.write_text(render_html(events, title=title, references=references))
-    print("Worked steps: %s (HTML+MathJax; %s)" % (_rel(html), html_note))
+    print("Worked steps: %s (HTML, no JavaScript; %s)" % (_rel(html), html_note))
     return str(html)
 
 
@@ -2068,7 +2126,7 @@ def _rel(p):
 - [ ] **Step 4: Run the focused suite**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 /Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/python -m pytest tests/trace/test_writer.py tests/test_no_floats.py -q`
-Expected: pass (LaTeX has pmatrix + dims + thebibliography; HTML has MathJax; selection prefers PDF when `have_latex` is stubbed, falls back to HTML with the loud two-fact message; filename `HH_<hash>.<ext>` in the chosen dir).
+Expected: pass (LaTeX has pmatrix + dims + thebibliography; HTML has NO `<script>`/MathJax and shows the TeX source; selection prefers PDF when `have_latex` is stubbed, falls back to HTML with the loud two-fact message; filename `HH_<hash>.<ext>` in the chosen dir).
 
 - [ ] **Step 5: Commit**
 
@@ -2085,7 +2143,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 
 **Files:**
 - Create: `src/quiverlab/trace/provenance.py`, `tests/trace/test_references.py`
-- Modify: `src/quiverlab/core/algebra.py` (set real `.references`; call `write_trace` when verbose)
+- Modify: `src/quiverlab/core/algebra.py` (call `write_trace` when verbose; **do NOT reassign `.references`** — it stays `self.citations()` as set in Task 8)
 
 **Interfaces:**
 - Consumes: `quiverlab.bibliography()` (Plan 06 registry), the recorded `Dispatch`/`LiftStep` events.
@@ -2093,7 +2151,7 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
   - `ENGINE_REFERENCES: dict[str, tuple[str,...]]` mapping an engine `route` to Plan 06's lowercase REGISTRY keys (`"normalized bar complex" -> ("bar",)`, `"hanlab fast GF(p) rank" -> ("bar",)`, `"bardzell" -> ("bardzell",)`, `"chouhy-solotar" -> ("chouhy_solotar",)`).
   - `references_for(events) -> tuple[str,...]` — REGISTRY keys implied by the trace's `Dispatch` (engine); operation keys (cup/bracket) are `()` until the operation trace lands. Deduplicated, stable order. This is what a result's `.references` stores.
   - `resolve_references(keys) -> tuple[tuple[str,str],...]` — `(bibtex_key, formatted)` pairs read from Plan 06's `bibliography()` by iterating it into a `{entry.key: entry}` map (no subscripting; `.keys` is a tuple, iteration yields entry views with `.key/.formatted/.bibtex_key`); a registry key absent from the bibliography raises a loud `KeyError` (the Task-1 gate keeps this from firing).
-  - `Algebra.hochschild_cohomology/homology`: set `table.references = references_for(rec)` (REGISTRY keys, e.g. `("bar",)`) and, when verbose and no explicit `trace=`, call `write_trace(..., references=resolve_references(table.references))`.
+  - `Algebra.hochschild_cohomology/homology`: leave `table.references = self.citations()` (Task 8; the merged family+engine union) **unchanged** — do NOT overwrite it engine-only. When verbose and no explicit `trace=`, call `write_trace(..., references=resolve_references(references_for(rec)))`: the References SECTION is resolved from the trace's ENGINE provenance keys (it MAY additionally list the family keys already on `table.references`).
 
 - [ ] **Step 1: Write the failing test**
 
@@ -2132,10 +2190,12 @@ def test_resolve_unknown_key_raises_loudly():
         resolve_references(("not_a_registry_key",))
 
 
-def test_result_object_carries_registry_references():
+def test_result_object_carries_the_citations_union():
     A = truncated_polynomial(2, field=CC)
     table = A.hochschild_cohomology(2, trace=Trace())
-    assert table.references == ("bar",)                   # registry keys, resolved at render time
+    # .references is the merged family+engine union (== A.citations()); this no-family
+    # fixture makes that exactly ("bar",). Task 11 must NOT overwrite it engine-only.
+    assert table.references == A.citations() == ("bar",)
 
 
 def test_verbose_run_writes_html_with_references(tmp_path, monkeypatch):
@@ -2231,19 +2291,20 @@ def resolve_references(keys):
     return tuple(pairs)
 ```
 
-In `src/quiverlab/core/algebra.py`, finish the `hochschild_cohomology` body from Task 8 by replacing `table.references = ()  # populated in Task 11` and the trailing `return table` with:
+In `src/quiverlab/core/algebra.py`, finish the `hochschild_cohomology` body from Task 8. Task 8 already set `table.references = self.citations()` (the FROZEN family+engine union) and left a `# NOTE: the verbose worked-steps FILE is written in Task 11` placeholder before `return table`. Task 11 **must NOT reassign `table.references`** — the merged `.references = self.citations()` contract is pinned by `tests/citations/test_result_references.py` and `tests/families/test_acceptance.py`, and overwriting it engine-only regresses them. Replace **only that NOTE line** with the verbose write, whose References SECTION is resolved from the ENGINE provenance keys of the trace (not from, and without changing, `table.references`):
 
 ```python
-        from quiverlab.trace.provenance import references_for, resolve_references
-        table.references = references_for(rec) if rec is not None else ()
         if want and trace is None and rec is not None:
+            from quiverlab.trace.provenance import references_for, resolve_references
             from quiverlab.trace.writer import write_trace
+            # References SECTION = engine keys implied by the trace's Dispatch, resolved
+            # through bibliography(); table.references stays self.citations() (untouched).
             write_trace(list(rec), table, algebra=self, kind="HH^", top=top,
-                        references=resolve_references(table.references))
+                        references=resolve_references(references_for(rec)))
         return table
 ```
 
-Mirror the same tail in `hochschild_homology` (with `kind="HH_"`).
+Mirror the same tail in `hochschild_homology` (with `kind="HH_"`); it too must leave `table.references = self.citations()` untouched.
 
 - [ ] **Step 4: Run the focused suite**
 
@@ -2397,7 +2458,7 @@ def test_end_to_end_draw_tikz_and_worked_steps(tmp_path, monkeypatch):
     finally:
         quiverlab.verbose = False
     assert table.dims == [2, 1, 1]
-    assert table.references == ("bar",)              # registry keys attached to the result
+    assert table.references == A.citations() == ("bar",)   # merged citations union (no family stamp here)
     out = tmp_path / "quiverlab_traces"
     files = list(out.glob("HHc_*"))                  # .pdf or .html per toolchain
     assert files, "verbose run must write a worked-steps file (D9)"
@@ -2475,16 +2536,18 @@ computation cannot blow up memory.
 4. **Rendering** (`trace.writer.write_trace`). If `pdflatex` or `tectonic` is on
    `PATH`, compile the LaTeX rendering to `./quiverlab_traces/HHc_<hash>.pdf` and
    print `Worked steps: quiverlab_traces/HHc_<hash>.pdf (N pp)`; otherwise write
-   the HTML+MathJax rendering and print a loud one-line explanation (no toolchain
-   found, or — if one was found — that compilation failed). The resulting
+   the self-contained, JavaScript-free HTML rendering (math as TeX source) and print
+   a loud one-line explanation (no toolchain found, or — if one was found — that
+   compilation failed). The resulting
    dimensions in every rendering are *derived from the recorded ranks*
    (`HH^n = dim C^n − rank_n − rank_{n-1}`), so a golden test can assert the
    document's claims equal the engine's own `.dims`.
 5. **References.** The engine's `route` maps (via `trace.provenance`) to Plan 06
    REGISTRY keys (e.g. `bar`); those resolve through Plan 06's `bibliography()`
    (`.keys` tuple + entry-view iteration exposing `.key/.formatted/.bibtex_key`)
-   into `(bibtex_key, formatted)` lines in the document's **References** section,
-   and the registry keys are attached to the result as `table.references`.
+   into `(bibtex_key, formatted)` lines in the document's **References** section.
+   The result itself carries the merged `table.references = self.citations()` (the
+   family + engine key union), which Plan 07 does not modify.
 
 ## A worked micro-example — HH*(k[x]/(x²)) over ℂ
 
@@ -2543,7 +2606,8 @@ Worked-steps documents are on by default (`quiverlab.verbose = True`); every cla
 in them is a golden-file-tested equality with the value the engine computed. Turn
 them off per call (`A.hochschild_cohomology(2, verbose=False)`) or globally
 (`quiverlab.verbose = False`). PDFs need `pdflatex` or `tectonic` on `PATH`;
-otherwise an HTML+MathJax document is written with a one-line note.
+otherwise a self-contained, JavaScript-free HTML document (math shown as TeX source)
+is written with a one-line note.
 ```
 
 - [ ] **Step 5: Run the full suite ONCE in the background, await, then commit**
@@ -2567,13 +2631,13 @@ Plans 08 (release/docs) and 09 (webapp) consume the following **verbatim** (do n
 
 **Trace output-path contract.** Verbose computations write **one** worked-steps file to `./quiverlab_traces/` (relative to the current working directory), named `<stem>_<hash>.<ext>` where `stem` is a filesystem-safe token — `HHc` for cohomology, `HHh` for homology (the caret-bearing `HH^`/`HH_` kinds are mapped to these safe stems; §3.8's `HH_A_<hash>` is illustrative) — `hash` is a 4-hex short hash, and `ext` is `pdf` when a LaTeX toolchain (`pdflatex`/`tectonic`) is on `PATH`, otherwise `html`. Exactly one file per computation; `.pdf` is preferred, `.html` is the fallback. Plan 09's `_collect_trace` globs `quiverlab_traces/*.pdf` (then `*.html`) and copies the **newest by mtime** — so the directory, the extension precedence (pdf ≻ html), and "newest is the just-computed one" are the load-bearing guarantees; the exact filename (and its safe stem) is not. The child process must run with `cwd` = the job's artifact dir (Plan 09 already `os.chdir`es), so the directory lands where the collector looks.
 
-**Printed one-liner (spec §3.8).** PDF: `Worked steps: quiverlab_traces/HHc_<hash>.pdf (N pp)`. HTML fallback, **no toolchain**: `Worked steps: quiverlab_traces/HHc_<hash>.html (HTML+MathJax; no LaTeX toolchain found -- install pdflatex or tectonic for a PDF)`. HTML fallback, **compile failed** (toolchain present but errored): `Worked steps: quiverlab_traces/HHc_<hash>.html (HTML+MathJax; LaTeX compilation failed (<engine>); wrote HTML fallback)`. Always the loud, honest explanation — never "no toolchain" when one was found.
+**Printed one-liner (spec §3.8).** PDF: `Worked steps: quiverlab_traces/HHc_<hash>.pdf (N pp)`. HTML fallback, **no toolchain**: `Worked steps: quiverlab_traces/HHc_<hash>.html (HTML, no JavaScript; no LaTeX toolchain found -- install pdflatex or tectonic for a PDF)`. HTML fallback, **compile failed** (toolchain present but errored): `Worked steps: quiverlab_traces/HHc_<hash>.html (HTML, no JavaScript; LaTeX compilation failed (<engine>); wrote HTML fallback)`. Always the loud, honest explanation — never "no toolchain" when one was found. The HTML is self-contained and JavaScript-free (math as TeX source); LaTeX→PDF is the primary typeset output.
 
 **Verbose flag.** `quiverlab.verbose: bool` (module attribute, default `True`, D9). Plan 09 sets it per request (`ql.verbose = bool(req.artifacts.pdf)`) and restores it. Per-call `verbose=` on `hochschild_cohomology`/`hochschild_homology` overrides the global; passing an explicit `trace=` list populates events **without** writing a file.
 
 **Event taxonomy (single import surface `quiverlab.trace.events`).** Seven plain dataclasses: `Dispatch(route, reason, n_relations)`, `ReductionStep(word, rule_lead, before, after)`, `AmbiguityEvent(degree, chain_words)`, `ResolutionTerm(degree, n_generators, collapsed_dim)`, `DifferentialEvent(degree, chain, terms)`, `LiftStep(degree, kind, detail)`, `RankStep(degree, side, nrows, ncols, rank, field, matrix, elided, note)`. The first six are re-exported from their home modules (`groebner.events`, `resolutions_cs.trace`); `RankStep` is defined in `trace.events`. `Dispatch` labels both the construction route (`monomial`/`groebner`) and the engine choice (`route` = engine name).
 
-**Renderer selection.** `pdflatex` or `tectonic` on `PATH` ⇒ LaTeX→PDF; else HTML+MathJax (loud note). `quiverlab.trace.render_text`/`render_latex`/`render_html` each take `(events, title=, references=)`; `derive_dims(events)` is the binding computation shared by all three (resulting dims are always derived from the recorded ranks, never echoed).
+**Renderer selection.** `pdflatex` or `tectonic` on `PATH` ⇒ LaTeX→PDF (primary math output); else a self-contained, JavaScript-free HTML showing TeX source (loud note). `quiverlab.trace.render_text`/`render_latex`/`render_html` each take `(events, title=, references=)`; `derive_dims(events)` is the binding computation shared by all three (resulting dims are always derived from the recorded ranks, never echoed).
 
 **Result references.** `HHTable` carries a post-hoc `.references: tuple[str,...]` of Plan 06 **registry** keys (lowercase, e.g. `("bar",)`); `quiverlab.trace.provenance.resolve_references` turns them into `(bibtex_key, formatted)` pairs by **iterating** Plan 06's `bibliography()` — a `Bibliography` with a `.keys` **tuple** and entry-view iteration exposing `.key/.formatted/.bibtex_key` (no `.keys()` method, no subscripting) — which the renderers list in the References section. The engine→registry-key map is `quiverlab.trace.provenance.ENGINE_REFERENCES`.
 

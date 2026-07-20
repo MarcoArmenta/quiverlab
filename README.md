@@ -147,4 +147,27 @@ machinery of a later phase (see `docs/plans/ROADMAP.md`).
 Coming next (see `docs/plans/ROADMAP.md`): full operation transport, drawing and
 TikZ export, worked-steps PDFs, and an optional QPA backend.
 
+## Draw it, and read the worked steps
+
+```python
+from quiverlab import Quiver, CC
+
+Q = Quiver(vertices=[1, 2, 3, 4],
+           arrows={"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)})
+A = Q.algebra(relations=["a*b - c*d"], field=CC)
+
+A.draw(file="square.svg")     # matplotlib PNG/SVG: loops, parallels, relations below
+print(A.tikz())               # same layout, paste-into-paper TikZ
+
+A.hochschild_cohomology(2)    # writes quiverlab_traces/HHc_<hash>.pdf (or .html) and
+                              # prints: Worked steps: quiverlab_traces/HHc_3f2a.pdf (N pp)
+```
+
+Worked-steps documents are on by default (`quiverlab.verbose = True`); every claim
+in them is a golden-file-tested equality with the value the engine computed. Turn
+them off per call (`A.hochschild_cohomology(2, verbose=False)`) or globally
+(`quiverlab.verbose = False`). PDFs need `pdflatex` or `tectonic` on `PATH`;
+otherwise a self-contained, JavaScript-free HTML document (math shown as TeX source)
+is written with a one-line note.
+
 MIT © 2026 Marco Armenta
