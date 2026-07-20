@@ -216,6 +216,11 @@ class Algebra:
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
             from quiverlab.resolutions_cs.homology import cs_cohomology_dims
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="chouhy-solotar",
+                    reason="general Chouhy-Solotar resolution over the admissible presentation",
+                    n_relations=len(self.relations or ())))
             table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
         elif self._use_fast_engine(engine):
             from quiverlab.engine.adapter import engine_cohomology_dims
@@ -235,7 +240,13 @@ class Algebra:
                     n_relations=len(self.relations or ())))
             table = hochschild_cohomology_dims(self, top, max_cells=max_cells, trace=rec)
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
-        # NOTE: the verbose worked-steps FILE is written in Task 11 (write_trace); here we only record/return.
+        if want and trace is None and rec is not None:
+            from quiverlab.trace.provenance import references_for, resolve_references
+            from quiverlab.trace.writer import write_trace
+            # References SECTION = engine keys implied by the trace's Dispatch, resolved
+            # through bibliography(); table.references stays self.citations() (untouched).
+            write_trace(list(rec), table, algebra=self, kind="HH^", top=top,
+                        references=resolve_references(references_for(rec)))
         return table
 
     def hochschild_homology(self, top, max_cells=4_000_000, engine="auto",
@@ -255,6 +266,11 @@ class Algebra:
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
             from quiverlab.resolutions_cs.homology import cs_homology_dims
+            if rec is not None:
+                rec.append(Dispatch(
+                    route="chouhy-solotar",
+                    reason="general Chouhy-Solotar resolution over the admissible presentation",
+                    n_relations=len(self.relations or ())))
             table = cs_homology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
         elif self._use_fast_engine(engine):
             from quiverlab.engine.adapter import engine_homology_dims
@@ -274,7 +290,13 @@ class Algebra:
                     n_relations=len(self.relations or ())))
             table = hochschild_homology_dims(self, top, max_cells=max_cells, trace=rec)
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
-        # NOTE: the verbose worked-steps FILE is written in Task 11 (write_trace); here we only record/return.
+        if want and trace is None and rec is not None:
+            from quiverlab.trace.provenance import references_for, resolve_references
+            from quiverlab.trace.writer import write_trace
+            # References SECTION = engine keys implied by the trace's Dispatch, resolved
+            # through bibliography(); table.references stays self.citations() (untouched).
+            write_trace(list(rec), table, algebra=self, kind="HH_", top=top,
+                        references=resolve_references(references_for(rec)))
         return table
 
     # -- modules --------------------------------------------------------------
