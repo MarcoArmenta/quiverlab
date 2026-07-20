@@ -15,12 +15,21 @@ from quiverlab.trace.recorder import TERMS_ELISION
 
 
 def derive_dims(events):
-    """HH^n / HH_n = collapsed_dim(n) - rank(n) - rank(n-1), from the events."""
+    """Resulting (co)homology dims, DERIVED from the recorded events, side-aware:
+      * cohomology (cochain side): HH^n = C_n - rank(d^n) - rank(d^{n-1});
+      * homology   (chain side):   HH_n = C_n - rank(b_n) - rank(b_{n+1}).
+    The engine emits RankStep(degree=n) <-> b_n for homology, so the neighbouring
+    rank is rk[n+1], NOT rk[n-1]. Which pairing to use is read from the RankStep
+    events' `.side` ("cochain" vs "chain"); `.get(...,0)` treats a missing degree
+    as rank 0 (e.g. d^{-1} = 0, or b_0 = 0)."""
     cn = {e.degree: e.collapsed_dim for e in events if isinstance(e, ResolutionTerm)}
     rk = {e.degree: e.rank for e in events if isinstance(e, RankStep)}
+    chain = any(getattr(e, "side", "") == "chain"
+                for e in events if isinstance(e, RankStep))
     dims = []
     for n in sorted(cn):
-        dims.append(cn[n] - rk.get(n, 0) - rk.get(n - 1, 0))
+        other = rk.get(n + 1, 0) if chain else rk.get(n - 1, 0)
+        dims.append(cn[n] - rk.get(n, 0) - other)
     return dims
 
 

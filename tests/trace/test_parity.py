@@ -22,12 +22,34 @@ def _events():
     return list(tr), table
 
 
+def _homology_events():
+    A = truncated_polynomial(2, field=CC)
+    tr = Trace()
+    table = A.hochschild_homology(2, trace=tr)
+    return list(tr), table
+
+
 def _dims_in(s):
     return [int(m) for m in re.findall(r"HH[\^_]?\{?\d+\}?\s*=\s*(\d+)", s)]
 
 
 def test_all_three_renderers_agree_on_dims():
     ev, table = _events()
+    txt = render_text(ev, title="t", references=REFS)
+    html = render_html(ev, title="t", references=REFS)
+    tex = render_latex(ev, title="t", references=REFS)
+    assert derive_dims(ev) == table.dims == [2, 1, 1]
+    assert _dims_in(txt) == [2, 1, 1]
+    assert _dims_in(html) == [2, 1, 1]
+    assert _dims_in(tex) == [2, 1, 1]
+
+
+def test_all_three_renderers_agree_on_homology_dims():
+    """Homology mirror of the cohomology parity test (review C1): all three
+    renderers must derive the engine's HOMOLOGY dims. For k[x]/(x^2) the correct
+    dims are [2, 1, 1]; the pre-fix cohomology formula (rk[n-1]) yielded [2, 2, 1]
+    on these homology events, so this test fails under the old derive_dims."""
+    ev, table = _homology_events()
     txt = render_text(ev, title="t", references=REFS)
     html = render_html(ev, title="t", references=REFS)
     tex = render_latex(ev, title="t", references=REFS)
