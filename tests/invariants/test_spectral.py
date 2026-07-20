@@ -32,6 +32,18 @@ def test_returns_exact_types_and_none():
     assert not isinstance(rho, float)              # exact sympy object, never a float
 
 
+def test_constant_and_zero_poly_are_guarded_not_bogus_one():
+    # Fix 3: a constant / zero polynomial has degree < 1 -> no reciprocal-root
+    # structure, so both entry points must return the guarded value (None, matching
+    # the poly-is-None convention), NEVER the silent bogus 1 they used to yield.
+    for p in (sp.Integer(5), sp.Integer(1), sp.Integer(0), sp.Integer(-7), sp.Integer(2) * t**0):
+        assert spectral_radius(p) is None
+        assert mahler_measure(p) is None
+    # existing valid-degree cases are unchanged
+    assert spectral_radius(t**3 - 1) == 1
+    assert mahler_measure((t + 1)**2 * (t**2 - t + 1)) == sp.Integer(1)
+
+
 def test_cyclotomic_short_circuit_is_exact_one():
     assert spectral_radius((t + 1)**3 * (t - 1)**2) == sp.Integer(1)
     assert mahler_measure((t + 1)**2 * (t**2 - t + 1)) == sp.Integer(1)

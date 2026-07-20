@@ -3,3 +3,4 @@ from quiverlab.fields.rationals import QQ  # noqa: F401
 from quiverlab.fields.primefield import PrimeField  # noqa: F401
 from quiverlab.fields.finitefield import GF, FiniteField  # noqa: F401
 from quiverlab.fields.complexfield import CC, E, SympyExactDomain  # noqa: F401
+from quiverlab.fields.gaussian import QQi, GaussianRationalField  # noqa: F401

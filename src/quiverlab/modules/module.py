@@ -183,9 +183,9 @@ class Module:
         from quiverlab.modules.radtopsoc import socle as _s
         return _s(self)
 
-    def projective_resolution(self, length):
+    def projective_resolution(self, length, max_term_dim=200000):
         from quiverlab.modules.resolution import minimal_resolution, ProjectiveResolution
-        terms, dmats = minimal_resolution(self, length)
+        terms, dmats = minimal_resolution(self, length, max_term_dim=max_term_dim)
         return ProjectiveResolution(self, terms, dmats)
 
     def __repr__(self):

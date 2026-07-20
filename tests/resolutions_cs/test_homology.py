@@ -26,6 +26,23 @@ def test_qci_homology_matches_bank_vector():
     assert cs_homology_dims(A, 12).dims == [3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 
 
+def test_hh_dims_unchanged_and_gate_green_after_go_loud(kx2_rs, qci_rs):
+    """Regression for GO-LOUD (open-item #1): making SSequence.S(n>max_degree) raise
+    must NOT change any HH dimension, and assert_dd_zero(upto=top+1, side="coh") must
+    still pass through the public build (its internal S(max_degree+1) read is now the
+    explicit empty cochain space, not the silent out-of-range []). Byte-identical dims."""
+    from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+    # k[x]/(x^2): known HH^* dims through top=6.
+    assert cs_cohomology_dims(_A(), 6).dims == [2, 1, 1, 1, 1, 1, 1]
+    res = ChouhySolotarResolution(_A(), kx2_rs, max_degree=7)   # max_degree = top + 1
+    res.assert_dd_zero(upto=7, side="coh")                       # reads S(8)=S(max_degree+1): explicit empty
+    # quantum complete intersection over CC: known HH^* dims through top=6.
+    Aq = _A(rels=["x*x", "y*y", "y*x - 2*x*y"], arrows={"x": (1, 1), "y": (1, 1)})
+    assert cs_cohomology_dims(Aq, 6).dims == [2, 2, 1, 0, 0, 0, 0]
+    resq = ChouhySolotarResolution(Aq, qci_rs(xi="2"), max_degree=7)
+    resq.assert_dd_zero(upto=7, side="coh")
+
+
 def test_engine_facade_is_resolution_protocol():
     from quiverlab.resolutions_cs.engine_facade import CSResolution
     from quiverlab.engine.resolutions import Resolution

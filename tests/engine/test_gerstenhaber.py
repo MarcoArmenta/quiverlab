@@ -175,6 +175,49 @@ def test_graded_jacobi_on_HH1(alg):
 
 
 # ---------------------------------------------------------------------------
+# graded (Koszul-signed) Jacobi in a mixed / higher degree
+# ---------------------------------------------------------------------------
+@pytest.mark.parametrize("alg", [truncated_polynomial(3), quantum_ci(3)],
+                         ids=lambda a: a.name)
+def test_graded_jacobi_mixed_degree(alg):
+    """Graded Jacobi identity for the Gerstenhaber bracket in a MIXED degree (p,q,r)=(2,2,1)
+    ≠ (1,1,1) (test_graded_jacobi_on_HH1 only covers (1,1,1), where every Koszul sign is +1).
+    With |f| = p−1 the shifted degree, the identity is
+
+        (−1)^{|f||h|}[[f,g],h] + (−1)^{|g||f|}[[g,h],f] + (−1)^{|h||g|}[[h,f],g] = 0,
+
+    which for (2,2,1) reads  [[f,g],h] − [[g,h],f] + [[h,f],g] = 0  — one genuine −1 Koszul
+    sign. The Gerstenhaber bracket is the graded commutator of a pre-Lie (comp) product, so
+    this holds EXACTLY at the cochain level (stronger than mod-coboundaries). Non-vacuous:
+    HH^1 and HH^2 are both nonzero here (so the cocycle reps are genuine classes), and the
+    WRONG all-+ sign is asserted non-identically-zero, pinning the Koszul sign load-bearing."""
+    p, q, r = 2, 2, 1
+    a, b, c = p - 1, q - 1, r - 1
+    s_fgh = 1 if (a * c) % 2 == 0 else -1        # sign on [[f,g],h]
+    s_ghf = 1 if (b * a) % 2 == 0 else -1        # sign on [[g,h],f]  -> −1 for (2,2,1)
+    s_hfg = 1 if (c * b) % 2 == 0 else -1        # sign on [[h,f],g]
+    assert (s_fgh, s_ghf, s_hfg) == (1, -1, 1)   # the mixed-degree Koszul signs, spelled out
+    Zp, Zq, Zr = _cocycles(alg, p, P), _cocycles(alg, q, P), _cocycles(alg, r, P)
+    # non-vacuous: the input degrees carry nonzero cohomology classes (dim Z − dim B > 0)
+    assert Zp.shape[1] - _coboundaries(alg, p, P).shape[1] > 0   # HH^2 ≠ 0
+    assert Zr.shape[1] - _coboundaries(alg, r, P).shape[1] > 0   # HH^1 ≠ 0
+    br = lambda pp, qq, x, y: gerstenhaber_bracket_cochain(alg, pp, qq, x, y)
+    wrong_sign_seen_nonzero = False
+    for i in range(Zp.shape[1]):
+        for j in range(Zq.shape[1]):
+            for k in range(Zr.shape[1]):
+                f, g, h = Zp[:, i], Zq[:, j], Zr[:, k]
+                t1 = br(p + q - 1, r, br(p, q, f, g), h)   # [[f,g],h]
+                t2 = br(q + r - 1, p, br(q, r, g, h), f)   # [[g,h],f]
+                t3 = br(r + p - 1, q, br(r, p, h, f), g)   # [[h,f],g]
+                jac = (s_fgh * t1 + s_ghf * t2 + s_hfg * t3) % P
+                assert np.all(jac == 0), f"{alg.name}: graded Jacobi (2,2,1) fails"
+                if np.any((t1 + t2 + t3) % P):             # wrong all-+ sign combination
+                    wrong_sign_seen_nonzero = True
+    assert wrong_sign_seen_nonzero, "Koszul sign must be load-bearing (all-+ should not vanish)"
+
+
+# ---------------------------------------------------------------------------
 # Gerstenhaber algebra: the bracket is a graded derivation of the cup product
 # ---------------------------------------------------------------------------
 @pytest.mark.parametrize("alg", [truncated_polynomial(3), quantum_ci(3)],

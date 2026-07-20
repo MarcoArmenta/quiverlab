@@ -76,7 +76,8 @@ A.simple(1).projective_resolution(4)   # P_1 <- P_2(+)P_3 <- P_4 <- 0
 
 Every module is a right A-module over the stated exact field; Ext, Hom, and the
 projective resolution are exact. Exact `spectral_radius`/`mahler_measure`, `center()`,
-`complexity()`, and `sweep()` (invariant × field) round out the invariant surface.
+`complexity()` (a lower-bound estimate — can under-report, exact only on local /
+single-vertex inputs), and `sweep()` (invariant × field) round out the invariant surface.
 
 ## Families and citations
 
@@ -123,7 +124,9 @@ ported and wired in:
   (loud `FieldError` off a prime field).
 - **Modules, scalar invariants, and the exact spectral layer.** Right A-modules
   with exact **Ext**, **Hom**, and minimal **projective resolutions**; the scalar
-  invariants **Loewy length**, **center**, and **complexity** (GF(p)); and the
+  invariants **Loewy length**, **center**, and **complexity** (GF(p); the last a
+  lower-bound estimate that can under-report, exact only on local / single-vertex
+  inputs); and the
   exact **spectral radius** / **Mahler measure** of the Coxeter polynomial as
   sympy algebraic numbers — no floats, ever.
 - **Algebra families and citations.** A curated catalog of named families
