@@ -51,3 +51,12 @@ def test_paper_workflow_builds_pdf():
     assert "openjournals/openjournals-draft-action@master" in p
     assert "paper-path: paper/paper.md" in p
     assert "cp src/quiverlab/citations/references.bib paper/paper.bib" in p   # packaged single-source bib
+
+
+def test_release_workflow_trusted_publishing():
+    r = _read("release.yml")
+    assert 'tags: ["v*"]' in r                     # tag-gated only
+    assert "pypa/gh-action-pypi-publish@release/v1" in r
+    assert "id-token: write" in r                  # OIDC, no token
+    assert "password:" not in r                    # no committed secret
+    assert "twine check dist/*" in r
