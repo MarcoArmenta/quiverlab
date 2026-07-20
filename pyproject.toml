@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,17 +8,62 @@ version = "0.1.0.dev0"
 description = "Quivers with relations and Hochschild theory, exactly, for algebraists"
 readme = "README.md"
 requires-python = ">=3.10"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [{ name = "Marco Armenta", email = "drmarcoarmenta@gmail.com" }]
+keywords = [
+    "quiver", "path algebra", "Hochschild cohomology", "Gerstenhaber bracket",
+    "representation theory", "homological algebra", "exact arithmetic",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
 dependencies = ["numpy>=1.21", "sympy>=1.12", "matplotlib>=3.7"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8"]
 fast = ["numba>=0.64"]
+# [qpa]: passagemath-gap 10.8.x ships prebuilt GAP + (via its own [qpa] sub-extra)
+# QPA v1.37 + GBNP, in manylinux/musllinux + macOS wheels (Python 3.11-3.14). No
+# Windows wheel -> the `sys_platform != 'win32'` marker makes the extra installable-
+# but-empty on Windows, and quiverlab.qpa prints the loud graceful message at runtime
+# (Task 4). VERIFY the exact pin/extra name at execution (research: 10.8.6, 2026-07-16).
+qpa = ["passagemath-gap[qpa]>=10.8; sys_platform != 'win32'"]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+    "mkdocs-jupyter>=0.25",
+    "mkdocs-gen-files>=0.5",
+    "mkdocs-literate-nav>=0.6",
+    "mkdocs-section-index>=0.3",
+    "mike>=2.1",
+]
+dev = ["pytest>=8", "build>=1.2", "twine>=5.1"]
+
+[project.urls]
+Homepage = "https://marcoarmenta.github.io/quiverlab/"
+Documentation = "https://marcoarmenta.github.io/quiverlab/"
+Repository = "https://github.com/MarcoArmenta/quiverlab"
+Issues = "https://github.com/MarcoArmenta/quiverlab/issues"
+Changelog = "https://github.com/MarcoArmenta/quiverlab/blob/main/CHANGELOG.md"
+# "Web GUI" and the JOSS DOI are added at web-deploy / JOSS-acceptance time.
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
+# LOAD-BEARING -- do NOT drop. citations/registry.py loads references.bib and
+# families/zoo.py loads zoo_catalog.json by __file__-relative path; without this
+# block both files are absent from the built wheel/sdist and bibliography()/zoo()
+# break in an installed environment (Plan 06). See the sdist/wheel data-file
+# packaging check in Task 10 (test_build.py, open item #4).
 [tool.setuptools.package-data]
 "quiverlab.citations" = ["references.bib"]
 "quiverlab.families" = ["zoo_catalog.json"]
