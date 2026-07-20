@@ -374,6 +374,15 @@ class Algebra:
 
     def __repr__(self):
         base = f"Algebra of dimension {self.dim} over {self.domain.name}"
+        lines = [base]
         if self.basis_labels:
-            base += "\nbasis: " + ", ".join(self.basis_labels)
-        return base
+            lines.append("basis: " + ", ".join(self.basis_labels))
+        q = self.quiver
+        if q is not None:  # spec 3.7: plain-text shows vertices, arrows, relations
+            lines.append("vertices: " + ", ".join(str(v) for v in q.vertices))
+            lines.append("arrows: " + "; ".join(
+                f"{n}: {s} -> {t}" for n, (s, t) in q.arrows.items()))
+            rels = self.relations or []
+            if rels:
+                lines.append("relations: " + "; ".join(repr(r) for r in rels))
+        return "\n".join(lines)
