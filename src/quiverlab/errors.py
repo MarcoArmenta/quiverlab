@@ -29,3 +29,7 @@ class NotFiniteDimensionalError(QuiverlabError):
 
 class DepthLimitError(QuiverlabError):
     """A guard stopped a computation; the certified range is stated in the message."""
+
+
+class CitationError(QuiverlabError):
+    """A citation key is unknown, or the bibliography is inconsistent."""

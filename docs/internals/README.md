@@ -62,12 +62,14 @@ by running the code.
   dict, column-vector / anti-homomorphism convention), simples / projectives /
   injectives read off the multiplication table, radical / top / socle, Hom and Ext,
   and the minimal projective resolution by iterated projective covers.
-- **11 — Families & citations.** *(Pending — arrives with Plan 06: the full algebra
-  catalogue and the citation registry. The chapter lands when Plan 06 does.)*
+- **11 — Families and citations.** The v1 family catalogue (Nakayama through
+  trivial extension), the three construction routes (monomial / general /
+  structure-constant), the curated zoo, and the citation registry that stamps
+  every algorithm and family with the paper behind it.
 
 ## Honest coverage statement
 
-This tree carries **Plans 01–05** together with the **Plan-04 Chouhy–Solotar
+This tree carries **Plans 01–06** together with the **Plan-04 Chouhy–Solotar
 resolution**. What is documented here is what is on disk *now*:
 
 - The **fast GF(p) engine** (`engine/`) is ported and live: bar homology/cohomology over
@@ -87,7 +89,10 @@ resolution**. What is documented here is what is on disk *now*:
   projective resolutions and global dimension (Chapter 10), plus the exact
   **spectral-radius / Mahler-measure** layer, `loewy_length`, `center`, `complexity`, and
   the `sweep` (invariant × field) table (documented in the "exact spectral layer" section
-  of Chapter 06). The starter algebra **families** remain deliberately minimal
-  (`families/basic.py`); the full catalogue **arrives with Plan 06**.
+  of Chapter 06).
+- The full algebra **family catalogue** (`families/`) and the **citation registry**
+  (`citations/`) have **landed with Plan 06** (Chapter 11): Nakayama through trivial
+  extension, the three construction routes (monomial / general / structure-constant),
+  the curated zoo, and `bibliography()`.
 
 Where a chapter describes something whose full form is still to come, it says so inline.

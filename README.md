@@ -78,10 +78,23 @@ Every module is a right A-module over the stated exact field; Ext, Hom, and the
 projective resolution are exact. Exact `spectral_radius`/`mahler_measure`, `center()`,
 `complexity()`, and `sweep()` (invariant × field) round out the invariant surface.
 
+## Families and citations
+
+```python
+from quiverlab import NakayamaAlgebra, QuantumCI, families, bibliography
+
+A = NakayamaAlgebra([3, 2, 2])          # cyclic Nakayama, dim 7
+print(A.hochschild_cohomology(0))       # HH^0 = 1
+print(A.citations())                    # ('nakayama', 'assem_book', 'bar')
+
+print(families())                       # the whole v1 catalog with signatures
+print(bibliography(A.citations()))      # grouped, annotated references
+```
+
 ## Status
 
-Engine and module phase (Plans 01–05 delivered, together with the Plan-04
-Chouhy–Solotar resolution). On top of the foundations — monomial presentations,
+Engine, module, and families phase (Plans 01–06 delivered, together with the
+Plan-04 Chouhy–Solotar resolution). On top of the foundations — monomial presentations,
 exact fields, bar-complex Hochschild (co)homology — the hanlab deep engine is now
 ported and wired in:
 
@@ -113,6 +126,12 @@ ported and wired in:
   invariants **Loewy length**, **center**, and **complexity** (GF(p)); and the
   exact **spectral radius** / **Mahler measure** of the Coxeter polynomial as
   sympy algebraic numbers — no floats, ever.
+- **Algebra families and citations.** A curated catalog of named families
+  (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
+  `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`
+  discovery and the `zoo` iterator, each stamped with the literature it comes from;
+  `A.citations()` and `bibliography(...)` resolve those keys to grouped, annotated
+  references, plus a batch scan surface for family sweeps.
 
 Everything is exact — no floating point, ever — and the full test suite runs
 green on both the numba kernel path and the pure-Python path
@@ -122,8 +141,7 @@ Honest scope note: the calculus lives at the *engine* level today. A classy
 `A.cup(u, v)` on named cohomology classes awaits the cohomology-classes
 machinery of a later phase (see `docs/plans/ROADMAP.md`).
 
-Coming next (see `docs/plans/ROADMAP.md`): algebra families and citations; plus
-full operation transport, drawing and TikZ export, worked-steps PDFs, and an
-optional QPA backend.
+Coming next (see `docs/plans/ROADMAP.md`): full operation transport, drawing and
+TikZ export, worked-steps PDFs, and an optional QPA backend.
 
 MIT © 2026 Marco Armenta
