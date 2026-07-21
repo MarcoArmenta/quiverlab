@@ -406,7 +406,7 @@ git commit -m "feat(gui): runner.py — Plan-09 schema validation + algebra buil
 
 **Interfaces:**
 - Consumes: Task 2's `_state`, `run_build`, `_fail`, `RequestError`, `MAX_DEGREE`.
-- Produces (for Task 4 and worker.js): `compute_one(spec: str) -> str` where `spec` is one Plan-09 compute string (`"hh_cohomology:0..4"`, `"hh_homology:0..3"`, `"cartan"`, `"coxeter_polynomial"`, `"global_dimension"`, `"center"`). Returns JSON `{"ok": true, "invariant": spec, "block": {...}}` or `{"ok": false, "invariant": spec, "error": {...}}`. Blocks: HH → `{kind, top, dims, engine, citations}`; cartan → `{matrix, latex, citations}`; coxeter → `{latex, text, citations}`; gl.dim → `{text, exact, value, citations}`; center → `{dim, basis, citations}`. `citations` is a list of `[bibtex_key, formatted]` pairs. Successful blocks are appended to `_state["results"]` as `{"invariant": spec, **block}`; HH events accumulate in `_state["events"]`. Also `_parse_compute(spec) -> (name, top_or_None)`.
+- Produces (for Task 4 and worker.js): `compute_one(spec: str) -> str` where `spec` is one Plan-09 compute string (`"hh_cohomology:0..4"`, `"hh_homology:0..3"`, `"cartan"`, `"coxeter_polynomial"`, `"global_dimension"`, `"center"`). Returns JSON `{"ok": true, "invariant": spec, "block": {...}}` or `{"ok": false, "invariant": spec, "error": {...}}`. Blocks: HH → `{kind, top, dims, engine, citations}`; cartan → `{matrix, latex, citations}`; coxeter → `{latex, text, citations}`; gl.dim → `{text, exact, value, citations}`; center → `{dim, basis, citations}` (basis entries are exact-value *strings* — over CC the library returns sympy MPQ rationals, which JSON cannot carry natively; amended 2026-07-21 during execution). `citations` is a list of `[bibtex_key, formatted]` pairs. Successful blocks are appended to `_state["results"]` as `{"invariant": spec, **block}`; HH events accumulate in `_state["events"]`. Also `_parse_compute(spec) -> (name, top_or_None)`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -563,7 +563,10 @@ def compute_one(spec):
                      "citations": _citation_pairs(A.citations())}
         elif name == "center":
             dim_z, basis = A.center()
-            block = {"dim": dim_z, "basis": basis,
+            # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
+            # JSON-serializable; ship them as exact strings.
+            block = {"dim": dim_z,
+                     "basis": [[str(x) for x in row] for row in basis],
                      "citations": _citation_pairs(A.citations())}
         else:
             raise RequestError("unknown invariant %r" % (name,))
