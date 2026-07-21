@@ -400,9 +400,7 @@
 
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
-    // "arithmatex" is REQUIRED: the site's MathJax config ignores everything
-    // (ignoreHtmlClass ".*|") except elements carrying processHtmlClass.
-    var div = h("div", { "class": "qlgui-block arithmatex" });
+    var div = h("div", { "class": "qlgui-block" });
     if (name === "hh_cohomology" || name === "hh_homology") {
       var sup = name === "hh_cohomology";
       var head = h("tr"), row = h("tr");
@@ -417,13 +415,16 @@
       div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
     } else if (name === "cartan") {
       div.appendChild(h("p", { text: "Cartan matrix:" }));
-      div.appendChild(h("p", { text: "\\[ C = " + b.latex + " \\]" }));
+      // className EXACTLY "arithmatex": the site's MathJax config matches
+      // class patterns against the full className string, so a combined
+      // "qlgui-block arithmatex" is silently skipped (found live).
+      div.appendChild(h("p", { "class": "arithmatex", text: "\\[ C = " + b.latex + " \\]" }));
     } else if (name === "coxeter_polynomial") {
-      div.appendChild(h("p", { text: "\\[ \\chi(t) = " + b.latex + " \\]" }));
+      div.appendChild(h("p", { "class": "arithmatex", text: "\\[ \\chi(t) = " + b.latex + " \\]" }));
     } else if (name === "global_dimension") {
       div.appendChild(h("p", { text: b.text }));
     } else if (name === "center") {
-      div.appendChild(h("p", { text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
+      div.appendChild(h("p", { "class": "arithmatex", text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
