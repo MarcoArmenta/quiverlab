@@ -117,7 +117,9 @@ dark (slate) palettes via CSS variables.
 
 All request-execution logic lives in **one Python file**, `docs/gui/runner.py`,
 shipped verbatim to the browser (mkdocs copies non-markdown docs files into the
-site) and imported by the worker:
+site; `mkdocs-jupyter` must be told to `ignore: ["gui/*.py"]`, since its default
+`include` would otherwise render the file as a notebook page instead of shipping
+it raw — found live 2026-07-21) and imported by the worker:
 
 - `run_build(request_json: str) -> str` — validates the schema, builds the
   algebra into module state, returns basic info (dimension, counts) or a typed

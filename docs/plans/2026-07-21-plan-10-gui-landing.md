@@ -921,7 +921,7 @@ def on_post_build(config):
 
 - [ ] **Step 4: Wire it into `mkdocs.yml`**
 
-In `mkdocs.yml`, add a top-level `hooks:` block directly above `markdown_extensions:`, add `extra_css:`, and append `gui/gui.js` to `extra_javascript:`:
+In `mkdocs.yml`, add a top-level `hooks:` block directly above `markdown_extensions:`, add `extra_css:`, and append `gui/gui.js` to `extra_javascript:`. **Amendment (2026-07-21, found live):** also add `ignore: ["gui/*.py"]` to the `mkdocs-jupyter` plugin config — its default `include` covers `*.py`, so without the ignore it renders `docs/gui/runner.py` as a notebook page and the raw file 404s for the worker:
 
 ```yaml
 hooks:

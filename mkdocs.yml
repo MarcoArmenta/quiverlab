@@ -45,6 +45,10 @@ plugins:
       include_source: true        # "download notebook" link
       allow_errors: false
       theme: auto
+      ignore:
+        - "gui/*.py"              # Plan 10: runner.py must ship RAW for the GUI
+                                  # worker to fetch — the plugin's default include
+                                  # (*.py) would render it as a notebook page.
 
 nav:
   - Home: index.md
