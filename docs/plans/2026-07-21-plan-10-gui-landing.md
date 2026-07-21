@@ -1076,7 +1076,7 @@ No pytest here (JS + markdown); the deliverable is verified with the manual chec
     '  <label id="qlgui-p-wrap" style="display:none">p <input type="number" id="qlgui-p" value="2" min="2"></label>' +
     '  <label id="qlgui-n-wrap" style="display:none">n <input type="number" id="qlgui-n" value="1" min="1"></label>' +
     '  <button id="qlgui-clear" class="qlgui-secondary" type="button">Clear</button>' +
-    '  <span id="qlgui-status">engine idle</span>' +
+    '  <span id="qlgui-status">engine loads on first use</span>' +
     '</div>' +
     '<div id="qlgui-canvas-wrap">' +
     '  <svg id="qlgui-canvas" viewBox="0 0 800 340" preserveAspectRatio="xMidYMid meet"></svg>' +
@@ -1370,8 +1370,17 @@ No pytest here (JS + markdown); the deliverable is verified with the manual chec
 
   window.QLGUI = { S: S, buildRequest: buildRequest };
   render();
-  if ("requestIdleCallback" in window) requestIdleCallback(startWorker);
-  else setTimeout(startWorker, 1500);
+  // Engine loads on FIRST INTENT (whole-branch review decision): pure readers
+  // never pay the ~60 MB download; the first GUI touch starts it.
+  var engineStarted = false;
+  function ensureEngine() {
+    if (engineStarted) return;
+    engineStarted = true;
+    startWorker();
+  }
+  el.canvas.addEventListener("mousedown", ensureEngine, true); // capture: circle handlers stopPropagation
+  el.preset.addEventListener("change", ensureEngine);
+  el.relations.addEventListener("focus", ensureEngine);
 })();
 ```
 
@@ -1681,7 +1690,7 @@ Replace the block from `/* TASK 7 replaces this stub ... */` through the end of 
 Run: `/Users/marco/Desktop/HomologicalNetworks/quiverlab/.venv/bin/mkdocs serve` (no skip env — the hook builds the wheel; needs network for the Pyodide CDN).
 
 At `http://127.0.0.1:8000/quiverlab/` verify:
-1. Status chip goes "engine loading…" → "engine ready — quiverlab 0.1.0.dev0" (first load downloads Pyodide; ~1–2 min on ordinary broadband, instant when cached).
+1. Status chip starts "engine loads on first use"; after the FIRST GUI interaction (canvas touch / preset pick / relations focus) it goes "engine loading…" → "engine ready — quiverlab 0.1.0.dev0" (first load downloads Pyodide; ~1–2 min on ordinary broadband, instant when cached).
 2. Preset "Kronecker quiver (CC)", Compute → algebra header "(dim = 4)"; with the default HH^ range 0..4 the table reads `1, 3, 0, 0, 0`; Cartan `pmatrix` typeset by MathJax.
 3. Draw a loop `x` on one vertex, relation `x*x*x`, field GF p=2 n=1, all boxes ticked, Compute → results appear one at a time; gl.dim shows the `>= 32` certified-bound text.
 4. Relation typo (`x*noarrow`) → red error block naming the library error type, verbatim message; no crash; next Compute works.

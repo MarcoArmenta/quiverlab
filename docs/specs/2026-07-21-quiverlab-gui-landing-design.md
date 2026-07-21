@@ -30,9 +30,12 @@ schema and (eventually) the same runner.
    above ("or use the GUI at the top of this page").
 
 The GUI shell (canvas, controls, buttons) is plain HTML/SVG/CSS and renders
-instantly. The engine (Pyodide runtime + wheel) loads lazily in the background
-after page idle; a status chip shows `engine loading…` → `engine ready`. Compute
-is disabled until ready. All GUI styling follows the Material theme's light and
+instantly. The engine (Pyodide runtime + wheel) loads **on first intent** — the
+first canvas touch, preset pick, or relations-box focus starts the ~60 MB
+download, so pure readers never pay for it (Marco's call at the whole-branch
+review, 2026-07-21; supersedes the original "after page idle" behavior). A
+status chip shows `engine loads on first use` → `engine loading…` → `engine
+ready`. Compute is disabled until ready. All GUI styling follows the Material theme's light and
 dark (slate) palettes via CSS variables.
 
 ## 3. Editor UX
