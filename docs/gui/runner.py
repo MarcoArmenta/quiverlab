@@ -88,3 +88,72 @@ def run_build(request_json):
     except Exception as exc:
         out = _fail(exc)
     return json.dumps(out)
+
+
+def _parse_compute(spec):
+    name, _, rng = spec.partition(":")
+    top = None
+    if rng:
+        lo, _, hi = rng.partition("..")
+        if lo != "0" or not hi.isdigit():
+            raise RequestError("bad compute range %r (expected 'name:0..N')" % (spec,))
+        top = int(hi)
+        if top > MAX_DEGREE:
+            raise RequestError("degree cap is %d (got %d)" % (MAX_DEGREE, top))
+    return name, top
+
+
+def _citation_pairs(keys):
+    from quiverlab.trace.provenance import resolve_references
+    return [list(p) for p in resolve_references(tuple(keys))]
+
+
+def _latex_matrix(rows):
+    body = r" \\ ".join(" & ".join(str(x) for x in row) for row in rows)
+    return r"\begin{pmatrix} %s \end{pmatrix}" % body
+
+
+def compute_one(spec):
+    """Run ONE Plan-09 compute string against the built algebra."""
+    A = _state["algebra"]
+    try:
+        if A is None:
+            raise RequestError("no algebra built (run_build first)")
+        name, top = _parse_compute(spec)
+        if name in ("hh_cohomology", "hh_homology"):
+            if top is None:
+                raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+            method = (A.hochschild_cohomology if name == "hh_cohomology"
+                      else A.hochschild_homology)
+            table = method(top, verbose=False, trace=_state["events"])
+            block = {"kind": table.kind, "top": top, "dims": list(table.dims),
+                     "engine": table.engine,
+                     "citations": _citation_pairs(table.references)}
+        elif name == "cartan":
+            m = A.cartan_matrix()
+            block = {"matrix": m, "latex": _latex_matrix(m),
+                     "citations": _citation_pairs(A.citations())}
+        elif name == "coxeter_polynomial":
+            import sympy
+            p = A.coxeter_polynomial()
+            block = {"latex": sympy.latex(p.as_expr()), "text": str(p.as_expr()),
+                     "citations": _citation_pairs(A.citations())}
+        elif name == "global_dimension":
+            g = A.global_dimension()
+            block = {"text": str(g), "exact": g.exact, "value": g.value,
+                     "citations": _citation_pairs(A.citations())}
+        elif name == "center":
+            dim_z, basis = A.center()
+            # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
+            # JSON-serializable; ship them as exact strings.
+            block = {"dim": dim_z,
+                     "basis": [[str(x) for x in row] for row in basis],
+                     "citations": _citation_pairs(A.citations())}
+        else:
+            raise RequestError("unknown invariant %r" % (name,))
+        _state["results"].append(dict(block, invariant=spec))
+        out = {"ok": True, "invariant": spec, "block": block}
+    except Exception as exc:
+        out = _fail(exc)
+        out["invariant"] = spec
+    return json.dumps(out)
