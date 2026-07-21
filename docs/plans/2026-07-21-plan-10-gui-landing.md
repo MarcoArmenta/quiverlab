@@ -1625,7 +1625,10 @@ Replace the block from `/* TASK 7 replaces this stub ... */` through the end of 
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
     if (window.MathJax && window.MathJax.typesetPromise) {
-      window.MathJax.typesetPromise([div]);
+      // Full-page sweep, NOT typesetPromise([div]): with explicit roots the
+      // walker never consults the root's own class, so the site's
+      // ignoreHtmlClass ".*|" config silently skips the block (found live).
+      window.MathJax.typesetPromise();
     }
   }
 
