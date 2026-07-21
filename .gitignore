@@ -7,3 +7,4 @@ site/
 .cache/
 docs/tutorials/quiverlab_traces/
 paper/paper.bib
+build/
