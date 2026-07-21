@@ -156,6 +156,10 @@ def compute_one(spec):
     except Exception as exc:
         out = _fail(exc)
         out["invariant"] = spec
+        # The downloadable bundle must not silently omit failures.
+        # (No bundle exists until run_build resets results to a list.)
+        if _state["results"] is not None:
+            _state["results"].append({"invariant": spec, "error": out["error"]})
     return json.dumps(out)
 
 

@@ -59,3 +59,15 @@ def test_result_bundle(runner):
 def test_artifacts_before_build_are_empty(runner):
     assert runner.trace_html() == "" and runner.tikz() == ""
     assert runner.python_snippet() == ""
+
+
+def test_result_bundle_records_failures(runner):
+    req = dict(KRONECKER_CC, compute=["hh_cohomology:0..1", "determinant"])
+    out = json.loads(runner.run_build(json.dumps(req)))
+    assert out["ok"]
+    assert json.loads(runner.compute_one("hh_cohomology:0..1"))["ok"]
+    assert not json.loads(runner.compute_one("determinant"))["ok"]
+    bundle = json.loads(runner.result_bundle())
+    assert [r["invariant"] for r in bundle["results"]] == [
+        "hh_cohomology:0..1", "determinant"]
+    assert bundle["results"][1]["error"]["type"] == "RequestError"

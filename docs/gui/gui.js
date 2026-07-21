@@ -229,8 +229,9 @@
     if (old) old.remove();
   });
   document.addEventListener("keydown", function (e) {
+    var tag = document.activeElement.tagName;
     if ((e.key === "Delete" || e.key === "Backspace") &&
-        document.activeElement.tagName !== "INPUT") { removeSelected(); }
+        tag !== "INPUT" && tag !== "SELECT" && tag !== "TEXTAREA") { removeSelected(); }
   });
 
   // ---------- arrow rename ----------
@@ -365,7 +366,7 @@
     } else if (m.type === "built") {
       if (m.data.ok) {
         el.results.appendChild(h("div", { "class": "qlgui-block",
-          text: m.data.algebra + "  (dim = " + m.data.dim + ")" }));
+          text: m.data.algebra }));
       } else { renderError(m.data); }
     } else if (m.type === "result") {
       if (m.data.ok) renderBlock(m.data); else renderError(m.data);
@@ -451,6 +452,7 @@
     setBusy(false);
     startWorker();                             // sets its own transient status…
     setStatus("cancelled — engine reloading…"); // …so the acknowledgment must land last
+    render();                                   // engineReady just went false — disable Compute
   });
   function download(name, text, type) {
     var a = document.createElement("a");
