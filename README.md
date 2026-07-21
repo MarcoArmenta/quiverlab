@@ -146,6 +146,8 @@ ported and wired in:
   discovery and the `zoo` iterator, each stamped with the literature it comes from;
   `A.citations()` and `bibliography(...)` resolve those keys to grouped, annotated
   references, plus a batch scan surface for family sweeps.
+- **In-browser GUI** — the [docs landing page](https://marcoarmenta.github.io/quiverlab/)
+  computes examples with nothing installed (Pyodide running the same exact engine).
 
 Everything is exact — no floating point, ever — and the full test suite runs
 green on both the numba kernel path and the pure-Python path
