@@ -303,11 +303,151 @@
              artifacts: { pdf: el.trace.checked, tikz: true } };
   }
 
-  /* TASK 7 replaces this stub: worker startup, compute wiring, results
-     rendering, artifact buttons. Until then the GUI is editor-only. */
+  // ---------- engine (Pyodide worker) ----------
   function startWorker() {
-    setStatus("engine wiring lands in Task 7", "err");
+    if (S.worker) S.worker.terminate();
+    S.engineReady = false;
+    S.worker = new Worker("gui/worker.js");
+    S.worker.onmessage = onWorkerMessage;
+    S.worker.onerror = function (e) {
+      setStatus("engine error — see console", "err");
+      console.error("qlgui worker:", e);
+    };
+    if (S.manifest) {                    // restart path (after Cancel)
+      setStatus("engine reloading…");
+      S.worker.postMessage({ cmd: "init", manifest: S.manifest });
+      return;
+    }
+    fetch("gui/manifest.json")
+      .then(function (r) { if (!r.ok) throw new Error("no manifest"); return r.json(); })
+      .then(function (m) {
+        if (!m.wheel) { setStatus("engine payload not built (QLGUI_SKIP_WHEEL)", "err"); return; }
+        S.manifest = m;
+        setStatus("engine loading… (~60 MB once, then cached)");
+        S.worker.postMessage({ cmd: "init", manifest: m });
+      })
+      .catch(function () { setStatus("engine manifest missing — editor-only preview", "err"); });
   }
+
+  function setBusy(b) {
+    S.busy = b;
+    el.cancel.disabled = !b;
+    render();
+  }
+
+  function onWorkerMessage(e) {
+    var m = e.data;
+    if (m.type === "ready") {
+      S.engineReady = true;
+      setStatus("engine ready — quiverlab " + m.version, "ok");
+      render();
+    } else if (m.type === "built") {
+      if (m.data.ok) {
+        el.results.appendChild(h("div", { "class": "qlgui-block",
+          text: m.data.algebra + "  (dim = " + m.data.dim + ")" }));
+      } else { renderError(m.data); }
+    } else if (m.type === "result") {
+      if (m.data.ok) renderBlock(m.data); else renderError(m.data);
+    } else if (m.type === "trace") {
+      S.artifacts.traceHtml = m.html;
+      el.print.disabled = !m.html;
+    } else if (m.type === "artifacts") {
+      S.artifacts.tikz = m.tikz; S.artifacts.snippet = m.snippet;
+      S.artifacts.bundle = m.bundle;
+      el.tikz.disabled = el.json.disabled = el.snippet.disabled = false;
+    } else if (m.type === "done") {
+      setBusy(false);
+      setStatus("engine ready — quiverlab " + (S.manifest ? S.manifest.quiverlab_version : ""), "ok");
+    } else if (m.type === "fatal") {
+      console.error("qlgui engine:", m.message);
+      setStatus("engine failed — see console", "err");
+      setBusy(false);
+    }
+  }
+
+  function renderError(res) {
+    if (res.detail) console.error(res.detail);
+    var div = h("div", { "class": "qlgui-block qlgui-error",
+      text: res.error.type + ": " + res.error.message });
+    el.results.appendChild(div);
+  }
+
+  function citesLine(block) {
+    return h("div", { "class": "qlgui-cites",
+      text: (block.citations || []).map(function (c) { return c[1]; }).join(" · ") });
+  }
+
+  function renderBlock(res) {
+    var b = res.block, name = res.invariant.split(":")[0];
+    var div = h("div", { "class": "qlgui-block" });
+    if (name === "hh_cohomology" || name === "hh_homology") {
+      var sup = name === "hh_cohomology";
+      var head = h("tr"), row = h("tr");
+      head.appendChild(h("th", { text: "n" }));
+      row.appendChild(h("th", { text: sup ? "dim HH^n" : "dim HH_n" }));
+      b.dims.forEach(function (d, n) {
+        head.appendChild(h("td", { text: String(n) }));
+        row.appendChild(h("td", { text: String(d) }));
+      });
+      div.appendChild(h("p", { text: sup ? "Hochschild cohomology" : "Hochschild homology" }));
+      div.appendChild(h("table", {}, head, row));
+      div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+    } else if (name === "cartan") {
+      div.appendChild(h("p", { text: "Cartan matrix:" }));
+      div.appendChild(h("p", { text: "\\[ C = " + b.latex + " \\]" }));
+    } else if (name === "coxeter_polynomial") {
+      div.appendChild(h("p", { text: "\\[ \\chi(t) = " + b.latex + " \\]" }));
+    } else if (name === "global_dimension") {
+      div.appendChild(h("p", { text: b.text }));
+    } else if (name === "center") {
+      div.appendChild(h("p", { text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
+    }
+    div.appendChild(citesLine(b));
+    el.results.appendChild(div);
+    if (window.MathJax && window.MathJax.typesetPromise) {
+      window.MathJax.typesetPromise([div]);
+    }
+  }
+
+  // ---------- buttons ----------
+  el.compute.addEventListener("click", function () {
+    if (S.busy || !S.engineReady) return;
+    el.results.innerHTML = "";
+    S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "" };
+    el.print.disabled = el.tikz.disabled = el.json.disabled = el.snippet.disabled = true;
+    setBusy(true);
+    setStatus("computing…");
+    S.worker.postMessage({ cmd: "run", request: buildRequest() });
+  });
+  el.cancel.addEventListener("click", function () {
+    if (!S.busy) return;
+    setBusy(false);
+    setStatus("cancelled — engine reloading…");
+    startWorker();
+  });
+  function download(name, text, type) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: type }));
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+  el.print.addEventListener("click", function () {
+    var url = URL.createObjectURL(new Blob([S.artifacts.traceHtml], { type: "text/html" }));
+    var w = window.open(url, "_blank");
+    if (w) w.addEventListener("load", function () { w.print(); });
+  });
+  el.tikz.addEventListener("click", function () {
+    download("quiver.tex", S.artifacts.tikz, "text/x-tex");
+  });
+  el.json.addEventListener("click", function () {
+    download("quiverlab-result.json", S.artifacts.bundle, "application/json");
+  });
+  el.snippet.addEventListener("click", function () {
+    navigator.clipboard.writeText(S.artifacts.snippet).then(function () {
+      setStatus("Python snippet copied", "ok");
+    });
+  });
 
   window.QLGUI = { S: S, buildRequest: buildRequest };
   render();
