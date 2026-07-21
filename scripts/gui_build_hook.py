@@ -57,6 +57,9 @@ def generate_presets():
 def build_wheel(gui_dir):
     """pip-wheel this checkout into gui_dir; return the wheel filename."""
     gui_dir = pathlib.Path(gui_dir)
+    # pip builds in-tree: a stale build/ from a previous run collides
+    # ([Errno 17] on dist-info), so every rebuild must start clean.
+    shutil.rmtree(REPO / "build", ignore_errors=True)
     with tempfile.TemporaryDirectory() as td:
         proc = subprocess.run(
             [sys.executable, "-m", "pip", "wheel", "--no-deps", "-w", td, str(REPO)],
