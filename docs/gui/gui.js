@@ -38,7 +38,7 @@
     '  <label id="qlgui-p-wrap" style="display:none">p <input type="number" id="qlgui-p" value="2" min="2"></label>' +
     '  <label id="qlgui-n-wrap" style="display:none">n <input type="number" id="qlgui-n" value="1" min="1"></label>' +
     '  <button id="qlgui-clear" class="qlgui-secondary" type="button">Clear</button>' +
-    '  <span id="qlgui-status">engine idle</span>' +
+    '  <span id="qlgui-status">engine loads on first use</span>' +
     '</div>' +
     '<div id="qlgui-canvas-wrap">' +
     '  <svg id="qlgui-canvas" viewBox="0 0 800 340" preserveAspectRatio="xMidYMid meet"></svg>' +
@@ -480,6 +480,15 @@
 
   window.QLGUI = { S: S, buildRequest: buildRequest };
   render();
-  if ("requestIdleCallback" in window) requestIdleCallback(startWorker);
-  else setTimeout(startWorker, 1500);
+  // Engine loads on FIRST INTENT (whole-branch review decision): pure readers
+  // never pay the ~60 MB download; the first GUI touch starts it.
+  var engineStarted = false;
+  function ensureEngine() {
+    if (engineStarted) return;
+    engineStarted = true;
+    startWorker();
+  }
+  el.canvas.addEventListener("mousedown", ensureEngine, true); // capture: circle handlers stopPropagation
+  el.preset.addEventListener("change", ensureEngine);
+  el.relations.addEventListener("focus", ensureEngine);
 })();
