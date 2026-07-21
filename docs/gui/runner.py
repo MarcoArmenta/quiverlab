@@ -157,3 +157,58 @@ def compute_one(spec):
         out = _fail(exc)
         out["invariant"] = spec
     return json.dumps(out)
+
+
+def trace_html():
+    """The worked-steps report as an HTML string ('' when nothing was traced)."""
+    events = _state["events"] or []
+    if not events:
+        return ""
+    from quiverlab.trace.provenance import references_for, resolve_references
+    from quiverlab.trace.render_html import render_html
+    title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
+    return render_html(list(events), title=title,
+                       references=resolve_references(references_for(events)))
+
+
+def tikz():
+    return "" if _state["algebra"] is None else _state["algebra"].tikz()
+
+
+def python_snippet():
+    """Copy-paste reproduction of the GUI computation (the GUI-to-library bridge)."""
+    req = _state["request"]
+    if req is None:
+        return ""
+    alg = req["algebra"]
+    f = alg["field"]
+    if f["kind"] == "CC":
+        field_name, field_expr = "CC", "CC"
+    else:
+        q = f["p"] ** f.get("n", 1)
+        field_name, field_expr = "GF", "GF(%d)" % q
+    arrows = ", ".join('"%s": (%d, %d)' % (k, s, t)
+                       for k, (s, t) in alg["arrows"].items())
+    lines = [
+        "from quiverlab import Quiver, %s" % field_name,
+        "",
+        "Q = Quiver(vertices=%r, arrows={%s})" % (alg["vertices"], arrows),
+        "A = Q.algebra(relations=%r, field=%s)" % (list(alg.get("relations", [])),
+                                                   field_expr),
+        "print(A.dim)",
+    ]
+    calls = {"hh_cohomology": "A.hochschild_cohomology(%d)",
+             "hh_homology": "A.hochschild_homology(%d)",
+             "cartan": "A.cartan_matrix()", "coxeter_polynomial": "A.coxeter_polynomial()",
+             "global_dimension": "A.global_dimension()", "center": "A.center()"}
+    for spec in req.get("compute", []):
+        name, top = _parse_compute(spec)
+        call = calls[name] % top if "%d" in calls[name] else calls[name]
+        lines.append("print(%s)" % call)
+    return "\n".join(lines) + "\n"
+
+
+def result_bundle():
+    return json.dumps({"schema": SCHEMA_VERSION, "request": _state["request"],
+                       "quiverlab_version": quiverlab.__version__,
+                       "results": _state["results"] or []}, indent=1)
