@@ -28,8 +28,9 @@ async function init(manifest) {
 }
 
 async function run(request) {
-  var built = JSON.parse(runner.run_build(JSON.stringify(
-    { schema: request.schema, algebra: request.algebra })));
+  // Pass the FULL request: python_snippet/result_bundle read request.compute
+  // from the stored request (run_build itself only validates schema+algebra).
+  var built = JSON.parse(runner.run_build(JSON.stringify(request)));
   self.postMessage({ type: "built", data: built });
   if (built.ok) {
     for (var i = 0; i < request.compute.length; i++) {

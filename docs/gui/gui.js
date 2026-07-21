@@ -244,7 +244,13 @@
     el.rename.focus(); el.rename.select();
     el.rename.onkeydown = function (e) {
       if (e.key === "Enter") commit();
-      if (e.key === "Escape") el.rename.style.display = "none";
+      if (e.key === "Escape") {
+        // Explicit blur: a display:none input silently keeps keyboard focus,
+        // which makes the document-level Delete guard eat later deletions.
+        el.rename.onblur = null;
+        el.rename.style.display = "none";
+        el.rename.blur();
+      }
     };
     el.rename.onblur = commit;
     function commit() {
@@ -252,7 +258,9 @@
       var taken = S.arrows.some(function (b) { return b !== arrow && b.name === name; });
       if (/^[A-Za-z][A-Za-z0-9_]*$/.test(name) && !taken) {
         arrow.name = name;
+        el.rename.onblur = null;      // avoid blur() re-entering commit
         el.rename.style.display = "none";
+        el.rename.blur();
         render();
       } else { el.rename.style.borderColor = "#c62828"; }
     }
@@ -392,7 +400,9 @@
 
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
-    var div = h("div", { "class": "qlgui-block" });
+    // "arithmatex" is REQUIRED: the site's MathJax config ignores everything
+    // (ignoreHtmlClass ".*|") except elements carrying processHtmlClass.
+    var div = h("div", { "class": "qlgui-block arithmatex" });
     if (name === "hh_cohomology" || name === "hh_homology") {
       var sup = name === "hh_cohomology";
       var head = h("tr"), row = h("tr");
@@ -435,8 +445,8 @@
   el.cancel.addEventListener("click", function () {
     if (!S.busy) return;
     setBusy(false);
-    setStatus("cancelled — engine reloading…");
-    startWorker();
+    startWorker();                             // sets its own transient status…
+    setStatus("cancelled — engine reloading…"); // …so the acknowledgment must land last
   });
   function download(name, text, type) {
     var a = document.createElement("a");
