@@ -119,17 +119,22 @@ All request-execution logic lives in **one Python file**, `docs/gui/runner.py`,
 shipped verbatim to the browser (mkdocs copies non-markdown docs files into the
 site) and imported by the worker:
 
-- `build(algebra_spec: dict) -> dict` — builds and caches the `Quiver`/`Algebra`
-  (module-level cache keyed by a hash of the spec, so per-invariant calls don't
-  rebuild), returns basic info (dimension, vertex/arrow counts).
-- `compute(invariant: str, params: dict) -> dict` — runs one invariant against
-  the cached algebra, returns a JSON-safe result block (values, LaTeX strings,
-  citations).
-- `render_trace() -> str` — the worked-steps HTML report for the last compute
-  batch, when the toggle is on.
+- `run_build(request_json: str) -> str` — validates the schema, builds the
+  algebra into module state, returns basic info (dimension, counts) or a typed
+  error.
+- `compute_one(spec: str) -> str` — runs one Plan-09 compute string
+  (`"hh_cohomology:0..4"`, `"cartan"`, …) against the built algebra; worked-steps
+  events accumulate in module state.
+- `trace_html() -> str`, `tikz() -> str`, `python_snippet() -> str`,
+  `result_bundle() -> str` — the artifacts.
 
-`runner.py` uses only the **public** `quiverlab` surface (`import quiverlab`) and
-the stdlib. It is unit-tested natively with pytest — no browser required —
+`runner.py` uses the **public** `quiverlab` surface (`import quiverlab`), the
+stdlib, and exactly three sanctioned trace helpers for the worked-steps report
+string (`quiverlab.trace.render_html.render_html`,
+`quiverlab.trace.provenance.references_for`,
+`quiverlab.trace.provenance.resolve_references`) — there is no public
+HTML-report-as-string API; the freshness gate pins these three and
+`quiverlab.engine.*` stays forbidden. It is unit-tested natively with pytest — no browser required —
 covering: schema validation and loud rejection of unknown `kind`/fields, every
 invariant in the checklist, error passthrough (type name + message), and golden
 result JSONs for two known algebras expressed in the quiver schema (e.g. one
