@@ -37,7 +37,7 @@ print(Q.algebra(relations=["a*b"], field=CC).hochschild_cohomology(3))
 - **Documentation:** <https://marcoarmenta.github.io/quiverlab/>
 - **Tutorials:** [executable notebooks](docs/tutorials/) — start here.
 - **Under the hood:** [internals chapters](docs/internals/) — how each number is produced.
-- **Web GUI:** compute without installing (Plan 09; linked from the docs when live).
+- **Web GUI:** the [docs landing page](https://marcoarmenta.github.io/quiverlab/) computes in your browser today; a server tier for big jobs is planned (Plan 09).
 - **Cite:** see the JOSS paper (`paper/paper.md`) and [`CITATION.cff`](CITATION.cff).
 
 ## The classic characteristic pathology, in one loop
@@ -146,6 +146,8 @@ ported and wired in:
   discovery and the `zoo` iterator, each stamped with the literature it comes from;
   `A.citations()` and `bibliography(...)` resolve those keys to grouped, annotated
   references, plus a batch scan surface for family sweeps.
+- **In-browser GUI** — the [docs landing page](https://marcoarmenta.github.io/quiverlab/)
+  computes examples with nothing installed (Pyodide running the same exact engine).
 
 Everything is exact — no floating point, ever — and the full test suite runs
 green on both the numba kernel path and the pure-Python path
