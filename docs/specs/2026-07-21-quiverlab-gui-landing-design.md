@@ -39,8 +39,10 @@ dark (slate) palettes via CSS variables.
 
 - **Add vertex:** click empty canvas → numbered vertex (1, 2, 3, …).
 - **Add arrow:** drag vertex → vertex; auto-named `a, b, c, …, z, a1, b1, …`.
-  Drag onto the same vertex → loop. Parallel arrows curve apart. Arrowheads
-  always visible.
+  Drag onto the same vertex → loop; a loop requires a real drag gesture
+  (movement past a small threshold), so a plain click on a vertex selects it
+  without creating a self-loop (defect found in live verification 2026-07-21).
+  Parallel arrows curve apart. Arrowheads always visible.
 - **Select / edit:** click selects a vertex or arrow; double-click renames an
   arrow (names must be valid library arrow names); `Delete`/`Backspace` removes
   the selection (removing a vertex removes its incident arrows). A Clear button

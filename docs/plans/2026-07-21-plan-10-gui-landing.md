@@ -1048,6 +1048,7 @@ No pytest here (JS + markdown); the deliverable is verified with the manual chec
   var SVGNS = "http://www.w3.org/2000/svg";
   var R = 16;                       // vertex radius (px in SVG user units)
   var S = { vertices: [], arrows: [], nextId: 1, selected: null, dragFrom: null,
+            dragMoved: false, dragOrigin: null,
             worker: null, engineReady: false, manifest: null, busy: false,
             artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "" } };
 
@@ -1211,13 +1212,21 @@ No pytest here (JS + markdown); the deliverable is verified with the manual chec
         (S.selected && S.selected.type === "vertex" && S.selected.key === v.id ? " sel" : "") });
       var c = sv("circle", { cx: v.x, cy: v.y, r: R });
       c.addEventListener("mousedown", function (e) {
-        e.preventDefault(); e.stopPropagation(); S.dragFrom = v.id;
+        e.preventDefault(); e.stopPropagation();
+        S.dragFrom = v.id; S.dragMoved = false;
+        S.dragOrigin = [e.clientX, e.clientY];
       });
       c.addEventListener("mouseup", function (e) {
         if (S.dragFrom === null) return;
         e.stopPropagation();
-        S.arrows.push({ name: nextArrowName(), s: S.dragFrom, t: v.id });
-        S.dragFrom = null; render();
+        // A press-release with no movement on the SAME vertex is a click
+        // (select), not a self-loop; loops need a real drag gesture.
+        if (S.dragFrom !== v.id || S.dragMoved) {
+          S.arrows.push({ name: nextArrowName(), s: S.dragFrom, t: v.id });
+          S.dragFrom = null; S.dragMoved = false; render();
+        } else {
+          S.dragFrom = null; S.dragMoved = false;
+        }
       });
       c.addEventListener("click", function (e) {
         e.stopPropagation(); S.selected = { type: "vertex", key: v.id }; render();
@@ -1244,12 +1253,16 @@ No pytest here (JS + markdown); the deliverable is verified with the manual chec
     var old = el.canvas.querySelector(".qlgui-rubber");
     if (old) old.remove();
     if (S.dragFrom === null) return;
+    if (S.dragOrigin && Math.hypot(e.clientX - S.dragOrigin[0],
+                                   e.clientY - S.dragOrigin[1]) > 8) {
+      S.dragMoved = true;
+    }
     var v = vertexAt(S.dragFrom), p = canvasPoint(e);
     el.canvas.appendChild(sv("line", { "class": "qlgui-rubber",
       x1: v.x, y1: v.y, x2: p.x, y2: p.y }));
   });
   document.addEventListener("mouseup", function () {
-    S.dragFrom = null;
+    S.dragFrom = null; S.dragMoved = false; S.dragOrigin = null;
     var old = el.canvas.querySelector(".qlgui-rubber");
     if (old) old.remove();
   });
