@@ -52,3 +52,35 @@ def test_in_range_empties_and_negative_unchanged(square_rs):
     ss = SSequence(square_rs, max_degree=5)
     assert ss.S(3) == [] and ss.S(4) == []          # in-range, genuinely empty: still []
     assert ss.S(-1) == []                            # negative degree convention: still []
+
+
+def _rs(rels, field=None):
+    from quiverlab import Quiver, CC
+    from quiverlab.groebner import build_reduction_system
+    Q = Quiver([1], {"x": (1, 1), "y": (1, 1)})
+    return build_reduction_system(Q, rels, field or CC)
+
+
+def test_ssequence_straddle_chains_present():
+    """Plan 12: tips {xx,yy,xyx} — S_3 must contain the straddling chains xyxx and
+    xyxyx (5 chains total, = the minimal-A^e Betti number; the exact-pair code had 3)."""
+    ss = SSequence(_rs(["x*x", "y*y", "x*y*x"]), max_degree=4)
+    assert {c.word for c in ss.S(3)} == {("x",) * 3, ("x", "x", "y", "x"),
+                                         ("x", "y", "x", "x"), ("x", "y", "x", "y", "x"),
+                                         ("y",) * 3}
+    straddle = next(c for c in ss.S(3) if c.word == ("x", "y", "x", "x"))
+    assert straddle.blocks == (("x",), ("y", "x"), ("x",))
+    assert len(ss.S(4)) == 9                              # Betti sequence 2,3,5,9,17
+
+
+def test_ssequence_qci32_matches_cs_phi_formula():
+    """CS §7.2 (TeX ~2110–2140): for k<x,y>/(x^n, y^m, yx−ξxy), 𝒜_N =
+    {y^{φ(s,m)} x^{φ(t,n)} : s+t = N+1}, φ(s,k) = (s/2)k if s even else ((s−1)/2)k + 1.
+    quiverlab S_N = 𝒜_{N-1}. Pin n=3, m=2 through S_5."""
+    def phi(s, k):
+        return (s // 2) * k if s % 2 == 0 else ((s - 1) // 2) * k + 1
+    ss = SSequence(_rs(["x*x*x", "y*y", "y*x - 2*x*y"]), max_degree=5)
+    for N in range(2, 6):
+        expect = {("y",) * phi(s, 2) + ("x",) * phi(t, 3)
+                  for s in range(N + 1) for t in range(N + 1) if s + t == N}
+        assert {c.word for c in ss.S(N)} == expect, f"S_{N}"
