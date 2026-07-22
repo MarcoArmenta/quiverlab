@@ -1,7 +1,10 @@
 """The Chouhy-Solotar differential (arXiv:1406.2300 §4, §6), Domain-generic. A TERM is
 (coeff, a_word, target_word, c_word) meaning coeff·(a ⊗ target ⊗ c) in P_{n-1}, where
 a_word,c_word are PATHS (arrow-name tuples; () = the unit) reduced to normal form only at
-collapse time, and target_word identifies a chain in S_{n-1}. Composition is LEFT TO RIGHT."""
+collapse time, and target_word identifies a chain in S_{n-1}. Composition is LEFT TO RIGHT.
+Valid for every admissible presentation (Plan 12 lifted the quadratic-or-monomial
+restriction: the odd 2-term map takes its first term from the RIGHT factorization, CS §4
+f_n even); the only refusal left is a genuinely inconsistent correction solve."""
 from quiverlab.resolutions_cs.ambiguities import SSequence
 from quiverlab.resolutions_cs.aarith import AArith
 
@@ -15,6 +18,7 @@ class ChouhySolotarResolution:
         self.ar = AArith(A, rs)
         self._chain_index = {}
         self._d_cache = {}
+        self._rdec_cache = {}
 
     def to_int(self, c):
         return self.dom.to_int(c) if hasattr(self.dom, "to_int") else int(c)
@@ -36,20 +40,28 @@ class ChouhySolotarResolution:
     def _fox(self, word, coeff):
         return [(coeff, word[:k], (word[k],), word[k + 1:]) for k in range(len(word))]
 
+    def _right_blocks(self, n, chain):
+        """CS §3 right factorization of the chain word (leftmost block first), cached.
+        Right ambiguities = left ambiguities as sets, so this always succeeds on S_n."""
+        rb = self._rdec_cache.get((n, chain.word))
+        if rb is None:
+            rb = tuple(tuple(b) for b in
+                       self.ss.tip_presentation().right_decomposition(chain.word, n))
+            self._rdec_cache[(n, chain.word)] = rb
+        return rb
+
     # -- leading map δ_n (CS f_{n-1}), quiverlab index ----------------------
     def delta_terms(self, n, chain):
-        self._require_in_scope()      # public + ungated (edit #1): a direct odd-n≥3 call on a
-        # non-quadratic non-monomial presentation would return silently-wrong even-δ terms
-        # (left-vs-right decomposition divergence); refuse at the same boundary as _d_general.
         if n == 1:
             return self._d1_terms(chain)
         one, none = self._one(), self._neg(self._one())
-        blocks = chain.blocks
-        if n % 2 == 1:                                            # CS f_{n-1} EVEN: 2-term map
-            u0, ulast = blocks[0], blocks[-1]
-            P = tuple(x for blk in blocks[1:] for x in blk)      # u_1..u_{n-1} in S_{n-1}
-            Q = tuple(x for blk in blocks[:-1] for x in blk)     # u_0..u_{n-2} in S_{n-1}
-            return [(one, u0, P, ()), (none, (), Q, ulast)]
+        if n % 2 == 1:                                   # CS f_{n-1} EVEN: 2-term map,
+            ulast = chain.blocks[-1]                     # first term from the RIGHT
+            v_top = self._right_blocks(n, chain)[0]      # factorization (CS §4; = u_0
+            word = chain.word                            # only in the quadratic case)
+            P = tuple(word[len(v_top):])                 # v_{n-2}..v_0 in S_{n-1}
+            Q = tuple(word[:len(word) - len(ulast)])     # u_0..u_{n-2} in S_{n-1}
+            return [(one, v_top, P, ()), (none, (), Q, ulast)]
         prev = {c.word for c in self.ss.S(n - 1)}                # n even: CS f_{n-1} ODD, big sum
         w, out = chain.word, []
         for i in range(len(w)):
@@ -99,25 +111,8 @@ class ChouhySolotarResolution:
                         gens.append((one, bw, p.word, cw))
         return gens
 
-    def _require_in_scope(self):
-        """RESTRICT (edit #1): the uncollapsed leading map is provably CS's δ only for
-        quadratic tips (v_n = u_0; CS Prop, TeX 772) or monomial presentations (no
-        correction; collapsed map = validated Bardzell). A non-quadratic non-monomial
-        presentation raises NotImplementedError at this exact boundary (spec §6)."""
-        quadratic = all(len(w) <= 2 for w in self.rs.leading_words())
-        monomial = all(len(r.tail) == 0 for r in self.rs.rules)
-        if not quadratic and not monomial:
-            raise NotImplementedError(
-                "CS is certified for quadratic tips (S ⊆ Q_2; CS Prop, arXiv:1406.2300 TeX "
-                "line 772) or monomial presentations; this presentation has a tip of length "
-                ">= 3 AND a nonzero tail (non-quadratic non-monomial). There v_n ≠ u_0 and the "
-                "uncollapsed leading map feeding the correction solve is not provably δ_CS. "
-                "Lifting this needs the right_decomposition upgrade (a Plan-04 stretch item); "
-                "boundary per spec §6 risk register.")
-
     def _d_general(self, n, chain):
         from quiverlab.resolutions_cs.pelt import terms_to_pelt, apply_lower
-        self._require_in_scope()                         # NotImplementedError at the exact boundary
         key = (n, chain.word)
         if key in self._d_cache:
             return self._d_cache[key]

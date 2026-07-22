@@ -66,7 +66,8 @@ def test_qci_d3_correction_matches_paper():
 
 def _kx3(field=CC):
     """k<x>/(x³): single vertex, loop x, MONOMIAL relation x*x*x. Non-quadratic (cubic tip)
-    but monomial, so _require_in_scope ADMITS it (no correction; collapsed = Bardzell)."""
+    but monomial: no correction; collapsed = Bardzell. (Plan 12 removed the scope gate;
+    this stays as the monomial-non-quadratic gates regression.)"""
     Q = Quiver([1], {"x": (1, 1)})
     return ChouhySolotarResolution(Q.algebra(relations=["x*x*x"], field=field),
                                    build_reduction_system(Q, ["x*x*x"], field), max_degree=5)
@@ -89,33 +90,51 @@ def test_kx3_monomial_nonquadratic_gates_pass():
                 res.d_terms(n, c)                        # no NotImplementedError
 
 
-def test_cubic_tip_nonmonomial_raises_notimplemented():
-    """RESTRICT boundary (edit #1): a non-quadratic (cubic tip) NON-monomial presentation
-    raises NotImplementedError at the exact degree-≥3 differential. A = k<x,y>/(x²,y²,xyx−yxy)
-    is finite-dimensional (basis {1,x,y,xy,yx,xyx}, dim 6) with a cubic tip and a nonzero tail.
-    (If completion changes the basis, keep any admissible f.d. cubic-tip non-monomial algebra.)"""
+def _cubic_tail(field=CC):
+    """A = k<x,y>/(x², y², xyx − yxy): f.d. (dim 6), cubic tip xyx WITH tail yxy —
+    non-quadratic non-monomial, previously refused (Plan-04 RESTRICT boundary; lifted
+    by Plan 12's right_decomposition). The order resolves the tip as yxy (tail xyx),
+    so tips = {xx, yy, yxy}, whose S-sequence has straddling chains (yxyy, yyxy,
+    yxyxy) — this exercises blocks + right factorization + corrections at once.
+    (If completion changes the tips, keep any admissible f.d. cubic-tip non-monomial.)"""
     Q = Quiver([1], {"x": (1, 1), "y": (1, 1)})
     rels = ["x*x", "y*y", "x*y*x - y*x*y"]
-    A = Q.algebra(relations=rels, field=CC)
-    res = ChouhySolotarResolution(A, build_reduction_system(Q, rels, CC), max_degree=4)
-    with pytest.raises(NotImplementedError) as e:
-        res.d_terms(3, res.ss.S(3)[0])                   # first degree-3 differential trips the guard
-    assert "quadratic" in str(e.value).lower() and "right_decomposition" in str(e.value)
+    A = Q.algebra(relations=rels, field=field)
+    return A, ChouhySolotarResolution(A, build_reduction_system(Q, rels, field),
+                                      max_degree=4)
 
 
-def test_cubic_tip_nonmonomial_refuses_at_battery_level():
-    """RESTRICT boundary (edit #1), END-TO-END: the same cubic-tip NON-monomial presentation
-    A = k<x,y>/(x²,y²,xyx−yxy) must refuse through the FULL HH pipeline, not only at the raw
-    res.d_terms(3,·) level (test_cubic_tip_nonmonomial_raises_notimplemented pins that). The
-    public entry points cs_cohomology_dims / cs_homology_dims and A.hochschild_cohomology(
-    engine="cs") each build the resolution and drive the degree-≥3 differential, so the guard's
-    NotImplementedError surfaces battery-level, confirming the refusal is not swallowed."""
-    Q = Quiver([1], {"x": (1, 1), "y": (1, 1)})
-    rels = ["x*x", "y*y", "x*y*x - y*x*y"]
-    A = Q.algebra(relations=rels, field=CC)
-    for call in (lambda: cs_cohomology_dims(A, 3),
-                 lambda: cs_homology_dims(A, 3),
-                 lambda: A.hochschild_cohomology(3, engine="cs")):
-        with pytest.raises(NotImplementedError) as e:
-            call()
-        assert "quadratic" in str(e.value).lower()
+def test_cubic_tip_nonmonomial_gates_pass():
+    """Plan 12: the former RESTRICT boundary now computes, certified per instance by
+    the two CS gates on both sides (Theorem 4.1 conditions (1) and (2))."""
+    for field in (CC, GF(2), GF(3)):
+        _A, res = _cubic_tail(field=field)
+        res.assert_dd_zero(upto=4, side="hom")
+        res.assert_dd_zero(upto=4, side="coh")
+        res.assert_order_condition(upto=4)
+
+
+def test_cubic_tip_nonmonomial_battery_level():
+    """END-TO-END: the full HH pipeline runs on the lifted boundary (the gates inside
+    cs_*_dims are the certificate); no NotImplementedError escapes."""
+    A, _res = _cubic_tail(field=CC)
+    coh = cs_cohomology_dims(A, 3).dims
+    hom = cs_homology_dims(A, 3).dims
+    assert len(coh) == 4 and len(hom) == 4
+    assert all(d >= 0 for d in list(coh) + list(hom))
+    assert A.hochschild_cohomology(3, engine="cs") is not None
+
+
+def test_cubic_tail_delta3_first_term_uses_right_block():
+    """Pin the corrected odd first term on a straddle chain: for σ = yxyy (tips
+    {xx,yy,yxy}), left blocks are (y)(xy)(y) and right blocks (yx)(y)(y), so the
+    leading 2-term map is (+1, yx, yy, ()) and (−1, (), yxy, y) — u_0 = y in the
+    first slot would be WRONG here."""
+    _A, res = _cubic_tail(field=CC)
+    sigma = next(c for c in res.ss.S(3) if c.word == ("y", "x", "y", "y"))
+    assert sigma.blocks == (("y",), ("x", "y"), ("y",))
+    lead = {(res.to_int(c), a, tw, cc) for (c, a, tw, cc) in res.delta_terms(3, sigma)}
+    assert lead == {
+        (1, ("y", "x"), ("y", "y"), ()),               # v_top ⊗ (rest) ⊗ 1
+        (-1, (), ("y", "x", "y"), ("y",)),             # 1 ⊗ (rest) ⊗ u_last
+    }
