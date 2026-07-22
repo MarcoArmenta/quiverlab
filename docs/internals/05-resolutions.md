@@ -88,21 +88,33 @@ path tuples). Its combinatorics are the graded **associated paths** AP^n (equiva
 Anick chains / n-ambiguities):
 
 - AP^0 = vertices, AP^1 = arrows, AP^2 = the minimal relations;
-- AP^n (n ≥ 2) = paths admitting a unique *left decomposition* p = u_0 u_1 ... u_{n−1} into
-  blocks where each consecutive pair u_k u_{k+1} is exactly a minimal relation (Bardzell's
-  overlap/chain condition), built recursively by `associated_paths`.
+- AP^n (n ≥ 2) = paths admitting a unique *left decomposition* p = u_0 u_1 ... u_{n−1}
+  (u_0 a single arrow): each next block is the **shortest extension making the consecutive
+  pair reducible** — the witness relation ends at the pair's end and *straddles* the block
+  boundary; with mixed-length relations it can be a proper suffix of the pair rather than
+  the pair itself (CS §3 / Anick minimality, corrected in Plan 12). Built recursively by
+  `associated_paths`. Example, relations `{xx, yy, xyx}`: `xyxx = (x)(yx)(x)` — the pair
+  `yx·x` is not a relation but contains `xx`; the exact-pair shortcut missed this chain
+  (and `xyxyx`), giving AP^3 = 3 instead of the true 5 = the minimal-A^e Betti number.
+- every associated path also has a unique *right decomposition* (`right_decomposition`,
+  last block a single arrow, mirror-greedy): same set (CS §3 Prop.), different blocks —
+  for `xyxx` it is `(xy)(x)(x)`.
 
 The n-th term is P_n = ⊕_{p ∈ AP^n} A e_{o(p)} ⊗ e_{t(p)} A; after A ⊗_{A^e} (−) each
 summand collapses to the loop space e_{o(p)} A e_{t(p)} (paths closing p), so a basis
 element of the contracted term is a pair `(p, w)` — an associated path and a nonzero path
 closing it (`term_basis`, `loops`). The differential `differential_matrix` alternates
 between Bardzell's "big" map (even n: sum over (n−1)-associated subpaths) and "small" map
-(odd n ≥ 3: drop the first / last block), with n = 1 the commutator/augmentation map.
+(odd n ≥ 3: `(+1)` drop the leftmost **right**-block `v_top`, `(−1)` drop the rightmost
+**left**-block — CS §4 `f_n` even; using `u_0` in the first slot is correct only for
+quadratic/palindromic relation sets), with n = 1 the commutator/augmentation map.
 Because the resolution is *minimal* and its terms are the small associated-path sets rather
 than the bar complex's m·(m−1)^n, it runs far past the bar wall — the bank record is exact
 homology to **degree 1702** (a hanlab-bank record; not reproduced or verified in this
 port). It is cross-checked entry-exact against the bar oracle on
-k[x]/(x^a), cyclic Nakayama algebras, and the radical-square-zero families.
+k[x]/(x^a), cyclic Nakayama algebras, the radical-square-zero families, and (Plan 12)
+the straddling-overlap presentation k⟨x,y⟩/(xx, yy, xyx) against bar **and** the
+minimal-A^e engine simultaneously.
 
 ## The periodicity detector, and eventually-periodic families
 

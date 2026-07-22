@@ -54,7 +54,7 @@ Line quiver tips `{abc, cde}`: `AP^3 = {abcde}`, left `(a)(bc)(de)`, right `(ab)
 - Consumes: existing `MonomialPresentation.__init__` fields (`relations`, `relset`, `bysrc`, `tgt`, `maxrel`).
 - Produces: `associated_paths(n, maxlen) -> sorted list of tuples` (same signature, now complete); `left_decomposition(p, n) -> list of n tuples` (same signature, greedy); `_witness_at_end(path) -> tuple|None` (internal helper reused by Task 2's mirror).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `tests/engine/test_bardzell_straddle.py`:
 
@@ -124,12 +124,12 @@ def test_deep_straddle_chain_growth():
     assert all(c >= 2 for c in counts)                 # y^k chain and an x-side chain persist
 ```
 
-- [ ] **Step 2: Run tests, verify current failures**
+- [x] **Step 2: Run tests, verify current failures**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/engine/test_bardzell_straddle.py -m deep`
 Expected: `test_straddle_ap3_complete`, `test_line_quiver_short_overlap_chain`, `test_left_decomposition_straddle_blocks` FAIL (missing chains / assertion "no left decomposition"); `test_uniform_families_unchanged` PASSES (pin of the unchanged behavior).
 
-- [ ] **Step 3: Implement first-reducibility cutting**
+- [x] **Step 3: Implement first-reducibility cutting**
 
 In `src/quiverlab/engine/resolutions_bardzell.py`, replace `_proper_suffix_in_I` with:
 
@@ -220,12 +220,12 @@ Replace `left_decomposition` with the greedy deterministic form:
 
 Grep for remaining `_proper_suffix_in_I` references (`grep -rn _proper_suffix_in_I src/ tests/`) — delete the method only if nothing else uses it.
 
-- [ ] **Step 4: Run tests, verify all pass**
+- [x] **Step 4: Run tests, verify all pass**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/engine/test_bardzell_straddle.py tests/engine/test_bardzell_resolution.py tests/engine/test_acceptance_plan02.py -m deep`
 Expected: all PASS (uniform-zoo Bardzell suites are the regression net; the straddle HH cross-check comes in Task 3 after the differential fix).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/quiverlab/engine/resolutions_bardzell.py tests/engine/test_bardzell_straddle.py
@@ -244,7 +244,7 @@ git commit -m "fix(engine): associated_paths/left_decomposition honor straddling
 - Consumes: Task 1's `_witness_at_end` pattern (mirrored), `MonomialPresentation.relations`.
 - Produces: `right_decomposition(p, n) -> list of n tuples in left-to-right order [v_{n-1}, ..., v_0]`, `v_0 = (p[-1],)`. Used by Task 3 (Bardzell odd map) and Task 4 (CS `delta_terms`).
 
-- [ ] **Step 1: Write the failing tests** (append to `tests/engine/test_bardzell_straddle.py`)
+- [x] **Step 1: Write the failing tests** (append to `tests/engine/test_bardzell_straddle.py`)
 
 ```python
 def test_right_decomposition_mirror_and_straddle():
@@ -298,12 +298,12 @@ def test_left_right_ambiguity_sets_coincide():
                 assert tuple(x for b in blocks for x in b) == tuple(p)
 ```
 
-- [ ] **Step 2: Run tests, verify failure**
+- [x] **Step 2: Run tests, verify failure**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/engine/test_bardzell_straddle.py -m deep -k right`
 Expected: FAIL with `AttributeError: ... no attribute 'right_decomposition'`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add to `MonomialPresentation` (below `left_decomposition`):
 
@@ -343,12 +343,12 @@ Add to `MonomialPresentation` (below `left_decomposition`):
         return blocks[::-1]
 ```
 
-- [ ] **Step 4: Run tests, verify pass**
+- [x] **Step 4: Run tests, verify pass**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/engine/test_bardzell_straddle.py -m deep`
 Expected: all PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/quiverlab/engine/resolutions_bardzell.py tests/engine/test_bardzell_straddle.py
@@ -367,7 +367,7 @@ git commit -m "feat(engine): right_decomposition — CS §3 right n-ambiguity bl
 - Consumes: Task 2's `right_decomposition`.
 - Produces: corrected `BardzellResolution.differential_matrix` (same signature/shape contract).
 
-- [ ] **Step 1: Write the failing test** (append)
+- [x] **Step 1: Write the failing test** (append)
 
 ```python
 def test_straddle_hh_matches_bar_and_minimal():
@@ -408,12 +408,12 @@ def test_straddle_bardzell_depth_unlock():
     assert len(dims) == 11 and all(d >= 0 for d in dims)
 ```
 
-- [ ] **Step 2: Run, verify the first test fails** (HH mismatch at degree ≥ 2 — the odd map still drops silently-invalid first terms)
+- [x] **Step 2: Run, verify the first test fails** (HH mismatch at degree ≥ 2 — the odd map still drops silently-invalid first terms)
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/engine/test_bardzell_straddle.py -m deep -k hh_matches`
 Expected: FAIL with dimension mismatch.
 
-- [ ] **Step 3: Fix the odd branch** of `differential_matrix`:
+- [x] **Step 3: Fix the odd branch** of `differential_matrix`:
 
 ```python
         # n odd >= 3: SMALL map — CS §4 f_{n-1} (even): v ⊗ (v_{n-2}⋯v_0) ⊗ 1 minus
@@ -438,12 +438,12 @@ Expected: FAIL with dimension mismatch.
         return M
 ```
 
-- [ ] **Step 4: Run the full engine Bardzell surface**
+- [x] **Step 4: Run the full engine Bardzell surface**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/engine/test_bardzell_straddle.py tests/engine/test_bardzell_resolution.py tests/engine/test_acceptance_plan02.py tests/engine/test_periodic_resolution.py tests/engine/test_resolution_contract.py tests/engine/test_resolution_protocol.py -m deep`
 Expected: all PASS (uniform zoo unchanged; straddle now matches oracles).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/quiverlab/engine/resolutions_bardzell.py tests/engine/test_bardzell_straddle.py
@@ -462,7 +462,7 @@ git commit -m "fix(engine): Bardzell odd differential takes its first term from 
 - Consumes: `right_decomposition` via `self.ss.tip_presentation()` (SSequence already exposes it).
 - Produces: `delta_terms`/`d_terms` valid for **all** admissible presentations; only remaining `NotImplementedError` is the correction-solve inconsistency (unchanged, ~137). Term format unchanged.
 
-- [ ] **Step 1: Replace the refusal tests with acceptance tests** in `tests/resolutions_cs/test_differential.py` (keep imports/`_kx3` as-is; delete `test_cubic_tip_nonmonomial_raises_notimplemented` and `test_cubic_tip_nonmonomial_refuses_at_battery_level`):
+- [x] **Step 1: Replace the refusal tests with acceptance tests** in `tests/resolutions_cs/test_differential.py` (keep imports/`_kx3` as-is; delete `test_cubic_tip_nonmonomial_raises_notimplemented` and `test_cubic_tip_nonmonomial_refuses_at_battery_level`):
 
 ```python
 def _cubic_tail(field=CC):
@@ -513,12 +513,12 @@ def test_cubic_tail_delta3_first_term_uses_right_block():
     }
 ```
 
-- [ ] **Step 2: Run, verify failure**
+- [x] **Step 2: Run, verify failure**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/resolutions_cs/test_differential.py -m deep`
 Expected: the four new tests FAIL with `NotImplementedError` ("CS is certified for quadratic tips..."); all pre-existing tests PASS.
 
-- [ ] **Step 3: Implement in `src/quiverlab/resolutions_cs/resolution.py`**
+- [x] **Step 3: Implement in `src/quiverlab/resolutions_cs/resolution.py`**
 
 In `__init__`, add `self._rdec_cache = {}` after `self._d_cache = {}`.
 
@@ -556,12 +556,12 @@ Replace `delta_terms`'s guard call and odd branch (lines ~41–52):
 
 Delete `_require_in_scope` entirely and its call in `_d_general` (line ~120). Keep the correction-solve inconsistency `NotImplementedError` (~137) verbatim. Update the module docstring's scope sentence to: "Valid for every admissible presentation (Plan 12 lifted the quadratic-or-monomial restriction via right_decomposition); the only refusal left is a genuinely inconsistent correction solve."
 
-- [ ] **Step 4: Run the CS suite**
+- [x] **Step 4: Run the CS suite**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/resolutions_cs/ -m deep`
 Expected: all PASS — QCI(2,2)/kx3/commutative-square term pins unchanged (quadratic/palindromic ⇒ `v_top == u_0`); new acceptance tests green. If `test_battery_*` pins fail, STOP: that means a shipped family was not palindromic-safe — investigate before proceeding (it would contradict the Global Constraints analysis).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/quiverlab/resolutions_cs/resolution.py tests/resolutions_cs/test_differential.py
@@ -580,7 +580,7 @@ git commit -m "feat(cs): odd differential takes the right factorization; lift th
 - Consumes: public `Quiver.algebra`, `build_reduction_system`, `ChouhySolotarResolution`, `cs_homology_dims`/`cs_cohomology_dims`, engine bar via `quiverlab.engine.hh_engine.hochschild_homology_dims` + `to_engine` (pattern of `test_battery_bar.py` — mirror its helper imports exactly when writing the file).
 - Produces: per-instance certification of the newly admitted presentations.
 
-- [ ] **Step 1: Append S-sequence pins** to `tests/resolutions_cs/test_ambiguities.py` (follow the file's existing fixture style for building an `SSequence` from a reduction system):
+- [x] **Step 1: Append S-sequence pins** to `tests/resolutions_cs/test_ambiguities.py` (follow the file's existing fixture style for building an `SSequence` from a reduction system):
 
 ```python
 def test_ssequence_straddle_chains_present():
@@ -612,7 +612,7 @@ def test_ssequence_qci32_matches_cs_phi_formula():
         assert {c.word for c in ss.S(N)} == expect, f"S_{N}"
 ```
 
-- [ ] **Step 2: Create `tests/resolutions_cs/test_battery_straddle.py`**
+- [x] **Step 2: Create `tests/resolutions_cs/test_battery_straddle.py`**
 
 ```python
 """Plan 12 battery: presentations OUTSIDE the old quadratic-or-monomial scope.
@@ -671,12 +671,12 @@ def test_straddle_monomial_literals():
     assert cs_homology_dims(A2, 3) == [4, 7, 9, 12]
 ```
 
-- [ ] **Step 3: Run the new battery**
+- [x] **Step 3: Run the new battery**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q tests/resolutions_cs/test_battery_straddle.py tests/resolutions_cs/test_ambiguities.py -m deep`
 Expected: all PASS. Execution notes: (a) fix imports to the repo's actual module paths by mirroring `test_battery_bar.py`'s header; (b) `cs_homology_dims`'s exact signature/arg order comes from `homology.py` — adapt the calls, not the assertions; (c) if `build_reduction_system` reports non-confluence for `x*y*x - y*x*y` (hand-checked confluent: overlaps xxyx, xyxx, xyxyx, xxx-side all resolve to 0), STOP and re-derive with the completion's actual tips per the docstring escape hatch.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/resolutions_cs/test_battery_straddle.py tests/resolutions_cs/test_ambiguities.py
@@ -690,27 +690,27 @@ git commit -m "test(cs): straddle/QCI(3,2)/cubic-tail batteries — gates + bar 
 **Files:**
 - Modify: `docs/internals/05-resolutions.md`, `docs/internals/09-chouhy-solotar.md` (scope prose), `CLAUDE.md` (stretch-item paragraph), `docs/plans/ROADMAP.md` (Plan 12 entry), this plan (mark executed)
 
-- [ ] **Step 1: Run the full deep suites**
+- [x] **Step 1: Run the full deep suites**
 
 Run: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q -m deep tests/engine/ tests/resolutions_cs/`
 Expected: all PASS (~15–20 min). Then the fast matrix: `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2 .venv/bin/python -m pytest -q -m fast`
 Expected: all PASS.
 
-- [ ] **Step 2: Update docs**
+- [x] **Step 2: Update docs**
 
 - `docs/internals/05-resolutions.md`: in the Bardzell section, document the minimal-extension block cut and `right_decomposition`, with the `xyxx` worked example (left `(x)(yx)(x)`, right `(xy)(x)(x)`).
 - `docs/internals/09-chouhy-solotar.md`: replace the RESTRICT-scope paragraph with the lifted-scope statement (only refusal left: inconsistent correction solve) and the corrected odd-map formula.
 - `CLAUDE.md`: rewrite the "Known deeper-engine stretch item" paragraph as delivered (Plan 12), noting `right_decomposition` and that `_require_in_scope` is gone; update the Status date line.
 - `docs/plans/ROADMAP.md`: add Plan 12 as delivered with a one-line summary of both findings.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/internals/05-resolutions.md docs/internals/09-chouhy-solotar.md CLAUDE.md docs/plans/ROADMAP.md docs/plans/2026-07-22-plan-12-ambiguity-blocks.md
 git commit -m "docs: Plan 12 — straddling ambiguities fixed, right factorization, CS scope lifted"
 ```
 
-- [ ] **Step 4 (optional, heavy): strict docs build**
+- [x] **Step 4 (optional, heavy): strict docs build**
 
 Run: `.venv/bin/mkdocs build --strict` — exit 0 expected (several minutes; executes notebooks). Only needed if internals chapters changed structurally.
 
@@ -726,6 +726,16 @@ Run: `.venv/bin/mkdocs build --strict` — exit 0 expected (several minutes; exe
 - Cyclic-Nakayama uniform pin fixed: `cn(3,2)` is quadratic (`ℓ=2`, length-3 chains);
   the genuinely-overlapping regression pin uses `cn(2,3)` instead.
 - Tasks 1 and 2 landed as one commit (same two files; interleaved verification).
+- **Cubic-tail tips are `{xx, yy, yxy}`**, not `{xx, yy, xyx}`: the Plan-03 order
+  resolves `x*y*x − y*x*y` with leading word `yxy` (tail `xyx`). The Task-4 delta pin
+  therefore uses the straddle chain `yxyy` (left `(y)(xy)(y)`, right `(yx)(y)(y)`),
+  terms `(+1, yx, yy, ())`, `(−1, (), yxy, y)`.
+- Task-5 battery compares against the **public bar oracle** (`quiverlab.hochschild.bar`,
+  `.dims`, live at assert time — the `test_battery_bar.py` posture), not the engine
+  adapter route sketched in the plan.
+- Battery results: 17/17 — the correction solve is **consistent** on all three newly
+  admitted presentations (no higher-homotopy refusal needed); CS ≡ bar degreewise over
+  GF(32003)/GF(2)/GF(3)/GF(5) and char 0.
 
 ## Self-review notes
 

@@ -16,6 +16,12 @@ roadmap fixes scope and interfaces between them.
 | 07 | Viz + trace | `draw()` (matplotlib hard dep added here) + `tikz()`; the worked-steps trace subsystem (PDF/HTML/text renderers, `verbose=True` default, eliding rules, golden-file tests) | §5 (10, 11), §3.7, §3.8, D9 |
 | 08 | QPA extra + release | `[qpa]` extra (passagemath-gap), crosscheck oracle + CI job; GitHub Actions matrix; docs site + CI-run tutorials; PyPI packaging; JOSS paper draft | §5 (12), §8 ring 3, §9–§11 |
 
+**Deeper-engine plans (post-v1, 2026-07-22 →):**
+
+| # | Plan | Delivers |
+|---|------|----------|
+| 12 | **Straddling ambiguities & the right decomposition** (`2026-07-22-plan-12-ambiguity-blocks.md`, DELIVERED) | Fixes the latent CS §3 block-combinatorics bug (exact-pair condition missed straddling-overlap chains — repro `k⟨x,y⟩/(xx,yy,xyx)`, Bardzell HH wrong from degree 2 vs bar/minimal oracles); adds `right_decomposition`; corrects the Bardzell and CS odd (2-term) differentials to CS §4 `f_n` (first term from the right factorization); lifts the CS non-quadratic non-monomial `NotImplementedError` (the Plan-04 stretch item) with a new battery: straddle-monomial, QCI(3,2) with CS §7.2 φ-formula pins, cubic-tip-with-tail — all gated by d²=0 + order condition + live bar agreement |
+
 Standing constraints for every plan: exact arithmetic only, floats fail loudly
 (AST gate enforces); read-only banks are never modified; ≤2 parallel agents during
 execution; path composition is left-to-right (`a*b` = first `a`, then `b`,
