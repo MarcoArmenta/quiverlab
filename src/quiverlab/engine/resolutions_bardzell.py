@@ -421,19 +421,20 @@ class BardzellResolution(Resolution):
                                 M[index_nm1[key], c] += 1
             return M
 
-        # n odd >= 3: SMALL map
+        # n odd >= 3: SMALL map — CS §4 f_{n-1} (even): v ⊗ (v_{n-2}⋯v_0) ⊗ 1 minus
+        # 1 ⊗ (u_0⋯u_{n-2}) ⊗ u_{n-1}; the FIRST term needs the RIGHT factorization
+        # (equal to u_0 only for quadratic/palindromic tips).
         for c, (p, w) in enumerate(basis_n):
-            blocks = pres.left_decomposition(p, n)
-            P = tuple(x for b in blocks[1:] for x in b)     # drop first block u_0
-            Q = tuple(x for b in blocks[:-1] for x in b)    # drop last block  u_{n-1}
-            u0 = blocks[0]
-            ulast = blocks[-1]
-            lw = pres.compose(w, u0)                         # (P ; w.u_0)
+            v_top = pres.right_decomposition(p, n)[0]
+            ulast = pres.left_decomposition(p, n)[-1]
+            P = tuple(p[len(v_top):])                    # right (n-2)-ambiguity ∈ AP^{n-1}
+            Q = tuple(p[:len(p) - len(ulast)])           # left  (n-2)-ambiguity ∈ AP^{n-1}
+            lw = pres.compose(w, v_top)                  # (P ; w·v_top)
             if lw is not None:
                 key = (P, lw)
                 if key in index_nm1:
                     M[index_nm1[key], c] += 1
-            lw = pres.compose(ulast, w)                      # (Q ; u_{n-1}.w)
+            lw = pres.compose(ulast, w)                  # (Q ; u_{n-1}·w)
             if lw is not None:
                 key = (Q, lw)
                 if key in index_nm1:

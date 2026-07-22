@@ -118,3 +118,41 @@ def test_left_right_ambiguity_sets_coincide():
                 blocks = pres.right_decomposition(p, n)
                 assert len(blocks) == n
                 assert tuple(x for b in blocks for x in b) == tuple(p)
+
+
+def test_straddle_hh_matches_bar_and_minimal():
+    """The decisive repro: A = k<x,y>/(xx,yy,xyx), dim 6. Bar and minimal-A^e oracles
+    agree; Bardzell must now too (was [4,4,7,6] vs [4,4,6,9] at 32003 before the fix)."""
+    import quiverlab as ql
+    from quiverlab.engine.adapter import to_engine
+    from quiverlab.engine.hh_engine import hochschild_homology_dims
+    from quiverlab.engine.resolutions_bardzell import BardzellResolution
+    from quiverlab.engine.resolutions_minimal import minimal_homology_dims
+
+    Q = ql.Quiver(["v"], {"x": ("v", "v"), "y": ("v", "v")})
+    A = Q.algebra(relations=["x*x", "y*y", "x*y*x"], field=ql.GF(32003))
+    eng = to_engine(A)
+    res = BardzellResolution(_s1())
+    N, PRIMES = 3, (32003, 2, 3, 5)
+    bar = hochschild_homology_dims(eng, N, primes=PRIMES)
+    bard = hochschild_homology_dims(eng, N, primes=PRIMES, resolution=res)
+    minh = minimal_homology_dims(eng, N, primes=PRIMES)
+    for p in PRIMES:
+        assert bard[p] == bar[p], f"p={p}: {bard[p]} != {bar[p]}"
+        assert minh[p] == bar[p][:len(minh[p])], f"minimal p={p}"
+    assert bar[32003] == [4, 4, 6, 9]                  # session-verified literals
+    assert bar[2] == [4, 7, 9, 12]
+
+
+def test_straddle_bardzell_depth_unlock():
+    """Bardzell runs past the bar window on the straddle presentation (smoke, N=10)."""
+    import quiverlab as ql
+    from quiverlab.engine.adapter import to_engine
+    from quiverlab.engine.hh_engine import hochschild_homology_dims
+    from quiverlab.engine.resolutions_bardzell import BardzellResolution
+
+    Q = ql.Quiver(["v"], {"x": ("v", "v"), "y": ("v", "v")})
+    A = Q.algebra(relations=["x*x", "y*y", "x*y*x"], field=ql.GF(32003))
+    dims = hochschild_homology_dims(to_engine(A), 10, primes=(32003,),
+                                    resolution=BardzellResolution(_s1()))[32003]
+    assert len(dims) == 11 and all(d >= 0 for d in dims)
