@@ -28,9 +28,14 @@ A = Q.algebra(relations=["a*b"], field=CC)
 print(A.hochschild_cohomology(3))
 ```
 
-- **Tutorials** — start here (executable notebooks).
-- **Under the hood** — how each object is represented and each number produced.
-- **API Reference** — every public function and class.
+- **Tutorials** — start here (executable notebooks):
+  [1 — Exact fields](tutorials/01-exact-fields/) ·
+  [2 — Quivers and algebras](tutorials/02-quivers-and-algebras/) ·
+  [3 — Hochschild theory](tutorials/03-hochschild/).
+- **[Under the hood](internals/)** — how each object is represented and each
+  number produced.
+- **[API Reference](reference/)** — every public function and class.
 - **Web GUI** — the form at the top of this page runs in your browser; a
   server-backed tier for big jobs is planned (Plan 09).
-- **Cite** — see the JOSS paper and `CITATION.cff`.
+- **Cite** — see the JOSS paper and
+  [`CITATION.cff`](https://github.com/MarcoArmenta/quiverlab/blob/main/CITATION.cff).
