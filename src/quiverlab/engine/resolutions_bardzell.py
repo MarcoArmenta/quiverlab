@@ -159,11 +159,15 @@ class MonomialPresentation:
                     return True
         return False
 
-    def _proper_suffix_in_I(self, path):
-        for k in range(1, len(path)):
-            if tuple(path[k:]) in self.relset:
-                return True
-        return False
+    def _witness_at_end(self, path):
+        """The unique tip that is a suffix of `path`, or None (S is interreduced, so at
+        most one tip ends at a given position)."""
+        lp = len(path)
+        for r in self.relations:
+            lr = len(r)
+            if lr <= lp and tuple(path[lp - lr:]) == r:
+                return r
+        return None
 
     def compose(self, w1, w2):
         """Concatenate paths w1 then w2 (tuples of arrow ids; () = empty/vertex path).
@@ -182,9 +186,12 @@ class MonomialPresentation:
 
     # -- associated paths ---------------------------------------------
     def associated_paths(self, n, maxlen):
-        """AP^n: the degree-n associated paths (n-ambiguities). maxlen caps the path
-        length explored (any associated path of degree n has length <= n*(maxrel-1)+1
-        when relations overlap maximally; pass a generous bound)."""
+        """AP^n: the degree-n associated paths (n-ambiguities), CS §3 verbatim: each
+        next block is the SHORTEST extension making (prev block)+(block) reducible;
+        the witness tip ends at the pair's end and may STRADDLE the boundary (a proper
+        suffix of the pair — the pair need not itself be a tip). maxlen caps the path
+        length explored (an associated path of degree n has length <= n*(maxrel-1)+1;
+        pass a generous bound)."""
         if n <= 0:
             return []
         if n == 1:
@@ -200,10 +207,13 @@ class MonomialPresentation:
 
             def ext(uk, lastt):
                 cand = tuple(prev) + tuple(uk)
-                if tuple(cand) in self.relset and not self._proper_suffix_in_I(cand):
-                    rec(blocks + [tuple(uk)], full + list(uk))
-                # a block uk satisfies len(prev)+len(uk) == len(relation) <= maxrel,
-                # so uk alone is shorter than maxrel: bound the search.
+                w = self._witness_at_end(cand)
+                if w is not None:
+                    # FIRST reducibility: the block boundary is forced here (CS §3 (ii)).
+                    if len(w) > len(uk):        # witness straddles => uk irreducible
+                        rec(blocks + [tuple(uk)], full + list(uk))
+                    return                       # witness inside uk alone: dead branch
+                # a valid block uk has len(uk) < len(witness) <= maxrel: bound the search.
                 if len(uk) >= self.maxrel:
                     return
                 if len(full) + len(uk) > maxlen:
@@ -219,26 +229,60 @@ class MonomialPresentation:
         return sorted(res, key=lambda p: (len(p), p))
 
     def left_decomposition(self, p, n):
-        """Unique block decomposition p = u_0 ... u_{n-1} of an associated path."""
+        """Unique CS §3 left block decomposition p = u_0 ... u_{n-1} (n blocks): u_0 =
+        first arrow; each next block is the SHORTEST extension making the consecutive
+        pair reducible (witness tip ends at the pair's end, straddling the boundary)."""
         if n == 1:
             return [(p[0],)]
-        out = []
+        blocks, pos = [(p[0],)], 1
+        while len(blocks) < n:
+            prev, uk, cut = blocks[-1], [], False
+            while pos < len(p):
+                uk.append(p[pos])
+                pos += 1
+                w = self._witness_at_end(tuple(prev) + tuple(uk))
+                if w is not None:
+                    assert len(w) > len(uk), ("block reducible in left decomposition", p, n)
+                    cut = True
+                    break
+            assert cut, ("no left decomposition for associated path", p, n)
+            blocks.append(tuple(uk))
+        assert pos == len(p), ("left decomposition does not exhaust the path", p, n)
+        return blocks
 
-        def rec(blocks, pos):
-            if len(blocks) == n:
-                if pos == len(p):
-                    out.append(list(blocks))
-                return
-            prev = blocks[-1]
-            for L in range(1, len(p) - pos + 1):
-                uk = tuple(p[pos:pos + L])
-                cand = tuple(prev) + uk
-                if tuple(cand) in self.relset and not self._proper_suffix_in_I(cand):
-                    rec(blocks + [uk], pos + L)
+    def _witness_at_start(self, path):
+        """The unique tip that is a prefix of `path`, or None (mirror of _witness_at_end)."""
+        lp = len(path)
+        for r in self.relations:
+            lr = len(r)
+            if lr <= lp and tuple(path[:lr]) == r:
+                return r
+        return None
 
-        rec([(p[0],)], 1)
-        assert out, ("no left decomposition for associated path", p, n)
-        return out[0]
+    def right_decomposition(self, p, n):
+        """Unique CS §3 RIGHT block decomposition p = v_{n-1} ... v_0, returned
+        left-to-right (n blocks): v_0 = LAST arrow; growing leftwards, each next block
+        is the SHORTEST extension making (block)+(prev block) reducible (witness tip
+        starts at the pair's start, straddling the boundary). Right ambiguities = left
+        ambiguities as sets (CS §3 Prop.), but the BLOCKS differ beyond the quadratic/
+        palindromic cases — the odd (2-term) differential needs these for its first term."""
+        if n == 1:
+            return [(p[-1],)]
+        blocks, pos = [(p[-1],)], len(p) - 1        # collected right-to-left
+        while len(blocks) < n:
+            prev, uk, cut = blocks[-1], [], False
+            while pos > 0:
+                pos -= 1
+                uk.insert(0, p[pos])
+                w = self._witness_at_start(tuple(uk) + tuple(prev))
+                if w is not None:
+                    assert len(w) > len(uk), ("block reducible in right decomposition", p, n)
+                    cut = True
+                    break
+            assert cut, ("no right decomposition for associated path", p, n)
+            blocks.append(tuple(uk))
+        assert pos == 0, ("right decomposition does not exhaust the path", p, n)
+        return blocks[::-1]
 
     # -- tensored-down term: loops closing an associated path ----------
     def _all_basis_paths(self, maxlen):
