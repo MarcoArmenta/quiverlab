@@ -216,3 +216,121 @@ def result_bundle():
     return json.dumps({"schema": SCHEMA_VERSION, "request": _state["request"],
                        "quiverlab_version": quiverlab.__version__,
                        "results": _state["results"] or []}, indent=1)
+
+
+# --- Plan 11: wait-time estimation (pure arithmetic; spec 2026-07-22) --------
+
+# Fitted on THIS machine (native, numba BLOCKED to match Pyodide's pure path),
+# 2026-07-22, scripts/fit_eta_model.py. Worst-off factor on heavy (>0.3 s)
+# grid points: bar 1.46x, fast 3.76x — inside one bucket width; the in-flight
+# rescale absorbs the rest. Units are calibrated native-seconds; the browser
+# factor comes from calibrate(). Do not hand-tune: rerun the fit script.
+ETA_MODEL = {
+    "bar":  {"alpha": 1.4622e-07, "p": 1.3},
+    "fast": {"alpha": 5.3447e-07, "p": 1.1},
+    "scalars": {"cartan": 0.01, "coxeter_polynomial": 0.2,
+                "center": 0.05, "global_dimension": 0.5},
+}
+_MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
+_BUCKETS = (                  # (upper bound in seconds, id, label)
+    (15.0, "seconds", "estimated: a few seconds"),
+    (75.0, "minute", "estimated: under a minute"),
+    (360.0, "minutes", "estimated: a few minutes"),
+    (None, "long", "estimated: could be long — Cancel anytime"),
+)
+
+
+def _bar_guard_cells(m, n):
+    """rows*cols of the bar coboundary d^n guard: (m(m-1)^{n+1}) * (m(m-1)^n)."""
+    return (m * (m - 1) ** (n + 1)) * (m * (m - 1) ** n)
+
+
+def _cap_degree(m, top):
+    """First degree in 0..top whose guard exceeds the library's max_cells."""
+    if m <= 2:
+        return None               # (m-1) <= 1: sizes stay tiny forever
+    for n in range(top + 1):
+        if _bar_guard_cells(m, n) > _MAX_CELLS:
+            return n
+    return None
+
+
+def _hh_units(m, top, route):
+    mdl = ETA_MODEL[route]
+    return mdl["alpha"] * sum(_bar_guard_cells(m, n) ** mdl["p"]
+                              for n in range(top + 1))
+
+
+def _units_for(dim, field_spec, compute):
+    """(total units, per-invariant breakdown, cap info or None)."""
+    route = ("fast" if field_spec.get("kind") == "GF"
+             and field_spec.get("n", 1) == 1 else "bar")
+    total, breakdown, cap = 0.0, [], None
+    for spec in compute:
+        name, top = _parse_compute(spec)
+        if name in ("hh_cohomology", "hh_homology"):
+            k = _cap_degree(dim, top)
+            if k is not None:
+                # The homology engine's own DepthLimitError names b_{k+1} —
+                # boundary indexing is shifted by one vs the coboundary guard —
+                # so the SHOWN degree gets +1 for hh_homology (units keep raw k).
+                shown = k + 1 if name == "hh_homology" else k
+                if cap is None or shown < cap["degree"]:
+                    cap = {"degree": shown, "invariant": spec}
+            u = _hh_units(dim, min(top, (k - 1) if k is not None else top), route)
+        else:
+            u = ETA_MODEL["scalars"].get(name, 0.1)
+        total += u
+        breakdown.append({"invariant": spec, "units": u})
+    return total, breakdown, cap
+
+
+def bucket_for_seconds(seconds):
+    for bound, bid, label in _BUCKETS:
+        if bound is None or seconds < bound:
+            return json.dumps({"bucket": bid, "label": label})
+    raise AssertionError("unreachable")
+
+
+def estimate(factor):
+    """Estimate the CURRENT request against the just-built algebra."""
+    try:
+        A, req = _state["algebra"], _state["request"]
+        if A is None or req is None:
+            raise RequestError("no algebra built (run_build first)")
+        units, breakdown, cap = _units_for(
+            A.dim, req["algebra"]["field"], req.get("compute", []))
+        seconds = units * float(factor)
+        if cap is not None:
+            bucket, label = "cap", ("will hit the engine's cell cap near "
+                                    "degree %d" % cap["degree"])
+        else:
+            b = json.loads(bucket_for_seconds(seconds))
+            bucket, label = b["bucket"], b["label"]
+        out = {"ok": True, "dim": A.dim, "units": units, "seconds": seconds,
+               "bucket": bucket, "label": label,
+               "cap_degree": cap["degree"] if cap else None,
+               "breakdown": breakdown}
+    except Exception as exc:
+        out = _fail(exc)
+    return json.dumps(out)
+
+
+_CAL_FIELD = {"kind": "GF", "p": 2, "n": 1}
+_CAL_COMPUTE = ["hh_cohomology:0..6", "cartan", "center"]
+
+
+def calibrate():
+    """Time a fixed workload; factor = seconds per model unit on THIS machine.
+    Builds locally (never via _state) so a visitor's probe state survives."""
+    import time
+    Q = quiverlab.Quiver(vertices=[1], arrows={"x": (1, 1)})
+    t0 = time.monotonic()
+    A = Q.algebra(relations=["x*x*x"], field=quiverlab.GF(2))
+    A.hochschild_cohomology(6, verbose=False)
+    A.cartan_matrix()
+    A.center()
+    seconds = time.monotonic() - t0
+    units, _, _ = _units_for(3, _CAL_FIELD, _CAL_COMPUTE)
+    return json.dumps({"seconds": seconds, "units": units,
+                       "factor": seconds / units})
