@@ -270,8 +270,13 @@ def _units_for(dim, field_spec, compute):
         name, top = _parse_compute(spec)
         if name in ("hh_cohomology", "hh_homology"):
             k = _cap_degree(dim, top)
-            if k is not None and (cap is None or k < cap["degree"]):
-                cap = {"degree": k, "invariant": spec}
+            if k is not None:
+                # The homology engine's own DepthLimitError names b_{k+1} —
+                # boundary indexing is shifted by one vs the coboundary guard —
+                # so the SHOWN degree gets +1 for hh_homology (units keep raw k).
+                shown = k + 1 if name == "hh_homology" else k
+                if cap is None or shown < cap["degree"]:
+                    cap = {"degree": shown, "invariant": spec}
             u = _hh_units(dim, min(top, (k - 1) if k is not None else top), route)
         else:
             u = ETA_MODEL["scalars"].get(name, 0.1)

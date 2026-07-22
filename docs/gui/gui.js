@@ -424,6 +424,7 @@
           setEta("dim = " + m.data.dim +
                  (m.data.eta ? " · " + m.data.eta.label : ""), false);
         } else {
+          if (m.data.detail) console.error(m.data.detail);
           setEta(m.data.error.type + ": " + m.data.error.message, true);
         }
       }

@@ -89,3 +89,9 @@ def test_calibrate_sane_and_stateless(runner):
     assert out["seconds"] < 30                      # native: well under a second
     assert abs(out["factor"] - out["seconds"] / out["units"]) < 1e-9
     assert runner._state == before                  # calibration must not clobber
+
+
+def test_homology_cap_degree_names_boundary_index(runner):
+    req = dict(KRONECKER_CC, compute=["hh_homology:0..8"])
+    out = _est(runner, req)
+    assert out["bucket"] == "cap" and out["cap_degree"] == 7   # b_7, not d^6
