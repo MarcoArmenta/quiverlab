@@ -10,7 +10,7 @@
   var SVGNS = "http://www.w3.org/2000/svg";
   var R = 16;                       // vertex radius (px in SVG user units)
   var S = { vertices: [], arrows: [], nextId: 1, selected: null, dragFrom: null,
-            dragMoved: false, dragOrigin: null,
+            dragMoved: false, dragOrigin: null, pressOnEmpty: false,
             worker: null, engineReady: false, manifest: null, busy: false,
             artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "" } };
 
@@ -177,6 +177,10 @@
         e.preventDefault(); e.stopPropagation();
         S.dragFrom = v.id; S.dragMoved = false;
         S.dragOrigin = [e.clientX, e.clientY];
+        // A gesture that begins on a vertex must never spawn a vertex on the
+        // trailing synthesized click (stopPropagation keeps the canvas
+        // mousedown below from resetting this flag for us).
+        S.pressOnEmpty = false;
       });
       c.addEventListener("mouseup", function (e) {
         if (S.dragFrom === null) return;
@@ -205,8 +209,18 @@
     pt.x = e.clientX; pt.y = e.clientY;
     return pt.matrixTransform(el.canvas.getScreenCTM().inverse());
   }
+  // Record whether a press began on genuinely empty canvas. Dragging vertex →
+  // vertex ends the vertex mouseup with a render() that detaches the pressed
+  // circles, so the browser synthesizes a click on their nearest surviving
+  // ancestor — the <svg>, i.e. el.canvas — which would otherwise pass the guard
+  // below and spawn a phantom vertex under the release point. Gating on this
+  // flag means only a real empty-canvas press adds a vertex.
+  el.canvas.addEventListener("mousedown", function (e) {
+    S.pressOnEmpty = (e.target === el.canvas);
+  });
   el.canvas.addEventListener("click", function (e) {
-    if (e.target !== el.canvas) return;
+    if (e.target !== el.canvas || !S.pressOnEmpty) return;
+    S.pressOnEmpty = false;
     var p = canvasPoint(e);
     S.vertices.push({ id: S.nextId++, x: p.x, y: p.y });
     S.selected = null; render();
