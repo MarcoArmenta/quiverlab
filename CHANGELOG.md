@@ -13,6 +13,12 @@ acceptance).
   downloads; copy-paste Python reproduction. GUI requests use the Plan-09
   schema (`kind: "quiver"`), and `docs/gui/runner.py` is the execution
   semantics a future server tier reuses.
+- **Live wait estimates in the GUI.** While configuring, the page shows the
+  algebra's dimension and an honest coarse estimate (a few seconds / under a
+  minute / a few minutes / could be long), predicts when a request would hit
+  the engine's cell cap, and surfaces relation/field errors before Compute;
+  while computing, elapsed time plus a re-scaling estimate. Calibrated to the
+  visitor's machine at engine start.
 - Optional `[qpa]` backend: `A.crosscheck(...)` (independent QPA recomputation).
 - GitHub Actions CI (matrix + engine-path legs), docs site, JOSS paper draft.
 - Modernized packaging (PEP 639 SPDX license), README, community files.
