@@ -26,5 +26,19 @@ for path in sorted(src.rglob("*.py")):
         fd.write(f"::: {'.'.join(parts)}")
     mkdocs_gen_files.set_edit_path(full_doc_path, path.relative_to(root))
 
+# Section landing page: listed FIRST in the SUMMARY so section-index promotes
+# it — the sidebar's "API Reference" header becomes clickable and reference/
+# stops 404ing.
+with mkdocs_gen_files.open("reference/index.md", "w") as fd:
+    fd.write(
+        "# API Reference\n\n"
+        "Every public function and class, generated from the docstrings.\n\n"
+        "Start at the [`quiverlab` package](quiverlab/index.md) — its top-level\n"
+        "exports (`Quiver`, `Algebra`, `GF`, `CC`, `zoo`, `families`,\n"
+        "`bibliography`, `sweep`, …) are what the tutorials and the\n"
+        "landing-page GUI use. The subpackages below mirror the source tree.\n"
+    )
+
 with mkdocs_gen_files.open("reference/SUMMARY.md", "w") as nav_file:
+    nav_file.write("* [API Reference](index.md)\n")
     nav_file.writelines(nav.build_literate_nav())
