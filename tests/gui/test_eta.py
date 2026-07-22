@@ -79,3 +79,13 @@ def test_bucket_for_seconds_mapping(runner):
         got = json.loads(runner.bucket_for_seconds(s))
         assert got["bucket"] == want, (s, got)
     assert "estimated:" in json.loads(runner.bucket_for_seconds(30))["label"]
+
+
+def test_calibrate_sane_and_stateless(runner):
+    import json as _json
+    before = dict(runner._state)
+    out = _json.loads(runner.calibrate())
+    assert out["seconds"] > 0 and out["units"] > 0 and out["factor"] > 0
+    assert out["seconds"] < 30                      # native: well under a second
+    assert abs(out["factor"] - out["seconds"] / out["units"]) < 1e-9
+    assert runner._state == before                  # calibration must not clobber

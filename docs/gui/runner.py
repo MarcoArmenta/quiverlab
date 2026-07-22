@@ -309,3 +309,23 @@ def estimate(factor):
     except Exception as exc:
         out = _fail(exc)
     return json.dumps(out)
+
+
+_CAL_FIELD = {"kind": "GF", "p": 2, "n": 1}
+_CAL_COMPUTE = ["hh_cohomology:0..6", "cartan", "center"]
+
+
+def calibrate():
+    """Time a fixed workload; factor = seconds per model unit on THIS machine.
+    Builds locally (never via _state) so a visitor's probe state survives."""
+    import time
+    Q = quiverlab.Quiver(vertices=[1], arrows={"x": (1, 1)})
+    t0 = time.monotonic()
+    A = Q.algebra(relations=["x*x*x"], field=quiverlab.GF(2))
+    A.hochschild_cohomology(6, verbose=False)
+    A.cartan_matrix()
+    A.center()
+    seconds = time.monotonic() - t0
+    units, _, _ = _units_for(3, _CAL_FIELD, _CAL_COMPUTE)
+    return json.dumps({"seconds": seconds, "units": units,
+                       "factor": seconds / units})
