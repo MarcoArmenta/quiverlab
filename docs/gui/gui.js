@@ -57,6 +57,7 @@
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
+    '<div id="qlgui-eta" class="qlgui-hint"></div>' +
     '<div class="qlgui-row">' +
     '  <button id="qlgui-compute" type="button" disabled>Compute</button>' +
     '  <button id="qlgui-cancel" class="qlgui-secondary" type="button" disabled>Cancel</button>' +
@@ -71,7 +72,7 @@
   ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
-   "cancel", "print", "tikz", "json", "snippet", "results"]
+   "cancel", "print", "tikz", "json", "snippet", "results", "eta"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
   [el["hhc-top"], el["hhh-top"]].forEach(function (sel) {
     for (var i = 0; i <= 10; i++) sel.appendChild(h("option", { text: String(i) }));
@@ -202,6 +203,7 @@
       g.appendChild(c); g.appendChild(t); svg.appendChild(g);
     });
     el.compute.disabled = !(S.engineReady && S.vertices.length && !S.busy);
+    scheduleProbe();
   }
 
   function canvasPoint(e) {
@@ -371,19 +373,69 @@
     render();
   }
 
+  // ---------- wait estimates (Plan 11) ----------
+  S.factor = null; S.probeSeq = 0; S.eta = null;
+  S.tickerId = null; S.computeT0 = 0;
+  var probeTimer = null;
+
+  function setEta(text, isErr) {
+    el.eta.textContent = text;
+    el.eta.className = "qlgui-hint" + (isErr ? " err" : "");
+  }
+
+  function scheduleProbe() {
+    if (probeTimer) clearTimeout(probeTimer);
+    probeTimer = setTimeout(function () {
+      probeTimer = null;
+      if (!S.engineReady || S.busy || S.factor === null || !S.vertices.length) return;
+      S.probeSeq++;
+      S.worker.postMessage({ cmd: "probe", request: buildRequest(),
+                             seq: S.probeSeq, factor: S.factor });
+    }, 600);
+  }
+
+  function startTicker() {
+    stopTicker();
+    S.computeT0 = Date.now();
+    S.tickerId = setInterval(function () {
+      var secs = Math.round((Date.now() - S.computeT0) / 1000);
+      setStatus("computing… · " + secs + " s elapsed" +
+                (S.eta ? " · " + S.eta.label : ""));
+    }, 1000);
+  }
+
+  function stopTicker() {
+    if (S.tickerId) { clearInterval(S.tickerId); S.tickerId = null; }
+  }
+
   function onWorkerMessage(e) {
     var m = e.data;
     if (m.type === "ready") {
       S.engineReady = true;
       setStatus("engine ready — quiverlab " + m.version, "ok");
       render();
+      S.worker.postMessage({ cmd: "calibrate" });
+    } else if (m.type === "calibrated") {
+      S.factor = m.factor;
+      scheduleProbe();
+    } else if (m.type === "probe") {
+      if (m.seq === S.probeSeq && !S.busy) {
+        if (m.data.ok) {
+          setEta("dim = " + m.data.dim +
+                 (m.data.eta ? " · " + m.data.eta.label : ""), false);
+        } else {
+          setEta(m.data.error.type + ": " + m.data.error.message, true);
+        }
+      }
     } else if (m.type === "built") {
       if (m.data.ok) {
         el.results.appendChild(h("div", { "class": "qlgui-block",
           text: m.data.algebra }));
+        if (m.eta) S.eta = m.eta;
       } else { renderError(m.data); }
     } else if (m.type === "result") {
       if (m.data.ok) renderBlock(m.data); else renderError(m.data);
+      if (m.eta) S.eta = m.eta;
     } else if (m.type === "trace") {
       S.artifacts.traceHtml = m.html;
       el.print.disabled = !m.html;
@@ -392,10 +444,13 @@
       S.artifacts.bundle = m.bundle;
       el.tikz.disabled = el.json.disabled = el.snippet.disabled = false;
     } else if (m.type === "done") {
+      stopTicker();
       setBusy(false);
       setStatus("engine ready — quiverlab " + (S.manifest ? S.manifest.quiverlab_version : ""), "ok");
+      scheduleProbe();
     } else if (m.type === "fatal") {
       console.error("qlgui engine:", m.message);
+      stopTicker();
       setStatus("engine failed — see console", "err");
       setBusy(false);
     }
@@ -457,17 +512,25 @@
     el.results.innerHTML = "";
     S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "" };
     el.print.disabled = el.tikz.disabled = el.json.disabled = el.snippet.disabled = true;
+    S.eta = null;
     setBusy(true);
     setStatus("computing…");
-    S.worker.postMessage({ cmd: "run", request: buildRequest() });
+    startTicker();
+    S.worker.postMessage({ cmd: "run", request: buildRequest(), factor: S.factor });
   });
   el.cancel.addEventListener("click", function () {
     if (!S.busy) return;
+    stopTicker();
+    S.factor = null;                            // worker died: recalibrate on ready
     setBusy(false);
     startWorker();                             // sets its own transient status…
     setStatus("cancelled — engine reloading…"); // …so the acknowledgment must land last
     render();                                   // engineReady just went false — disable Compute
   });
+  el.relations.addEventListener("input", scheduleProbe);
+  [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"], el.cartan,
+   el.coxeter_polynomial, el.global_dimension, el.center]
+    .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   function download(name, text, type) {
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type: type }));

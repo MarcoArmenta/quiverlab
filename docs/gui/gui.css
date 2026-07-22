@@ -52,3 +52,6 @@
 [data-md-color-scheme="slate"] #qlgui-status.ok  { color: #81c784; }
 [data-md-color-scheme="slate"] #qlgui-status.err,
 [data-md-color-scheme="slate"] #qlgui-results .qlgui-error { color: #ef9a9a; }
+#qlgui-eta { min-height: 1.1em; }
+#qlgui-eta.err { color: #c62828; }
+[data-md-color-scheme="slate"] #qlgui-eta.err { color: #ef9a9a; }
