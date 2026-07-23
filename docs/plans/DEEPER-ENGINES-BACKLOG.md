@@ -31,9 +31,11 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   `plan-15-deepen-corner-checkpoint`). Original item: `engine/deepen.py` refuses
   multi-vertex (Plan-13 boundary). Corner data is deterministic from A; persist only
   `cur`/`cur_r`/`rks`/`tags`. Unlocks cluster-scale multi-vertex scans.
-- [ ] **3. Cohomology from the minimal/corner resolution** — the minimal engine is
-  homology-only; the Hom-collapse (`e_o A e_t` corner, like CS's `side="coh"`) on the
-  same resolution gives deep HH^• for any f.d. algebra + a second deep oracle vs CS.
+- [x] **3. Cohomology from the minimal/corner resolution** — DONE, Plan 16
+  (`2026-07-23-plan-16-minimal-cohomology.md`, branch `plan-16-minimal-cohomology`).
+  Original item: the minimal engine is homology-only; the Hom-collapse (`e_o A e_t`
+  corner, like CS's `side="coh"`) on the same resolution gives deep HH^• for any
+  f.d. algebra + a second deep oracle vs CS.
 - [ ] **4. CS canonicalization** — reduce the correction-solve solution modulo its
   nullspace to a normal form; flips the 7 `xfail(strict=False)` coefficient pins
   strict (Plan-04 stretch item E2). Makes CS differentials byte-reproducible.
