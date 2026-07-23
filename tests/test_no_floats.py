@@ -7,7 +7,9 @@ SRC = pathlib.Path(__file__).resolve().parent.parent / "src" / "quiverlab"
 
 
 def _violations(path: pathlib.Path) -> list[str]:
-    tree = ast.parse(path.read_text(), filename=str(path))
+    # explicit encoding: src/ is UTF-8; the locale default (cp1252 on Windows CI)
+    # chokes on the non-ASCII bytes in ported-source comments
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     out = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Constant) and isinstance(node.value, (float, complex)):
