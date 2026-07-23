@@ -53,3 +53,31 @@ def test_truncation_semantics():
     trunc = minimal_cohomology_dims(A, 6, primes=(32003,), max_term_dim=40)[32003]
     assert len(trunc) < len(full)
     assert trunc == full[:len(trunc)]
+
+
+def test_ka2_happel_pin():
+    """kA_2 hereditary: HH^. = [1, 0, 0] (Happel). The coh corner of the P_1
+    tag (1,2) is e_1 A e_2 (dim 1), NOT the homology corner e_2 A e_1 (dim 0):
+    the tag swap is load-bearing here."""
+    for p in PRIMES:
+        E = _eng([1, 2], {"a": (1, 2)}, [], p=p)
+        assert minimal_cohomology_dims(E, 2, primes=(p,))[p] == [1, 0, 0]
+
+
+def test_commutative_square_kunneth_pin():
+    """kQ/(ab - cd) = kA_2 (x) kA_2: HH^. = [1, 0, 0] (Kunneth; the qpa
+    crosscheck fixture) -- non-monomial multi-vertex."""
+    E = _eng([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)},
+             ["a*b - c*d"])
+    assert minimal_cohomology_dims(E, 2, primes=(32003,))[32003] == [1, 0, 0]
+
+
+def test_cyclic_nakayama_matches_bar():
+    """kZ_3/rad^2 over four primes: corner coh == bar coh degreewise (the
+    strongest multi-vertex cross-check; nonzero in high degrees)."""
+    for p in PRIMES:
+        E = _eng([1, 2, 3], {"a": (1, 2), "b": (2, 3), "c": (3, 1)},
+                 ["a*b", "b*c", "c*a"], p=p)
+        mc = minimal_cohomology_dims(E, 3, primes=(p,))
+        bc = hochschild_cohomology_dims(E, 3, primes=(p,))
+        assert mc[p] == bc[p][:len(mc[p])], f"CN(3,2) p={p}: {mc[p]} != {bc[p]}"

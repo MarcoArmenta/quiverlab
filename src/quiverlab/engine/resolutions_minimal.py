@@ -925,6 +925,51 @@ def _cohomology_degree(eng, gens_n, r_nm1, n):
     return M
 
 
+def _corner_cohomology_degree(eng, ctx, gens_n, tags_n, tags_nm1, p):
+    """One degree of the corner-typed cochain complex: Hom_{A^e}(A^e.(eps_v (x)
+    eps_w), A) ~ e_v A e_w, the OPPOSITE corner of the homology collapse -- both
+    row and column blocks read cornerA with the tag swapped.  Columns run over
+    the C^{n-1} blocks (tags_nm1), rows over the C^n blocks (tags_n = one per
+    generator); entries by the coh-side two-sided action e_u . alpha . e_v,
+    coordinates recovered in the row block's coh-corner basis (reconstruction
+    asserted -- loud on failure)."""
+    m, m2 = ctx.m, ctx.m2
+    T = eng.T % p
+    row_offs, off = [], 0
+    for tg in tags_n:
+        row_offs.append(off)
+        off += ctx.corner_dim_A((tg[1], tg[0]))
+    nrows = off
+    cols_out = []
+    for blk, tgp in enumerate(tags_nm1):
+        Bcol = ctx.cornerA[(tgp[1], tgp[0])]          # e_v A e_w for source tag (v, w)
+        for c in range(Bcol.shape[1]):
+            alpha = Bcol[:, c]
+            col = np.zeros(nrows, dtype=np.int64)
+            for j, (g, tg) in enumerate(zip(gens_n, tags_n)):
+                w = g[blk * m2:(blk + 1) * m2]
+                acc = np.zeros(m, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        ua = np.zeros(m, dtype=np.int64)
+                        for a in np.nonzero(alpha)[0]:      # e_uu . alpha
+                            ua = (ua + alpha[a] * T[uu, a, :]) % p
+                        outv = np.zeros(m, dtype=np.int64)
+                        for s in np.nonzero(ua)[0]:         # ... . e_vv
+                            outv = (outv + ua[s] * T[s, vv, :]) % p
+                        acc = (acc + cf * outv) % p
+                x = _solve_in_span(ctx.cornerA[(tg[1], tg[0])], acc, p)
+                assert x is not None, "corner cochain image left its corner (bug)"
+                col[row_offs[j]:row_offs[j] + x.shape[0]] = x
+            cols_out.append(col)
+    if not cols_out:
+        return np.zeros((nrows, 0), dtype=np.int64)
+    return np.stack(cols_out, axis=1) % p
+
+
 def minimal_cohomology_dims(A, N, primes=(32003,), max_term_dim=20000,
                             max_transient_bytes=None):
     """dim HH^n(A; F_p) for n=0..N via Hom_{A^e}(-, A) on the SAME minimal A^e
