@@ -2,6 +2,8 @@
 mkdocs.yml, README, and CITATION.cff (Plan 08 Task 12)."""
 import pathlib
 
+import pytest
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 URL = "https://marcoarmenta.github.io/quiverlab/"
 
@@ -19,8 +21,12 @@ def test_citation_cff_shape():
 
 def test_citation_version_matches_pyproject():
     import re
-    import tomllib
-    ver = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"]["version"]
+    try:
+        import tomllib
+    except ModuleNotFoundError:    # Python 3.10: tomllib is stdlib only from 3.11
+        tomllib = pytest.importorskip("tomli")
+    ver = tomllib.loads(
+        (ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     core = re.match(r"\d+\.\d+\.\d+", ver).group(0)        # 0.1.0.dev0 -> 0.1.0
     cff = (ROOT / "CITATION.cff").read_text()
     assert f"version: {core}" in cff, f"CITATION.cff version must be the release core {core}"

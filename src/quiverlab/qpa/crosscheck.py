@@ -32,7 +32,8 @@ def _read_int_list(gap_value) -> list:
 def crosscheck_hochschild(algebra, top: int) -> CrosscheckReport:
     session.require_gap()
     ours = algebra.hochschild_cohomology(top).dims
-    gap = session.run(scripts.hochschild_dims_script(algebra, top) + " hh;")
+    # the trailing read-back must be its OWN line: session.run evals per line
+    gap = session.run(scripts.hochschild_dims_script(algebra, top) + "\nhh;")
     qpa = _read_int_list(gap)
     return CrosscheckReport("hochschild", list(ours), qpa, list(ours) == qpa)
 
@@ -41,9 +42,11 @@ def crosscheck_module_ext(algebra, M, top: int) -> CrosscheckReport:
     """Self-Ext Ext^*(M, M) vs QPA (via ExtAlgebraGenerators). Distinct-module
     Ext(M, N) is a flagged post-v1 extension (needs ExtOverAlgebra + syzygies)."""
     session.require_gap()
-    ours = [algebra.ext(M, M, n).dimension() for n in range(top + 1)]  # Plan 05 surface
+    ours = [algebra.ext(M, M, n) for n in range(top + 1)]   # ext() returns dim (int)
+    dimvec = M.dimension_vector()                           # dict {vertex: dim}
+    dims = [dimvec[v] for v in algebra.quiver.vertices]     # QPA order = quiver order
     gap = session.run(
-        scripts.module_self_ext_dims_script(algebra, M.dimension_vector(), top) + " ext;")
+        scripts.module_self_ext_dims_script(algebra, dims, top) + "\next;")
     qpa = _read_int_list(gap)
     return CrosscheckReport("module_ext", list(ours), qpa, list(ours) == qpa)
 

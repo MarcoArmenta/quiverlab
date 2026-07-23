@@ -8,12 +8,18 @@ zoo_catalog.json (Plan 06 bibliography()/zoo() load them by __file__-relative
 path; without the block a built wheel omits them and those APIs raise
 FileNotFoundError in a real install)."""
 import pathlib
-import tomllib
+
+import pytest
+
+try:
+    import tomllib
+except ModuleNotFoundError:        # Python 3.10: tomllib is stdlib only from 3.11
+    tomllib = pytest.importorskip("tomli")     # backport, or skip the module on 3.10
 
 import quiverlab
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-PP = tomllib.loads((ROOT / "pyproject.toml").read_text())
+PP = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
 
 
 def test_license_is_spdx_expression_not_table():

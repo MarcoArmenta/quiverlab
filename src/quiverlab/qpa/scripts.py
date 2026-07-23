@@ -85,8 +85,7 @@ def hochschild_dims_script(algebra, top: int) -> str:
         "Ae := EnvelopingAlgebra(A);;",
         "AA := AlgebraAsModuleOverEnvelopingAlgebra(A);;    # VERIFY constructor name",
         f"info := ExtAlgebraGenerators(AA, {top});;",
-        f"hh := info[1];;                                    # dims Ext^0..Ext^{top}  [VERIFY component]",
-        "Print(hh);",
+        f"hh := info[1];;                                    # dims Ext^0..Ext^{top}",
     ])
 
 
@@ -94,14 +93,16 @@ def module_self_ext_dims_script(algebra, dimvec_M, top: int) -> str:
     """Bind `ext := [dim Ext^0(M,M), ..., dim Ext^top(M,M)]` (self-Ext of one module
     given by its dimension vector) via the SAME idiom `ExtAlgebraGenerators(M, top)[1]`.
 
+    `dimvec_M` is a LIST of ints in `algebra.quiver.vertices` order (the same order
+    the quiver builder numbers QPA's 1-based vertices) -- the caller flattens the
+    Module.dimension_vector() dict.
+
     Self-Ext keeps the cross-check on the one confirmed QPA idiom. Distinct-module
     Ext(M,N) (M != N) needs `ExtOverAlgebra` + iterated `NthSyzygy` instead and is a
-    flagged post-v1 extension. VERIFY the `RightModuleOverPathAlgebra` args + the
-    `[1]` component read at execution."""
+    flagged post-v1 extension."""
     base = quiver_and_algebra_script(algebra)
     return base + "\n" + "\n".join([
-        f"M := RightModuleOverPathAlgebra(A, {list(dimvec_M)}, []);;   # VERIFY args",
+        f"M := RightModuleOverPathAlgebra(A, {list(dimvec_M)}, []);;",
         f"info := ExtAlgebraGenerators(M, {top});;",
-        f"ext := info[1];;                                   # dims Ext^0..Ext^{top}(M,M)  [VERIFY]",
-        "Print(ext);",
+        f"ext := info[1];;                                   # dims Ext^0..Ext^{top}(M,M)",
     ])
