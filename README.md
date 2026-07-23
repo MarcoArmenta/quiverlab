@@ -15,6 +15,28 @@ finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhabe
 brackets, the first full Chouhy–Solotar resolution, module Ext, and Cartan/Coxeter
 invariants. Floats fail loudly by design.
 
+## Run the GUI
+
+**Zero install — it runs in your browser:** open
+<https://marcoarmenta.github.io/quiverlab/> and use the canvas at the top of the
+page. Draw vertices and arrows, add relations, pick a field, and compute Hochschild
+(co)homology exactly; the full quiverlab engine runs client-side via Pyodide (the
+first computation loads it — give it a few seconds).
+
+To launch the same GUI locally from a clone (it always runs the exact code you
+checked out):
+
+```bash
+git clone https://github.com/MarcoArmenta/quiverlab.git && cd quiverlab
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[docs]"
+mkdocs serve
+```
+
+then open <http://127.0.0.1:8000> — the GUI is at the top of the landing page.
+The first start packs the engine wheel and executes the tutorial notebooks; give
+it a minute or two.
+
 ## Install
 
 ```bash
