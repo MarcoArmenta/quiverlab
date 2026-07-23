@@ -65,7 +65,9 @@ and CS). Over int64 GF(p).
   chains) and `class BardzellResolution(Resolution)`.
 - **Minimal `A^e` resolution** (any f.d. algebra over GF(p), iterated syzygies) —
   `engine/resolutions_minimal.py`: `minimal_resolution(A,N,p,...)`,
-  `minimal_homology_dims(...)`, `hochschild_dimension(...)`, `class AeEngine`.
+  `minimal_homology_dims(...)`, `minimal_cohomology_dims(...)` (Plan 16 Hom-collapse:
+  coh acts `a·w·b` vs homology's `b·w·a`; corner blocks are the SWAPPED tag
+  `e_v A e_w`), `hochschild_dimension(...)`, `class AeEngine`.
 - **Periodic** — `engine/resolutions_periodic.py`: thin family wrappers
   (`QuantumCIResolution`→CS, `CyclicNakayamaResolution`→Bardzell).
 - **Resolution contract / bar** — `engine/resolutions.py`: `Resolution` ABC,
@@ -120,4 +122,6 @@ presentation in the bar window, and cap transport exists,
 `Comparison.cap_of_cs_classes`), Plan 15 (`engine/deepen.py` corner-mode
 checkpoints — multi-vertex algebras now deepen/resume; the payload gains only the
 per-degree corner `tags`, everything else is rebuilt from `(A, prime)`; cross-mode
-ckpt_dir reuse refuses loudly).
+ckpt_dir reuse refuses loudly), Plan 16 (`minimal_cohomology_dims` — Hom-collapse
+HH^• on the same minimal/corner resolution for any f.d. algebra; validated vs bar
+coh over 4 primes and degreewise vs CS coh to depth 8 — the second deep oracle).

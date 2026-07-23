@@ -380,4 +380,6 @@ git commit -m "docs: Plan-16 status -- minimal/corner HH cohomology delivered"
 
 ## Status
 
-- [ ] Executed (fill in on completion)
+- [x] Executed 2026-07-23 in-session (branch `plan-16-minimal-cohomology`). All 6
+  battery tests green on both the numba and `QUIVERLAB_NO_NUMBA=1` paths; homology
+  regression suites untouched-green; full `-m deep` and `-m fast` suites green.
