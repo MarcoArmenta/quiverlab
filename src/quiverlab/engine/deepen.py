@@ -9,15 +9,23 @@ finalizing HH_{n-1} after each advance, recording the per-degree memory (predict
 transient + actual VmHWM), and writing an ATOMIC checkpoint after every degree.  A re-run
 with the same ckpt_dir resumes from the last completed degree -- so a timeout / node
 failure costs at most one degree's recompute, and the memory guard turns the OOM wall into
-a clean `stop_reason='memory'` record (the last degree + its radK_bytes = the wall)."""
+a clean `stop_reason='memory'` record (the last degree + its radK_bytes = the wall).
+
+Both stepper modes are supported (Plan 15): local algebras run the kernel-accelerated
+free path; multi-vertex algebras run the corner-typed projective path (Plan 13).  Corner
+data (_CornerContext, gens0, rad_ab_pairs, the engine) is deterministic from (A, prime)
+and rebuilt on resume -- corner checkpoints persist only the extra per-degree `tags`.
+A ckpt_dir belongs to one (algebra, prime) run: resuming across modes refuses loudly."""
 
 import os
 import time
 import pickle
 
 from quiverlab.engine.resolutions_minimal import (
-    _init_resolution, _advance_resolution, _contracted_degree, AeEngine)
+    _init_resolution, _advance_resolution, _contracted_degree,
+    _corner_contracted_degree)
 from quiverlab.engine.hh_engine import rank_mod_p
+from quiverlab.errors import QuiverlabError
 
 PRIME = 32003
 
@@ -98,7 +106,9 @@ def deepen(A, ckpt_dir, prime=PRIME, max_transient_bytes=None, max_term_dim=10 *
 
     Stops at the memory wall (guard), resolution termination, the term cap, `max_degree`,
     or `time_limit_s` (clean checkpoint + resumable).  Returns the summary dict described
-    in the plan's interface block.
+    in the plan's interface block.  Works for local AND multi-vertex algebras (the
+    corner-typed Plan-13 path); a corner checkpoint additionally persists the per-degree
+    corner `tags` -- everything else corner-related is rebuilt from (A, prime) on resume.
 
     `finalize_only=True` does not advance the resolution: it just re-emits the summary from
     the latest checkpoint (`stop_reason='checkpoint'`) -- the recovery path for a job that
@@ -114,28 +124,26 @@ def deepen(A, ckpt_dir, prime=PRIME, max_transient_bytes=None, max_term_dim=10 *
         log("deepen: finalize_only -> summary from checkpoint n=%d (HH len %d)"
             % (ck["n"], len(ck["HH"])))
         return _summary(A, prime, list(ck["HH"]), list(ck["per_degree"]), "checkpoint", False)
+    st = _init_resolution(A, prime)         # engine, rad pairs (+ corner ctx, gens0):
+    corner = st.get("corner") is not None   # deterministic from (A, prime) -- rebuilt, never pickled
     if ck is None:
-        st = _init_resolution(A, prime)
-        if st.get("corner") is not None:
-            raise NotImplementedError(
-                "deepen supports local algebras only: the corner-typed multi-vertex "
-                "path (Plan 13) has no checkpoint format; use minimal_homology_dims "
-                "directly")
         last_gens = None                                    # cols[0] is None
         HH = []
         per_degree = []
-        log("deepen: fresh start (dim=%d, prime=%d)" % (A.m, prime))
+        log("deepen: fresh start (dim=%d, prime=%d%s)"
+            % (A.m, prime, ", corner mode" if corner else ""))
     else:
-        init = _init_resolution(A, prime)
-        if init.get("corner") is not None:
-            raise NotImplementedError(
-                "deepen supports local algebras only: the corner-typed multi-vertex "
-                "path (Plan 13) has no checkpoint format; use minimal_homology_dims "
-                "directly")
-        eng = AeEngine(A, prime)                            # recompute (cheap); not pickled
-        st = {"eng": eng, "rad_ab_pairs": init["rad_ab_pairs"],
-              "cur": ck["cur"], "cur_r": ck["cur_r"], "rks": ck["rks"],
-              "cols": {}, "n": ck["n"]}
+        if corner != ("tags" in ck):
+            raise QuiverlabError(
+                "deepen: ckpt_dir holds a %s-mode checkpoint but this algebra needs "
+                "%s mode" % ("corner" if "tags" in ck else "local",
+                             "corner" if corner else "local"),
+                hint="each ckpt_dir belongs to one (algebra, prime) run -- point "
+                     "this run at its own directory")
+        st.update({"cur": ck["cur"], "cur_r": ck["cur_r"], "rks": ck["rks"],
+                   "n": ck["n"], "cols": {}})
+        if corner:
+            st["tags"] = ck["tags"]
         last_gens = ck["last_gens"]
         HH = list(ck["HH"])
         per_degree = list(ck["per_degree"])
@@ -170,12 +178,26 @@ def deepen(A, ckpt_dir, prime=PRIME, max_transient_bytes=None, max_term_dim=10 *
         # finalize HH_{k-1} now that d_k is known (rolling pair last_gens=cols[k-1], gens)
         if k >= 1:
             r_km1 = st["rks"].get(k - 1, 0)
-            r_km2 = st["rks"].get(k - 2, 0)
-            dbar_km1 = (_contracted_degree(st["eng"], last_gens or [], r_km2, k - 1)
-                        if (k - 1) >= 1 and r_km1 > 0 else None)
-            dbar_k = (_contracted_degree(st["eng"], gens or [], r_km1, k)
-                      if st["rks"].get(k, 0) > 0 else None)
-            dimn = m * r_km1
+            if corner:
+                # contracted blocks are corners e_w A e_v, not full copies of A
+                ctx = st["corner"]
+                tags = st["tags"]
+                dbar_km1 = (_corner_contracted_degree(
+                                st["eng"], ctx, last_gens or [], tags.get(k - 1, []),
+                                tags.get(k - 2, []), prime)
+                            if (k - 1) >= 1 and r_km1 > 0 else None)
+                dbar_k = (_corner_contracted_degree(
+                              st["eng"], ctx, gens or [], tags.get(k, []),
+                              tags.get(k - 1, []), prime)
+                          if st["rks"].get(k, 0) > 0 else None)
+                dimn = sum(ctx.corner_dim_A(tg) for tg in tags.get(k - 1, []))
+            else:
+                r_km2 = st["rks"].get(k - 2, 0)
+                dbar_km1 = (_contracted_degree(st["eng"], last_gens or [], r_km2, k - 1)
+                            if (k - 1) >= 1 and r_km1 > 0 else None)
+                dbar_k = (_contracted_degree(st["eng"], gens or [], r_km1, k)
+                          if st["rks"].get(k, 0) > 0 else None)
+                dimn = m * r_km1
             rn = rank_mod_p(dbar_km1, prime) if dbar_km1 is not None else 0
             rnp1 = rank_mod_p(dbar_k, prime) if dbar_k is not None else 0
             HH.append(int(dimn - rn - rnp1))                # HH_{k-1}
@@ -193,9 +215,12 @@ def deepen(A, ckpt_dir, prime=PRIME, max_transient_bytes=None, max_term_dim=10 *
             return _summary(A, prime, HH, per_degree, "term", False)
 
         last_gens = gens                                    # roll forward
-        _save_ckpt(ckpt_dir, {"n": st["n"], "cur": st["cur"], "cur_r": st["cur_r"],
-                              "rks": st["rks"], "last_gens": last_gens,
-                              "HH": HH, "per_degree": per_degree})
+        payload = {"n": st["n"], "cur": st["cur"], "cur_r": st["cur_r"],
+                   "rks": st["rks"], "last_gens": last_gens,
+                   "HH": HH, "per_degree": per_degree}
+        if corner:
+            payload["tags"] = st["tags"]        # tiny: one vertex pair per generator
+        _save_ckpt(ckpt_dir, payload)
         st["cols"] = {}                                     # free history (rolling)
         if time_limit_s is not None and (time.time() - t0) > time_limit_s:
             log("deepen: TIME LIMIT after degree %d -> checkpoint + exit (resumable)" % k)
