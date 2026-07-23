@@ -26,7 +26,9 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   gave deep *dimensions* for every admissible presentation; this gives the full
   calculus (cup/cap/bracket) there too. The paper's contracting homotopy S_n is
   already transcribed in CS §4 (arXiv:1406.2300 TeX ~880–905).
-- [ ] **2. Corner-mode checkpoint format for `deepen`** — `engine/deepen.py` refuses
+- [x] **2. Corner-mode checkpoint format for `deepen`** — DONE, Plan 15
+  (`2026-07-23-plan-15-deepen-corner-checkpoint.md`, branch
+  `plan-15-deepen-corner-checkpoint`). Original item: `engine/deepen.py` refuses
   multi-vertex (Plan-13 boundary). Corner data is deterministic from A; persist only
   `cur`/`cur_r`/`rks`/`tags`. Unlocks cluster-scale multi-vertex scans.
 - [ ] **3. Cohomology from the minimal/corner resolution** — the minimal engine is

@@ -89,7 +89,13 @@ save format) whose payload is a dict containing literally: `n` (the last complet
 `cur` and `cur_r` (the current differential and its generator count), `rks` (the r_n so
 far), `last_gens` (the previous degree's generator columns, needed to finalize the next
 HH), `HH` (the dimensions computed so far), and `per_degree` (per-degree timing and memory
-records). Resuming reads the latest checkpoint and rebuilds only the cheap `AeEngine`. A
+records). Multi-vertex algebras (the corner-typed Plan-13 stepper) checkpoint one extra
+key: `tags`, the per-degree corner labels — every other piece of corner data
+(`_CornerContext`, `gens0`, `rad_ab_pairs`) is deterministic from `(A, prime)` and is
+rebuilt on resume, never pickled. A checkpoint directory belongs to one `(algebra, prime)`
+run: resuming a corner algebra against a local checkpoint (or vice versa) refuses loudly
+with `QuiverlabError`. Resuming reads the latest checkpoint and rebuilds only the cheap
+per-`(A, prime)` state via `_init_resolution`. A
 `latest.txt` pointer only ever advances (a stale second writer cannot regress it), and
 `deepen` predicts the next degree's walltime as a multiple of the last one's, stopping
 *before* a degree that would overrun the time budget rather than being SIGKILL'd mid-degree
