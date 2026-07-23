@@ -10,9 +10,13 @@ off it — reaching degrees the bar complex never can.
   rewriting rules `s → f_s`. `rs.leading_words()` are the tips `S`; `rs.irreducibles` a
   basis of `A`. Words are tuples of arrow NAMES, left to right.
 - **Ambiguity chain `Chain`** (`resolutions_cs.terms`): an element of `S_n`. `word` is the
-  path; `blocks = (u_0,…,u_{n-1})` its unique CS decomposition; `o,t` its endpoints.
+  path; `blocks = (u_0,…,u_{n-1})` its unique CS **left** decomposition; `o,t` its endpoints.
   `S_0`=vertices, `S_1`=arrows, `S_2`=tips, `S_n (n≥3)` = `(n-1)`-fold overlaps of tips.
   Computed by reusing Bardzell's `associated_paths` on the tip monomial algebra `A_S`.
+  Since Plan 12, blocks are cut at **first reducibility** (the witness tip may straddle a
+  block boundary as a proper suffix of the pair — with mixed-length tips the pair need not
+  itself be a tip), and each chain also has a **right** decomposition `(v_{n-1},…,v_0)`
+  (`right_decomposition`, mirror-greedy from the last arrow), used by the odd differential.
 - **Resolution term `P_n = ⨁_{σ∈S_n} A e_{o(σ)} ⊗ e_{t(σ)} A`.** Tensoring/homming down,
   each `σ` contributes the corner `e_tAe_o` (homology) or `e_oAe_t` (cohomology).
 - **A term** `(coeff, a, τ, c)` means `coeff · (a ⊗ τ ⊗ c)`; `a,c` are paths, `τ ∈ S_{n-1}`.
@@ -23,11 +27,15 @@ off it — reaching degrees the bar complex never can.
 3. Collapse to `C_n`: odd `↦ 0`; even `↦` multiply-by-`2x` = `[[0,0],[2,0]]`, rank 1.
 4. `HH_n = dim C_n − rank d_n − rank d_{n+1} = [2,1,1,1,…]` (char 0); `[2,2,…]` (char 2).
 
-## The differential in general (the one subtle step)
-The leading map `δ_n` is Bardzell's (depends only on the tips). The tails add a correction
-strictly below `σ` in the reduction order; its coefficients are the solution of the linear
-system `d_{n-1}∘d_n = 0` (CS Theorems 4.1/4.2 — the same trick CS use in §6). Two gates
-certify every run: `assert_dd_zero` and `assert_order_condition`.
+## The differential in general (the two subtle steps)
+The leading map `δ_n` is Bardzell's (depends only on the tips). For `n` odd (the 2-term
+map) its **first** term is `v_top ⊗ (rest) ⊗ 1` with `v_top` the leftmost block of the
+**right** factorization (CS §4 `f_n`, `n` even) — equal to `u_0` only for quadratic tips
+(CS Prop. "cuadratico") or palindromic families; e.g. for tips `{xx,yy,yxy}` and the
+straddle chain `yxyy` the terms are `(+1, yx, yy, ())`, `(−1, (), yxy, y)`. The tails then
+add a correction strictly below `σ` in the reduction order; its coefficients are the
+solution of the linear system `d_{n-1}∘d_n = 0` (CS Theorems 4.1/4.2 — the same trick CS
+use in §6). Two gates certify every run: `assert_dd_zero` and `assert_order_condition`.
 
 ## Worked non-monomial example — the commutative square (HH^• = (1,0,0))
 `A = kQ/(ab − cd)`, `Q`: `1→2→4`, `1→3→4` (arrows `a,b,c,d`), tip `cd`, `dim A = 9`.
@@ -60,8 +68,9 @@ so `HH_0 = 4 ≠ 1 = HH^0`.
 
 ## What is certified, and what is not
 - Deep dims: certified for `k[x]/(x^a)` and the quantum CI (byte-oracle) to any depth.
-- General `kQ/I`: computed, certified per instance by `d²=0` + order gate + bar window,
-  **restricted to quadratic tips or monomial presentations**; a non-quadratic non-monomial
-  presentation raises `NotImplementedError` (the `right_decomposition` stretch item lifts this).
+- General `kQ/I`: computed for **every admissible presentation** (Plan 12 lifted the
+  quadratic-or-monomial restriction via `right_decomposition`), certified per instance by
+  `d²=0` + order gate + bar-window agreement. The only remaining refusal is a genuinely
+  inconsistent correction solve (`NotImplementedError` at that exact `(n, σ)`).
 - Operations (cup/bracket): transported to bar; certified only in the bar window.
   (Cap products exist on the bar engine `engine/tt_calculus.py` only — no CS transport wrapper yet.)

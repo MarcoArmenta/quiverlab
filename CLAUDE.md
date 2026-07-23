@@ -81,11 +81,17 @@ and CS). Over int64 GF(p).
 - **Disambiguation:** `src/quiverlab/modules/resolution.py` is a *separate* minimal
   resolution for **right modules** (module Ext, Plan 05) — not HH. Don't conflate.
 
-**Known deeper-engine stretch item (next CS task):** the CS differential raises
-`NotImplementedError` for **non-quadratic non-monomial tips** (tip length ≥ 3 with
-nonzero tail, `v_n ≠ u_0`) — see `resolutions_cs/resolution.py` `_require_in_scope`/
-`_d_general`. Lifting it needs a `right_decomposition` upgrade (right block
-factorization so the even `f_n` first term is exact for all tips).
+**Plan 12 (2026-07-22, delivered):** the former non-quadratic non-monomial
+`NotImplementedError` is **lifted** — `_require_in_scope` is gone; every admissible
+presentation computes, certified per instance (d²=0 + order gate + bar window; only
+refusal left is an inconsistent correction solve). Two Plan-12 facts to keep in mind:
+(1) block decompositions cut at **first reducibility** — the witness tip may straddle
+the block boundary (the old exact-pair condition silently missed chains, e.g. tips
+`{xx,yy,xyx}` lost `xyxx`/`xyxyx` and Bardzell HH was wrong from degree 2);
+(2) the odd (2-term) differential's first term uses
+`MonomialPresentation.right_decomposition` (CS §4 `f_n` even), equal to `u_0` only for
+quadratic/palindromic tips. Batteries: `tests/engine/test_bardzell_straddle.py`,
+`tests/resolutions_cs/test_battery_straddle.py`.
 
 **Tests & oracles:** `tests/engine/` (Bardzell/minimal vs normalized-bar oracle,
 deep-depth past the bar blow-up, pure/numba parity, memory guards) and
@@ -103,4 +109,7 @@ Internals: `docs/internals/05-resolutions.md`, `docs/internals/09-chouhy-solotar
 
 Plans 01–11 delivered and merged to `main`. GUI (Plans 10–11 — Pyodide quiver
 canvas + live wait estimates) is live on the docs landing page. Deeper-engine work
-is the current focus.
+is the current focus: Plan 12 (straddling ambiguities + right decomposition + CS
+scope lift) delivered on branch `plan-12-ambiguity-blocks`. Known open engine item:
+`engine/resolutions_minimal.py` silently returns a wrong resolution on multi-vertex
+algebras (validated local-only) — should refuse loudly or be fixed.
