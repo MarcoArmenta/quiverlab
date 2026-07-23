@@ -75,8 +75,24 @@ def libgap_handle():
 
 
 def run(script: str):
-    """Eval a GAP script string in the QPA-loaded session; return the libgap value."""
-    return libgap_handle().eval(script)
+    """Eval a GAP script in the QPA-loaded session; return the LAST statement's value.
+
+    sage's libgap.eval accepts only a SINGLE statement per call -- even a trailing
+    `;;` counts as two statements (assignment + empty) and raises GAPError("can only
+    evaluate a single statement").  So the script is evaluated one statement at a
+    time.  This relies on the shape our builders emit: exactly one statement per
+    line, `#` starts a comment, and no string literal ever contains `#` or `;`
+    (arrow names are Python identifiers).  Each line is stripped of its comment and
+    normalized to a single trailing `;`.  GAP session globals persist across eval
+    calls, so `x := ...;;` lines bind state and a later bare `x;` reads it back."""
+    lg = libgap_handle()
+    out = None
+    for line in script.splitlines():
+        stmt = line.split("#", 1)[0].strip()
+        if not stmt:
+            continue
+        out = lg.eval(stmt.rstrip(";") + ";")
+    return out
 
 
 def should_skip_qpa() -> bool:
