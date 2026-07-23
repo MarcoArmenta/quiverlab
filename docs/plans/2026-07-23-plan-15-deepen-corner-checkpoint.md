@@ -359,4 +359,6 @@ git commit -m "docs: Plan-15 status -- deepen corner-mode checkpoints delivered"
 
 ## Status
 
-- [ ] Executed (fill in on completion)
+- [x] Executed 2026-07-23 in-session (branch `plan-15-deepen-corner-checkpoint`).
+  All 8 corner-battery tests + the 8 local regression tests green on both the numba
+  and `QUIVERLAB_NO_NUMBA=1` paths; full `-m deep` and `-m fast` suites green.

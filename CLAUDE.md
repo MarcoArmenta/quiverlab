@@ -105,7 +105,7 @@ comparison, homology, dispatch). Oracles: normalized bar complex, primes
 `docs/plans/2026-07-18-plan-04-chouhy-solotar.md` (CS), `docs/plans/ROADMAP.md`.
 Internals: `docs/internals/05-resolutions.md`, `docs/internals/09-chouhy-solotar.md`.
 
-## Status (2026-07-22)
+## Status (2026-07-23)
 
 Plans 01–11 delivered and merged to `main`. GUI (Plans 10–11 — Pyodide quiver
 canvas + live wait estimates) is live on the docs landing page. Deeper-engine work
@@ -117,5 +117,7 @@ terms; was silently wrong on any multi-vertex input), Plan 14 (comparison map
 rebuilt as a homotopy lift — the closed-form block map was not a chain map for any
 tip of length ≥ 3, even monomial; cup/bracket transport now serves every admissible
 presentation in the bar window, and cap transport exists,
-`Comparison.cap_of_cs_classes`). `engine/deepen.py` stays local-only (refuses
-corner mode loudly — no checkpoint format for it yet).
+`Comparison.cap_of_cs_classes`), Plan 15 (`engine/deepen.py` corner-mode
+checkpoints — multi-vertex algebras now deepen/resume; the payload gains only the
+per-degree corner `tags`, everything else is rebuilt from `(A, prime)`; cross-mode
+ckpt_dir reuse refuses loudly).
