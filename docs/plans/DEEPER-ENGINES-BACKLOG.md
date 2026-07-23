@@ -13,7 +13,11 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
 
 ## Tier 1 — debts that limit what already ships (do these first, in order)
 
-- [ ] **1. Operations on the newly admitted algebras** (the natural Plan 14):
+- [x] **1. Operations on the newly admitted algebras** — DONE, Plan 14
+  (`2026-07-23-plan-14-cs-operations.md`, branch `plan-14-cs-operations`). Found and
+  fixed a third uniform-zoo latent bug on the way: the closed-form block map was not
+  a chain map for any tip of length ≥ 3 (even monomial). Native deep-degree CS cup
+  (lifted diagonal) added to Tier 2. Original item:
   Sköldberg homotopy expansion for the CS↔bar comparison maps Φ/Ψ —
   `resolutions_cs/comparison.py` refuses beyond the quadratic/degree-2 window in three
   places ("Skoldberg homotopy expansion (a later phase)", `_WINDOW_MSG`, "native CS cup
@@ -42,6 +46,10 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   hooks; the only planned-but-unbuilt tier.
 
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
+
+- [ ] **Native deep-degree CS cup/cap** (added by Plan 14): a comparison-lifted
+  diagonal `P → P ⊗_A P` computed degreewise like Φ, giving cup/cap PAST the bar
+  window (the transported operations are window-bounded by construction).
 
 - [ ] **Ext-algebra / Yoneda-ring presentations** (v1 non-goal): generators/relations
   of `Ext_A(⊕S, ⊕S)` from Plan-05 module resolutions + deep CS; Koszulity checks.

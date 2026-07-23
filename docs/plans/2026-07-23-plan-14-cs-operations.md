@@ -84,12 +84,29 @@ and GF(2)/GF(3) where feasible:
 
 ## Execution log
 
-- [ ] Phase A: recursive Φ expansion (`_phi_expansion_general`), general Phi() pairing
+- [x] Phase A: recursive Φ expansion (`_phi_expansion_general`), general Phi() pairing
       (c-vector slot), scope switch, chain-map gates green on the three algebras.
-- [ ] Phase B: `PhiHom`, homology-side transports, `cap_of_cs_classes`, cap gates.
-- [ ] Battery + docs (internals 09 operations paragraph, CLAUDE.md, ROADMAP, backlog
+- [x] Phase B: `PhiHom`, homology-side transports, `cap_of_cs_classes`, cap gates.
+- [x] Battery + docs (internals 09 operations paragraph, CLAUDE.md, ROADMAP, backlog
       checkbox for Tier-1 item 1).
 
 Branch: `plan-14-cs-operations`. Stretch (NOT this plan): native CS cup via a
 homotopy-constructed diagonal `P → P ⊗_A P` (deep-degree operations past the bar
 window) — add to the backlog Tier 2 when this plan lands.
+
+## Execution amendments (recorded during the run)
+
+- **A third uniform-zoo latent bug surfaced immediately:** the TDD chain-map gate
+  failed at degree 1 on straddle-MONOMIAL too — the pure block map is not a chain map
+  whenever a block has length >= 2 (hand check: dΦ₂(1⊗x⊗yx⊗1) ≠ Φ₁(φ₀(xyx));
+  the shipped Comparison had only ever been exercised on single-arrow-block tips,
+  kx2 and the square). The plan's "keep legacy closed form for monomial any-n"
+  scope switch was therefore WRONG; final scope: legacy for n <= 1 only, homotopy
+  lift for all n >= 2 and all presentations. Hand-verified that the lift reproduces
+  the legacy closed forms exactly at n = 2 for kx2, the square, and the QCI, and the
+  existing test_comparison.py identities stayed green unchanged.
+- The lift needed no sign tweaks: h with no sign satisfies the gate against the
+  engine's bar conventions as-is.
+- Expansion representation: `{interior word: c-vector}` (coefficient absorbed into
+  the right outer factor); the Phi() pairing collapses `e_s · c` in unit-adapted
+  coords and converts through P.

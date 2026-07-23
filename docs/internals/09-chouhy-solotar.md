@@ -72,5 +72,11 @@ so `HH_0 = 4 ≠ 1 = HH^0`.
   quadratic-or-monomial restriction via `right_decomposition`), certified per instance by
   `d²=0` + order gate + bar-window agreement. The only remaining refusal is a genuinely
   inconsistent correction solve (`NotImplementedError` at that exact `(n, σ)`).
-- Operations (cup/bracket): transported to bar; certified only in the bar window.
-  (Cap products exist on the bar engine `engine/tt_calculus.py` only — no CS transport wrapper yet.)
+- Operations (cup/cap/bracket): transported to bar and back, certified only in the bar
+  window — but since Plan 14 for **every admissible presentation** (the comparison map
+  is built by the homotopy lift `Φ_n = h∘Φ_{n-1}∘d_n` through the normalized bar's
+  contracting homotopy, replacing the closed forms that were valid only for
+  single-arrow blocks; cap transports through the covariant collapse `A ⊗ Φ`,
+  `Comparison.cap_of_cs_classes`). Per-instance gates: `assert_chain_map`,
+  transport roundtrip, cup-route agreement, unit-cap and `(z∩f)∩g ~ z∩(f∪g)`.
+  Past the window: native CS cup via a lifted diagonal is a backlog Tier-2 item.
