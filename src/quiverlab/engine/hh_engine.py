@@ -95,6 +95,12 @@ class Algebra:
         assert ts.size > 0, "unit must have a coordinate equal to 1"
         t = int(ts[0])
         self.t = t
+        # Original-basis inputs, kept for vertex-idempotent detection (Plan 13:
+        # resolutions_minimal reads the orthogonal idempotents off the unit's
+        # 1-coordinates; the f-basis change below only touches column t, so the
+        # non-t vertex vectors stay standard basis vectors).
+        self.unit_input = unit.copy()
+        self.T_input = np.array(T, dtype=np.int64, copy=True)
         # change-of-basis matrix B: identity with column t replaced by unit
         B = np.eye(m, dtype=np.int64)
         B[:, t] = unit
@@ -119,6 +125,10 @@ class Algebra:
         self.R = [i for i in range(m) if i != t]
         self.Rpos = {idx: k for k, idx in enumerate(self.R)}  # idx -> position in reduced basis
         self.mr = m - 1
+        # vertex idempotent indices (original basis; None if the basis is not
+        # recognizably path-type -- resolutions_minimal then guards loudly)
+        from quiverlab.engine.resolutions_minimal import _vertex_indices
+        self.vertices = _vertex_indices(self)
 
     def mult_full(self, i, j):
         """e_i * e_j as a full length-m vector (f-basis coords)."""

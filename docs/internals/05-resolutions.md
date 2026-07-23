@@ -30,11 +30,27 @@ the oracle every other backend is checked against.
 
 ## The minimal A^e-resolution (the syzygy stepper)
 
-`engine/resolutions_minimal.py` builds the minimal free resolution
-... -> (A^e)^{r_n} --d_n--> (A^e)^{r_{n-1}} -> ... -> A^e --mu--> A -> 0 one degree at a
-time, valid for *any* finite-dimensional A given by its structure constants. The engine
-`AeEngine` precomputes, over F_p, the m^2 × m^2 matrices of left-multiplication by each
-A^e basis element e_a ⊗ e_b (using (e_a ⊗ e_b)·(e_p ⊗ e_q) = (e_a e_p) ⊗ (e_q e_b)).
+`engine/resolutions_minimal.py` builds the minimal projective bimodule resolution one
+degree at a time, valid for *any* finite-dimensional path-basis A given by its structure
+constants. The engine `AeEngine` precomputes, over F_p, the m^2 × m^2 matrices of
+left-multiplication by each A^e basis element e_a ⊗ e_b (using
+(e_a ⊗ e_b)·(e_p ⊗ e_q) = (e_a e_p) ⊗ (e_q e_b)).
+
+**Local vs multi-vertex terms (Plan 13).** For a local algebra projective = free, so the
+terms are free: `... -> (A^e)^{r_n} -> ... -> A^e -> A -> 0` (the original,
+kernel-accelerated path). Over a multi-vertex algebra a minimal *free* resolution does
+not exist — ker(A^e ↠ A) contains whole off-diagonal corner projectives Ae_v ⊗ e_wA, and
+free covers of projectives spawn projective junk forever — so the engine builds
+**corner-typed** terms `P_n = ⊕_j A^e·(ε_{v_j} ⊗ ε_{w_j})` (`_CornerContext`, pure
+Python): kernels are computed over corner coordinates, generator candidates are the
+corner components (ε_i ⊗ ε_j)·k of kernel vectors, and each generator carries its corner
+tag. The vertex idempotents are read off the unit's 1-coordinates (validated against T);
+a nilpotent-closure guard in `radical_basis` refuses non-path-type bases loudly instead
+of returning a silently wrong resolution (the pre-Plan-13 multi-vertex failure mode).
+Validation: HH ≡ bar on kA_2 / the commutative square / kZ_3/rad², and on the monomial
+line quiver kQ/(abc, cde) the corner Betti numbers equal Bardzell's chain counts
+6, 5, 2, 1, 0 — with the 1 the straddling overlap `abcde` (an independent syzygy-side
+re-derivation of the Plan-12 chain).
 
 `_advance_resolution` computes the next degree n from the current differential `cur`:
 
@@ -45,9 +61,10 @@ A^e basis element e_a ⊗ e_b (using (e_a ⊗ e_b)·(e_p ⊗ e_q) = (e_a e_p) �
    of A^e (minimality). `_build_radK` forms rad(A^e)·ker (the non-minimal part), and
    `_independent_modulo` greedily keeps exactly the kernel vectors that are independent of
    it — via one incremental row-reduction, not repeated rank tests. Those chosen vectors
-   `gens` are the columns of d_n and their count is r_n. For a local algebra rad(A) is,
-   in the unit-adapted basis, just the span of the non-unit basis vectors — computed
-   characteristic-independently by `radical_basis`.
+   `gens` are the columns of d_n and their count is r_n. rad(A) is the span of the
+   non-idempotent basis vectors (vertex idempotents read off the unit; for a local
+   algebra this degenerates to "all non-unit basis vectors") — computed
+   characteristic-independently by `radical_basis`, with a nilpotent-closure guard.
 3. **Assemble d_n.** `_build_Dn` writes each generator into a column block, giving the new
    `cur`; the loop repeats.
 

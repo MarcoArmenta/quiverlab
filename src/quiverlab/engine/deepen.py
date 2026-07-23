@@ -116,13 +116,24 @@ def deepen(A, ckpt_dir, prime=PRIME, max_transient_bytes=None, max_term_dim=10 *
         return _summary(A, prime, list(ck["HH"]), list(ck["per_degree"]), "checkpoint", False)
     if ck is None:
         st = _init_resolution(A, prime)
+        if st.get("corner") is not None:
+            raise NotImplementedError(
+                "deepen supports local algebras only: the corner-typed multi-vertex "
+                "path (Plan 13) has no checkpoint format; use minimal_homology_dims "
+                "directly")
         last_gens = None                                    # cols[0] is None
         HH = []
         per_degree = []
         log("deepen: fresh start (dim=%d, prime=%d)" % (A.m, prime))
     else:
+        init = _init_resolution(A, prime)
+        if init.get("corner") is not None:
+            raise NotImplementedError(
+                "deepen supports local algebras only: the corner-typed multi-vertex "
+                "path (Plan 13) has no checkpoint format; use minimal_homology_dims "
+                "directly")
         eng = AeEngine(A, prime)                            # recompute (cheap); not pickled
-        st = {"eng": eng, "rad_ab_pairs": _init_resolution(A, prime)["rad_ab_pairs"],
+        st = {"eng": eng, "rad_ab_pairs": init["rad_ab_pairs"],
               "cur": ck["cur"], "cur_r": ck["cur_r"], "rks": ck["rks"],
               "cols": {}, "n": ck["n"]}
         last_gens = ck["last_gens"]

@@ -138,28 +138,110 @@ def _nullspace_mod_p_py(M, p):
 # ---------------------------------------------------------------------------
 # rad(A) and rad(A^e) over F_p (for picking minimal generators)
 # ---------------------------------------------------------------------------
-def radical_basis(A, p):
-    """A basis of rad(A) for a LOCAL algebra, characteristic-independently.
-
-    A finite-dimensional local algebra splits as A = k.1 (+) rad(A), and in the
-    unit-adapted basis (where 1_A is the basis vector f_t) the radical is exactly the
-    span of the non-unit basis vectors {f_i : i != t}.  This is correct in every
-    characteristic, unlike the trace form (which degenerates when p divides the
-    relevant dimensions, e.g. k[x]/(x^2) at p=2).
-
-    All algebras in this engine's intended use -- the open-zone local non-monomial
-    zoo, plus the validation algebras k[x]/(x^a) and the quantum CIs -- are local with
-    unit = f_t, so this is exact.  (A genuinely multi-vertex algebra would need its
-    idempotents; that is out of scope here and would be flagged by the bar-oracle
-    cross-check failing.)
-    """
+def _vertex_indices(A):
+    """Indices (ORIGINAL basis) of the orthogonal vertex idempotents, read off the
+    unit vector: for every path-type basis (vertex idempotents + radical paths, the
+    basis both Quiver.algebra routes and the local factories produce) the unit has
+    coordinate 1 exactly at the idempotents.  Validated against T (e_i e_j must be
+    delta_ij e_i in the original basis); returns None when the unit/basis does not
+    have this shape -- radical_basis then falls back to {t} + the nilpotency guard."""
+    unit = np.asarray(A.unit_input, dtype=np.int64)
+    if not np.all((unit == 0) | (unit == 1)):
+        return None
+    idx = [int(i) for i in np.nonzero(unit == 1)[0]]
+    T = A.T_input
     m = A.m
+    for i in idx:
+        for j in idx:
+            want = np.zeros(m, dtype=np.int64)
+            if i == j:
+                want[i] = 1
+            if not np.array_equal(T[i, j, :], want):
+                return None
+    return idx
+
+
+def _assert_nilpotent_span(A, indices, p):
+    """Loud guard: the span of the f-basis vectors at `indices` must be multiplicatively
+    nilpotent (it is claimed to be rad A).  Iterate span powers via T mod p; if the
+    chain has not died after m steps, the claimed radical contains a non-nilpotent
+    element (e.g. a hidden idempotent) and every downstream answer would be silently
+    wrong -- refuse instead."""
+    from quiverlab.errors import QuiverlabError
+    m = A.m
+    T = A.T % p
+    gens = []
+    for i in indices:
+        v = np.zeros(m, dtype=np.int64)
+        v[i] = 1
+        gens.append(v)
+    current = list(gens)
+    for _ in range(m + 1):
+        if not current:
+            return
+        prods = []
+        for u in current:
+            for g in gens:
+                w = np.zeros(m, dtype=np.int64)
+                for a in np.nonzero(u % p)[0]:
+                    for b in np.nonzero(g % p)[0]:
+                        w = (w + u[a] * g[b] * T[a, b, :]) % p
+                if np.any(w):
+                    prods.append(w)
+        # reduce to an independent set (rank via elimination) to keep the chain small
+        current = []
+        ech = []
+        for v in prods:
+            w = v.copy() % p
+            for (pc, row) in ech:
+                if w[pc]:
+                    w = (w - w[pc] * row) % p
+            nz = np.nonzero(w)[0]
+            if nz.size:
+                pc = int(nz[0])
+                w = (w * pow(int(w[pc]), p - 2, p)) % p
+                ech.append((pc, w))
+                current.append(w)
+    raise QuiverlabError(
+        f"radical_basis: the claimed radical span of {A.name} is not nilpotent "
+        f"(chain alive after {m} steps) -- the basis is not path-type (orthogonal "
+        "vertex idempotents + radical paths), so the minimal A^e engine cannot "
+        "identify rad(A) and refuses rather than return a silently wrong resolution",
+        hint="build the algebra via Quiver.algebra(...) (path basis), or present it "
+             "with a basis whose non-idempotent vectors span rad A")
+
+
+def radical_basis(A, p):
+    """A basis of rad(A) for a path-type basis, characteristic-independently.
+
+    The unit's 1-coordinates mark the orthogonal vertex idempotents (validated via T);
+    in the unit-adapted f-basis every NON-vertex basis vector is unchanged by the
+    basis change and spans rad(A) = the arrow ideal.  Local algebras are the
+    one-vertex case (rad = span{f_i : i != t}, the original hanlab formula).  This is
+    correct in every characteristic, unlike the trace form (which degenerates when p
+    divides the relevant dimensions, e.g. k[x]/(x^2) at p=2).
+
+    A nilpotent-closure guard verifies the claim on every algebra (m tiny iterations,
+    cached per prime): a non-path-type basis -- where the non-vertex span contains a
+    hidden idempotent -- raises QuiverlabError instead of silently corrupting the
+    resolution (the pre-Plan-13 failure mode on multi-vertex input)."""
+    m = A.m
+    vertices = getattr(A, "vertices", None)
+    if vertices is None:
+        vertices = [A.t]
+    rad_idx = [i for i in range(m) if i not in vertices]
+    checked = getattr(A, "_rad_guard_checked", None)
+    if checked is None:
+        checked = set()
+        A._rad_guard_checked = checked
+    if p not in checked:
+        _assert_nilpotent_span(A, rad_idx, p)
+        checked.add(p)
     out = []
-    for i in range(m):
-        if i != A.t:
-            v = np.zeros(m, dtype=np.int64)
-            v[i] = 1
-            out.append(v)
+    for i in rad_idx:
+        v = np.zeros(m, dtype=np.int64)
+        v[i] = 1
+        out.append(v)
     return out
 
 
@@ -244,6 +326,143 @@ def _independent_modulo_py(span_cols, candidates, p):
 
 
 # ---------------------------------------------------------------------------
+# Corner-typed projective terms (Plan 13, multi-vertex support)
+#
+# Over a multi-vertex algebra a minimal FREE A^e-resolution does not terminate
+# (the kernel of A^e ->> A contains whole off-diagonal corner projectives, and free
+# covers of projectives spawn projective junk forever), so the engine builds the
+# minimal PROJECTIVE resolution with terms  P_n = (+)_j  A^e . (eps_v (x) eps_w).
+# Local algebras are the one-corner case and keep the original (kernel-accelerated)
+# free path bit-for-bit.  The corner path is pure Python.
+# ---------------------------------------------------------------------------
+class _CornerContext:
+    """Per-(algebra, prime) corner data: idempotent vectors (f-coords), a basis of
+    each corner left ideal A^e.(eps_i (x) eps_j), and a basis of each contraction
+    target e_j A e_i (with in-span coordinate solving for the collapsed complex)."""
+
+    def __init__(self, eng, p):
+        A = eng.A
+        m, m2 = eng.m, eng.m2
+        self.m, self.m2, self.p = m, m2, p
+        T = eng.T % p
+        vertices = A.vertices
+        self.vertices = vertices
+        # idempotent vectors in f-coords: f_v for v != t; e_t = 1 - sum(other vertices)
+        self.idem = {}
+        for v in vertices:
+            vec = np.zeros(m, dtype=np.int64)
+            if v != A.t:
+                vec[v] = 1
+            else:
+                vec[A.t] = 1
+                for w in vertices:
+                    if w != A.t:
+                        vec[w] = (vec[w] - 1) % p
+            self.idem[v] = vec
+        # corner_basis[(i, j)]: (m2, d) basis of A^e.(eps_i (x) eps_j) = the image of
+        # right-mult by (eps_i (x) eps_j): (e_p (x) e_q).(x (x) y) = (e_p x) (x) (y e_q)
+        self.corner_basis = {}
+        # cornerA[(i, j)]: (m, d) basis of e_j A e_i (image of a |-> eps_j . a . eps_i),
+        # the contraction target of a generator tagged (i, j)
+        self.cornerA = {}
+        for i in vertices:
+            x = self.idem[i]
+            for j in vertices:
+                y = self.idem[j]
+                cols = []
+                for pp in range(m):
+                    for qq in range(m):
+                        vec = np.zeros(m2, dtype=np.int64)
+                        for a in np.nonzero(x)[0]:
+                            pa = T[pp, a, :]                    # e_p . x-component
+                            for b in np.nonzero(y)[0]:
+                                bq = T[b, qq, :]                # y-component . e_q
+                                for r in np.nonzero(pa)[0]:
+                                    for s in np.nonzero(bq)[0]:
+                                        vec[r * m + s] = (vec[r * m + s]
+                                                          + x[a] * pa[r] * y[b] * bq[s]) % p
+                        if np.any(vec):
+                            cols.append(vec)
+                self.corner_basis[(i, j)] = _independent_columns(cols, p, m2)
+                acols = []
+                for c in range(m):
+                    vec = np.zeros(m, dtype=np.int64)
+                    for u in np.nonzero(y)[0]:
+                        uc = T[u, c, :]                         # eps_j . e_c
+                        for s in np.nonzero(uc)[0]:
+                            for w in np.nonzero(x)[0]:
+                                sw = T[s, w, :]                 # ... . eps_i
+                                vec = (vec + y[u] * uc[s] * x[w] * sw) % p
+                    if np.any(vec):
+                        acols.append(vec)
+                self.cornerA[(i, j)] = _independent_columns(acols, p, m)
+
+    def corner_dim_A(self, tag):
+        B = self.cornerA[tag]
+        return B.shape[1]
+
+    def left_idem_mult(self, eng, tag, vec, r):
+        """(eps_i (x) eps_j) . vec on (A^e)^r (left mult by the corner idempotent)."""
+        x, y = self.idem[tag[0]], self.idem[tag[1]]
+        out = np.zeros(self.m2 * r, dtype=np.int64)
+        for a in np.nonzero(x)[0]:
+            for b in np.nonzero(y)[0]:
+                out = (out + x[a] * y[b] * eng.apply_block(int(a), int(b), vec, r)) % self.p
+        return out
+
+
+def _independent_columns(cols, p, nrows):
+    """Stack `cols` into an (nrows, d) matrix keeping an independent subset (mod p)."""
+    keep = []
+    ech = []
+    for v in cols:
+        w = v.copy() % p
+        for (pc, row) in ech:
+            if w[pc]:
+                w = (w - w[pc] * row) % p
+        nz = np.nonzero(w)[0]
+        if nz.size:
+            pc = int(nz[0])
+            ech.append((pc, (w * pow(int(w[pc]), p - 2, p)) % p))
+            keep.append(v % p)
+    if not keep:
+        return np.zeros((nrows, 0), dtype=np.int64)
+    return np.stack(keep, axis=1)
+
+
+def _solve_in_span(B, v, p):
+    """Coordinates x with B @ x = v (mod p), or None. B is (n, d) with d small."""
+    n, d = B.shape
+    if d == 0:
+        return np.zeros(0, dtype=np.int64) if not np.any(v % p) else None
+    M = np.concatenate([B % p, (v % p).reshape(n, 1)], axis=1).astype(np.int64)
+    r = 0
+    piv = []
+    for c in range(d):
+        pr = -1
+        for i in range(r, n):
+            if M[i, c] % p:
+                pr = i
+                break
+        if pr < 0:
+            continue
+        M[[r, pr]] = M[[pr, r]]
+        M[r] = (M[r] * pow(int(M[r, c]), p - 2, p)) % p
+        for i in range(n):
+            if i != r and M[i, c] % p:
+                M[i] = (M[i] - M[i, c] * M[r]) % p
+        piv.append(c)
+        r += 1
+    for i in range(r, n):
+        if M[i, d] % p:
+            return None
+    x = np.zeros(d, dtype=np.int64)
+    for k, c in enumerate(piv):
+        x[c] = M[k, d] % p
+    return x
+
+
+# ---------------------------------------------------------------------------
 # rad(A^e) . ker syzygy-image build (extracted hot loop)
 # ---------------------------------------------------------------------------
 def _rad_ab_pairs(radAe, m):
@@ -317,12 +536,18 @@ def _build_Dn(eng, gens, cur_r, p):
 # ---------------------------------------------------------------------------
 def _init_resolution(A, p):
     """Set up the minimal-resolution state: engine, rad(A^e) spanning pairs, d_0
-    augmentation.  Returns a mutable state dict advanced by _advance_resolution."""
+    augmentation.  Returns a mutable state dict advanced by _advance_resolution.
+
+    Local algebras (one vertex) keep the original free-cover state bit-for-bit.
+    Multi-vertex algebras get the corner-typed projective state (Plan 13): P_0 =
+    (+)_v A^e.(eps_v (x) eps_v) inside the ambient (A^e)^{#vertices}; `cur` maps
+    P_n CORNER coordinates to the previous term's flat/A coordinates, `tags[n]`
+    records each generator's corner."""
     eng = AeEngine(A, p)
     m = A.m
     m2 = eng.m2
     T = eng.T
-    radA = radical_basis(A, p)
+    radA = radical_basis(A, p)                       # loud guard lives here
     radAe = _rad_ae_columns(eng, radA)
     rad_ab_pairs = _rad_ab_pairs(radAe, m)
     aug = np.zeros((m, m2), dtype=np.int64)
@@ -331,14 +556,145 @@ def _init_resolution(A, p):
             prod = T[a, b, :]
             for c in np.nonzero(prod % p)[0]:
                 aug[c, a * m + b] = (aug[c, a * m + b] + prod[c]) % p
+    if A.vertices is not None and len(A.vertices) > 1:
+        ctx = _CornerContext(eng, p)
+        eng.corner_ctx = ctx
+        tags0 = [(v, v) for v in ctx.vertices]
+        gens0 = []
+        cur_cols = []
+        k = len(tags0)
+        for blk, (v, _v) in enumerate(tags0):
+            g = np.zeros(m2 * k, dtype=np.int64)
+            eps = ctx.idem[v]
+            for a in np.nonzero(eps)[0]:
+                for b in np.nonzero(eps)[0]:
+                    g[blk * m2 + int(a) * m + int(b)] = (
+                        g[blk * m2 + int(a) * m + int(b)] + eps[a] * eps[b]) % p
+            gens0.append(g)
+            C = ctx.corner_basis[(v, v)]
+            for c in range(C.shape[1]):
+                cur_cols.append((aug @ C[:, c]) % p)  # mu restricted to the corner
+        cur = (np.stack(cur_cols, axis=1) % p if cur_cols
+               else np.zeros((m, 0), dtype=np.int64))
+        state = {"eng": eng, "rad_ab_pairs": rad_ab_pairs, "cur": cur, "cur_r": k,
+                 "rks": {0: k}, "cols": {0: None}, "n": 0,
+                 "corner": ctx, "tags": {0: tags0}, "gens0": gens0}
+        return state
+    eng.corner_ctx = None
     return {"eng": eng, "rad_ab_pairs": rad_ab_pairs, "cur": aug, "cur_r": 1,
             "rks": {0: 1}, "cols": {0: None}, "n": 0}
+
+
+def _corner_flatten(ctx, tags, kvec, r, p):
+    """A P_n element from corner coordinates (blocks of per-tag corner-basis coords)
+    to the flat ambient (A^e)^r."""
+    m2 = ctx.m2
+    flat = np.zeros(m2 * r, dtype=np.int64)
+    off = 0
+    for blk, tg in enumerate(tags):
+        C = ctx.corner_basis[tg]
+        d = C.shape[1]
+        if d:
+            flat[blk * m2:(blk + 1) * m2] = (C @ (kvec[off:off + d] % p)) % p
+        off += d
+    return flat
+
+
+def _corner_select(radK, tagged, p):
+    """Greedy Nakayama selection with corner tags: candidates independent modulo
+    span(radK).  Mirrors _independent_modulo_py, returning (tag, vec) pairs."""
+    ech = []
+
+    def _absorb(v):
+        w = v.copy() % p
+        for (pc, row) in ech:
+            if w[pc]:
+                w = (w - w[pc] * row) % p
+        nz = np.nonzero(w)[0]
+        if nz.size:
+            pc = int(nz[0])
+            ech.append((pc, (w * pow(int(w[pc]), p - 2, p)) % p))
+            return True
+        return False
+
+    for v in radK:
+        _absorb(np.asarray(v, dtype=np.int64))
+    chosen = []
+    for tg, cand in tagged:
+        if _absorb(cand):
+            chosen.append((tg, cand))
+    return chosen
+
+
+def _advance_corner(state, p, max_term_dim, max_transient_bytes):
+    """Corner-typed advance (multi-vertex): same status contract as the free path."""
+    eng = state["eng"]
+    ctx = state["corner"]
+    rad_ab_pairs = state["rad_ab_pairs"]
+    m2 = eng.m2
+    n = state["n"] + 1
+    cur = state["cur"]
+    cur_r = state["cur_r"]
+    tags_n = state["tags"][n - 1]
+    kcoords = nullspace_mod_p(np.asarray(cur, dtype=np.int64), p)
+    if not kcoords:
+        state["rks"][n] = 0
+        state["cols"][n] = []
+        state["tags"][n] = []
+        state["n"] = n
+        return {"status": "terminated", "radK_bytes": None, "r_n": 0}
+    ker = [_corner_flatten(ctx, tags_n, k, cur_r, p) for k in kcoords]
+    radK_bytes = None
+    if max_transient_bytes is not None:
+        nrad = rad_ab_pairs.shape[0]
+        radK_bytes = len(ker) * nrad * (m2 * cur_r) * 8
+        if radK_bytes > max_transient_bytes:
+            return {"status": "memory", "radK_bytes": radK_bytes, "r_n": None}
+    radK = _build_radK(eng, rad_ab_pairs, ker, cur_r, p)
+    tagged = []
+    for k in ker:                                     # K = (+)_{ij} eps_ij . K
+        for i in ctx.vertices:
+            for j in ctx.vertices:
+                comp = ctx.left_idem_mult(eng, (i, j), k, cur_r)
+                if np.any(comp):
+                    tagged.append(((i, j), comp))
+    chosen = _corner_select(radK, tagged, p)
+    del radK
+    r_n = len(chosen)
+    state["rks"][n] = r_n
+    state["cols"][n] = [g for (_tg, g) in chosen]
+    state["tags"][n] = [tg for (tg, _g) in chosen]
+    if r_n == 0:
+        state["n"] = n
+        return {"status": "terminated", "radK_bytes": radK_bytes, "r_n": 0}
+    if m2 * r_n > max_term_dim:
+        state["n"] = n
+        return {"status": "term", "radK_bytes": radK_bytes, "r_n": r_n}
+    cols = []
+    for tg, g in chosen:                              # d_{n+1} columns over corner coords
+        C = ctx.corner_basis[tg]
+        for c in range(C.shape[1]):
+            x = C[:, c]
+            col = np.zeros(m2 * cur_r, dtype=np.int64)
+            for a in range(ctx.m):
+                for b in range(ctx.m):
+                    cf = x[a * ctx.m + b]
+                    if cf % p:
+                        col = (col + cf * eng.apply_block(a, b, g, cur_r)) % p
+            cols.append(col)
+    state["cur"] = (np.stack(cols, axis=1) % p if cols
+                    else np.zeros((m2 * cur_r, 0), dtype=np.int64))
+    state["cur_r"] = r_n
+    state["n"] = n
+    return {"status": "ok", "radK_bytes": radK_bytes, "r_n": r_n}
 
 
 def _advance_resolution(state, p, max_term_dim, max_transient_bytes):
     """Compute the next degree (n = state['n']+1) of the minimal resolution in place.
     Returns {'status', 'radK_bytes', 'r_n'} -- see the plan's interface block for the
     exact state mutations per status."""
+    if state.get("corner") is not None:
+        return _advance_corner(state, p, max_term_dim, max_transient_bytes)
     eng = state["eng"]
     rad_ab_pairs = state["rad_ab_pairs"]
     m2 = eng.m2
@@ -409,6 +765,8 @@ def minimal_resolution(A, N, p, max_term_dim=20000, max_transient_bytes=None):
             for nn in range(state["n"] + 1, N + 2):
                 state["rks"][nn] = 0
                 state["cols"][nn] = []
+                if "tags" in state:
+                    state["tags"][nn] = []
             break
         if st == "memory":
             truncated_at = state["n"]                 # = n-1
@@ -416,6 +774,7 @@ def minimal_resolution(A, N, p, max_term_dim=20000, max_transient_bytes=None):
         if st == "term":
             truncated_at = state["n"]                 # = n
             break
+    state["eng"].corner_tags = state.get("tags")      # None on the local/free path
     return state["rks"], state["cols"], state["eng"], truncated_at
 
 
@@ -454,6 +813,48 @@ def _contracted_complex(A, rks, cols, eng, N):
     return Dbar
 
 
+def _corner_contracted_degree(eng, ctx, gens_n, tags_n, tags_nm1, p):
+    """One degree of the corner-typed contracted complex: A (x)_{A^e} A^e.(eps_v (x)
+    eps_w) = e_w A e_v, so blocks are corner bases of A instead of full copies of A.
+    Same collapse as _contracted_degree (b . alpha . a), with the result expressed in
+    the target block's corner basis (reconstruction asserted -- loud on failure)."""
+    m, m2 = ctx.m, ctx.m2
+    T = eng.T % p
+    row_offs, off = [], 0
+    for tg in tags_nm1:
+        row_offs.append(off)
+        off += ctx.corner_dim_A(tg)
+    nrows = off
+    cols_out = []
+    for g, tg in zip(gens_n, tags_n):
+        Bcol = ctx.cornerA[tg]                        # basis of e_w A e_v, tag (v, w)
+        for c in range(Bcol.shape[1]):
+            alpha = Bcol[:, c]
+            col = np.zeros(nrows, dtype=np.int64)
+            for blk, tgp in enumerate(tags_nm1):
+                w = g[blk * m2:(blk + 1) * m2]
+                acc = np.zeros(m, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        va = np.zeros(m, dtype=np.int64)
+                        for a in np.nonzero(alpha)[0]:      # e_vv . alpha
+                            va = (va + alpha[a] * T[vv, a, :]) % p
+                        out = np.zeros(m, dtype=np.int64)
+                        for s in np.nonzero(va)[0]:         # ... . e_uu
+                            out = (out + va[s] * T[s, uu, :]) % p
+                        acc = (acc + cf * out) % p
+                x = _solve_in_span(ctx.cornerA[tgp], acc, p)
+                assert x is not None, "corner contraction image left its corner (bug)"
+                col[row_offs[blk]:row_offs[blk] + x.shape[0]] = x
+            cols_out.append(col)
+    if not cols_out:
+        return np.zeros((nrows, 0), dtype=np.int64)
+    return np.stack(cols_out, axis=1) % p
+
+
 def minimal_homology_dims(A, N, primes=(32003,), max_term_dim=20000,
                           max_transient_bytes=None):
     """dim HH_n(A; F_p) for n=0..N, each prime in `primes`, via the minimal A^e
@@ -465,12 +866,25 @@ def minimal_homology_dims(A, N, primes=(32003,), max_term_dim=20000,
     for p in primes:
         rks, cols, eng, trunc = minimal_resolution(
             A, N, p, max_term_dim=max_term_dim, max_transient_bytes=max_transient_bytes)
-        Dbar = _contracted_complex(A, rks, cols, eng, N)
         m = eng.m
         # if truncated at degree t, we know d_1..d_t but not d_{t+1}, so HH_n is exact
         # only for n <= t-1.
         last = (trunc - 1) if trunc is not None else N
         dims = []
+        ctx = getattr(eng, "corner_ctx", None)
+        if ctx is not None:
+            tags = eng.corner_tags
+            Dbar = {n: _corner_contracted_degree(eng, ctx, cols.get(n, []) or [],
+                                                 tags.get(n, []), tags.get(n - 1, []), p)
+                    for n in range(1, N + 2)}
+            for n in range(0, last + 1):
+                dimn = sum(ctx.corner_dim_A(tg) for tg in tags.get(n, []))
+                rn = rank_mod_p(Dbar[n], p) if (n >= 1 and rks.get(n, 0) > 0) else 0
+                rnp1 = rank_mod_p(Dbar[n + 1], p) if rks.get(n + 1, 0) > 0 else 0
+                dims.append(int(dimn - rn - rnp1))
+            out[p] = dims
+            continue
+        Dbar = _contracted_complex(A, rks, cols, eng, N)
         for n in range(0, last + 1):
             dimn = m * rks.get(n, 0)
             rn = rank_mod_p(Dbar[n], p) if (n >= 1 and rks.get(n, 0) > 0) else 0
