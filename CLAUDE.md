@@ -110,6 +110,7 @@ Internals: `docs/internals/05-resolutions.md`, `docs/internals/09-chouhy-solotar
 Plans 01–11 delivered and merged to `main`. GUI (Plans 10–11 — Pyodide quiver
 canvas + live wait estimates) is live on the docs landing page. Deeper-engine work
 is the current focus: Plan 12 (straddling ambiguities + right decomposition + CS
-scope lift) delivered on branch `plan-12-ambiguity-blocks`. Known open engine item:
-`engine/resolutions_minimal.py` silently returns a wrong resolution on multi-vertex
-algebras (validated local-only) — should refuse loudly or be fixed.
+scope lift) and Plan 13 (minimal A^e engine multi-vertex support — corner-typed
+projective terms `A^e·(e_v⊗e_w)`; was silently wrong on any multi-vertex input)
+both delivered 2026-07-22. `engine/deepen.py` stays local-only (refuses corner mode
+loudly — no checkpoint format for it yet).

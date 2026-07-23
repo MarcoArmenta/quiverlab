@@ -375,12 +375,10 @@ class Algebra:
     def complexity(self, n):
         """Apparent complexity from the minimal A^e resolution's growth (GF(p) only).
 
-        Can UNDER-REPORT: read the number as a lower-bound estimate, trustworthy as
-        exact only on local / single-vertex inputs (the resolution's radical logic is
-        local-only, so a multi-vertex algebra of genuinely infinite complexity may still
-        come back finite; a memory-truncated build adds a silent prefix). No vertex-count
-        guard is imposed on purpose — one would break the correct kA_2 pin
-        (``linear_path_algebra(2)`` complexity zero). See ``invariants.scalar.complexity``.
+        Exact for path-basis algebras of any vertex count (Plan 13: the engine builds
+        the corner-typed minimal projective resolution). Remaining caveat: a
+        memory-truncated build adds a silent prefix (read the number as a lower bound
+        in that case). See ``invariants.scalar.complexity``.
         """
         from quiverlab.invariants.scalar import complexity
         return complexity(self, n)
