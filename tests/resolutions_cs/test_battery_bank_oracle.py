@@ -20,14 +20,14 @@ TWO tiers of comparison:
      Invariant under the correction's nullspace non-uniqueness (a permutation or a
      nullspace shift of the differential cannot change its rank), yet swap-sensitive
      to any genuine Task-6 differential bug (which would move a rank).  These MUST pass.
-  2. ASPIRATIONAL -- the collapsed differential matrices agree ENTRY-BY-ENTRY mod p,
-     once the two generator orders are aligned (quiverlab Chain.word <-> bank chain
-     label ("c",)/("v",) for truncpoly, (s,t) for qci; corner index is identity --
-     both libraries order the A-basis as [1, x, y, xy] / [1, x, x^2, ...]).
+  2. STRICT (since Plan 17) -- the collapsed differential matrices agree
+     ENTRY-BY-ENTRY mod p, once the two generator orders are aligned (quiverlab
+     Chain.word <-> bank chain label ("c",)/("v",) for truncpoly, (s,t) for qci;
+     corner index is identity -- both libraries order the A-basis as
+     [1, x, y, xy] / [1, x, x^2, ...]).
 
 ===========================================================================
-EMPIRICAL FINDING (flagged per the task's "report what you actually observe"
-rule; DEVIATES from the brief's predicted "6 passed, 6 xfailed"):
+HISTORY (the pre-Plan-17 EMPIRICAL FINDING, kept for the record):
 
   *** The byte-exact pins PASS byte-for-byte -- they XPASS, not xfail. ***
 
@@ -56,17 +56,16 @@ rule; DEVIATES from the brief's predicted "6 passed, 6 xfailed"):
       COINCIDENCE (two independent tie-breakers agreeing), NOT a mathematical
       guarantee of uniqueness.
 
-  *** WARNING: do NOT flip these markers to xfail(strict=True). ***
-  The byte identity on the qci family is TIE-BREAKING-DEPENDENT: it holds only while
-  quiverlab's solver keeps its current free-variable convention AND that convention
-  keeps matching the bank's hand-derived choice.  Any change to the linear-solve
-  representative (a different RREF pivot order, a non-zero free-variable assignment, a
-  future canonicalization pass) can legitimately move gamma to another equally-valid
-  point of the nullspace and break byte-exactness WITHOUT any real bug.  Keep
-  strict=False until an explicit canonicalization step lands that PINS the
-  representative on both sides; only then may a strict pin be justified.  The
-  load-bearing guarantee remains tier 1 (HH-dim equality), which is rank-based, hence
-  nullspace-invariant, and is a hard pass.
+  RESOLVED BY PLAN 17 (2026-07-23): the tie-breaking coincidence became a
+  guarantee.  `_d_general` now reduces gamma through
+  `fields.linalg.reduce_mod_nullspace` -- the unique coset representative with
+  zero coordinates at every free column of the correction system's RREF, i.e.
+  exactly the representative both the solver and the bank's hand derivation were
+  already choosing.  Byte identity is therefore pinned BY CONSTRUCTION
+  (adversarial-solver gate: tests/resolutions_cs/test_canonicalization.py shifts
+  the solve by a nullspace vector and the differential bytes must not move), and
+  the entrywise pins below are STRICT plain tests.  Tier 1 (HH-dim equality)
+  remains the rank-based, nullspace-invariant load-bearing guarantee.
 ===========================================================================
 """
 import functools
@@ -221,8 +220,6 @@ def test_cs_hh_matches_bank_quantum_ci(xi):
 
 
 # ========================= tier 2 (aspirational byte pins) =======================
-@pytest.mark.xfail(strict=False,
-                   reason="canonicalization pending (correction unique mod nullspace)")
 @pytest.mark.parametrize("a", [2, 3, 4])
 def test_cs_matches_bank_truncpoly_bytes(a):
     H, BCS = _bank()
@@ -233,8 +230,6 @@ def test_cs_matches_bank_truncpoly_bytes(a):
             BCS.truncpoly_reduction_system(a), N=6, p=p, keyfn=_key_truncpoly)
 
 
-@pytest.mark.xfail(strict=False,
-                   reason="canonicalization pending (correction unique mod nullspace)")
 @pytest.mark.parametrize("xi", [1, 2, 3])
 def test_cs_matches_bank_quantum_ci_bytes(xi):
     H, BCS = _bank()

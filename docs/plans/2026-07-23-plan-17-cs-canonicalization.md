@@ -356,4 +356,7 @@ git commit -m "test(cs): flip the 7 byte pins strict -- canonicalization guarant
 
 ## Status
 
-- [ ] Executed (fill in on completion)
+- [x] Executed 2026-07-23 in-session (branch `plan-17-cs-canonicalization`).
+  Canonicalization is a verified no-op on prior outputs (full CS battery byte-stable);
+  the adversarial-solver gate holds; the 7 pins are strict (CS battery: 114 passed,
+  0 xpassed); full `-m deep` and `-m fast` suites green.

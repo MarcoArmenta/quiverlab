@@ -37,6 +37,19 @@ add a correction strictly below `σ` in the reduction order; its coefficients ar
 solution of the linear system `d_{n-1}∘d_n = 0` (CS Theorems 4.1/4.2 — the same trick CS
 use in §6). Two gates certify every run: `assert_dd_zero` and `assert_order_condition`.
 
+**The canonical form (Plan 17).** The correction solution γ is unique only modulo the
+system's nullspace (on the quantum-CI family the nullity grows with degree), so
+`_d_general` reduces it through `fields.linalg.reduce_mod_nullspace` — the unique coset
+representative with **zero coordinates at every free (non-pivot) column** of the
+system's RREF. That makes the CS differential **byte-reproducible by construction**:
+which particular solution the solver returns no longer matters (an adversarial test
+shifts the solve by a nullspace vector and demands byte-identical `d_n`). The
+representative happens to coincide with both the solver's own free-variables-zero
+convention and the bank's hand-derived closed forms, so the byte-level bank pins and
+the paper's `d₂` coefficient pin are strict tests since this plan. A coset move never
+touches `d² = 0` (same linear system) or the order condition (every candidate
+generator is `≺ σ` by construction).
+
 ## Worked non-monomial example — the commutative square (HH^• = (1,0,0))
 `A = kQ/(ab − cd)`, `Q`: `1→2→4`, `1→3→4` (arrows `a,b,c,d`), tip `cd`, `dim A = 9`.
 `S_0 = {e_1,e_2,e_3,e_4}`, `S_1 = {a,b,c,d}`, `S_2 = {cd}`, `S_n = ∅ (n≥3)`.
