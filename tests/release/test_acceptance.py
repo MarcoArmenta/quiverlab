@@ -1,6 +1,8 @@
 """Plan 08 acceptance: the whole release surface is present and coherent."""
 import pathlib
 
+import pytest
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
 
 
@@ -18,8 +20,11 @@ def test_release_artifacts_present():
 
 
 def test_pyproject_release_ready():
-    import tomllib
-    pp = tomllib.loads((ROOT / "pyproject.toml").read_text())
+    try:
+        import tomllib
+    except ModuleNotFoundError:    # Python 3.10: tomllib is stdlib only from 3.11
+        tomllib = pytest.importorskip("tomli")
+    pp = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     assert pp["project"]["license"] == "MIT"                 # SPDX, not table
     extras = pp["project"]["optional-dependencies"]
     assert {"fast", "qpa", "docs", "dev"} <= set(extras)
