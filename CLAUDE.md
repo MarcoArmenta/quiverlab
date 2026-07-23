@@ -109,8 +109,13 @@ Internals: `docs/internals/05-resolutions.md`, `docs/internals/09-chouhy-solotar
 
 Plans 01–11 delivered and merged to `main`. GUI (Plans 10–11 — Pyodide quiver
 canvas + live wait estimates) is live on the docs landing page. Deeper-engine work
-is the current focus: Plan 12 (straddling ambiguities + right decomposition + CS
-scope lift) and Plan 13 (minimal A^e engine multi-vertex support — corner-typed
-projective terms `A^e·(e_v⊗e_w)`; was silently wrong on any multi-vertex input)
-both delivered 2026-07-22. `engine/deepen.py` stays local-only (refuses corner mode
-loudly — no checkpoint format for it yet).
+is the current focus, driven by the standing queue
+`docs/plans/DEEPER-ENGINES-BACKLOG.md` (on "continue": take the topmost unchecked
+item). Delivered so far: Plan 12 (straddling ambiguities + right decomposition + CS
+scope lift), Plan 13 (minimal A^e engine multi-vertex — corner-typed projective
+terms; was silently wrong on any multi-vertex input), Plan 14 (comparison map
+rebuilt as a homotopy lift — the closed-form block map was not a chain map for any
+tip of length ≥ 3, even monomial; cup/bracket transport now serves every admissible
+presentation in the bar window, and cap transport exists,
+`Comparison.cap_of_cs_classes`). `engine/deepen.py` stays local-only (refuses
+corner mode loudly — no checkpoint format for it yet).

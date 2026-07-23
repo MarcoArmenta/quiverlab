@@ -3,13 +3,15 @@ cup/bracket classes (spec Plan-04 Task 12).
 
 The Chouhy-Solotar resolution P_* is a retract of the (reduced) normalized bar
 resolution B_*: an inclusion Phi: P -> B and a projection Psi: B -> P with
-Psi Phi = id.  On generators the inclusion is the block map
-    Phi_n(1 (x) sigma (x) 1) = 1 (x) u_0 (x) ... (x) u_{n-1} (x) 1
-of the CS left decomposition sigma = u_0 | ... | u_{n-1}, PLUS the lower-order
-correction that makes it a chain map: for a relation generator the image is the
-whole relation, tip - beta(tip), not just the leading tip.  (For a monomial
-presentation beta(tip)=0, so the block term alone is already a chain map; for a
-quadratic binomial the correction is the length-2 words of the normal form.)
+Psi Phi = id.  Phi is constructed degreewise by the comparison-theorem lift
+    Phi_n = h ( Phi_{n-1} ( d_n^CS ) )        (Plan 14)
+through the normalized bar's contracting homotopy h(a (x) w (x) c) =
+1 (x) [a] (x) w (x) c, so every image term has left outer factor 1.  For
+single-arrow blocks this reproduces the classical block map
+Phi_n(1 (x) sigma (x) 1) = 1 (x) u_0 (x) ... (x) u_{n-1} (x) 1 plus, at n = 2,
+the -beta(tip) relation correction — but unlike those closed forms it is a
+genuine chain map for EVERY admissible presentation (the pure block map already
+fails d Phi = Phi d for a monomial tip of length 3, e.g. blocks (x)(yx)).
 
 Applying Hom_{A^e}(-, A) turns the covariant inclusion into the contravariant
 comparison COCHAIN map that this module works with,
@@ -17,9 +19,10 @@ comparison COCHAIN map that this module works with,
 a genuine cochain map (delta_cs Phi# = Phi# delta_bar) and a quasi-isomorphism.
 Its inverse on HH^* transports classes the other way; cup/bracket are computed
 on the bar side with engine.tt_calculus (the GF(p) facade) and pulled back through
-Phi#.  (Cap products live on the bar engine, engine.tt_calculus, only; there is no
-CS transport wrapper for them yet.)  Everything is exact over GF(p); the transport is delivered only inside the
-bar-comparison WINDOW (a cup at degree n needs bar cochains up to degree 2n+1).
+Phi#.  Cap products transport through the covariant collapse PhiHom = A (x) Phi
+on the chain side (cap_of_cs_classes; Plan 14 Phase B).  Everything is exact over
+GF(p); the transport is delivered only inside the bar-comparison WINDOW (a cup at
+degree n needs bar cochains up to degree 2n+1).
 
 Bases.  The bar side uses the engine's cochain basis engine.scan3.cochain_basis
 (pairs (w, s), interior word w in R^n, output slot s), matching tt_calculus.  The
@@ -84,6 +87,10 @@ class Comparison:
         self._dbar_cache = {}
         self._zbar_cache = {}
         self._barbasis_cache = {}
+        self._exp_cache = {}
+        self._pathB_cache = {}
+        self._phihom_cache = {}
+        self._barchain_cache = {}
 
     # -- setup ---------------------------------------------------------------
     def _default_window(self):
@@ -135,6 +142,9 @@ class Comparison:
         self._maxdeg = need + 1
         self._phi_cache.clear()
         self._dcs_cache.clear()
+        self._exp_cache.clear()
+        self._pathB_cache.clear()
+        self._phihom_cache.clear()
 
     # -- A-vector helpers ----------------------------------------------------
     def _A_to_Bred(self, vA):
@@ -150,41 +160,100 @@ class Comparison:
 
     def _block_reduced_index(self, word):
         """A CS block (arrow-name path) as a single reduced unit-adapted basis index.
-        Blocks in the CS left decomposition of a quadratic/monomial presentation are
-        irreducible single-basis paths, so their normal form is one basis vector."""
+        Used only by the degree-1 closed form (Plan 14: n >= 2 goes through the
+        homotopy lift), where the block is a single arrow — irreducible, so its
+        normal form is exactly one basis vector.  Loud invariant, never scope."""
         ar = self._res.ar
         vA = [int(x) % self.p for x in ar.path_vec(word)]
         d = self._A_to_Bred(vA)
-        if len(d) != 1 or next(iter(d.values())) != 1:
-            raise NotImplementedError(
-                "comparison block does not reduce to a single basis path; the honest "
-                "Phi for this (non-quadratic/non-monomial) presentation needs the "
-                "Skoldberg homotopy expansion (a later phase)")
+        assert len(d) == 1 and next(iter(d.values())) == 1, \
+            ("comparison block is not a single basis path (invariant violation)", word)
         return next(iter(d))
 
-    # -- the comparison expansion Phi_n(sigma) = sum coeff * (1 (x) word (x) 1) ----
+    # -- B-side (unit-adapted) arithmetic helpers for the homotopy lift ------
+    def _unit_B(self):
+        v = np.zeros(self.m, dtype=np.int64)
+        v[0] = 1                                   # unit-adapted basis: 1_A = index 0
+        return v
+
+    def _mult_B(self, u, v):
+        """Product of two A-vectors in unit-adapted coordinates (engine T)."""
+        p, m, T = self.p, self.m, self.E.T
+        out = np.zeros(m, dtype=np.int64)
+        for i in np.nonzero(u % p)[0]:
+            for j in np.nonzero(v % p)[0]:
+                out = (out + int(u[i]) * int(v[j]) * T[i, j, :]) % p
+        return out
+
+    def _path_B(self, word):
+        """A path word (arrow names) as an m-vector in unit-adapted coordinates."""
+        w = tuple(word)
+        v = self._pathB_cache.get(w)
+        if v is None:
+            if not w:
+                v = self._unit_B()
+            else:
+                vA = self._res.ar.path_vec(w)          # original-basis coords
+                v = np.zeros(self.m, dtype=np.int64)
+                for k in range(self.m):
+                    acc = 0
+                    for i in range(self.m):
+                        acc += self._Pinv[k][i] * (int(vA[i]) % self.p)
+                    v[k] = acc % self.p
+            self._pathB_cache[w] = v
+        return v
+
+    # -- the comparison expansion Phi_n(sigma) = sum (1 (x) word (x) c) ------------
     def _expansion(self, n, sigma):
-        """{interior word (reduced unit-adapted indices): coeff} for the honest bar
-        image Phi_n(sigma).  Leading block term for every n; for a non-monomial
-        presentation at n = 2 also the -beta(tip) relation correction."""
+        """{interior word (tuple of reduced unit-adapted indices) : c-vector} for the
+        honest bar image Phi_n(1 (x) sigma (x) 1) = sum_w  1 (x) w (x) c_w.  The left
+        outer factor is always 1 (the contracting homotopy h guarantees it); scalar
+        coefficients are absorbed into the right outer c-vectors.
+
+        n <= 1: closed form (identity-shaped).  n >= 2 (Plan 14): the comparison-
+        theorem lift  Phi_n = h ( Phi_{n-1} ( d_n^CS ) )  through the normalized bar's
+        contracting homotopy  h(a (x) w (x) c) = 1 (x) [a] (x) w (x) c  ([a] = class
+        of a in A/k.1; the unit component dies).  This reproduces the old closed forms
+        exactly where they were valid (single-arrow blocks; the n = 2 block - beta
+        correction) and is a chain map for EVERY admissible presentation — the old
+        pure block map silently failed d Phi = Phi d already for a monomial tip of
+        length 3 (blocks (x)(yx)), and non-monomial n >= 3 used to raise."""
         if n == 0:
-            return {(): 1}
-        lead = tuple(self._block_reduced_index(b) for b in sigma.blocks)
-        out = {lead: 1}
-        if not self._monomial and n >= 2:
-            nf = self._rs.normal_form(sigma.word)   # beta(tip) = sum lambda_k v_k
-            for w, coeff in nf.items():
-                if len(w) != len(sigma.word):
-                    raise NotImplementedError(
-                        "inhomogeneous reduction in the comparison correction; the "
-                        "honest Phi past the quadratic window needs the Skoldberg "
-                        "homotopy expansion (a later phase)")
-                if n != 2:
-                    raise NotImplementedError(
-                        "the honest comparison correction is delivered through degree "
-                        "2 for non-monomial presentations (quadratic window)")
-                key = tuple(self._block_reduced_index((letter,)) for letter in w)
-                out[key] = (out.get(key, 0) - int(coeff)) % self.p
+            return {(): self._unit_B()}
+        if n == 1:
+            return {(self._block_reduced_index(sigma.blocks[0]),): self._unit_B()}
+        key = (n, sigma.word)
+        cached = self._exp_cache.get(key)
+        if cached is not None:
+            return cached
+        p, m = self.p, self.m
+        out = {}
+        chain_by_word = {c.word: c for c in self._res.ss.S(n - 1)}
+        for (coeff, a_word, tw, c_word) in self._res.d_terms(n, sigma):
+            ci = self._res.to_int(coeff) % p
+            if not ci:
+                continue
+            tau = chain_by_word[tuple(tw)] if tuple(tw) in chain_by_word else \
+                self._res._chain(n - 1, tuple(tw))
+            sub = self._expansion(n - 1, tau)
+            av = self._path_B(a_word)                     # left outer, to be h-lifted
+            cv = self._path_B(c_word)                     # right outer multiplier
+            for w, cvec in sub.items():
+                c_new = self._mult_B(cvec, cv)
+                if not np.any(c_new):
+                    continue
+                for r in range(1, m):                     # h: prepend reduced legs of a;
+                    lam = (ci * int(av[r])) % p           # the unit component (r = 0)
+                    if not lam:                           # dies in the normalized bar
+                        continue
+                    nw = (r,) + w
+                    acc = out.get(nw)
+                    if acc is None:
+                        out[nw] = (lam * c_new) % p
+                    else:
+                        out[nw] = (acc + lam * c_new) % p
+        out = {w: v for w, v in out.items() if np.any(v)}
+        self._exp_cache[key] = out
         return out
 
     # -- bar-side bases / matrices (engine convention) -----------------------
@@ -238,21 +307,35 @@ class Comparison:
         if M is not None:
             return M
         self._ensure(n)
-        p = self.p
+        p, m = self.p, self.m
         csb = self._res._basis(n, "coh")
         bcb = self._bar_basis(n)
         Pi = self._P
         M = [[0] * len(bcb) for _ in range(len(csb))]
         exps = {}
+        vals = {}                                    # (s, word) -> original-coords m-vec
         for ri, (sigma, j) in enumerate(csb):
             key = sigma.word
             if key not in exps:
                 exps[key] = self._expansion(n, sigma)
             ex = exps[key]
             for ci, (w, s) in enumerate(bcb):
-                c = ex.get(tuple(w), 0)
-                if c:
-                    M[ri][ci] = (M[ri][ci] + c * Pi[j][s]) % p
+                cvec = ex.get(tuple(w))
+                if cvec is None:
+                    continue
+                # (Phi# g)(sigma) for g = (w |-> e_s):  1 . e_s . c, back to original
+                # coords through P, paired with the CS basis coordinate j.
+                vk = (s, tuple(w), key)
+                val = vals.get(vk)
+                if val is None:
+                    es = np.zeros(m, dtype=np.int64)
+                    es[s] = 1
+                    vB = self._mult_B(es, cvec)
+                    val = [sum(Pi[r][k] * int(vB[k]) for k in range(m)) % p
+                           for r in range(m)]
+                    vals[vk] = val
+                if val[j]:
+                    M[ri][ci] = (M[ri][ci] + val[j]) % p
         self._phi_cache[n] = M
         return M
 
@@ -479,6 +562,143 @@ class Comparison:
             rep = (rep + int(cls[k]) * Hpq.reps[:, k]) % self.p
         self._ensure(p + q)
         return self.transport_class_bar_to_cs([int(x) % self.p for x in rep], p + q)
+
+    # -- homology-side comparison + cap transport (Plan 14, Phase B) ---------
+    def _bar_chain_basis(self, k):
+        from quiverlab.engine.hh_engine import cn_basis
+        b = self._barchain_cache.get(k)
+        if b is None:
+            b = cn_basis(self.E, k)
+            self._barchain_cache[k] = b
+        return b
+
+    def PhiHom(self, n):
+        """Matrix of the covariant collapse A (x)_{A^e} Phi : C_n_cs -> C_n_bar
+        (rows = engine cn_basis, cols = CS hom basis [(sigma, j)]), int mod p.
+        A CS chain (sigma, x) goes to sum_w ( c_w . x ; w ) — the homology collapse
+        puts the right outer factor on the left (the A^e op-twist), and the left
+        outer factor of every lifted Phi term is 1."""
+        M = self._phihom_cache.get(n)
+        if M is not None:
+            return M
+        self._ensure(n)
+        p, m = self.p, self.m
+        csb = self._res._basis(n, "hom")
+        bcb = self._bar_chain_basis(n)
+        idx = {gen: i for i, gen in enumerate(bcb)}
+        M = [[0] * len(csb) for _ in range(len(bcb))]
+        exps = {}
+        for ci, (sigma, j) in enumerate(csb):
+            key = sigma.word
+            if key not in exps:
+                exps[key] = self._expansion(n, sigma)
+            xB = np.array([self._Pinv[k][j] for k in range(m)], dtype=np.int64)
+            for w, cvec in exps[key].items():
+                slot = self._mult_B(cvec, xB)             # c . x (b-left twist)
+                for a0 in np.nonzero(slot % p)[0]:
+                    r = idx.get((int(a0),) + tuple(w))
+                    if r is not None:
+                        M[r][ci] = (M[r][ci] + int(slot[a0])) % p
+        self._phihom_cache[n] = M
+        return M
+
+    def transport_cycle_cs_to_bar(self, z, n):
+        """A CS n-chain -> its bar image under the covariant collapse (direct)."""
+        return self._matvec(self.PhiHom(n), [int(x) % self.p for x in z])
+
+    def _bar_boundary_cols(self, n):
+        """Columns of the bar boundary b_{n+1} : C_{n+1}_bar -> C_n_bar (int mod p)."""
+        from quiverlab.engine.resolutions import _default
+        res = _default(None)
+        bnp = self._bar_chain_basis(n + 1)
+        index_n = {g: i for i, g in enumerate(self._bar_chain_basis(n))}
+        B = res.differential_matrix(self.E, n + 1, bnp, index_n)
+        return [[int(B[i][c]) % self.p for i in range(B.shape[0])]
+                for c in range(B.shape[1])]
+
+    def _cs_cycles(self, n):
+        """Basis of CS n-cycles Z_n = ker(matrix(n, 'hom')) (int mod p vectors)."""
+        dom = self.dom
+        self._ensure(n + 1)
+        Mb = self._res.matrix(n, "hom") if n >= 1 else []
+        if not Mb:
+            d = len(self._res._basis(n, "hom"))
+            return [[1 if i == k else 0 for i in range(d)] for k in range(d)]
+        ker = nullspace([[dom.coerce(x) for x in row] for row in Mb], dom)
+        return [[int(x) % self.p for x in v] for v in ker]
+
+    def transport_class_bar_to_cs_hom(self, bar_chain, n):
+        """A bar n-cycle -> a CS n-cycle z with PhiHom(z) homologous to it (solve
+        against PhiHom(CS cycles) and the bar boundaries; the homology mirror of
+        transport_cocycle_cs_to_bar)."""
+        dom, p = self.dom, self.p
+        zb = [int(x) % p for x in bar_chain]
+        cyc = self._cs_cycles(n)
+        cols = [self.transport_cycle_cs_to_bar(c, n) for c in cyc]
+        cols = cols + self._bar_boundary_cols(n)
+        if not cols:
+            if any(x % p for x in zb):
+                raise AssertionError("bar->cs homology transport: nonzero class in a "
+                                     "zero space")
+            return [0] * len(self._res._basis(n, "hom"))
+        Mat = [[dom.coerce(cols[cc][rr]) for cc in range(len(cols))]
+               for rr in range(len(zb))]
+        x = solve(Mat, [dom.coerce(v) for v in zb], dom)
+        if x is None:
+            raise AssertionError(
+                f"bar->cs homology transport is inconsistent at degree {n}: the "
+                f"comparison is not a quasi-isomorphism here (a bug, never an "
+                f"approximation)")
+        d = len(self._res._basis(n, "hom"))
+        out = [0] * d
+        for i, ci in enumerate(x[:len(cyc)]):
+            c = int(ci) % p
+            if c:
+                for k in range(d):
+                    out[k] = (out[k] + c * cyc[i][k]) % p
+        return out
+
+    def cs_homology_basis(self, n):
+        """Representative CS cycles of a basis of HH_n (int mod p vectors)."""
+        from quiverlab.resolutions_cs.homology import cs_hh_basis
+        reps = cs_hh_basis(self.A, n, "hom", max_cells=self.max_cells)
+        return [[int(x) % self.p for x in v] for v in reps]
+
+    def hh_class_cs_hom(self, n, i):
+        """The i-th representative class of HH_n on the CS side."""
+        reps = self.cs_homology_basis(n)
+        if i >= len(reps):
+            raise IndexError(f"HH_{n}(CS) has {len(reps)} basis classes; no index {i}")
+        return CSClass(n, reps[i])
+
+    def same_homology_class(self, x, y, degree):
+        """True iff x - y is a CS boundary at the given degree."""
+        dom, p = self.dom, self.p
+        self._ensure(degree + 1)
+        Mb = self._res.matrix(degree + 1, "hom")
+        Bcs = self._cols(Mb) if Mb and Mb[0] else []
+        diff = [(int(a) - int(b)) % p for a, b in zip(x, y)]
+        if not Bcs:
+            return not any(diff)
+        Mat = [[dom.coerce(Bcs[c][r]) for c in range(len(Bcs))]
+               for r in range(len(diff))]
+        return solve(Mat, [dom.coerce(v) for v in diff], dom) is not None
+
+    def cap_of_cs_classes(self, f, z):
+        """The CS-side cap product f ∩ z (f a CS cohomology class of degree p, z a CS
+        homology class of degree n >= p): transport both to the bar, cap there with
+        engine.tt_calculus.cap_cochain, pull the degree-(n-p) chain class back.
+        Returns a CS chain vector at degree n - p (window-bounded)."""
+        from quiverlab.engine import tt_calculus as TT
+        p_deg, n_deg = f.degree, z.degree
+        self._check_window(p_deg, n_deg)
+        fb = self.transport_cocycle_cs_to_bar(f.vec, p_deg)
+        zb = self.transport_cycle_cs_to_bar(z.vec, n_deg)
+        capped = TT.cap_cochain(self.E, p_deg, n_deg,
+                                np.array(fb, dtype=np.int64),
+                                np.array(zb, dtype=np.int64))
+        return self.transport_class_bar_to_cs_hom(
+            [int(v) % self.p for v in capped], n_deg - p_deg)
 
     # -- assertions ----------------------------------------------------------
     def assert_chain_map(self, upto=2):
