@@ -406,17 +406,6 @@ class Algebra:
         from quiverlab.viz.tikz import tikz_quiver
         return tikz_quiver(self.quiver, self.relations or [])
 
-    def _require_prime_field(self, what):
-        from quiverlab.errors import FieldError
-        from quiverlab.fields.primefield import PrimeField
-        if not isinstance(self.domain, PrimeField):
-            raise FieldError(
-                f"{what} is available over GF(p) today (fast engine); "
-                f"this algebra is over {self.domain.name}",
-                hint="construct the algebra over a prime field, or wait for the "
-                     "later phase that generalizes this invariant",
-            )
-
     def cyclic_homology(self, top, max_cells=4_000_000):
         """Dimensions of HC_0..HC_top (Connes (b, B) mixed complex).
 
@@ -437,31 +426,45 @@ class Algebra:
         return cyclic_homology_dims(self, top, max_cells=max_cells)
 
     def nakayama_automorphism(self):
-        """Nakayama automorphism nu as an integer matrix (columns = images) in the
-        unit-adapted basis, over GF(p); loud if not Frobenius / not GF(p)."""
-        self._require_prime_field("the Nakayama automorphism")
-        from quiverlab.engine.adapter import to_engine
-        from quiverlab.engine.coxeter import nakayama_automorphism
-        S, _ = nakayama_automorphism(to_engine(self.unit_adapted()), self.domain.p)
-        return [[int(S[i, j]) for j in range(S.shape[1])] for i in range(S.shape[0])]
+        """Nakayama automorphism nu as a matrix (columns = images) in the
+        algebra's basis. GF(p): integer matrix via the engine (unit-adapted
+        basis). Other exact Domains: Domain-element matrix on the path-type
+        basis (Plan 19). Loud if not Frobenius."""
+        from quiverlab.fields.primefield import PrimeField
+        if isinstance(self.domain, PrimeField):
+            from quiverlab.engine.adapter import to_engine
+            from quiverlab.engine.coxeter import nakayama_automorphism
+            S, _ = nakayama_automorphism(to_engine(self.unit_adapted()), self.domain.p)
+            return [[int(S[i, j]) for j in range(S.shape[1])] for i in range(S.shape[0])]
+        from quiverlab.invariants.frobenius import nakayama_automorphism_generic
+        return nakayama_automorphism_generic(self)
 
     def is_frobenius(self):
-        """Is the algebra Frobenius? (GF(p) via the engine.)"""
-        self._require_prime_field("the Frobenius test")
-        from quiverlab.engine.adapter import to_engine
-        from quiverlab.engine.coxeter import is_frobenius
-        return bool(is_frobenius(to_engine(self.unit_adapted()), self.domain.p))
+        """Is the algebra Frobenius? GF(p): engine form search. Other exact
+        Domains: the exact socle criterion on a path-type basis (Plan 19)."""
+        from quiverlab.fields.primefield import PrimeField
+        if isinstance(self.domain, PrimeField):
+            from quiverlab.engine.adapter import to_engine
+            from quiverlab.engine.coxeter import is_frobenius
+            return bool(is_frobenius(to_engine(self.unit_adapted()), self.domain.p))
+        from quiverlab.invariants.frobenius import is_frobenius_generic
+        return is_frobenius_generic(self)
 
     def is_symmetric(self):
-        """Is the algebra symmetric? (Frobenius with identity Nakayama automorphism; GF(p).)"""
-        self._require_prime_field("the symmetry test")
-        if not self.is_frobenius():
-            return False
-        from quiverlab.engine.adapter import to_engine
-        from quiverlab.engine.coxeter import is_identity, nakayama_automorphism
-        E = to_engine(self.unit_adapted())
-        S, _ = nakayama_automorphism(E, self.domain.p)
-        return bool(is_identity(S, self.domain.p))
+        """Is the algebra symmetric? GF(p): Frobenius with identity Nakayama
+        automorphism (engine). Other exact Domains: Frobenius with INNER
+        Nakayama automorphism (Plan 19, the definitional test)."""
+        from quiverlab.fields.primefield import PrimeField
+        if isinstance(self.domain, PrimeField):
+            if not self.is_frobenius():
+                return False
+            from quiverlab.engine.adapter import to_engine
+            from quiverlab.engine.coxeter import is_identity, nakayama_automorphism
+            E = to_engine(self.unit_adapted())
+            S, _ = nakayama_automorphism(E, self.domain.p)
+            return bool(is_identity(S, self.domain.p))
+        from quiverlab.invariants.frobenius import is_symmetric_generic
+        return is_symmetric_generic(self)
 
     def __repr__(self):
         base = f"Algebra of dimension {self.dim} over {self.domain.name}"

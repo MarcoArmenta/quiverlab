@@ -20,11 +20,17 @@ def test_sweep_custom_invariants_and_char_dependence():
 
 
 def test_sweep_records_field_errors_without_crashing():
-    # an engine-backed invariant over CC must be recorded, not raised, in a sweep cell
+    # a FieldError in a sweep cell must be recorded, not raised. Plan 19:
+    # is_frobenius now COMPUTES over CC (socle criterion), so the refusing
+    # column uses the fast engine, which is genuinely GF(p)-only.
     tab = sweep(truncated_polynomial, 2, fields=[CC, GF(5)],
-                invariants={"is_frobenius": lambda A: A.is_frobenius()})
+                invariants={"is_frobenius": lambda A: A.is_frobenius(),
+                            "hh1_fast": lambda A: A.hochschild_cohomology(
+                                1, engine="fast").dims[1]})
     assert tab.cell("is_frobenius", GF(5)) is True
-    assert "n/a" in str(tab.cell("is_frobenius", CC)).lower()
+    assert tab.cell("is_frobenius", CC) is True      # Plan-19 upgrade
+    assert tab.cell("hh1_fast", GF(5)) == 1
+    assert "n/a" in str(tab.cell("hh1_fast", CC)).lower()
 
 
 def test_sweep_repr_and_latex_are_strings():
