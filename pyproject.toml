@@ -31,6 +31,13 @@ dependencies = ["numpy>=1.21", "sympy>=1.12", "matplotlib>=3.7"]
 
 [project.optional-dependencies]
 fast = ["numba>=0.64"]
+web = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "jinja2>=3.1",
+    "python-ulid>=2.7",
+    "pydantic>=2.7",
+]
 # [qpa]: passagemath-gap 10.8.x ships prebuilt GAP + (via its own [qpa] sub-extra)
 # QPA v1.37 + GBNP, in manylinux/musllinux + macOS wheels (Python 3.11-3.14). No
 # Windows wheel -> the `sys_platform != 'win32'` marker makes the extra installable-
@@ -46,7 +53,7 @@ docs = [
     "mkdocs-section-index>=0.3",
     "mike>=2.1",
 ]
-dev = ["pytest>=8", "build>=1.2", "twine>=5.1"]
+dev = ["pytest>=8", "build>=1.2", "twine>=5.1", "httpx>=0.27"]
 
 [project.urls]
 Homepage = "https://marcoarmenta.github.io/quiverlab/"
@@ -57,7 +64,8 @@ Changelog = "https://github.com/MarcoArmenta/quiverlab/blob/main/CHANGELOG.md"
 # "Web GUI" and the JOSS DOI are added at web-deploy / JOSS-acceptance time.
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["src", "."]
+include = ["quiverlab*", "webapp*"]
 
 # LOAD-BEARING -- do NOT drop. citations/registry.py loads references.bib and
 # families/zoo.py loads zoo_catalog.json by __file__-relative path; without this
