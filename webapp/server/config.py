@@ -49,6 +49,7 @@ class Config:
     smtp_pass: str
     smtp_from: str
     token_secret: str
+    email_hash_salt: str
     big_token_ttl_seconds: int
     public_base_url: str
     docs_url: str
@@ -104,6 +105,12 @@ class Config:
             smtp_pass=env.get("QLWEB_SMTP_PASS", ""),
             smtp_from=env.get("QLWEB_SMTP_FROM", ""),
             token_secret=env.get("QLWEB_TOKEN_SECRET", "quiverlab-dev-token-secret"),
+            # Salt for the per-email rate-limit hash. Optional: defaults to
+            # token_secret (the original choice) so nothing breaks if it is unset;
+            # set it to decouple the two secrets and to rotate rate-limit buckets
+            # independently of the magic-link signing key.
+            email_hash_salt=(env.get("QLWEB_EMAIL_HASH_SALT")
+                             or env.get("QLWEB_TOKEN_SECRET", "quiverlab-dev-token-secret")),
             big_token_ttl_seconds=_int(env, "QLWEB_BIG_TOKEN_TTL_SECONDS", 3600),
             public_base_url=env.get("QLWEB_PUBLIC_BASE_URL", "http://127.0.0.1:8000"),
             # Empty by default: the Docs nav link is absent (no dead href) unless

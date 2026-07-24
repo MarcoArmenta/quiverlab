@@ -10,13 +10,15 @@ No test performs a real SMTP send: every path uses the injected ``FakeMailer``.
 """
 import logging
 import re
+import smtplib
 import sqlite3
 import time
 
+import pytest
 from fastapi.testclient import TestClient
 
 from webapp.server.app import create_app as create_app_
-from webapp.server.bigjobs import _spec_hash, sign_token, verify_token
+from webapp.server.bigjobs import _email_hash, _spec_hash, sign_token, verify_token
 from webapp.server.config import Config
 from webapp.server.security import hash_ip
 from webapp.server.store import JobStore
@@ -60,6 +62,14 @@ def _all_job_ids(store):
     conn = sqlite3.connect(store.db_path)
     try:
         return [r[0] for r in conn.execute("SELECT id FROM jobs").fetchall()]
+    finally:
+        conn.close()
+
+
+def _pending_big_count(store):
+    conn = sqlite3.connect(store.db_path)
+    try:
+        return conn.execute("SELECT COUNT(*) FROM pending_big").fetchone()[0]
     finally:
         conn.close()
 
@@ -276,3 +286,100 @@ def test_email_never_appears_in_logs(tmp_path, caplog):
         from webapp.server.mail import notify_completion
         notify_completion(cfg, job, "done", mailer=mail)
     assert "user@example.org" not in caplog.text
+
+
+# --------------------------------------------------------------------------- #
+# Mail failures never reach the logs -- including the exception paths
+# --------------------------------------------------------------------------- #
+
+def test_submit_mail_failure_is_502_and_never_logs_address(tmp_path, caplog):
+    cfg = _big_cfg(tmp_path)
+    addr = "leak-submit@example.org"
+
+    def boom(to, subject, body):
+        # A recipient refusal whose str() carries the address -- a naive log would
+        # leak it.
+        raise smtplib.SMTPRecipientsRefused({addr: (550, b"x")})
+
+    client = TestClient(create_app_(cfg, mailer=boom), raise_server_exceptions=False)
+    with caplog.at_level(logging.DEBUG):
+        r = client.post("/api/jobs/big", json=_big_body(email=addr))
+    assert r.status_code == 502
+    assert addr not in caplog.text                       # never logged, even on failure
+    # No pending row leaked in a half-state, and no job was created.
+    store = JobStore(cfg.db_path)
+    assert _pending_big_count(store) == 0
+    assert _all_job_ids(store) == []
+
+
+def test_completion_mail_failure_keeps_job_done_and_never_logs_address(tmp_path, caplog):
+    from webapp.worker.worker import worker_tick
+    cfg = _big_cfg(tmp_path)
+    store = JobStore(cfg.db_path)
+    store.init_schema()
+    addr = "leak-done@example.org"
+    eh = hash_ip(addr, cfg.token_secret)
+    jid = store.create_job(
+        {"schema": 1, "algebra": {"kind": "family", "family": "QuantumCI",
+         "params": {"q": 1}, "field": {"kind": "GF", "p": 2, "n": 1}},
+         "compute": ["hh_cohomology:0..3"], "artifacts": {"pdf": False, "tikz": False}},
+        ip="i", tier="big", email=addr, email_hash=eh,
+        wall_seconds=cfg.big_job_wall_seconds, mem_bytes=cfg.big_job_mem_bytes, lang="en")
+
+    def boom(to, subject, body):
+        raise RuntimeError("smtp down for " + to)        # str() carries the address
+
+    with caplog.at_level(logging.DEBUG):
+        worker_tick(store, cfg, mailer=boom)
+    done = store.get_job(jid)
+    assert done.status == "done", done.error             # the result is never lost
+    assert done.email is None                            # email still cleared on failure
+    assert done.email_hash == eh                         # hash kept for rate-limiting
+    assert addr not in caplog.text                       # never logged, even on failure
+
+
+# --------------------------------------------------------------------------- #
+# Strict single-address shape check
+# --------------------------------------------------------------------------- #
+
+@pytest.mark.parametrize("bad", ["a@b.org\nBcc: x@y.org", "a b@c.org", "a@b"])
+def test_email_shape_rejects_bad_addresses(tmp_path, bad):
+    cfg = _big_cfg(tmp_path)
+    client = TestClient(create_app_(cfg, mailer=FakeMailer()))
+    r = client.post("/api/jobs/big", json=_big_body(email=bad))
+    assert r.status_code == 422
+
+
+# --------------------------------------------------------------------------- #
+# Plus-alias cap bypass: +tag variants share one rate-limit bucket
+# --------------------------------------------------------------------------- #
+
+def test_plus_alias_shares_rate_bucket(tmp_path):
+    cfg = _big_cfg(tmp_path, QLWEB_PER_EMAIL_RUNNING_MAX="1")
+    store = JobStore(cfg.db_path)
+    store.init_schema()
+    # A running big job under user+1@x.org occupies the shared bucket ...
+    eh = _email_hash("user+1@x.org", cfg)
+    store.create_job({}, ip="i", tier="big", email="user+1@x.org", email_hash=eh)
+    # ... so user+2@x.org hits the same running cap instead of slipping past.
+    r = TestClient(create_app_(cfg, mailer=FakeMailer())).post(
+        "/api/jobs/big", json=_big_body(email="user+2@x.org"))
+    assert r.status_code == 429
+
+
+# --------------------------------------------------------------------------- #
+# Completion-mail permalink is localized to the job's language
+# --------------------------------------------------------------------------- #
+
+def test_completion_mail_localizes_url_for_es(tmp_path):
+    from webapp.server.mail import notify_completion
+    cfg = _big_cfg(tmp_path)
+
+    class _Job:
+        id = "JOB123"
+        email = "user@example.org"
+        lang = "es"
+
+    mail = FakeMailer()
+    notify_completion(cfg, _Job(), "done", mailer=mail)
+    assert "/es/job/JOB123" in mail.sent[-1][2]

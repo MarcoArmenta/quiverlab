@@ -139,8 +139,11 @@ def _notify_if_big(store: JobStore, cfg: Config, job: Job, status: str,
     try:
         from webapp.server.mail import notify_completion
         notify_completion(cfg, job, status, mailer=mailer)
-    except Exception:  # pragma: no cover - a mail failure must not lose the result
-        _log.warning("completion mail failed for job %s", job.id, exc_info=True)
+    except Exception as exc:  # a mail failure must not lose the result
+        # Never log the address, even on failure: the exception TYPE name and the
+        # job id only. No exc_info -- an SMTP exception's str carries the recipient.
+        _log.warning("completion mail failed for job %s (type=%s)",
+                     job.id, type(exc).__name__)
     finally:
         store.clear_email(job.id)
 

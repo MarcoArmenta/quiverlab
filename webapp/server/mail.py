@@ -46,7 +46,9 @@ def notify_completion(cfg, job, status: str, mailer=None) -> None:
         return
     send = mailer or smtp_mailer(cfg)
     lang = getattr(job, "lang", "en") or "en"
-    url = cfg.public_base_url.rstrip("/") + "/job/" + job.id
+    # Localise the permalink: a Spanish job links to the /es/job/<id> page.
+    prefix = "/es" if lang == "es" else ""
+    url = cfg.public_base_url.rstrip("/") + prefix + "/job/" + job.id
     if status == "done":
         subject = _t("mail.done_subject", lang)
         body = _t("mail.done_body", lang).replace("{url}", url)

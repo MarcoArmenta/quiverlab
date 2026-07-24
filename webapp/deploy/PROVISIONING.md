@@ -41,8 +41,10 @@ Target: a **persistent instance** (RAS quota: 25 vCPU / 50 GB RAM / 10 instances
      rotating the salt anonymizes past rate-limit keys.
    - `QLWEB_TOKEN_SECRET` — signs the single-use big-job magic-link tokens (§17).
    Keep `.env` off version control (it holds live secrets). `docker compose`
-   auto-reads it from this directory. Optional secrets (SMTP, `QLWEB_ADMIN_TOKEN`)
-   are set the same way — see "Secrets and feedback" below.
+   auto-reads it from this directory. Optional secrets (SMTP, `QLWEB_ADMIN_TOKEN`,
+   `QLWEB_EMAIL_HASH_SALT` — salt for the per-email rate-limit hash, defaults to
+   `QLWEB_TOKEN_SECRET` when unset) are set the same way — see "Secrets and
+   feedback" below.
 8. **Deploy.**
    ```bash
    # from quiverlab/webapp/deploy (repo already cloned in step 7)

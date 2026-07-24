@@ -17,10 +17,11 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fastapi import Request
+from fastapi import HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import field_validator
@@ -33,11 +34,18 @@ from webapp.server.runner import RunError
 from webapp.server.schema import ComputeRequest
 from webapp.server.security import hash_ip
 
+_log = logging.getLogger("quiverlab_web.bigjobs")
+
 _TEMPLATES = Jinja2Templates(
     directory=str(Path(__file__).resolve().parent.parent / "templates"))
 
 # (url prefix, language) -- the verify page is mounted twice, same handler.
 _LANGS = (("", "en"), ("/es", "es"))
+
+# The i18n catalogs carry no ``mail.send_failed`` key (checked in both en.json and
+# es.json), so a neutral English literal is used rather than inventing a Spanish
+# string -- the message never echoes the recipient address.
+_MAIL_SEND_FAILED = "Could not send the verification email; please try again later."
 
 
 class BigJobRequest(ComputeRequest):
@@ -51,8 +59,21 @@ class BigJobRequest(ComputeRequest):
     @field_validator("email")
     @classmethod
     def _email_shape(cls, v: str) -> str:
+        """A single-address shape check (no delivery probe): exactly one ``@``, no
+        whitespace or control character anywhere -- so a header-injection payload
+        like ``a@b\\nBcc: x@y`` is rejected -- length 3-200, non-empty local and
+        domain parts, and a dot in the domain. The real validation is that the
+        magic link is clicked from that inbox."""
         v = v.strip()
-        if "@" not in v or not (3 <= len(v) <= 200):
+        if not (3 <= len(v) <= 200):
+            raise ValueError("a valid email is required for a big job")
+        if v.count("@") != 1:
+            raise ValueError("a valid email is required for a big job")
+        # Reject spaces, \r\n\t, and any other control char (header injection).
+        if any(c.isspace() or ord(c) < 0x20 or ord(c) == 0x7F for c in v):
+            raise ValueError("a valid email is required for a big job")
+        local, _, domain = v.partition("@")
+        if not local or not domain or "." not in domain:
             raise ValueError("a valid email is required for a big job")
         return v
 
@@ -123,11 +144,25 @@ def _week_ago_iso() -> str:
         "%Y-%m-%dT%H:%M:%SZ")
 
 
+def _canonical_email_for_hash(email: str) -> str:
+    """Canonicalise an address for the rate-limit HASH ONLY (never for delivery):
+    strip, lowercase, and drop a ``+tag`` suffix from the local part so
+    ``user+1@x`` and ``user+2@x`` collapse to one bucket. Delivery always uses the
+    raw address; this normalisation exists solely to defeat plus-alias cap bypass."""
+    email = email.strip().lower()
+    local, sep, domain = email.partition("@")
+    if not sep:
+        return email
+    local = local.split("+", 1)[0]
+    return local + "@" + domain
+
+
 def _email_hash(email: str, cfg) -> str:
-    """Salted hash of the normalised address, used for rate-limiting and kept
+    """Salted hash of the canonicalised address, used for rate-limiting and kept
     after the plaintext is deleted. The raw address never reaches a log or a
-    long-lived column beyond the pending row / in-flight job."""
-    return hash_ip(email.strip().lower(), cfg.token_secret)
+    long-lived column beyond the pending row / in-flight job. The salt is
+    ``cfg.email_hash_salt`` (defaults to ``token_secret`` for back-compat)."""
+    return hash_ip(_canonical_email_for_hash(email), cfg.email_hash_salt)
 
 
 # --------------------------------------------------------------------------- #
@@ -180,8 +215,19 @@ def register_big_jobs(app, cfg, store, mailer=None) -> None:
         prefix = "/es" if req.lang == "es" else ""
         url = cfg.public_base_url.rstrip("/") + prefix + "/verify/" + token
         send = mailer or smtp_mailer(cfg)
-        send(req.email, _t("mail.verify_subject", req.lang),
-             _t("mail.verify_body", req.lang).replace("{url}", url))
+        try:
+            send(req.email, _t("mail.verify_subject", req.lang),
+                 _t("mail.verify_body", req.lang).replace("{url}", url))
+        except Exception as exc:
+            # The address must NEVER reach a log, even on the failure path: log the
+            # exception TYPE name and the pending id only -- no exc_info and no
+            # str(exc), either of which can echo the recipient (an SMTP refusal
+            # carries the address). Drop the half-created pending row so no
+            # plaintext address is stranded, then surface a neutral 502.
+            store.consume_pending_big(pid)
+            _log.warning("big-job verification mail failed (type=%s, pending=%s)",
+                         type(exc).__name__, pid)
+            raise HTTPException(status_code=502, detail=_MAIL_SEND_FAILED)
         return JSONResponse(status_code=202, content={"status": "sent"})
 
     for prefix, lang in _LANGS:
@@ -197,6 +243,9 @@ def _mount_verify(app, cfg, store, prefix: str, lang: str) -> None:
         payload = verify_token(cfg.token_secret, token, _now())
         # Check the big-queue cap BEFORE consuming, so a transiently full queue
         # does not burn a still-valid single-use link (the user can retry later).
+        # Soft: this count-then-consume is non-atomic across concurrent verifies,
+        # so the big queue can be marginally exceeded under a race -- acceptable,
+        # matching the per-IP / per-email soft limits.
         if payload is not None and store.count_big_pending() < cfg.big_queue_max:
             data = store.consume_pending_big(payload.get("pid", ""))   # single-use
             if (data is not None
