@@ -8,9 +8,9 @@ Adapted from the brief against the REAL in-repo interfaces:
     address in the store);
   * `job_ref` is ULID-validated when present (the plan's global constraint the
     brief's inline code omitted) -- see the invalid/valid job_ref tests;
-  * wrong admin token -> 403 Forbidden (the task's explicit contract; 403 is also
-    HTTP-correct here since 401 would require a WWW-Authenticate challenge we do
-    not send for a query-param token).
+  * the admin token arrives in the ``X-Admin-Token`` HEADER (never a query
+    string -- uvicorn logs query strings, so a ``?token=`` would leak the secret
+    into access logs); a wrong token -> 401.
 
 Beyond the brief this file pins the additional adjudicated coverage the task
 requires: message length bounds at 9/10/4001 chars, the 6th same-day submission
@@ -156,7 +156,7 @@ def test_feedback_page_has_literature_option(tmp_path):
 # Admin view (only when a token is configured; constant-time compare).
 # --------------------------------------------------------------------------- #
 def test_admin_route_absent_without_token(tmp_path):
-    r = _client(tmp_path).get("/admin/feedback?token=whatever")
+    r = _client(tmp_path).get("/admin/feedback", headers={"X-Admin-Token": "whatever"})
     assert r.status_code == 404
 
 
@@ -164,21 +164,27 @@ def test_admin_token_gate(tmp_path):
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "sekret"})
     client = TestClient(create_app(cfg))
     ref = client.post("/api/feedback", json=_body()).json()["reference"]
-    wrong = client.get("/admin/feedback?token=wrong")
+    wrong = client.get("/admin/feedback", headers={"X-Admin-Token": "wrong"})
     assert wrong.status_code == 401                       # 401 per plan (not 403)
     assert wrong.text == "unauthorized"
-    ok = client.get("/admin/feedback?token=sekret")
+    # The token lives in the X-Admin-Token HEADER, never a query string (a
+    # ?token=... would land the secret in uvicorn's access log): a query-param
+    # token does NOT authenticate.
+    assert client.get("/admin/feedback?token=sekret").status_code == 401
+    ok = client.get("/admin/feedback", headers={"X-Admin-Token": "sekret"})
     assert ok.status_code == 200
     assert "HH^3 dims look wrong" in ok.text
     assert ref in ok.text                                 # the id column renders the reference
 
 
 def test_admin_non_ascii_token_is_401_not_500(tmp_path):
-    # A non-ASCII query token must NOT crash hmac.compare_digest (TypeError on
-    # str) -- both sides are encoded to bytes, so it refuses cleanly.
+    # A non-ASCII token header must NOT crash hmac.compare_digest (TypeError on
+    # str) -- both sides are encoded to bytes, so it refuses cleanly. (Passed as
+    # UTF-8 bytes because httpx rejects a non-ASCII str header value client-side;
+    # the server still decodes it to a non-ASCII str, exercising the guard.)
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "sekret"})
     client = TestClient(create_app(cfg))
-    r = client.get("/admin/feedback", params={"token": "café"})
+    r = client.get("/admin/feedback", headers={"X-Admin-Token": "café".encode("utf-8")})
     assert r.status_code == 401                           # clean refusal, never a 500
 
 
@@ -186,7 +192,7 @@ def test_admin_escapes_untrusted_text(tmp_path):
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "t"})
     client = TestClient(create_app(cfg))
     client.post("/api/feedback", json=_body(message="<script>alert(1)</script> bug report"))
-    r = client.get("/admin/feedback?token=t")
+    r = client.get("/admin/feedback", headers={"X-Admin-Token": "t"})
     assert r.status_code == 200
     assert "<script>alert(1)</script>" not in r.text     # escaped, not raw
     assert "&lt;script&gt;" in r.text

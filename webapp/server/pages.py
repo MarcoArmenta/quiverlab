@@ -25,7 +25,7 @@ from fastapi.templating import Jinja2Templates
 from webapp.server.catalog import build_catalog
 from webapp.server.i18n import t as _t
 from webapp.server.references import grouped_bibliography
-from webapp.server.security import valid_ulid
+from webapp.server.security import sanitize_error_string, valid_ulid
 
 _TEMPLATES = Jinja2Templates(
     directory=str(Path(__file__).resolve().parent.parent / "templates"))
@@ -115,11 +115,14 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
                 references = data.get("references", []) or []  # runner-resolved
             except (json.JSONDecodeError, OSError):
                 pass
+        # Genericise the error at the READ boundary (same helper the JSON API
+        # uses): the stored value stays raw for forensics, but no unexpected
+        # internal type/message is rendered into the page.
         return _TEMPLATES.TemplateResponse(
             request, "job.html",
             _ctx(request, cfg, lang, prefix, job=job, trace_name=trace_name,
                  has_tikz=has_tikz, reproduce=reproduce, version=version,
-                 references=references))
+                 references=references, error=sanitize_error_string(job.error)))
 
 
 def _mount_download(app, cfg, store) -> None:

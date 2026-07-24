@@ -22,7 +22,7 @@ from webapp.server.runner import RunError, build_algebra
 from webapp.server.schema import ComputeRequest
 from webapp.server.security import (
     GENERIC_ERROR_MESSAGE, GENERIC_ERROR_TYPE, SECURITY_HEADERS, hash_ip,
-    is_safe_error_type, sanitize_error, valid_ulid,
+    is_safe_error_type, sanitize_error, sanitize_error_string, valid_ulid,
 )
 from webapp.server.store import JobStore
 
@@ -46,13 +46,21 @@ def _stamp_security_headers(response):
 
 
 def client_ip(request: Request) -> str:
-    """The originating client address: the first X-Forwarded-For hop (behind the
-    reverse proxy) or the direct peer. Hashed with a salt before it ever reaches
-    the store or a log -- the raw value stays inside this function's callers only
-    long enough to hash it."""
+    """The originating client address, hashed with a salt before it ever reaches
+    the store or a log (the raw value stays inside this function's callers only
+    long enough to hash it).
+
+    Trust contract: exactly ONE trusted reverse proxy (Caddy, the sole ingress)
+    sits in front and APPENDS the immediate peer as the LAST X-Forwarded-For
+    entry. So the trustworthy hop is the LAST one -- the leftmost entries are
+    client-supplied and spoofable (a client behind an appending proxy can inject
+    ``X-Forwarded-For: 9.9.9.9`` and Caddy appends the real peer after it). With
+    no XFF header at all, fall back to the direct socket peer."""
     fwd = request.headers.get("x-forwarded-for")
     if fwd:
-        return fwd.split(",")[0].strip()
+        hops = [h.strip() for h in fwd.split(",") if h.strip()]
+        if hops:
+            return hops[-1]
     return request.client.host if request.client else "unknown"
 
 
@@ -193,9 +201,12 @@ def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
         job = store.get_job(job_id)
         if job is None:
             return JSONResponse(status_code=404, content={"message": "no such job"})
+        # Genericise at the READ boundary (single source of truth): the STORED
+        # error stays raw for forensics, but an unexpected internal type/message
+        # never reaches a client -- exactly as the sync path's sanitize_error.
         return {"id": job.id, "status": job.status, "progress": job.progress,
-                "error": job.error, "created_at": job.created_at,
-                "finished_at": job.finished_at}
+                "error": sanitize_error_string(job.error),
+                "created_at": job.created_at, "finished_at": job.finished_at}
 
     _register_pages(app, cfg, store)   # Task 11
     # Task 12: feedback form page, JSON submit API, token-gated admin table.

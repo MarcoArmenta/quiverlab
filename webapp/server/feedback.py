@@ -18,7 +18,7 @@ import json
 from pathlib import Path
 from typing import Literal
 
-from fastapi import Request
+from fastapi import Header, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, field_validator, model_validator
@@ -118,7 +118,10 @@ def register_feedback(app, cfg, store) -> None:
 
     if cfg.admin_token:                     # route exists only when a token is configured
         @app.get("/admin/feedback", response_class=HTMLResponse)
-        def admin_feedback(token: str = ""):
+        def admin_feedback(token: str = Header(default="", alias="X-Admin-Token")):
+            # The token arrives in the ``X-Admin-Token`` HEADER, never a query
+            # param: uvicorn's access log records the query string, so a
+            # ``?token=...`` would land the admin secret in the logs.
             # Constant-time compare so a wrong token leaks no timing signal.
             # Encode both sides: hmac.compare_digest raises TypeError on a
             # non-ASCII str, so a token like "cafe" with accents must reach it

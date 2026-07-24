@@ -6,7 +6,7 @@
      data-status="{{ job.status }}"></div>
 <h1>{{ t("job.title") }} {{ job.id }}</h1>
 <p>{{ t("job.status") }} <strong id="status">{{ t("status." ~ job.status) }}</strong></p>
-{% if job.status == "failed" %}<div class="err">{{ job.error }}</div>{% endif %}
+{% if job.status == "failed" %}<div class="err">{{ error }}</div>{% endif %}
 {% if job.status == "done" %}
   <p>{{ t("job.downloads") }}
      <a href="/download/{{ job.id }}/result.json">result.json</a>

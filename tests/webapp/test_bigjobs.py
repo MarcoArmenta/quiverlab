@@ -265,7 +265,7 @@ def test_email_never_in_admin_feedback(tmp_path):
     mail = FakeMailer()
     client = TestClient(create_app_(cfg, mailer=mail))
     client.post("/api/jobs/big", json=_big_body())               # pending big w/ email
-    admin = client.get("/admin/feedback?token=tok")
+    admin = client.get("/admin/feedback", headers={"X-Admin-Token": "tok"})
     assert admin.status_code == 200
     assert "user@example.org" not in admin.text                  # never shows job emails
 

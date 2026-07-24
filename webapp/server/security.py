@@ -99,3 +99,27 @@ def sanitize_error(error_type: str, message: str) -> tuple[str, str]:
     if is_safe_error_type(error_type):
         return error_type, message
     return GENERIC_ERROR_TYPE, GENERIC_ERROR_MESSAGE
+
+
+def sanitize_error_string(raw: str | None) -> str | None:
+    """Client-safe form of a STORED job error string (``"Type: message"``).
+
+    The worker stores the raw ``f"{type(exc).__name__}: {exc}"`` (and the
+    parent's ``"worker error: <Type>: ..."``) for server-side forensics; this is
+    the READ boundary that genericises it, so the async/queued path leaks no more
+    than the sync path's ``sanitize_error``. A safe type (``QuiverlabError``
+    subclass name or a runner tag) passes VERBATIM -- honest refusals like
+    ``RelationError``/``ResultTooLarge``/``DepthLimitError`` still show their type
+    and message; an unexpected internal type becomes the same generic
+    ``InternalError`` type+message the sync path returns.
+
+    The type is the substring before the FIRST ``": "`` (``str.partition`` splits
+    once, so a message that itself contains ``": "`` is preserved intact); a
+    string with no ``": "`` cannot be vetted and is genericised."""
+    if raw is None:
+        return None
+    error_type, sep, message = raw.partition(": ")
+    if not sep:                          # no "Type: message" shape -> cannot vet
+        error_type, message = raw, ""
+    etype, msg = sanitize_error(error_type, message)
+    return f"{etype}: {msg}" if msg else etype

@@ -64,8 +64,13 @@ Changelog = "https://github.com/MarcoArmenta/quiverlab/blob/main/CHANGELOG.md"
 # "Web GUI" and the JOSS DOI are added at web-deploy / JOSS-acceptance time.
 
 [tool.setuptools.packages.find]
-where = ["src", "."]
-include = ["quiverlab*", "webapp*"]
+# Only the library ships in `pip install quiverlab` (lean base wheel). The
+# deploy-only `webapp` tier lives at the repo root and is served from the source
+# tree by the editable deploy install (webapp/deploy) -- it is NOT packaged into
+# the wheel/sdist, which would bloat every `pip install quiverlab` and, without a
+# matching package-data block, ship broken in a non-editable install anyway.
+where = ["src"]
+include = ["quiverlab*"]
 
 # LOAD-BEARING -- do NOT drop. citations/registry.py loads references.bib and
 # families/zoo.py loads zoo_catalog.json by __file__-relative path; without this

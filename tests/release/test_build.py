@@ -65,6 +65,12 @@ def test_wheel_and_sdist_contain_package_data(tmp_path):
         wheel_names = set(zf.namelist())
     for rel in _DATA_FILES:
         assert rel in wheel_names, f"{rel} missing from the wheel (package-data dropped?)"
+    # Lean base wheel (M4): `pip install quiverlab` ships ONLY the library. The
+    # deploy-only `webapp` tier is served from the source tree by the editable
+    # deploy install and must NOT be packaged (it would bloat every install and,
+    # without a matching package-data block, ship broken in a non-editable one).
+    assert not any(n.split("/")[0] == "webapp" for n in wheel_names), \
+        "base wheel must not ship the deploy-only webapp package (lean contract)"
 
     # sdist is a tar.gz; entries are under <name-version>/src/quiverlab/...
     sdists = list(out.glob("quiverlab-*.tar.gz"))
@@ -74,3 +80,6 @@ def test_wheel_and_sdist_contain_package_data(tmp_path):
     for rel in _DATA_FILES:
         assert any(m.endswith(rel) for m in sdist_names), \
             f"{rel} missing from the sdist (package-data dropped?)"
+    # The sdist likewise carries only the library sources, not the webapp tree.
+    assert not any("/webapp/" in m or m.endswith("/webapp") for m in sdist_names), \
+        "base sdist must not ship the deploy-only webapp package (lean contract)"

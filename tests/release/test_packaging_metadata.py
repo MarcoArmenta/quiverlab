@@ -66,3 +66,14 @@ def test_package_data_ships_bib_and_zoo():
 def test_numba_floor_not_regressed():
     """numba>=0.64 in the fast extra; kept identical to merged main."""
     assert "numba>=0.64" in PP["project"]["optional-dependencies"]["fast"]
+
+
+def test_packages_find_is_lean_no_webapp():
+    """The base dist ships ONLY the library (M4): the deploy-only `webapp` tier is
+    served from the source tree by the editable deploy install, never packaged --
+    so `pip install quiverlab` stays lean and no non-editable install ships a
+    webapp that lacks its own package-data."""
+    find = PP["tool"]["setuptools"]["packages"]["find"]
+    assert find["include"] == ["quiverlab*"], find["include"]
+    assert find["where"] == ["src"], find["where"]
+    assert not any("webapp" in inc for inc in find["include"])

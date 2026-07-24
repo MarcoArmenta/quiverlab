@@ -21,7 +21,10 @@ from fastapi.testclient import TestClient
 
 from webapp.server.app import create_app
 from webapp.server.config import Config
-from webapp.server.security import hash_ip, sanitize_error, valid_ulid
+from webapp.server.security import (
+    GENERIC_ERROR_MESSAGE, hash_ip, sanitize_error, valid_ulid,
+)
+from webapp.server.store import JobStore
 
 
 FAMILY = "QuantumCI"
@@ -267,3 +270,50 @@ def test_unhandled_exception_gets_security_headers_and_no_leak(tmp_path, monkeyp
     assert r.json()["error_type"] == "InternalError"
     assert "RuntimeError" not in r.text
     assert "SECRET_INTERNAL_LEAK" not in r.text
+
+
+def test_async_job_error_is_genericised_at_read_boundary(tmp_path):
+    # The queued/async path STORES the raw "Type: message" for server-side
+    # forensics; the READ boundary (GET /api/jobs AND the /job page) must
+    # genericise an UNEXPECTED internal type exactly as the sync path does, while
+    # an honest QuiverlabError/runner-tag failure still shows its type+message.
+    cfg = _cfg(tmp_path)
+    store = JobStore(cfg.db_path)
+    store.init_schema()
+    # An unexpected internal failure exactly as the worker would store it.
+    bad = store.create_job(_gf_body(["hh_cohomology:0..2"]), ip="h")
+    store.mark_failed(bad, "KeyError: 'SECRET_INTERNAL'")
+    # An honest, client-safe refusal (a QuiverlabError subclass name).
+    good = store.create_job(_gf_body(["hh_cohomology:0..2"]), ip="h")
+    store.mark_failed(good, "RelationError: relation is not admissible")
+
+    client = TestClient(create_app(cfg))
+
+    # Unexpected internal error: nothing leaks -- on BOTH the API and the page.
+    api = client.get(f"/api/jobs/{bad}")
+    assert api.status_code == 200
+    assert api.json()["error"] == "InternalError: " + GENERIC_ERROR_MESSAGE
+    assert "KeyError" not in api.text and "SECRET_INTERNAL" not in api.text
+    page = client.get(f"/job/{bad}")
+    assert page.status_code == 200
+    assert "KeyError" not in page.text and "SECRET_INTERNAL" not in page.text
+    assert "InternalError" in page.text
+
+    # Honest QuiverlabError: its type + message DO pass through verbatim.
+    assert client.get(f"/api/jobs/{good}").json()["error"] == \
+        "RelationError: relation is not admissible"
+    assert "RelationError" in client.get(f"/job/{good}").text
+
+
+def test_client_ip_trusts_last_xff_hop(tmp_path):
+    # Behind the single trusted reverse proxy (Caddy APPENDS the real peer as the
+    # LAST X-Forwarded-For hop), the stored/rate-limit key is that last hop --
+    # never the leftmost, which a client behind an appending proxy can spoof.
+    cfg = _cfg(tmp_path, QLWEB_INSTANT_MAX_DEGREE=0)      # force a queued row
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/compute", json=_gf_body(["hh_cohomology:0..2"]),
+                    headers={"X-Forwarded-For": "9.9.9.9, 10.0.0.5"})
+    assert r.status_code == 202
+    (stored,) = sqlite3.connect(cfg.db_path).execute("SELECT ip FROM jobs").fetchone()
+    assert stored == hash_ip("10.0.0.5", cfg.ip_hash_salt)   # Caddy-appended peer
+    assert stored != hash_ip("9.9.9.9", cfg.ip_hash_salt)    # spoofable leftmost ignored

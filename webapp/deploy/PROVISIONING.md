@@ -133,9 +133,12 @@ The **optional** secrets below go in the same `.env`, or in the `app`/`worker`
 - `QLWEB_IP_HASH_SALT` — a long random string. Client IPs are stored only as
   `sha256(salt + ":" + ip)`; rotating the salt anonymizes past rate-limit keys.
 - `QLWEB_ADMIN_TOKEN` — enables the feedback admin view. **When unset, the
-  `/admin/feedback` route does not exist at all.** With it set, read submissions at:
+  `/admin/feedback` route does not exist at all.** With it set, pass the token in
+  the `X-Admin-Token` **header** (never a query string — uvicorn's access log
+  records query strings, so a `?token=...` would leak the admin secret into the
+  logs):
 
-      https://quiverlab.<domain>/admin/feedback?token=<QLWEB_ADMIN_TOKEN>
+      curl -H "X-Admin-Token: $QLWEB_ADMIN_TOKEN" https://quiverlab.<domain>/admin/feedback
 
   The comparison is constant-time. Alternatively, query the SQLite directly on
   the VM (no token needed, you are on the box):
