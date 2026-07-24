@@ -2,8 +2,9 @@
 //
 // The strict CSP (script-src 'self') blocks script *execution*, but it does NOT
 // block HTML/link injection. So every server-provided string below is placed via
-// textContent / DOM node APIs (never the HTML-parsing sink) and reference links
-// are built with document.createElement("a"), accepting http(s) hrefs only.
+// textContent / DOM node APIs (never innerHTML / insertAdjacentHTML / document.write)
+// and reference links are built with document.createElement("a"), accepting
+// http(s) hrefs only.
 
 // Interpolate {cells}/{minutes}/{maxcells} into a t()-sourced template string.
 function interp(tmpl, est, maxcells) {
@@ -21,6 +22,9 @@ function errDiv(text) {
   return div;
 }
 
+// Honesty note: this gate intentionally drops every non-http(s):// href — bare
+// DOIs (10.1/x), protocol-relative (//host), uppercase schemes (HTTP://) — and the
+// server currently emits only https://… or null (see webapp/server/references.py).
 // True only for http:// or https:// hrefs — everything else (javascript:, data:,
 // relative, …) is rejected so we never build an attacker-controlled link.
 function isHttpUrl(url) {

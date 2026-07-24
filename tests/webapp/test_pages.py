@@ -14,9 +14,13 @@ download traversal + whitelist + done-gate, no untranslated key leak in /es
 (brief keys AND a key-shaped regex over visible text), and a no-inline-script
 assertion on every rendered page (strict CSP: every <script> must carry src=).
 """
+import json
 import re
+import shutil
+import subprocess
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from webapp.server.app import create_app
@@ -259,13 +263,83 @@ def test_no_inline_script_on_any_page(tmp_path):
             assert "src=" in tag, f"{page}: inline <script> found: {tag}"
 
 
-def test_app_js_has_no_innerhtml_sinks():
-    """The strict CSP blocks script *execution* but NOT HTML/link injection.
-    app.js therefore renders every server-provided string via textContent / DOM
-    nodes and must contain ZERO ``innerHTML`` assignments. This static assertion
-    (app.js is a served static file, not exercised by TestClient's non-JS render)
-    is the honest, checkable guard against regressing to an injection sink."""
-    app_js = Path(__file__).resolve().parents[2] / "webapp" / "static" / "app.js"
-    assert app_js.is_file(), app_js
-    src = app_js.read_text()
-    assert "innerHTML" not in src, "app.js must render server data via textContent/DOM, not innerHTML"
+_APP_JS = Path(__file__).resolve().parents[2] / "webapp" / "static" / "app.js"
+
+# The whole HTML-injection class -- not just innerHTML. Any of these can parse an
+# attacker-controlled string as markup; app.js must use none of them.
+_HTML_INJECTION_SINKS = (
+    "innerHTML", "outerHTML", "insertAdjacentHTML",
+    "document.write", "setHTMLUnsafe", "createContextualFragment",
+)
+
+
+def _strip_js_comments_and_strings(src: str) -> str:
+    """Best-effort removal of ``//`` line comments and string literals
+    (``"..."`` / ``'...'`` / ``` `...` ```) from JS source so the sink scan sees
+    only executable code -- honest comments and URL literals may now name the
+    forbidden tokens without tripping the guard.
+
+    This is a GUARD, not a JS parser. Known limits (all absent from app.js, which
+    is why the approximation is adequate): it does not handle ``/* block
+    comments */``, regex literals, or template-literal ``${...}`` interpolation.
+    Strings are stripped BEFORE comments so a ``//`` inside a string (e.g.
+    ``"https://"``) is never mistaken for a comment; string patterns are
+    newline-bounded so an unbalanced quote inside a ``//`` comment cannot run
+    away across lines."""
+    src = re.sub(r'"(?:[^"\\\n]|\\.)*"', "", src)   # double-quoted
+    src = re.sub(r"'(?:[^'\\\n]|\\.)*'", "", src)   # single-quoted
+    src = re.sub(r"`(?:[^`\\]|\\.)*`", "", src)     # template literal (best-effort)
+    src = re.sub(r"//[^\n]*", "", src)              # // line comments
+    return src
+
+
+def test_app_js_has_no_html_injection_sinks():
+    """The strict CSP blocks script *execution* but NOT HTML/link injection, so a
+    regression to any HTML-parsing sink would be a live XSS/link-injection hole.
+    app.js is a served static file (not exercised by TestClient's non-JS render),
+    so this static scan is the honest, checkable fence. Comments and string
+    literals are stripped first (see ``_strip_js_comments_and_strings``) so the
+    assertion fires only on the tokens in *executable* code."""
+    assert _APP_JS.is_file(), _APP_JS
+    code = _strip_js_comments_and_strings(_APP_JS.read_text())
+    for token in _HTML_INJECTION_SINKS:
+        assert token not in code, (
+            f"app.js contains HTML-injection sink '{token}' in executable code; "
+            "render server data via textContent / DOM nodes instead"
+        )
+
+
+def test_is_http_url_rejects_non_http_schemes():
+    """Table-test app.js's ``isHttpUrl`` gate under node: extract the function
+    source textually and evaluate it against a case table in one ``node -e`` run.
+    Skipped (never failed) when node is unavailable -- a missing runtime is not a
+    regression."""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not available")
+
+    src = _APP_JS.read_text()
+    m = re.search(r"function isHttpUrl\s*\([^)]*\)\s*\{.*?\n\}", src, re.DOTALL)
+    assert m, "isHttpUrl function not found in app.js"
+    fn_src = m.group(0)
+
+    rejected = ["//evil.com", " https://x", "HTTP://x", "https:@evil",
+                "javascript:alert(1)", "data:text/html,x", "", None]
+    accepted = ["https://doi.org/10.1/x", "http://example.org"]
+
+    harness = fn_src + "\n" + (
+        f"const rejected = {json.dumps(rejected)};\n"
+        f"const accepted = {json.dumps(accepted)};\n"
+        "process.stdout.write(JSON.stringify({\n"
+        "  rejected: rejected.map((u) => isHttpUrl(u)),\n"
+        "  accepted: accepted.map((u) => isHttpUrl(u)),\n"
+        "}));\n"
+    )
+    proc = subprocess.run([node, "-e", harness],
+                          capture_output=True, text=True, timeout=30)
+    assert proc.returncode == 0, proc.stderr
+    got = json.loads(proc.stdout)
+    assert got["rejected"] == [False] * len(rejected), \
+        f"isHttpUrl accepted a bad href: {list(zip(rejected, got['rejected']))}"
+    assert got["accepted"] == [True] * len(accepted), \
+        f"isHttpUrl rejected a good href: {list(zip(accepted, got['accepted']))}"
