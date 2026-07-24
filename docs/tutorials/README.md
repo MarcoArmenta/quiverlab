@@ -17,3 +17,14 @@ Read them in order:
 The notebooks are committed with their outputs so they render on GitHub. To
 re-execute: `jupyter nbconvert --execute --inplace docs/tutorials/*.ipynb`
 (with `NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2`).
+
+## Prefer not to write Python?
+
+The library also ships a no-code **web interface** (`webapp/`): pick a family, a
+field, and invariants and read exact results with rendered mathematics — instant
+for small computations, queued (with a permalink) for deeper ones, and
+email-verified big jobs for the largest. It is bilingual (English at `/`, Spanish
+at `/es/`) and every result carries its literature references. See the
+[Web interface section of the README](../../README.md#web-interface) to run it
+locally, and [`webapp/deploy/PROVISIONING.md`](../../webapp/deploy/PROVISIONING.md)
+to deploy it.

@@ -59,7 +59,7 @@ print(Q.algebra(relations=["a*b"], field=CC).hochschild_cohomology(3))
 - **Documentation:** <https://marcoarmenta.github.io/quiverlab/>
 - **Tutorials:** [executable notebooks](docs/tutorials/) — start here.
 - **Under the hood:** [internals chapters](docs/internals/) — how each number is produced.
-- **Web GUI:** the [docs landing page](https://marcoarmenta.github.io/quiverlab/) computes in your browser today; a server tier for big jobs is planned (Plan 09).
+- **Web GUI:** the [docs landing page](https://marcoarmenta.github.io/quiverlab/) computes in your browser today; a self-hostable server tier (`webapp/`) adds queued and email-verified big jobs — see [Web interface](#web-interface).
 - **Cite:** see the JOSS paper (`paper/paper.md`) and [`CITATION.cff`](CITATION.cff).
 
 ## The classic characteristic pathology, in one loop
@@ -204,5 +204,45 @@ them off per call (`A.hochschild_cohomology(2, verbose=False)`) or globally
 (`quiverlab.verbose = False`). PDFs need `pdflatex` or `tectonic` on `PATH`;
 otherwise a self-contained, JavaScript-free HTML document (math shown as TeX source)
 is written with a one-line note.
+
+## Web interface
+
+A no-code web GUI (`webapp/`) exposes the library for algebraists who prefer not
+to write Python: pick a family, a field, and invariants; read exact results with
+rendered mathematics; download the worked-steps PDF. Small computations run
+instantly; deep ones become queued jobs with a permalink; very large ones run as
+email-verified **big jobs** (a single-use magic link; requires an outbound SMTP
+relay, disabled otherwise). Every result carries a References block (the
+literature the computation stands on, from the library's citations subsystem),
+and `/literature` shows the full curated bibliography. The UI is bilingual
+(English at `/`, Spanish at `/es/`) with a public feedback form at `/feedback`
+(including a "suggest literature" category).
+
+Each finished computation exposes downloadable artifacts under
+`/download/<job-id>/…`: `result.json` (exact dimensions, references, and a
+copy-paste reproduction snippet), the worked-steps `trace.pdf` (or a
+self-contained `trace_steps.html` when no LaTeX toolchain is present), and
+`tikz.tex` when a drawing was requested. Every number is exact — the server never
+approximates, and an out-of-scope request fails loudly rather than silently
+truncating.
+
+Run it locally:
+
+```bash
+pip install -e ".[web,fast]"
+uvicorn webapp.server.app:create_app --factory --reload      # terminal 1
+python -m webapp.worker.run_loop                             # terminal 2
+# open http://127.0.0.1:8000
+```
+
+The web tier is two processes sharing one SQLite database: the FastAPI app
+(instant computations under a hard wall-time net; everything larger is enqueued)
+and one or more worker loops (each job runs in a resource-capped subprocess). A
+full-stack local smoke driving the real processes over HTTP lives at
+[`scripts/webapp_smoke.py`](scripts/webapp_smoke.py); the equivalent flow runs
+in-process (no ports) as `tests/webapp/test_acceptance.py`.
+
+Deploy (DRAC Arbutus, Docker Compose + Caddy TLS): see
+[`webapp/deploy/PROVISIONING.md`](webapp/deploy/PROVISIONING.md).
 
 MIT © 2026 Marco Armenta
