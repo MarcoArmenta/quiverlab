@@ -1312,4 +1312,21 @@ git commit -m "docs: Plan-19 status -- engine-backed invariants over any exact D
 
 ## Status
 
-- [ ] Not yet executed.
+- [x] Executed 2026-07-23 in-session (branch `plan-19-field-generality`, stacked on
+  `plan-18-zoo-diversity`). Four execution findings folded in:
+  (1) engine `minimal_resolution(N)` returns `rks` for degrees 0..N+1, so the
+  generic `complexity(A, n)` feeds `relative_betti_numbers(A, n + 1)` to match the
+  engine's growth-sequence length exactly;
+  (2) a uniform Betti-parity depth of 5 is infeasible on the generic path for
+  single-vertex algebras with a 5-element radical (chains grow as (dim r)^n —
+  `straddle_xx_yy_xyx`'s d_7 would have ~1.2B cells): the parity test uses
+  per-algebra depths (straddle N=2, quantum CI N=3 — both past the degrees where
+  the Plan-12 straddling chains appear);
+  (3) quiverlab's `QuantumCI(q)` relation is `x*y + q*y*x`, NOT the engine
+  docstring's `yx − q·xy`, so its Nakayama automorphism is
+  ν = diag(1, −q, −1/q, 1) — the self-certification battery (defining identity +
+  multiplicativity) caught the sign-convention slip in the original test pin;
+  (4) `test_sweep_records_field_errors_without_crashing` pinned the OLD refusal
+  (`is_frobenius` over CC → "n/a" cell): repinned so the frobenius row documents
+  the Plan-19 upgrade (True over CC) and the FieldError-recording mechanism is
+  exercised by `engine="fast"` HH, which is genuinely GF(p)-only.

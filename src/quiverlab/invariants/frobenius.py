@@ -96,7 +96,7 @@ def _lam_of(lam, vec, dom):
 
 def frobenius_form_generic(A):
     """(lam, G): a VERIFIED-nondegenerate Frobenius covector (lam(x) =
-    sum_t lam[t] x_t) and its Gram matrix G[i][j] = lam(f_i f_j).
+    sum_t lam_t x_t) and its Gram matrix G_{ij} = lam(f_i f_j).
     Raises QuiverlabError if A is not Frobenius, and loudly if no candidate
     passes the exact rank check (never returns an unverified form)."""
     dom = A.domain

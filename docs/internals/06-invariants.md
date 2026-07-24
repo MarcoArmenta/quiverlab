@@ -7,9 +7,11 @@ C_{ij} = dim e_i A e_j — the number of basis paths from vertex i to vertex j �
 integer matrix independent of the ground field. When C is invertible over Q the Coxeter
 transformation is Phi = −C^{−T} C, and its characteristic polynomial (the Coxeter
 polynomial) is a classical invariant tying the algebra to Dynkin/Euclidean type. A second
-family of invariants lives over the enveloping algebra and is only computed via the fast
-GF(p) engine: whether A is Frobenius or symmetric, and, when it is, its Nakayama
-automorphism — the twist by which the dualizing bimodule differs from A itself.
+family of invariants lives over the enveloping algebra: whether A is Frobenius or
+symmetric, and, when it is, its Nakayama automorphism — the twist by which the dualizing
+bimodule differs from A itself. Over GF(p) these route through the fast engine; over every
+other exact Domain they run on generic exact linear algebra (Plan 19; see "Field
+generality" below).
 
 ## How it is represented
 
@@ -51,14 +53,13 @@ the domain follows the coefficients (ZZ when integral, QQ when genuinely rationa
 non-unimodular Cartan that yields a rational Coxeter transformation is called out, not
 silent (see below).
 
-### The engine-backed GF(p) extras
+### The engine-backed extras: GF(p) fast path
 
 `nakayama_automorphism`, `is_frobenius`, `is_symmetric`, and `cyclic_homology` are methods
-on `Algebra` that route through the fast engine. Each first calls `_require_prime_field`,
-which raises `FieldError` unless the domain is a `PrimeField` — because these invariants are
-wired only through the numpy-int64/mod-p engine (`engine/coxeter.py`), which does its linear
-algebra over F_p with modular inverses. Over QQ or GF(p^n) they are not yet available and
-say so.
+on `Algebra` that dispatch on the domain: a `PrimeField` routes through the fast
+numpy-int64/mod-p engine (`engine/coxeter.py`, `engine/cyclic.py`), byte-for-byte the
+pre-Plan-19 behavior; every other exact Domain routes to the generic paths of the "Field
+generality" section below.
 
 - `is_frobenius` searches for a non-degenerate Frobenius form: `frobenius_form` tries a
   deterministic sequence of covectors λ (coordinate functionals first, then all-ones, then
@@ -70,15 +71,59 @@ say so.
   the identity exactly when G is symmetric — i.e. when A is *symmetric*.
 - `is_symmetric` is "Frobenius **and** the Nakayama automorphism is the identity mod p".
 
-`complexity(A, n)` (`invariants/scalar.py`) is engine-backed the same way — it reads the
-minimal A^e resolution's term-dimension growth through `complexity_of`, so it too calls
-`_require_prime_field` and is GF(p)-only — but the number it returns can silently
-**under-report**, exact only on local / single-vertex inputs. Two unguarded caveats travel
-with it: the resolution's radical logic is **local-only**, so a multi-vertex algebra of
-genuinely *infinite* complexity can still come back *finite* (read it as a lower bound), and
-a memory-truncated build adds a silent prefix because the truncation marker is not consulted.
-No vertex-count guard is added on purpose — it would break the correct
-`linear_path_algebra(2) → 0`.
+`complexity(A, n)` (`invariants/scalar.py`) dispatches the same way — over GF(p) it reads
+the minimal A^e resolution's generator-count growth (`engine/resolutions_minimal.py`,
+multi-vertex exact since Plan 13's corner-typed resolution) through `complexity_of`. One
+caveat still travels with the engine path: a memory-truncated build adds a silent prefix
+because the truncation marker is not consulted.
+
+## Field generality (Plan 19)
+
+Off GF(p), the five engine-backed invariants run on exact `Domain` linear algebra
+(`fields/linalg.py`), each with a correctness gate stronger than trust in the port:
+
+- **`cyclic_homology`** (`hochschild/cyclic.py`) builds Connes' B on the same normalized
+  bar basis as `hochschild/bar.py` and computes HC_n = dim Tot_n − rank D_n − rank D_{n+1}
+  on the (b, B) total complex, mirroring `engine/cyclic.py`'s conventions verbatim. It
+  needs no quiver — any unital algebra over any Domain computes (exponential in `top`;
+  `max_cells` guards every assembled matrix). Gates: GF(p) parity with the engine, the
+  mixed-complex identities (b² = B² = bB + Bb = 0) asserted exactly over QQ, and a
+  **second chain model** — Connes' λ-complex C^λ = C/(1 − t), valid over char 0 (Loday,
+  *Cyclic Homology*, Thm 2.1.5) — implemented independently in the test battery.
+- **`complexity`** (`invariants/betti.py`) computes the minimal resolution's generator
+  counts as dim H_n of the E-relative (Cibils) complex T_n = r^{⊗_E n} with the
+  middle-face differential d = Σ_{i=1}^{n−1} (−1)^i (…r_i r_{i+1}…): applying
+  ⊗_{A^e}(E ⊗ E) to the relative bar resolution kills the outer faces, and minimality
+  kills the true minimal resolution's induced differential, so H_n = Tor_n^{A^e}(A, E⊗E)
+  = rks[n] over **every** field. Gate: exact GF(p) parity with `minimal_resolution`,
+  including multi-vertex (`comm_square`, `cn_3_2`) and straddling-monomial
+  (`straddle_xx_yy_xyx`) Plan-18 records. Honest cost: the chain count is (dim r)^n on a
+  single vertex — the `max_cells` guard refuses past it.
+- **`is_frobenius` / `nakayama_automorphism` / `is_symmetric`**
+  (`invariants/frobenius.py`) decide by the **socle criterion** for basic split algebras
+  (Nakayama; Skowroński–Yamagata, *Frobenius Algebras I*): A is Frobenius iff every
+  soc(e_v A) = {x ∈ e_v A : x·r = 0} is 1-dimensional and v ↦ vertex(soc(e_v A)) is a
+  permutation — conclusive both ways, any field. The Frobenius form is the socle-dual
+  covector, **verified** nondegenerate (Gram rank = dim A) before use; ν = G^{−1}Gᵀ, and
+  the test battery certifies λ(ab) = λ(b·ν(a)) plus multiplicativity on every basis pair.
+  `is_symmetric` upgrades the engine's "ν literally id" to the definitional "ν **inner**":
+  a nontrivial Nakayama vertex permutation refutes symmetry outright (inner automorphisms
+  fix primitive-idempotent classes); otherwise a Schwartz–Zippel grid sweep searches the
+  twisted centralizer U = {u : ν(a)u = ua} for an invertible element — conclusive whenever
+  the Domain supplies > dim A distinct samples, and LOUDLY inconclusive otherwise (small
+  GF(p^n) coefficients cannot be enumerated by integer coercions — it refuses rather than
+  guesses). The two semantics coincide on the validated zoo, gated by a parity test; the
+  exterior algebra Λ(x, y) (ν = diag(1, −1, −1, 1), not inner) is the case that separates
+  the inner test from the permutation shortcut.
+
+All three generic paths that need the split A = E ⊕ r go through
+`invariants/pathbasis.py::path_type_basis`, which **verifies** (via multiplication, never
+by parsing labels) that the `e_v`-labeled basis vectors are complete orthogonal
+idempotents summing to 1 and that every radical basis vector has a unique source and
+target. The residual refusal surface is therefore exactly: a structure-constants algebra
+(no quiver) off GF(p), asking for a path-basis-needing invariant — and the `FieldError` it
+gets names the actual requirement ("needs a quiver presentation (path-type basis)") with
+no "later phase" promise. `cyclic_homology` refuses nowhere.
 
 ## A worked micro-example — A_2 and k[x]/(x^2)
 
@@ -100,9 +145,13 @@ algebra. Asking `A_2` (not self-injective) for its Nakayama automorphism raises
 | Cartan from the path basis | `invariants/cartan.py` | `cartan_matrix` |
 | Coxeter matrix −C^{−T}C, singular guard | `invariants/cartan.py` | `coxeter_matrix` |
 | exact Coxeter polynomial | `invariants/cartan.py` | `coxeter_polynomial` |
-| public method wrappers + GF(p) gate | `core/algebra.py` | `cartan_matrix`, `coxeter_matrix`, `_require_prime_field`, `nakayama_automorphism`, `is_frobenius`, `is_symmetric` |
+| public method wrappers + domain dispatch | `core/algebra.py` | `cartan_matrix`, `coxeter_matrix`, `nakayama_automorphism`, `is_frobenius`, `is_symmetric`, `cyclic_homology` |
 | Frobenius form / Nakayama over F_p | `engine/coxeter.py` | `frobenius_form`, `is_frobenius`, `nakayama_automorphism` |
-| cyclic homology (GF(p)) | `core/algebra.py`, `engine/cyclic.py` | `cyclic_homology`, `cyclic_homology_dims` |
+| cyclic homology (GF(p) engine) | `engine/cyclic.py` | `cyclic_homology_dims` |
+| cyclic homology (generic Domain) | `hochschild/cyclic.py` | `connes_B_matrix`, `cyclic_homology_dims` |
+| path-type basis split A = E ⊕ r | `invariants/pathbasis.py` | `path_type_basis` |
+| generic Betti numbers (relative Tor) | `invariants/betti.py` | `relative_betti_numbers` |
+| generic Frobenius / Nakayama / symmetry | `invariants/frobenius.py` | `is_frobenius_generic`, `frobenius_form_generic`, `nakayama_automorphism_generic`, `is_symmetric_generic` |
 | exact spectral radius / Mahler measure | `invariants/spectral.py` | `spectral_radius`, `mahler_measure` |
 | scalar invariants (Loewy, complexity, center) | `invariants/scalar.py` | `loewy_length`, `complexity`, `center` |
 | invariant × field sweep | `invariants/sweep.py` | `sweep` |
