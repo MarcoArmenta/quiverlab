@@ -417,17 +417,24 @@ class Algebra:
                      "later phase that generalizes this invariant",
             )
 
-    def cyclic_homology(self, top):
-        """Dimensions of HC_0..HC_top (Connes mixed complex; GF(p) via the engine)."""
-        self._require_prime_field("cyclic homology")
-        from quiverlab.engine.adapter import to_engine
-        from quiverlab.engine.cyclic import cyclic_homology_dims
-        from quiverlab.hochschild.table import HHTable
-        p = self.domain.p
-        out = cyclic_homology_dims(to_engine(self.unit_adapted()), top, primes=(p,))
-        dims = [int(d) for d in out[p]]
-        return HHTable(dims, "HC_", repr(self).splitlines()[0],
-                       engine="hanlab engine (F_p fast rank)")
+    def cyclic_homology(self, top, max_cells=4_000_000):
+        """Dimensions of HC_0..HC_top (Connes (b, B) mixed complex).
+
+        GF(p): the fast engine (int64 rank). Any other exact Domain: the
+        generic mixed complex on the normalized bar basis (exponential —
+        max_cells guards the blow-up). Works for any unital algebra."""
+        from quiverlab.fields.primefield import PrimeField
+        if isinstance(self.domain, PrimeField):
+            from quiverlab.engine.adapter import to_engine
+            from quiverlab.engine.cyclic import cyclic_homology_dims
+            from quiverlab.hochschild.table import HHTable
+            p = self.domain.p
+            out = cyclic_homology_dims(to_engine(self.unit_adapted()), top, primes=(p,))
+            dims = [int(d) for d in out[p]]
+            return HHTable(dims, "HC_", repr(self).splitlines()[0],
+                           engine="hanlab engine (F_p fast rank)")
+        from quiverlab.hochschild.cyclic import cyclic_homology_dims
+        return cyclic_homology_dims(self, top, max_cells=max_cells)
 
     def nakayama_automorphism(self):
         """Nakayama automorphism nu as an integer matrix (columns = images) in the

@@ -10,9 +10,11 @@ def test_cyclic_homology_gfp():
     assert len(t.dims) == 5 and all(isinstance(d, int) for d in t.dims)
 
 
-def test_cyclic_homology_cc_loud():
-    with pytest.raises(FieldError):
-        truncated_polynomial(2, field=CC).cyclic_homology(4)
+def test_cyclic_homology_cc_computes():
+    # Plan 19: off GF(p) the generic (b, B) mixed complex serves any Domain
+    t = truncated_polynomial(2, field=CC).cyclic_homology(2)
+    assert t.kind == "HC_"
+    assert len(t.dims) == 3 and all(isinstance(d, int) for d in t.dims)
 
 
 def test_symmetric_dual_numbers_gfp():
