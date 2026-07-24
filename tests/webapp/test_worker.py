@@ -68,6 +68,30 @@ def test_worker_records_failure(tmp_path):
     assert job.error
 
 
+def test_worker_marks_failed_on_parent_side_error(tmp_path, monkeypatch):
+    # A parent-side failure in the setup path (here: artifact-dir mkdir) after
+    # claim_next has flipped the row to `running` must not strand it there: the
+    # job ends `failed` (with a "worker error" note) and the exception re-raises.
+    import webapp.worker.worker as w
+
+    cfg, store = _setup(tmp_path)
+    spec = {"schema": 1, "algebra": _ALG,
+            "compute": ["cartan"], "artifacts": {"pdf": False, "tikz": False}}
+    jid = store.create_job(spec, ip="1.2.3.4")
+
+    def boom(*a, **k):
+        raise OSError("simulated mkdir failure")
+
+    monkeypatch.setattr(w.Path, "mkdir", boom)
+    with pytest.raises(OSError):
+        worker_tick(store, cfg)
+
+    job = store.get_job(jid)
+    assert job.status == "failed"        # not stranded in `running`
+    assert "worker error" in job.error
+    assert "OSError" in job.error
+
+
 def test_sweeper_removes_old(tmp_path):
     cfg, store = _setup(tmp_path)
     jid = store.create_job({}, ip="1.1.1.1")
