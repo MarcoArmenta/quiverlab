@@ -1,4 +1,9 @@
 // External static script (no inline JS — the CSP forbids it).
+//
+// The strict CSP (script-src 'self') blocks script *execution*, but it does NOT
+// block HTML/link injection. So every server-provided string below is placed via
+// textContent / DOM node APIs (never the HTML-parsing sink) and reference links
+// are built with document.createElement("a"), accepting http(s) hrefs only.
 
 // Interpolate {cells}/{minutes}/{maxcells} into a t()-sourced template string.
 function interp(tmpl, est, maxcells) {
@@ -6,6 +11,78 @@ function interp(tmpl, est, maxcells) {
     .replace("{cells}", (est && est.cells != null) ? est.cells.toLocaleString() : "?")
     .replace("{minutes}", (est && est.minutes != null) ? est.minutes : "?")
     .replace("{maxcells}", maxcells ? Number(maxcells).toLocaleString() : "?");
+}
+
+// A styled error box carrying plain text (no markup interpretation).
+function errDiv(text) {
+  const div = document.createElement("div");
+  div.className = "err";
+  div.textContent = text;
+  return div;
+}
+
+// True only for http:// or https:// hrefs — everything else (javascript:, data:,
+// relative, …) is rejected so we never build an attacker-controlled link.
+function isHttpUrl(url) {
+  return typeof url === "string"
+    && (url.startsWith("https://") || url.startsWith("http://"));
+}
+
+// Append " · <a href=url>label</a>" to li, but only for http(s) URLs.
+function appendLink(li, url, label) {
+  if (!isHttpUrl(url)) return;
+  li.append(" · ");
+  const a = document.createElement("a");
+  a.href = url;               // property assignment, not markup parsing
+  a.textContent = label;
+  li.appendChild(a);
+}
+
+// Render a compute result into `out` using DOM nodes (server strings via
+// textContent). Keeps the same visual structure as before (h2/pre/p/ul/li/h3).
+function renderResult(out, res) {
+  out.textContent = "";       // clear prior render
+
+  const h2 = document.createElement("h2");
+  h2.textContent = "Result";
+  out.appendChild(h2);
+
+  const pre = document.createElement("pre");
+  pre.textContent = JSON.stringify(res.results, null, 2);
+  out.appendChild(pre);
+
+  if (res.quiverlab_version) {
+    const p = document.createElement("p");
+    p.append("quiverlab ");
+    const code = document.createElement("code");
+    code.textContent = res.quiverlab_version;
+    p.appendChild(code);
+    out.appendChild(p);
+  }
+
+  if (res.references && res.references.length) {
+    const h3 = document.createElement("h3");
+    h3.textContent = form.dataset.refsLabel || "References";
+    out.appendChild(h3);
+    const ul = document.createElement("ul");
+    for (const ref of res.references) {
+      const li = document.createElement("li");
+      li.textContent = ref.formatted;
+      appendLink(li, ref.doi_url, "DOI");
+      appendLink(li, ref.arxiv_url, "arXiv");
+      ul.appendChild(li);
+    }
+    out.appendChild(ul);
+  }
+
+  if (res.reproduce) {
+    const h3 = document.createElement("h3");
+    h3.textContent = "Reproduce locally";
+    out.appendChild(h3);
+    const pre2 = document.createElement("pre");
+    pre2.textContent = res.reproduce;
+    out.appendChild(pre2);
+  }
 }
 
 // Index page: POST the form to /api/compute, render results or redirect to a job.
@@ -44,25 +121,11 @@ if (form) form.addEventListener("submit", async (e) => {
   // Beyond big caps, or big tier disabled: honest message + local hint.
   if (r.status === 422 && data.reason) {
     const tmpl = data.reason === "beyond_big_cap" ? form.dataset.bigReject : form.dataset.bigDisabled;
-    out.innerHTML = '<div class="err">' + interp(tmpl, data.estimate, form.dataset.bigCap) + "</div>";
+    out.replaceChildren(errDiv(interp(tmpl, data.estimate, form.dataset.bigCap)));
     return;
   }
-  if (!r.ok) { out.innerHTML = '<div class="err">' + data.error_type + ": " + data.message + "</div>"; return; }
-  const res = data.result;
-  let html = "<h2>Result</h2><pre>" + JSON.stringify(res.results, null, 2) + "</pre>";
-  if (res.quiverlab_version) html += "<p>quiverlab <code>" + res.quiverlab_version + "</code></p>";
-  if (res.references && res.references.length) {
-    html += "<h3>" + (form.dataset.refsLabel || "References") + "</h3><ul>";
-    for (const r of res.references) {
-      html += "<li>" + r.formatted;
-      if (r.doi_url) html += ' · <a href="' + r.doi_url + '">DOI</a>';
-      if (r.arxiv_url) html += ' · <a href="' + r.arxiv_url + '">arXiv</a>';
-      html += "</li>";
-    }
-    html += "</ul>";
-  }
-  if (res.reproduce) html += "<h3>Reproduce locally</h3><pre>" + res.reproduce + "</pre>";
-  out.innerHTML = html;
+  if (!r.ok) { out.replaceChildren(errDiv(data.error_type + ": " + data.message)); return; }
+  renderResult(out, data.result);
   renderMath(out);
 });
 
@@ -78,7 +141,7 @@ if (bigSend && form) bigSend.addEventListener("click", async () => {
     headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
   const sent = document.getElementById("big-sent");
   if (r.status === 202) { sent.textContent = form.dataset.bigSent || "Check your inbox."; }
-  else { const d = await r.json(); sent.innerHTML = '<div class="err">' + (d.message || "error") + "</div>"; }
+  else { const d = await r.json(); sent.replaceChildren(errDiv(d.message || "error")); }
 });
 
 // Job page: while the job runs, poll its status every 2s; reload on completion

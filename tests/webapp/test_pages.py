@@ -15,6 +15,7 @@ download traversal + whitelist + done-gate, no untranslated key leak in /es
 assertion on every rendered page (strict CSP: every <script> must carry src=).
 """
 import re
+from pathlib import Path
 
 from fastapi.testclient import TestClient
 
@@ -256,3 +257,15 @@ def test_no_inline_script_on_any_page(tmp_path):
         html = c.get(page).text
         for tag in _SCRIPT_OPEN.findall(html):
             assert "src=" in tag, f"{page}: inline <script> found: {tag}"
+
+
+def test_app_js_has_no_innerhtml_sinks():
+    """The strict CSP blocks script *execution* but NOT HTML/link injection.
+    app.js therefore renders every server-provided string via textContent / DOM
+    nodes and must contain ZERO ``innerHTML`` assignments. This static assertion
+    (app.js is a served static file, not exercised by TestClient's non-JS render)
+    is the honest, checkable guard against regressing to an injection sink."""
+    app_js = Path(__file__).resolve().parents[2] / "webapp" / "static" / "app.js"
+    assert app_js.is_file(), app_js
+    src = app_js.read_text()
+    assert "innerHTML" not in src, "app.js must render server data via textContent/DOM, not innerHTML"
