@@ -106,19 +106,78 @@ def test_result_size_cap_refuses_before_writing(tmp_path):
 
 
 def test_pdf_unavailable_is_recorded(tmp_path, monkeypatch):
-    # The server never runs `verbose=True`, so a real worked-steps PDF is never
-    # produced (no quiverlab_traces under cwd) -> meta records it honestly. The
-    # sanctioned worked-steps artifact is trace.html, rendered from the events.
+    # Honest worked-steps contract: when pdf is requested with an HH item,
+    # write_trace produces EITHER a real trace.pdf (pdflatex/tectonic on PATH) OR
+    # a self-contained trace_steps.html fallback, and meta["pdf"] names whichever
+    # landed. The old FALSE "trace subsystem absent" label must appear nowhere.
     monkeypatch.chdir(tmp_path)
     req = _req({"kind": "GF", "p": 2, "n": 1}, ["hh_cohomology:0..3"],
                artifacts={"pdf": True, "tikz": False})
     art = tmp_path / "art"
     result = run_spec(req, art)
-    assert result["meta"]["pdf"] == "unavailable (trace subsystem absent)"
-    assert result["meta"]["worked_steps"] == "trace.html"
-    assert (art / "trace.html").exists()
-    # And no PDF was ever written under the working dir.
+    meta_pdf = result["meta"]["pdf"]
+    pdf_ok = (art / "trace.pdf").exists() and meta_pdf == "trace.pdf"
+    html_ok = ("trace_steps.html" in meta_pdf
+               and (art / "trace_steps.html").exists())
+    assert pdf_ok or html_ok, f"neither trace.pdf nor trace_steps.html: {meta_pdf!r}"
+    # The false label is gone -- from the payload and from result.json on disk.
+    assert "trace subsystem absent" not in json.dumps(result)
+    assert "trace subsystem absent" not in (art / "result.json").read_text()
+    # write_trace was given an explicit out_dir, so the cwd is never touched.
     assert not (tmp_path / "quiverlab_traces").exists()
+
+
+def test_pdf_requested_without_hh_item(tmp_path, monkeypatch):
+    # pdf requested but no HH item computed -> honest label, no trace file.
+    monkeypatch.chdir(tmp_path)
+    req = _req({"kind": "GF", "p": 2, "n": 1}, ["cartan"],
+               artifacts={"pdf": True, "tikz": False})
+    art = tmp_path / "art"
+    result = run_spec(req, art)
+    assert result["meta"]["pdf"] == "no traced computation requested (PDF covers HH worked steps)"
+    assert not (art / "trace.pdf").exists()
+    assert not (art / "trace_steps.html").exists()
+    assert not (tmp_path / "quiverlab_traces").exists()
+
+
+def test_duplicate_compute_kind_refused(tmp_path):
+    # Finding 3: results is keyed by kind, so two same-kind items would collide;
+    # refuse loudly BEFORE computing anything (no result.json written).
+    req = _req({"kind": "GF", "p": 2, "n": 1},
+               ["hh_cohomology:0..3", "hh_cohomology:0..5"])
+    try:
+        run_spec(req, tmp_path)
+        assert False, "expected RunError"
+    except RunError as exc:
+        assert exc.error_type == "DuplicateComputeItem"
+        assert "requested twice" in exc.message
+    assert not (tmp_path / "result.json").exists()
+
+
+def test_hh_homology_kind(tmp_path):
+    # Finding 4b: hh_homology returns kind "HH_" with a dims list.
+    req = _req({"kind": "GF", "p": 2, "n": 1}, ["hh_homology:0..3"])
+    result = run_spec(req, tmp_path)
+    block = result["results"]["hh_homology"]
+    assert block["kind"] == "HH_"
+    assert isinstance(block["dims"], list) and len(block["dims"]) == 4
+
+
+def test_bad_relation_is_relation_error(tmp_path):
+    # Finding 4b: a quiver with an unparseable relation surfaces the library's
+    # RelationError verbatim -- no traceback text in the payload.
+    req = _quiver_req({"kind": "GF", "p": 2, "n": 1}, ["cartan"],
+                      vertices=[1], arrows={"x": [1, 1]},
+                      relations=["x*x*nonsense"])
+    try:
+        run_spec(req, tmp_path)
+        assert False, "expected RunError"
+    except RunError as exc:
+        assert exc.error_type == "RelationError"
+        assert "nonsense" in exc.message            # verbatim library message
+        assert "Traceback" not in exc.message
+        assert 'File "' not in exc.message
+    assert not (tmp_path / "result.json").exists()
 
 
 def test_tikz_written_when_requested(tmp_path):
