@@ -58,3 +58,30 @@ def solve(A, b, dom):
     for r, pc in enumerate(pivots):
         x[pc] = R[r][nc]
     return x
+
+
+def reduce_mod_nullspace(x, A, dom):
+    """The canonical representative of the coset x + Null(A): the unique element
+    with ZERO coordinates at every free (non-pivot) column of A's RREF.
+
+    Applying this to ANY solution of A·y = b yields the same vector, so a linear
+    solve's answer becomes independent of the solver's particular-solution
+    convention (pivot order, free-variable assignment).  solve() already returns
+    this representative (free variables set to 0); this function is the explicit,
+    order-pinned guarantee the CS correction solve canonicalizes through
+    (Plan 17 -- byte-reproducible CS differentials)."""
+    if not A or not x:
+        return list(x)
+    R, pivots = rref(A, dom)
+    nc = len(A[0])
+    y = list(x)
+    for fc in (c for c in range(nc) if c not in pivots):
+        c = y[fc]
+        if dom.is_zero(c):
+            continue
+        # subtract c * v_fc where v_fc is nullspace()'s basis vector for the free
+        # column fc: v_fc[fc] = 1, v_fc[pc] = -R[r][fc] at each pivot column pc
+        y[fc] = dom.zero()
+        for r, pc in enumerate(pivots):
+            y[pc] = dom.add(y[pc], dom.mul(c, R[r][fc]))
+    return y

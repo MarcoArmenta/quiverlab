@@ -133,6 +133,12 @@ class ChouhySolotarResolution:
                 f"CS correction linear system is inconsistent at degree {n}, chain "
                 f"{chain.word}: this admissible algebra needs the higher CS homotopy "
                 f"correction, outside quiverlab v1's construction (spec §6 risk register)")
+        from quiverlab.fields.linalg import reduce_mod_nullspace
+        # canonical representative: γ is unique only mod Null(M); pin the
+        # free-variables-zero coset element so d_n is byte-reproducible no matter
+        # which particular solution _solve returned (Plan 17; flips the bank-oracle
+        # byte pins strict)
+        gamma = reduce_mod_nullspace(gamma, M, dom)
         terms = list(delta)
         for coeff, (c1, a, tw, cc) in zip(gamma, gens):
             if not dom.is_zero(coeff):

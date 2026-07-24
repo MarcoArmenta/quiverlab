@@ -36,9 +36,11 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   Original item: the minimal engine is homology-only; the Hom-collapse (`e_o A e_t`
   corner, like CS's `side="coh"`) on the same resolution gives deep HH^• for any
   f.d. algebra + a second deep oracle vs CS.
-- [ ] **4. CS canonicalization** — reduce the correction-solve solution modulo its
-  nullspace to a normal form; flips the 7 `xfail(strict=False)` coefficient pins
-  strict (Plan-04 stretch item E2). Makes CS differentials byte-reproducible.
+- [x] **4. CS canonicalization** — DONE, Plan 17
+  (`2026-07-23-plan-17-cs-canonicalization.md`, branch `plan-17-cs-canonicalization`).
+  Original item: reduce the correction-solve solution modulo its nullspace to a
+  normal form; flips the 7 `xfail(strict=False)` coefficient pins strict (Plan-04
+  stretch item E2). Makes CS differentials byte-reproducible.
 - [ ] **5. Battery diversity audit** — add mixed-length-tip (straddling) and
   multi-vertex presentations to the *standing* zoo (`families/`, batch scans), not
   just the Plan-12/13 test files. Uniform-length zoos hid both 2026-07-22 bugs.

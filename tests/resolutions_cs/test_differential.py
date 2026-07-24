@@ -44,15 +44,13 @@ def test_qci_dd_zero_and_order_condition():
         res.assert_order_condition(upto=8)                   # CS Theorem 4.1 condition (2)
 
 
-@pytest.mark.xfail(strict=False, reason="canonicalization pending: the d²=0 solve is unique only "
-                   "up to the constraint nullspace, so a correct-but-noncanonical correction is "
-                   "allowed; binding criteria (d²=0 + order gate + HH dims) are checked separately")
 def test_qci_d3_correction_matches_paper():
-    """CS §6 (verbatim, kept as an aspirational canonical-form pin): d_2^{CS}(1⊗y²x⊗1) =
-    y⊗yx⊗1 + ξ 1⊗yx⊗y + ξ² x⊗y²⊗1 − 1⊗y²⊗x  (ξ=2). Edit #2: the BINDING criteria are
-    test_qci_dd_zero_and_order_condition (d²=0 + order) and test_qci_homology_matches_bank_vector
-    (HH dims, Task 7) — this exact-coefficient check is xfail-tolerant until the canonicalization
-    stretch item (normal-form modulo the solve nullspace) flips it strict."""
+    """CS §6 (verbatim), STRICT since Plan 17: d_2^{CS}(1⊗y²x⊗1) =
+    y⊗yx⊗1 + ξ 1⊗yx⊗y + ξ² x⊗y²⊗1 − 1⊗y²⊗x  (ξ=2). The correction γ is
+    canonicalized modulo the solve nullspace (`reduce_mod_nullspace` in
+    `_d_general`), so this exact-coefficient pin is now binding alongside d²=0 +
+    order gate + HH dims — a byte move here is a real regression, not an
+    equally-valid nullspace representative."""
     res = _qci()
     q = next(c for c in res.ss.S(3) if c.word == ("y", "y", "x"))
     got = {(res.to_int(c), a, t, cc) for (c, a, t, cc) in res.d_terms(3, q)}

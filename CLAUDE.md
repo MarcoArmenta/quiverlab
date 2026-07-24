@@ -75,7 +75,9 @@ and CS). Over int64 GF(p).
 - **Chouhy–Solotar** — top-level package `src/quiverlab/resolutions_cs/` (runs over
   any exact `Domain`, not just GF(p)):
   `resolution.py::ChouhySolotarResolution` (differential `delta_terms`/`d_terms`/
-  `matrix`, `assert_dd_zero`, `assert_order_condition`), `ambiguities.py::SSequence`,
+  `matrix`, `assert_dd_zero`, `assert_order_condition`; differentials are
+  **canonical/byte-reproducible** since Plan 17 — the correction solve is reduced
+  mod its nullspace via `fields.linalg.reduce_mod_nullspace`), `ambiguities.py::SSequence`,
   `homology.py` (`cs_cohomology_dims`, `cs_homology_dims`, `cs_hh_basis`),
   `comparison.py::Comparison` (CS↔bar class transport), `engine_facade.py::CSResolution`,
   `build.py::reduction_system_of(A)`. Reach it via `engine="cs"` or
@@ -124,4 +126,8 @@ checkpoints — multi-vertex algebras now deepen/resume; the payload gains only 
 per-degree corner `tags`, everything else is rebuilt from `(A, prime)`; cross-mode
 ckpt_dir reuse refuses loudly), Plan 16 (`minimal_cohomology_dims` — Hom-collapse
 HH^• on the same minimal/corner resolution for any f.d. algebra; validated vs bar
-coh over 4 primes and degreewise vs CS coh to depth 8 — the second deep oracle).
+coh over 4 primes and degreewise vs CS coh to depth 8 — the second deep oracle),
+Plan 17 (CS canonicalization — the correction γ is reduced to the free-variables-zero
+coset representative, CS differentials byte-reproducible by construction; the 7
+former `xfail(strict=False)` byte pins are strict, gated by an adversarial-solver
+test that shifts the solve by a nullspace vector and demands identical bytes).
