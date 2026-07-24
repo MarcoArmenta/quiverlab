@@ -241,3 +241,29 @@ def test_jobs_endpoint_rate_limited(tmp_path):
 def test_get_missing_job_returns_404(tmp_path):
     r = _client(tmp_path).get("/api/jobs/" + "7" * 26)   # valid shape, never created
     assert r.status_code == 404
+
+
+def test_unhandled_exception_gets_security_headers_and_no_leak(tmp_path, monkeypatch):
+    # A GENUINELY unhandled exception -- one that escapes the route (not a
+    # RunError caught into an honest error response) -- must still ship ALL the
+    # security headers and leak neither the exception type nor its message.
+    # Force the store's get_job to raise an arbitrary exception with a secret.
+    from webapp.server.store import JobStore
+
+    def _boom(self, job_id):
+        raise RuntimeError("SECRET_INTERNAL_LEAK")
+
+    monkeypatch.setattr(JobStore, "get_job", _boom)
+    # raise_server_exceptions=False so the 500 response is observable.
+    client = TestClient(create_app(_cfg(tmp_path)), raise_server_exceptions=False)
+    r = client.get("/api/jobs/" + "0" * 26)   # valid ULID -> reaches get_job
+    assert r.status_code == 500
+    # All four security headers present on the genuinely-unhandled 500.
+    assert "default-src 'self'" in r.headers["content-security-policy"]
+    assert r.headers["x-content-type-options"] == "nosniff"
+    assert r.headers["x-frame-options"] == "DENY"
+    assert r.headers["referrer-policy"] == "no-referrer"
+    # Genericised: neither the exception type nor its (secret) message leaks.
+    assert r.json()["error_type"] == "InternalError"
+    assert "RuntimeError" not in r.text
+    assert "SECRET_INTERNAL_LEAK" not in r.text

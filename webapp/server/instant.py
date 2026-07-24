@@ -52,8 +52,11 @@ def run_with_timeout(req: ComputeRequest, cfg: Config) -> dict | None:
         p.start()
         p.join(cfg.instant_wall_seconds)
         if p.is_alive():
-            p.terminate()
-            p.join()
+            p.terminate()                  # SIGTERM: ask the child to exit
+            p.join(5)
+            if p.is_alive():               # ignored SIGTERM -> escalate to SIGKILL
+                p.kill()
+                p.join()
             return None                    # exceeded the net -> caller queues it
         try:
             status, payload = result_q.get_nowait()

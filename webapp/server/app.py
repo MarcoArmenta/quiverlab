@@ -21,7 +21,8 @@ from webapp.server.limits import check_can_queue
 from webapp.server.runner import RunError, build_algebra
 from webapp.server.schema import ComputeRequest
 from webapp.server.security import (
-    SECURITY_HEADERS, hash_ip, is_safe_error_type, sanitize_error, valid_ulid,
+    GENERIC_ERROR_MESSAGE, GENERIC_ERROR_TYPE, SECURITY_HEADERS, hash_ip,
+    is_safe_error_type, sanitize_error, valid_ulid,
 )
 from webapp.server.store import JobStore
 
@@ -31,6 +32,17 @@ _STATIC = Path(__file__).resolve().parent.parent / "static"
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _stamp_security_headers(response):
+    """Stamp the strict security headers on a response (idempotent via
+    ``setdefault``). One source of truth (``SECURITY_HEADERS``) shared by the
+    header middleware AND the catch-all exception handler -- the latter runs
+    above the middleware, so it must stamp here too or an unhandled 500 ships
+    bare."""
+    for k, v in SECURITY_HEADERS.items():
+        response.headers.setdefault(k, v)
+    return response
 
 
 def client_ip(request: Request) -> str:
@@ -89,10 +101,20 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
     @app.middleware("http")
     async def _security_headers(request: Request, call_next):
-        response = await call_next(request)
-        for k, v in SECURITY_HEADERS.items():
-            response.headers.setdefault(k, v)
-        return response
+        return _stamp_security_headers(await call_next(request))
+
+    @app.exception_handler(Exception)
+    async def _unhandled_exception(request: Request, exc: Exception) -> JSONResponse:
+        # A GENUINELY unhandled exception escapes the route and unwinds past the
+        # header middleware to Starlette's ServerErrorMiddleware -- which would
+        # otherwise ship a bare PlainTextResponse with NO security headers. This
+        # catch-all runs there: it logs the type only (never the request body or
+        # client IP), returns the same genericised 500 the honest path uses (no
+        # class name or message leaks), and stamps the security headers itself.
+        _log.error("unhandled server error (type=%s)", type(exc).__name__)
+        return _stamp_security_headers(JSONResponse(
+            status_code=500,
+            content={"error_type": GENERIC_ERROR_TYPE, "message": GENERIC_ERROR_MESSAGE}))
 
     def _ip_hash(request: Request) -> str:
         # Hash immediately: the raw address must never reach the store or a log.
@@ -106,6 +128,10 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     def api_compute(req: ComputeRequest, request: Request):
         iph = _ip_hash(request)
         try:
+            # Build the algebra to read its dimension. This runs BEFORE (outside)
+            # the wall net, so its construction cost is bounded by catalog
+            # validation (the degree/param caps in validate_family), not the
+            # instant timeout.
             A = _build_or_error(req.algebra)   # validation + honest errors
             dim = A.dim                        # library attribute (never .dimension())
         except RunError as exc:
@@ -136,6 +162,9 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                                          "message": _reject_message(info["reason"])})
 
         # tier == "queued"
+        # Soft limit: this read-then-write (count check, then create_job) is NOT
+        # atomic across concurrent requests, so the cap can be marginally exceeded
+        # under a race -- acceptable for anonymous abuse control.
         refusal = check_can_queue(store, cfg, iph, _now_iso())
         if refusal:
             return JSONResponse(status_code=429,
@@ -146,6 +175,8 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     @app.post("/api/jobs")
     def api_create_job(req: ComputeRequest, request: Request):
         iph = _ip_hash(request)
+        # Soft limit: read-then-write is non-atomic across concurrent requests
+        # (see api_compute); acceptable for anonymous abuse control.
         refusal = check_can_queue(store, cfg, iph, _now_iso())
         if refusal:
             return JSONResponse(status_code=429,
