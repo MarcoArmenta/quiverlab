@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ t("big.verify_title") }}{% endblock %}
+{% block body %}
+<h1>{{ t("big.verify_title") }}</h1>
+{% if job_id %}
+  <p>{{ t("big.queued") }}</p>
+  <p><a href="{{ prefix }}/job/{{ job_id }}">{{ prefix }}/job/{{ job_id }}</a></p>
+{% else %}
+  <div class="err">{{ t("big.link_used") }}</div>
+{% endif %}
+{% endblock %}

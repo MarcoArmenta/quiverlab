@@ -91,7 +91,7 @@ def _reject_message(reason: str | None) -> str:
     return "computation too large; narrow the degree range or run locally: pip install quiverlab"
 
 
-def create_app(cfg: Config | None = None) -> FastAPI:
+def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
     cfg = cfg or get_config()
     store = JobStore(cfg.db_path)
     store.init_schema()
@@ -203,6 +203,13 @@ def create_app(cfg: Config | None = None) -> FastAPI:
     # client_ip/_now_iso helpers without an import cycle.
     from webapp.server.feedback import register_feedback
     register_feedback(app, cfg, store)
+    # Task 13: big-job email magic-link tier (spec §17). Imported here (not at
+    # module top) so bigjobs.py can reuse this module's _build_or_error /
+    # _error_response helpers without an import cycle. The production worker
+    # passes the real SMTP mailer; None here leaves the default transport, built
+    # lazily only when a link is actually sent.
+    from webapp.server.bigjobs import register_big_jobs
+    register_big_jobs(app, cfg, store, mailer=mailer)
     return app
 
 
