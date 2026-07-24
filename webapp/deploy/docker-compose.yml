@@ -1,0 +1,40 @@
+# quiverlab-web stack: app (FastAPI) + worker (poll loops) + caddy (TLS).
+# Build context is the repo root (two levels up from this file) so the Dockerfile
+# can COPY pyproject.toml / src / webapp / LICENSE / README.md. Secrets (SMTP,
+# QLWEB_IP_HASH_SALT, QLWEB_ADMIN_TOKEN, ...) are documented in PROVISIONING.md;
+# set them in these `environment:` blocks or a compose `.env` before going live.
+services:
+  app:
+    build: { context: ../.., dockerfile: webapp/deploy/Dockerfile }
+    environment:
+      NUMBA_NUM_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+      QLWEB_DATA_DIR: /data
+    volumes:
+      - qldata:/data
+    expose: ["8000"]
+    restart: unless-stopped
+  worker:
+    build: { context: ../.., dockerfile: webapp/deploy/Dockerfile }
+    entrypoint: ["bash", "webapp/deploy/entrypoint-worker.sh"]
+    environment:
+      NUMBA_NUM_THREADS: "2"
+      OMP_NUM_THREADS: "2"
+      QLWEB_DATA_DIR: /data
+      QLWEB_WORKER_PROCESSES: "2"
+    volumes:
+      - qldata:/data
+    restart: unless-stopped
+  caddy:
+    image: caddy:2
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+    restart: unless-stopped
+volumes:
+  qldata:
+  caddy_data:
+  caddy_config:
