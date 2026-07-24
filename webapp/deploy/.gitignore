@@ -1,0 +1,3 @@
+# Live production secrets (QLWEB_IP_HASH_SALT, QLWEB_TOKEN_SECRET, SMTP...).
+# The tracked template is .env.example; the real .env must never be committed.
+.env

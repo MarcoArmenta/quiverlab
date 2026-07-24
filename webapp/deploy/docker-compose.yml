@@ -1,8 +1,12 @@
 # quiverlab-web stack: app (FastAPI) + worker (poll loops) + caddy (TLS).
 # Build context is the repo root (two levels up from this file) so the Dockerfile
-# can COPY pyproject.toml / src / webapp / LICENSE / README.md. Secrets (SMTP,
-# QLWEB_IP_HASH_SALT, QLWEB_ADMIN_TOKEN, ...) are documented in PROVISIONING.md;
-# set them in these `environment:` blocks or a compose `.env` before going live.
+# can COPY pyproject.toml / src / webapp / LICENSE / README.md.
+#
+# REQUIRED secrets: QLWEB_IP_HASH_SALT and QLWEB_TOKEN_SECRET are wired below with
+# the `${VAR:?...}` required-var syntax, so `docker compose up` REFUSES to start
+# unless both are set (non-empty). Put them in a `.env` file in this directory
+# (see .env.example; `docker compose` auto-reads it). Optional secrets (SMTP,
+# QLWEB_ADMIN_TOKEN, ...) are documented in PROVISIONING.md.
 services:
   app:
     build: { context: ../.., dockerfile: webapp/deploy/Dockerfile }
@@ -10,9 +14,19 @@ services:
       NUMBA_NUM_THREADS: "2"
       OMP_NUM_THREADS: "2"
       QLWEB_DATA_DIR: /data
+      QLWEB_IP_HASH_SALT: "${QLWEB_IP_HASH_SALT:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
+      QLWEB_TOKEN_SECRET: "${QLWEB_TOKEN_SECRET:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
     volumes:
       - qldata:/data
     expose: ["8000"]
+    # python (not curl -- absent from python:3.12-slim) hits the unauthenticated
+    # catalog route; caddy waits for this before proxying (depends_on below).
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/catalog').read()"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     restart: unless-stopped
   worker:
     build: { context: ../.., dockerfile: webapp/deploy/Dockerfile }
@@ -22,17 +36,26 @@ services:
       OMP_NUM_THREADS: "2"
       QLWEB_DATA_DIR: /data
       QLWEB_WORKER_PROCESSES: "2"
+      QLWEB_IP_HASH_SALT: "${QLWEB_IP_HASH_SALT:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
+      QLWEB_TOKEN_SECRET: "${QLWEB_TOKEN_SECRET:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
     volumes:
       - qldata:/data
+    # One anonymous job wall cap (QLWEB_JOB_WALL_SECONDS default 900) + 30s slack.
+    # On stop, run_loop drains the in-flight job within this window; a job still
+    # running when Docker SIGKILLs is requeued at the next startup, so the cut is
+    # recoverable either way.
+    stop_grace_period: 930s
     restart: unless-stopped
   caddy:
     image: caddy:2
     ports: ["80:80", "443:443"]
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    depends_on: [app]
+    depends_on:
+      app:
+        condition: service_healthy
     restart: unless-stopped
 volumes:
   qldata:

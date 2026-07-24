@@ -51,6 +51,16 @@ ENV NUMBA_NUM_THREADS=2 \
     OMP_NUM_THREADS=2 \
     QLWEB_DATA_DIR=/data
 
+# Run as a non-root user (defense in depth: the worker executes user-submitted
+# compute). Pre-create + chown the /data mountpoint so a FRESH named volume
+# inherits writable ownership (Docker seeds an empty named volume from the image
+# dir's owner/mode). A PRE-EXISTING root-owned volume needs a one-time host-side
+# `chown 10001:10001` -- see PROVISIONING.md "Operational limits".
+RUN useradd --create-home --uid 10001 quiverlab \
+    && mkdir -p /data \
+    && chown -R quiverlab:quiverlab /data /app
+USER quiverlab
+
 EXPOSE 8000
 
 # App tier: uvicorn calls the create_app() factory. The worker service overrides

@@ -175,6 +175,27 @@ class JobStore:
         finally:
             conn.close()
 
+    def requeue_stale_running(self) -> list[str]:
+        """Requeue every `running` job back to `pending` (clearing started_at);
+        return the requeued ids.
+
+        Call this ONLY at worker-fleet startup -- the single-writer moment,
+        before any poll loop begins claiming. `claim_next` only ever claims
+        `pending`, so a worker that dies mid-job (`docker compose stop`, reboot,
+        OOM-kill) strands its row in `running` FOREVER, permanently consuming the
+        per-IP running slot (`count_running_for_ip` counts `running`). Running
+        this once before the loops start adopts those orphans back into the
+        queue. It is NOT safe to call while loops are live: it would yank a
+        genuinely in-flight job's row out from under its worker, letting a second
+        worker double-run it."""
+        with self._conn() as conn:
+            ids = [r["id"] for r in conn.execute(
+                "SELECT id FROM jobs WHERE status='running'").fetchall()]
+            conn.execute(
+                "UPDATE jobs SET status='pending', started_at=NULL "
+                "WHERE status='running'")
+        return ids
+
     def update_progress(self, job_id: str, progress: dict) -> None:
         """Overwrite the job's progress blob (a small JSON-serialisable dict)."""
         with self._conn() as conn:

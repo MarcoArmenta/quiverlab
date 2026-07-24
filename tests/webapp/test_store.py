@@ -25,6 +25,23 @@ def test_claim_transitions_to_running(tmp_path):
     assert s.claim_next() is None  # nothing left pending
 
 
+def test_requeue_stale_running_makes_claimable(tmp_path):
+    s = _store(tmp_path)
+    jid = s.create_job({"compute": ["cartan"]}, ip="1.2.3.4")
+    assert s.claim_next().id == jid          # flipped to running
+    assert s.get_job(jid).status == "running"
+    assert s.claim_next() is None            # worker died: row stranded in running
+    # Startup requeue adopts the orphan back into the queue and clears started_at.
+    assert s.requeue_stale_running() == [jid]
+    job = s.get_job(jid)
+    assert job.status == "pending"
+    assert job.started_at is None
+    assert s.claim_next().id == jid          # claimable again
+    # A quiescent fleet (nothing running) requeues nothing.
+    s.mark_done(jid, artifact_dir="/x")
+    assert s.requeue_stale_running() == []
+
+
 def test_ip_counts(tmp_path):
     s = _store(tmp_path)
     s.create_job({}, ip="9.9.9.9")

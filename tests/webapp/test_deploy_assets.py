@@ -18,6 +18,28 @@ def test_compose_has_services_and_data_mount():
     assert any("/data" in v for v in app["volumes"])
 
 
+def test_compose_requires_prod_secrets_and_recoverable_shutdown():
+    text = (DEPLOY / "docker-compose.yml").read_text()
+    compose = yaml.safe_load(text)
+    # Both prod secrets are wired with the required-var syntax on BOTH tiers, so
+    # `compose up` refuses to start when they are unset (no dev-default ships).
+    for svc in ("app", "worker"):
+        env = compose["services"][svc]["environment"]
+        assert "${QLWEB_IP_HASH_SALT:?" in env["QLWEB_IP_HASH_SALT"]
+        assert "${QLWEB_TOKEN_SECRET:?" in env["QLWEB_TOKEN_SECRET"]
+    # A template exists and lists exactly the two required secrets (empty values).
+    example = (DEPLOY / ".env.example").read_text()
+    assert "QLWEB_IP_HASH_SALT=" in example and "QLWEB_TOKEN_SECRET=" in example
+    assert "openssl rand -hex 32" in example
+    # Worker gets a stop grace so graceful drain has room before Docker SIGKILLs.
+    assert "stop_grace_period" in compose["services"]["worker"]
+    # App healthcheck + caddy waits for it healthy; Caddyfile mounted read-only.
+    assert "healthcheck" in compose["services"]["app"]
+    assert compose["services"]["caddy"]["depends_on"]["app"]["condition"] == "service_healthy"
+    assert any(v.endswith(":ro") and "Caddyfile" in v
+               for v in compose["services"]["caddy"]["volumes"])
+
+
 def test_caddyfile_has_tls_site():
     text = (DEPLOY / "Caddyfile").read_text()
     assert "reverse_proxy" in text
@@ -50,7 +72,7 @@ def test_two_workers_drain_jobs(tmp_path):
                         "params": {"q": 1}, "field": {"kind": "GF", "p": 2, "n": 1}},
             "compute": ["hh_cohomology:0..3"], "artifacts": {"pdf": False, "tikz": False}}
     jids = [store.create_job(spec, ip="h") for _ in range(2)]
-    procs = start_workers(cfg, count=2)
+    procs, _stop = start_workers(cfg, count=2)
     try:
         deadline = time.monotonic() + 180
         while time.monotonic() < deadline:
@@ -62,5 +84,26 @@ def test_two_workers_drain_jobs(tmp_path):
     finally:
         for p in procs:
             p.terminate()
+        for p in procs:
+            p.join()
+
+
+def test_workers_stop_gracefully_on_flag(tmp_path):
+    # With no pending jobs, each loop idles checking the shared stop event. Setting
+    # it (the SIGTERM path in main(), without terminate) makes the loops exit on
+    # their own with exit code 0 -- the true graceful drain.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_WORKER_PROCESSES": "2"})
+    JobStore(cfg.db_path).init_schema()
+    procs, stop = start_workers(cfg, count=2)
+    try:
+        stop.set()
+        for p in procs:
+            p.join(15)
+        assert all(not p.is_alive() for p in procs)
+        assert all(p.exitcode == 0 for p in procs)
+    finally:
+        for p in procs:
+            if p.is_alive():
+                p.terminate()
         for p in procs:
             p.join()

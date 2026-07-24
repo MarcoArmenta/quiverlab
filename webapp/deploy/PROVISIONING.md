@@ -26,24 +26,41 @@ Target: a **persistent instance** (RAS quota: 25 vCPU / 50 GB RAM / 10 instances
      `APT::Periodic::Unattended-Upgrade "7";`). Document a manual cadence too:
      roughly monthly `sudo apt-get update && sudo apt-get dist-upgrade && sudo reboot`.
 6. **Docker.** `sudo apt-get install -y docker.io docker-compose-plugin`.
-7. **Deploy.**
+7. **Secrets (REQUIRED — do this before deploying).** The stack refuses to start
+   without two secrets, wired into `docker-compose.yml` with the required-var
+   syntax `${VAR:?...}`. Clone the repo, then create `webapp/deploy/.env` from
+   the template and fill both in:
    ```bash
    git clone https://github.com/MarcoArmenta/quiverlab.git
    cd quiverlab/webapp/deploy
+   cp .env.example .env
+   printf 'QLWEB_IP_HASH_SALT=%s\nQLWEB_TOKEN_SECRET=%s\n' \
+       "$(openssl rand -hex 32)" "$(openssl rand -hex 32)" > .env
+   ```
+   - `QLWEB_IP_HASH_SALT` — client IPs are stored only as `sha256(salt+":"+ip)`;
+     rotating the salt anonymizes past rate-limit keys.
+   - `QLWEB_TOKEN_SECRET` — signs the single-use big-job magic-link tokens (§17).
+   Keep `.env` off version control (it holds live secrets). `docker compose`
+   auto-reads it from this directory. Optional secrets (SMTP, `QLWEB_ADMIN_TOKEN`)
+   are set the same way — see "Secrets and feedback" below.
+8. **Deploy.**
+   ```bash
+   # from quiverlab/webapp/deploy (repo already cloned in step 7)
    # edit Caddyfile: set your domain
    sudo docker compose up -d --build
    ```
+   `compose up` fails fast if either required secret from step 7 is missing.
    Caddy obtains TLS automatically. Verify: `https://quiverlab.<domain>/`.
    KaTeX is vendored in the repo (`webapp/static/katex/`) and copied into the
    image, so the build needs no CDN and the app serves math with a strict CSP.
-8. **Web listeners.** HTTPS only. Caddy binds 80 solely to redirect to 443
+9. **Web listeners.** HTTPS only. Caddy binds 80 solely to redirect to 443
    (the `Caddyfile` site block on `:443`; the automatic HTTP→HTTPS redirect is
    Caddy's default) and 443 for the app. Nothing else listens on the host — no
    mail server (all email is the outbound SMTP relay, §17), no database port
    (SQLite is a file), no BitTorrent, no extra daemons. Confirm with
    `sudo ss -tlnp` — only sshd (bound to your CIDR via the security group),
    plus Docker-published 80/443.
-9. **Backups (optional).** Cron a nightly `sqlite3 /data/quiverlab_web.sqlite3
+10. **Backups (optional).** Cron a nightly `sqlite3 /data/quiverlab_web.sqlite3
    ".backup /data/backup.sqlite3"` and sync `/data/artifacts` to object storage
    (RAS object quota: 10 TB).
 
@@ -80,10 +97,36 @@ local virtualenv, git history, or agent scratch into the daemon, a root
 trees. Edit it if you add large top-level directories that the image does not
 need. The image installs `.[web,fast]`, so numba is present in production.
 
+## Operational limits
+
+- **No per-service CPU/memory limits by default.** `docker-compose.yml` sets no
+  `deploy.resources` / `mem_limit` caps; the host's RAS flavor bounds the whole
+  stack. Per-**job** compute is bounded instead by the worker: each job runs in a
+  resource-capped `spawn` child with `RLIMIT_CPU` (Linux + macOS) and `RLIMIT_AS`
+  (Linux, hard in the Docker image) plus a parent wall-time kill, so a runaway
+  job cannot exhaust the VM. Add `deploy.resources.limits` if you want a hard
+  ceiling per container as well.
+- **Graceful worker stop.** `docker compose stop` SIGTERMs the worker; the poll
+  loops finish their in-flight job then exit, bounded by the worker's
+  `stop_grace_period` (930s ≈ one job wall + slack). Any job still running when
+  Docker SIGKILLs — or lost to a reboot/crash — is requeued from `running` back
+  to `pending` at the next worker startup (`JobStore.requeue_stale_running`), so
+  no job is stranded and no per-IP running slot leaks.
+- **`/data` volume ownership.** The image runs as non-root uid `10001`. A FRESH
+  `qldata` named volume inherits writable ownership from the image. A volume that
+  already exists from an older root-based image is root-owned; fix it once on the
+  host with `sudo chown -R 10001:10001 /var/lib/docker/volumes/deploy_qldata/_data`
+  (adjust the volume name to `docker volume ls`).
+- **Caddyfile is mounted read-only** (`:ro` in compose); the app container never
+  writes it. Caddy's ACME state lives in the separate `caddy_data` volume.
+
 ## Secrets and feedback
 
-Set these in the `app` and `worker` service `environment:` blocks (or a
-compose `.env`):
+`QLWEB_IP_HASH_SALT` and `QLWEB_TOKEN_SECRET` are **required** (step 7): compose
+wires them with `${VAR:?...}` and refuses to start if either is missing, so no
+dev-default secret can ship. Put them in `webapp/deploy/.env` (see `.env.example`).
+The **optional** secrets below go in the same `.env`, or in the `app`/`worker`
+`environment:` blocks:
 
 - `QLWEB_IP_HASH_SALT` — a long random string. Client IPs are stored only as
   `sha256(salt + ":" + ip)`; rotating the salt anonymizes past rate-limit keys.
@@ -112,8 +155,9 @@ Set, in the `app` and `worker` `environment:` blocks:
   `QLWEB_SMTP_PASS`, `QLWEB_SMTP_FROM` — the relay credentials and From address.
   **If `QLWEB_SMTP_HOST`/`QLWEB_SMTP_FROM` are unset, the big-job tier is
   disabled** and the app tells users to run locally.
-- `QLWEB_TOKEN_SECRET` — a long random string signing the single-use magic-link
-  tokens. Rotating it invalidates outstanding links.
+- `QLWEB_TOKEN_SECRET` — **required** (already set in step 7): the random string
+  signing the single-use magic-link tokens. Rotating it invalidates outstanding
+  links.
 - `QLWEB_PUBLIC_BASE_URL` — e.g. `https://quiverlab.<domain>`; used to build the
   verification and completion links in emails.
 - `QLWEB_BIG_JOB_WALL_SECONDS` (default 14400 = 4 h), `QLWEB_BIG_JOB_MEM_BYTES`
