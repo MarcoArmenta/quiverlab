@@ -55,9 +55,20 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   promises a "later phase"). Original item: `complexity`, cyclic homology etc.
   are GF(p)-only; `_require_prime_field`'s hint promises a "later phase that
   generalizes this invariant". Deliver a generic-Domain path or reword.
-- [ ] **7. Plan 09 — the server tier** — spec exists
-  (`docs/specs/2026-07-18-quiverlab-web-design.md`); citations/trace already carry its
-  hooks; the only planned-but-unbuilt tier.
+- [x] **7. Plan 09 — the server tier** — DONE, 2026-07-24, branch `plan-09-web`
+  (executed subagent-driven with adversarial critics; plan
+  `docs/plans/2026-07-18-plan-09-web.md` + its 2026-07-24 interface-drift
+  amendment). The `webapp/` tier: FastAPI app (`create_app`) + a spawn-child
+  resource-capped worker fleet over a single SQLite/WAL queue, two-tier compute
+  (instant sync / queued jobs) + the email magic-link big-job tier, bilingual
+  EN/ES pages with vendored KaTeX, `/literature`, feedback+admin, deploy assets
+  (Dockerfile/compose/Caddy/PROVISIONING). All algebra delegated to the library
+  (no user-code exec; engine internals never imported). Whole-branch adversarial
+  review's four cross-layer majors fixed (async-error genericization, header
+  admin token, last-hop XFF trust, lean base wheel). Post-merge backlog captured
+  (error-envelope unification, app.js /es dynamic-label localization,
+  tier-ordered claim, real-SMTP/TLS/concurrency acceptance gaps). UNMERGED —
+  merge/push only when Marco asks.
 
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
@@ -97,6 +108,31 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
 - [ ] **GUI**: surface deeper engines (CS depth, Betti sequences) in the Pyodide
   landing-page GUI.
 - [ ] **Native AR-quiver** (v1 non-goal; `[qpa]` extra covers it today).
+
+## Tier 3 — quiverlab-web (`plan-09-web`) post-merge polish (from the 2026-07-24 whole-branch review)
+
+- [ ] **Unify client error envelopes**: the API mixes `{error_type,message}`
+  (compute/feedback/bigjobs), `{detail}` (FastAPI 422 + the big-job 502
+  `HTTPException`), and `{message}` (404s); `app.js` reads only the first, so an
+  empty-`compute` submit renders "undefined: undefined". Map all to one shape or
+  make `app.js` tolerate `{detail}`.
+- [ ] **Localize `app.js` dynamic labels** (`Result`, `Reproduce locally`, and the
+  polled job status overwriting the server-localized text) via `data-*` so `/es`
+  has no English leak in JS-rendered output.
+- [ ] **verify page transient-vs-terminal**: `bigjobs` renders `big.link_used` when
+  the big queue is full at verify time even though the link is still valid — a
+  retry mints a needless pending row + email. Distinguish queue-full (retry) from
+  consumed/expired.
+- [ ] **Tier-ordered `claim_next`**: shared FIFO can let up to `big_queue_max` 4h
+  big jobs sit ahead of an anonymous queued job (instant tier unaffected). Add a
+  tier priority or a dedicated anonymous worker.
+- [ ] **Acceptance coverage gaps**: real SMTP relay (STARTTLS/auth in `mail.py`),
+  TLS/Caddy end-to-end, and multi-worker concurrency (`claim_next` double-claim,
+  `requeue_stale_running`, graceful stop) are asserted by code-reading only — the
+  smoke ran single-worker with a fake mailer over bare HTTP; the prod HTML
+  worked-steps fallback (no TeX in the image) is unit-tested but not in the smoke.
+- [ ] **De-flake `test_instant_compute`**: timing-sensitive tier assertion flaked
+  once under a full-dir run (passed isolated + rerun); make it deterministic.
 
 ## Done (this backlog's history)
 
