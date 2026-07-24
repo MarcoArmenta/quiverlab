@@ -71,6 +71,20 @@ re-derivation of the Plan-12 chain).
 Then `_contracted_complex` applies A ⊗_{A^e} (−) to every degree, and
 `minimal_homology_dims` reads off dim HH_n = dim(A ⊗ P_n) − rank(dbar_n) − rank(dbar_{n+1}).
 
+**Cohomology from the same resolution (Plan 16).** `minimal_cohomology_dims` applies
+`Hom_{A^e}(−, A)` instead: `Hom_{A^e}((A^e)^{r_n}, A) ≅ A^{r_n}`, and the coboundary
+δ^{n−1} is *pre*composition with d_n, so a differential coefficient at `e_u ⊗ e_v` acts
+two-sidedly the **other way round** than the homology collapse — `α ↦ e_u·α·e_v` (in the
+Chouhy–Solotar code's vocabulary, `a·w·b` where homology is `b·w·a`). On the corner path
+the cochain block of a generator tagged `(v, w)` is `e_v A e_w` — the **opposite** corner
+of the homology target `e_w A e_v`, so the corner-basis dictionary is read with the tag
+swapped (`_corner_cohomology_degree`; kA₂ makes the swap load-bearing: its coh corner is
+1-dimensional exactly where the homology corner is 0). dim HH^n = dim C^n − rank δ^n −
+rank δ^{n−1}, with the same per-prime rebuild and the same truncation rule (exact through
+`truncated_at − 1`, since δ^t needs the unknown d_{t+1}). This gives deep HH^• for any
+finite-dimensional algebra and a second deep oracle degreewise against the CS
+resolution's `side="coh"` collapse.
+
 **Guards.** The host is small, so two budgets stop the build gracefully instead of being
 killed by the operating system: `max_term_dim` caps a term's k-dimension `m^2·r_n`, and
 `max_transient_bytes` *predicts* the size of the large transient `radK` array *before*

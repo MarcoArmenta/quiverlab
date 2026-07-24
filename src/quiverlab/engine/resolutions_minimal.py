@@ -894,6 +894,126 @@ def minimal_homology_dims(A, N, primes=(32003,), max_term_dim=20000,
     return out
 
 
+def _cohomology_degree(eng, gens_n, r_nm1, n):
+    """Hom_{A^e}(-, A) applied to d_n: one degree of the cochain complex.
+    `gens_n` = cols[n] (r_n generator blocks over (A^e)^{r_nm1}), `r_nm1` = rks[n-1].
+    Returns delta^{n-1} : C^{n-1} = A^{r_nm1} -> C^n = A^{r_n}, alpha |-> alpha o d_n,
+    of shape (m*r_n, m*r_nm1).  A coefficient cf at e_u (x) e_v in block blk of
+    generator j sends e_a |-> cf * (e_u e_a) e_v -- the coh-side two-sided action;
+    the homology collapse (_contracted_degree) is (e_v e_a) e_u."""
+    m = eng.m
+    m2 = eng.m2
+    p = eng.p
+    T = eng.T
+    r_n = len(gens_n)
+    M = np.zeros((m * r_n, m * r_nm1), dtype=np.int64)
+    for j, g in enumerate(gens_n):
+        for blk in range(r_nm1):
+            w = g[blk * m2:(blk + 1) * m2]
+            for a in range(m):
+                col = blk * m + a
+                acc = np.zeros(m, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        mid = T[uu, a, :]              # e_u * e_a
+                        for s in np.nonzero(mid % p)[0]:
+                            acc = (acc + cf * mid[s] * T[s, vv, :]) % p   # (e_u e_a) e_v
+                M[j * m:(j + 1) * m, col] = (M[j * m:(j + 1) * m, col] + acc) % p
+    return M
+
+
+def _corner_cohomology_degree(eng, ctx, gens_n, tags_n, tags_nm1, p):
+    """One degree of the corner-typed cochain complex: Hom_{A^e}(A^e.(eps_v (x)
+    eps_w), A) ~ e_v A e_w, the OPPOSITE corner of the homology collapse -- both
+    row and column blocks read cornerA with the tag swapped.  Columns run over
+    the C^{n-1} blocks (tags_nm1), rows over the C^n blocks (tags_n = one per
+    generator); entries by the coh-side two-sided action e_u . alpha . e_v,
+    coordinates recovered in the row block's coh-corner basis (reconstruction
+    asserted -- loud on failure)."""
+    m, m2 = ctx.m, ctx.m2
+    T = eng.T % p
+    row_offs, off = [], 0
+    for tg in tags_n:
+        row_offs.append(off)
+        off += ctx.corner_dim_A((tg[1], tg[0]))
+    nrows = off
+    cols_out = []
+    for blk, tgp in enumerate(tags_nm1):
+        Bcol = ctx.cornerA[(tgp[1], tgp[0])]          # e_v A e_w for source tag (v, w)
+        for c in range(Bcol.shape[1]):
+            alpha = Bcol[:, c]
+            col = np.zeros(nrows, dtype=np.int64)
+            for j, (g, tg) in enumerate(zip(gens_n, tags_n)):
+                w = g[blk * m2:(blk + 1) * m2]
+                acc = np.zeros(m, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        ua = np.zeros(m, dtype=np.int64)
+                        for a in np.nonzero(alpha)[0]:      # e_uu . alpha
+                            ua = (ua + alpha[a] * T[uu, a, :]) % p
+                        outv = np.zeros(m, dtype=np.int64)
+                        for s in np.nonzero(ua)[0]:         # ... . e_vv
+                            outv = (outv + ua[s] * T[s, vv, :]) % p
+                        acc = (acc + cf * outv) % p
+                x = _solve_in_span(ctx.cornerA[(tg[1], tg[0])], acc, p)
+                assert x is not None, "corner cochain image left its corner (bug)"
+                col[row_offs[j]:row_offs[j] + x.shape[0]] = x
+            cols_out.append(col)
+    if not cols_out:
+        return np.zeros((nrows, 0), dtype=np.int64)
+    return np.stack(cols_out, axis=1) % p
+
+
+def minimal_cohomology_dims(A, N, primes=(32003,), max_term_dim=20000,
+                            max_transient_bytes=None):
+    """dim HH^n(A; F_p) for n=0..N via Hom_{A^e}(-, A) on the SAME minimal A^e
+    resolution the homology side uses (rebuilt per prime).  Returns
+    {p: [dim HH^0, ..., dim HH^M]} with M = N unless a budget truncated the build
+    at degree t (then the list stops at t-1 and is exact: delta^t needs the
+    unknown d_{t+1}).  Corner path (multi-vertex): the cochain block of a
+    generator tagged (v, w) is e_v A e_w -- the homology dict cornerA[(i, j)] =
+    e_j A e_i read with the tag SWAPPED."""
+    out = {}
+    for p in primes:
+        rks, cols, eng, trunc = minimal_resolution(
+            A, N, p, max_term_dim=max_term_dim, max_transient_bytes=max_transient_bytes)
+        m = eng.m
+        last = (trunc - 1) if trunc is not None else N
+        dims = []
+        ctx = getattr(eng, "corner_ctx", None)
+        if ctx is not None:
+            tags = eng.corner_tags
+            D = {n: _corner_cohomology_degree(eng, ctx, cols.get(n, []) or [],
+                                              tags.get(n, []), tags.get(n - 1, []), p)
+                 for n in range(1, N + 2)}
+            for n in range(0, last + 1):
+                dimn = sum(ctx.corner_dim_A((tg[1], tg[0])) for tg in tags.get(n, []))
+                rn = (rank_mod_p(D[n + 1], p)                       # rank delta^n
+                      if rks.get(n + 1, 0) > 0 and rks.get(n, 0) > 0 else 0)
+                rnm1 = (rank_mod_p(D[n], p)                         # rank delta^{n-1}
+                        if n >= 1 and rks.get(n, 0) > 0 and rks.get(n - 1, 0) > 0 else 0)
+                dims.append(int(dimn - rn - rnm1))
+            out[p] = dims
+            continue
+        D = {n: _cohomology_degree(eng, cols.get(n, []) or [], rks.get(n - 1, 0), n)
+             for n in range(1, N + 2)}
+        for n in range(0, last + 1):
+            dimn = m * rks.get(n, 0)
+            rn = (rank_mod_p(D[n + 1], p)
+                  if rks.get(n + 1, 0) > 0 and rks.get(n, 0) > 0 else 0)
+            rnm1 = (rank_mod_p(D[n], p)
+                    if n >= 1 and rks.get(n, 0) > 0 and rks.get(n - 1, 0) > 0 else 0)
+            dims.append(int(dimn - rn - rnm1))
+        out[p] = dims
+    return out
+
+
 def hochschild_dimension(A, N, p=32003, max_term_dim=20000, max_transient_bytes=None):
     """The largest n <= N with r_n > 0 in the minimal A^e resolution over F_p, or
     'N+ (truncated)' info.  proj.dim_{A^e}(A) (the Hochschild dimension) is finite iff
