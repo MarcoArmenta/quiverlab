@@ -15,11 +15,11 @@ def load_catalog():
     return [r for r in data if isinstance(r, dict) and "rules" in r]
 
 
-def _word(idxs):
-    return "*".join(_GENS[i] for i in idxs)
+def _word(idxs, gens=_GENS):
+    return "*".join(gens[i] for i in idxs)
 
 
-def _render_terms(terms):
+def _render_terms(terms, gens=_GENS):
     """Render a signed sum of (int coeff, generator-index word) as a flat
     relation string with folded signs and no parentheses.
 
@@ -34,7 +34,7 @@ def _render_terms(terms):
         if c == 0:
             continue
         mag = abs(c)
-        piece = _word(w) if mag == 1 else f"{mag}*{_word(w)}"
+        piece = _word(w, gens) if mag == 1 else f"{mag}*{_word(w, gens)}"
         if not out:
             out = f"-{piece}" if c < 0 else piece
         else:
@@ -43,16 +43,22 @@ def _render_terms(terms):
 
 
 def build_from_record(rec, field=None):
-    ngen = rec["ngen"]
-    gens = _GENS[:ngen]
-    Q = Quiver([1], {g: (1, 1) for g in gens})
+    arrows = rec.get("arrows")
+    if arrows is not None:
+        # multi-vertex record (Plan 18): arrows = [[name, s, t], ...] in rules
+        # index order; vertices listed explicitly
+        gens = tuple(name for name, _s, _t in arrows)
+        Q = Quiver(list(rec["vertices"]), {name: (s, t) for name, s, t in arrows})
+    else:
+        gens = _GENS[:rec["ngen"]]
+        Q = Quiver([1], {g: (1, 1) for g in gens})
     rels = []
     for lead, tail in rec["rules"]:
         if not tail:
-            rels.append(_word(lead))                            # lead -> 0 (monomial)
+            rels.append(_word(lead, gens))                      # lead -> 0 (monomial)
         else:
             # lead = sum c*w  <=>  lead - sum c*w = 0
-            rels.append(_render_terms([(1, lead)] + [(-c, w) for c, w in tail]))
+            rels.append(_render_terms([(1, lead)] + [(-c, w) for c, w in tail], gens))
     A = Q.algebra(relations=rels, field=field)
     A._family_citations = ("han_conjecture", "chouhy_solotar")
     A.zoo_name = rec["name"]

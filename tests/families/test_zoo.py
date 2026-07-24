@@ -35,6 +35,25 @@ def test_periodic_symmetric_member_present_dim9():
     assert names["open2_33_712"].dim == 9
 
 
+def test_build_from_record_multivertex_schema():
+    """Records may carry vertices + arrows (list order = rules index space);
+    legacy records (no arrows) keep the one-vertex loop path."""
+    from quiverlab.families.zoo import build_from_record
+    rec = {"name": "cn_3_2_inline", "ngen": 3, "dim": 6,
+           "vertices": [1, 2, 3],
+           "arrows": [["a", 1, 2], ["b", 2, 3], ["c", 3, 1]],
+           "rules": [[[0, 1], []], [[1, 2], []], [[2, 0], []]]}
+    A = build_from_record(rec)
+    assert A.dim == 6                                  # kZ_3/rad^2
+    assert A.zoo_name == "cn_3_2_inline"
+    nonmono = {"name": "sq_inline", "ngen": 4, "dim": 9,
+               "vertices": [1, 2, 3, 4],
+               "arrows": [["a", 1, 2], ["b", 2, 4], ["c", 1, 3], ["d", 3, 4]],
+               "rules": [[[2, 3], [[1, [0, 1]]]]]}     # cd -> ab  (ab - cd = 0)
+    B = build_from_record(nonmono)
+    assert B.dim == 9                                  # commutative square
+
+
 @pytest.mark.skipif(
     importlib.util.find_spec("quiverlab.resolutions_cs") is None,
     reason="open-zone HH golden gated on the Plan 04 CS backend, consistent with Tasks 1/13")
