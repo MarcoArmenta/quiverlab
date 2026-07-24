@@ -22,6 +22,7 @@ from fastapi import Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field, field_validator, model_validator
+from ulid import ULID
 
 from webapp.server.app import _now_iso, client_ip
 from webapp.server.i18n import t as _t
@@ -91,10 +92,18 @@ def register_feedback(app, cfg, store) -> None:
 
     @app.post("/api/feedback")
     def api_feedback(req: FeedbackRequest, request: Request):
-        if req.website.strip():             # honeypot: pretend success, store nothing
-            return JSONResponse(status_code=201, content={"reference": "ignored"})
         # Hash the address immediately: the raw value never reaches the store.
         iph = hash_ip(client_ip(request), cfg.ip_hash_salt)
+        if req.website:                     # honeypot: ANY non-empty raw value
+            # (including whitespace) is a bot. Return a freshly minted fake ULID
+            # so the drop is INDISTINGUISHABLE from a real success -- a parsing
+            # bot sees a 26-char Crockford reference, identical to the happy
+            # path. The salted-IP hash above runs here too for timing parity;
+            # nothing is stored.
+            return JSONResponse(status_code=201, content={"reference": str(ULID())})
+        # Soft limit: this read-then-write (count check, then create_feedback) is
+        # NOT atomic across concurrent requests, so the cap can be marginally
+        # exceeded under a race -- acceptable for anonymous abuse control.
         refusal = check_feedback_allowed(store, cfg, iph, _now_iso())
         if refusal:
             return JSONResponse(status_code=429,
@@ -111,19 +120,23 @@ def register_feedback(app, cfg, store) -> None:
         @app.get("/admin/feedback", response_class=HTMLResponse)
         def admin_feedback(token: str = ""):
             # Constant-time compare so a wrong token leaks no timing signal.
-            # 403 (not 401): the token is a query-param authorization, not an
-            # HTTP auth scheme, so no WWW-Authenticate challenge is owed.
-            if not hmac.compare_digest(token, cfg.admin_token):
-                return HTMLResponse("forbidden", status_code=403)
+            # Encode both sides: hmac.compare_digest raises TypeError on a
+            # non-ASCII str, so a token like "cafe" with accents must reach it
+            # as bytes -- otherwise the compare 500s instead of refusing.
+            # 401 per plan; 403 arguably more correct (no WWW-Authenticate offered) -- flip deliberately if the plan owner prefers
+            if not hmac.compare_digest(token.encode("utf-8"),
+                                       cfg.admin_token.encode("utf-8")):
+                return HTMLResponse("unauthorized", status_code=401)
             rows = store.list_feedback()
             out = ["<h1>Feedback</h1><table border=\"1\" cellpadding=\"4\">",
-                   "<tr><th>when</th><th>category</th><th>message</th>"
+                   "<tr><th>id</th><th>when</th><th>category</th><th>message</th>"
                    "<th>contact</th><th>job</th><th>extra</th></tr>"]
             for r in rows:
                 # Every cell escaped: feedback text is fully untrusted input.
                 out.append(
-                    "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
-                        html.escape(r["created_at"]), html.escape(r["category"]),
+                    "<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>".format(
+                        html.escape(r["id"]), html.escape(r["created_at"]),
+                        html.escape(r["category"]),
                         html.escape(r["message"]), html.escape(r.get("contact") or ""),
                         html.escape(r.get("job_ref") or ""), html.escape(r.get("extra") or "")))
             out.append("</table>")

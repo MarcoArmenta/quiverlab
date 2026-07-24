@@ -19,12 +19,12 @@ constant-time (`hmac.compare_digest`), and that the admin table HTML-escapes
 untrusted feedback text.
 """
 import json
-from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from webapp.server.app import create_app
 from webapp.server.config import Config
+from webapp.server.security import valid_ulid
 from webapp.server.store import JobStore
 
 _ULID = "01AN4Z07BY79KA1307SR9X4MV3"        # a well-formed Crockford-base32 ULID
@@ -62,7 +62,21 @@ def test_feedback_honeypot_dropped_silently(tmp_path):
     client = TestClient(create_app(cfg))
     r = client.post("/api/feedback", json=_body(website="http://spam"))
     assert r.status_code == 201                          # looks fine to the bot
+    # Body shape is INDISTINGUISHABLE from a real success: a 26-char Crockford
+    # ULID reference. A parsing bot cannot detect the drop.
+    ref = r.json()["reference"]
+    assert len(ref) == 26 and valid_ulid(ref)
     assert JobStore(cfg.db_path).list_feedback() == []   # but nothing stored
+
+
+def test_feedback_honeypot_whitespace_dropped(tmp_path):
+    # A whitespace-only honeypot value is still a bot -- any NON-EMPTY raw value
+    # triggers the silent drop (no .strip() bypass).
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/feedback", json=_body(website="   "))
+    assert r.status_code == 201                           # dropped silently
+    assert JobStore(cfg.db_path).list_feedback() == []    # nothing stored
 
 
 def test_feedback_too_short_is_422(tmp_path):
@@ -78,6 +92,11 @@ def test_feedback_message_9_chars_is_422(tmp_path):
 def test_feedback_message_10_chars_ok(tmp_path):
     r = _client(tmp_path).post("/api/feedback", json=_body(message="a" * 10))
     assert r.status_code == 201, r.text                  # exactly the lower bound
+
+
+def test_feedback_message_4000_chars_ok(tmp_path):
+    r = _client(tmp_path).post("/api/feedback", json=_body(message="a" * 4000))
+    assert r.status_code == 201, r.text                  # exactly the upper bound
 
 
 def test_feedback_message_4001_chars_is_422(tmp_path):
@@ -144,11 +163,23 @@ def test_admin_route_absent_without_token(tmp_path):
 def test_admin_token_gate(tmp_path):
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "sekret"})
     client = TestClient(create_app(cfg))
-    client.post("/api/feedback", json=_body())
-    assert client.get("/admin/feedback?token=wrong").status_code == 403
+    ref = client.post("/api/feedback", json=_body()).json()["reference"]
+    wrong = client.get("/admin/feedback?token=wrong")
+    assert wrong.status_code == 401                       # 401 per plan (not 403)
+    assert wrong.text == "unauthorized"
     ok = client.get("/admin/feedback?token=sekret")
     assert ok.status_code == 200
     assert "HH^3 dims look wrong" in ok.text
+    assert ref in ok.text                                 # the id column renders the reference
+
+
+def test_admin_non_ascii_token_is_401_not_500(tmp_path):
+    # A non-ASCII query token must NOT crash hmac.compare_digest (TypeError on
+    # str) -- both sides are encoded to bytes, so it refuses cleanly.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "sekret"})
+    client = TestClient(create_app(cfg))
+    r = client.get("/admin/feedback", params={"token": "café"})
+    assert r.status_code == 401                           # clean refusal, never a 500
 
 
 def test_admin_escapes_untrusted_text(tmp_path):
@@ -161,10 +192,19 @@ def test_admin_escapes_untrusted_text(tmp_path):
     assert "&lt;script&gt;" in r.text
 
 
-def test_admin_compare_is_constant_time():
-    import webapp.server.feedback as fb_mod
-    src = Path(fb_mod.__file__).read_text(encoding="utf-8")
-    assert "hmac.compare_digest" in src                  # structural: no == token compare
+def test_admin_compare_is_constant_time(tmp_path):
+    # Structural, not a file-wide grep: inspect the ACTUAL admin handler the app
+    # registered and assert its body uses hmac.compare_digest and never a plain
+    # `== cfg.admin_token`.
+    import inspect
+
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "t"})
+    app = create_app(cfg)
+    handler = next(r.endpoint for r in app.routes
+                   if getattr(r, "path", None) == "/admin/feedback")
+    src = inspect.getsource(handler)
+    assert "hmac.compare_digest" in src                  # constant-time compare in the handler
+    assert " == cfg.admin_token" not in src              # never a plain == token compare
 
 
 # --------------------------------------------------------------------------- #
