@@ -361,4 +361,10 @@ git commit -m "docs: Plan-18 status -- standing zoo diversity delivered"
 
 ## Status
 
-- [ ] Executed (fill in on completion)
+- [x] Executed 2026-07-23 in-session (branch `plan-18-zoo-diversity`). Two execution
+  findings folded in: (1) certification must use plain `to_engine(A)` — NOT
+  `unit_adapted()`, a local-only convention that trips the Plan-13 guard on
+  multi-vertex algebras; the same latent bug was found and fixed in
+  `_analyze_open`'s engine conversion. (2) `line_abc_cde` (dim 16) is past the bar
+  blow-up — certified by the Plan-13 Bardzell chain-count pin `6,5,2,1,0` instead
+  of the bar oracle. Full `-m deep` and `-m fast` suites green.

@@ -130,4 +130,10 @@ coh over 4 primes and degreewise vs CS coh to depth 8 — the second deep oracle
 Plan 17 (CS canonicalization — the correction γ is reduced to the free-variables-zero
 coset representative, CS differentials byte-reproducible by construction; the 7
 former `xfail(strict=False)` byte pins are strict, gated by an adversarial-solver
-test that shifts the solve by a nullspace vector and demands identical bytes).
+test that shifts the solve by a nullspace vector and demands identical bytes),
+Plan 18 (standing-zoo diversity — zoo records may carry `vertices`/`arrows`
+(multi-vertex reduction systems), five diversity records added (2 straddling-
+monomial + 3 multi-vertex incl. `line_abc_cde`), diversity gates in
+`test_zoo.py`, batch specs carry quiver data, and `_analyze_open` no longer
+unit-adapts multi-vertex algebras — unit-adaptation is a local-only convention
+that trips the Plan-13 radical guard).

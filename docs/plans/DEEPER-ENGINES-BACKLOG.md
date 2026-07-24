@@ -69,7 +69,11 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   detection on the corner engine (beyond the two wrapped families), exact isomorphism
   as certificate.
 - [ ] **Han's-conjecture batch campaigns**: sweep the open zone with the now-correct
-  multi-vertex engines through `quiverlab.batch`.
+  multi-vertex engines through `quiverlab.batch` (Plan 18 opened the scan surface:
+  specs carry quiver data, `_analyze_open` serves multi-vertex).
+- [ ] **Open-zone scan cohomology** (found by Plan 18): `_analyze_open` still records
+  `cx_cohomology = None` ("no cohomology on this engine") — stale since Plan 16's
+  `minimal_cohomology_dims`; wire it in and drop the None-side special-casing.
 - [ ] **A∞-structure (Kadeishvili) on Ext** — ambitious flagship; CS small models make
   it feasible.
 - [ ] **Performance**: numba kernels for the Plan-13 corner path (pure Python today);
