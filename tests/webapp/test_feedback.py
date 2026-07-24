@@ -1,0 +1,199 @@
+"""Task 12 -- feedback: bilingual page, JSON submit API, token-gated admin view.
+
+Adapted from the brief against the REAL in-repo interfaces:
+  * the i18n `fb.*` keys and `nav.feedback` already ship in BOTH en.json/es.json
+    (Task 11), so the page tests key off the real ES strings ("Comentarios",
+    "Sugerir bibliografia");
+  * IP hashing reuses the app's `client_ip` + `security.hash_ip` (never a raw
+    address in the store);
+  * `job_ref` is ULID-validated when present (the plan's global constraint the
+    brief's inline code omitted) -- see the invalid/valid job_ref tests;
+  * wrong admin token -> 403 Forbidden (the task's explicit contract; 403 is also
+    HTTP-correct here since 401 would require a WWW-Authenticate challenge we do
+    not send for a query-param token).
+
+Beyond the brief this file pins the additional adjudicated coverage the task
+requires: message length bounds at 9/10/4001 chars, the 6th same-day submission
+over the DEFAULT cap of 5, a structural assertion that the admin compare is
+constant-time (`hmac.compare_digest`), and that the admin table HTML-escapes
+untrusted feedback text.
+"""
+import json
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from webapp.server.app import create_app
+from webapp.server.config import Config
+from webapp.server.store import JobStore
+
+_ULID = "01AN4Z07BY79KA1307SR9X4MV3"        # a well-formed Crockford-base32 ULID
+
+
+def _client(tmp_path, **env):
+    e = {"QLWEB_DATA_DIR": str(tmp_path)}
+    e.update(env)
+    return TestClient(create_app(Config.from_env(e)))
+
+
+def _body(**over):
+    b = {"category": "problem", "message": "HH^3 dims look wrong for A5 over GF(2).",
+         "contact": "", "job_ref": "", "website": ""}
+    b.update(over)
+    return b
+
+
+# --------------------------------------------------------------------------- #
+# Submit API: happy path, honeypot, validation, rate limit.
+# --------------------------------------------------------------------------- #
+def test_feedback_roundtrip(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/feedback", json=_body())
+    assert r.status_code == 201, r.text
+    ref = r.json()["reference"]
+    rows = JobStore(cfg.db_path).list_feedback()
+    assert rows and rows[0]["id"] == ref
+    assert rows[0]["category"] == "problem"
+
+
+def test_feedback_honeypot_dropped_silently(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/feedback", json=_body(website="http://spam"))
+    assert r.status_code == 201                          # looks fine to the bot
+    assert JobStore(cfg.db_path).list_feedback() == []   # but nothing stored
+
+
+def test_feedback_too_short_is_422(tmp_path):
+    r = _client(tmp_path).post("/api/feedback", json=_body(message="hi"))
+    assert r.status_code == 422
+
+
+def test_feedback_message_9_chars_is_422(tmp_path):
+    r = _client(tmp_path).post("/api/feedback", json=_body(message="a" * 9))
+    assert r.status_code == 422                           # min length is 10
+
+
+def test_feedback_message_10_chars_ok(tmp_path):
+    r = _client(tmp_path).post("/api/feedback", json=_body(message="a" * 10))
+    assert r.status_code == 201, r.text                  # exactly the lower bound
+
+
+def test_feedback_message_4001_chars_is_422(tmp_path):
+    r = _client(tmp_path).post("/api/feedback", json=_body(message="a" * 4001))
+    assert r.status_code == 422                           # max length is 4000
+
+
+def test_feedback_rate_limit_429(tmp_path):
+    client = _client(tmp_path, QLWEB_FEEDBACK_DAILY_MAX="2")
+    for _ in range(2):
+        assert client.post("/api/feedback", json=_body()).status_code == 201
+    assert client.post("/api/feedback", json=_body()).status_code == 429
+
+
+def test_feedback_sixth_same_day_is_429(tmp_path):
+    client = _client(tmp_path)                            # DEFAULT cap == 5
+    for _ in range(5):
+        assert client.post("/api/feedback", json=_body()).status_code == 201
+    assert client.post("/api/feedback", json=_body()).status_code == 429
+
+
+def test_feedback_invalid_job_ref_is_422(tmp_path):
+    r = _client(tmp_path).post("/api/feedback", json=_body(job_ref="not-a-ulid"))
+    assert r.status_code == 422                           # ULID-validated when present
+
+
+def test_feedback_valid_job_ref_is_stored(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/feedback", json=_body(job_ref=_ULID))
+    assert r.status_code == 201, r.text
+    assert JobStore(cfg.db_path).list_feedback()[0]["job_ref"] == _ULID
+
+
+# --------------------------------------------------------------------------- #
+# Pages (bilingual).
+# --------------------------------------------------------------------------- #
+def test_feedback_page_prefills_job_ref(tmp_path):
+    r = _client(tmp_path).get("/feedback?job=" + _ULID)
+    assert r.status_code == 200
+    assert _ULID in r.text
+    assert "Comentarios" not in r.text                   # English page
+
+
+def test_feedback_page_es(tmp_path):
+    r = _client(tmp_path).get("/es/feedback")
+    assert r.status_code == 200
+    assert "Comentarios" in r.text
+
+
+def test_feedback_page_has_literature_option(tmp_path):
+    r = _client(tmp_path).get("/es/feedback")
+    assert "Sugerir bibliografía" in r.text          # literature category label (ES)
+
+
+# --------------------------------------------------------------------------- #
+# Admin view (only when a token is configured; constant-time compare).
+# --------------------------------------------------------------------------- #
+def test_admin_route_absent_without_token(tmp_path):
+    r = _client(tmp_path).get("/admin/feedback?token=whatever")
+    assert r.status_code == 404
+
+
+def test_admin_token_gate(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "sekret"})
+    client = TestClient(create_app(cfg))
+    client.post("/api/feedback", json=_body())
+    assert client.get("/admin/feedback?token=wrong").status_code == 403
+    ok = client.get("/admin/feedback?token=sekret")
+    assert ok.status_code == 200
+    assert "HH^3 dims look wrong" in ok.text
+
+
+def test_admin_escapes_untrusted_text(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_ADMIN_TOKEN": "t"})
+    client = TestClient(create_app(cfg))
+    client.post("/api/feedback", json=_body(message="<script>alert(1)</script> bug report"))
+    r = client.get("/admin/feedback?token=t")
+    assert r.status_code == 200
+    assert "<script>alert(1)</script>" not in r.text     # escaped, not raw
+    assert "&lt;script&gt;" in r.text
+
+
+def test_admin_compare_is_constant_time():
+    import webapp.server.feedback as fb_mod
+    src = Path(fb_mod.__file__).read_text(encoding="utf-8")
+    assert "hmac.compare_digest" in src                  # structural: no == token compare
+
+
+# --------------------------------------------------------------------------- #
+# Literature category: structured extra JSON.
+# --------------------------------------------------------------------------- #
+def test_literature_submission_roundtrip(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/feedback", json=_body(
+        category="literature",
+        message="This paper's resolution should be cited.",
+        reference="arXiv:1406.2300",
+        why_relevant="It is the Chouhy-Solotar resolution the engine implements."))
+    assert r.status_code == 201, r.text
+    row = JobStore(cfg.db_path).list_feedback()[0]
+    assert row["category"] == "literature"
+    extra = json.loads(row["extra"])
+    assert extra["reference"] == "arXiv:1406.2300"
+    assert "Chouhy-Solotar" in extra["why_relevant"]
+
+
+def test_literature_requires_structured_fields(tmp_path):
+    r = _client(tmp_path).post("/api/feedback", json=_body(
+        category="literature", message="Please cite something relevant."))
+    assert r.status_code == 422           # reference + why_relevant missing
+
+
+def test_non_literature_stores_no_extra(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    client.post("/api/feedback", json=_body())          # category problem
+    assert JobStore(cfg.db_path).list_feedback()[0]["extra"] is None

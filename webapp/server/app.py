@@ -198,6 +198,11 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                 "finished_at": job.finished_at}
 
     _register_pages(app, cfg, store)   # Task 11
+    # Task 12: feedback form page, JSON submit API, token-gated admin table.
+    # Imported here (not at module top) so feedback.py can reuse this module's
+    # client_ip/_now_iso helpers without an import cycle.
+    from webapp.server.feedback import register_feedback
+    register_feedback(app, cfg, store)
     return app
 
 

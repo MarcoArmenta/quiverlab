@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}{{ t("fb.h1") }} · quiverlab{% endblock %}
+{% block body %}
+<h1>{{ t("fb.h1") }}</h1>
+<p>{{ t("fb.intro") }}</p>
+<form id="feedback-form" data-thanks="{{ t('fb.thanks') }}">
+  <input type="hidden" name="job_ref" value="{{ job_ref }}">
+  {# Honeypot: off-screen, not a real field. A filled value => bot => dropped. #}
+  <div style="position:absolute; left:-5000px;" aria-hidden="true">
+    <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+  </div>
+  <label for="category">{{ t("fb.category") }}</label>
+  <select id="category" name="category">
+    <option value="problem">{{ t("fb.cat_problem") }}</option>
+    <option value="feature">{{ t("fb.cat_feature") }}</option>
+    <option value="literature">{{ t("fb.cat_literature") }}</option>
+  </select>
+  {# Shown only when category = literature; app.js toggles it (no inline JS -- CSP). #}
+  <div id="lit-fields" style="display:none">
+    <label for="reference">{{ t("fb.reference") }}</label>
+    <input id="reference" name="reference" maxlength="2000">
+    <label for="why_relevant">{{ t("fb.why_relevant") }}</label>
+    <textarea id="why_relevant" name="why_relevant" rows="3" maxlength="2000"></textarea>
+  </div>
+  <label for="message">{{ t("fb.message") }}</label>
+  <textarea id="message" name="message" rows="6" minlength="10" maxlength="4000" required></textarea>
+  <label for="contact">{{ t("fb.contact") }}</label>
+  <input id="contact" name="contact" maxlength="200">
+  <button type="submit">{{ t("fb.send") }}</button>
+</form>
+<div id="fb-out"></div>
+<p><a href="{{ github }}">{{ t("fb.github") }}</a></p>
+{% endblock %}

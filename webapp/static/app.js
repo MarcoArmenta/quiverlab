@@ -168,6 +168,50 @@ if (meta && ["pending", "running"].includes(meta.dataset.status)) {
   }, 2000);
 }
 
+// Feedback page: POST the form to /api/feedback, show the reference id.
+// CSP-safe: every server string goes through textContent / errDiv, never
+// innerHTML. Reuses the errDiv() helper defined above.
+const fbForm = document.getElementById("feedback-form");
+if (fbForm) {
+  // Reveal the literature-only fields when that category is selected.
+  const catSel = document.getElementById("category");
+  const litFields = document.getElementById("lit-fields");
+  const syncLit = () => {
+    if (litFields) {
+      litFields.style.display =
+        (catSel && catSel.value === "literature") ? "block" : "none";
+    }
+  };
+  if (catSel) catSel.addEventListener("change", syncLit);
+  syncLit();
+
+  fbForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const fd = new FormData(fbForm);
+    const body = {
+      category: fd.get("category"),
+      message: fd.get("message"),
+      contact: fd.get("contact") || null,
+      job_ref: fd.get("job_ref") || null,
+      reference: fd.get("reference") || null,
+      why_relevant: fd.get("why_relevant") || null,
+      website: fd.get("website") || "",
+    };
+    const r = await fetch("/api/feedback", {method: "POST",
+      headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
+    const out = document.getElementById("fb-out");
+    const data = await r.json();
+    if (r.status === 201) {
+      out.textContent =
+        (fbForm.dataset.thanks || "Thank you. Your reference is") + " " + data.reference;
+      fbForm.reset();
+      syncLit();
+    } else {
+      out.replaceChildren(errDiv(data.message || "error"));
+    }
+  });
+}
+
 // KaTeX (vendored, no CDN): typeset $…$ / \(…\) / $$…$$ math. Guarded so the page
 // still works if the optional contrib script is unavailable. app.js is the last
 // script in <body>, so the DOM is fully parsed here.
