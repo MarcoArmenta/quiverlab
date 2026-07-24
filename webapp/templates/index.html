@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>{{ t("index.h1") }}</h1>
+<p>{{ t("index.intro") }}</p>
+<form id="compute-form" data-refs-label="{{ t('results.references') }}"
+      data-lang="{{ lang }}" data-big-cap="{{ big_max_cells }}"
+      data-big-warn="{{ t('big.warn') }}" data-big-disabled="{{ t('big.disabled') }}"
+      data-big-reject="{{ t('big.reject') }}" data-big-sent="{{ t('big.sent') }}">
+  <label for="family">{{ t("form.family") }}</label>
+  <select id="family" name="family">
+    {% for f in catalog.families %}<option value="{{ f.name }}">{{ f.name }}</option>{% endfor %}
+  </select>
+  <label for="params">{{ t("form.params") }}</label>
+  <input id="params" name="params" value='{"q": 1}'>
+  <label for="field">{{ t("form.field") }}</label>
+  <input id="field" name="field" value="GF(2)" placeholder="CC or GF(5)">
+  <label>{{ t("form.invariants") }}</label>
+  <label><input type="checkbox" name="compute" value="hh_cohomology:0..6" checked> {{ t("inv.hh_cohomology") }}</label>
+  <label><input type="checkbox" name="compute" value="hh_homology:0..6"> {{ t("inv.hh_homology") }}</label>
+  <label><input type="checkbox" name="compute" value="coxeter_polynomial"> {{ t("inv.coxeter") }}</label>
+  <label><input type="checkbox" name="compute" value="cartan"> {{ t("inv.cartan") }}</label>
+  <label><input type="checkbox" name="compute" value="global_dimension"> {{ t("inv.gldim") }}</label>
+  <label><input type="checkbox" name="compute" value="center"> {{ t("inv.center") }}</label>
+  <label><input type="checkbox" name="pdf" value="1"> {{ t("form.pdf") }}</label>
+  <button type="submit">{{ t("form.compute") }}</button>
+</form>
+{# Big-job warning + email, revealed by app.js when the estimate is over the
+   anonymous cap (CSP-safe: no inline JS, all strings via data-* on the form). #}
+<div id="big-warn" class="err" style="display:none"></div>
+<div id="big-email-row" style="display:none">
+  <label for="big-email">{{ t("big.email") }}</label>
+  <input id="big-email" type="email" name="big_email" autocomplete="email">
+  <button type="button" id="big-send">{{ t("big.submit") }}</button>
+  <div id="big-sent"></div>
+</div>
+<div id="out"></div>
+{% endblock %}

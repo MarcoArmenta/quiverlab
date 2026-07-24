@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}quiverlab{% endblock %}</title>
+  {# KaTeX is self-hosted (vendored under /static/katex) -- the strict CSP forbids
+     any runtime CDN. Fonts resolve relative to this stylesheet, same-origin. #}
+  <link rel="stylesheet" href="/static/katex/katex.min.css">
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
+    label { display:block; margin:.5rem 0 .2rem; font-weight:600; }
+    .err { color:#a00; border:1px solid #a00; padding:.6rem; border-radius:.3rem; }
+    code, pre { background:#f4f4f4; padding:.1rem .3rem; border-radius:.2rem; }
+    pre { overflow-x:auto; padding:.6rem; }
+    header, footer { color:#555; }
+    header a, footer a { color:#555; }
+  </style>
+</head>
+<body>
+  <header>
+    <a href="{{ prefix }}/">quiverlab</a> ·
+    <a href="{{ prefix }}/about">{{ t("nav.about") }}</a> ·
+    <a href="{{ prefix }}/literature">{{ t("nav.literature") }}</a> ·
+    <a href="{{ prefix }}/feedback">{{ t("nav.feedback") }}</a>
+    {% if docs_url %}· <a href="{{ docs_url }}">{{ t("nav.docs") }}</a>{% endif %} ·
+    <a href="{{ other_url }}">{{ t("lang.other") }}</a>
+  </header>
+  <main>{% block body %}{% endblock %}</main>
+  <footer>
+    <a href="{{ prefix }}/feedback">{{ t("nav.feedback") }}</a>
+    {% if docs_url %}· <a href="{{ docs_url }}">{{ t("nav.docs") }}</a>{% endif %}
+  </footer>
+  {# External scripts only (CSP script-src 'self'): KaTeX, its auto-render
+     contrib, then the app. No inline <script> anywhere. #}
+  <script src="/static/katex/katex.min.js"></script>
+  <script src="/static/katex/auto-render.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

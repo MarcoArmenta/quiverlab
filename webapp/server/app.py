@@ -202,5 +202,6 @@ def create_app(cfg: Config | None = None) -> FastAPI:
 
 
 def _register_pages(app, cfg, store) -> None:
-    # Filled in by Task 11; a no-op stub so Task 9 wires up cleanly.
-    return None
+    # Task 11: server-rendered bilingual pages + artifact downloads.
+    from webapp.server.pages import register
+    register(app, cfg, store)

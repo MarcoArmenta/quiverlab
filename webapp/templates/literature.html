@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block body %}
+<h1>{{ t("lit.h1") }}</h1>
+<p>{{ t("lit.intro") }}</p>
+{# Topic labels and annotations are library-sourced (references.grouped_bibliography);
+   webapp never authors them. #}
+{% for group in groups %}
+  <h2>{{ group.topic }}</h2>
+  <ul>
+  {% for r in group.entries %}
+    <li>{{ r.formatted }}
+      {% if r.doi_url %}· <a href="{{ r.doi_url }}">DOI</a>{% endif %}
+      {% if r.arxiv_url %}· <a href="{{ r.arxiv_url }}">arXiv</a>{% endif %}
+      {% if r.annotation %}<br><em>{{ r.annotation }}</em>{% endif %}
+    </li>
+  {% endfor %}
+  </ul>
+{% endfor %}
+{% endblock %}
