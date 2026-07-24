@@ -79,11 +79,16 @@ def han_verdict(seq):
 # open-zoo -> spec adapter -- ported verbatim from hanlab.cluster.make_shards (MIT)
 # ---------------------------------------------------------------------------
 def _reduction_system_args(entry):
-    """Catalog entry -> the ``reduction_system`` builder's args ``[ngen, rules, name]``.
+    """Catalog entry -> the ``reduction_system`` builder's args.
 
-    Matches ``builders._reduction_system(ngen, rules, name)``; if the builder's arg
-    shape ever changes, this is the only line to touch."""
-    return [entry["ngen"], entry["rules"], entry["name"]]
+    Matches ``builders._reduction_system(ngen, rules, name[, arrows, vertices])``;
+    legacy (local) entries keep the 3-arg shape byte-for-byte (spec back-compat,
+    same law as ``max_transient_bytes``).  If the builder's arg shape ever changes,
+    this is the only place to touch."""
+    args = [entry["ngen"], entry["rules"], entry["name"]]
+    if "arrows" in entry:
+        args += [entry["arrows"], entry["vertices"]]
+    return args
 
 
 def open_zoo_to_specs(catalog, primes=(PRIME,), max_dim=None, min_dim=None, limit=None,
@@ -216,7 +221,11 @@ def _analyze_open(spec):
     rec["max_transient_bytes"] = mtb
     rec["associative"] = True                 # validated at build
 
-    E = to_engine(A.unit_adapted())           # F_p engine algebra (b_0 = 1_A)
+    # unit-adaptation (b_0 = 1_A) is a LOCAL-algebra convention; on multi-vertex
+    # algebras it destroys the path-type basis the minimal engine's radical
+    # identification needs (the Plan-13 nilpotency guard would refuse) -- pass
+    # those through on their path basis unchanged (Plan 18)
+    E = to_engine(A if len(A.quiver.vertices) > 1 else A.unit_adapted())
     hh = minimal_homology_dims(E, N, primes=primes, max_term_dim=budget,
                                max_transient_bytes=mtb)
     rks, _cols, _eng, trunc = minimal_resolution(E, N, PRIME, max_term_dim=budget,

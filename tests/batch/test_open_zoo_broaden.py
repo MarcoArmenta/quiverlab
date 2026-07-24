@@ -22,3 +22,24 @@ def test_open_zoo_to_specs_band_and_probe():
     # limit branch: cap after filtering -> exactly the band's first entry (bank parity, lines 62-64)
     probe = open_zoo_to_specs(load_catalog(), min_dim=9, max_dim=9, limit=1)
     assert len(probe) == 1 and probe[0] == specs[0]
+
+
+def test_multivertex_record_flows_through_specs_and_analyze():
+    """A multi-vertex catalog record survives the spec adapter and analyze():
+    the batch scan surface serves the Plan-18 diversity records (specs carry the
+    quiver data; _analyze_open must NOT unit-adapt a multi-vertex algebra -- that
+    destroys the path-type basis and trips the Plan-13 radical guard)."""
+    from quiverlab import GF
+    from quiverlab.batch.scan import analyze
+    from quiverlab.engine.adapter import to_engine
+    from quiverlab.engine.resolutions_minimal import minimal_homology_dims
+    from quiverlab.families.zoo import build_from_record
+    rec = next(r for r in load_catalog() if r.get("name") == "cn_3_2")
+    specs = open_zoo_to_specs([rec], primes=(32003,))
+    assert len(specs) == 1 and specs[0]["builder"] == "reduction_system"
+    out = analyze(specs[0])
+    assert "error" not in out, out.get("error")
+    assert out["dim"] == 6
+    E = to_engine(build_from_record(rec, field=GF(32003)))
+    ref = minimal_homology_dims(E, out["N"], primes=(32003,))[32003]
+    assert out["HH_homology"]["32003"] == ref
