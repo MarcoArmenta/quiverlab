@@ -6,6 +6,10 @@ import pytest
 
 from quiverlab.hpc.spec import parse_request, SpecError
 
+# The QPA CI job installs without the [web] extra; collection must skip cleanly
+# there (same guard pattern as tests/webapp/conftest.py).
+pytest.importorskip("pydantic", reason="config-parity test needs the [web] extra")
+
 from webapp.server.schema import ComputeRequest, SchemaError as WSchemaError
 from pydantic import ValidationError
 
