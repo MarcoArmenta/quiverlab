@@ -1,0 +1,212 @@
+# Plan 27 — Ext-algebra / Yoneda-ring presentations (Tier 2)
+
+**Date:** 2026-07-25. **Branch:** `plan-27-ext-algebra`. **Backlog:** Tier-2 topmost
+unchecked item — "Ext-algebra / Yoneda-ring presentations: generators/relations of
+`Ext_A(⊕S, ⊕S)` from Plan-05 module resolutions + deep CS; Koszulity checks."
+
+**Goal.** For any finite-dimensional admissible `A = kQ/I` over any exact `Domain`,
+compute the Yoneda algebra `E(A) = Ext•_A(A/J, A/J)` as a graded algebra over the
+semisimple base `R = k^{Q_0}`: graded dimensions, the Yoneda product, minimal
+generators and minimal relations up to a degree bound `d` with HONEST certification
+language, and a three-valued Koszulity verdict. Output is a quiver-with-relations
+presentation of `E(A)` itself — self-hosting when finite-dimensional.
+
+## The locked convention (arbitrated, not assumed)
+
+Derived by explicit lift computations on `k[x]/(x²)`, `kA₂`, and `kQ/J²` (1→2→3);
+the QPA crosscheck anchors it (mirror of the Plan-20/21 native-vs-transported
+anchor pattern):
+
+- `Ext^n(S_i, S_j)` sits in **corner `(i, j)`** of `E`; `e_i E e_j = ⊕_n E^n_{ij}`.
+- The product is **left-to-right**: `g·f` for `g ∈ E^n_{ij}`, `f ∈ E^m_{jk}` lands
+  in `E^{n+m}_{ik}` — composability `target(g) = source(f)`, exactly the repo's
+  `a*b` path law (ASS).
+- Hence the **Ext-quiver equals Q** (same vertices, same arrow orientation):
+  `dim Ext¹(S_i,S_j) = #{arrows i→j}`, `dim Ext²(S_i,S_k) = #{minimal relations
+  i→k}`.
+- For Koszul `A`: **`E(A) ≅ (A^!)^{op}`**, NOT `A^!` — the quadratic dual
+  (Polishchuk–Positselski convention) lives on `Q^{op}`; the op is a real
+  consequence of (right modules) + (left-to-right product) + (lift the first
+  factor). Never import a `Q^{op}`-oriented textbook formula without applying op.
+
+Worked anchors (all become tests): `E(k[x]/x²) = k[y]` (deg-1 loop, no relations);
+`E(kA₂) = kA₂`; `E(kQ/J²) = kQ` for `Q: 1→2→3` with the length-2 path surviving as
+`y_α·y_β ≠ 0` in corner (1,3).
+
+## Engine (module-level, general, certified — the v1 workhorse)
+
+1. **Ext dims = graded Betti numbers, no homology.** On the Plan-05 minimal
+   resolution `P_• → S_i` (`modules/resolution.py::minimal_resolution`),
+   minimality (`d(P_{n+1}) ⊆ rad P_n`) makes EVERY differential of
+   `Hom(P_•, S_j)` zero, so `Ext^n(S_i,S_j) = Hom(P_n, S_j) = k^{b_{n,ij}}`,
+   `b_{n,ij}` = multiplicity of `P_j` in `P_n` = `res.term(n).count(j)`.
+   A basis cocycle is a **summand projection** `P_n ↠ P_j ↠ top P_j = S_j`,
+   addressable as (source `i`, degree `n`, summand index). No coboundary
+   arithmetic exists anywhere (δ ≡ 0 on the nose).
+2. **Yoneda product = chain-map lifting.** For `g: P_n → S_j` on `P_•→S_i` and
+   `f: Q_m → S_k` on `Q_•→S_j`: lift `g_0: P_n → Q_0` covering `g` (projective
+   lift, per-generator linear solve), then `g_{t+1}` solving
+   `d^Q_{t+1} ∘ g_{t+1} = g_t ∘ d^P_{n+t+1}` (each an exact underdetermined
+   `solve`; canonicalize with `reduce_mod_nullspace` à la Plan 17 for
+   byte-reproducibility). Product class = read `f ∘ g_m` off the summand basis of
+   `E^{n+m}_{ik}` directly. Lift-independence is exact-on-the-nose here (two lifts
+   differ by `d^Q h + h d^P`; `f` kills the first term as a cocycle, minimality
+   kills the second literally, not just up to coboundary).
+3. **Matrix conventions:** right modules, `action[b] @ m` anti-homomorphism,
+   module maps `φ: M→N` are `dim N × dim M` matrices with
+   `N.action[b] @ φ = φ @ M.action[b]` (`modules/hom.py`); everything through
+   `modules/linalg_mod` / `fields.linalg` — Domain-generic.
+4. **Prerequisite fix:** there is no public `⊕` of modules and
+   `resolution.py::_direct_sum` assumes `_pv_vertex` (AttributeError on simples).
+   Either generalize `_direct_sum` or build per-simple resolutions and take the
+   corner-indexed union (recommended: per-simple — `E` is corner-graded anyway,
+   `⊕S` never needs materializing).
+5. **Monomial fast path / independent oracle:** for monomial `kQ/I`,
+   `dim Ext^n(S_i,S_j) = #{Anick n-chains with source i, target j}` via
+   `MonomialPresentation.associated_paths` / `resolutions_cs.SSequence` — Bardzell
+   chains are certified minimal. Gate the module engine against it degreewise on
+   the monomial zoo.
+
+**Deferred by design:** the CS tensored-down route (`S_v ⊗_A P^{CS}_•` — right-side
+collapse of the bimodule resolution; certified minimal only in the monomial case,
+upper bound otherwise) as a deep-degree dims accelerator, and the native CS Yoneda
+coproduct via the Plan-20 diagonal. v1 products come from module-level lifting.
+
+## Generators / relations up to degree d (`YonedaPresentation`)
+
+Degreewise over `R = k^{Q_0}` (all tensors `⊗_R` = composable corner pairs only):
+decomposables `D^n = Σ_{a+b=n} im(E^a ⊗_R E^b → E^n)` per corner; **new generators**
+= complement of `D^n` in `E^n`; free cover `φ_n: F^n → E^n` from the tensor algebra
+on accumulated generators; **new minimal relations** = complement of
+(ideal generated by lower relations)^n inside `ker φ_n`. Exact linear algebra only.
+
+New module `src/quiverlab/modules/ext_algebra.py`, public surface
+`Algebra.ext_algebra(top, ...) -> YonedaPresentation` (thin delegator, Plan-23/24
+precedent). `YonedaPresentation` fields:
+
+- `ext_quiver` (vertices `Q_0`, arrows = `E¹` basis tagged by corner),
+  `generators_by_degree`, `relations_by_degree` (R-linear combos of composable
+  generator-words), `hilbert_matrix_through(d)` = the `b_{n,ij}`,
+  `certified_through_degree = d`,
+  `is_finite_dimensional: bool|None`, `is_finitely_generated_certified: bool|None`,
+  `koszul: True|False|None`, `koszul_obstruction: (degree, reason)|None`.
+- `as_algebra()` → a genuine quiverlab `Algebra` **iff** finiteness is certified
+  (gl.dim `< ∞` with `GlobalDimension.exact`); otherwise raises with an honest
+  message naming the truncation.
+
+**Honest-language rules (hard):** gl.dim `A = g < ∞` (exact) ⇒ complete at `d = g`,
+finite-dimensional, self-hosting. Certified-Koszul ⇒ complete at `d = 2`
+(quadratic). Otherwise: "no new generators/relations found through degree d;
+higher degrees not excluded" — `None`, never a silent claim.
+
+## Koszulity (three-valued verdict)
+
+- **Falsifiers:** non-quadratic (minimal relations not all length 2 — read off
+  Ext²/the reduction system) ⇒ certified NOT Koszul; a new `E`-generator in degree
+  ≥ 2 ⇒ certified NOT Koszul (with obstruction degree); Fröberg matrix numeric
+  `P(t) · C_A(−t) = I` coefficientwise through `d` (`C_A(t)_{ij}` = graded path
+  counts; hand-verified on A₂) — failure ⇒ certified NOT Koszul over that field;
+  passing is necessary only.
+- **Certifier:** **G-quadratic** — the confluent reduction system
+  (`resolutions_cs/build.py::reduction_system_of` / `groebner/`) has all tips of
+  length 2 ⇒ certified Koszul (Priddy PBW). Covers the whole oracle battery
+  (quadratic monomial, rad²=0, hereditary, quantum CI, commutative square).
+  Failing G-quadratic disproves nothing.
+- **Optional cross-check:** build `A^! = kQ^{op}/(R^⊥)` for quadratic `A` and
+  compare `E(A) ≅ (A^!)^{op}` degreewise through `d`.
+- Verdict: `True (certified: G-quadratic)` / `False (certified: <reason>)` /
+  `None ("no obstruction through degree d")`. Field-sensitivity: numeric passes
+  are per-field; never promote a GF(p) pass to a char-independent claim.
+
+Koszul code lives in `src/quiverlab/modules/koszul.py` (quadraticity, G-quadratic
+certifier, quadratic dual, Fröberg check), integrated into `YonedaPresentation` by
+`ext_algebra`.
+
+## Oracles
+
+**Theory/literature battery** (tests pin dims + generator degrees + relations +
+verdict; all run without `[qpa]`):
+
+1. `k[x]/(x²)`: `E = k[y]`, dims all 1, gens deg {1}, no relations, Koszul.
+2. `k[x]/(x^n), n ≥ 3`: `E = k[y,z]/(y²)`, deg y=1 z=2, dims all 1, gens deg
+   {1,2}, relation `y²` in deg 2, certified not Koszul (non-quadratic).
+   Char-independent (`y² = 0` by lifting, `y_1 = ·x^{n-2}`); pin over GF(2), GF(3),
+   GF(32003), char 0.
+3. Hereditary `kQ`: `E = kQ/J²` (same quiver), `E^{≥2} = 0`, finite-dimensional,
+   `as_algebra()` round-trips; Koszul.
+4. Rad-square-zero `kQ/J²`: `E = kQ` free, `dim E^n = #paths_n(Q)`; micro-cases:
+   one loop ⇒ `k[y]`; two loops ⇒ `dim E^n = 2^n`; the 1→2→3 line ⇒ the §worked
+   anchor.
+5. Quantum CI `k⟨x,y⟩/(x², y², yx − ξxy)`: `E` = quantum plane, `dim E^n = n+1`
+   (= CS `|S_n|`), gens deg 1 ×2, one deg-2 relation, Koszul (G-quadratic).
+6. Commutative square (`ab − cd`): gl.dim 2 ⇒ `E` finite-dim, graded dims
+   (4, 4, 1), `E ≅ A` (Koszul self-dual here), `as_algebra()` self-hosting.
+7. Semisimple `A`: `E = A` in degree 0, immediate return.
+
+**QPA battery** (`-m qpa`; idioms live-confirmed on QPA 1.37, all < 100 ms):
+`M := DirectSumOfQPAModules(SimpleModules(A))`, then
+
+- `crosscheck_ext_algebra_dims`: our `dim E^n` vs `ExtAlgebraGenerators(M,n)[1]`.
+- `crosscheck_ext_generator_degrees`: our new-generator counts per degree vs
+  `[2]` (the Koszulity discriminator: rad²=0 A₃ has dim Ext²=1 with gens[2]=0;
+  cubic A₄ has the same dim as a genuine generator).
+- `crosscheck_ext_quiver`: pairwise `dim Ext¹(S_i,S_j)` vs
+  `Length(ExtOverAlgebra(S_i,S_j)[2])` — pins corner/direction convention.
+- `crosscheck_quadratic`: vs `IsQuadraticIdeal` (relations in `kQ`).
+- `crosscheck_koszul` (derived — QPA has NO `IsKoszul`/`KoszulDual`, confirmed by
+  exhaustive `NamesGVars()` sweep): quadraticity + gens-degree-1-only through the
+  bound; optionally `QuadraticPerpOfPathAlgebraIdeal` dims vs ours (mind: QPA's
+  perp lives in the opposite path algebra, e.g. `ab − cd ↦ b°a° + d°c°`).
+
+Session quirk: one statement per line (`session.run`); FD guard
+(`IsFiniteDimensional`); fields QQ + prime GF(p) only.
+
+**Verification page (merge-time):** add the Ext-algebra/Koszul oracles to
+`docs/verification.md` (modules row, counts, References), README badge count, and
+the honest-scope entry: *QPA has no Koszulity primitive; the Koszul verdict is our
+theory oracle (G-quadratic certifier + generated-in-degree-1 falsifier), with QPA
+validating its inputs (dims, generator degrees, quadraticity, quadratic perp).*
+
+## Citations (new registry keys + references.bib)
+
+- `priddy` — S. Priddy, *Koszul resolutions*, Trans. AMS 152 (1970) 39–60
+  (G-quadratic/PBW ⇒ Koszul).
+- `froberg_koszul` — R. Fröberg, *Koszul algebras*, in Advances in Commutative
+  Ring Theory, LNPAM 205, Dekker (1999) (Hilbert-series criterion; survey).
+- `polishchuk_positselski` — A. Polishchuk, L. Positselski, *Quadratic Algebras*,
+  AMS ULS 37 (2005) (quadratic dual conventions).
+- (optional, only if the N-Koszul stretch lands) `berger_nkoszul` — R. Berger,
+  *Koszulity for nonquadratic algebras*, J. Algebra 239 (2001) 705–734.
+
+Existing keys reused: `minimal_resolution` (GSZ2001), `module_ext`, `assem_book`,
+`bardzell`, `chouhy_solotar`, `qpa`.
+
+## Tests
+
+- `tests/modules/test_ext_algebra.py` (deep): worked anchors, the 7-battery,
+  lift-canonicity (byte-reproducible products), corner bookkeeping, Domain
+  spread (GF(2)/GF(3)/GF(32003)/char-0), `as_algebra()` round-trips + honest
+  refusals, monomial Anick gate.
+- `tests/modules/test_koszul.py` (deep): certifier/falsifier matrix on the
+  battery, Fröberg identity, quadratic dual + op, three-valued verdict honesty.
+- `tests/qpa/test_ext_algebra_qpa.py` (qpa): the 5 crosschecks across the zoo
+  incl. `line_abc_cde` and Plan-18 diversity records.
+- No floats gate untouched (`src/` exact only); engine internals stay internal
+  (module layer only reaches `resolutions_cs`/`engine` combinatorics through the
+  already-public monomial surface used by tests, or reimplements the chain count
+  from `SSequence`).
+
+## Acceptance
+
+New `src/`: `modules/ext_algebra.py`, `modules/koszul.py`, `Algebra.ext_algebra`
+delegator, citations registry entries. Tests as above, all suites green (fast +
+deep + qpa locally). Docs: this plan; `docs/internals/` chapter add-on if natural
+(defer OK); `docs/verification.md` + README counts at merge; backlog tick;
+CLAUDE.md + ROADMAP status updates. Merge/push only when Marco asks.
+
+## Deferred / out of scope
+
+CS tensored-down deep-degree Ext dims + per-instance minimality certificate;
+native CS Yoneda coproduct (Plan-20 Δ); A∞/Kadeishvili (separate backlog item);
+support varieties (separate item); N-Koszul certifier (stretch); Ext-algebra of
+arbitrary modules `Ext(M,M)` (the machinery generalizes — surface it later).
