@@ -25,6 +25,7 @@ import sys
 import time
 from pathlib import Path
 
+from webapp.server import cache
 from webapp.server.config import Config
 from webapp.server.runner import run_spec, RunError
 from webapp.server.schema import ComputeRequest
@@ -136,6 +137,19 @@ def _read_result(q: "mp.Queue"):
         return None
 
 
+def _record_cache(store: JobStore, cfg: Config, job: Job) -> None:
+    # Record the finished result so any later identical request replays it (Plan
+    # 25). Runs ONLY on the success path -- failures (which may be transient, e.g.
+    # a wall-time kill under load) are never cached. A cache failure must never lose
+    # the result: the job is already marked done, so swallow it with a type-only
+    # warning (never the spec or any address).
+    try:
+        cache.record(store, cfg, job)
+    except Exception as exc:  # pragma: no cover - defensive; result already saved
+        _log.warning("result-cache record failed for job %s (type=%s)",
+                     job.id, type(exc).__name__)
+
+
 def _notify_if_big(store: JobStore, cfg: Config, job: Job, status: str,
                    mailer) -> None:
     # Completion email for big jobs only; then delete the plaintext address
@@ -207,6 +221,7 @@ def run_one_job(store: JobStore, cfg: Config, job: Job, mailer=None) -> None:
         if status == "ok":
             store.mark_done(job.id, str(artifact_dir))
             marked = True
+            _record_cache(store, cfg, job)      # replayable for identical requests
             _notify_if_big(store, cfg, job, "done", mailer)
         else:
             store.mark_failed(job.id, err)

@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from webapp.server import cache
 from webapp.server.catalog import build_catalog
 from webapp.server.config import Config, get_config
 from webapp.server.estimator import classify
@@ -99,6 +100,24 @@ def _reject_message(reason: str | None) -> str:
     return "computation too large; narrow the degree range or run locally: pip install quiverlab"
 
 
+def _cached_body(store: JobStore, job_id: str) -> dict:
+    """The shared payload for a cache HIT: the cached job's permalink and its
+    first-computed timestamp. The result page/artifacts at ``/job/{job_id}`` are
+    served with zero recompute -- and, on the big-job path, with no email
+    interaction at all. The referenced job carries mathematics only (no email/ip is
+    ever rendered), so replaying its permalink to a second user leaks nothing about
+    the first. Callers add their endpoint's discriminator (``tier`` vs ``status``)."""
+    job = store.get_job(job_id)
+    return {"job_id": job_id, "cached_at": job.finished_at if job else None}
+
+
+def _cached_response(store: JobStore, job_id: str) -> JSONResponse:
+    """A ``/api/compute`` cache HIT: 200 with ``tier: "cached"`` plus the shared
+    cached body."""
+    return JSONResponse(status_code=200,
+                        content={"tier": "cached", **_cached_body(store, job_id)})
+
+
 def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
     cfg = cfg or get_config()
     store = JobStore(cfg.db_path)
@@ -134,6 +153,15 @@ def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
 
     @app.post("/api/compute")
     def api_compute(req: ComputeRequest, request: Request):
+        # Cache FIRST (before building, classifying, or rate-limiting): a request
+        # whose canonical key was computed before is replayed instantly and for
+        # free -- no build, no wall net, no queue slot, not even a rate-limit
+        # charge. This also short-circuits an instant-classified request that was
+        # previously forced to queue by a wall-net overflow: it is now cached, so
+        # we skip the doomed instant attempt entirely.
+        hit = cache.lookup(store, cfg, req.model_dump(by_alias=True), _now_iso())
+        if hit is not None:
+            return _cached_response(store, hit)
         iph = _ip_hash(request)
         try:
             # Build the algebra to read its dimension. This runs BEFORE (outside)
@@ -182,6 +210,10 @@ def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
 
     @app.post("/api/jobs")
     def api_create_job(req: ComputeRequest, request: Request):
+        # Cache first: a known example is replayed instead of enqueuing a duplicate.
+        hit = cache.lookup(store, cfg, req.model_dump(by_alias=True), _now_iso())
+        if hit is not None:
+            return _cached_response(store, hit)
         iph = _ip_hash(request)
         # Soft limit: read-then-write is non-atomic across concurrent requests
         # (see api_compute); acceptable for anonymous abuse control.

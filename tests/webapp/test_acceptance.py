@@ -34,13 +34,16 @@ allocation and process teardown never make CI flaky.
 """
 import json
 import re
+import sqlite3
 
 import pytest
 from fastapi.testclient import TestClient
 
 from webapp.server.app import create_app
+from webapp.server.cache import canonical_key, library_version
 from webapp.server.config import Config
 from webapp.server.store import JobStore
+from webapp.worker.sweeper import sweep_cache_once, sweep_once
 from webapp.worker.worker import worker_tick
 
 pytestmark = pytest.mark.fast
@@ -176,3 +179,205 @@ def test_big_tier_disabled_without_smtp(tmp_path):
     r = client.post("/api/jobs/big", json=body)
     assert r.status_code == 503
     assert r.json()["error_type"] == "BigJobsDisabled"
+
+
+# --------------------------------------------------------------------------- #
+# Plan 25 -- the result cache: never recompute a known example, across users and
+# tiers. Email verification gates the COST of computing, not access to the maths.
+# --------------------------------------------------------------------------- #
+
+def _job_ids(cfg):
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        return [r[0] for r in conn.execute("SELECT id FROM jobs").fetchall()]
+    finally:
+        conn.close()
+
+
+def _pending_big_count(cfg):
+    conn = sqlite3.connect(cfg.db_path)
+    try:
+        return conn.execute("SELECT COUNT(*) FROM pending_big").fetchone()[0]
+    finally:
+        conn.close()
+
+
+def _queue_body(compute="hh_cohomology:0..4", pdf=True):
+    return {"schema": 1, "algebra": _gf(2), "compute": [compute],
+            "artifacts": {"pdf": pdf, "tikz": False}}
+
+
+def test_queued_result_replayed_from_cache_across_users(tmp_path):
+    # User A's queued computation, once finished, is replayed instantly for User B's
+    # identical request -- zero recompute, no new job, no worker run needed.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                           "QLWEB_INSTANT_MAX_DEGREE": "2"})   # deg-4 -> queued
+    client = TestClient(create_app(cfg))
+    body = _queue_body()
+
+    r1 = client.post("/api/compute", json=body)
+    assert r1.status_code == 202 and r1.json()["tier"] == "queued"
+    jid = r1.json()["job_id"]
+    store = JobStore(cfg.db_path)
+    assert worker_tick(store, cfg) is True                    # runs + caches it
+    assert len(_job_ids(cfg)) == 1
+
+    # Identical request from "another user": a cache HIT pointing at the SAME job,
+    # with no second job created and no worker tick required.
+    r2 = client.post("/api/compute", json=body)
+    assert r2.status_code == 200, r2.text
+    assert r2.json()["tier"] == "cached"
+    assert r2.json()["job_id"] == jid                         # the very same result
+    assert r2.json()["cached_at"]                             # honest timestamp
+    assert len(_job_ids(cfg)) == 1                            # NO duplicate job
+    assert store.count_pending() == 0                         # nothing re-queued
+
+    # The permalink page renders the bilingual "previously computed" note.
+    page = client.get(f"/job/{jid}")
+    assert page.status_code == 200
+    assert "served instantly without recomputing" in page.text
+    es = client.get(f"/es/job/{jid}")
+    assert "sin recalcular" in es.text                        # ES parity
+
+
+def test_instant_tier_checks_cache_before_computing(tmp_path):
+    # A request that CLASSIFIES as instant is still served from the cache first,
+    # skipping the instant compute entirely. Seed the cache via a queued run under
+    # a tight instant cap, then re-ask under a generous cap (where it is instant):
+    # the reply is the cached permalink, not a fresh instant result.
+    body = _queue_body(compute="hh_cohomology:0..4", pdf=False)
+    cfg_q = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                             "QLWEB_INSTANT_MAX_DEGREE": "2"})
+    client_q = TestClient(create_app(cfg_q))
+    jid = client_q.post("/api/compute", json=body).json()["job_id"]
+    store = JobStore(cfg_q.db_path)
+    assert worker_tick(store, cfg_q) is True
+
+    cfg_i = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                             "QLWEB_INSTANT_MAX_DEGREE": "8"})   # now instant-classified
+    client_i = TestClient(create_app(cfg_i))
+    r = client_i.post("/api/compute", json=body)
+    assert r.status_code == 200 and r.json()["tier"] == "cached"
+    assert r.json()["job_id"] == jid
+    assert len(_job_ids(cfg_i)) == 1                            # no fresh instant job either
+
+
+def test_big_job_cache_hit_sends_no_email_and_mints_no_token(tmp_path):
+    # THE big-job requirement: a big request whose canonical key is already cached
+    # is served immediately, with NO email, NO token, NO pending row, NO email hash
+    # -- across users. Only genuinely new big examples take the magic-link path.
+    over = {"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_SMTP_HOST": "relay",
+            "QLWEB_SMTP_FROM": "q@e.org", "QLWEB_PUBLIC_BASE_URL": "https://ql.example",
+            "QLWEB_INSTANT_OPS_THRESHOLD": "0", "QLWEB_QUEUED_OPS_THRESHOLD": "0",
+            "QLWEB_INSTANT_MAX_DEGREE": "0", "QLWEB_QUEUED_MAX_DEGREE": "0"}
+    cfg = Config.from_env(over)
+    body = {"schema": 1, "algebra": _gf(2), "compute": ["hh_cohomology:0..3"],
+            "artifacts": {"pdf": False, "tikz": False},
+            "email": "first@example.org", "lang": "en"}
+
+    # First user: the full magic-link flow computes and caches the big example.
+    mail1 = FakeMailer()
+    client1 = TestClient(create_app(cfg, mailer=mail1))
+    assert client1.post("/api/jobs/big", json=body).status_code == 202
+    token = re.search(r"/verify/([^\s]+)", mail1.sent[0][2]).group(1)
+    assert client1.get("/verify/" + token).status_code == 200
+    store = JobStore(cfg.db_path)
+    assert worker_tick(store, cfg, mailer=mail1) is True
+    first_job = _job_ids(cfg)[0]
+
+    # Second user, FRESH mailer, same DB, identical big request: served from cache.
+    mail2 = FakeMailer()
+    client2 = TestClient(create_app(cfg, mailer=mail2))
+    r = client2.post("/api/jobs/big", json=dict(body, email="second@example.org"))
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "cached"
+    assert r.json()["job_id"] == first_job                     # replays the SAME result
+    # The crux, asserted via the fake mailer + the store:
+    assert mail2.sent == []                                    # NO verification email
+    assert _pending_big_count(cfg) == 0                        # NO token / pending row minted
+    assert _job_ids(cfg) == [first_job]                        # NO duplicate big job
+
+    # Privacy: neither the cached result nor the cache row leaks the first requester.
+    stripped = {k: body[k] for k in ("schema", "algebra", "compute", "artifacts")}
+    row = store.cache_row(canonical_key(stripped, library_version()))
+    assert "first@example.org" not in json.dumps(row)
+    result_json = (cfg.artifacts_dir / first_job / "result.json").read_text(encoding="utf-8")
+    assert "first@example.org" not in result_json
+
+
+def test_big_cache_hit_served_even_when_smtp_disabled(tmp_path):
+    # Email gates COST, not access: with SMTP off (big tier "disabled"), an ALREADY
+    # cached example is still served -- a cached big example needs no relay. Seed the
+    # cache with an anonymous queued run of the same maths, then POST /api/jobs/big.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                           "QLWEB_INSTANT_MAX_DEGREE": "2"})     # no SMTP -> big off
+    assert cfg.big_jobs_enabled is False
+    client = TestClient(create_app(cfg))
+    base = {"schema": 1, "algebra": _gf(2), "compute": ["hh_cohomology:0..4"],
+            "artifacts": {"pdf": False, "tikz": False}}
+    jid = client.post("/api/compute", json=base).json()["job_id"]
+    store = JobStore(cfg.db_path)
+    assert worker_tick(store, cfg) is True                      # cached
+
+    # A big request for the SAME maths would 503 (SMTP off) -- but it is cached, so
+    # it is served instead. The cache check runs BEFORE the disabled-tier refusal.
+    r = client.post("/api/jobs/big", json=dict(base, email="u@e.org", lang="en"))
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "cached" and r.json()["job_id"] == jid
+    assert _pending_big_count(cfg) == 0
+
+
+def test_version_bump_invalidates_the_cache(tmp_path, monkeypatch):
+    # A library-version bump changes every key, so a previously cached example is a
+    # MISS and recomputes -- the cache never replays a stale-version result.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                           "QLWEB_INSTANT_MAX_DEGREE": "2"})
+    client = TestClient(create_app(cfg))
+    body = _queue_body(pdf=False)
+    jid = client.post("/api/compute", json=body).json()["job_id"]
+    store = JobStore(cfg.db_path)
+    assert worker_tick(store, cfg) is True                      # cached under the live version
+
+    # Same request under the same version: a hit.
+    assert client.post("/api/compute", json=body).json()["tier"] == "cached"
+
+    # Bump the version: the key changes, so the same request now MISSES and queues
+    # a brand-new job instead of replaying the (now stale-version) cached one.
+    import quiverlab
+    monkeypatch.setattr(quiverlab, "__version__", "99.0.0-bumped")
+    r = client.post("/api/compute", json=body)
+    assert r.status_code == 202 and r.json()["tier"] == "queued"
+    assert r.json()["job_id"] != jid                            # a fresh computation
+
+
+def test_cache_lru_sweep_evicts_and_retention_reclaims(tmp_path):
+    # The LRU size-cap sweep runs alongside retention. Fill the cache past a cap of
+    # 1, sweep: the least-recently-hit entry is evicted (unpinned), and the ordinary
+    # retention sweep then reclaims that now-unpinned old job -- while the surviving
+    # cached job's artifacts are kept.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                           "QLWEB_CACHE_MAX_ENTRIES": "1"})
+    store = JobStore(cfg.db_path)
+    store.init_schema()
+
+    def _cached_done_job(tag):
+        jid = store.create_job({"compute": [tag]}, ip="i")
+        store.claim_next()
+        store.mark_done(jid, str(cfg.artifacts_dir / jid))
+        (cfg.artifacts_dir / jid).mkdir(parents=True, exist_ok=True)
+        return jid
+
+    cold = _cached_done_job("cartan")
+    store.cache_put("cold", cold, library_version(), "2026-01-01T00:00:00Z")
+    warm = _cached_done_job("dimension")
+    store.cache_put("warm", warm, library_version(), "2026-06-01T00:00:00Z")
+
+    assert sweep_cache_once(store, cfg) == 1                     # cap=1 -> evict the cold one
+    assert store.cache_row("cold") is None and store.cache_row("warm") is not None
+
+    # Retention now reclaims the unpinned (evicted, old) job; the still-cached job
+    # AND its artifacts survive.
+    removed = sweep_once(store, cfg, now_iso="2999-01-01T00:00:00Z")
+    assert cold in removed and warm not in removed
+    assert not (cfg.artifacts_dir / cold).exists()              # evicted job's artifacts gone
+    assert (cfg.artifacts_dir / warm).exists()                  # cached job's artifacts kept

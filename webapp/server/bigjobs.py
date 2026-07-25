@@ -26,7 +26,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import field_validator
 
-from webapp.server.app import _build_or_error, _error_response
+from webapp.server import cache
+from webapp.server.app import _build_or_error, _cached_body, _error_response, _now_iso
 from webapp.server.estimator import classify
 from webapp.server.i18n import t as _t
 from webapp.server.mail import smtp_mailer
@@ -177,6 +178,20 @@ def register_big_jobs(app, cfg, store, mailer=None) -> None:
 
     @app.post("/api/jobs/big")
     def submit_big(req: BigJobRequest):
+        # Cache FIRST -- before minting a token, sending mail, or storing an email
+        # hash. Email verification gates the COST of computing, not access to the
+        # mathematics: if this exact computation is already cached (by ANY prior
+        # user, on ANY tier -- a queued anonymous run and a big run of the same math
+        # share one key), serve it immediately with no token, no email, no
+        # pending_big row, no email_hash. The key strips email/lang, matching the
+        # spec the store persists. This is checked even when SMTP is off: a cached
+        # big example needs no relay. Only genuinely NEW big examples fall through
+        # to the magic-link flow below (and enter the cache for everyone after).
+        spec = req.model_dump(by_alias=True, exclude={"email", "lang"})
+        hit = cache.lookup(store, cfg, spec, _now_iso())
+        if hit is not None:
+            return JSONResponse(status_code=200,
+                                content={"status": "cached", **_cached_body(store, hit)})
         # SMTP unconfigured => the whole tier is off; say "run locally" (spec §17).
         if not cfg.big_jobs_enabled:
             return JSONResponse(status_code=503, content={
@@ -207,7 +222,7 @@ def register_big_jobs(app, cfg, store, mailer=None) -> None:
                 >= cfg.per_email_weekly_max):
             return JSONResponse(status_code=429, content={
                 "error_type": "RateLimited", "message": "Weekly big-job limit reached."})
-        spec = req.model_dump(by_alias=True, exclude={"email", "lang"})
+        # `spec` was already computed for the cache check above (email/lang stripped).
         pid = store.create_pending_big(spec, req.email, eh, lang=req.lang)
         payload = {"pid": pid, "sh": _spec_hash(spec),
                    "exp": _now() + cfg.big_token_ttl_seconds}

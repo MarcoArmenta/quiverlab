@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 from webapp.server.config import Config, get_config
 from webapp.server.store import JobStore
-from webapp.worker.sweeper import sweep_once
+from webapp.worker.sweeper import sweep_cache_once, sweep_once
 from webapp.worker.worker import worker_tick
 
 _log = logging.getLogger("quiverlab_web.worker")
@@ -61,6 +61,9 @@ def _loop(cfg: Config, index: int, stop) -> None:
         if index == 0:
             now = time.time()
             if now - last_sweep > 3600:
+                # Cache sweep FIRST (lifts stale-version / LRU pins), then retention
+                # (reclaims any now-unpinned job past the cutoff) -- Plan 25.
+                sweep_cache_once(store, cfg)
                 sweep_once(store, cfg,
                            datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"))
                 last_sweep = now
