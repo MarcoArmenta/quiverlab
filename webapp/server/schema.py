@@ -1,14 +1,22 @@
 """Versioned request schema. Everything is data — a family id with typed params,
 or a quiver (vertices / arrows / opaque relation strings) — plus a field spec.
 There is no code path that evaluates user strings; relation strings are parsed
-later, loudly, by the library's exact relation grammar."""
+later, loudly, by the library's exact relation grammar.
+
+Schema v2 (Plan 26) adds an optional ``module`` block so a representation theorist
+can specify a module with zero code: either explicitly (a dimension vector + one
+exact-entry matrix per arrow) or via a zero-typing pick-list (a built-in
+``simple`` / ``projective`` / ``injective`` at a vertex). Matrix entries stay pure
+DATA (ints or exact strings like ``"1/2"``) — never evaluated, never floats; the
+exact parse into the chosen field happens later, loudly, in the runner."""
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
+from fractions import Fraction
 from typing import Annotated, Any, Literal, Union
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SchemaError(ValueError):
@@ -65,17 +73,132 @@ class Artifacts(BaseModel):
     tikz: bool = False
 
 
+# --------------------------------------------------------------------------- #
+# Schema v2: the no-code module block (Plan 26)
+# --------------------------------------------------------------------------- #
+
+SIDES = ("right", "left")
+
+# The module compute kinds served on top of a `module` block. `ext` also needs a
+# second module (`ext_target`); the rest act on the single `module`. Kept here so
+# both the schema (routing rules) and the runner agree on the set by construction.
+MODULE_KINDS = frozenset({
+    "dimension_vector", "rad_top_soc", "ext", "tau", "tau_minus",
+    "projective_resolution", "injective_resolution",
+    "projective_dimension", "injective_dimension",
+})
+# Module kinds that consume a degree range (`kind:0..n`); the rest are scalars.
+MODULE_RANGE_KINDS = frozenset({"ext", "projective_resolution", "injective_resolution"})
+
+
+def _valid_entry(x: Any) -> bool:
+    """A matrix entry is exact DATA: a JSON integer or an exact string literal
+    (e.g. ``"3"``, ``"-2"``, ``"1/2"``). Never a float (exactness is the whole
+    point) and never a bool (``True``/``False`` are not field entries). The
+    string is NOT parsed here -- the exact parse into the chosen field happens in
+    the runner, where the domain (GF(p) vs CC) is known -- but its lexical shape
+    is vetted so a malformed entry fails loudly at request time, not with a 500."""
+    if isinstance(x, bool):
+        return False
+    if isinstance(x, int):
+        return True
+    if isinstance(x, str):
+        s = x.strip()
+        if not s:
+            return False
+        try:
+            int(s)
+            return True
+        except ValueError:
+            pass
+        try:
+            Fraction(s)                       # accepts "1/2"; also exact decimals
+            return True
+        except (ValueError, ZeroDivisionError):
+            return False
+    return False
+
+
+class BuiltinModule(BaseModel):
+    """A zero-typing pick-list module: the simple / projective / injective at a
+    vertex (the library's ``A.simple/projective/injective(v, side=)`` builders)."""
+    kind: Literal["simple", "projective", "injective"]
+    vertex: Any                               # a vertex label (int for quiver/family)
+
+
+class ModuleSpec(BaseModel):
+    """A module, either specified explicitly (``dims`` + one exact-entry matrix per
+    arrow in ``maps``) or via a ``builtin`` pick-list. ``side`` defaults to
+    ``"right"`` and is always emitted, so an omitted side and an explicit
+    ``"right"`` canonicalize to the SAME cache key (Plan 25)."""
+    dims: dict[str, int] | None = None
+    maps: dict[str, list[list[Any]]] | None = None
+    builtin: BuiltinModule | None = None
+    side: Literal["right", "left"] = "right"
+
+    @model_validator(mode="before")
+    @classmethod
+    def _lift_builtin_side(cls, data):
+        """Accept the task's ``{"builtin": {"kind", "vertex", "side"}}`` shape by
+        lifting a ``side`` nested inside ``builtin`` up to the top level, so the
+        canonical form carries ``side`` in exactly one place (a builtin and an
+        explicit module both dump ``side`` as a sibling field)."""
+        if isinstance(data, dict) and isinstance(data.get("builtin"), dict):
+            b = dict(data["builtin"])
+            if "side" in b:
+                inner = b.pop("side")
+                outer = data.get("side")
+                if outer is not None and outer != inner:
+                    raise SchemaError(
+                        f"conflicting side: builtin.side={inner!r} vs side={outer!r}")
+                data = {**data, "builtin": b, "side": inner}
+        return data
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        if self.builtin is not None:
+            if self.dims is not None or self.maps is not None:
+                raise SchemaError("module: give either a builtin pick-list OR "
+                                  "dims+maps, not both")
+            return self
+        if self.dims is None:
+            raise SchemaError("module: needs 'dims' (a dimension vector) or a "
+                              "'builtin' pick-list")
+        for v, n in self.dims.items():
+            if not isinstance(n, int) or isinstance(n, bool) or n < 0:
+                raise SchemaError(f"module dims[{v!r}] must be a non-negative integer")
+        for arrow, mat in (self.maps or {}).items():
+            width = None
+            for row in mat:
+                if not isinstance(row, list):
+                    raise SchemaError(f"module maps[{arrow!r}] must be a matrix "
+                                      "(list of rows)")
+                if width is None:
+                    width = len(row)
+                elif len(row) != width:
+                    raise SchemaError(f"module maps[{arrow!r}] is not rectangular")
+                for x in row:
+                    if not _valid_entry(x):
+                        raise SchemaError(
+                            f"module maps[{arrow!r}] has a non-exact entry {x!r}; "
+                            "entries must be integers or exact strings like '1/2' "
+                            "(never floats)")
+        return self
+
+
 class ComputeRequest(BaseModel):
     schema_version: int = Field(1, alias="schema")
     algebra: AlgebraSpec
     compute: list[str]
     artifacts: Artifacts = Field(default_factory=Artifacts)
+    module: ModuleSpec | None = None          # v2 (Plan 26)
+    ext_target: ModuleSpec | None = None      # v2: the N in Ext^n(M, N)
 
     @field_validator("schema_version")
     @classmethod
-    def _schema_one(cls, v: int) -> int:
-        if v != 1:
-            raise SchemaError(f"unsupported schema version {v}; this server speaks v1")
+    def _schema_known(cls, v: int) -> int:
+        if v not in (1, 2):
+            raise SchemaError(f"unsupported schema version {v}; this server speaks v1/v2")
         return v
 
     @field_validator("compute")
@@ -86,6 +209,33 @@ class ComputeRequest(BaseModel):
         for item in v:
             parse_compute_item(item)          # validates each entry
         return v
+
+    @model_validator(mode="after")
+    def _module_rules(self):
+        """The module block is a v2 feature; and any module compute kind needs a
+        ``module`` (and, for ``ext``, an ``ext_target``)."""
+        if (self.module is not None or self.ext_target is not None) \
+                and self.schema_version != 2:
+            raise SchemaError("a 'module'/'ext_target' block requires schema 2")
+        kinds = {parse_compute_item(s).kind for s in self.compute}
+        if kinds & MODULE_KINDS and self.module is None:
+            need = sorted(kinds & MODULE_KINDS)
+            raise SchemaError(f"module compute kind(s) {need} require a 'module' block")
+        if "ext" in kinds and self.ext_target is None:
+            raise SchemaError("Ext needs a second module 'ext_target' (the N in "
+                              "Ext^n(M, N))")
+        return self
+
+    def model_dump(self, *args, **kwargs):
+        """Drop ``module``/``ext_target`` when absent so a non-module request
+        canonicalizes byte-identically to the pre-Plan-26 shape (the cache key of
+        every existing family/quiver request is unchanged; only genuine module
+        requests carry the extra block)."""
+        d = super().model_dump(*args, **kwargs)
+        for k in ("module", "ext_target"):
+            if d.get(k) is None:
+                d.pop(k, None)
+        return d
 
 
 @dataclass(frozen=True)
