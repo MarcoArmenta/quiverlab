@@ -103,6 +103,37 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   `test_ext.py`, `test_engine_validation.py`, `test_battery_bardzell.py` —
   docstring/comment-only, no logic change). No theorem number guessed.
 
+- [ ] **Literature-oracle battery expansion (Marco, 2026-07-25 deep research)** —
+  implement the test batteries from
+  `docs/plans/2026-07-25-literature-oracles-deep-research.md` (four cluster
+  reports — Cibils, Solotar, Happel/Keller/Rickard, de la Peña/Lenzing/Marcos —
+  with per-cluster "best 5" rankings, verification-status labels, and BibTeX
+  ready for `references.bib`; the consolidated priority list is at the end of
+  that doc). Headliners: Nakayama Coxeter polynomials (LMR 2022, all six
+  already recomputed under our convention), Dynkin/affine/canonical Coxeter
+  tables + Lehmer [2,3,7] spectral pin, the Happel-1997 trace identity
+  `tr Φ = −Σ(−1)^i dim HH^i` (sign pinned on A₃), derived-invariance
+  orientation pairs (HH*/HH_*/HC_*), Bergh–Erdmann QCI cohomology
+  [2,2,1,0,…] for all a,b (char 0 only — GF(p) root-of-unity trap documented),
+  triangular-string revival family, rad²=0 char-2 doubling, a-Kronecker
+  [1,a²−1,0,…], Taft cyclic homology (first strong HC family), canonical
+  HH²=t−3, incidence ≅ nerve, trivial-extension HH¹, and the Plan-27 feeders
+  (Ext k[u,v]/(u²) bidegrees, Cassidy quadratic-non-Koszul witnesses,
+  (D,A)-stacked Example 1.2, preprojective Koszul/self-injective facts).
+  Every battery cites its source in the test docstring and lands on
+  `docs/verification.md` per the standing rule; honest-scope flags (paywalled
+  primaries, unverified figures, lossy transcriptions) are in the research doc
+  and must be respected — nothing flagged gets frozen as a strict pin without
+  the primary. **INCLUDES A LIVE, QPA-VERIFIED BUG FIX (do first):**
+  `is_symmetric` returns False on multi-vertex symmetric Nakayama kZ_n/J^L
+  with n | (L−1) (Brauer stars; QPA `IsSymmetricAlgebra = true`) and on
+  `TrivialExtension(A)` (always symmetric; fails because it carries no quiver
+  presentation) — fix the ν-inner sweep in `invariants/frobenius.py` for the
+  multi-vertex weakly-symmetric case, consider a double-quiver presentation
+  for `TrivialExtension`, and add the QPA-crosschecked symmetry regression
+  battery (every currently passing `is_symmetric is True` test is
+  single-vertex).
+
 ## Tier 1b — the module-theoretic surface (Marco, 2026-07-24)
 
 **Vision:** every representation theorist can use this tool — specify a module in
