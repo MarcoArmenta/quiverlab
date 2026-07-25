@@ -70,6 +70,44 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   tier-ordered claim, real-SMTP/TLS/concurrency acceptance gaps). UNMERGED —
   merge/push only when Marco asks.
 
+## Tier 1b — the module-theoretic surface (Marco, 2026-07-24)
+
+**Vision:** every representation theorist can use this tool — specify a module in
+the GUI without writing code, and read off the classical module-level invariants.
+Ordering: these items come right after the in-flight native CS cup/cap (Plan 20);
+they share one engine (the opposite-algebra functor + the duality D) and should be
+planned together even if delivered in slices.
+
+- [ ] **AR translates τ / τ⁻** — native Auslander–Reiten translate of a f.d. right
+  module: minimal projective presentation `P₁ → P₀ → M → 0` (exists —
+  `modules/resolution.py::projective_cover` / `minimal_resolution`, Plan 05),
+  transpose `Tr M = coker(Hom_A(P₀,A) → Hom_A(P₁,A))` as a right `A^op`-module,
+  then `τM = D Tr M`, `τ⁻M = Tr D M`. New machinery: the opposite algebra `A^op`
+  as a first-class Algebra (reversed quiver, transposed structure constants), the
+  duality functor `D` on arbitrary Modules (today implicit only in
+  `builders.injective`: `I_v = D(Ae_v)`), and `Hom(−, A)` on projectives
+  (corner-transpose bookkeeping). Surface: `M.tau()`, `M.tau_minus()`; honest
+  gates: `τ⁻τM ≅ M` for non-projective indecomposables (iso test via
+  `modules/hom.py` + dim vectors; document the decomposability caveat loudly).
+- [ ] **Injective resolutions + injective dimension** — the dual of Plan 05's
+  `ProjectiveResolution`: `E(M) = D(projective cover of DM over A^op)`, cosyzygy
+  iteration, `injective_resolution(M, length)`, `injective_dimension(M)`. Same
+  op+D engine as τ — build in the same plan.
+- [ ] **No-code module input (GUI + webapp)** — the constructor already exists
+  (`modules/module.py`: dimension vector + one matrix per arrow, exact entries,
+  loud `RelationError` when the matrices violate the relations); expose it with
+  zero code: webapp request schema v2 gains a `module` block
+  (`{dims: {v: n_v}, maps: {arrow: [[…]]}}`) + module compute kinds (rad/top/soc
+  from `radtopsoc.py`, Ext from `modules/ext.py`, plus τ/τ⁻ and both resolutions
+  above); GUI: per-vertex dimension picker + per-arrow matrix grid, and
+  zero-typing pick-lists for S(v) / P(v) / I(v) (builders exist). Versioned
+  schema bump, served by BOTH tiers (Pyodide GUI + Plan-09 server).
+- [ ] **QPA (GAP) as the oracle** — the `[qpa]` extra and `qpa/crosscheck.py`
+  plumbing exist and are live locally; add `-m qpa` crosschecks pinning τ/τ⁻
+  (dimension vectors + iso class), projective/injective resolution terms/Betti
+  numbers, and injective dimension against QPA across the zoo incl. the Plan-18
+  multi-vertex records (libgap is single-statement-only — eval per line).
+
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
 - [ ] **Native deep-degree CS cup/cap** (added by Plan 14): a comparison-lifted
