@@ -176,6 +176,23 @@ planned together even if delivered in slices.
   oracles (Coxeter transformation, kA_n tables, self-injective/Nakayama,
   inj.dim vs gl.dim) run without the extra.
 
+## Tier 1c — container & HPC surface (Marco, 2026-07-25)
+
+- [x] **Plan 28 — quiverlab as a container: HPC batch tier + offline laptop app**
+  — DELIVERED on branch 2026-07-25 (merge pending Marco), branch `plan-28-hpc-container`
+  (`2026-07-25-plan-28-hpc-container.md`). Marco's workflow: download an
+  Apptainer-ready image; send to a SLURM cluster with extremely simple
+  instructions; edit a sample config YAML (or design in the GUI, which prints
+  the config); sbatch → `result.json` on disk; download; render a PDF with the
+  same container locally. PLUS (Marco, same day): the image doubles as a fully
+  OFFLINE laptop app — `quiverlab-hpc gui` serves the Plan-09 webapp locally
+  (no internet, zero code), showing memory limits and time estimates, with a
+  build-time-seeded Plan-25 result cache of precomputed examples (curated list
+  = Marco's open decision; mechanism + placeholder manifest ship). Wheel-level:
+  `[hpc]` extra, `quiverlab-hpc` CLI, `quiverlab/hpc/` spec core (runner
+  delegation, byte-stable cache keys), `engine/deepen.py` finally wired
+  (checkpoint/resume, exit-75 requeue).
+
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
@@ -255,7 +272,12 @@ planned together even if delivered in slices.
 - [ ] **A∞-structure (Kadeishvili) on Ext** — ambitious flagship; CS small models make
   it feasible.
 - [ ] **Performance**: numba kernels for the Plan-13 corner path (pure Python today);
-  GF(p^n) fast-engine acceleration (int64 stack is GF(p)-only).
+  GF(p^n) fast-engine acceleration (int64 stack is GF(p)-only). GPU exploration
+  (Marco, 2026-07-25): exact GF(p) rank/elimination on GPUs (FFLAS-style
+  delayed-reduction in doubles is provably exact for small p, or int32/int64
+  kernels via numba-CUDA) — research-tier: big engineering + certification cost,
+  uncertain gains on memory-bound sparse ranks; benchmark before committing.
+  Until then every surface says honestly: CPU cores + RAM help, GPUs idle.
 - [ ] **GUI**: surface deeper engines (CS depth, Betti sequences) in the Pyodide
   landing-page GUI.
 - [ ] **Native AR-quiver** (v1 non-goal; `[qpa]` extra covers it today).

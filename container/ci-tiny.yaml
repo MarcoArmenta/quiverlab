@@ -1,0 +1,28 @@
+# Tiny quiverlab HPC config for the container CI smoke (.github/workflows/
+# container.yml) and tests/webapp/test_container_assets.py. Small enough to finish
+# instantly (exit 0, no checkpoint).
+#
+# Shape = the webapp ComputeRequest (schema 1) plus an `hpc:` block. The spec-core
+# CLI reads the `hpc:` block; the pydantic HTTP schema ignores unknown top-level
+# keys, so this same document validates as a ComputeRequest (the asset test pins
+# that parity).
+schema: 1
+algebra:
+  kind: family
+  family: QuantumCI
+  params:
+    q: 1
+  field:
+    kind: GF
+    p: 2
+    n: 1
+compute:
+  - "hh_cohomology:0..2"
+artifacts:
+  pdf: false
+  tikz: false
+hpc:
+  prime: 2
+  time_limit_s: 300
+  max_mem_bytes: 2147483648
+  allow_large: false

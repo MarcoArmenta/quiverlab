@@ -281,4 +281,36 @@ in-process (no ports) as `tests/webapp/test_acceptance.py`.
 Deploy (DRAC Arbutus, Docker Compose + Caddy TLS): see
 [`webapp/deploy/PROVISIONING.md`](webapp/deploy/PROVISIONING.md).
 
+## HPC and offline use (container)
+
+The same library ships as **one container** (`ghcr.io/MarcoArmenta/quiverlab`) with
+a `quiverlab-hpc` CLI, serving two stories from the one image.
+
+**Run a big example on a SLURM cluster in 5 steps** (only `ssh`/`scp`/`sbatch`
+needed; Apptainer is rootless):
+
+```bash
+apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest   # 1. pull
+apptainer run quiverlab.sif sample-config > my-config.yaml                    # 2. config (or export from the GUI)
+sbatch slurm/quiverlab-drac.sbatch my-config.yaml result.json                 # 3. submit
+scp you@cluster:result.json .                                                 # 4. fetch
+apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.pdf    # 5. render locally
+```
+
+Very large examples become reachable via **atomic per-degree checkpoints**: a job
+that runs out of wall time exits 75, requeues, and resumes from `$SCRATCH` on the
+next submit — just `sbatch` again. **quiverlab is CPU-only** — request cores
+(`--cpus-per-task`) and RAM (`--mem`), never a GPU; the arithmetic is exact
+(integers mod p / rationals) and a GPU would sit idle. `quiverlab-hpc estimate
+my-config.yaml` suggests the resources.
+
+**Offline laptop app.** Pull the image once with internet, then run
+`apptainer run quiverlab.sif gui` (or `docker run -p 8000:8000 … gui`) and open
+`http://localhost:8000` — the zero-code GUI computes locally with no network, showing
+your machine's detected cores/RAM, memory/time estimates, and the limits you are
+computing under, and ships precomputed examples.
+
+Full instructions: [Run on your HPC cluster](docs/hpc.md) and
+[Offline laptop app](docs/offline-app.md).
+
 MIT © 2026 Marco Armenta

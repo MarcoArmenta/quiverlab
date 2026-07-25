@@ -100,6 +100,7 @@
     '  <button id="qlgui-tikz" class="qlgui-secondary" type="button" disabled>TikZ</button>' +
     '  <button id="qlgui-json" class="qlgui-secondary" type="button" disabled>JSON</button>' +
     '  <button id="qlgui-snippet" class="qlgui-secondary" type="button" disabled>Copy Python</button>' +
+    '  <button id="qlgui-config" class="qlgui-secondary" type="button" disabled>Config (YAML)</button>' +
     '</div>' +
     '<div id="qlgui-results"></div>';
 
@@ -107,7 +108,7 @@
   ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
-   "cancel", "print", "tikz", "json", "snippet", "results", "eta",
+   "cancel", "print", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel
    "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
@@ -245,6 +246,9 @@
       g.appendChild(c); g.appendChild(t); svg.appendChild(g);
     });
     el.compute.disabled = !(S.engineReady && S.vertices.length && !S.busy);
+    // Config export needs only the request builder (pure, client-side): usable as
+    // soon as there is a quiver, WITHOUT the engine -- design here, run on a cluster.
+    el.config.disabled = !(S.vertices.length && !S.busy);
     renderModulePanel();
     scheduleProbe();
   }
@@ -553,6 +557,76 @@
     return req;
   }
 
+  // Hand-rolled YAML emitter for the exported cluster config. MIRRORS
+  // webapp/server/clusterconfig.py: both must round-trip through a YAML parser
+  // back to the same compute request (the export test pins the round-trip, not
+  // byte-identity). Self-contained + pure so it can be extracted and node-tested.
+  // Handles the shallow request shape: scalars, block lists, nested dicts, and
+  // matrix (list-of-list) module maps.
+  function configYaml(obj) {
+    function scalar(v) {
+      if (v === null || v === undefined) return "null";
+      if (typeof v === "boolean") return v ? "true" : "false";
+      if (typeof v === "number") return String(v);
+      var s = String(v);
+      // Quote unless it is an unambiguous plain scalar. A pure integer string
+      // ("0", "-3") stays plain (round-trips to an int, which the schema accepts);
+      // everything else (empty, YAML-special chars, leading space, reserved words,
+      // fractions like "1/2") is double-quoted (JSON strings are valid YAML).
+      var plainInt = /^-?[0-9]+$/.test(s);
+      if (!plainInt && (s === "" || /[:#\-?\[\]{}&*!|>'"%@`,]/.test(s) ||
+          /^\s|\s$/.test(s) || /^(true|false|null|yes|no|on|off|~)$/i.test(s) ||
+          /^[0-9.+]/.test(s))) {
+        return JSON.stringify(s);
+      }
+      return s;
+    }
+    function keyScalar(k) {
+      // Keys must keep their STRING type through the round-trip: quote anything a
+      // YAML parser would otherwise read as a non-string. Notably module dims keys
+      // ("1","2") are numeric strings and MUST be quoted (the schema's dims keys
+      // are strings), unlike matrix VALUES where a plain int is acceptable.
+      var s = String(k);
+      if (s === "" || /^-?[0-9]+$/.test(s) || /[:#\-?\[\]{}&*!|>'"%@`,]/.test(s) ||
+          /^\s|\s$/.test(s) || /^(true|false|null|yes|no|on|off|~)$/i.test(s) ||
+          /^[0-9.+]/.test(s)) {
+        return JSON.stringify(s);
+      }
+      return s;
+    }
+    function emit(o, indent) {
+      var pad = new Array(indent + 1).join("  "), out = "";
+      if (Array.isArray(o)) {
+        if (o.length === 0) return pad + "[]\n";
+        o.forEach(function (item) {
+          if (item !== null && typeof item === "object") {
+            out += pad + "-\n" + emit(item, indent + 1);   // nested list/dict
+          } else {
+            out += pad + "- " + scalar(item) + "\n";
+          }
+        });
+        return out;
+      }
+      if (o !== null && typeof o === "object") {
+        Object.keys(o).sort().forEach(function (k) {
+          var v = o[k], kk = keyScalar(k),
+            nonEmptyObj = v !== null && typeof v === "object" &&
+            (Array.isArray(v) ? v.length : Object.keys(v).length);
+          if (nonEmptyObj) {
+            out += pad + kk + ":\n" + emit(v, indent + 1);
+          } else if (v !== null && typeof v === "object") {
+            out += pad + kk + ": " + (Array.isArray(v) ? "[]" : "{}") + "\n";
+          } else {
+            out += pad + kk + ": " + scalar(v) + "\n";
+          }
+        });
+        return out;
+      }
+      return pad + scalar(o) + "\n";
+    }
+    return emit(obj, 0);
+  }
+
   // ---------- engine (Pyodide worker) ----------
   function startWorker() {
     if (S.worker) S.worker.terminate();
@@ -839,8 +913,15 @@
       setStatus("Python snippet copied", "ok");
     });
   });
+  el.config.addEventListener("click", function () {
+    // The exported request as a runnable cluster config: a one-line header naming
+    // the command, then the YAML request body.
+    var text = "# run on a cluster: quiverlab-hpc run this-file.yaml -o result.json\n" +
+               configYaml(buildRequest());
+    download("quiverlab-config.yaml", text, "text/yaml");
+  });
 
-  window.QLGUI = { S: S, buildRequest: buildRequest };
+  window.QLGUI = { S: S, buildRequest: buildRequest, configYaml: configYaml };
   render();
   // Engine loads on FIRST INTENT (whole-branch review decision): pure readers
   // never pay the ~60 MB download; the first GUI touch starts it.

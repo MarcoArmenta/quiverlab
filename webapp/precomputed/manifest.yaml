@@ -1,0 +1,76 @@
+# quiverlab offline GUI -- precomputed example manifest (Plan 28).
+#
+# Each entry is a full compute request (schema 1/2, exactly the ComputeRequest
+# shape). `container/seed_cache.py` runs every request at image-build time and
+# records the result in the shipped seed cache, so the offline GUI replays these
+# instantly (Plan-25 result cache) with zero recompute.
+#
+# placeholder -- Marco to curate: the entries below are small, fast, schema-valid
+# showcases spanning families / quiver / no-code module kinds. Swap them for the
+# curated list before release; nothing in the mechanism depends on WHICH examples
+# ship. Keep them small (they run on every build) and inside the anonymous caps.
+examples:
+  # placeholder -- Marco to curate: a monomial loop k[x]/(x^3), the canonical
+  # smallest HH example (quiver input, GF(2)).
+  - schema: 1
+    algebra:
+      kind: quiver
+      vertices: [1]
+      arrows: {x: [1, 1]}
+      relations: ["x*x*x"]
+      field: {kind: GF, p: 2, n: 1}
+    compute: ["hh_cohomology:0..4", "cartan", "center"]
+    artifacts: {pdf: false, tikz: false}
+
+  # placeholder -- Marco to curate: a Nakayama algebra (family input) -- Cartan +
+  # low-degree HH, well inside the instant tier.
+  - schema: 1
+    algebra:
+      kind: family
+      family: NakayamaAlgebra
+      params: {n: 3, l: 2}
+      field: {kind: GF, p: 2, n: 1}
+    compute: ["hh_cohomology:0..2", "cartan"]
+    artifacts: {pdf: false, tikz: false}
+
+  # placeholder -- Marco to curate: a quantum complete intersection (family input),
+  # the non-monomial admissible showcase.
+  - schema: 1
+    algebra:
+      kind: family
+      family: QuantumCI
+      params: {q: 1}
+      field: {kind: GF, p: 2, n: 1}
+    compute: ["hh_cohomology:0..4"]
+    artifacts: {pdf: false, tikz: false}
+
+  # placeholder -- Marco to curate: a no-code BUILTIN module -- the simple S(1)
+  # over k[x]/(x^3) with its classical module invariants (schema 2).
+  - schema: 2
+    algebra:
+      kind: quiver
+      vertices: [1]
+      arrows: {x: [1, 1]}
+      relations: ["x*x*x"]
+      field: {kind: GF, p: 2, n: 1}
+    module:
+      builtin: {kind: simple, vertex: 1}
+      side: right
+    compute: ["dimension_vector", "rad_top_soc", "tau"]
+    artifacts: {pdf: false, tikz: false}
+
+  # placeholder -- Marco to curate: a no-code EXPLICIT module -- dims + one exact
+  # matrix per arrow -- with its projective resolution (schema 2).
+  - schema: 2
+    algebra:
+      kind: quiver
+      vertices: [1]
+      arrows: {x: [1, 1]}
+      relations: ["x*x*x"]
+      field: {kind: GF, p: 2, n: 1}
+    module:
+      dims: {"1": 2}
+      maps: {x: [["0", "0"], ["1", "0"]]}
+      side: right
+    compute: ["dimension_vector", "projective_resolution:0..3"]
+    artifacts: {pdf: false, tikz: false}

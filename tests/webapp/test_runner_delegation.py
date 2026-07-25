@@ -1,0 +1,44 @@
+"""Byte-stability acceptance for the Plan-28 runner refactor.
+
+``webapp/server/runner.py`` no longer holds the compute dispatch -- it DELEGATES
+to the wheel's ``quiverlab.hpc.spec``. This test pins that the delegation is
+BYTE-IDENTICAL to the pre-refactor runner across a fixture corpus covering
+family / quiver / module / ext computes:
+
+  (a) the returned result dict is byte-identical (``json.dumps(sort_keys=True)``);
+  (b) the Plan-25 ``canonical_key`` is unchanged.
+
+The goldens in ``_runner_goldens.json`` were frozen from the CURRENT runner
+BEFORE the refactor (a regression fence: if the delegation ever perturbs a result
+byte or a cache key, this fails)."""
+import json
+import pathlib
+
+import pytest
+
+from webapp.server.cache import canonical_key
+from webapp.server.runner import run_spec
+from webapp.server.schema import ComputeRequest
+
+_GOLDENS = json.loads(
+    (pathlib.Path(__file__).parent / "_runner_goldens.json").read_text(encoding="utf-8"))
+# The library version the goldens were frozen under (kept explicit so the cache-key
+# pin is independent of the running version -- the key must reproduce the frozen one).
+_V = "0.1.0.dev0"
+
+
+@pytest.mark.parametrize("name", sorted(_GOLDENS))
+def test_result_dict_is_byte_identical(name, tmp_path):
+    g = _GOLDENS[name]
+    req = ComputeRequest.model_validate(g["body"])
+    result = run_spec(req, tmp_path)
+    got = json.dumps(result, sort_keys=True, default=str)
+    assert got == g["result_json"], f"result dict drifted for {name!r}"
+
+
+@pytest.mark.parametrize("name", sorted(_GOLDENS))
+def test_canonical_key_is_unchanged(name):
+    g = _GOLDENS[name]
+    req = ComputeRequest.model_validate(g["body"])
+    key = canonical_key(req.model_dump(by_alias=True), _V)
+    assert key == g["canonical_key"], f"cache key drifted for {name!r}"

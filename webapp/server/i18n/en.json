@@ -51,7 +51,7 @@
   "lit.intro": "The curated bibliography behind quiverlab's algorithms and families, grouped by topic.",
   "results.references": "References",
   "nav.docs": "Docs",
-  "big.warn": "This computation builds ~{cells}-cell matrices (~{minutes} min) — beyond the anonymous limit. Enter an email and we'll run it as a big job and email you when it's done.",
+  "big.warn": "This computation builds ~{cells}-cell matrices (~{minutes} min, ~{mem} memory) — beyond the anonymous limit. Enter an email and we'll run it as a big job and email you when it's done.",
   "big.disabled": "This computation builds ~{cells}-cell matrices — beyond the anonymous limit, and large jobs are unavailable right now. Run it locally: pip install quiverlab.",
   "big.reject": "This computation builds ~{cells}-cell matrices, beyond the large-job limit of ~{maxcells} cells. Run it locally: pip install quiverlab.",
   "big.email": "Email",
@@ -65,5 +65,12 @@
   "mail.done_subject": "Your quiverlab job finished",
   "mail.done_body": "Your computation is ready:\n{url}",
   "mail.failed_subject": "Your quiverlab job failed",
-  "mail.failed_body": "Your computation did not complete:\n{url}"
+  "mail.failed_body": "Your computation did not complete:\n{url}",
+  "job.reproduce_cluster": "Reproduce on a cluster",
+  "offline.limits": "Local limits:",
+  "offline.host": "CPU cores",
+  "offline.ram": "RAM detected",
+  "offline.worker_mem": "worker memory cap",
+  "offline.workers": "worker process(es)",
+  "offline.gpu_note": "{n} GPU(s) detected — not used: quiverlab's engines are exact CPU computation."
 }

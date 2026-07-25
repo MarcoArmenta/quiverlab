@@ -54,13 +54,20 @@ def _other_url(path: str) -> str:
 
 def _ctx(request: Request, cfg, lang: str, prefix: str, **extra) -> dict:
     """The shared template context. ``t`` is pre-bound to this page's language so
-    templates call ``t("key")`` with no lang argument."""
+    templates call ``t("key")`` with no lang argument.
+
+    ``offline``/``caps`` come from ``app.state`` (stamped by
+    ``webapp.server.offline.create_offline_app``); on the deployed server they are
+    absent, so the offline footer block never renders there (Plan 28)."""
+    state = request.app.state
     return {"lang": lang, "prefix": prefix,
             "t": (lambda k: _t(k, lang)),
             "other_url": _other_url(request.url.path),
             "docs_url": cfg.docs_url,                # "" ⇒ no Docs link (base.html)
             "big_max_cells": cfg.big_ops_threshold,  # big.reject {maxcells}
             "big_jobs_enabled": cfg.big_jobs_enabled,
+            "offline": bool(getattr(state, "offline", False)),
+            "caps": getattr(state, "caps", None),
             **extra}
 
 
@@ -115,6 +122,17 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
                 references = data.get("references", []) or []  # runner-resolved
             except (json.JSONDecodeError, OSError):
                 pass
+        # "Reproduce on a cluster" (Plan 28): the request spec as a runnable YAML
+        # config, rendered next to the local-Python snippet. Only for a done job
+        # whose stored spec is a real request (skips e.g. empty test fixtures); a
+        # serialisation hiccup must never 500 the page.
+        cluster_yaml = None
+        if job.status == "done" and isinstance(job.spec, dict) and job.spec.get("algebra"):
+            try:
+                from webapp.server.clusterconfig import cluster_config_yaml
+                cluster_yaml = cluster_config_yaml(job.spec)
+            except Exception:
+                cluster_yaml = None
         # Genericise the error at the READ boundary (same helper the JSON API
         # uses): the stored value stays raw for forensics, but no unexpected
         # internal type/message is rendered into the page.
@@ -122,7 +140,8 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
             request, "job.html",
             _ctx(request, cfg, lang, prefix, job=job, trace_name=trace_name,
                  has_tikz=has_tikz, reproduce=reproduce, version=version,
-                 references=references, error=sanitize_error_string(job.error)))
+                 references=references, cluster_yaml=cluster_yaml,
+                 error=sanitize_error_string(job.error)))
 
 
 def _mount_download(app, cfg, store) -> None:
