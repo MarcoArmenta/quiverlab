@@ -352,3 +352,76 @@ def _record_res(name, field, md):
     A = _record(name, field)
     from quiverlab.resolutions_cs.build import reduction_system_of
     return ChouhySolotarResolution(A, reduction_system_of(A), max_degree=md)
+
+
+# =========================================================================== #
+# PAST-WINDOW DELIVERY -- the headline: cap routes to the native CS diagonal   #
+# once max(p,n) exceeds the (deliberately tiny) comparison window.             #
+# =========================================================================== #
+def test_native_cap_past_window_kx2():
+    """Past the window `Comparison.cap_of_cs_classes` no longer refuses -- it routes to
+    the native CS diagonal (`engine='auto'`).  k[x]/x^2 over GF(5), window shrunk to 0:
+    f ∈ HH^1 capped with z ∈ HH_1 (max(1,1) = 1 > 0) computes natively and is a nonzero
+    HH_0 class; today's transport route would raise NotImplementedError."""
+    comp = Comparison(_kx2_gf5(), max_cells=8)
+    assert comp.window == 0, f"expected tiny window 0, got {comp.window}"
+    f = comp.hh_class_cs(1, 0)
+    z = comp.hh_class_cs_hom(1, 0)
+    capped = comp.cap_of_cs_classes(f, z)                  # deg (1,1) > window: native
+    zero0 = [0] * len(comp._res._basis(0, "hom"))
+    assert not comp.same_homology_class(capped, zero0, degree=0), \
+        "f ∩ z (HH^1 ∩ HH_1) must be a nonzero HH_0 class"
+
+
+def test_native_cap_bridge_to_longer_transport_kx2():
+    """Bridge oracle: a cap past a TINY window computed NATIVELY equals -- mod
+    boundary -- the SAME cap computed by TRANSPORT on a wider-window instance.
+    k[x]/x^2 over GF(5): f ∈ HH^1 ∩ z ∈ HH_3 = a nonzero HH_2 class, so the match is not
+    a vacuous boundary coincidence.  Plan-17 canonicalization makes the two instances'
+    CS bases identical -- asserted ELEMENT-WISE (chain word + corner index), not merely
+    equal length."""
+    small = Comparison(_kx2_gf5(), max_cells=8)            # window 0 (native past it)
+    big = Comparison(_kx2_gf5())                           # default window (transport)
+    assert small.window == 0 and big.window >= 3, (small.window, big.window)
+
+    fs, zs = small.hh_class_cs(1, 0), small.hh_class_cs_hom(3, 0)
+    fb, zb = big.hh_class_cs(1, 0), big.hh_class_cs_hom(3, 0)
+
+    native = small.cap_of_cs_classes(fs, zs)              # max(1,3)=3 > 0 -> native, deg 2
+    transported = big.cap_of_cs_classes(fb, zb)           # max(1,3)=3 <= window -> transport
+
+    small_basis = [(ch.word, j) for ch, j in small._res._basis(2, "hom")]
+    big_basis = [(ch.word, j) for ch, j in big._res._basis(2, "hom")]
+    assert small_basis == big_basis, \
+        "Plan-17 canonicalization must give element-wise identical CS hom bases"
+    assert big.same_homology_class(native, transported, degree=2), \
+        "native (tiny window) != longer transport (wide window) mod boundary"
+    zero2 = [0] * len(big._res._basis(2, "hom"))
+    assert not big.same_homology_class(transported, zero2, degree=2), \
+        "the bridged class must be nonzero -- not a vacuous match"
+
+
+def test_cap_engine_selector_kx2():
+    """`engine=` forces a route: 'native' computes at any degree; 'transport' keeps the
+    window refusal; an invalid engine is a ValueError naming the three options."""
+    comp = Comparison(_kx2_gf5(), max_cells=8)             # window 0
+    f = comp.hh_class_cs(1, 0)
+    z = comp.hh_class_cs_hom(1, 0)
+    forced_native = comp.cap_of_cs_classes(f, z, engine="native")
+    assert isinstance(forced_native, list)
+    with pytest.raises(NotImplementedError):
+        comp.cap_of_cs_classes(f, z, engine="transport")   # transport still refuses
+    with pytest.raises(ValueError):
+        comp.cap_of_cs_classes(f, z, engine="bogus")
+
+
+def test_cap_auto_in_window_is_transport_byte_unchanged():
+    """`engine='auto'` in-window is byte-for-byte the transported route (Plan-14
+    behavior), and both equal `engine='transport'` there.  k[x]/x^2 over GF(32003),
+    wide window; (1,1) is well inside it."""
+    comp = Comparison(_kx2_gf())
+    f = comp.hh_class_cs(1, 0)
+    z = comp.hh_class_cs_hom(1, 0)
+    auto = comp.cap_of_cs_classes(f, z, engine="auto")
+    transport = comp.cap_of_cs_classes(f, z, engine="transport")
+    assert auto == transport, "auto in-window must be byte-identical to transport"
