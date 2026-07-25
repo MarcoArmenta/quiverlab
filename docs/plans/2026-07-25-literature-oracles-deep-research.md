@@ -14,7 +14,7 @@ implemented from here must cite its source in the tests and on
 **Status of the four cluster reports:**
 - Solotar cluster — LANDED (below).
 - Cibils cluster — LANDED (below).
-- Happel / Keller / Rickard — pending.
+- Happel / Keller / Rickard — LANDED (below).
 - de la Peña / Lenzing / Marcos — LANDED (below).
 
 ---
@@ -692,3 +692,172 @@ recomputed / UNVERIFIED.
 v-factorization); Barot–de la Peña D₁₁ quiver unverified (figure); Martínez-
 Villa 1996 verified only via reproving papers; k[x]/(x^n) per-degree HH beyond
 x² should come from quiverlab's own closed form, not the graded-BV literature.
+
+---
+
+## Cluster report: Happel / Keller / Rickard
+
+**Method:** every entry checked against a fetched source AND, where feasible,
+**independently verified by running quiverlab itself** (pure kernel and
+GF(32003)) plus **QPA crosschecks** for symmetry claims. Labels:
+[ran quiverlab] / [ran QPA]. Springer LNM 1404 and the Happel-1997
+ScienceDirect PDF are paywalled → those formulas are secondary-source (open
+restatements, arXiv:2509.05135 Cor 4.10) and were re-derived + numerically
+confirmed.
+
+**⚠ HEADLINE (actionable, QPA-verified bug):** `is_symmetric` returns
+**False** on provably symmetric algebras: (a) multi-vertex symmetric Nakayama
+kZ_n/J^L with n | (L−1), n ≥ 2 (Brauer stars — kZ₂/J³, kZ₃/J⁴, kZ₄/J⁵ all QPA
+`IsSymmetricAlgebra = true`, quiverlab False; weakly-symmetric detection via
+the Nakayama permutation is CORRECT, the downstream "ν inner" search in
+`invariants/frobenius.py::is_symmetric_generic` fails only for multi-vertex);
+(b) `TrivialExtension(A)` for every A (always symmetric by the classical
+theorem; root cause differs — TrivialExtension carries no quiver presentation,
+so the path-basis certifier cannot run). Single-vertex k[x]/xᵃ and genuinely
+non-symmetric kZ₃/J³ are both correct. Every passing `is_symmetric is True`
+assertion in the current suite is single-vertex — an untested gap.
+
+### [happel_hh_hereditary] Happel (1989, LNM 1404) — HH of hereditary kQ
+- dim HH⁰ = 1; HH^{i≥2} = 0; **dim HH¹ = 1 − |Q₀| + Σ_{a∈Q₁}
+  dim e_{s(a)}Ae_{t(a)}** (general form with relations: arXiv:2509.05135
+  Cor 4.10). [ran quiverlab]: m-Kronecker → [1, m²−1, 0, 0] for m = 1,2,3;
+  trees → [1,0,0]; the acyclic triangle (1→2, 2→3, 1→3) → [1,2,0].
+  The `happel_question` → Happel1989 registry mapping CONFIRMED correct.
+- **Status:** secondary-source + numerically confirmed.
+
+### [happel_coxeter_trace] Happel (1997, LAA 258, 169–177) — Coxeter trace = HH Euler characteristic ★
+- **tr Φ_A = Σ (−1)^i dim HH^i(A)** for finite gl.dim (Happel's convention).
+  **Sign-matched to quiverlab [ran quiverlab]: with our Φ = −C^{−T}C the
+  verified identity is `tr(coxeter_matrix) == −Σ(−1)^i dim HH^i`** —
+  confirmed on 2/3-Kronecker, A₃, A₄, D₄, the acyclic triangle. PIN THE SIGN
+  ON A₃ FIRST (quiverlab tr = −1).
+- **Status:** secondary-source + sign-exact numerically confirmed.
+
+### [rickard_brauer_derived] Rickard (1989/1991) — Brauer tree ≅_der Brauer star ★
+- Every Brauer tree algebra (e edges, multiplicity m) is derived equivalent to
+  the Brauer star = symmetric Nakayama kZ_e/J^{em+1} ⇒ equal HH^n / HH_n /
+  HC_n. Star side [ran quiverlab + QPA]: kZ₂/J³, kZ₃/J⁴, kZ₄/J⁵, kZ₅/J⁶ all
+  is_selfinjective ✓, QPA symmetric ✓ (quiverlab is_symmetric ✗ — the bug).
+  Tree side: build-and-compare recommended (special-biserial relations,
+  CS engine), NOT hard-coded relations.
+- **Status:** fetched-source + star side verified.
+
+### [keller_derived_invariance] Keller (JPAA 123, 1998) / Rickard (1991) — HH*/HH_*/HC_* derived invariants ★ oracle scheme
+- Derived equivalence ⇒ equal HH^n, HH_n, HC_n. **Free self-checking oracle:**
+  reflection-equivalent orientations of one graph. [ran quiverlab]: both
+  acyclic orientations of the à ₂ triangle give HH* = [1,2,0], HH_* = [3,0,0],
+  HC_* = [3,0,3] — matched exactly.
+- **Status:** fetched-source + numerically confirmed.
+
+### [armenta_keller_cap] Armenta & Keller (2019, C. R. Acad. Sci.; arXiv:1711.02947) — derived invariance of the CAP product
+- The HH*-module structure on HH_* (cap) is a derived invariant — directly
+  relevant to quiverlab's native cap (Plans 20/21): compare the induced action
+  across a derived-equivalent pair. **Status:** abstract/metadata (statement
+  corroborated twice; theorem numbers unconfirmed).
+
+### [happel_trivial_extension] T(A) is symmetric (Happel LMS 119, 1988; Yamagata; ASS2006)
+- T(A) = A ⋉ D(A) symmetric for EVERY f.d. A. [ran quiverlab]:
+  is_frobenius ✓ but is_symmetric ✗ (no quiver presentation — see headline).
+  Suggested fix: give TrivialExtension a double-quiver presentation.
+- **Status:** fetched-source theorem + discrepancy reproduced.
+
+### [happel_question_counterexample] BGMS (MRL 12, 2005) / Bergh–Erdmann (2008)
+- The QCI A_q (q not a root of unity) has infinite gl.dim with bounded HH^• —
+  the negative answer to Happel's question (restated arXiv:2509.05135 Ex 6.2).
+  Already wired (`BGMS2005`, `qci_hh_oracle`); ties to the Solotar-cluster
+  general-(a,b) extension. **Status:** secondary + already-pinned.
+
+### [euler_char_preprojective] Graded-Euler-characteristic route (arXiv:2606.26255, 2606.15595, 2607.10913)
+- Graded refinement of the Happel trace identity + candidate HH/HC tables for
+  higher preprojective algebras. **Status: abstract-only — follow-up fetch
+  needed before any pin.**
+
+### [happel_ringel_tilted] Happel–Ringel (1982) / Happel–Vossieck (1983) — UNVERIFIED lead
+- Canonical sources for concrete tilted-algebra derived pairs (nonzero-HH
+  instances of the derived-invariance scheme) and τ/AR data. No machine-usable
+  worked example fetched — next-fetch recommendation recorded.
+
+### BibTeX (Happel/Keller/Rickard cluster)
+
+```bibtex
+@article{Happel1997,
+  author = {Happel, Dieter},
+  title = {The trace of the {C}oxeter matrix and {H}ochschild cohomology},
+  journal = {Linear Algebra and its Applications}, volume = {258},
+  year = {1997}, pages = {169--177}, doi = {10.1016/S0024-3795(96)00195-4} }
+@book{Happel1988,
+  author = {Happel, Dieter},
+  title = {Triangulated Categories in the Representation Theory of Finite Dimensional Algebras},
+  series = {London Mathematical Society Lecture Note Series}, volume = {119},
+  publisher = {Cambridge University Press}, year = {1988},
+  doi = {10.1017/CBO9780511629228} }
+@article{Rickard1989stable,
+  author = {Rickard, Jeremy}, title = {Derived categories and stable equivalence},
+  journal = {Journal of Pure and Applied Algebra}, volume = {61}, number = {3},
+  year = {1989}, pages = {303--317}, doi = {10.1016/0022-4049(89)90081-9} }
+@article{Rickard1991,
+  author = {Rickard, Jeremy}, title = {Derived equivalences as derived functors},
+  journal = {Journal of the London Mathematical Society}, volume = {43},
+  number = {1}, year = {1991}, pages = {37--48}, doi = {10.1112/jlms/s2-43.1.37} }
+@article{Keller1998cyclic,
+  author = {Keller, Bernhard},
+  title = {Invariance and localization for cyclic homology of {DG} algebras},
+  journal = {Journal of Pure and Applied Algebra}, volume = {123},
+  number = {1-3}, year = {1998}, pages = {223--273},
+  doi = {10.1016/S0022-4049(96)00085-0} }
+@article{ArmentaKeller2019,
+  author = {Armenta, Marco and Keller, Bernhard},
+  title = {Derived invariance of the cap product in {H}ochschild theory},
+  journal = {Comptes Rendus Math\'ematique}, year = {2019},
+  note = {arXiv:1711.02947} }
+@misc{HappelQuestionTau2025,
+  title = {Happel's question, {H}an's conjecture and $\tau$-{H}ochschild (co)homology},
+  year = {2025}, note = {arXiv:2509.05135} }
+@misc{GradedEulerPreproj2026,
+  title = {Hochschild (co)homology and cyclic homology via a graded Euler characteristic with applications to higher preprojective algebras},
+  year = {2026}, note = {arXiv:2606.26255} }
+```
+
+### Best 5 batteries (agent ranking)
+
+1. **Happel-1997 trace identity** — tr(coxeter_matrix) == −Σ(−1)^i dim HH^i:
+   cheap, zoo-wide, both sides independent, catches Cartan/Coxeter AND HH bugs.
+2. **Derived-invariance across orientations** — self-checking equal
+   HH*/HH_*/HC_* (verified on the à ₂ pair).
+3. **Hereditary formula** — HH¹ = m²−1 on m-Kronecker + trees [1,0,0].
+4. **Brauer-star symmetry oracle** — reproduces the LIVE is_symmetric bug;
+   QPA-crosschecked regression battery.
+5. **BGMS Happel-question falsifier** — bounded HH^• + infinite gl.dim on
+   QuantumCI, tied to the existing qci_hh_oracle.
+
+---
+
+# Consolidated: implementation priorities across all four clusters
+
+Cross-cluster headliners (each battery must cite its bib entry; honest-scope
+flags live in the cluster sections):
+
+1. **The is_symmetric bug fix + regression battery** (Happel/Rickard cluster —
+   QPA-verified live bug; multi-vertex ν-inner sweep + TrivialExtension
+   presentation).
+2. **Nakayama Coxeter polynomials** (LMR 2022 — six exact polynomials already
+   recomputed under quiverlab's convention + Prop-6.1 family + Coxeter numbers).
+3. **Happel-1997 trace identity, zoo-wide** (sign pinned on A₃).
+4. **Dynkin/affine/canonical Coxeter tables + Lehmer [2,3,7] spectral pin**
+   (ship Dₙ v-factorization; mahler_measure == 1 cyclotomic-type predicate).
+5. **Derived-invariance orientation pairs** (HH*/HH_*/HC_*; later the cap
+   module structure per Armenta–Keller).
+6. **BE QCI cohomology [2,2,1,0,…] all a,b + general-(a,b) homology** (char-0
+   only — the GF(p) root-of-unity trap is documented).
+7. **Rad²=0 parallel-path HH with the char-2 doubling; triangular-string
+   family with the degree-(2m+1) revival; a-Kronecker [1, a²−1, 0…];
+   cup-triviality (RR2014) vs cup-nonvanishing (RR2018).**
+8. **Taft/Nakayama cyclic homology (char 0)** — first strong HC family oracle.
+9. **Canonical-algebra HH² = t−3 cross-linked to the trace identity**
+   (two-invariant consistency).
+10. **Incidence ≅ nerve cohomology; trivial-extension HH¹ decomposition +
+    Example 2.20; truncated finiteness boolean (dim HH• < ∞ ⇔ acyclic).**
+11. **Plan-27 feeders:** Ext of k[x]/(x^d) = k[u,v]/(u²) with internal
+    bidegrees (1,1),(2,d); Cassidy quadratic-non-Koszul witnesses (gl.dim m,
+    generators (1,1)+(m,m+1)) — closes the missing-witness gap; (D,A)-stacked
+    Example 1.2; preprojective non-Dynkin Koszul + Dynkin self-injective/LL.
