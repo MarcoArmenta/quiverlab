@@ -69,6 +69,26 @@ Target: a **persistent instance** (RAS quota: 25 vCPU / 50 GB RAM / 10 instances
 Retention: finished jobs and artifacts are swept after `QLWEB_RETENTION_DAYS`
 (default 90). Tune limits via `QLWEB_*` env in `docker-compose.yml`.
 
+## Result cache (Plan 25)
+
+Finished results are cached and replayed for any later identical request, across
+users and tiers — a previously computed example is never recomputed, and a *cached*
+big example is served with no email/token at all (email verification gates the cost
+of NEW computations, not access to the mathematics). The cache lives in a
+`result_cache` table inside the same SQLite database, keyed by the canonicalized
+request plus the library version (a version bump invalidates every entry naturally),
+and carries mathematics only — no email, IP, or token. A cache entry "pins" its
+finished job against the retention sweep so the artifacts survive to back replays;
+when the entry is evicted (LRU size cap or a version bump) the pin lifts and ordinary
+retention reclaims the job once it is also past `QLWEB_RETENTION_DAYS`.
+
+- `QLWEB_CACHE_ENABLED` (default `1`) — set to `0` to disable the cache entirely
+  (every request recomputes; the `result_cache` table is simply left empty).
+- `QLWEB_CACHE_MAX_ENTRIES` (default `1000`) — LRU size cap. The least-recently-hit
+  entries beyond this many are evicted by the hourly sweep (which runs alongside the
+  retention sweep on worker loop 0). Higher = more replays kept warm (and more
+  artifacts pinned on disk); lower = tighter disk footprint.
+
 ## Worked-steps PDF (optional TeX engine)
 
 The default image ships **without** a TeX engine. This is deliberate: the compute

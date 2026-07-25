@@ -164,4 +164,20 @@ cup collapse in `cup.py`; `Comparison.cup_of_cs_classes(engine="auto"/"native"/
 "transport")` routes native past-window, transported in-window (byte-unchanged).
 Leibniz is the sign arbiter; the transported cup anchors it in-window. Cap = Plan
 21 (same Δ); bracket stays transported/window-bounded by design. Branch
-`plan-20-native-cs-cup`, UNMERGED).
+`plan-20-native-cs-cup`, UNMERGED), Plan 25 (webapp result cache — backlog Tier-3
+item: never recompute a known example. `webapp/server/cache.py` canonicalizer
+(`canonical_key` = sha256 of sorted-keys JSON over the versioned request + library
+version; dict order irrelevant, tuple/list round-trip collides, version bump
+invalidates) + a new `result_cache` table in the single SQLite/WAL store — NOT a
+jobs column — that maps the canonical key → a finished job and "pins" that job
+against the retention purge so its artifacts survive to back replays. All three
+tiers check the cache FIRST (`/api/compute`, `/api/jobs`, `/api/jobs/big`); a hit
+replays instantly across users with zero recompute. Big-job crux: the cache check
+is the first statement in `submit_big`, BEFORE `big_jobs_enabled`, so a cached big
+example is served with NO token/email/`email_hash` — email verification gates the
+COST of computing, not access to the mathematics — even when SMTP is off. Worker
+records on success only (failures may be transient); `cache_put` is idempotent
+(benign identical-request race, in-flight dedup skipped as it needs a jobs-schema
+change); `sweep_cache_once` (version purge + LRU size cap) runs beside `sweep_once`.
+Rows are math-only (no email/ip/token). Config `QLWEB_CACHE_ENABLED`/
+`QLWEB_CACHE_MAX_ENTRIES`. Branch `plan-25-webapp-result-cache`, UNMERGED).
