@@ -164,4 +164,13 @@ cup collapse in `cup.py`; `Comparison.cup_of_cs_classes(engine="auto"/"native"/
 "transport")` routes native past-window, transported in-window (byte-unchanged).
 Leibniz is the sign arbiter; the transported cup anchors it in-window. Cap = Plan
 21 (same Δ); bracket stays transported/window-bounded by design. Branch
-`plan-20-native-cs-cup`, UNMERGED).
+`plan-20-native-cs-cup`, UNMERGED), Plan 22 (verification transparency, backlog
+Tier 1a — `docs/verification.md` documents HOW everything is tested: the two
+oracle classes (theory/literature pins on constructed examples; cross-engine +
+QPA/GAP agreement wherever QPA implements the feature), a subsystem→oracles→tests
+table, the marker/bucket scheme with audited counts (1377 tests: fast 504 / deep
+868 / qpa 5), the CI matrix, and an honest-scope section naming where QPA cannot
+compare and the theory oracle that covers each gap; wired into the mkdocs nav +
+a README section; standing rule: every future plan adds its new oracles to the
+verification page as part of acceptance. Docs+audit only, no `src/` change.
+Branch `plan-22-verification-transparency`, UNMERGED).

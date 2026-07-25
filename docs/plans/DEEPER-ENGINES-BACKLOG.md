@@ -70,6 +70,23 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   tier-ordered claim, real-SMTP/TLS/concurrency acceptance gaps). UNMERGED —
   merge/push only when Marco asks.
 
+## Tier 1a — verification transparency (Marco, 2026-07-25)
+
+- [x] **Verification transparency** — DONE, Plan 22, 2026-07-25, branch
+  `plan-22-verification-transparency`
+  (`2026-07-25-plan-22-verification-transparency.md`). Display in the repo that
+  everything is unit tested and say HOW: both against QPA and against theory from
+  the literature (constructed examples the literature/known theorems already
+  resolve). Delivered: `docs/verification.md` (the two oracle classes in Marco's
+  framing; a subsystem → oracles → test-file table; the marker/bucket scheme with
+  audited counts — 1377 tests, fast 504 / deep 868 / qpa 5; the CI matrix; an
+  honest-scope section naming where QPA cannot compare and which theory oracle
+  covers that ground) wired into the mkdocs nav after "Under the hood"; a concise
+  "How quiverlab is verified" README section; the **standing rule** that every
+  future plan adds its new oracles to the verification page as part of acceptance
+  (mirrored in ROADMAP). Audit-first, no `src/` change; no sentence written that
+  was not traced to an actual test file.
+
 ## Tier 1b — the module-theoretic surface (Marco, 2026-07-24)
 
 **Vision:** every representation theorist can use this tool — specify a module in
@@ -198,3 +215,8 @@ planned together even if delivered in slices.
   non-quadratic non-monomial scope lift. Merged.
 - [x] Plan 13 (2026-07-22): minimal A^e engine multi-vertex (corner-typed projective
   resolution); loud guard for non-path-type bases. Merged.
+- [x] Plan 22 (2026-07-25): verification transparency — `docs/verification.md`
+  (two oracle classes, subsystem→oracles→tests table, CI matrix, honest scope) +
+  README section + the standing "every plan adds its oracles to the verification
+  page" rule. Docs+audit only; no `src/` change. Branch
+  `plan-22-verification-transparency`, UNMERGED.
