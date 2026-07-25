@@ -178,8 +178,8 @@ planned together even if delivered in slices.
 
 ## Tier 1c — container & HPC surface (Marco, 2026-07-25)
 
-- [ ] **Plan 28 — quiverlab as a container: HPC batch tier + offline laptop app**
-  — IN PROGRESS, branch `plan-28-hpc-container`
+- [x] **Plan 28 — quiverlab as a container: HPC batch tier + offline laptop app**
+  — DELIVERED on branch 2026-07-25 (merge pending Marco), branch `plan-28-hpc-container`
   (`2026-07-25-plan-28-hpc-container.md`). Marco's workflow: download an
   Apptainer-ready image; send to a SLURM cluster with extremely simple
   instructions; edit a sample config YAML (or design in the GUI, which prints

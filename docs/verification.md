@@ -300,7 +300,8 @@ and the oracle class that guards it. Counts are `pytest --collect-only` with the
 | `trace/` (worked-steps) | 46 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
 | `qpa/` (GAP/QPA crosscheck) | 38 | 31 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim — left side via `A^op`); script builders + guards run without GAP |
-| `webapp/` (server tier + result cache — non-algebraic glue) | 227 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library |
+| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 227 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
+| `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 61+ | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 51 | fast | runner artifacts / invariants; build hook; freshness |
 | release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`) | 50 | fast | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage |
 
@@ -360,6 +361,15 @@ verified precision and listed below as such.
   cell as the always-on stand-in.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+- The Plan-28 container tier: what pytest verifies is the **wheel-side story**
+  (CLI ≡ public-API parity, renderer goldens, checkpoint-resume, byte-stable
+  runner delegation, asset-file gates) plus the CI image smoke (build → run a
+  tiny config → render → text-extract, on every tagged release). **Real
+  Apptainer on a real cluster is a manual release-checklist step**; the local
+  drac-local emulator exercises only the no-container (venv-fallback)
+  orchestration path, and `--mem`/OOM behaviour is validated by the host
+  `deepen` memory-guard tests, not by the emulator (which records but does not
+  enforce memory).
 
 ---
 
