@@ -152,3 +152,114 @@ def test_koszul_sign_pin_kx3():
         key_1d:                             (-1) % 5,  # −e ⊗ x ⊗ x ⊗ e ⊗ e  (Koszul)
         (ev, ("x",), ev, ("__v__", 1), xi):  1,     #  e ⊗ x ⊗ e ⊗ e ⊗ x
     }
+
+
+# --------------------------------------------------------------------------- #
+# Task 2: the comparison-lifted diagonal Δ: P → P ⊗_A P                        #
+#   Δ is the chain-map lift of id_A through the lifting equation               #
+#     d^{P⊗P}_n · Δ_n(σ) = Δ_{n−1}(d_n σ)                                       #
+#   solved per generator (fields.linalg.solve + reduce_mod_nullspace), the     #
+#   structural clone of resolution.py::_d_general's correction solve.          #
+# --------------------------------------------------------------------------- #
+from quiverlab.resolutions_cs.diagonal import diagonal as diagonal_fn
+
+
+def _cw(ch):
+    """Storage word of a chain (== TensorComplex._chain_word == d_terms targets)."""
+    return ("__v__", ch.o) if ch.degree == 0 else ch.word
+
+
+def _assert_pq_structure(tc, n, sigma, dpelt):
+    """(p,q)-component sanity: every key (a, τ, mid, ρ, c) of Δ_n(σ) has
+    deg τ + deg ρ == n and endpoint-compatible corners
+    a ∈ e_{o(σ)}Ae_{o(τ)},  mid ∈ e_{t(τ)}Ae_{o(ρ)},  c ∈ e_{t(ρ)}Ae_{t(σ)}."""
+    ar = tc.ar
+    for (ai, tau_w, mi, rho_w, ci) in dpelt:
+        tau, rho = tc._chain(tau_w), tc._chain(rho_w)
+        assert tau.degree + rho.degree == n, \
+            f"key {(tau_w, rho_w)}: deg {tau.degree}+{rho.degree} != {n}"
+        assert ai in ar.corner(sigma.o, tau.o, "coh"), f"a-slot corner: {(ai, tau_w)}"
+        assert mi in ar.corner(tau.t, rho.o, "coh"), f"mid-slot corner: {(mi, tau_w, rho_w)}"
+        assert ci in ar.corner(rho.t, sigma.t, "coh"), f"c-slot corner: {(ci, rho_w)}"
+
+
+def _canon(diag, res):
+    """int-normalised copy of a Δ dict for exact cross-run (byte) comparison."""
+    return {w: {k: res.to_int(v) for k, v in dp.items()} for w, dp in diag.items()}
+
+
+# --------------------------------------------------------------------------- #
+# (a) chain-map identity  apply_tensor_d(n, Δ_n(σ)) == Δ_{n−1}(d_n σ)          #
+#     + (d) (p,q)-component structural sanity, folded in per generator.        #
+#     kx2/qci to n=4; straddle to n=3 ONLY — the n=4 straddle system is        #
+#     ≈4752×10152 dense over GF(5) (pure-python solve infeasible), budgeted out.#
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("mk,name,maxn", [
+    (_kx2, "kx2", 4),
+    (_qci, "qci", 4),
+    (_straddle, "straddle-monomial", 3),
+])
+def test_diagonal_chain_map(mk, name, maxn):
+    """Δ is a chain map. Two validations beyond the by-construction solve:
+      * the lift is NEVER inconsistent on these in-CS-scope fixtures (a wrong ζ
+        gluing would generically make ζ a non-cycle, and the solve would raise
+        the loud NotImplementedError);
+      * ζ = Δ_{n−1}(d_n σ) is itself a d^{P⊗P}-cycle (apply_tensor_d(n−1, ζ) == {})
+        for n ≥ 2 — the propagated chain-map property, checked independently of
+        the lift-solve."""
+    tc = TensorComplex(mk())
+    res = tc.res
+    for n in range(1, maxn + 1):
+        diag_n = tc.diagonal(n)
+        prev = tc.diagonal(n - 1)
+        for sigma in res.ss.S(n):
+            zeta = tc._zeta(n, sigma, prev)
+            dn = diag_n[_cw(sigma)]
+            assert tc.apply_tensor_d(n, dn) == zeta, \
+                f"chain-map identity failed at {name} n={n}, σ={sigma.word}"
+            if n >= 2:
+                assert tc.apply_tensor_d(n - 1, zeta) == {}, \
+                    f"ζ(σ) is not a d^(P⊗P)-cycle at {name} n={n}, σ={sigma.word}"
+            _assert_pq_structure(tc, n, sigma, dn)
+
+
+# --------------------------------------------------------------------------- #
+# (b) byte-reproducibility: two fresh resolutions → identical Δ dicts          #
+# --------------------------------------------------------------------------- #
+def test_diagonal_byte_reproducible_qci():
+    """Plan-17 law: Δ (via solve + reduce_mod_nullspace) is byte-reproducible."""
+    ra, rb = _qci(), _qci()
+    for n in range(4):
+        da = diagonal_fn(ra, n)
+        db = diagonal_fn(rb, n)
+        assert _canon(da, ra) == _canon(db, rb), f"Δ_{n} not byte-reproducible"
+
+
+# --------------------------------------------------------------------------- #
+# (c) Δ_0 base shape: Δ_0(σ_v) = e_v ⊗ σ_v ⊗ e_v ⊗ σ_v ⊗ e_v                   #
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("mk,name", ZOO, ids=[n for _, n in ZOO])
+def test_diagonal_base_shape(mk, name):
+    tc = TensorComplex(mk())
+    res, dom = tc.res, tc.res.dom
+    d0 = tc.diagonal(0)
+    verts = list(res.rs.quiver.vertices)
+    assert set(d0) == {("__v__", v) for v in verts}
+    for v in verts:
+        ev = res.ar._word_index[("v", v)]
+        w = ("__v__", v)
+        assert d0[w] == {(ev, w, ev, w, ev): dom.one()}, f"Δ_0 base shape wrong at v={v}"
+
+
+# --------------------------------------------------------------------------- #
+# (d) (p,q)-component structure smoke — a dedicated, lightweight gate          #
+# --------------------------------------------------------------------------- #
+def test_diagonal_pq_structure_smoke():
+    """Every Δ_n(σ) key splits as τ.degree + ρ.degree == n with endpoint-compatible
+    corners (checked cheaply on kx2 to n=4 and qci to n=2)."""
+    for mk, maxn in ((_kx2, 4), (_qci, 2)):
+        tc = TensorComplex(mk())
+        for n in range(maxn + 1):
+            diag_n = tc.diagonal(n)
+            for sigma in tc.res.ss.S(n):
+                _assert_pq_structure(tc, n, sigma, diag_n[_cw(sigma)])

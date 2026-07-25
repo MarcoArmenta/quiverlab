@@ -33,6 +33,7 @@ Domain-generic (all arithmetic through A.domain / AArith); exact only; no floats
 no engine imports.  Basis/matrix orderings are deterministic (sorted S-sequence,
 ascending corner indices, nested iteration) so downstream Δ is byte-reproducible.
 """
+from quiverlab.fields.linalg import reduce_mod_nullspace, solve
 from quiverlab.resolutions_cs.pelt import _resolve_chain, _vecs, _accum
 
 
@@ -55,6 +56,7 @@ class TensorComplex:
         self._full_basis_cache = {}
         self._matrix_cache = {}
         self._gen_cache = {}
+        self._diag_cache = {}
 
     # -- chains -------------------------------------------------------------
     def _chain(self, word):
@@ -218,3 +220,106 @@ class TensorComplex:
                 M[ri][cj] = dom.add(M[ri][cj], val)
         self._matrix_cache[key] = M
         return M
+
+    # -- the lifted diagonal Δ: P → P ⊗_A P (Plan 20 Task 2) ----------------
+    def _zeta(self, n, sigma, prev):
+        """RHS ζ(σ) = Δ_{n−1}(d_n σ) as a double-PELT of total degree n−1.
+
+        `d_n σ = Σ (coeff, a', τ, c')` in P_{n−1}; Δ_{n−1} is an A^e-module (bimodule)
+        map, so Δ_{n−1}(a'·τ·c') = a'·Δ_{n−1}(τ)·c'.  For each term the produced a'
+        LEFT-multiplies the a-slot of Δ_{n−1}(τ) (b_a → a'·b_a) and c' RIGHT-multiplies
+        the c-slot (b_c → b_c·c'); the middle slot and both chain words are untouched.
+        This is the OUTER bimodule action — distinct from `apply_tensor_d`'s INTERIOR
+        gluing, which sends a' into the a-slot from the right and c' into the mid-slot
+        from the left.  ζ lands in the (o(σ), t(σ)) corner of ⊕_{p+q=n−1} P_p ⊗_A P_q."""
+        res, ar, dom = self.res, self.ar, self.dom
+        out = {}
+        for (coeff, a_word, tw, c_word) in res.d_terms(n, sigma):
+            if dom.is_zero(coeff):
+                continue
+            a_vec, c_vec = _vecs(res, sigma, a_word, c_word)   # a' : o(σ)→o(τ),  c' : t(τ)→t(σ)
+            for (ai, tau_w, mi, rho_w, ci), kappa in prev[tw].items():
+                base = dom.mul(coeff, kappa)
+                if dom.is_zero(base):
+                    continue
+                left = ar.mul(a_vec, ar.A._basis_vec(ai))       # a'·b_a  (LEFT action)
+                right = ar.mul(ar.A._basis_vec(ci), c_vec)      # b_c·c'  (RIGHT action)
+                for aj, av in enumerate(left):
+                    if dom.is_zero(av):
+                        continue
+                    for cj, cv in enumerate(right):
+                        if dom.is_zero(cv):
+                            continue
+                        val = dom.mul(base, dom.mul(av, cv))
+                        _accum(out, (aj, tau_w, mi, rho_w, cj), val, dom)
+        return out
+
+    def diagonal(self, n):
+        """Δ_n as {chain-word: double-PELT} for σ ∈ S_n, cached and recursive.
+
+        Base: Δ_0(σ_v) = e_v ⊗ σ_v ⊗ e_v ⊗ σ_v ⊗ e_v (corner idempotent indices).
+        Step: per σ solve the lifting equation d^{P⊗P}_n · Δ_n(σ) = Δ_{n−1}(d_n σ)
+        over the (o(σ),t(σ))-corner — coefficient matrix `tensor_matrix(n,o,t)`,
+        RHS = ζ(σ) coordinates over `_full_basis(n−1,o,t)`; `solve` + `reduce_mod_nullspace`
+        pin the canonical (free-variables-zero) representative, so Δ is byte-reproducible.
+        An inconsistent solve is the identical scope edge `_d_general` flags — raise the
+        same loud NotImplementedError, never a fallback."""
+        cached = self._diag_cache.get(n)
+        if cached is not None:
+            return cached
+        res, dom = self.res, self.dom
+        out = {}
+        if n == 0:
+            one = dom.one()
+            for sv in res.ss.S(0):
+                w = self._chain_word(sv)
+                ev = self._vidx(sv.o)
+                out[w] = {(ev, w, ev, w, ev): one}
+            self._diag_cache[0] = out
+            return out
+        prev = self.diagonal(n - 1)
+        for sigma in res.ss.S(n):
+            o, t = sigma.o, sigma.t
+            zeta = self._zeta(n, sigma, prev)
+            cols = self._full_basis(n, o, t)
+            rows = self._full_basis(n - 1, o, t)
+            ridx = {tup: i for i, tup in enumerate(rows)}
+            rhs = [dom.zero()] * len(rows)
+            for tup, val in zeta.items():
+                i = ridx.get(tup)
+                if i is None:
+                    raise AssertionError(
+                        f"ζ(σ) term {tup} escaped the ({o},{t})-corner row basis at "
+                        f"degree {n}, chain {sigma.word} — a corner-bookkeeping bug, "
+                        f"never an approximation")
+                rhs[i] = dom.add(rhs[i], val)
+            M = self.tensor_matrix(n, o, t)
+            if not M:                                          # no equations: choose the zero lift
+                x = [dom.zero()] * len(cols) if all(dom.is_zero(v) for v in rhs) else None
+            else:
+                x = solve(M, rhs, dom)
+            if x is None:
+                raise NotImplementedError(
+                    f"diagonal lift-solve is inconsistent at degree {n}, chain "
+                    f"{sigma.word}: this admissible algebra needs the higher CS homotopy "
+                    f"correction for the diagonal, outside quiverlab v1's construction "
+                    f"(spec §6 risk register)")
+            x = reduce_mod_nullspace(x, M, dom)
+            dpelt = {}
+            for coeff, tup in zip(x, cols):
+                if not dom.is_zero(coeff):
+                    dpelt[tup] = coeff
+            out[self._chain_word(sigma)] = dpelt
+        self._diag_cache[n] = out
+        return out
+
+
+def diagonal(res, n):
+    """Comparison-lifted diagonal Δ_n on the CS resolution `res`: {chain-word:
+    double-PELT} for σ ∈ S_n.  Caches a `TensorComplex` on `res` so repeated calls
+    (and the recursion) reuse degrees, and the result is byte-reproducible."""
+    tc = getattr(res, "_tensor_complex", None)
+    if tc is None:
+        tc = TensorComplex(res)
+        res._tensor_complex = tc
+    return tc.diagonal(n)
