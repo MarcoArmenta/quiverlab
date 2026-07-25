@@ -155,6 +155,60 @@ row convention) and compared against `DTr`/`TrD` (dimension vectors +
 `InjDimensionOfModule` across the zoo including the Plan-18 multi-vertex
 `line_abc_cde`.
 
+### Left modules alongside right (Plan 24)
+
+The surface accepts a **side**: `A.simple(v, side=…)`, `A.projective(v, side=…)`,
+`A.injective(v, side=…)`, and the general `A.module(dimvec, arrow_matrices,
+side=…)` all take `side="right"` (the default) or `side="left"`. **Right is
+byte-unchanged** — the flag defaults to right and no right-module output moves.
+
+The trick is that a **left A-module IS a right A^op-module**, and Plan 23 already
+made `A^op` a first-class `Algebra`. So a `Module` keeps storing its action as a
+**right action of a representation algebra** `self.algebra`, and a new attribute
+`self.side` records how to read it: a left A-module carries `self.algebra = A^op`
+and `self.side = "left"`. The derived property `self.base_algebra` is `self.algebra`
+when right and `self.algebra.opposite()` when left — the algebra the user reads the
+module over (for a right module it *is* `self.algebra`, so the repr is identical
+to before; a left module prints `left <A>`). Left construction routes through
+`opposite_algebra(A)` and re-tags with `M.with_side("left")` (a relabelling of the
+same representation, no recomputation).
+
+**No mathematics is forked.** Every algorithm — `radical/top/soc`, `Hom/End/Ext`,
+`is_isomorphic`, projective covers & resolutions, injective resolutions & injective
+dimension, `τ/τ⁻` — reads only `(self.algebra, self.action)` and never consults the
+side; a left A-module runs them over `A^op`, which by definition computes the
+left-A-module invariant. The `side` is threaded only so **derived** modules of a
+left module are themselves presented on the left (an honest repr, never a right
+`A^op` surprise): `submodule`/`quotient` inherit the ambient module's side,
+`_direct_sum`/`projective_cover` tag their output with the covered module's side,
+and resolution terms inherit through the syzygy chain — label-only edits, identical
+numbers.
+
+The **duality D is side-aware**: at the representation level it is unchanged
+(transpose every action matrix, reverse every label, `R → R^op`), but the
+**categorical side flips**, so `D` exchanges the two sides over the **same base
+algebra** — `D(right A-mod) = left A-mod` and vice versa (its classical
+contravariant form; `D∘D = id`, dimension vectors preserved). `Tr` flips the side
+the same way (`Hom_A(−,A)` lands in the other-side modules). Because `τ = D∘Tr` and
+`τ⁻ = Tr∘D` each flip twice, `τ`/`τ⁻` **preserve** the side. One consequence to
+note (Plan 24 changed it deliberately): `M.dualize()` of a right A-module is now a
+**left A-module** (previously surfaced as a right `A^op`-module) — the stored
+representation and every action byte are unchanged, only the tag and repr move, so
+`injective.py`, `τ`, `τ⁻` are all numerically identical. `I_v = D(A e_v)` is now
+spelled honestly as `A.projective(v, side="left").dualize()`.
+
+Comparing across the boundary is a **category error**: `is_isomorphic`, `A.hom`,
+`A.ext` refuse loudly (`QuiverlabError`) when the two arguments are not the same
+side over the same base algebra — the guard runs before the dim/dim-vector
+fast-paths, so a left `S_v` and a right `S_v` sharing a dimension vector still
+refuse rather than falsely report iso. `k[x]/(x^n)` is self-opposite, so its left
+and right modules coincide; on **kA₂** the asymmetry is sharp — right
+`P(1) = e_1A` has dimvec `{1:1, 2:1}` while left `P(1) = Ae_1` has dimvec
+`{1:1, 2:0}` (the honest witness that the sides are not conflated). QPA (right-module
+native) validates the left side by being fed the **opposite algebra**
+(`A.opposite()`): the left module's underlying right-`A^op` representation is exactly
+QPA's input.
+
 ## A worked micro-example — S_1 over the A₂ path algebra
 
 `linear_path_algebra(2)` is Q: 1 → 2 with basis `["e_1", "e_2", "a1"]` (the arrow is
@@ -183,5 +237,7 @@ dimvec {1:0, 2:1}), which is projective, so Q_1 = P_2 and Ω_2 = 0. The resoluti
 | injective resolutions, injective dimension | `modules/injective.py` | `injective_resolution`, `injective_dimension`, `InjectiveResolution` |
 | module → QPA representation form | `modules/qpa_module.py` | `graded_form` |
 | QPA module oracles (τ/τ⁻, resolutions, inj.dim) | `qpa/crosscheck.py`, `qpa/scripts.py` | `crosscheck_tau`, `crosscheck_proj_resolution`, `crosscheck_inj_resolution`, `crosscheck_inj_dimension`, `module_decl` |
-| public methods on the algebra | `core/algebra.py` | `simple`, `projective`, `injective`, `opposite`, `hom`, `ext`, `global_dimension` |
-| public methods on the module | `modules/module.py` | `dualize`, `transpose`, `tau`, `tau_minus`, `is_isomorphic`, `injective_resolution`, `injective_dimension` |
+| left/right side (Plan 24) | `modules/module.py`, `core/algebra.py` | `Module.side`, `Module.base_algebra`, `Module.with_side`, `_other_side`, `side=` on `simple`/`projective`/`injective`/`module` |
+| category guard (side/algebra) | `modules/hom.py` | `_assert_comparable` (reused by `is_isomorphic`, `hom_dim`, `ext`) |
+| public methods on the algebra | `core/algebra.py` | `simple`, `projective`, `injective`, `module`, `opposite`, `hom`, `ext`, `global_dimension` |
+| public methods on the module | `modules/module.py` | `dualize`, `transpose`, `tau`, `tau_minus`, `is_isomorphic`, `injective_resolution`, `injective_dimension`, `with_side` |

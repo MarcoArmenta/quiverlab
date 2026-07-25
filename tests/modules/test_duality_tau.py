@@ -49,13 +49,17 @@ def test_duality_is_involution():
 
 
 def test_D_of_opposite_projective_is_injective():
-    # builders.injective's implicit D must agree with the explicit D on A^op.
+    # builders.injective's implicit D must agree with the explicit D. I_v = D(A e_v):
+    # Plan 24 spells A e_v as the LEFT projective, and D (now side-aware) flips it to
+    # the right injective. (Pre-Plan-24 this used A.opposite().projective(v).dualize()
+    # and relied on D presenting right-A^op -> right-A; Plan 24's D exchanges sides, so
+    # the honest form is D of the left projective -- see 2026-07-25-plan-24-left-modules.md.)
     for field in (CC, GF(5)):
         A = _square(field=field)
-        Aop = A.opposite()
         for v in A.quiver.vertices:
-            explicit = Aop.projective(v).dualize()      # D(P_v^{op}) as a right A-module
-            implicit = A.injective(v)                   # builders.injective = D(A e_v)
+            explicit = A.projective(v, side="left").dualize()   # D(A e_v), a right A-module
+            implicit = A.injective(v)                           # builders.injective = D(A e_v)
+            assert explicit.side == "right"
             assert explicit.dimension_vector() == implicit.dimension_vector()
             assert explicit.is_isomorphic(implicit), f"D disagreement at v={v}"
 

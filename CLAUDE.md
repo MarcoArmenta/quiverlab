@@ -181,4 +181,24 @@ AND QPA `-m qpa` (`DTr`/`TrD`+`IsomorphicModules`, `ProjectiveResolution`,
 `DualOfModule`, `InjDimensionOfModule`; `modules/qpa_module.py::graded_form`
 translates our modules to QPA's row convention) across the zoo incl. Plan-18
 `line_abc_cde`. Tier 1b item 3 (no-code module GUI/webapp) SPECIFIED in the
-plan doc, NEXT slice. Branch `plan-23-module-surface`, UNMERGED).
+plan doc, NEXT slice. Branch `plan-23-module-surface`, UNMERGED), Plan 24
+(**left modules alongside right, right as default** — backlog Tier 1b: the
+module surface takes `side="right"|"left"`; right stays the default and
+byte-unchanged (right-module repr byte-identical, whole existing suite green).
+A left A-module IS a right A^op-module, so the Plan-23 op+D engine makes the
+side a presentation-only tag on `Module` (`self.side`, `self.base_algebra`,
+`self.with_side`); ALL algorithms read only `(algebra, action)` and are blind
+to the side — no math forked. `Algebra.simple/projective/injective/module`
+gain `side=` (left routes through `A^op` + re-tag); `D` and `Tr` are now
+**side-aware** (exchange left↔right over the SAME base algebra — the classical
+contravariant form), so `M.dualize()` of a right A-module is now a LEFT
+A-module (representation byte-identical, only the tag/repr move — `injective.py`,
+`τ`, `τ⁻` numerically unchanged). `is_isomorphic`/`hom`/`ext` refuse loudly
+across sides/algebras (`modules/hom.py::_assert_comparable`, before the
+dim-vector fast-paths). Two Plan-23 tests spelling `I_v=D(Ae_v)` via
+`A.opposite().projective(v).dualize()` moved to the honest
+`A.projective(v, side="left").dualize()`. Oracles: ASS2006 (left/right
+duality D, AR translates); QPA `-m qpa` crosschecks left τ/τ⁻/inj.dim/
+resolutions by FEEDING QPA THE OPPOSITE ALGEBRA (right-module native).
+`tests/modules/test_left_modules.py` + `tests/qpa/test_left_modules_qpa.py`.
+Branch `plan-24-left-modules`, UNMERGED).

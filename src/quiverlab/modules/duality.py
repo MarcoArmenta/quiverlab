@@ -10,13 +10,14 @@ Right-module (anti-homomorphism) convention throughout: m*b = action[b] @ m,
 action[x*y] = action[y] @ action[x].
 """
 from quiverlab.modules import linalg_mod as lm
+from quiverlab.modules.module import _other_side
 from quiverlab.modules.opposite import opposite_algebra, reverse_label
 
 
-def _zero_module(A):
+def _zero_module(A, side="right"):
     from quiverlab.modules.module import Module
     action = {lab: lm.zeros(0, 0, A.domain) for lab in A.basis_labels}
-    return Module(A, 0, action, name="0")
+    return Module(A, 0, action, name="0", side=side)
 
 
 def _offsets(dims):
@@ -28,12 +29,15 @@ def _offsets(dims):
 
 
 def dualize(M):
-    """D M = Hom_k(M, k), a right (M.algebra)^op-module: transpose every action
-    matrix and reverse every basis label. Preserves dimension vectors."""
+    """D M = Hom_k(M, k): transpose every action matrix and reverse every basis label.
+    Preserves dimension vectors. Contravariant and D.D = id. At the representation
+    level the algebra flips M.algebra -> M.algebra^op; the CATEGORICAL side flips too
+    (Plan 24), so D exchanges the two sides over the SAME base algebra -- D of a right
+    A-module is a LEFT A-module and vice versa."""
     from quiverlab.modules.module import Module
     Rop = opposite_algebra(M.algebra)
     action = {reverse_label(lab): lm.transpose(mat) for lab, mat in M.action.items()}
-    return Module(Rop, M.dim, action, name=f"D({M.name})")
+    return Module(Rop, M.dim, action, name=f"D({M.name})", side=_other_side(M.side))
 
 
 def transpose_module(M):
@@ -48,16 +52,18 @@ def transpose_module(M):
     Rop = opposite_algebra(R)
     dom = R.domain
 
+    out_side = _other_side(M.side)      # Tr is contravariant: it flips the side
     terms, dmats = minimal_resolution(M, 1)
     v_list = terms[0].vertices          # P_0 summand vertices
     w_list = terms[1].vertices          # P_1 summand vertices
     if not w_list:                      # M projective (or zero) => Tr M = 0
-        return _zero_module(Rop)
+        return _zero_module(Rop, side=out_side)
     d1 = dmats[1]                       # P_1 -> P_0 in k-bases (P0.dim x P1.dim)
 
-    # Target module N = P_1^{op} = (+)_j projective(Rop, w_j).
+    # Target module N = P_1^{op} = (+)_j projective(Rop, w_j). It carries Tr's flipped
+    # side; the cokernel below inherits it.
     Sop = [projective(Rop, w) for w in w_list]
-    N, off1op = _direct_sum(Sop, name=f"Tr({M.name})_cover")
+    N, off1op = _direct_sum(Sop, name=f"Tr({M.name})_cover", side=out_side)
     posmap = [{lab: k for k, lab in enumerate(s._pv_basis_labels)} for s in Sop]
     off1op_start = [s for (s, _d) in off1op]
 

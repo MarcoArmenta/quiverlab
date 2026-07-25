@@ -7,6 +7,23 @@ from quiverlab.errors import QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 
 
+def _assert_comparable(M, N, op):
+    """Refuse loudly when M and N are not the same side over the same base algebra
+    (Plan 24): comparing/relating a left module to a right module -- or modules over
+    two different algebras -- is a category error, never a silent False or 0."""
+    if M.side != N.side:
+        raise QuiverlabError(
+            f"{op}: a {M.side} module and a {N.side} module are not in the same "
+            "category (left A-modules and right A-modules live in mod-A^op and mod-A "
+            "respectively)",
+            hint="dualize one side (D exchanges left/right), or drop the side= flag")
+    if M.algebra is not N.algebra:
+        raise QuiverlabError(
+            f"{op}: the two modules are over different algebras "
+            f"({M.base_algebra} vs {N.base_algebra})",
+            hint="Hom/Ext/iso compare modules over one fixed algebra and side")
+
+
 def _generators(M):
     labels = [f"e_{v}" for v in M.algebra.quiver.vertices]
     labels += list(M.algebra.quiver.arrows)
@@ -46,6 +63,7 @@ def hom_space(M, N):
 
 
 def hom_dim(M, N):
+    _assert_comparable(M, N, "Hom")
     return len(hom_space(M, N))
 
 
@@ -128,6 +146,7 @@ def is_isomorphic(M, N):
     isomorphism. When neither a witness nor an exhaustive refutation is reachable
     within the search budget (large GF(p^n), or an unlucky char-0 search), it raises
     loudly rather than guess."""
+    _assert_comparable(M, N, "is_isomorphic")   # left vs right is a category error
     if M.dim != N.dim:
         return False
     if M.dimension_vector() != N.dimension_vector():

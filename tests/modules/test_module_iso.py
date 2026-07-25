@@ -43,6 +43,9 @@ def test_iso_across_builders(field):
 
 
 def test_iso_certificate_over_gfp_square():
+    # I_v = D(A e_v): A e_v is the LEFT projective, D flips it to the right injective.
+    # (Plan 24: D is side-aware; the pre-Plan-24 form A.opposite().projective(v).dualize()
+    # now yields a left-tagged module, so the honest expression uses side="left".)
     A = _square(field=GF(2))
     for v in A.quiver.vertices:
-        assert A.injective(v).is_isomorphic(A.opposite().projective(v).dualize())
+        assert A.injective(v).is_isomorphic(A.projective(v, side="left").dualize())

@@ -24,10 +24,10 @@ def _rad_image_cols(M):
     return [lm.col(G, j) for j in piv]
 
 
-def submodule(M, basis_cols, name="sub"):
+def submodule(M, basis_cols, name="sub", side=None):
     """The submodule of M spanned by basis_cols (assumed A-stable). Its action[b] is
     the coordinates of action[b] applied to each basis column, expressed back in
-    basis_cols (solved over the Domain)."""
+    basis_cols (solved over the Domain). Inherits M's side (Plan 24)."""
     dom = M.domain
     B = lm.cols_to_matrix(basis_cols) if basis_cols else lm.zeros(M.dim, 0, dom)
     n = len(basis_cols)
@@ -41,10 +41,10 @@ def submodule(M, basis_cols, name="sub"):
         coeffs = lm.solve_columns(B, V, dom)                   # express in basis_cols
         assert coeffs is not None, f"submodule not A-stable under {label}"
         action[label] = lm.cols_to_matrix(coeffs)
-    return Module(M.algebra, n, action, name=name)
+    return Module(M.algebra, n, action, name=name, side=M.side if side is None else side)
 
 
-def quotient(M, sub_cols, name="quot"):
+def quotient(M, sub_cols, name="quot", side=None):
     """The quotient module M / <sub_cols>. Pick coset representatives = a basis of M
     completing sub_cols; action[b] is read on the representatives modulo the submodule."""
     dom = M.domain
@@ -71,7 +71,7 @@ def quotient(M, sub_cols, name="quot"):
             x = sol[0]
             cols.append(x[s:])                 # drop the submodule part -> class in quotient
         action[label] = lm.cols_to_matrix(cols) if cols else lm.zeros(n, n, dom)
-    return Module(M.algebra, n, action, name=name)
+    return Module(M.algebra, n, action, name=name, side=M.side if side is None else side)
 
 
 def radical(M):

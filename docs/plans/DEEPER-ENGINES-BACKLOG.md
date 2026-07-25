@@ -98,15 +98,20 @@ planned together even if delivered in slices.
   (`modules/injective.py`): `E(M) = D(projective cover of DM over A^op)`, cosyzygy
   iteration, `injective_resolution(M, length)`, `injective_dimension(M)` =
   `pd_{A^op}(DM)` (int, or `None` = infinite).
-- [ ] **Left modules alongside right, right as default** (Marco, 2026-07-25) —
-  the module surface accepts `side="right" | "left"` (right stays the default and
-  byte-unchanged). Internally a left A-module IS a right A^op-module — the
-  Plan-23 op+D engine makes the wrapper thin: constructors
-  (`Algebra.module(...)`, S/P/I builders), Hom/End/Ext, projective AND injective
-  resolutions, τ/τ⁻, dimensions all gain the side flag; `D` maps the two sides
-  into each other (its classical contravariant form). QPA crosscheck via the
-  opposite algebra (QPA is right-module native). The no-code GUI/webapp item
-  below inherits the side picker in its schema.
+- [x] **Left modules alongside right, right as default** — DONE, Plan 24,
+  2026-07-25 (`2026-07-25-plan-24-left-modules.md`, branch `plan-24-left-modules`).
+  The module surface accepts `side="right" | "left"` (right stays the default and
+  byte-unchanged — right-module repr is byte-identical, whole existing suite green).
+  Internally a left A-module IS a right A^op-module; the Plan-23 op+D engine makes
+  the wrapper a presentation-only tag: constructors (`Algebra.module(...)` +
+  S/P/I builders), Hom/End/Ext, projective AND injective resolutions, τ/τ⁻,
+  dimensions all read only `(algebra, action)` and are blind to the side — no math
+  forked. `D` (now side-aware) exchanges the two sides over the SAME base algebra
+  (its classical contravariant form); `Tr` likewise. Two Plan-23 tests that spelled
+  `I_v = D(A e_v)` via `A.opposite().projective(v).dualize()` moved to the honest
+  side-aware form `A.projective(v, side="left").dualize()` (documented). QPA
+  crosschecks left-side τ/τ⁻/inj.dim/resolutions by feeding QPA the opposite
+  algebra. The no-code GUI/webapp item below inherits the side picker in its schema.
 - [ ] **No-code module input (GUI + webapp)** — the constructor already exists
   (`modules/module.py`: dimension vector + one matrix per arrow, exact entries,
   loud `RelationError` when the matrices violate the relations); expose it with
