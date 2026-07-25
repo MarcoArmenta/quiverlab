@@ -49,7 +49,8 @@ RUN pip install -e ".[web,fast]"
 # QLWEB_DATA_DIR holds the SQLite DB + artifacts; compose mounts a volume here.
 ENV NUMBA_NUM_THREADS=2 \
     OMP_NUM_THREADS=2 \
-    QLWEB_DATA_DIR=/data
+    QLWEB_DATA_DIR=/data \
+    QLWEB_EXPECT_FAST=1
 
 # Run as a non-root user (defense in depth: the worker executes user-submitted
 # compute). Pre-create + chown the /data mountpoint so a FRESH named volume

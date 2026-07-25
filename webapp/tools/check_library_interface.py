@@ -15,6 +15,7 @@ Bibliography object with .groups/.keys/.bibtex()."""
 from __future__ import annotations
 
 import importlib.util
+import os
 
 # Version floor this plan was written against (the installed 0.1.0.dev0 library).
 # Bump when the plan is re-synced to a newer library; a lower installed version
@@ -76,9 +77,15 @@ def check() -> list[str]:
             f"quiverlab {ver} < required floor {MIN_QUIVERLAB_VERSION}; the plan "
             "was written against a newer library -- re-sync before executing")
 
-    # The [fast] extra must be present so prod runs the fast GF(p) engine path.
-    if importlib.util.find_spec("numba") is None:
-        problems.append("numba not importable -- install the [fast] extra")
+    # The [fast] extra must be present so PROD runs the fast GF(p) engine path.
+    # numba presence is an environment/deployment property, not library-surface
+    # drift: the CI matrix runs deliberately numba-free pure-path legs, so this
+    # is enforced only where the deployment opts in (the Docker image /
+    # provisioning sets QLWEB_EXPECT_FAST=1).
+    if os.environ.get("QLWEB_EXPECT_FAST") == "1" and \
+            importlib.util.find_spec("numba") is None:
+        problems.append("numba not importable -- install the [fast] extra "
+                        "(QLWEB_EXPECT_FAST=1 demands the fast engine path)")
 
     # families() must enumerate the FamilyInfo records the catalog resolves by name.
     fam_map: dict = {}
