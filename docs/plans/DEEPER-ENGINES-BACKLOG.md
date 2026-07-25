@@ -98,6 +98,15 @@ planned together even if delivered in slices.
   (`modules/injective.py`): `E(M) = D(projective cover of DM over A^op)`, cosyzygy
   iteration, `injective_resolution(M, length)`, `injective_dimension(M)` =
   `pd_{A^op}(DM)` (int, or `None` = infinite).
+- [ ] **Left modules alongside right, right as default** (Marco, 2026-07-25) —
+  the module surface accepts `side="right" | "left"` (right stays the default and
+  byte-unchanged). Internally a left A-module IS a right A^op-module — the
+  Plan-23 op+D engine makes the wrapper thin: constructors
+  (`Algebra.module(...)`, S/P/I builders), Hom/End/Ext, projective AND injective
+  resolutions, τ/τ⁻, dimensions all gain the side flag; `D` maps the two sides
+  into each other (its classical contravariant form). QPA crosscheck via the
+  opposite algebra (QPA is right-module native). The no-code GUI/webapp item
+  below inherits the side picker in its schema.
 - [ ] **No-code module input (GUI + webapp)** — the constructor already exists
   (`modules/module.py`: dimension vector + one matrix per arrow, exact entries,
   loud `RelationError` when the matrices violate the relations); expose it with
@@ -180,6 +189,18 @@ planned together even if delivered in slices.
 
 ## Tier 3 — quiverlab-web (`plan-09-web`) post-merge polish (from the 2026-07-24 whole-branch review)
 
+- [ ] **Result cache — never recompute a known example** (Marco, 2026-07-25):
+  cache finished results keyed by the CANONICALIZED request (family/quiver/module
+  spec + field + invariant + parameters + library version — exact results are
+  deterministic, so a key hit is a correctness-safe replay). Identical requests
+  are served from the cache instantly, including across users. Big-job tier
+  interaction: email verification gates the COST of computing, not access to
+  mathematics — so a big-job request whose canonical key is already cached is
+  served immediately WITHOUT email verification (no token minted, no email
+  stored); only genuinely new big examples go through the magic-link flow, and
+  their results enter the cache for everyone after. Invalidate on library
+  version bump; nothing user-identifying in the key or the cached record;
+  retention/size cap with LRU sweep alongside the existing retention sweep.
 - [ ] **Unify client error envelopes**: the API mixes `{error_type,message}`
   (compute/feedback/bigjobs), `{detail}` (FastAPI 422 + the big-job 502
   `HTTPException`), and `{message}` (404s); `app.js` reads only the first, so an
