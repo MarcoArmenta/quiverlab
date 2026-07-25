@@ -47,7 +47,11 @@ def test_cup_routes_agree_and_graded_commutative(rels):
     graded-commutative on HH (odd*odd anticommutes) — on a formerly refused algebra."""
     comp = Comparison(_mk(rels))
     reps1 = comp.cs_cohomology_basis(1)
-    if not reps1:
+    if rels is QCI32:
+        # QCI32 has HH^1 = k^2 (known nonzero); a dims regression must FAIL here, not
+        # green-wash to a skip (Plan 21 review item -- harden the QCI skip-guards).
+        assert reps1, "QCI32 must have HH^1 != 0 (dims regression)"
+    elif not reps1:
         pytest.skip("HH^1 = 0 here; nothing to cup")
     u = comp.hh_class_cs(1, 0)
     lhs = comp.cup_of_cs_classes(u, u)
@@ -76,6 +80,9 @@ def test_cap_unit_identity(rels):
     for n in (1, 2):
         reps = comp.cs_homology_basis(n)
         if not reps:
+            # QCI32 has HH_1 = k^3, HH_2 = k^3 (known nonzero): a dims regression must
+            # FAIL, not skip-past the degree (Plan 21 review item).
+            assert rels is not QCI32, f"QCI32 must have HH_{n} != 0 (dims regression)"
             continue
         z = comp.hh_class_cs_hom(n, 0)
         capped = comp.cap_of_cs_classes(u0, z)
@@ -89,7 +96,12 @@ def test_cap_module_identity(rels):
     the transported operations on a formerly refused algebra."""
     from quiverlab.resolutions_cs.comparison import CSClass
     comp = Comparison(_mk(rels))
-    if not comp.cs_cohomology_basis(1) or not comp.cs_homology_basis(2):
+    has = bool(comp.cs_cohomology_basis(1)) and bool(comp.cs_homology_basis(2))
+    if rels is QCI32:
+        # QCI32 has HH^1 = k^2 and HH_2 = k^3 (known nonzero); a dims regression must
+        # FAIL here, not green-wash to a skip (Plan 21 review item).
+        assert has, "QCI32 must have HH^1 != 0 and HH_2 != 0 (dims regression)"
+    elif not has:
         pytest.skip("needs HH^1 != 0 and HH_2 != 0")
     f = comp.hh_class_cs(1, 0)
     g = comp.hh_class_cs(1, 0)
