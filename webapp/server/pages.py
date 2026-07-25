@@ -109,7 +109,7 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
         references: list = []
         if job.status == "done" and (art / "result.json").exists():
             try:
-                data = json.loads((art / "result.json").read_text())
+                data = json.loads((art / "result.json").read_text(encoding="utf-8"))
                 reproduce = data.get("reproduce")
                 version = data.get("quiverlab_version")
                 references = data.get("references", []) or []  # runner-resolved

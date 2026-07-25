@@ -119,7 +119,7 @@ def _child(spec_dict: dict, artifact_dir: str, result_max_bytes: int,
 def _drain_progress(store: JobStore, job_id: str, progress_path: Path) -> None:
     try:
         if progress_path.exists():
-            store.update_progress(job_id, json.loads(progress_path.read_text()))
+            store.update_progress(job_id, json.loads(progress_path.read_text(encoding="utf-8")))
     except (json.JSONDecodeError, OSError):
         pass                                # transient partial read; retry next tick
 

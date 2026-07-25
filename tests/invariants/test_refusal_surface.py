@@ -40,5 +40,5 @@ def test_cyclic_homology_needs_no_quiver():
 def test_no_later_phase_promise_left_in_src():
     root = pathlib.Path(quiverlab.__file__).parent
     hits = [str(p) for p in root.rglob("*.py")
-            if "later phase that generalizes" in p.read_text()]
+            if "later phase that generalizes" in p.read_text(encoding="utf-8")]
     assert hits == []
