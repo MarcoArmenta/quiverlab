@@ -189,6 +189,47 @@ def test_cap_leibniz_qci(p, n):
 
 
 # =========================================================================== #
+# MULTI-PRIME + BYTE-REPRODUCIBILITY                                           #
+# =========================================================================== #
+@pytest.mark.parametrize("prime", [2, 3, 5, 32003])
+def test_cap_multiprime_kx2(prime):
+    """The cap is domain-generic and prime-independent: the exact unit cap and
+    cap-Leibniz hold on k[x]/x^2 over several primes -- including char 2, where the
+    Koszul signs (−1)^p collapse to +1 (a genuine edge for the sign bookkeeping)."""
+    res = _res(["x*x"], {"x": (1, 1)}, 6, p=prime)
+    u = _unit_cochain(res)
+    for n in (1, 2, 3):
+        for z in _basis_chains(res, n):
+            assert _toints(res, native_cap(res, u, 0, z, n)) == _toints(res, z), \
+                f"unit cap != z on kx2/GF({prime}) at n={n}"
+    for (p, n) in [(1, 2), (1, 3), (2, 3)]:
+        ok, w = _cap_leibniz_holds(res, p, n)
+        assert ok, f"cap-Leibniz failed on kx2/GF({prime}) at ({p},{n}); witness {w}"
+
+
+def test_cap_byte_reproducible_qci():
+    """native_cap is byte-reproducible: two FRESH CS resolutions give identical cap
+    vectors (follows from Δ's byte-reproducibility, Plan 17; pinned here for the cap).
+    Uses quantum-CI at n=3, where the diagonal's correction solve has genuine nullspace
+    freedom -- the case the Plan-17 canonicalization exists for -- and asserts at least
+    one nonzero cap so the match is substantive."""
+    ra, rb = _qci(), _qci()
+    saw = False
+    for fi in range(len(ra._basis(1, "coh"))):
+        f = [ra.dom.zero()] * len(ra._basis(1, "coh"))
+        f[fi] = ra.dom.one()
+        for zi in range(len(ra._basis(3, "hom"))):
+            z = [ra.dom.zero()] * len(ra._basis(3, "hom"))
+            z[zi] = ra.dom.one()
+            va = _toints(ra, native_cap(ra, f, 1, z, 3))
+            vb = _toints(rb, native_cap(rb, f, 1, z, 3))
+            assert va == vb, f"native_cap not byte-reproducible at (f{fi}, z{zi})"
+            if any(va):
+                saw = True
+    assert saw, "byte-repro check was vacuous -- every cap vanished"
+
+
+# =========================================================================== #
 # (e) DEGREE EDGES                                                             #
 # =========================================================================== #
 def test_cap_degree_edge_n_equals_p():
