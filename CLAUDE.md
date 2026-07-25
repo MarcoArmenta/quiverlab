@@ -153,4 +153,15 @@ email magic-link big-job tier; bilingual EN/ES pages with vendored KaTeX,
 PROVISIONING). All algebra delegated to `import quiverlab` — no user-code exec,
 `quiverlab.engine.*` never imported, base wheel stays lean. Executed
 subagent-driven with adversarial critics; whole-branch review's four cross-layer
-majors fixed. Branch `plan-09-web`, UNMERGED).
+majors fixed. Branch `plan-09-web`, UNMERGED), Plan 20 (native deep-degree CS
+**cup** past the bar 2n+1 window — backlog Tier-2 item 1: a comparison-lifted
+diagonal `Δ: P → P ⊗_A P` in `resolutions_cs/diagonal.py` (double-PELT ambient,
+Koszul-signed tensor differential `d_p⊗1 + (−1)^p·1⊗d_q`), built degreewise by a
+per-degree lift-solve `d^{P⊗P}·Δ_n(σ)=Δ_{n−1}(d_nσ)` — the structural clone of
+`_d_general`'s correction solve (`solve`+`reduce_mod_nullspace`, canonical; same
+loud `NotImplementedError` scope edge, no contracting homotopy). Sign-free `a·w·b`
+cup collapse in `cup.py`; `Comparison.cup_of_cs_classes(engine="auto"/"native"/
+"transport")` routes native past-window, transported in-window (byte-unchanged).
+Leibniz is the sign arbiter; the transported cup anchors it in-window. Cap = Plan
+21 (same Δ); bracket stays transported/window-bounded by design. Branch
+`plan-20-native-cs-cup`, UNMERGED).

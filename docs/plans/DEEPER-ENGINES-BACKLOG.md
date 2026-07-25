@@ -110,9 +110,23 @@ planned together even if delivered in slices.
 
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
-- [ ] **Native deep-degree CS cup/cap** (added by Plan 14): a comparison-lifted
-  diagonal `P → P ⊗_A P` computed degreewise like Φ, giving cup/cap PAST the bar
-  window (the transported operations are window-bounded by construction).
+- [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
+  Plan 20, 2026-07-24, branch `plan-20-native-cs-cup`**
+  (`2026-07-24-plan-20-native-cs-cup.md`). A comparison-lifted diagonal
+  `Δ: P → P ⊗_A P` built degreewise by a per-degree lift-solve on the CS small
+  model (`fields.linalg.solve` + `reduce_mod_nullspace`, canonical/byte-reproducible;
+  the same loud `NotImplementedError` scope edge as `_d_general`), giving the CUP
+  PAST the bar window (`resolutions_cs/diagonal.py`, `cup.py`;
+  `Comparison.cup_of_cs_classes(engine="auto"/"native"/"transport")`). Leibniz is the
+  sign arbiter; the transported cup is the in-window anchor. The cap is the follow-up
+  item below; the bracket stays transported/window-bounded by design.
+- [ ] **Plan 21: native CS cap via the Plan-20 diagonal** — the homology-side
+  `b·w·a` collapse of the SAME lifted diagonal Δ (Plan 20 built it and the tensor
+  differential; the cap reuses both). Smaller than Plan 20: no new construction,
+  just the covariant/homology collapse and its gates (unit cap, `(z∩f)∩g ~ z∩(f∪g)`,
+  in-window agreement with the transported `cap_of_cs_classes`). Lifts the last
+  window-bounded operation with a native route (the bracket stays transported —
+  it needs the brace/circle machinery, out of scope).
 
 - [ ] **Ext-algebra / Yoneda-ring presentations** (v1 non-goal): generators/relations
   of `Ext_A(⊕S, ⊕S)` from Plan-05 module resolutions + deep CS; Koszulity checks.

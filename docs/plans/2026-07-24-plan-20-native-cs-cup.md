@@ -231,8 +231,30 @@ small algebra). Tests in `tests/resolutions_cs/` → deep bucket.
 
 ## Status
 
-- [ ] Not yet executed. (Research findings folded into the Architecture
-  block; key risks named there: lift-solve consistency = CS acyclicity past
-  the window (inherits the per-instance certification model), Koszul sign
-  placement (Leibniz is the arbiter), three-slot corner bookkeeping (chain-map
-  gate).)
+- [x] **DELIVERED** (2026-07-24, branch `plan-20-native-cs-cup`, all five tasks;
+  UNMERGED). Tasks 1–4: double-PELT + Koszul-signed tensor differential, the
+  lifted diagonal (per-degree lift-solve, canonical), the native cup + algebraic
+  gates, and the `Comparison` past-window routing — all committed green with the
+  full oracle set (`(d^{P⊗P})²=0`, Koszul-sign pin, chain-map identity,
+  byte-reproducibility, Leibniz, unit, in-window anchor, graded-commutativity/
+  associativity, past-window compute, bumped-window bridge, engine selector).
+- Task 5 deep pins + docs + suites. **Finding — the small-window pattern replaced
+  the infeasible past-default-window pins.** The plan's "2–3 degrees past each
+  fixture's DEFAULT window" is infeasible: default windows are ~9–10 while Δ(4)
+  costs ~28s on the QCI and is out of budget on the straddle. Per the controller
+  adjudication, the deep pins use the Task-4 SMALL/ZERO-`max_cells` (or explicit
+  `window=`) Comparison so "past-window" lands at LOW absolute degree:
+  * **QCI** (`x²,y²,yx−2xy`, GF(5), `window=0`): Leibniz at (2,1) and (1,2) — the
+    pairs Task 3 budgeted out, needing Δ(4) (~28s) — plus one nonzero product
+    class. Scope fact discovered: `HH^•(QCI/GF5) = (2,2,1,0,2,4,…)`, so `HH^3 = 0`;
+    the nonzero product class is the off-diagonal `cup(HH¹[0],HH¹[1]) → HH²` (a
+    degree-3 native cup still COMPUTES past the window, class forced to zero).
+  * **`comm_square`** (Plan-18 multi-vertex zoo, GF(5)): the FIRST genuine
+    multi-vertex diagonal (empty-corner branch). Δ exists and chain-maps at every
+    built degree (gldim 2 ⟹ `S(3)=∅`); native cup **== transported cup exactly as
+    cochains** (`HH²=0` makes the class test vacuous, so exact match + a nonzero
+    native cochain are the substantive checks). No empty-corner defect.
+  * **QQ smoke**: the domain-generic diagonal on `k[x]/x²` over QQ — chain-map
+    identity + ζ-cycle exact, no Comparison (it is GF(p)-gated).
+- **Battery time delta:** the three added deep pins run in **~30s** (numba;
+  QCI Δ(4) dominates), well inside the ~180s budget.
