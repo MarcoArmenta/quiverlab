@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **1582 tests** (collected with the `[dev,fast,docs,web,qpa]` extras,
+The suite is **1583 tests** (collected with the `[dev,fast,docs,web,qpa]` extras,
 2026-07-25 post-merge of Plans 21–26). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one.
@@ -302,7 +302,7 @@ and the oracle class that guards it. Counts are `pytest --collect-only` with the
 | `qpa/` (GAP/QPA crosscheck) | 38 | 31 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim — left side via `A^op`); script builders + guards run without GAP |
 | `webapp/` (server tier + result cache — non-algebraic glue) | 227 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 51 | fast | runner artifacts / invariants; build hook; freshness |
-| release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`) | 49 | fast | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage |
+| release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`) | 50 | fast | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage |
 
 Non-algebraic glue (`webapp/`, `docs/gui/`) carries no oracle *because it holds no
 mathematics of its own* — it calls `import quiverlab` and is tested for correct
@@ -316,7 +316,7 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 583 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `fast` | 584 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
 | `deep` | 968 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 31 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
