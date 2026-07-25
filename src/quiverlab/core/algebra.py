@@ -360,6 +360,13 @@ class Algebra:
         from quiverlab.modules.ext import ext
         return ext(self, M, N, n)
 
+    def ext_algebra(self, top=6):
+        """The Yoneda / Ext-algebra E(A) = Ext^*_A(A/J, A/J) as a graded
+        quiver-with-relations presentation over R = k^{Q_0}, through degree `top`
+        (or complete through gl.dim when finite); a YonedaPresentation (Plan 27)."""
+        from quiverlab.modules.ext_algebra import ext_algebra
+        return ext_algebra(self, top)
+
     def crosscheck(self, what="hochschild", *args, **kwargs):
         """Independently recompute an invariant via the optional QPA backend and
         compare (spec §5 c.12). Requires `pip install quiverlab[qpa]`; raises
