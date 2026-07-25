@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import logging
+from fractions import Fraction
 from pathlib import Path
 from typing import Callable
 
@@ -33,7 +34,13 @@ from quiverlab import errors as qerr
 
 from webapp.server.catalog import validate_family, CatalogError, _iter_families
 from webapp.server.references import resolve_references
-from webapp.server.schema import ComputeRequest, parse_compute_item
+from webapp.server.schema import (
+    ComputeRequest, MODULE_KINDS, MODULE_RANGE_KINDS, parse_compute_item,
+)
+
+# Depth to which projective dimension is probed before reporting "infinite"
+# (matches the library's `injective_dimension(bound=32)` default).
+_PD_BOUND = 32
 
 _log = logging.getLogger("quiverlab_web.runner")
 
@@ -135,10 +142,22 @@ def run_spec(req: ComputeRequest, artifact_dir,
             ql.verbose = False
         try:
             A = build_algebra(req.algebra)
+            # Build the module(s) once if any module compute kind is requested. A
+            # matrix that violates the relations raises the library's loud
+            # QuiverlabError right here -- surfaced verbatim as a clean 4xx by the
+            # caller (a QuiverlabError subclass name is a safe error type), never a
+            # 500 and never a silent wrong answer.
+            M = (_build_module(A, req.module, "M")
+                 if any(it.kind in MODULE_KINDS for it in items) else None)
+            N = (_build_module(A, req.ext_target, "N")
+                 if any(it.kind == "ext" for it in items) else None)
             results: dict = {}
             for i, item in enumerate(items):
                 if progress_cb:
                     progress_cb({"step": i, "of": len(items), "kind": item.kind})
+                if item.kind in MODULE_KINDS:
+                    results[item.kind] = _dispatch_module(A, item, M, N)
+                    continue
                 block, hh = _dispatch(A, item, events)
                 results[item.kind] = block
                 if hh is not None:
@@ -169,7 +188,7 @@ def run_spec(req: ComputeRequest, artifact_dir,
             "algebra": req.algebra.model_dump(),
             "results": results,
             "references": resolve_references(used_keys),
-            "reproduce": _snippet(req),
+            "reproduce": _snippet(req, A),
             "meta": meta,
         }
     except CatalogError as exc:
@@ -313,10 +332,221 @@ def _rows(mat) -> list:
 
 
 # --------------------------------------------------------------------------- #
+# Module block (Plan 26): build the module from the request, then dispatch the
+# module-level invariants. All mathematics via the public quiverlab surface.
+# --------------------------------------------------------------------------- #
+
+def _match_vertex(algebra, label):
+    """Resolve a JSON vertex label (a builtin's ``vertex``) to the actual vertex
+    object of ``algebra`` (ints for quiver/family). Matched by string form so both
+    ``1`` and ``"1"`` name vertex 1."""
+    for v in algebra.quiver.vertices:
+        if v == label or str(v) == str(label):
+            return v
+    raise RunError("SchemaError", f"module: no vertex {label!r} in the algebra")
+
+
+def _parse_entry(x):
+    """Parse a matrix entry to an EXACT python scalar (int or Fraction). Entries
+    are DATA, never evaluated; a float is refused (exactness is the point). The
+    library's field coercion turns these into GF(p)/CC elements."""
+    if isinstance(x, bool):
+        raise RunError("SchemaError", f"module entry {x!r} is not a number")
+    if isinstance(x, int):
+        return x
+    if isinstance(x, float):
+        raise RunError("ExactnessError",
+                       f"module entry {x!r} is a float; entries must be exact "
+                       "(integers or strings like '1/2')")
+    if isinstance(x, str):
+        s = x.strip()
+        try:
+            return int(s)
+        except ValueError:
+            pass
+        try:
+            return Fraction(s)
+        except (ValueError, ZeroDivisionError):
+            raise RunError("SchemaError",
+                           f"module entry {x!r} is not an exact integer or fraction")
+    raise RunError("SchemaError", f"module entry {x!r} is not a number")
+
+
+def _full_matrices(algebra, mspec):
+    """Turn the request's per-arrow BLOCK matrices (each sized dim[target] x
+    dim[source] in the representation quiver) into the FULL n x n arrow actions
+    the library's ``A.module`` consumes, in the vertex-ordered basis. Returns
+    ``(dimension_vector, arrow_action)`` keyed by the actual vertex/arrow objects.
+    ``side`` selects the representation quiver: right = A, left = A^op (a left
+    A-module is a right A^op-module), so an arrow's source/target -- hence the
+    block orientation -- come from that quiver, correct for both sides."""
+    rep = algebra if mspec.side == "right" else algebra.opposite()
+    verts = list(rep.quiver.vertices)
+    by_str = {str(v): v for v in verts}
+    dimvec = {v: 0 for v in verts}
+    for key, n in (mspec.dims or {}).items():
+        if key not in by_str:
+            raise RunError("SchemaError", f"module: no vertex {key!r} in the algebra")
+        dimvec[by_str[key]] = int(n)
+    start, off = {}, 0
+    for v in verts:
+        start[v] = off
+        off += dimvec[v]
+    n = off
+    arrow_names = list(rep.quiver.arrows)
+    for a in (mspec.maps or {}):
+        if a not in arrow_names:
+            raise RunError("SchemaError", f"module: no arrow {a!r} in the algebra")
+    action = {}
+    for a in arrow_names:
+        s, t = rep.quiver.source(a), rep.quiver.target(a)
+        rows, cols = dimvec[t], dimvec[s]
+        full = [[0] * n for _ in range(n)]
+        block = (mspec.maps or {}).get(a)
+        if block is not None:
+            if len(block) != rows or any(len(r) != cols for r in block):
+                got = f"{len(block)}x{len(block[0]) if block else 0}"
+                raise RunError("SchemaError",
+                               f"module map {a!r} must be {rows}x{cols} (target x "
+                               f"source dims); got {got}")
+            for i in range(rows):
+                for j in range(cols):
+                    full[start[t] + i][start[s] + j] = _parse_entry(block[i][j])
+        action[a] = full
+    return dimvec, action
+
+
+def _build_module(algebra, mspec, name):
+    if mspec is None:                          # defensive: the schema guarantees it
+        raise RunError("SchemaError", f"module {name} block is required")
+    if mspec.builtin is not None:
+        b = mspec.builtin
+        v = _match_vertex(algebra, b.vertex)
+        builder = {"simple": algebra.simple, "projective": algebra.projective,
+                   "injective": algebra.injective}[b.kind]
+        return builder(v, side=mspec.side)
+    dimvec, action = _full_matrices(algebra, mspec)
+    return algebra.module(dimvec, action, side=mspec.side, name=name)
+
+
+def _dv(dimvec) -> dict:
+    """A JSON-safe dimension vector: string vertex keys (sorted), int values."""
+    return {str(v): int(n) for v, n in sorted(dimvec.items(), key=lambda kv: str(kv[0]))}
+
+
+def _mod_view(m) -> dict:
+    return {"dimvec": _dv(m.dimension_vector()), "dim": m.dim}
+
+
+# Citation step-ids (registry keys): GSZ2001 for the minimal engine / module Ext
+# ("minimal_resolution" / "module_ext"), ASS2006 for the representation-theory
+# constructions ("assem_book").
+_MOD_REFS = {
+    "dimension_vector": ["assem_book"],
+    "rad_top_soc": ["assem_book"],
+    "tau": ["assem_book"],
+    "tau_minus": ["assem_book"],
+    "ext": ["module_ext"],
+    "projective_resolution": ["minimal_resolution"],
+    "projective_dimension": ["minimal_resolution"],
+    "injective_resolution": ["minimal_resolution", "assem_book"],
+    "injective_dimension": ["minimal_resolution", "assem_book"],
+}
+
+
+def _with_refs(block: dict, kind: str) -> dict:
+    keys = _MOD_REFS[kind]
+    block["references"] = list(keys)
+    block["citations"] = _citation_pairs(keys)
+    return block
+
+
+def _dispatch_module(A, item, M, N) -> dict:
+    """Per-module-invariant dispatch. Every block carries ``references`` (registry
+    step-ids) + resolved ``citations`` exactly like the algebra invariants."""
+    kind = item.kind
+    if kind == "dimension_vector":
+        return _with_refs({"kind": "dimension_vector", "side": M.side,
+                           **_mod_view(M)}, kind)
+    if kind == "rad_top_soc":
+        return _with_refs({"kind": "rad_top_soc", "side": M.side,
+                           "radical": _mod_view(M.radical()),
+                           "top": _mod_view(M.top()),
+                           "socle": _mod_view(M.socle())}, kind)
+    if kind in ("tau", "tau_minus"):
+        t = M.tau() if kind == "tau" else M.tau_minus()
+        return _with_refs({"kind": kind, "side": t.side, "is_zero": t.dim == 0,
+                           **_mod_view(t)}, kind)
+    if kind == "ext":
+        top = item.hi
+        if top is None:
+            raise RunError("SchemaError", "ext needs a degree range, e.g. 'ext:0..4'")
+        from quiverlab.modules.ext import ext_dims
+        dims = ext_dims(A, M, N, top)          # loud if M, N are not comparable
+        return _with_refs({"kind": "ext", "top": top,
+                           "dims": [int(d) for d in dims],
+                           "target": _mod_view(N)}, kind)
+    if kind in ("projective_resolution", "injective_resolution"):
+        top = item.hi
+        if top is None:
+            raise RunError("SchemaError", f"{kind} needs a degree range, e.g. "
+                           f"'{kind}:0..4'")
+        res = (M.projective_resolution(top) if kind == "projective_resolution"
+               else M.injective_resolution(top))
+        terms = [_dv(dv) for dv in res.dimension_vectors()]
+        block = {"kind": kind, "top": top, "terms": terms,
+                 "betti": [res.betti(i) for i in range(len(terms))]}
+        if kind == "projective_resolution":
+            block["pd"] = res.pd()
+        else:
+            block["injective_dimension"] = res.injective_dimension()
+        return _with_refs(block, kind)
+    if kind == "projective_dimension":
+        pd = M.projective_resolution(_PD_BOUND).pd()
+        return _with_refs({"kind": "projective_dimension", "value": pd,
+                           "finite": pd is not None, "bound": _PD_BOUND}, kind)
+    if kind == "injective_dimension":
+        idim = M.injective_dimension(bound=_PD_BOUND)
+        return _with_refs({"kind": "injective_dimension", "value": idim,
+                           "finite": idim is not None, "bound": _PD_BOUND}, kind)
+    raise RunError("SchemaError", f"unsupported module computation {kind!r}")
+
+
+# --------------------------------------------------------------------------- #
 # Copy-paste reproduction snippet
 # --------------------------------------------------------------------------- #
 
-def _snippet(req: ComputeRequest) -> str:
+def _fmt_scalar(x) -> str:
+    if isinstance(x, Fraction):
+        return (str(x.numerator) if x.denominator == 1
+                else f"Fraction({x.numerator}, {x.denominator})")
+    return str(x)
+
+
+def _pymat(mat) -> str:
+    return ("[" + ", ".join("[" + ", ".join(_fmt_scalar(x) for x in row) + "]"
+                            for row in mat) + "]")
+
+
+def _module_construction(mspec, varname, A) -> list:
+    """Runnable lines building ``varname`` locally. Builtins reproduce the
+    ``A.simple/projective/injective`` call; explicit modules reproduce the FULL
+    arrow-action matrices ``A.module`` consumes (exact int/Fraction entries)."""
+    if mspec.builtin is not None:
+        b = mspec.builtin
+        return [f'{varname} = A.{b.kind}({b.vertex!r}, side="{mspec.side}")']
+    dimvec, action = _full_matrices(A, mspec)
+    lines = []
+    if any(isinstance(x, Fraction) for m in action.values() for row in m for x in row):
+        lines.append("from fractions import Fraction")
+    dv_lit = "{" + ", ".join(f"{v!r}: {n}" for v, n in dimvec.items()) + "}"
+    maps_lit = "{" + ", ".join(f'"{a}": {_pymat(m)}' for a, m in action.items()) + "}"
+    lines.append(f'{varname} = A.module({dv_lit}, {maps_lit}, '
+                 f'side="{mspec.side}", name="{varname}")')
+    return lines
+
+
+def _snippet(req: ComputeRequest, A) -> str:
     f = req.algebra.field
     field_name = "CC" if f.kind == "CC" else "GF"
     field_expr = "CC" if f.kind == "CC" else f"GF({f.p ** (f.n or 1)})"
@@ -332,13 +562,29 @@ def _snippet(req: ComputeRequest) -> str:
         params = "".join(f", {k}={v!r}" for k, v in req.algebra.params.items())
         lines = ["import quiverlab as ql",
                  f"A = ql.{req.algebra.family}(field=ql.{field_expr}{params})"]
+    if req.module is not None:
+        lines += _module_construction(req.module, "M", A)
+    if req.ext_target is not None:
+        lines += _module_construction(req.ext_target, "N", A)
     _snip = {"hh_cohomology": lambda it: f"A.hochschild_cohomology({it.hi})",
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",
              "center": lambda it: "A.center()",
-             "dimension": lambda it: "A.dim"}
+             "dimension": lambda it: "A.dim",
+             "dimension_vector": lambda it: "M.dimension_vector()",
+             "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
+             "tau": lambda it: "M.tau()",
+             "tau_minus": lambda it: "M.tau_minus()",
+             "ext": lambda it: f"[A.ext(M, N, i) for i in range({it.hi} + 1)]",
+             "projective_resolution":
+                 lambda it: f"M.projective_resolution({it.hi}).dimension_vectors()",
+             "injective_resolution":
+                 lambda it: f"M.injective_resolution({it.hi}).dimension_vectors()",
+             "projective_dimension":
+                 lambda it: f"M.projective_resolution({_PD_BOUND}).pd()",
+             "injective_dimension": lambda it: "M.injective_dimension()"}
     for s in req.compute:
         item = parse_compute_item(s)
         if item.kind in _snip:
