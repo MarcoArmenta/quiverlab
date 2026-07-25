@@ -10,6 +10,26 @@
 
 **Quivers with relations and Hochschild theory, exactly, for algebraists.**
 
+## The two metagoals
+
+quiverlab is built toward two long-term goals, and every release is measured
+against them:
+
+1. **No code required.** Every computation the library can do should be
+   reachable without writing a single line of code: draw the quiver and the
+   relations in the browser GUI, specify modules entry-by-entry in the no-code
+   panel, export a config file for a cluster, and read the results as rendered
+   mathematics (or a PDF report). Python is a power-user option, never a
+   prerequisite.
+2. **Any computation done in representation theory.** The aim is that whatever
+   a representation theorist of finite-dimensional algebras computes in a paper
+   — homological invariants, module-theoretic constructions, Auslander–Reiten
+   data, Ext algebras, spectral/Coxeter data, and beyond — can be computed
+   here, exactly and with certified, oracle-tested results. The gap between
+   this goal and the current surface is tracked openly as the coverage program
+   in [`docs/plans/ROADMAP.md`](docs/plans/ROADMAP.md); if your computation is
+   missing, it belongs on that list.
+
 quiverlab computes with finite-dimensional algebras `kQ/I` over the complex numbers
 (exactly — no floating point, ever) and over all finite fields: certified
 finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhaber
