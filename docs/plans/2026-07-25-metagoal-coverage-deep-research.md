@@ -11,8 +11,8 @@ research-practice survey (τ-tilting industry, torsion lattices, silting,
 higher AR, geometric models, …). The distilled, prioritized coverage program
 lives in `ROADMAP.md`; this file preserves the full evidence.
 
-**Status:** classical audit — LANDED; software systems — pending; modern
-practice — pending.
+**Status:** classical audit — LANDED; modern practice — LANDED; software
+systems — pending.
 
 ---
 
@@ -99,3 +99,39 @@ Species, coalgebras/comodules — **out of scope** (state explicitly). Koszulity
 8. Representation-type decisions; tame-hereditary structure (defect/tubes).
 9. kG bridge + support varieties.
 10. Species/coalgebras: out of scope, stated.
+
+## Report 2 — Modern research-practice survey (the last ~15 years)
+
+**The single most important structural finding:** survey areas 1–4 (τ-tilting,
+torsion classes/bricks/wide subcategories, stability/walls/c-vectors, 2-term
+silting) are **not four features — they are one engine**. AIR + DIJ:
+{support τ-tilting modules} ≅ {2-term silting complexes} ≅ {functorially finite
+torsion classes} ≅ {chambers of the g-vector fan}, bricks = wall labels,
+c-vectors = dual basis. quiverlab already has every primitive: minimal
+projective presentations (g-vectors = [P₀]−[P₁] in K₀(proj)), `hom`, `τ` — the
+τ-rigid test IS `Hom(M, τM) = 0`, computable today by composing two existing
+calls. The only genuinely new code is the mutation / Bongartz-completion
+enumerator. Honest decidability: the mutation BFS terminates iff the algebra is
+τ-tilting finite (semi-algorithm; cap → "complete: N" or "cap hit,
+τ-tilting-infinite witness (uncertified)").
+
+| # | Area | Output | Algorithm (who) | Priority |
+|---|------|--------|-----------------|----------|
+| 1 | τ-tilting | support τ-tilting modules, g-vectors, is_τ_rigid, exchange graph, is_τ_tilting_finite | mutation BFS (Adachi–Iyama–Reiten 2014; Demonet–Iyama–Jasso 2019) | **P1** |
+| 2 | Torsion/bricks/wide/semibricks | torsion-class lattice + brick-labelled Hasse, semibricks↔wide (Asai) | rides #1 (DIRRT 2023) | **P1** |
+| 3 | Stability/walls/c-vectors | wall-and-chamber fan, θ-stable modules; **n=2,3 the drawable killer GUI demo** | King 1994; Bruestle–Smith–Treffinger 2019 | **P1** |
+| 4 | 2-term silting (+exceptional/cluster) | =#1; hereditary exceptional sequences, clusters | AIR; Aihara–Iyama 2012; BMRRT 2006 | **P1**/P2 |
+| 5 | AR quiver knitting; higher AR | AR quiver + sequences (rep-finite) | knitting (ASS); QPA covers today → native is P2 | P2/P3 |
+| 6 | Representation type | finite/tame/wild; indec. dim vectors = roots | Gabriel 1972; **Kac 1980/82 root combinatorics = cheap exact P1**; Bongartz 1984; BGRS 1985; Drozd (no general decider — honest) | **P1**(hereditary/Kac)/P2/P3 |
+| 7 | Gentle/string/special biserial; Brauer graph | ALL indecomposables as string/band modules, AR quiver, AAG derived invariant, surface model | Butler–Ringel 1987 (complete, combinatorial); AAG 2008; Opper–Plamondon–Schroll 2018 | **P1** (gentle)/P2 |
+| 8 | findim/domdim/Igusa–Todorov/Gorenstein/delooping | homological-dimensions card; GProj/singularity (gentle combinatorial, Kalck 2015) | Igusa–Todorov 2005; Gélinas 2022 | **P1** (findim/IT)/P2 |
+| 9 | Derived/stable equivalence | derived-fingerprint panel (HH/HC/Cartan/center ALREADY implemented); Brauer-graph + gentle classifications | Rickard 1989; Antipov–Zvonareva; Opper–Zvonareva | P2/P3 |
+| 10 | Quiver geometry | Kac canonical decomposition (Schofield 1992 / Derksen–Weyman 2002), orbit dims + Voigt, degeneration order (Zwara 2000), Reineke Betti (P3) | exact integer LA + generic rank | P2/P3 |
+| 11 | Species/valued quivers; group-algebra blocks; Hopf examples | B/C/F/G types (Dlab–Ringel 1976, needs a modulation layer over GF(p^n)); consume block basic algebras; curated Taft/quantum library | | P2/P3 |
+| 12 | Hall numbers (exact GF(q) point counts); DT/scattering | | | P3 / out-of-scope (state) |
+
+**One-line recommendation:** build the τ-tilting mutation engine first (four P1
+areas at once, killer n=2/3 wall-picture GUI), then gentle/string combinatorics
+(pairs with Nakayama), the findim/Igusa–Todorov family (pairs with
+gldim/ext/complexity), and Kac/Dynkin root combinatorics as the cheap
+high-visibility side-quest.
