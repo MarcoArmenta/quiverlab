@@ -347,3 +347,161 @@ def test_cup_engine_selector_kx2():
         comp.cup_of_cs_classes(u1, u1, engine="transport")   # transport still refuses
     with pytest.raises(ValueError):
         comp.cup_of_cs_classes(u1, u1, engine="bogus")
+
+
+# =========================================================================== #
+# (Task 5) DEEP PINS -- the past-window headline at real depth, the first      #
+# genuinely multi-vertex diagonal, and the domain-generic (QQ) smoke.          #
+#                                                                              #
+# Controller-adjudicated small-window pattern (Task-4 style): the plan's "2-3  #
+# degrees past each fixture's DEFAULT window" is infeasible (default windows    #
+# are ~9-10; Delta(4) costs ~25-30s on QCI and is out of budget on the         #
+# straddle).  Instead a TINY/ZERO comparison window makes "past-window" land at #
+# LOW absolute degree, so the heavy Delta build is the only cost and stays      #
+# inside the deep bucket.                                                       #
+# =========================================================================== #
+from quiverlab.fields import QQ
+from quiverlab.fields.linalg import nullspace
+from quiverlab.resolutions_cs.diagonal import TensorComplex, diagonal
+from quiverlab.resolutions_cs.comparison import CSClass
+from quiverlab.families.zoo import load_catalog, build_from_record
+
+
+def _cw(ch):
+    """Storage word of a chain (== d_terms targets / TensorComplex._chain_word)."""
+    return ("__v__", ch.o) if ch.degree == 0 else ch.word
+
+
+def _comm_square(field):
+    """The Plan-18 multi-vertex zoo record kQ/(cd-ab): commutative square
+    1->2->4, 1->3->4 (arrows a,b,c,d), gldim 2, dim 9."""
+    rec = next(r for r in load_catalog() if r["name"] == "comm_square")
+    return build_from_record(rec, field=field)
+
+
+def test_deep_qci_past_window_leibniz_and_nonzero_class():
+    """QCI over GF(5), PAST a zero window at real depth (needs Delta_4, ~28s --
+    deep-bucket-acceptable).  window=0 forces every cup (max(p,q) >= 1 > 0) onto the
+    native route, so "past-window" lands at low absolute degree.
+
+    Two pins Task 3 budgeted out (they need Delta_4):
+      * LEIBNIZ at (p,q) = (2,1) and (1,2) -- the sign arbiter at total degree 3,
+        exact over GF(5) on the full basis grid (reuses the cached Delta_4).
+      * one NONZERO product class: cup(HH^1[0], HH^1[1]) is a nonzero HH^2 class
+        (the off-diagonal (1,1)-cup; the diagonal squares vanish by graded
+        commutativity, char 5 != 2).
+
+    Honest scope note: HH^*(QCI/GF5) = (2,2,1,0,2,4,...), so HH^3 = 0 -- there is NO
+    nonzero degree-3 class; the nonzero product class lives at degree 2 while the
+    Leibniz pins are the degree-3 (Delta_4) ones.  A degree-3 native cup is
+    additionally shown to COMPUTE past the window (transport would raise) although
+    its class is forced to zero."""
+    comp = Comparison(_qci_gf(), window=0)
+    comp._ensure(4)                        # CS resolution to max_degree 5
+    res = comp._res
+    diagonal(res, 4)                       # the ~28s build; cached for every cup below
+
+    # (i) Leibniz at (2,1) and (1,2) -- reuse the cached Delta_4.
+    ok, w = _leibniz_holds(res, 2, 1)
+    assert ok, f"Leibniz failed on QCI at (2,1); witness {w}"
+    ok, w = _leibniz_holds(res, 1, 2)
+    assert ok, f"Leibniz failed on QCI at (1,2); witness {w}"
+
+    # (ii) one nonzero product class, PAST window=0 (auto routes native).
+    reps1 = comp.cs_cohomology_basis(1)
+    assert len(reps1) >= 2, "QCI HH^1 should be 2-dimensional"
+    u0, u1 = comp.hh_class_cs(1, 0), comp.hh_class_cs(1, 1)
+    prod = comp.cup_of_cs_classes(u0, u1)              # max(1,1)=1 > 0 -> native, deg 2
+    zero2 = [0] * len(res._basis(2, "coh"))
+    assert not comp.same_cohomology_class(prod, zero2, degree=2), \
+        "cup(HH^1[0], HH^1[1]) must be a nonzero HH^2 class"
+
+    # (iii) a degree-3 native cup COMPUTES past the window (HH^3 = 0 -> zero class).
+    u2 = comp.hh_class_cs(2, 0)
+    c3 = comp.cup_of_cs_classes(u0, u2)                # deg 3 > 0 -> native (no refusal)
+    zero3 = [0] * len(res._basis(3, "coh"))
+    assert comp.same_cohomology_class(c3, zero3, degree=3)
+
+
+def test_deep_comm_square_multivertex_diagonal():
+    """comm_square (Plan-18 multi-vertex zoo, GF(5)): the FIRST genuine multi-vertex
+    exercise of the lifted diagonal -- the empty-corner branch a single-vertex
+    algebra never reaches (a Task-2 review carry-forward).
+
+    A = kQ/(cd - ab), Q the commutative square 1->2->4, 1->3->4; gldim 2, so the CS
+    resolution is finite: S(0..2) nonempty, S(3) = empty.  Two validations:
+
+      * Delta EXISTS and CHAIN-MAPS at every built degree (n = 0,1,2): for every
+        sigma in S(n), apply_tensor_d(n, Delta_n(sigma)) == zeta(sigma), and zeta is a
+        d^{PxP}-cycle for n >= 2 -- the multi-vertex three-slot corner bookkeeping
+        with empty corners, plus the Delta_0 base shape (one generator per vertex).
+      * native cup == transported cup at degree 2, EXACTLY as cochains (engine
+        "native" vs "transport" on the SAME in-window instance; window >= 2 so both
+        routes run).  HH^2(comm_square) = 0 collapses all of C^2 onto coboundaries,
+        so the class-level test would be VACUOUS here -- the EXACT cochain match plus
+        a nonzero native cochain are the substantive multi-vertex cross-check.
+    """
+    A = _comm_square(GF(5))
+    comp = Comparison(A)
+    assert comp.window >= 2, f"expected a wide window, got {comp.window}"
+    comp._ensure(3)                                   # resolution to max_degree 4
+    res = comp._res
+    assert len(res.ss.S(3)) == 0, "comm_square (gldim 2) should have S(3) empty"
+
+    tc = TensorComplex(res)
+    d0 = tc.diagonal(0)
+    assert set(d0) == {("__v__", v) for v in res.rs.quiver.vertices}, \
+        "Delta_0 must have exactly one generator per vertex (multi-vertex base shape)"
+    for n in range(1, 3):                             # top nonvanishing degree is 2
+        diag_n = tc.diagonal(n)
+        prev = tc.diagonal(n - 1)
+        for sigma in res.ss.S(n):
+            zeta = tc._zeta(n, sigma, prev)
+            assert tc.apply_tensor_d(n, diag_n[_cw(sigma)]) == zeta, \
+                f"comm_square chain-map failed at n={n}, sigma={sigma.word}"
+            if n >= 2:
+                assert tc.apply_tensor_d(n - 1, zeta) == {}, \
+                    f"zeta not a d^(PxP)-cycle at n={n}, sigma={sigma.word}"
+
+    # native cup == transported cup (multi-vertex), exact cochains at degree 2.
+    dom = comp.dom
+    d1 = comp._dcs(1)
+    Z1 = [[int(x) % comp.p for x in v]
+          for v in nullspace([[dom.coerce(x) for x in row] for row in d1], dom)]
+    assert len(Z1) >= 1, "comm_square should have degree-1 cocycles"
+    saw_nonzero = False
+    for i in range(len(Z1)):
+        for j in range(len(Z1)):
+            u, v = CSClass(1, Z1[i]), CSClass(1, Z1[j])
+            nat = [x % comp.p for x in comp.cup_of_cs_classes(u, v, engine="native")]
+            tr = [x % comp.p for x in comp.cup_of_cs_classes(u, v, engine="transport")]
+            assert nat == tr, \
+                f"native != transported cup on comm_square at (z{i},z{j}): {nat} vs {tr}"
+            if any(nat):
+                saw_nonzero = True
+    assert saw_nonzero, \
+        "every native cup vanished -- the multi-vertex diagonal produced no content"
+
+
+def test_deep_qq_diagonal_smoke():
+    """The diagonal is DOMAIN-GENERIC.  On k[x]/x^2 over QQ (exact rationals;
+    Comparison is GF(p)-gated and NOT used here) build Delta to n=3 directly and
+    assert the chain-map identity and the zeta-cycle property EXACTLY over QQ."""
+    Q = Quiver([1], {"x": (1, 1)})
+    A = Q.algebra(relations=["x*x"], field=QQ)
+    rs = build_reduction_system(Q, ["x*x"], QQ)
+    res = ChouhySolotarResolution(A, rs, max_degree=5)
+    assert res.dom.name == "QQ", f"expected the QQ domain, got {res.dom.name}"
+    tc = TensorComplex(res)
+    for n in range(4):
+        diag_n = tc.diagonal(n)
+        prev = tc.diagonal(n - 1) if n >= 1 else None
+        for sigma in res.ss.S(n):
+            dn = diag_n[_cw(sigma)]
+            if n >= 1:
+                zeta = tc._zeta(n, sigma, prev)
+                assert tc.apply_tensor_d(n, dn) == zeta, \
+                    f"QQ chain-map identity failed at n={n}, sigma={sigma.word}"
+                if n >= 2:
+                    assert tc.apply_tensor_d(n - 1, zeta) == {}, \
+                        f"QQ zeta not a d^(PxP)-cycle at n={n}, sigma={sigma.word}"
