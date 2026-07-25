@@ -26,7 +26,6 @@ imports.  Determinism follows from Δ's byte-reproducibility and the determinist
 `_basis`/`corner` orderings.
 """
 from quiverlab.resolutions_cs.diagonal import diagonal
-from quiverlab.resolutions_cs.pelt import _resolve_chain
 
 
 def _cochain_evaluator(res, vec, deg):
@@ -65,6 +64,7 @@ def native_cup(res, f_vec, p, g_vec, q):
     ar, dom = res.ar, res.dom
     n = p + q
     diag = diagonal(res, n)                       # {chain-word: double-PELT}, cached
+    tc = res._tensor_complex                      # set by diagonal(); its chain cache
     f_at = _cochain_evaluator(res, f_vec, p)
     g_at = _cochain_evaluator(res, g_vec, q)
 
@@ -73,15 +73,15 @@ def native_cup(res, f_vec, p, g_vec, q):
     out = [dom.zero()] * len(out_basis)
 
     for sigma_word, dpelt in diag.items():
-        sigma = _resolve_chain(res, sigma_word)
+        sigma = tc._chain(sigma_word)
         acc = [dom.zero()] * res.A.dim            # (f∪g)(σ) ∈ e_{o(σ)}Ae_{t(σ)}
         for (ai, tau_word, mi, rho_word, ci), coeff in dpelt.items():
             if dom.is_zero(coeff):
                 continue
-            tau = _resolve_chain(res, tau_word)
+            tau = tc._chain(tau_word)
             if tau.degree != p:
                 continue
-            rho = _resolve_chain(res, rho_word)
+            rho = tc._chain(rho_word)
             if rho.degree != q:
                 continue
             fval = f_at(tau)
