@@ -425,3 +425,102 @@ def test_cap_auto_in_window_is_transport_byte_unchanged():
     auto = comp.cap_of_cs_classes(f, z, engine="auto")
     transport = comp.cap_of_cs_classes(f, z, engine="transport")
     assert auto == transport, "auto in-window must be byte-identical to transport"
+
+
+# =========================================================================== #
+# DEEP PINS -- the past-window cap headline at real depth (shared Delta_4      #
+# fixture), and the domain-generic (QQ) smoke.                                 #
+# =========================================================================== #
+def test_deep_qci_cap_past_window(qci_gf5_diag4):
+    """QCI over GF(5), PAST a zero window at real depth, reusing the SESSION-scoped
+    Delta_4 (`qci_gf5_diag4`, shared with the cup deep pin -- Plan 21 review item).
+    window=0 forces every cap onto the native route.  HH_•(QCI/GF5) = (3,2,3,4,3,2).
+
+    Three pins:
+      * exact CAP-LEIBNIZ at (p,n) = (1,3) and (2,3) -- the sign arbiter at real depth,
+        past the window (reuses the cached Delta_3 inside Delta_4);
+      * one NONZERO cap class: HH^1 ∩ HH_3 -> HH_2 (HH_2 = k^3), routed native;
+      * the MODULE IDENTITY (z∩f)∩g ~ z∩(f∪g) with the NATIVE cup for f∪g, all past
+        window=0 -- HH_• as a module over HH^• with no bar object anywhere."""
+    comp = qci_gf5_diag4
+    res = comp._res
+
+    # (i) exact cap-Leibniz at (1,3), (2,3) -- past window=0.
+    for (p, n) in [(1, 3), (2, 3)]:
+        ok, w = _cap_leibniz_holds(res, p, n)
+        assert ok, f"cap-Leibniz failed on QCI at (p,n)=({p},{n}); witness {w}"
+
+    # (ii) one nonzero cap class HH^1 ∩ HH_3 -> HH_2 (past window=0 -> native).
+    reps1 = comp.cs_cohomology_basis(1)
+    reps3 = comp.cs_homology_basis(3)
+    assert len(reps1) >= 1 and len(reps3) >= 1
+    zero2 = [0] * len(res._basis(2, "hom"))
+    saw = False
+    for i in range(len(reps1)):
+        for j in range(len(reps3)):
+            capped = comp.cap_of_cs_classes(comp.hh_class_cs(1, i),
+                                            comp.hh_class_cs_hom(3, j))
+            if not comp.same_homology_class(capped, zero2, degree=2):
+                saw = True
+    assert saw, "expected a nonzero HH^1 ∩ HH_3 -> HH_2 cap class past the window"
+
+    # (iii) module identity via the NATIVE cup, past window=0.
+    f = comp.hh_class_cs(1, 0)
+    g = comp.hh_class_cs(1, 1) if len(reps1) >= 2 else comp.hh_class_cs(1, 0)
+    z = comp.hh_class_cs_hom(3, 0)
+    inner = native_cap(res, f.vec, 1, z.vec, 3)                     # deg 2
+    lhs = native_cap(res, g.vec, 1, inner, 2)                       # deg 1
+    fg = native_cup(res, f.vec, 1, g.vec, 1)                        # deg 2 (native)
+    rhs = native_cap(res, fg, 2, z.vec, 3)                          # deg 1
+    assert comp.same_homology_class(lhs, rhs, degree=1), \
+        "(z∩f)∩g !~ z∩(f∪g) past the window (native cup + cap)"
+
+
+def _dom_eq(res, a, b):
+    """Exact equality of two domain vectors (a - b == 0 componentwise)."""
+    dom = res.dom
+    return len(a) == len(b) and all(dom.is_zero(dom.sub(x, y)) for x, y in zip(a, b))
+
+
+def _dom_axpy(res, s1, v1, s2, v2):
+    """s1*v1 + s2*v2 in the domain, s1,s2 in {+1,-1}."""
+    dom = res.dom
+    one, none = dom.one(), dom.neg(dom.one())
+    c1, c2 = (one if s1 == 1 else none), (one if s2 == 1 else none)
+    return [dom.add(dom.mul(c1, a), dom.mul(c2, b)) for a, b in zip(v1, v2)]
+
+
+def test_deep_qq_cap_smoke():
+    """The native cap is DOMAIN-GENERIC.  On k[x]/x^2 over QQ (exact rationals;
+    Comparison is GF(p)-gated and NOT used) assert the two exact chain-level identities
+    directly over the QQ domain: the unit cap `1 ∩ z = z` and the cap-Leibniz
+    `b(f∩z) = (-1)^{p+1}(δf∩z) + (-1)^p(f∩bz)`."""
+    from quiverlab.fields import QQ
+    Q = Quiver([1], {"x": (1, 1)})
+    A = Q.algebra(relations=["x*x"], field=QQ)
+    rs = build_reduction_system(Q, ["x*x"], QQ)
+    res = ChouhySolotarResolution(A, rs, max_degree=5)
+    assert res.dom.name == "QQ", f"expected the QQ domain, got {res.dom.name}"
+
+    # unit cap exact over QQ
+    u = _unit_cochain(res)
+    for n in (1, 2, 3):
+        for z in _basis_chains(res, n):
+            assert _dom_eq(res, native_cap(res, u, 0, z, n), z), \
+                f"QQ unit cap 1 ∩ z != z at n={n}"
+
+    # cap-Leibniz exact over QQ (s1 = (-1)^{p+1}, s2 = (-1)^p)
+    for (p, n) in [(1, 2), (1, 3), (2, 3)]:
+        s1 = 1 if (p + 1) % 2 == 0 else -1
+        s2 = 1 if p % 2 == 0 else -1
+        b_out = res.matrix(n - p, "hom")
+        dcoh = res.matrix(p, "coh")
+        bhom = res.matrix(n, "hom")
+        for f in _basis_cochains(res, p):
+            df = _matvec(res, dcoh, f)
+            for z in _basis_chains(res, n):
+                lhs = _matvec(res, b_out, native_cap(res, f, p, z, n))
+                t1 = native_cap(res, df, p + 1, z, n)
+                t2 = native_cap(res, f, p, _matvec(res, bhom, z), n - 1)
+                assert _dom_eq(res, lhs, _dom_axpy(res, s1, t1, s2, t2)), \
+                    f"QQ cap-Leibniz failed at (p,n)=({p},{n})"

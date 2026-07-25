@@ -383,10 +383,13 @@ def _comm_square(field):
     return build_from_record(rec, field=field)
 
 
-def test_deep_qci_past_window_leibniz_and_nonzero_class():
+def test_deep_qci_past_window_leibniz_and_nonzero_class(qci_gf5_diag4):
     """QCI over GF(5), PAST a zero window at real depth (needs Delta_4, ~28s --
     deep-bucket-acceptable).  window=0 forces every cup (max(p,q) >= 1 > 0) onto the
     native route, so "past-window" lands at low absolute degree.
+
+    The heavy Delta_4 build is the SESSION-scoped `qci_gf5_diag4` fixture (shared with
+    the cap deep pin -- Plan 21 review item, recover the per-test rebuild cost).
 
     Two pins Task 3 budgeted out (they need Delta_4):
       * LEIBNIZ at (p,q) = (2,1) and (1,2) -- the sign arbiter at total degree 3,
@@ -400,10 +403,8 @@ def test_deep_qci_past_window_leibniz_and_nonzero_class():
     Leibniz pins are the degree-3 (Delta_4) ones.  A degree-3 native cup is
     additionally shown to COMPUTE past the window (transport would raise) although
     its class is forced to zero."""
-    comp = Comparison(_qci_gf(), window=0)
-    comp._ensure(4)                        # CS resolution to max_degree 5
+    comp = qci_gf5_diag4
     res = comp._res
-    diagonal(res, 4)                       # the ~28s build; cached for every cup below
 
     # (i) Leibniz at (2,1) and (1,2) -- reuse the cached Delta_4.
     ok, w = _leibniz_holds(res, 2, 1)
