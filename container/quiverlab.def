@@ -1,0 +1,96 @@
+# quiverlab HPC + offline-GUI image -- Apptainer/Singularity definition (Plan 28).
+#
+# KEEP IN SYNC with container/Dockerfile: every %post step below mirrors a RUN in
+# the Dockerfile (same base digest, same tectonic pin + pre-warm, same
+# `pip install -e ".[fast,hpc,web]"`, same guarded seed).
+#
+# The PRIMARY distribution path does NOT use this file -- users pull the OCI image
+# straight into a SIF (rootless, no native build needed):
+#     apptainer pull docker://ghcr.io/MarcoArmenta/quiverlab:<version>
+# This definition exists for sites that prefer a NATIVE SIF build:
+#     apptainer build quiverlab.sif container/quiverlab.def
+#
+# CPU-ONLY BY DESIGN -- exact integer/rational arithmetic, no GPU kernels. Never
+# `apptainer run --nv` and never request GPUs; ask for cores + RAM instead.
+
+Bootstrap: docker
+From: python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033a3a83b97fd0464
+
+# Mirror the Dockerfile COPY set (NOT `.`, to keep .venv/.git out of the image).
+%files
+    pyproject.toml /opt/build/pyproject.toml
+    README.md /opt/build/README.md
+    LICENSE /opt/build/LICENSE
+    src /opt/build/src
+    webapp /opt/build/webapp
+    container /opt/build/container
+
+%post
+    set -eu
+    export DEBIAN_FRONTEND=noninteractive
+    export TECTONIC_VERSION=0.15.0
+    export TECTONIC_ARCH=x86_64-unknown-linux-gnu
+    export TECTONIC_CACHE_DIR=/opt/quiverlab/tectonic-cache
+    export QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
+    export PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
+
+    # tectonic (pinned static release), mirrors the Dockerfile RUN.
+    apt-get update
+    apt-get install -y --no-install-recommends curl ca-certificates
+    curl -fsSL "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40${TECTONIC_VERSION}/tectonic-${TECTONIC_VERSION}-${TECTONIC_ARCH}.tar.gz" \
+        | tar xz -C /usr/local/bin tectonic
+    tectonic --version
+    apt-get purge -y curl
+    apt-get autoremove -y
+    rm -rf /var/lib/apt/lists/*
+
+    # Editable install: webapp is not in the wheel -> -e keeps `import webapp` live.
+    cd /opt/build
+    pip install -e ".[fast,hpc,web]"
+
+    # Pre-warm the tectonic bundle so runtime is fully offline.
+    mkdir -p "$TECTONIC_CACHE_DIR"
+    printf '%s\n' \
+        '\documentclass{article}' \
+        '\usepackage{amsmath,amssymb,amsfonts,geometry,hyperref}' \
+        '\begin{document}' \
+        'quiverlab tectonic pre-warm.' \
+        '\end{document}' > /tmp/prewarm.tex
+    tectonic --outdir /tmp /tmp/prewarm.tex
+    rm -f /tmp/prewarm.tex /tmp/prewarm.pdf
+
+    # Offline example-cache seed (guarded; wheel/webapp side of Plan 28).
+    mkdir -p /opt/quiverlab
+    if [ -f container/seed_cache.py ] && [ -f webapp/precomputed/manifest.yaml ]; then
+        python container/seed_cache.py --manifest webapp/precomputed/manifest.yaml \
+            --out "$QUIVERLAB_SEED_CACHE" || true
+    else
+        echo "[quiverlab] seed_cache.py/manifest not present yet -- skipping example-cache seed"
+    fi
+
+%environment
+    export LANG=C.UTF-8 LC_ALL=C.UTF-8
+    export MPLBACKEND=Agg PYTHONUNBUFFERED=1
+    export NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2
+    export TECTONIC_CACHE_DIR=/opt/quiverlab/tectonic-cache
+    export QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
+
+# Default entrypoint mirrors the Dockerfile ENTRYPOINT ["quiverlab-hpc"].
+%runscript
+    exec quiverlab-hpc "$@"
+
+# Named app entrypoints: `apptainer run --app run|render|gui quiverlab.sif ...`.
+%apprun run
+    exec quiverlab-hpc run "$@"
+
+%apprun render
+    exec quiverlab-hpc render "$@"
+
+%apprun gui
+    exec quiverlab-hpc gui "$@"
+
+%labels
+    org.opencontainers.image.title quiverlab
+    org.opencontainers.image.source https://github.com/MarcoArmenta/quiverlab
+    org.opencontainers.image.licenses MIT
+    Version 0.1.0.dev0
