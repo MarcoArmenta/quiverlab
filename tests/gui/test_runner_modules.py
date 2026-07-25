@@ -111,6 +111,22 @@ def test_module_snippet_reproduces(runner):
     assert ns["M"].dim == 2
 
 
+def test_gui_request_shape_with_string_entries(runner):
+    # The EXACT request gui.js buildRequest() emits: string matrix entries (an empty
+    # cell normalizes to "0"), string dims keys, a builtin ext_target -- all DATA.
+    req = {"schema": 1,
+           "algebra": {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+                       "relations": ["x*x*x"], "field": {"kind": "GF", "p": 2, "n": 1}},
+           "compute": ["dimension_vector", "ext:0..2"],
+           "artifacts": {"pdf": False, "tikz": True},
+           "module": {"dims": {"1": 2}, "maps": {"x": [["0", "0"], ["1", "0"]]},
+                      "side": "right"},
+           "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}}
+    _ready(runner, req)
+    assert _one(runner, "dimension_vector")["block"]["dimvec"] == {"1": 2}
+    assert _one(runner, "ext:0..2")["block"]["dims"] == [1, 1, 1]
+
+
 def test_module_kinds_in_result_bundle_and_estimate(runner):
     _ready(runner, dict(_LOOP, compute=["dimension_vector"]))
     _one(runner, "dimension_vector")

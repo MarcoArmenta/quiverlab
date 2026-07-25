@@ -12,7 +12,12 @@
   var S = { vertices: [], arrows: [], nextId: 1, selected: null, dragFrom: null,
             dragMoved: false, dragOrigin: null, pressOnEmpty: false,
             worker: null, engineReady: false, manifest: null, busy: false,
-            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "" } };
+            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "" },
+            // Plan 26 no-code module panel: dims/maps hold the explicit module the
+            // user types (matrix entries are exact strings); side/vertex track the
+            // toggle + builtin pick-list. All read back in buildRequest().
+            module: { enabled: false, side: "right", vertex: null,
+                      dims: {}, maps: {} } };
 
   // ---------- tiny DOM helpers ----------
   function h(tag, attrs) {
@@ -57,6 +62,36 @@
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
+    // ---- Plan 26: no-code module panel ----
+    '<fieldset id="qlgui-module" class="qlgui-fieldset">' +
+    '  <legend><label><input type="checkbox" id="qlgui-mod-enable"> Module (no code)</label></legend>' +
+    '  <div class="qlgui-row">' +
+    '    <label>build <select id="qlgui-mod-mode">' +
+    '      <option value="explicit">explicit (dims + matrices)</option>' +
+    '      <option value="simple">S(v) simple</option>' +
+    '      <option value="projective">P(v) projective</option>' +
+    '      <option value="injective">I(v) injective</option>' +
+    '    </select></label>' +
+    '    <label>side <select id="qlgui-mod-side">' +
+    '      <option value="right">right</option><option value="left">left</option>' +
+    '    </select></label>' +
+    '  </div>' +
+    '  <div id="qlgui-mod-body"></div>' +
+    '  <div class="qlgui-row" id="qlgui-mod-kinds">' +
+    '    <label><input type="checkbox" id="qlgui-dimension_vector" checked> dim vector</label>' +
+    '    <label><input type="checkbox" id="qlgui-rad_top_soc"> rad/top/soc</label>' +
+    '    <label><input type="checkbox" id="qlgui-tau"> τ</label>' +
+    '    <label><input type="checkbox" id="qlgui-tau_minus"> τ⁻</label>' +
+    '    <label><input type="checkbox" id="qlgui-projective_dimension"> proj.dim</label>' +
+    '    <label><input type="checkbox" id="qlgui-injective_dimension"> inj.dim</label>' +
+    '    <label><input type="checkbox" id="qlgui-projective_resolution"> proj.res 0..<select id="qlgui-pr-top"></select></label>' +
+    '    <label><input type="checkbox" id="qlgui-injective_resolution"> inj.res 0..<select id="qlgui-ir-top"></select></label>' +
+    '    <label><input type="checkbox" id="qlgui-ext"> Ext 0..<select id="qlgui-ext-top"></select> with ' +
+    '      <select id="qlgui-ext-kind"><option value="simple">S</option>' +
+    '      <option value="projective">P</option><option value="injective">I</option></select>' +
+    '      (<select id="qlgui-ext-vertex"></select>)</label>' +
+    '  </div>' +
+    '</fieldset>' +
     '<div id="qlgui-eta" class="qlgui-hint"></div>' +
     '<div class="qlgui-row">' +
     '  <button id="qlgui-compute" type="button" disabled>Compute</button>' +
@@ -72,12 +107,19 @@
   ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
-   "cancel", "print", "tikz", "json", "snippet", "results", "eta"]
+   "cancel", "print", "tikz", "json", "snippet", "results", "eta",
+   // Plan 26 module panel
+   "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
+   "dimension_vector", "rad_top_soc", "tau", "tau_minus",
+   "projective_dimension", "injective_dimension",
+   "projective_resolution", "pr-top", "injective_resolution", "ir-top",
+   "ext", "ext-top", "ext-kind", "ext-vertex"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
-  [el["hhc-top"], el["hhh-top"]].forEach(function (sel) {
-    for (var i = 0; i <= 10; i++) sel.appendChild(h("option", { text: String(i) }));
-    sel.value = "4";
-  });
+  [el["hhc-top"], el["hhh-top"], el["pr-top"], el["ir-top"], el["ext-top"]]
+    .forEach(function (sel) {
+      for (var i = 0; i <= 10; i++) sel.appendChild(h("option", { text: String(i) }));
+      sel.value = "4";
+    });
 
   function setStatus(text, cls) {
     el.status.textContent = text;
@@ -203,7 +245,155 @@
       g.appendChild(c); g.appendChild(t); svg.appendChild(g);
     });
     el.compute.disabled = !(S.engineReady && S.vertices.length && !S.busy);
+    renderModulePanel();
     scheduleProbe();
+  }
+
+  // ---------- Plan 26: no-code module panel ----------
+  var MOD_KIND_IDS = ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
+    "projective_dimension", "injective_dimension",
+    "projective_resolution", "injective_resolution", "ext"];
+
+  function modDim(id) { var n = S.module.dims[id]; return (n == null) ? 0 : n; }
+
+  function syncModuleDims() {   // one dim per current vertex (default 1); drop stale
+    var d = {};
+    S.vertices.forEach(function (v) {
+      d[v.id] = (S.module.dims[v.id] != null) ? S.module.dims[v.id] : 1;
+    });
+    S.module.dims = d;
+  }
+
+  function matrixDims(a) {      // [rows, cols] of arrow a's block, per side
+    var ds = modDim(a.s), dt = modDim(a.t);
+    // right: a:s→t acts M_s→M_t, block is dim[t]×dim[s]; left is over A^op, so the
+    // block is transposed (dim[s]×dim[t]) — the runner places it by the rep quiver.
+    return (S.module.side === "left") ? [ds, dt] : [dt, ds];
+  }
+
+  function syncModuleMaps() {   // rows×cols string grid per arrow, preserving overlap
+    var maps = {};
+    S.arrows.forEach(function (a) {
+      var rc = matrixDims(a), rows = rc[0], cols = rc[1];
+      var old = S.module.maps[a.name] || [];
+      var grid = [];
+      for (var i = 0; i < rows; i++) {
+        var row = [];
+        for (var j = 0; j < cols; j++) {
+          row.push((old[i] && old[i][j] != null) ? old[i][j] : "0");
+        }
+        grid.push(row);
+      }
+      maps[a.name] = grid;
+    });
+    S.module.maps = maps;
+  }
+
+  function fillVertexOptions(sel, current) {
+    sel.innerHTML = "";
+    S.vertices.forEach(function (v) {
+      sel.appendChild(h("option", { value: String(v.id), text: String(v.id) }));
+    });
+    if (current != null && S.vertices.some(function (v) { return v.id === current; })) {
+      sel.value = String(current);
+    } else if (S.vertices.length) { sel.value = String(S.vertices[0].id); }
+  }
+
+  function renderModulePanel() {
+    var on = el["mod-enable"].checked;
+    S.module.enabled = on;
+    S.module.side = el["mod-side"].value;
+    el["mod-mode"].disabled = el["mod-side"].disabled = !on;
+    MOD_KIND_IDS.forEach(function (k) { if (el[k]) el[k].disabled = !on; });
+    ["pr-top", "ir-top", "ext-top", "ext-kind", "ext-vertex"].forEach(function (k) {
+      if (el[k]) el[k].disabled = !on;
+    });
+    fillVertexOptions(el["ext-vertex"], parseInt(el["ext-vertex"].value, 10));
+    var body = el["mod-body"];
+    body.innerHTML = "";
+    if (!on) return;
+    var mode = el["mod-mode"].value;
+    if (mode !== "explicit") {                    // S(v)/P(v)/I(v) pick-list
+      var vsel = h("select", {});
+      fillVertexOptions(vsel, S.module.vertex);
+      S.module.vertex = parseInt(vsel.value, 10);
+      vsel.addEventListener("change", function () {
+        S.module.vertex = parseInt(vsel.value, 10); scheduleProbe();
+      });
+      body.appendChild(h("div", { "class": "qlgui-row" },
+        h("label", { text: mode + " at vertex " }, vsel)));
+      return;
+    }
+    if (!S.vertices.length) {
+      body.appendChild(h("p", { "class": "qlgui-hint",
+        text: "add vertices on the canvas to define the module" }));
+      return;
+    }
+    syncModuleDims(); syncModuleMaps();
+    var dimRow = h("div", { "class": "qlgui-row" });
+    S.vertices.forEach(function (v) {
+      var inp = h("input", { type: "number", min: "0", value: String(modDim(v.id)) });
+      // update on every keystroke; rebuild grids only on `change` (blur/Enter) so
+      // typing a multi-digit dimension never loses focus mid-edit.
+      inp.addEventListener("input", function () {
+        S.module.dims[v.id] = Math.max(0, parseInt(inp.value, 10) || 0);
+      });
+      inp.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
+      dimRow.appendChild(h("label", { text: "dim " + v.id + " " }, inp));
+    });
+    body.appendChild(h("div", { "class": "qlgui-mrow" },
+      h("span", { "class": "qlgui-mlabel", text: "dimension vector" }), dimRow));
+    S.arrows.forEach(function (a) {
+      var rc = matrixDims(a), rows = rc[0], cols = rc[1];
+      var grid = h("div", { "class": "qlgui-mgrid" });
+      grid.style.gridTemplateColumns = "repeat(" + Math.max(cols, 1) + ", 3.2em)";
+      if (rows === 0 || cols === 0) {
+        grid.appendChild(h("span", { "class": "qlgui-hint",
+          text: rows + "×" + cols + " (empty block)" }));
+      }
+      for (var i = 0; i < rows; i++) {
+        for (var j = 0; j < cols; j++) {
+          (function (ii, jj) {
+            var cell = h("input", { type: "text", value: S.module.maps[a.name][ii][jj] });
+            cell.addEventListener("input", function () {
+              S.module.maps[a.name][ii][jj] = cell.value; scheduleProbe();
+            });
+            grid.appendChild(cell);
+          })(i, j);
+        }
+      }
+      body.appendChild(h("div", { "class": "qlgui-mrow" },
+        h("span", { "class": "qlgui-mlabel",
+          text: a.name + ": " + a.s + "→" + a.t + "  [" + rows + "×" + cols + "]" }), grid));
+    });
+  }
+
+  function normGrid(g) {        // trim; an empty cell means 0
+    return (g || []).map(function (row) {
+      return row.map(function (x) {
+        var s = (x == null ? "" : String(x)).trim();
+        return s === "" ? "0" : s;
+      });
+    });
+  }
+
+  function moduleSpec() {
+    S.module.side = el["mod-side"].value;
+    var mode = el["mod-mode"].value, side = S.module.side;
+    if (mode !== "explicit") {
+      return { builtin: { kind: mode, vertex: S.module.vertex }, side: side };
+    }
+    syncModuleDims(); syncModuleMaps();
+    var dims = {}, maps = {};
+    S.vertices.forEach(function (v) { dims[String(v.id)] = modDim(v.id); });
+    S.arrows.forEach(function (a) { maps[a.name] = normGrid(S.module.maps[a.name]); });
+    return { dims: dims, maps: maps, side: side };
+  }
+
+  function extTargetSpec() {    // N is a zero-typing S/P/I pick-list, same side as M
+    return { builtin: { kind: el["ext-kind"].value,
+                        vertex: parseInt(el["ext-vertex"].value, 10) },
+             side: el["mod-side"].value };
   }
 
   function canvasPoint(e) {
@@ -285,6 +475,9 @@
 
   el.clear.addEventListener("click", function () {
     S.vertices = []; S.arrows = []; S.nextId = 1; S.selected = null;
+    S.module = { enabled: false, side: "right", vertex: null, dims: {}, maps: {} };
+    el["mod-enable"].checked = false; el["mod-mode"].value = "explicit";
+    el["mod-side"].value = "right";
     el.relations.value = ""; el.results.innerHTML = ""; render();
   });
   el.field.addEventListener("change", function () {
@@ -333,12 +526,31 @@
     ["cartan", "coxeter_polynomial", "global_dimension", "center"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
-    return { schema: 1,
-             algebra: { kind: "quiver",
-                        vertices: S.vertices.map(function (v) { return v.id; }),
-                        arrows: arrows, relations: relations, field: field },
-             compute: compute,
-             artifacts: { pdf: el.trace.checked, tikz: true } };
+    var module = null, extTarget = null;
+    if (el["mod-enable"].checked) {          // read live, independent of render timing
+      module = moduleSpec();
+      ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
+       "projective_dimension", "injective_dimension"].forEach(function (k) {
+        if (el[k].checked) compute.push(k);
+      });
+      if (el.projective_resolution.checked)
+        compute.push("projective_resolution:0.." + el["pr-top"].value);
+      if (el.injective_resolution.checked)
+        compute.push("injective_resolution:0.." + el["ir-top"].value);
+      if (el.ext.checked) {
+        compute.push("ext:0.." + el["ext-top"].value);
+        extTarget = extTargetSpec();
+      }
+    }
+    var req = { schema: 1,
+                algebra: { kind: "quiver",
+                           vertices: S.vertices.map(function (v) { return v.id; }),
+                           arrows: arrows, relations: relations, field: field },
+                compute: compute,
+                artifacts: { pdf: el.trace.checked, tikz: true } };
+    if (module) req.module = module;
+    if (extTarget) req.ext_target = extTarget;
+    return req;
   }
 
   // ---------- engine (Pyodide worker) ----------
@@ -469,6 +681,49 @@
       text: (block.citations || []).map(function (c) { return c[1]; }).join(" · ") });
   }
 
+  // ---- module-block rendering helpers (Plan 26) ----
+  function dvText(dv) {
+    return "{" + Object.keys(dv).map(function (k) { return k + ": " + dv[k]; }).join(", ") + "}";
+  }
+  function degreeTable(rowLabel, dims) {   // n | value_n, like the HH table
+    var head = h("tr"), row = h("tr");
+    head.appendChild(h("th", { text: "n" }));
+    row.appendChild(h("th", { text: rowLabel }));
+    dims.forEach(function (d, n) {
+      head.appendChild(h("td", { text: String(n) }));
+      row.appendChild(h("td", { text: String(d) }));
+    });
+    return h("table", {}, head, row);
+  }
+  function dvTable(pairs) {                 // label | dim | dim vector
+    var head = h("tr");
+    ["", "dim", "dim vector"].forEach(function (t) { head.appendChild(h("th", { text: t })); });
+    var tbl = h("table", {}, head);
+    pairs.forEach(function (p) {
+      var r = h("tr");
+      r.appendChild(h("th", { text: p[0] }));
+      r.appendChild(h("td", { text: String(p[1].dim) }));
+      r.appendChild(h("td", { text: dvText(p[1].dimvec) }));
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
+  function resTable(b) {                    // term n | betti | dim vector
+    var head = h("tr");
+    ["term", "# summands", "dim vector"].forEach(function (t) {
+      head.appendChild(h("th", { text: t }));
+    });
+    var tbl = h("table", {}, head);
+    b.terms.forEach(function (dv, n) {
+      var r = h("tr");
+      r.appendChild(h("td", { text: String(n) }));
+      r.appendChild(h("td", { text: String((b.betti || [])[n] != null ? b.betti[n] : "") }));
+      r.appendChild(h("td", { text: dvText(dv) }));
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
+
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
     var div = h("div", { "class": "qlgui-block" });
@@ -496,6 +751,22 @@
       div.appendChild(h("p", { text: b.text }));
     } else if (name === "center") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
+    } else if (name === "dimension_vector" || name === "tau" || name === "tau_minus" ||
+               name === "projective_dimension" || name === "injective_dimension") {
+      div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
+    } else if (name === "rad_top_soc") {
+      div.appendChild(h("p", { text: "radical / top / socle:" }));
+      div.appendChild(dvTable([["rad", b.radical], ["top", b.top], ["soc", b.socle]]));
+    } else if (name === "ext") {
+      div.appendChild(h("p", { text: "Ext to the target module — dim vector " + dvText(b.target.dimvec) + ":" }));
+      div.appendChild(degreeTable("dim Ext^n", b.dims));
+    } else if (name === "projective_resolution" || name === "injective_resolution") {
+      var proj = name === "projective_resolution";
+      div.appendChild(h("p", { text: proj ? "projective resolution" : "injective resolution" }));
+      div.appendChild(resTable(b));
+      var d = proj ? b.pd : b.injective_dimension;
+      div.appendChild(h("p", { text: (proj ? "pd = " : "id = ") +
+        (d == null ? "∞ (beyond the probed length)" : String(d)) }));
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -531,6 +802,19 @@
   el.relations.addEventListener("input", scheduleProbe);
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"], el.cartan,
    el.coxeter_polynomial, el.global_dimension, el.center]
+    .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
+  // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
+  // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
+  el["mod-enable"].addEventListener("change", function () {
+    renderModulePanel(); scheduleProbe();
+  });
+  [el["mod-mode"], el["mod-side"]].forEach(function (x) {
+    x.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
+  });
+  [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
+   el.projective_dimension, el.injective_dimension,
+   el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
+   el.ext, el["ext-top"], el["ext-kind"], el["ext-vertex"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   function download(name, text, type) {
     var a = document.createElement("a");
@@ -569,4 +853,5 @@
   el.canvas.addEventListener("mousedown", ensureEngine, true); // capture: circle handlers stopPropagation
   el.preset.addEventListener("change", ensureEngine);
   el.relations.addEventListener("focus", ensureEngine);
+  el["mod-enable"].addEventListener("change", ensureEngine);   // enabling the module panel is intent
 })();
