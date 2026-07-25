@@ -41,9 +41,11 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   Original item: reduce the correction-solve solution modulo its nullspace to a
   normal form; flips the 7 `xfail(strict=False)` coefficient pins strict (Plan-04
   stretch item E2). Makes CS differentials byte-reproducible.
-- [ ] **5. Battery diversity audit** — add mixed-length-tip (straddling) and
-  multi-vertex presentations to the *standing* zoo (`families/`, batch scans), not
-  just the Plan-12/13 test files. Uniform-length zoos hid both 2026-07-22 bugs.
+- [x] **5. Battery diversity audit** — DONE, Plan 18
+  (`2026-07-23-plan-18-zoo-diversity.md`, branch `plan-18-zoo-diversity`).
+  Original item: add mixed-length-tip (straddling) and multi-vertex presentations
+  to the *standing* zoo (`families/`, batch scans), not just the Plan-12/13 test
+  files. Uniform-length zoos hid both 2026-07-22 bugs.
 - [ ] **6. Field generality of engine-backed invariants** — `complexity`, cyclic
   homology etc. are GF(p)-only; `_require_prime_field`'s hint promises a "later phase
   that generalizes this invariant". Deliver a generic-Domain path or reword.
@@ -66,8 +68,22 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
 - [ ] **Periodicity detection with certificates**: general "syzygy ≅ shifted syzygy"
   detection on the corner engine (beyond the two wrapped families), exact isomorphism
   as certificate.
+- [ ] **Single-degree HH mode** (Marco, 2026-07-23): `degree=n` on
+  `minimal_homology_dims` / `cs_homology_dims` / `deepen`, surfaced as
+  `A.hochschild_homology(n, single_degree=True)`. dim HH_n needs only d_n, d_{n+1}
+  + two ranks. Honest expectations per engine: Bardzell/monomial ≈ n-fold win
+  (closed-form differentials per degree); minimal/CS: the sequential resolution
+  build to n+1 is an unavoidable floor — skip the other degrees' collapse+rank
+  (20–50% compute) and roll memory to two consecutive differentials (deepen
+  already rolls; add a flag skipping non-target finalizations); bar: no win.
+  Composes with periodicity certificates (item above): a certified period turns
+  deep single-degree into a lookup — implement both together if possible.
 - [ ] **Han's-conjecture batch campaigns**: sweep the open zone with the now-correct
-  multi-vertex engines through `quiverlab.batch`.
+  multi-vertex engines through `quiverlab.batch` (Plan 18 opened the scan surface:
+  specs carry quiver data, `_analyze_open` serves multi-vertex).
+- [ ] **Open-zone scan cohomology** (found by Plan 18): `_analyze_open` still records
+  `cx_cohomology = None` ("no cohomology on this engine") — stale since Plan 16's
+  `minimal_cohomology_dims`; wire it in and drop the None-side special-casing.
 - [ ] **A∞-structure (Kadeishvili) on Ext** — ambitious flagship; CS small models make
   it feasible.
 - [ ] **Performance**: numba kernels for the Plan-13 corner path (pure Python today);

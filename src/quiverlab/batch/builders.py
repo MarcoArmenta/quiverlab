@@ -42,11 +42,15 @@ def _dynkin(typ, n, field=None):
     return PathAlgebra(f"{typ}{n}", field=field)
 
 
-def _reduction_system(ngen, rules, name, field=None):
+def _reduction_system(ngen, rules, name, arrows=None, vertices=None, field=None):
     """Open-zone builder: materialise A = k<g>/I from a confluent reduction system,
-    routed through quiverlab's zoo reduction-system -> Algebra path."""
-    return _build_from_record(
-        {"ngen": ngen, "rules": rules, "name": name, "dim": None}, field=field)
+    routed through quiverlab's zoo reduction-system -> Algebra path.  Multi-vertex
+    records (Plan 18) carry arrows/vertices; legacy args are byte-unchanged."""
+    rec = {"ngen": ngen, "rules": rules, "name": name, "dim": None}
+    if arrows is not None:
+        rec["arrows"] = arrows
+        rec["vertices"] = vertices
+    return _build_from_record(rec, field=field)
 
 
 BUILDERS = {

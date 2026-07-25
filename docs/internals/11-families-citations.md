@@ -41,7 +41,15 @@ and `quiverlab.bibliography()` render. `references.bib` holds the verified BibTe
    keys. `bibliography(keys)` groups them by kind and prints the annotations.
 5. `zoo(dim_max)` loads a bundled JSON catalogue (lifted from hanlab's open_zoo),
    rebuilds each confluent reduction system into an `Algebra`, and yields those
-   with `dim <= dim_max`.
+   with `dim <= dim_max`. Since Plan 18 records may carry `"vertices"` +
+   `"arrows"` (a list of `[name, source, target]` whose order is the index space
+   of the `rules` words) — multi-vertex reduction systems; records without them
+   keep the legacy one-vertex loop reading. The catalogue also holds the Plan-18
+   diversity records (two straddling-monomial mixed-tip-length algebras, the
+   line quiver `kQ/(abc,cde)`, the commutative square, `kZ₃/rad²`), each
+   live-certified by the test battery and guarded by a diversity gate
+   (`tests/families/test_zoo.py::test_zoo_diversity_gates`) so curation can
+   never silently drop the shapes that hid the 2026-07-22 bugs.
 
 ## A worked micro-example
 `NakayamaAlgebra([3,2,2])`: cyclic `Z_3`, arrows `a1:1->2, a2:2->3, a3:3->1`,
