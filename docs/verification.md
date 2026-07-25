@@ -5,8 +5,8 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **1583 tests** (collected with the `[dev,fast,docs,web,qpa]` extras,
-2026-07-25 post-merge of Plans 21–26). It
+The suite is **1795 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+2026-07-25 post-merge of Plans 21–28). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one.
 
@@ -294,16 +294,16 @@ and the oracle class that guards it. Counts are `pytest --collect-only` with the
 | `hochschild/` (bar, cyclic) | 11 | fast | **the base bar oracle**; mixed-complex identities |
 | `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama) | 543 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
 | `resolutions_cs/` (CS; comparison; diagonal; cup; cap) | 197 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization |
-| `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity) | 188 | deep | AR/duality literature pins (ASS2006); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks |
+| `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity) | 185 | deep | AR/duality literature pins (ASS2006); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks |
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius, scalar, sweep) | 53 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `families/` (catalog, zoo) | 72 | deep | closed-form family pins; zoo diversity gates; citations |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps) | 46 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
-| `qpa/` (GAP/QPA crosscheck) | 38 | 31 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim — left side via `A^op`); script builders + guards run without GAP |
-| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 227 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
-| `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 61+ | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
+| `qpa/` (GAP/QPA crosscheck) | 81 | 74 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim — left side via `A^op`); script builders + guards run without GAP |
+| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 286 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
+| `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 49 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 51 | fast | runner artifacts / invariants; build hook; freshness |
 | release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`) | 50 | fast | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage |
 
@@ -319,9 +319,9 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 584 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 968 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
-| `qpa` | 31 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `fast` | 690 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 1031 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `qpa` | 74 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The

@@ -210,7 +210,7 @@ planned together even if delivered in slices.
 ## Tier 1c — container & HPC surface (Marco, 2026-07-25)
 
 - [x] **Plan 28 — quiverlab as a container: HPC batch tier + offline laptop app**
-  — DELIVERED on branch 2026-07-25 (merge pending Marco), branch `plan-28-hpc-container`
+  — DONE, Plan 28, merged 2026-07-25, branch `plan-28-hpc-container`
   (`2026-07-25-plan-28-hpc-container.md`). Marco's workflow: download an
   Apptainer-ready image; send to a SLURM cluster with extremely simple
   instructions; edit a sample config YAML (or design in the GUI, which prints
@@ -255,8 +255,7 @@ planned together even if delivered in slices.
   `NotImplementedError` scope edge. NOTE: `docs/verification.md` (concurrent
   `plan-22-verification-transparency` branch) must gain Plan 21's cap oracles at merge time.
 
-- [x] **Ext-algebra / Yoneda-ring presentations** — DELIVERED on branch 2026-07-25
-  (merge pending Marco), Plan 27 (`2026-07-25-plan-27-ext-algebra.md`, branch
+- [x] **Ext-algebra / Yoneda-ring presentations** — DONE, Plan 27, merged 2026-07-25 (`2026-07-25-plan-27-ext-algebra.md`, branch
   `plan-27-ext-algebra`). The Yoneda algebra `E(A) = Ext•_A(A/J, A/J)` for any
   admissible kQ/I over any exact Domain: Ext dims = graded Betti numbers off the
   Plan-05 minimal resolutions (minimality ⇒ δ≡0, cocycles = summand

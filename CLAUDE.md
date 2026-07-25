@@ -268,4 +268,45 @@ oversized families. Two runners carry the SAME dispatch: `webapp/server/runner.p
 panel on the canvas — per-vertex dimension picker, per-arrow matrix grid (dims
 follow source/target live), a right/left side toggle, S(v)/P(v)/I(v) pick-lists;
 results render like existing blocks (MathJax + citations); interface-freshness
-pins the module surface. Branch `plan-26-no-code-modules`, merged 2026-07-25).
+pins the module surface. Branch `plan-26-no-code-modules`, merged 2026-07-25), Plan 27 (Yoneda Ext-algebra + Koszulity, Tier 2 — the Ext quiver equals Q with
+left-to-right products so E(A) ≅ (A^!)^op, arbitrated by worked anchors + the
+QPA ext-quiver pin; Ext dims = graded Betti numbers off Plan-05 minimal
+resolutions (minimality ⇒ δ≡0, cocycles = summand projections), Yoneda product
+by canonical chain-map lifting (reduce_mod_nullspace, byte-reproducible),
+degreewise minimal generators/relations over k^{Q_0};
+`Algebra.ext_algebra(top)` → `modules/ext_algebra.py::YonedaPresentation`
+(honest certification; `as_algebra()` iff gl.dim exact-finite); Koszulity
+three-valued in `modules/koszul.py` — G-quadratic certifier (Priddy PBW),
+quadratic dual on Q^op, Fröberg falsifier; citations priddy/froberg_koszul/
+polishchuk_positselski; 43 live QPA tests (`ExtAlgebraGenerators`,
+`ExtOverAlgebra`, `IsQuadraticIdeal`; QPA has NO IsKoszul — honest scope on the
+verification page). Branch `plan-27-ext-algebra`, merged 2026-07-25), Plan 28
+(container HPC batch tier + offline laptop app, Tier 1c — the `quiverlab-hpc`
+CLI lives in the WHEEL (`src/quiverlab/hpc/`: stdlib-validated spec core
+promoted from the webapp runner, which now delegates with byte-stable results
+AND Plan-25 cache keys pinned by frozen goldens; verbs run/render/sample-config/
+estimate/gui/version/selftest; `[hpc]` extra = pyyaml; exit 75 = clean
+checkpoint stop via the finally-wired `engine/deepen.py`, sbatch templates
+requeue on it); container/ Dockerfile+quiverlab.def (python:3.12-slim by
+digest, tectonic pre-warmed for offline PDF via the extended `quiverlab.trace`
+ladder PDF→HTML→txt, result_schema envelope), GHCR OCI primary + SIF release
+asset via .github/workflows/container.yml; slurm/ templates auto-detect
+apptainer→singularity→venv (drac-local emulator = the venv path);
+`quiverlab-hpc gui` serves the Plan-09 webapp fully OFFLINE on localhost
+(embedded worker, big-jobs/SMTP off, seeded Plan-25 result cache from
+webapp/precomputed/manifest.yaml — 5 placeholder examples, Marco to curate —
+WAL-checkpointed at build), estimator gains exact memory estimates (bilingual),
+GUI + job pages export the cluster config YAML; `quiverlab/hpc/resources.py`
+detects cores/RAM (cgroup+SLURM-aware) and reports GPUs as detected-but-UNUSED
+(exact CPU engines — sbatch/docs say request cores+RAM, never GPUs). Branch
+`plan-28-hpc-container`, merged 2026-07-25). Also merged 2026-07-25: the
+literature-oracle deep research (4 author-cluster reports in
+`docs/plans/2026-07-25-literature-oracles-deep-research.md` + a Tier-1a
+battery backlog item headlined by a QPA-verified `is_symmetric` bug on
+multi-vertex symmetric Nakayama and TrivialExtension — DO FIRST), and the two
+METAGOALS (README top): (1) no code required, (2) any computation in
+representation theory — with the C1–C8 coverage program in
+`docs/plans/ROADMAP.md` (C1 categorical glue: morphisms + Krull–Schmidt; C4
+τ-tilting engine = τ-tilting/torsion/stability/silting in one, white space
+even in QPA) grounded in `2026-07-25-metagoal-coverage-deep-research.md`.
+Suite recounted post-merge: 1795 tests (fast 690 / deep 1031 / qpa 74).
