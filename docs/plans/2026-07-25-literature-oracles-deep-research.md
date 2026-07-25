@@ -15,7 +15,7 @@ implemented from here must cite its source in the tests and on
 - Solotar cluster — LANDED (below).
 - Cibils cluster — LANDED (below).
 - Happel / Keller / Rickard — pending.
-- de la Peña / Lenzing / Marcos — pending.
+- de la Peña / Lenzing / Marcos — LANDED (below).
 
 ---
 
@@ -430,3 +430,265 @@ restatements were the fetched sources. Verification status per entry.
    decomposition, never-vanishing HH¹(TA); char-0/char-p swap.
 5. **Truncated finiteness boolean** (dim HH• < ∞ ⇔ acyclic) zoo-wide + the
    basic-cycle char|N bump (pending primary confirmation).
+
+---
+
+## Cluster report: de la Peña / Lenzing / Marcos (+ Green, Martínez-Villa, Barot; method-descendants Cassidy, Leader–Snashall, Etingof–Eu, Hubery, Schremmer)
+
+### Convention mapping (load-bearing, verified)
+
+quiverlab (`invariants/cartan.py`): Cartan `C[i][j] = dim e_i A e_j`; Coxeter
+`Φ = −C^{−T} C`; `coxeter_polynomial` = charpoly(Φ) in t. Papers use
+`Φ_A = −C^{−1}C^t`. **Verified numerically (3 random triangular Cartans):
+`charpoly(−C^{−T}C) ≡ charpoly(−C^{−1}C^t)`** — quiverlab's Coxeter polynomial
+equals the papers' exactly (variable rename only), for all triangular algebras
+(covers every example below). The agent additionally re-derived, in quiverlab's
+convention, the full Dynkin table, the canonical formula, Lehmer's [2,3,7], and
+all six Nakayama polynomials — all match.
+
+**Methodology warning:** WebFetch auto-summaries of these PDFs were unreliable
+(one stated the OPPOSITE of a theorem); every verbatim value came from
+pdftotext on a downloaded PDF. Labels: fetched-source / secondary /
+recomputed / UNVERIFIED.
+
+### [LdlP2008-spectral] Lenzing–de la Peña (2008) — Spectral analysis of f.d. algebras and singularities
+- **Citation:** EMS Congr. Rep. (ICRA XII) 2008, 541–588. arXiv:0805.1018.
+- **Dynkin path algebras (verbatim table; orientation-independent):**
+  Aₙ: χ = v_{n+1} = ∏_{d|(n+1), d>1} Φ_d (Coxeter number n+1);
+  Dₙ: χ = v₂·v_{2(n−1)}/v_{n−1} = Φ₂·(x^{n−1}+1) (Coxeter number 2(n−1));
+  E₆: Φ₃Φ₁₂ (12); E₇: Φ₂Φ₁₈ (18); E₈: Φ₃₀ (30). [v_n := (x^n−1)/(x−1).]
+  **Recomputed expansions:** E₆ = t⁶+t⁵−t³+t+1; E₇ = t⁷+t⁶−t⁴−t³+t+1;
+  E₈ = t⁸+t⁷−t⁵−t⁴−t³+t+1; A₄ = Φ₅; D₄ = Φ₂²Φ₆; D₅ = Φ₂Φ₈; D₆ = Φ₂²Φ₁₀.
+  **⚠ Dₙ caveat:** the pdftotext of the cyclotomic-condition column is
+  mis-transcribed ("d|2(n−1), d≠1, d≠n−1" — wrong Φ₂ multiplicity); SHIP the
+  v-factorization + small cases, not the condition (correct form should be
+  d|2(n−1), d∤(n−1) — check the published table before citing it).
+- **Star formula (eq. 1):** χ_{[p₁..p_t]} = (∏v_{p_i})·[(x+1) − x·Σ v_{p_i−1}/v_{p_i}];
+  sign of χ(1) ⇔ Dynkin / extended-Dynkin / wild.
+- **Cross-invariant identities (both sides quiverlab-computable):**
+  - **Prop 1.2 (Happel):** degree-1 coefficient of χ_A = −trace Φ_A =
+    Σ_{i≥0} (−1)^i dim HH^i(A). (Verified on A₂.)
+  - **Prop 1.5:** χ_A(−1) is a perfect square (triangular A, k alg. closed).
+  - **Prop 1.6 (A'Campo):** bipartite hereditary: χ_A(x²) = xⁿ κ_Δ(x+x^{−1}).
+  - **B₃ parametric example:** Cartan [[1,a,b],[0,1,c],[0,0,1]] ⇒
+    χ = x³+αx²+αx+1, α = abc−a²−b²−c²+3 (recomputed a=b=c=1 → (t+1)(t²+1)).
+- **Status:** fetched-source + recomputed (Dₙ column transcription-flagged).
+
+### [LdlP2008-affine] Extended-Dynkin + canonical formula (same paper; corroborated by arXiv:1310.1557 §2.3 and 1310.1910 §2.3–2.6)
+- Ã_{p,q}: χ = (x−1)² v_p v_q (the ONLY orientation-dependent case);
+  D̃ₙ: (x−1)² v₂² v_{n−2}; Ẽ₆: (x−1)² v₂ v₃²; Ẽ₇: (x−1)² v₂ v₃ v₄;
+  Ẽ₈: (x−1)² v₂ v₃ v₅.
+- **Canonical algebras (Prop 2.4):** χ_{Λ(p,λ)} = (x−1)² ∏ v_{p_i} — weights
+  only, determines them up to order. Recomputed: C(2,2,2)=(x−1)²(x+1)³;
+  C(3,3,3)=(x−1)²(x²+x+1)³; C(2,4,4)=(x−1)²(x+1)³(x²+1)²;
+  C(2,3,6)=(x−1)²(x+1)²(x²−x+1)(x²+x+1)²; C(2,3,5)=(x−1)²(x+1)(x²+x+1)Φ₅.
+- **Status:** fetched-source (3 independent PDFs) + recomputed. Rock-solid.
+
+### [LdlP-cheby] Lenzing–de la Peña (2009) — Chebysheff recursion for Coxeter polynomials
+- **Citation:** Linear Algebra Appl. 430 (2009) 947–956. arXiv:math/0611535.
+- **Cor 3.2:** f̂_{(p₁..p_t)}(T) = (T+1)(T−1)² ∏v_{p_i}(T) − T·f_{[p₁..p_t]}(T)
+  (extended canonical = one-point extension of canonical by an indec.
+  projective). **Prop 3.4(d):** f̂_{(..,m+1)} = T·f̂_{(..,m)} − f̂_{(..,m−1)}.
+  Prop 3.4(b): f_{(p₁..p_t)}(T²) = χ*_{K₂}(T)·∏ χ*_{[p_i−1]}(T).
+- **Status:** fetched-source.
+
+### [dlP-mahler] de la Peña (2013/14) — Mahler measure of Coxeter polynomials ★ spectral.py flagship
+- **Citation:** arXiv:1310.1910 (Adv. Math. 2014).
+- **§2.5:** the wild hereditary star [2,3,7] (10 vertices) has
+  χ = T¹⁰+T⁹−T⁷−T⁶−T⁵−T⁴−T³+T+1 = **Lehmer's polynomial**; spectral radius =
+  Mahler measure = μ₀ = 1.176280… (smallest known Salem number). Ordering
+  c > ρ_{[2,4,5]} > ρ_{[2,3,m]} > ρ_{[2,3,7]} = μ₀ (m≥8), c = real root of
+  T³−T−1. **Recomputed in quiverlab convention: [2,3,7] == Lehmer exactly;
+  ρ ordering confirmed** (ρ_{[2,4,5]} ≈ 1.280638, ρ_{[2,3,8]} ≈ 1.230391).
+- **§2.4:** A accessible ⇒ HH^i = 0 (i>0), HH⁰ = k. Interlaced towers:
+  χ_{A_{s+1}} = (T+1)χ_{A_s} − Tχ_{A_{s−1}}.
+- **Status:** fetched-source + recomputed.
+
+### [dlP-cyclo] de la Peña (2013) — Cyclotomic Coxeter polynomials
+- **Citation:** arXiv:1310.1557. Corroborates the tables; plus **§5.2 ladder
+  R_{2n}** (2×n commutative grid): χ_{2n} = v_{n+1} ⊗ v₃ (root-product tensor);
+  R₄ = v₃⊗v₃. "Cyclotomic type" ⇔ Mahler measure 1 — clean `mahler_measure`
+  predicate. **Status:** fetched-source.
+
+### [LMR-nakayama] Lenzing–Meltzer–Ruan (2022) — Nakayama algebras and Fuchsian singularities ★ strongest direct battery
+- **Citation:** arXiv:2112.15587v2. §2.7 + Prop 6.1.
+- **Algebra:** N_n(r) = linear equioriented Aₙ with rad^r = 0 (uniserial
+  Nakayama).
+- **Verbatim polynomials (Coxeter number in parens) — ALL六 RECOMPUTED AND
+  MATCHED under quiverlab's convention:**
+  χ(17,8) = (λ+1)(λ¹⁶+λ⁸+1) (24); χ(16,3) = (λ+1)(λ⁶−λ³+1)(λ⁹+1) (18);
+  χ(15,6) = χ(15,4) = (λ+1)(λ⁸+λ⁴+1)(λ⁶+1) (12); χ(15,5) = (λ+1)(λ⁴+1)(λ⁵+1)² (40);
+  χ(14,7) = (λ+1)(λ⁶−λ³+1)(λ⁷+1) (126). **Prop 6.1:** r≥9 ⇒ χ(r+7,r) =
+  (λ+1)(λ⁶−λ³+1)(λ^r+1), Coxeter number lcm(2r,9).
+- **Test:** NakayamaAlgebra/truncated linear Aₙ; exact polynomial equality +
+  Coxeter number via Φ^m = I. **Status:** fetched-source + recomputed.
+
+### [BdlP-dynkintype] Barot–de la Peña (1999) — Dynkin type of a non-negative unit form
+- Expo. Math. 17 (1999) 339–348. Example 3.2: corank-5 D₁₁ unit form with
+  Coxeter char. polynomial (T+1)⁶(T−1)⁶(T⁴+T³+T²+T+1) (degree 16). **Quiver
+  UNVERIFIED** (bigraph not reconstructable from ASCII art) — polynomial firm,
+  hold until the figure is read. **Status:** polynomial fetched; quiver UNVERIFIED.
+
+### [GM-dkoszul] Green–Marcos (2008) + GMMZ (2004) — d-Koszul ★ feeds Plan 27
+- **Citations:** arXiv:0812.3408v2; E. Green–E. Marcos–R. Martínez-Villa–P.
+  Zhang, "D-Koszul algebras," J. Pure Appl. Algebra 193 (2004) 141–162 Thm 4.1
+  (paywalled; verbatim-quoted via two fetched papers — secondary).
+- **δ-pattern:** δ(n) = (n/2)d (even), ((n−1)/2)d+1 (odd); d-Koszul ⇔ P^n
+  generated in degree δ(n); then Ext_Λ(Λ₀,Λ₀) generated in degrees **0,1,2**.
+- **Ext of k[x]/(x^ℓ), ℓ≥3 (Keller/Madsen restatement, fetched):**
+  Ext ≅ k[u,v]/(u²), |u|=1, |v|=2, each Ext^i 1-dim, independent of ℓ;
+  internal bidegrees u=(1,1), v=(2,d) (the (2,d) half is synthesis from the
+  δ-pattern — flagged). Matches Plan 27's k[y,z]/(y²) oracle: adversarially
+  good (ranks identical across d, internal grading differs).
+- **Status:** fetched-source + secondary (GMMZ Thm 4.1).
+
+### [Cassidy-twodeg] Cassidy (2009) — Ext generated in two degrees (quadratic NON-Koszul witnesses!)
+- **Citation:** arXiv:0903.0344v1 (k = CC, connected graded quadratic).
+- **Thm 2.7:** for every m≥3 a QUADRATIC algebra C, gl.dim m, Yoneda algebra
+  generated in bidegrees (1,1) and (m, m+1); Ext^{ij}=0 for i<j≤m,
+  Ext^{m,m+1}≠0 — **m-Koszul in Backelin's sense but NOT Koszul**. Explicit
+  presentation: 3m generators, 4+3m relations (m=3 → 10 gens/8 rels).
+  **This supplies the quadratic-non-Koszul witness Plan 27's battery lacked**
+  (if the presentation is graded-admissible for our engines — check
+  finite-dimensionality when building; the agent recorded projective ranks).
+- **Status:** fetched-source.
+
+### [LS-stacked] Leader–Snashall (2015) — (D,A)-stacked algebras
+- **Citation:** arXiv:1506.01854v2. Def 1.1, Thm 1.4, **Example 1.2**: explicit
+  non-monomial (D=4,A=2)-stacked algebra — 7 vertices, 8 arrows (hexagon
+  1→2→3→4→5→6→1 plus shortcut 1→7→3), relations
+  ⟨(α₁α₂−α₇α₈)α₃α₄, α₃α₄α₅α₆, α₅α₆(α₁α₂−α₇α₈)⟩; minimal resolution
+  P^n = e₁Λ⊕e₃Λ⊕e₅Λ (n≥2), generator degrees 0,1,then 2n; Ext algebra
+  generated in degrees 0,1,2,3 (Thm 1.4). **Status:** fetched-source.
+
+### [MV-preproj / EtingofEu / Hubery] Preprojective algebras
+- **Citations:** Martínez-Villa CMS Conf. Proc. 18 (1996) 487–504 (primary
+  UNVERIFIED — not fetchable); Etingof–Eu arXiv:math/0512287 (MRL 14, 2007)
+  Thm 3.4.2/Prop 3.2.1; Hubery arXiv:2509.21448 (2025) Thm 7.1/7.5 — both fetched.
+- **Non-Dynkin Q:** Π_Q Koszul, matrix Hilbert series (I − Ct + t²)^{−1}
+  (C = adjacency of the double). **Dynkin Q:** Π_Q self-injective, Loewy length
+  h−1, (h−2,2)-Koszul. **⚠ a WebFetch summary claimed "Koszul iff Dynkin" —
+  FALSE**; the verified statements are as here.
+- **Test:** PreprojectiveAlgebra: is_selfinjective for Dynkin + Loewy length
+  h−1 (A₂→2, D₄→5, E₈→29 — derived, flag); Hilbert-series match to depth for
+  non-Dynkin presentations if buildable. **Status:** fetched (EE, Hubery);
+  MV primary unverified.
+
+### [Schremmer-Happel] HH of canonical algebras ★
+- **Citation:** F. Schremmer, arXiv:2512.08414 (2025), Prop 4.2.8/Cor 4.2.9,
+  attributing Happel LNM 1404 / [Hap98 Thm 2.4].
+- **Verbatim:** canonical C(p₁..p_t;λ), t≥3: dim HH^i = 1 (i=0), 0 (i=1),
+  **t−3** (i=2), 0 else. HH_0 = #vertices = 2+Σ(p_i−1), HH_{≥1} = 0 (acyclic).
+  Two-arm hereditary (a₁,a₂): HH¹ ∈ {3,2,1} by weight-1 count.
+- **Test:** canonical (2,2,2,2) → HH²=1; (3,3,3),(2,4,4),(2,3,6) → HH²=0;
+  (2,2,2,2,2) → HH²=2; cross-check Happel's Prop 1.2 trace identity against
+  the degree-1 Coxeter coefficient — a TWO-INVARIANT consistency oracle.
+- **Status:** fetched-source (Schremmer; primary Happel LNM 1404).
+
+### [Happel-Cibils-Redondo] Hereditary + rad²=0 HH (via Redondo survey, Resenhas IME-USP 5 (2001), fetched)
+- **Hereditary kQ (acyclic, any field):** HH⁰=1; HH¹ = 1 − n + Σ_{α∈Q₁}
+  dim e_{t(α)}Ae_{s(α)}; HH^{>1}=0; HH¹=0 ⇔ tree; m-Kronecker HH¹ = m²−1.
+  HH_0 = |Q₀|, HH_{≥1} = 0.
+- **rad²=0 (Cibils Thm 3.1):** dim HH^n = |Q_n//Q₁| − |Q_{n−1}//Q₀| (n>0),
+  HH⁰ = |Q₁//Q₀|+1. **⚠ n=1 discrepancy between Redondo Thm 4.11 (+1) and
+  Cibils Thm 3.1 — treat Cibils as authoritative for n≥2 and verify
+  HH⁰/HH¹ numerically before pinning.** k[x]/(x²): char≠2 → HH⁰=2, HH^{n>0}=1;
+  char 2 → all 2 (agrees with the Cibils-cluster hand-verification). c-crown
+  kQ/J² char-placement data (Prop 3.3).
+- **Status:** fetched-source (survey); primaries Happel LNM 1404 / Cibils 1998.
+
+### BibTeX (de la Peña / Lenzing / Marcos cluster)
+
+```bibtex
+@incollection{LenzingdlPena2008spectral,
+  author = {Lenzing, Helmut and de la Pe\~na, Jos\'e Antonio},
+  title = {Spectral analysis of finite dimensional algebras and singularities},
+  booktitle = {Trends in Representation Theory of Algebras and Related Topics (ICRA XII)},
+  series = {EMS Congr. Rep.}, publisher = {Eur. Math. Soc.}, pages = {541--588},
+  year = {2008}, note = {arXiv:0805.1018} }
+@article{LenzingdlPena2009chebysheff,
+  author = {Lenzing, Helmut and de la Pe\~na, Jos\'e Antonio},
+  title = {A {C}hebysheff recursion formula for {C}oxeter polynomials},
+  journal = {Linear Algebra Appl.}, volume = {430}, number = {4},
+  pages = {947--956}, year = {2009}, doi = {10.1016/j.laa.2008.10.003},
+  note = {arXiv:math/0611535} }
+@article{dlPena2014mahler,
+  author = {de la Pe\~na, Jos\'e Antonio},
+  title = {On the {M}ahler measure of the {C}oxeter polynomial of an algebra},
+  journal = {Adv. Math.}, year = {2014}, note = {arXiv:1310.1910} }
+@article{dlPena2013cyclotomic,
+  author = {de la Pe\~na, Jos\'e Antonio},
+  title = {Algebras whose {C}oxeter polynomials are products of cyclotomic polynomials},
+  year = {2013}, note = {arXiv:1310.1557} }
+@article{LenzingMeltzerRuan2022nakayama,
+  author = {Lenzing, Helmut and Meltzer, Hagen and Ruan, Shiquan},
+  title = {Nakayama algebras and {F}uchsian singularities},
+  year = {2022}, note = {arXiv:2112.15587} }
+@article{BarotdlPena1999dynkintype,
+  author = {Barot, Michael and de la Pe\~na, Jos\'e Antonio},
+  title = {The {D}ynkin type of a non-negative unit form},
+  journal = {Expo. Math.}, volume = {17}, pages = {339--348}, year = {1999} }
+@article{GreenMarcos2008dkoszul,
+  author = {Green, Edward L. and Marcos, Eduardo N.},
+  title = {$d$-{K}oszul algebras, 2-$d$-determined algebras and 2-$d$-{K}oszul algebras},
+  year = {2008}, note = {arXiv:0812.3408} }
+@article{GreenMarcosMartinezVillaZhang2004Dkoszul,
+  author = {Green, Edward L. and Marcos, Eduardo N. and Mart\'inez-Villa, Roberto and Zhang, Pu},
+  title = {{D}-{K}oszul algebras}, journal = {J. Pure Appl. Algebra},
+  volume = {193}, pages = {141--162}, year = {2004} }
+@article{Cassidy2009twodegrees,
+  author = {Cassidy, Thomas},
+  title = {Quadratic algebras with {E}xt algebras generated in two degrees},
+  year = {2009}, note = {arXiv:0903.0344} }
+@article{LeaderSnashall2015stacked,
+  author = {Leader, Joanna and Snashall, Nicole},
+  title = {The {E}xt algebra and a new generalisation of {D}-{K}oszul algebras},
+  year = {2015}, note = {arXiv:1506.01854} }
+@article{EtingofEu2007preprojective,
+  author = {Etingof, Pavel and Eu, Ching-Hwa},
+  title = {Koszulity and the {H}ilbert series of preprojective algebras},
+  journal = {Math. Res. Lett.}, volume = {14}, year = {2007},
+  note = {arXiv:math/0512287} }
+@incollection{MartinezVilla1996preprojective,
+  author = {Mart\'inez-Villa, Roberto},
+  title = {Applications of {K}oszul algebras: the preprojective algebra},
+  booktitle = {Representation Theory of Algebras}, series = {CMS Conf. Proc.},
+  volume = {18}, pages = {487--504}, year = {1996} }
+@book{Happel1989hochschild,
+  author = {Happel, Dieter},
+  title = {Hochschild cohomology of finite-dimensional algebras},
+  series = {Lecture Notes in Math.}, volume = {1404}, publisher = {Springer},
+  year = {1989} }
+@article{Redondo2001survey,
+  author = {Redondo, Mar\'ia Julia},
+  title = {Hochschild cohomology: some methods for computations},
+  journal = {Resenhas IME-USP}, volume = {5}, year = {2001} }
+@article{Schremmer2025wpl,
+  author = {Schremmer, Felix},
+  title = {Weighted projective lines and {H}ochschild cohomology},
+  year = {2025}, note = {arXiv:2512.08414} }
+@article{Hubery2025preprojective,
+  author = {Hubery, Andrew},
+  title = {On the global dimension and {K}oszul property of preprojective algebras},
+  year = {2025}, note = {arXiv:2509.21448} }
+```
+
+### Best 5 batteries (agent ranking)
+
+1. **Nakayama N_n(r) Coxeter polynomials [LMR-nakayama]** — six exact
+   polynomials + the Prop-6.1 family, already reproduced under quiverlab's
+   convention; Coxeter number via Φ^m = I. Zero ambiguity, immediate.
+2. **Dynkin + canonical Coxeter tables** — triple-corroborated + recomputed;
+   the broadest coxeter_polynomial coverage (ship Dₙ v-factorization).
+3. **Lehmer [2,3,7] spectral oracle** — flagship spectral_radius /
+   mahler_measure pin + strict ρ ordering.
+4. **Canonical-algebra HH² = t−3 + Happel trace identity** — two-invariant
+   consistency (HH alternating sum = degree-1 Coxeter coefficient).
+5. **Ext of k[x]/(x^d) = k[u,v]/(u²) + δ-pattern [GM-dkoszul]** — the Plan-27
+   seed; pair with the char-sensitive k[x]/(x²) split for a GF(p)/char-0 probe.
+   (Cassidy's quadratic-non-Koszul witnesses close Plan 27's missing-witness gap.)
+
+**Honest-scope notes:** Dₙ cyclotomic condition mis-transcribed (use
+v-factorization); Barot–de la Peña D₁₁ quiver unverified (figure); Martínez-
+Villa 1996 verified only via reproving papers; k[x]/(x^n) per-degree HH beyond
+x² should come from quiverlab's own closed form, not the graded-BV literature.
