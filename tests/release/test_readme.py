@@ -1,13 +1,31 @@
 """README is the release front door: badges, real install, quickstart, links."""
 import pathlib
+import re
 
-README = (pathlib.Path(__file__).resolve().parent.parent.parent / "README.md").read_text()
+ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+README = (ROOT / "README.md").read_text(encoding="utf-8")
 
 
 def test_badges_present():
     for b in ("actions/workflows/ci.yml/badge.svg", "img.shields.io/pypi/v/quiverlab",
               "License-MIT"):
         assert b in README
+
+
+def test_tests_badge_matches_verification_page():
+    """The README tests badge may never go stale: its count must equal the
+    audited count stated on docs/verification.md (both are updated together by
+    the verification-transparency standing rule), and it must link there."""
+    badge = re.search(r"img\.shields\.io/badge/tests-(\d+)_oracle--pinned", README)
+    assert badge, "README is missing the tests badge"
+    page = (ROOT / "docs" / "verification.md").read_text(encoding="utf-8")
+    stated = re.search(r"The suite is \*\*(\d+) tests\*\*", page)
+    assert stated, "docs/verification.md no longer states the audited suite count"
+    assert badge.group(1) == stated.group(1), (
+        f"README badge says {badge.group(1)} tests but docs/verification.md "
+        f"states {stated.group(1)} — update them together"
+    )
+    assert "marcoarmenta.github.io/quiverlab/verification/" in README
 
 
 def test_install_and_quickstart():

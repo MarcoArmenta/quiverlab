@@ -330,7 +330,9 @@ page missing from the nav fails the build.
 **Every future plan adds its new oracles to this page as part of its acceptance** —
 exactly as every plan already updates the "Under the hood" internals chapters. When
 a plan ships a new engine, invariant, or operation, its acceptance task extends the
-tables above with the oracle that guards it and the test file that runs it. This
+tables above with the oracle that guards it and the test file that runs it — and
+updates the audited counts here and in the README tests badge (a release test pins
+the two numbers equal, so a stale badge fails the suite). This
 page is the single living record of how each shipped feature is verified, and it is
 kept honest: if a subsystem lacks an oracle, this page says so rather than implying
 one.
