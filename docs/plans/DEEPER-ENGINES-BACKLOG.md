@@ -126,7 +126,13 @@ planned together even if delivered in slices.
   just the covariant/homology collapse and its gates (unit cap, `(z∩f)∩g ~ z∩(f∪g)`,
   in-window agreement with the transported `cap_of_cs_classes`). Lifts the last
   window-bounded operation with a native route (the bracket stays transported —
-  it needs the brace/circle machinery, out of scope).
+  it needs the brace/circle machinery, out of scope). Fold in the Plan-20
+  final-review backlog while there: harden the QCI skip-guards (a dims regression
+  currently green-washes to skip), tighten the bridge test to element-wise basis
+  equality, a session-scoped resolution fixture to recover the +2:18 battery
+  cost of per-test Δ rebuilds, route `native_cup`'s chain resolution through the
+  TensorComplex cache, and exercise the diagonal's inconsistent-lift
+  `NotImplementedError` scope edge with a constructed refusal test.
 
 - [ ] **Ext-algebra / Yoneda-ring presentations** (v1 non-goal): generators/relations
   of `Ext_A(⊕S, ⊕S)` from Plan-05 module resolutions + deep CS; Koszulity checks.
