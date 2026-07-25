@@ -53,6 +53,8 @@ class Config:
     big_token_ttl_seconds: int
     public_base_url: str
     docs_url: str
+    cache_enabled: bool
+    cache_max_entries: int
 
     @property
     def big_jobs_enabled(self) -> bool:
@@ -116,6 +118,11 @@ class Config:
             # Empty by default: the Docs nav link is absent (no dead href) unless
             # a docs site URL is configured (spec §3 docs-link).
             docs_url=env.get("QLWEB_DOCS_URL", ""),
+            # Result cache (Plan 25). On by default: a finished computation is
+            # replayed for any later identical request (across users and tiers),
+            # never recomputed. The LRU size cap bounds the pinned artifacts.
+            cache_enabled=_int(env, "QLWEB_CACHE_ENABLED", 1) != 0,
+            cache_max_entries=_int(env, "QLWEB_CACHE_MAX_ENTRIES", 1000),
         )
 
 

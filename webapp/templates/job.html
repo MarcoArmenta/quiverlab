@@ -13,7 +13,8 @@
      {% if trace_name %}· <a href="/download/{{ job.id }}/{{ trace_name }}">{{ t("form.pdf") }}</a>{% endif %}
      {% if has_tikz %}· <a href="/download/{{ job.id }}/tikz.tex">TikZ</a>{% endif %}
   </p>
-  {% if version %}<p>{{ t("job.computed_with") }} <code>{{ version }}</code>.</p>{% endif %}
+  {% if version %}<p>{{ t("job.computed_with") }} <code>{{ version }}</code>{% if job.finished_at %} · {{ t("job.finished") }} {{ job.finished_at }}{% endif %}.</p>{% endif %}
+  <p class="cached-note">{{ t("job.cached_note") }}</p>{# Plan 25: exact => THE answer; identical requests replay from cache #}
   {% if references %}
     <h2>{{ t("results.references") }}</h2>
     <ul>

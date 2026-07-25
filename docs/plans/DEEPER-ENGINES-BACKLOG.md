@@ -194,18 +194,29 @@ planned together even if delivered in slices.
 
 ## Tier 3 — quiverlab-web (`plan-09-web`) post-merge polish (from the 2026-07-24 whole-branch review)
 
-- [ ] **Result cache — never recompute a known example** (Marco, 2026-07-25):
-  cache finished results keyed by the CANONICALIZED request (family/quiver/module
-  spec + field + invariant + parameters + library version — exact results are
-  deterministic, so a key hit is a correctness-safe replay). Identical requests
-  are served from the cache instantly, including across users. Big-job tier
-  interaction: email verification gates the COST of computing, not access to
-  mathematics — so a big-job request whose canonical key is already cached is
-  served immediately WITHOUT email verification (no token minted, no email
-  stored); only genuinely new big examples go through the magic-link flow, and
-  their results enter the cache for everyone after. Invalidate on library
-  version bump; nothing user-identifying in the key or the cached record;
-  retention/size cap with LRU sweep alongside the existing retention sweep.
+- [x] **Result cache — never recompute a known example** (Marco, 2026-07-25) —
+  DONE, Plan 25, 2026-07-25 (`2026-07-25-plan-25-webapp-result-cache.md`, branch
+  `plan-25-webapp-result-cache`). Original item: cache finished results keyed by
+  the CANONICALIZED request (family/quiver/module spec + field + invariant +
+  parameters + library version — exact results are deterministic, so a key hit is
+  a correctness-safe replay). Identical requests are served from the cache
+  instantly, including across users. Big-job tier interaction: email verification
+  gates the COST of computing, not access to mathematics — so a big-job request
+  whose canonical key is already cached is served immediately WITHOUT email
+  verification (no token minted, no email stored); only genuinely new big examples
+  go through the magic-link flow, and their results enter the cache for everyone
+  after. Invalidate on library version bump; nothing user-identifying in the key
+  or the cached record; retention/size cap with LRU sweep alongside the existing
+  retention sweep. Delivered: `webapp/server/cache.py` canonicalizer + a
+  `result_cache` table (new table, not a jobs column) that "pins" its finished job
+  against retention; cache-first checks on `/api/compute`, `/api/jobs`, AND
+  `/api/jobs/big` (big check is the first statement, before `big_jobs_enabled`, so
+  a cached big example is served even with SMTP off, no token/email/pending row);
+  worker records on success only; `sweep_cache_once` (version purge + LRU) beside
+  `sweep_once`; bilingual "previously computed" note. In-flight dedup documented as
+  benign and skipped (would need a jobs-schema change — not "within the existing
+  schema"); `cache_put` is idempotent so concurrent identical completions never
+  crash.
 - [ ] **Unify client error envelopes**: the API mixes `{error_type,message}`
   (compute/feedback/bigjobs), `{detail}` (FastAPI 422 + the big-job 502
   `HTTPException`), and `{message}` (404s); `app.js` reads only the first, so an
