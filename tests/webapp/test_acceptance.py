@@ -381,3 +381,123 @@ def test_cache_lru_sweep_evicts_and_retention_reclaims(tmp_path):
     assert cold in removed and warm not in removed
     assert not (cfg.artifacts_dir / cold).exists()              # evicted job's artifacts gone
     assert (cfg.artifacts_dir / warm).exists()                  # cached job's artifacts kept
+
+
+# --------------------------------------------------------------------------- #
+# Plan 26 -- no-code module input: the module compute kinds served end-to-end on
+# all three tiers (instant / queued+cached / big+cached), with the loud
+# RelationError surfaced as a clean 4xx.
+# --------------------------------------------------------------------------- #
+
+# k[x]/(x^3) over GF(2): one vertex + a nilpotent loop -- a tiny module algebra.
+_MOD_ALG = {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+            "relations": ["x*x*x"], "field": {"kind": "GF", "p": 2, "n": 1}}
+_M2 = {"dims": {"1": 2}, "maps": {"x": [[0, 0], [1, 0]]}}
+
+
+def _module_body(compute, module=None, **extra):
+    body = {"schema": 2, "algebra": _MOD_ALG, "compute": compute,
+            "artifacts": {"pdf": False, "tikz": False},
+            "module": module if module is not None else _M2}
+    body.update(extra)
+    return body
+
+
+def test_module_instant_compute(tmp_path):
+    # A small module dispatches on the instant tier and carries its result + the
+    # resolved references inline -- no job, no artifact.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/compute",
+                    json=_module_body(["dimension_vector", "rad_top_soc", "tau"]))
+    assert r.status_code == 200, r.text
+    assert r.json()["tier"] == "instant"
+    results = r.json()["result"]["results"]
+    assert results["dimension_vector"]["dimvec"] == {"1": 2}
+    assert results["rad_top_soc"]["socle"]["dimvec"] == {"1": 1}
+    assert results["tau"]["dimvec"] == {"1": 2}
+    # References carry through like every other kind.
+    keys = {e["key"] for e in r.json()["result"]["references"]}
+    assert "assem_book" in keys
+
+
+def test_module_relation_violation_is_a_clean_4xx(tmp_path):
+    # A module whose matrices break the relations (x acting invertibly => x^3 != 0)
+    # gets the library's loud error as a clean 4xx -- never a 500, never a silent
+    # wrong answer.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/compute",
+                    json=_module_body(["dimension_vector"],
+                                      module={"dims": {"1": 1}, "maps": {"x": [[1]]}}))
+    assert r.status_code == 422, r.text
+    assert "relation" in r.json()["message"].lower()
+
+
+def test_module_ext_two_modules_instant(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    client = TestClient(create_app(cfg))
+    r = client.post("/api/compute",
+                    json=_module_body(["ext:0..3"],
+                                      ext_target={"builtin": {"kind": "simple", "vertex": 1}}))
+    assert r.status_code == 200, r.text
+    assert r.json()["result"]["results"]["ext"]["dims"] == [1, 1, 1, 1]
+
+
+def test_queued_module_replayed_from_cache_across_users(tmp_path):
+    # A deep module resolution routes to the queued tier; once computed it is
+    # replayed instantly for an identical request, no recompute, no second job.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                           "QLWEB_INSTANT_MAX_DEGREE": "2"})    # deg-4 -> queued
+    client = TestClient(create_app(cfg))
+    body = _module_body(["projective_resolution:0..4"])
+
+    r1 = client.post("/api/compute", json=body)
+    assert r1.status_code == 202 and r1.json()["tier"] == "queued", r1.text
+    jid = r1.json()["job_id"]
+    store = JobStore(cfg.db_path)
+    assert worker_tick(store, cfg) is True                     # runs + caches it
+
+    result = json.loads((cfg.artifacts_dir / jid / "result.json").read_text(encoding="utf-8"))
+    assert result["results"]["projective_resolution"]["top"] == 4
+
+    r2 = client.post("/api/compute", json=body)
+    assert r2.status_code == 200 and r2.json()["tier"] == "cached"
+    assert r2.json()["job_id"] == jid                          # the very same result
+    assert len(_job_ids(cfg)) == 1                             # no duplicate job
+
+
+def test_big_module_cache_hit_sends_no_email(tmp_path):
+    # The big-job requirement, for a MODULE request: a first user runs it through
+    # the magic-link flow (which caches it); a second user's identical module
+    # request is served from cache with NO email, NO token, NO pending row.
+    over = {"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_SMTP_HOST": "relay",
+            "QLWEB_SMTP_FROM": "q@e.org", "QLWEB_PUBLIC_BASE_URL": "https://ql.example",
+            "QLWEB_INSTANT_OPS_THRESHOLD": "0", "QLWEB_QUEUED_OPS_THRESHOLD": "0",
+            "QLWEB_INSTANT_MAX_DEGREE": "0", "QLWEB_QUEUED_MAX_DEGREE": "0"}
+    cfg = Config.from_env(over)
+    body = _module_body(["dimension_vector", "tau"], email="first@example.org", lang="en")
+
+    mail1 = FakeMailer()
+    client1 = TestClient(create_app(cfg, mailer=mail1))
+    assert client1.post("/api/jobs/big", json=body).status_code == 202, "expected the magic-link flow"
+    token = re.search(r"/verify/([^\s]+)", mail1.sent[0][2]).group(1)
+    assert client1.get("/verify/" + token).status_code == 200
+    store = JobStore(cfg.db_path)
+    assert worker_tick(store, cfg, mailer=mail1) is True
+    first_job = _job_ids(cfg)[0]
+
+    # Second user, fresh mailer, identical module request: served from cache.
+    mail2 = FakeMailer()
+    client2 = TestClient(create_app(cfg, mailer=mail2))
+    r = client2.post("/api/jobs/big", json=dict(body, email="second@example.org"))
+    assert r.status_code == 200, r.text
+    assert r.json()["status"] == "cached" and r.json()["job_id"] == first_job
+    assert mail2.sent == []                                     # NO verification email
+    assert _pending_big_count(cfg) == 0                        # NO token / pending row
+    assert _job_ids(cfg) == [first_job]                        # NO duplicate big job
+
+    # Privacy: the cached module result leaks nothing about the first requester.
+    result_json = (cfg.artifacts_dir / first_job / "result.json").read_text(encoding="utf-8")
+    assert "first@example.org" not in result_json
+    assert json.loads(result_json)["results"]["tau"]["dimvec"] == {"1": 2}

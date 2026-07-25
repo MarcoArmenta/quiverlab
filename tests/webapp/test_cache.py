@@ -14,6 +14,7 @@ Two layers, both pure/fast:
 import sqlite3
 
 from webapp.server.cache import canonical_blob, canonical_key
+from webapp.server.schema import ComputeRequest
 from webapp.server.store import JobStore
 
 
@@ -107,6 +108,71 @@ def test_canonical_blob_is_sorted_json():
     blob = canonical_blob(_FAMILY, _V)
     assert blob.startswith('{"lib":')          # "lib" sorts before "req"
     assert " " not in blob                       # compact separators
+
+
+# --------------------------------------------------------------------------- #
+# Module requests (Plan 26): the module block canonicalizes deterministically
+# THROUGH canonical_key, exactly like family/quiver requests. Specs go through
+# the schema's model_dump (the normalized form the API and the worker both hash).
+# --------------------------------------------------------------------------- #
+
+_ALG = {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+        "relations": ["x*x*x"], "field": {"kind": "GF", "p": 2, "n": 1}}
+
+
+def _mod_spec(**module):
+    body = {"schema": 2, "algebra": _ALG, "compute": ["dimension_vector"],
+            "artifacts": {"pdf": False, "tikz": False}, "module": module}
+    return ComputeRequest.model_validate(body).model_dump(by_alias=True)
+
+
+def test_same_module_typed_twice_collides():
+    a = _mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [1, 0]]})
+    b = _mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [1, 0]]})
+    assert canonical_key(a, _V) == canonical_key(b, _V)
+
+
+def test_module_side_omitted_equals_explicit_right():
+    # The load-bearing side-default invariant: omitted side and side="right" are ONE
+    # cache key (the schema always emits side="right"), so a user who never touches
+    # the side toggle hits the same entry as one who set it to the default.
+    omitted = _mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [1, 0]]})
+    explicit = _mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [1, 0]]}, side="right")
+    assert canonical_key(omitted, _V) == canonical_key(explicit, _V)
+
+
+def test_module_dict_key_order_is_irrelevant():
+    a = _mod_spec(dims={"1": 1, "2": 0}, maps={"x": [[0]]})
+    # a spec spelled with the module dict keys in a different order is the SAME key
+    b = _mod_spec(maps={"x": [[0]]}, side="right", dims={"2": 0, "1": 1})
+    assert canonical_key(a, _V) == canonical_key(b, _V)
+
+
+def test_builtin_nested_side_collides_with_lifted_side():
+    # The builtin's nested `side` is lifted to the canonical top-level `side`, so the
+    # task's `{"builtin": {..., "side": "left"}}` and the lifted form are one key.
+    a = _mod_spec(builtin={"kind": "simple", "vertex": 1, "side": "left"})
+    b = _mod_spec(builtin={"kind": "simple", "vertex": 1}, side="left")
+    assert canonical_key(a, _V) == canonical_key(b, _V)
+
+
+def test_different_modules_do_not_collide():
+    base = canonical_key(_mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [1, 0]]}), _V)
+    assert canonical_key(_mod_spec(dims={"1": 3},
+                                   maps={"x": [[0, 0, 0], [1, 0, 0], [0, 1, 0]]}), _V) != base
+    assert canonical_key(_mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [0, 0]]}), _V) != base
+    assert canonical_key(_mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [1, 0]]},
+                                   side="left"), _V) != base
+    assert canonical_key(_mod_spec(builtin={"kind": "simple", "vertex": 1}), _V) != base
+
+
+def test_module_request_key_differs_from_same_algebra_without_module():
+    with_mod = canonical_key(_mod_spec(dims={"1": 2}, maps={"x": [[0, 0], [1, 0]]}), _V)
+    plain = ComputeRequest.model_validate(
+        {"schema": 1, "algebra": _ALG, "compute": ["cartan"],
+         "artifacts": {"pdf": False, "tikz": False}}).model_dump(by_alias=True)
+    assert "module" not in plain                       # non-module dump is unchanged
+    assert canonical_key(plain, _V) != with_mod
 
 
 # --------------------------------------------------------------------------- #
