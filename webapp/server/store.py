@@ -82,6 +82,25 @@ CREATE TABLE IF NOT EXISTS feedback (
   extra TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_feedback_ip ON feedback(ip);
+
+-- Result cache (Plan 25): a finished computation is replayable for any later
+-- identical request, keyed by the CANONICALISED request + library version (see
+-- webapp/server/cache.py). Mathematics ONLY -- no email/ip/token ever lives here.
+-- `job_id` references a `done` job whose artifacts back the replay; a live cache
+-- row "pins" that job against the ordinary retention purge (see purge_older_than),
+-- so the artifacts survive to be replayed. `hits`/`last_hit_at` drive the LRU
+-- size-cap sweep (cache_sweep); `quiverlab_version` lets a version bump purge stale
+-- rows even before the key mismatch would have hidden them.
+CREATE TABLE IF NOT EXISTS result_cache (
+  key TEXT PRIMARY KEY,
+  job_id TEXT NOT NULL,
+  quiverlab_version TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  last_hit_at TEXT NOT NULL,
+  hits INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_result_cache_job ON result_cache(job_id);
+CREATE INDEX IF NOT EXISTS idx_result_cache_recency ON result_cache(last_hit_at);
 """
 
 
@@ -114,7 +133,9 @@ class JobStore:
         return conn
 
     def init_schema(self) -> None:
-        """Create the `jobs`, `pending_big`, and `feedback` tables (idempotent)."""
+        """Create the `jobs`, `pending_big`, `feedback`, and `result_cache` tables
+        (idempotent -- CREATE ... IF NOT EXISTS, so it upgrades an older DB in place
+        by adding only the new `result_cache` table on the next start)."""
         with self._conn() as conn:
             conn.executescript(_SCHEMA)
 
@@ -253,15 +274,96 @@ class JobStore:
 
     def purge_older_than(self, cutoff_iso: str) -> list[str]:
         """Delete finished jobs older than `cutoff_iso`; return their ids so the
-        caller can clean up the matching artifact directories."""
+        caller can clean up the matching artifact directories.
+
+        A job referenced by a live `result_cache` row is EXCLUDED (the cache "pins"
+        it): its row and artifacts must survive to back a cached replay. When the
+        cache entry is later evicted (`cache_sweep`), the pin lifts and a subsequent
+        retention pass reclaims the now-unreferenced job. This is the Plan-25
+        artifact-lifetime rule: a finished job lives until it is BOTH older than the
+        retention cutoff AND unreferenced by the cache."""
         with self._conn() as conn:
             rows = conn.execute(
                 "SELECT id FROM jobs WHERE finished_at IS NOT NULL AND "
-                "finished_at < ?", (cutoff_iso,)).fetchall()
+                "finished_at < ? AND id NOT IN (SELECT job_id FROM result_cache)",
+                (cutoff_iso,)).fetchall()
             ids = [r["id"] for r in rows]
-            conn.execute("DELETE FROM jobs WHERE finished_at IS NOT NULL AND "
-                         "finished_at < ?", (cutoff_iso,))
+            conn.execute(
+                "DELETE FROM jobs WHERE finished_at IS NOT NULL AND "
+                "finished_at < ? AND id NOT IN (SELECT job_id FROM result_cache)",
+                (cutoff_iso,))
         return ids
+
+    # --- result cache (Plan 25) ---------------------------------------------
+    def cache_get(self, key: str, now_iso: str) -> str | None:
+        """Return the cached done-job id for `key` (a cache HIT), or None on a miss.
+
+        A hit bumps the entry's `hits` and `last_hit_at=now_iso` (LRU recency). If
+        the referenced job has vanished or is no longer `done` (should not happen
+        while pinned -- defensive), the stale row is dropped and the call reports a
+        miss. Non-transactional: a concurrent double-hit may lose one increment of
+        the popularity counter, which is immaterial; the pin makes correctness
+        independent of the counter."""
+        with self._conn() as conn:
+            row = conn.execute("SELECT job_id FROM result_cache WHERE key=?",
+                               (key,)).fetchone()
+            if row is None:
+                return None
+            job = conn.execute("SELECT status FROM jobs WHERE id=?",
+                               (row["job_id"],)).fetchone()
+            if job is None or job["status"] != "done":
+                conn.execute("DELETE FROM result_cache WHERE key=?", (key,))
+                return None
+            conn.execute("UPDATE result_cache SET hits=hits+1, last_hit_at=? "
+                         "WHERE key=?", (now_iso, key))
+            return row["job_id"]
+
+    def cache_put(self, key: str, job_id: str, version: str, now_iso: str) -> None:
+        """Record a finished `job_id` under `key`. First writer wins: an identical
+        request racing to compute the same math (benign -- results are exact and
+        deterministic) records the same key on completion; the second `cache_put` is
+        a no-op via ON CONFLICT DO NOTHING, so exactly one job stays pinned and the
+        other ages out under normal retention. Never crashes on a duplicate key."""
+        with self._conn() as conn:
+            conn.execute(
+                "INSERT INTO result_cache (key, job_id, quiverlab_version, "
+                "created_at, last_hit_at, hits) VALUES (?, ?, ?, ?, ?, 0) "
+                "ON CONFLICT(key) DO NOTHING",
+                (key, job_id, version, now_iso, now_iso))
+
+    def cache_row(self, key: str) -> dict | None:
+        """Return the raw cache row (math-only: key, job_id, version, timestamps,
+        hits) as a dict, or None. Used by tests and by callers that want the
+        first-computed timestamp for the 'previously computed' UX."""
+        with self._conn() as conn:
+            row = conn.execute("SELECT * FROM result_cache WHERE key=?",
+                               (key,)).fetchone()
+        return dict(row) if row else None
+
+    def cache_sweep(self, max_entries: int, current_version: str) -> int:
+        """Evict cache rows and return how many were removed. Two passes:
+
+        1. **Version purge** -- drop every row not from `current_version`
+           (a library bump invalidates them; the key would already hide them, this
+           reclaims the slots).
+        2. **LRU size cap** -- keep the `max_entries` most-recently-hit rows, evict
+           the rest (ties broken by created_at then key for determinism).
+
+        Eviction only removes the fast-lookup row + the retention pin; it never
+        deletes a job or its artifacts directly -- the next retention pass reclaims
+        a now-unpinned job once it is also older than the cutoff."""
+        removed = 0
+        with self._conn() as conn:
+            cur = conn.execute("DELETE FROM result_cache WHERE quiverlab_version != ?",
+                               (current_version,))
+            removed += cur.rowcount
+            cur = conn.execute(
+                "DELETE FROM result_cache WHERE key IN ("
+                "  SELECT key FROM result_cache "
+                "  ORDER BY last_hit_at DESC, created_at DESC, key DESC "
+                "  LIMIT -1 OFFSET ?)", (max_entries,))
+            removed += cur.rowcount
+        return removed
 
     # --- feedback -----------------------------------------------------------
     def create_feedback(self, category: str, message: str, contact: str | None,
