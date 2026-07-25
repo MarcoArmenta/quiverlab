@@ -79,6 +79,8 @@ def test_symmetric_homology_equals_cohomology(alg_fn, N):
 
 
 # ---- Kunneth: HH_*(A (x) B) = HH_*(A) (x) HH_*(B) ----
+# Source: Cartan-Eilenberg, "Homological Algebra", Princeton Univ. Press (1956);
+# citations registry key ``tensor_product`` -> CartanEilenberg1956.
 def test_kunneth_tensor_square_equals_commutative_ci():
     from quiverlab.engine.scan2 import tensor_product
     t = tensor_product(truncated_polynomial(2), truncated_polynomial(2))
