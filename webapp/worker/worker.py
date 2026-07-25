@@ -67,7 +67,14 @@ def _apply_caps(wall_seconds: int, mem_bytes: int) -> None:
 
     Production runs on Linux (Docker), where both caps are hard. The test probe
     (Linux-only) asserts RLIMIT_AS lands at the requested value."""
-    import resource
+    try:
+        import resource
+    except ImportError:  # Windows: no POSIX rlimits at all -- degrade LOUDLY
+        _log.warning("the 'resource' module is unavailable on %s: neither "
+                     "RLIMIT_CPU nor RLIMIT_AS is enforced; the parent "
+                     "wall-time kill is the only guard (production runs on "
+                     "Linux where both caps are hard)", sys.platform)
+        return
 
     _try_setrlimit(resource.RLIMIT_CPU, wall_seconds, "RLIMIT_CPU")
     if sys.platform == "linux":

@@ -30,7 +30,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ".[dev]"          # pure path; numba is a separate deep leg
+      - run: pip install -e ".[dev,web]"      # pure path; numba is a separate deep leg; web serves tests/webapp (fast bucket)
       - run: python -m pytest -m fast -q
 
   deep:
@@ -40,8 +40,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { leg: numba, extras: ".[dev,fast]", no_numba: "0" }
-          - { leg: pure,  extras: ".[dev]",      no_numba: "1" }
+          - { leg: numba, extras: ".[dev,fast,web]", no_numba: "0" }
+          - { leg: pure,  extras: ".[dev,web]",      no_numba: "1" }
     env:
       NUMBA_NUM_THREADS: "2"
       OMP_NUM_THREADS: "2"
