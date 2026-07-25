@@ -326,8 +326,12 @@ def test_native_cup_bridge_to_longer_transport_kx2():
     native = small.cup_of_cs_classes(u1s, u2s)            # max(1,2)=2 > 0 -> native, deg 3
     transported = big.cup_of_cs_classes(u1b, u2b)         # max(1,2)=2 <= 9 -> transport
 
-    assert len(small._res._basis(3, "coh")) == len(big._res._basis(3, "coh")), \
-        "Plan-17 canonicalization must give identical CS bases across instances"
+    small_basis = [(ch.word, j) for ch, j in small._res._basis(3, "coh")]
+    big_basis = [(ch.word, j) for ch, j in big._res._basis(3, "coh")]
+    assert small_basis == big_basis, \
+        "Plan-17 canonicalization must give ELEMENT-WISE identical CS bases across " \
+        "instances (chain word + corner index), so the coordinate vectors are directly " \
+        "comparable"
     assert big.same_cohomology_class(native, transported, degree=3), \
         "native (tiny window) != longer transport (wide window) mod coboundary"
     zero3 = [0] * len(big._res._basis(3, "coh"))
@@ -379,10 +383,13 @@ def _comm_square(field):
     return build_from_record(rec, field=field)
 
 
-def test_deep_qci_past_window_leibniz_and_nonzero_class():
+def test_deep_qci_past_window_leibniz_and_nonzero_class(qci_gf5_diag4):
     """QCI over GF(5), PAST a zero window at real depth (needs Delta_4, ~28s --
     deep-bucket-acceptable).  window=0 forces every cup (max(p,q) >= 1 > 0) onto the
     native route, so "past-window" lands at low absolute degree.
+
+    The heavy Delta_4 build is the SESSION-scoped `qci_gf5_diag4` fixture (shared with
+    the cap deep pin -- Plan 21 review item, recover the per-test rebuild cost).
 
     Two pins Task 3 budgeted out (they need Delta_4):
       * LEIBNIZ at (p,q) = (2,1) and (1,2) -- the sign arbiter at total degree 3,
@@ -396,10 +403,8 @@ def test_deep_qci_past_window_leibniz_and_nonzero_class():
     Leibniz pins are the degree-3 (Delta_4) ones.  A degree-3 native cup is
     additionally shown to COMPUTE past the window (transport would raise) although
     its class is forced to zero."""
-    comp = Comparison(_qci_gf(), window=0)
-    comp._ensure(4)                        # CS resolution to max_degree 5
+    comp = qci_gf5_diag4
     res = comp._res
-    diagonal(res, 4)                       # the ~28s build; cached for every cup below
 
     # (i) Leibniz at (2,1) and (1,2) -- reuse the cached Delta_4.
     ok, w = _leibniz_holds(res, 2, 1)

@@ -132,12 +132,38 @@ coboundary on HH representatives, and in-window the native cup is cohomologous t
 transported cup — a permanent anchor oracle (the multi-vertex `comm_square` even matches
 transport exactly as cochains, where `HH² = 0` makes the class test vacuous).
 
+## The native cap (Plan 21)
+
+Past the window the **cap** product is computed natively too, by reading the SAME
+lifted diagonal Δ the HOMOLOGY way — the covariance flip is the whole idea, exactly as
+in the minimal engine's Plan-16 note (cohomology acts `a·w·b`, HOMOLOGY acts `b·w·a` on
+SWAPPED corner tags; `engine/resolutions_minimal.py`). For a double-PELT key
+`(a, τ, mid, ρ, c)` of the `(p, n-p)`-component of `Δ_n(σ)` (`deg τ = p`, `deg ρ = n-p`),
+a cochain `f ∈ C^p` capped with a chain `z ∈ C_n` (value `x = z(σ) ∈ e_{t(σ)}A e_{o(σ)}`)
+lands in `C_{n-p}`, supported on `ρ`, with
+
+`(f ∩ z)(ρ) = Σ_Δ coeff · b_c · x · b_a · f(τ) · b_mid` — SIGN-FREE.
+
+`f` eats the degree-`p` **first** factor `τ`, `ρ` survives, and the `x ⊗_{A^e} P_{n-p}`
+collapse is the op-twisted `R·x·L` (`L = b_a·f(τ)·b_mid`, `R = b_c`) the homology
+differential already uses (`resolution.py:187`). The value reads against
+`corner(o(ρ), t(ρ), "hom")`; no bar object is built, so it works at ANY degree
+(`resolutions_cs/cap.py`; `Comparison.cap_of_cs_classes(engine="auto"/"native"/
+"transport")` routes native past-window, transported in-window byte-unchanged).
+Signs are again arbitrated, not assumed: the in-window native ≡ transported
+`cap_of_cs_classes` anchor (the non-commutative quantum CI distinguishes `b·w·a` from
+`a·w·b`), the exact unit cap `1 ∩ z = z`, the exact cap-Leibniz
+`b(f∩z) = (−1)^{p+1}(δf∩z) + (−1)^p(f∩bz)`, and the module identity
+`(z∩f)∩g ~ z∩(f∪g)` (HH_• a module over HH^•, using the native cup for `f∪g`) all hold
+simultaneously with the sign-free collapse. Degree edges: `n = p` lands in `C_0`;
+`p > n` raises `ValueError` (a cap into negative degree, bar convention).
+
 **Honest scope table (CS Hochschild operations).**
 
 | operation | in the bar window | past the window |
 |-----------|-------------------|-----------------|
-| **cup** | transported (Plan 14) ≡ native, mod coboundary | **native ✓** (this section) |
-| **cap** | transported `cap_of_cs_classes` (Plan 14) | **Plan 21** — same Δ, homology-side `b·w·a` collapse |
+| **cup** | transported (Plan 14) ≡ native, mod coboundary | **native ✓** (Plan 20) |
+| **cap** | transported `cap_of_cs_classes` (Plan 14) ≡ native, mod boundary | **native ✓** (Plan 21) — same Δ, homology-side `b·w·a` collapse |
 | **bracket** | transported (Plan 14) | window-bounded **by design** — going native needs the CS brace/circle machinery, not built in quiverlab v1 |
 
 ## What is certified, and what is not
@@ -153,6 +179,7 @@ transport exactly as cochains, where `HH² = 0` makes the class test vacuous).
   single-arrow blocks; cap transports through the covariant collapse `A ⊗ Φ`,
   `Comparison.cap_of_cs_classes`). Per-instance gates: `assert_chain_map`,
   transport roundtrip, cup-route agreement, unit-cap and `(z∩f)∩g ~ z∩(f∪g)`.
-  Past the window: the **cup** is delivered natively via the lifted diagonal
-  (Plan 20 — see "The lifted diagonal and the native cup" above); the **cap** is
-  Plan 21 (same Δ); the **bracket** stays transported/window-bounded by design.
+  Past the window: the **cup** (Plan 20) and the **cap** (Plan 21) are both delivered
+  natively via the lifted diagonal — the cup the `a·w·b` cohomology way, the cap the
+  `b·w·a` homology way (see "The native cap" above); the **bracket** stays
+  transported/window-bounded by design.

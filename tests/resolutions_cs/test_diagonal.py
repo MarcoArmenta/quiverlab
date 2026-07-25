@@ -263,3 +263,26 @@ def test_diagonal_pq_structure_smoke():
             diag_n = tc.diagonal(n)
             for sigma in tc.res.ss.S(n):
                 _assert_pq_structure(tc, n, sigma, diag_n[_cw(sigma)])
+
+
+# --------------------------------------------------------------------------- #
+# (e) the scope edge: an inconsistent lift-solve raises the loud               #
+#     NotImplementedError -- never a silent fallback (Plan 21 review item).    #
+# --------------------------------------------------------------------------- #
+def test_diagonal_inconsistent_lift_raises_loudly(monkeypatch):
+    """The diagonal's lift-solve `d^{P⊗P}·Δ_n(σ) = ζ(σ)` shares the exact scope edge of
+    resolution.py::_d_general: an inconsistent solve (no lift) is refused with a loud
+    NotImplementedError ("higher CS homotopy correction … spec §6 risk register"),
+    NEVER a silent fallback.  No in-CS-scope algebra reaches it (the lift always closes
+    on the certified fixtures), so the edge is exercised by a CONSTRUCTED refusal:
+    force `fields.linalg.solve` (as imported in diagonal.py) to report inconsistency by
+    returning None, and demand the loud raise at the first degree that actually solves.
+
+    Δ_0 (base case, no solve) is unaffected; degree 1 hits the solve branch and must
+    raise."""
+    import quiverlab.resolutions_cs.diagonal as diagmod
+    tc = TensorComplex(_kx2())
+    assert tc.diagonal(0)                                  # base case: no solve, fine
+    monkeypatch.setattr(diagmod, "solve", lambda M, rhs, dom: None)
+    with pytest.raises(NotImplementedError, match="higher CS homotopy"):
+        tc.diagonal(1)

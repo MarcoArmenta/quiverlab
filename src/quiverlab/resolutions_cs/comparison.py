@@ -22,11 +22,12 @@ on the bar side with engine.tt_calculus (the GF(p) facade) and pulled back throu
 Phi#.  Cap products transport through the covariant collapse PhiHom = A (x) Phi
 on the chain side (cap_of_cs_classes; Plan 14 Phase B).  Everything is exact over
 GF(p); this bar TRANSPORT is delivered only inside the bar-comparison WINDOW (a cup
-at degree n needs bar cochains up to degree 2n+1).  The CUP additionally has a native
-CS route (resolutions_cs.cup, Plan 20) that carries it PAST the window with no bar
-object at all; cup_of_cs_classes routes to it automatically past the window.  The
-bracket stays transported/window-bounded (it would need the CS brace/circle
-machinery); native cap is Plan 21.
+at degree n needs bar cochains up to degree 2n+1).  Both the CUP (resolutions_cs.cup,
+Plan 20) and the CAP (resolutions_cs.cap, Plan 21) additionally have a native CS route
+-- the homology-side b*w*a collapse of the SAME lifted diagonal -- that carries them
+PAST the window with no bar object at all; cup_of_cs_classes / cap_of_cs_classes route
+to it automatically past the window.  The bracket stays transported/window-bounded (it
+would need the CS brace/circle machinery).
 
 Bases.  The bar side uses the engine's cochain basis engine.scan3.cochain_basis
 (pairs (w, s), interior word w in R^n, output slot s), matching tt_calculus.  The
@@ -44,11 +45,11 @@ from quiverlab.fields.primefield import PrimeField
 
 _WINDOW_MSG = (
     "this operation is transported through the bar comparison and delivered only "
-    "within the bar-comparison window: the Gerstenhaber bracket needs the CS "
-    "brace/circle machinery to go native (not built in quiverlab v1), and the cap "
-    "product's native diagonal route is Plan 21. The CUP product IS delivered "
-    "natively past the window -- call cup_of_cs_classes with engine='auto' (the "
-    "default) or engine='native'.")
+    "within the bar-comparison window (a degree-n operation needs bar cochains up to "
+    "degree 2n+1): the Gerstenhaber bracket needs the CS brace/circle machinery to go "
+    "native (not built in quiverlab v1). The CUP and CAP products ARE delivered "
+    "natively past the window -- call cup_of_cs_classes / cap_of_cs_classes with "
+    "engine='auto' (the default) or engine='native'.")
 
 
 class CSClass:
@@ -562,11 +563,11 @@ class Comparison:
         engine.tt_calculus.gerstenhaber_bracket_cochain.  Returns a CS cochain at
         degree u.degree+v.degree-1.
 
-        Scope note (Plan 20): UNLIKE the cup, the bracket stays transported and
-        window-bounded (it raises NotImplementedError past self.window).  Going native
-        would need the CS brace/circle machinery, which quiverlab v1 does not build --
-        this is by design, not a gap.  The cup product's native past-window route lives
-        in cup_of_cs_classes; the cap's is deferred to Plan 21."""
+        Scope note: UNLIKE the cup (Plan 20) and the cap (Plan 21), the bracket stays
+        transported and window-bounded (it raises NotImplementedError past self.window).
+        Going native would need the CS brace/circle machinery, which quiverlab v1 does
+        not build -- this is by design, not a gap.  The native past-window routes live in
+        cup_of_cs_classes / cap_of_cs_classes."""
         from quiverlab.engine import tt_calculus as TT
         p, q = u.degree, v.degree
         self._check_window(p, q)
@@ -725,13 +726,42 @@ class Comparison:
                for r in range(len(diff))]
         return solve(Mat, [dom.coerce(v) for v in diff], dom) is not None
 
-    def cap_of_cs_classes(self, f, z):
+    def cap_of_cs_classes(self, f, z, engine="auto"):
         """The CS-side cap product f ∩ z (f a CS cohomology class of degree p, z a CS
-        homology class of degree n >= p): transport both to the bar, cap there with
-        engine.tt_calculus.cap_cochain, pull the degree-(n-p) chain class back.
-        Returns a CS chain vector at degree n - p (window-bounded)."""
-        from quiverlab.engine import tt_calculus as TT
+        homology class of degree n >= p), at degree n - p.  Two routes, selected by
+        ``engine`` exactly as ``cup_of_cs_classes`` does:
+
+        * ``"transport"`` (and ``"auto"`` in-window, i.e. max(p, n) <= self.window):
+          transport f, z to the bar, cap there with engine.tt_calculus.cap_cochain, and
+          pull the degree-(n-p) chain class back through the covariant collapse.  This is
+          window-bounded (a degree-n operation needs bar cochains up to degree 2n+1);
+          ``"transport"`` keeps that refusal at any degree, so past the window it raises
+          NotImplementedError.
+        * ``"native"`` (and ``"auto"`` PAST the window): the native CS cap on the lifted
+          diagonal (resolutions_cs.cap.native_cap, Plan 21) -- the homology-side `b·w·a`
+          collapse of the SAME Δ the native cup uses.  No bar object is ever built, so it
+          works at ANY degree; in-window it is homologous to the transported route (the
+          permanent anchor oracle, tests/resolutions_cs/test_native_cap.py).
+
+        ``"auto"`` is byte-for-byte the transported behavior (and all its cross-checks)
+        wherever the transport does NOT refuse -- exactly max(p, n) <= self.window -- and
+        routes native only where the transport used to raise.  Raises ValueError for
+        p > n (a cap into negative degree) on both routes."""
+        if engine not in ("auto", "native", "transport"):
+            raise ValueError(
+                "engine must be one of 'auto', 'native', 'transport'; got "
+                f"{engine!r}")
         p_deg, n_deg = f.degree, z.degree
+        if engine == "native" or (engine == "auto" and max(p_deg, n_deg) > self.window):
+            # native CS route: no bar object; any degree.  native_cap iterates Δ_n and
+            # reads the hom collapse, so ensure the resolution one past n (mirrors the
+            # cup's p+q+1) so downstream homology-class checks have their differential.
+            from quiverlab.resolutions_cs.cap import native_cap
+            self._ensure(n_deg + 1)
+            return native_cap(self._res, f.vec, p_deg, z.vec, n_deg)
+        # transported route (engine == "transport", or "auto" in-window): byte-for-byte
+        # the original behavior, INCLUDING the window refusal via _check_window.
+        from quiverlab.engine import tt_calculus as TT
         self._check_window(p_deg, n_deg)
         fb = self.transport_cocycle_cs_to_bar(f.vec, p_deg)
         zb = self.transport_cycle_cs_to_bar(z.vec, n_deg)
