@@ -62,6 +62,10 @@ def _kx2_gf():
     return Quiver([1], {"x": (1, 1)}).algebra(relations=["x*x"], field=GF(32003))
 
 
+def _kx2_gf5():
+    return Quiver([1], {"x": (1, 1)}).algebra(relations=["x*x"], field=GF(5))
+
+
 def _qci_gf():
     return Quiver([1], {"x": (1, 1), "y": (1, 1)}).algebra(
         relations=["x*x", "y*y", "y*x - 2*x*y"], field=GF(5))
@@ -265,3 +269,81 @@ def test_graded_commutativity_qci():
     rhs = native_cup(res, u1.vec, 1, u0.vec, 1)
     neg = [(-x) % comp.p for x in rhs]                   # (-1)^{1*1}
     assert comp.same_cohomology_class(lhs, neg, degree=2)
+
+
+# =========================================================================== #
+# (Task 4) PAST-WINDOW DELIVERY -- the headline: cup routes to the native CS   #
+# diagonal once max(p,q) exceeds the (deliberately tiny) comparison window.    #
+# =========================================================================== #
+def test_native_cup_past_window_kx2():
+    """Past the window, `Comparison.cup_of_cs_classes` no longer refuses -- it routes
+    to the native CS diagonal (Plan 20 Task 4).  k[x]/x^2 over GF(5), char 5 != 2:
+    the HH ring is k[alpha]/alpha^2 (x) k[beta], |alpha|=1 (odd), |beta|=2 (even), so
+
+        alpha cup alpha  (deg 2, ODD square)  ~ 0   (a coboundary; forced by graded
+                                                     commutativity in char != 2)
+        beta  cup beta   (deg 4, EVEN square) !~ 0  (nonzero -- beta is the period-2
+                                                     periodicity element)
+
+    Both cups have max(p,q) > window == 0, so today's transport raises
+    NotImplementedError; after wiring they compute natively.  Class dims are pinned
+    via same_cohomology_class against zero (never bytes)."""
+    comp = Comparison(_kx2_gf5(), max_cells=8)
+    # _default_window: eff=max(m-1,2)=2, largest n with m*eff^(2n+1) <= 8:
+    #   n=0 -> 2*2 = 4 <= 8 (ok); n=1 -> 2*8 = 16 > 8 -> window 0.
+    assert comp.window == 0, f"expected tiny window 0, got {comp.window}"
+    u1 = comp.hh_class_cs(1, 0)
+    u2 = comp.hh_class_cs(2, 0)
+
+    a = comp.cup_of_cs_classes(u1, u1)                     # deg 2 > window: native now
+    zero2 = [0] * len(comp._res._basis(2, "coh"))
+    assert comp.same_cohomology_class(a, zero2, degree=2), \
+        "alpha cup alpha must be a coboundary (odd square, char != 2)"
+
+    b = comp.cup_of_cs_classes(u2, u2)                     # deg 4 > window: native now
+    zero4 = [0] * len(comp._res._basis(4, "coh"))
+    assert not comp.same_cohomology_class(b, zero4, degree=4), \
+        "beta cup beta must be a nonzero class (even periodicity square)"
+
+
+def test_native_cup_bridge_to_longer_transport_kx2():
+    """Bridge oracle: a cup past a TINY window computed NATIVELY equals -- mod
+    coboundary -- the SAME cup computed by TRANSPORT on a wider-window instance
+    (Plan 20 Task 4).  k[x]/x^2 over GF(5): u1 in HH^1, u2 in HH^2, and
+    u1 cup u2 = alpha*beta in HH^3 is nonzero, so the match is not a vacuous
+    coboundary coincidence.
+
+    The two instances build SEPARATE CS resolutions; Plan-17 canonicalization makes
+    their CS bases identical, so the coordinate vectors are directly comparable --
+    asserted loudly (equal basis lengths) before the comparison."""
+    small = Comparison(_kx2_gf5(), max_cells=8)            # window 0 (native past it)
+    big = Comparison(_kx2_gf5())                           # default window 9 (transport)
+    assert small.window == 0 and big.window >= 3, (small.window, big.window)
+
+    u1s, u2s = small.hh_class_cs(1, 0), small.hh_class_cs(2, 0)
+    u1b, u2b = big.hh_class_cs(1, 0), big.hh_class_cs(2, 0)
+
+    native = small.cup_of_cs_classes(u1s, u2s)            # max(1,2)=2 > 0 -> native, deg 3
+    transported = big.cup_of_cs_classes(u1b, u2b)         # max(1,2)=2 <= 9 -> transport
+
+    assert len(small._res._basis(3, "coh")) == len(big._res._basis(3, "coh")), \
+        "Plan-17 canonicalization must give identical CS bases across instances"
+    assert big.same_cohomology_class(native, transported, degree=3), \
+        "native (tiny window) != longer transport (wide window) mod coboundary"
+    zero3 = [0] * len(big._res._basis(3, "coh"))
+    assert not big.same_cohomology_class(transported, zero3, degree=3), \
+        "the bridged class (alpha*beta) must be nonzero -- not a vacuous match"
+
+
+def test_cup_engine_selector_kx2():
+    """`engine=` forces a route: 'native' computes at any degree; 'transport' keeps
+    the window refusal; an invalid engine is a ValueError naming the three options."""
+    comp = Comparison(_kx2_gf5(), max_cells=8)             # window 0
+    u1 = comp.hh_class_cs(1, 0)
+    # in-window is degree <= 0 for a cup, so (1,1) is past the window either way.
+    forced_native = comp.cup_of_cs_classes(u1, u1, engine="native")
+    assert isinstance(forced_native, list)
+    with pytest.raises(NotImplementedError):
+        comp.cup_of_cs_classes(u1, u1, engine="transport")   # transport still refuses
+    with pytest.raises(ValueError):
+        comp.cup_of_cs_classes(u1, u1, engine="bogus")
