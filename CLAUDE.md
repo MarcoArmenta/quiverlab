@@ -79,7 +79,10 @@ and CS). Over int64 GF(p).
   **canonical/byte-reproducible** since Plan 17 — the correction solve is reduced
   mod its nullspace via `fields.linalg.reduce_mod_nullspace`), `ambiguities.py::SSequence`,
   `homology.py` (`cs_cohomology_dims`, `cs_homology_dims`, `cs_hh_basis`),
-  `comparison.py::Comparison` (CS↔bar class transport), `engine_facade.py::CSResolution`,
+  `comparison.py::Comparison` (CS↔bar class transport; `cup_of_cs_classes` /
+  `cap_of_cs_classes` route native past-window (Plans 20/21), transported in-window),
+  `diagonal.py` (lifted diagonal Δ), `cup.py` (native `a·w·b` cup, Plan 20),
+  `cap.py` (native `b·w·a` cap, Plan 21), `engine_facade.py::CSResolution`,
   `build.py::reduction_system_of(A)`. Reach it via `engine="cs"` or
   `import quiverlab.resolutions_cs`.
 - **Disambiguation:** `src/quiverlab/modules/resolution.py` is a *separate* minimal
@@ -164,4 +167,19 @@ cup collapse in `cup.py`; `Comparison.cup_of_cs_classes(engine="auto"/"native"/
 "transport")` routes native past-window, transported in-window (byte-unchanged).
 Leibniz is the sign arbiter; the transported cup anchors it in-window. Cap = Plan
 21 (same Δ); bracket stays transported/window-bounded by design. Branch
-`plan-20-native-cs-cup`, UNMERGED).
+`plan-20-native-cs-cup`, UNMERGED), Plan 21 (native deep-degree CS **cap** past the
+bar window — backlog Tier-2: the homology-side sign-free `b·w·a` collapse of the SAME
+Plan-20 diagonal Δ (`resolutions_cs/cap.py::native_cap`,
+`(f∩z)(ρ)=Σ_Δ coeff·b_c·x·b_a·f(τ)·b_mid`; f eats the degree-p first factor τ, ρ
+survives — the covariance flip of the Plan-16 note, cohomology `a·w·b` vs homology
+`b·w·a` on swapped corner tags). `Comparison.cap_of_cs_classes(engine="auto"/"native"/
+"transport")` routes native past-window, transported in-window (byte-unchanged). The
+sign convention is ARBITRATED, not assumed — the in-window native ≡ transported cap
+anchor (non-commutative quantum CI distinguishes `b·w·a` from `a·w·b`), exact unit cap
+`1∩z=z`, exact cap-Leibniz `b(f∩z)=(-1)^{p+1}(δf∩z)+(-1)^p(f∩bz)`, and module identity
+`(z∩f)∩g ~ z∩(f∪g)` via the native cup all hold simultaneously. Edges: n=p→C_0, p>n
+raises. Folded-in Plan-20 review backlog cleared (QCI skip-guards now FAIL not skip,
+element-wise CS-basis bridge, session-scoped Δ_4 fixture, `native_cup` chain-cache
+routing, constructed inconsistent-lift refusal). Branch `plan-21-native-cs-cap`,
+UNMERGED — `docs/verification.md` cap oracles owed at merge, that page lives on
+`plan-22-verification-transparency`).

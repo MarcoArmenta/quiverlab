@@ -120,19 +120,24 @@ planned together even if delivered in slices.
   `Comparison.cup_of_cs_classes(engine="auto"/"native"/"transport")`). Leibniz is the
   sign arbiter; the transported cup is the in-window anchor. The cap is the follow-up
   item below; the bracket stays transported/window-bounded by design.
-- [ ] **Plan 21: native CS cap via the Plan-20 diagonal** — the homology-side
-  `b·w·a` collapse of the SAME lifted diagonal Δ (Plan 20 built it and the tensor
-  differential; the cap reuses both). Smaller than Plan 20: no new construction,
-  just the covariant/homology collapse and its gates (unit cap, `(z∩f)∩g ~ z∩(f∪g)`,
-  in-window agreement with the transported `cap_of_cs_classes`). Lifts the last
-  window-bounded operation with a native route (the bracket stays transported —
-  it needs the brace/circle machinery, out of scope). Fold in the Plan-20
-  final-review backlog while there: harden the QCI skip-guards (a dims regression
-  currently green-washes to skip), tighten the bridge test to element-wise basis
-  equality, a session-scoped resolution fixture to recover the +2:18 battery
-  cost of per-test Δ rebuilds, route `native_cup`'s chain resolution through the
-  TensorComplex cache, and exercise the diagonal's inconsistent-lift
-  `NotImplementedError` scope edge with a constructed refusal test.
+- [x] **Plan 21: native CS cap via the Plan-20 diagonal** — DONE, Plan 21,
+  2026-07-25 (`2026-07-25-plan-21-native-cs-cap.md`, branch `plan-21-native-cs-cap`,
+  UNMERGED). The homology-side sign-free `b·w·a` collapse of the SAME lifted diagonal Δ
+  (`resolutions_cs/cap.py::native_cap`; `Comparison.cap_of_cs_classes(engine="auto"/
+  "native"/"transport")` routes native past-window, transported in-window byte-unchanged).
+  `f ∩ z = Σ_Δ coeff · b_c·x·b_a·f(τ)·b_mid` — f eats the degree-p first factor τ, ρ
+  survives; the sign convention is arbitrated (not assumed) by the in-window native ≡
+  transported anchor (the non-commutative quantum CI distinguishes `b·w·a` from `a·w·b`),
+  the exact unit cap, the exact cap-Leibniz `b(f∩z)=(-1)^{p+1}(δf∩z)+(-1)^p(f∩bz)`, and
+  the module identity `(z∩f)∩g ~ z∩(f∪g)` via the native cup — all holding simultaneously.
+  Degree edges: n=p → C_0; p>n raises. The last window-bounded operation to gain a native
+  route (the bracket stays transported by design). Folded-in Plan-20 review backlog all
+  done: hardened the QCI skip-guards (a dims regression now FAILs, not skips), tightened
+  the native-cup bridge to element-wise CS-basis equality, a session-scoped Δ_4 fixture
+  (cup+cap deep pins share one build), routed `native_cup`'s chain resolution through the
+  TensorComplex cache, and a constructed refusal test for the diagonal's inconsistent-lift
+  `NotImplementedError` scope edge. NOTE: `docs/verification.md` (concurrent
+  `plan-22-verification-transparency` branch) must gain Plan 21's cap oracles at merge time.
 
 - [ ] **Ext-algebra / Yoneda-ring presentations** (v1 non-goal): generators/relations
   of `Ext_A(⊕S, ⊕S)` from Plan-05 module resolutions + deep CS; Koszulity checks.
