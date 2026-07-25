@@ -252,7 +252,12 @@ planned together even if delivered in slices.
 - [ ] **A∞-structure (Kadeishvili) on Ext** — ambitious flagship; CS small models make
   it feasible.
 - [ ] **Performance**: numba kernels for the Plan-13 corner path (pure Python today);
-  GF(p^n) fast-engine acceleration (int64 stack is GF(p)-only).
+  GF(p^n) fast-engine acceleration (int64 stack is GF(p)-only). GPU exploration
+  (Marco, 2026-07-25): exact GF(p) rank/elimination on GPUs (FFLAS-style
+  delayed-reduction in doubles is provably exact for small p, or int32/int64
+  kernels via numba-CUDA) — research-tier: big engineering + certification cost,
+  uncertain gains on memory-bound sparse ranks; benchmark before committing.
+  Until then every surface says honestly: CPU cores + RAM help, GPUs idle.
 - [ ] **GUI**: surface deeper engines (CS depth, Betti sequences) in the Pyodide
   landing-page GUI.
 - [ ] **Native AR-quiver** (v1 non-goal; `[qpa]` extra covers it today).

@@ -177,6 +177,23 @@ All suites green (fast + relevant deep + webapp) in this worktree's venv.
 Merge/push only when Marco asks. **Open decision left for Marco: the curated
 precomputed-example list** (placeholder manifest ships).
 
+## Addendum (Marco, 2026-07-25): host resources & accelerators
+
+- **`quiverlab/hpc/resources.py::detect_resources()`** — stdlib-only, exact-int
+  detection of cores (cpu_count / sched_getaffinity / cgroup v1+v2 quotas /
+  `$SLURM_CPUS_PER_TASK`), RAM (`/proc/meminfo` | macOS sysctl | cgroup limits |
+  SLURM mem vars), and GPUs (`nvidia-smi -L`, report-only). Thread caps and the
+  deepen memory budget default from it (env/SLURM always win); `estimate`
+  compares the job against the host honestly; the offline GUI shows detected
+  resources + configured caps.
+- **GPUs: detected but UNUSED, by design.** quiverlab's engines are exact CPU
+  arithmetic (int64 mod p, exact rationals); GPUs would idle. Exact mod-p linear
+  algebra on GPUs (FFLAS-style delayed-reduction or integer kernels) is a real
+  research direction but a large engineering+certification lift for uncertain
+  gains on memory-bound ranks — recorded as a Tier-2 performance exploration,
+  NOT in this plan. All resource guidance (sbatch templates, docs, DRAC-cloud
+  hosting note) says: request cores+RAM, never GPUs.
+
 ## Out of scope
 
 Real-cluster execution (manual release checklist); QPA in the image; Pyodide
