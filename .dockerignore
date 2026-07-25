@@ -1,0 +1,38 @@
+# Build context = repo root (compose build.context is ../..). The Dockerfile
+# COPYies only pyproject.toml, README.md, LICENSE, src/, and webapp/; everything
+# listed here is excluded from the context sent to the daemon to keep builds
+# fast and to avoid leaking the local venv, git history, or agent scratch.
+.git/
+.gitignore
+.venv/
+venv/
+.claude/
+.superpowers/
+
+# Docs, plans, and internals are not needed to run the app.
+docs/
+site/
+
+# Tests are not COPYied into the image.
+tests/
+
+# Python / build caches and artifacts.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local job data / traces that may exist during dev.
+quiverlab_traces/
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# OS cruft.
+.DS_Store

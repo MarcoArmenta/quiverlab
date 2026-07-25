@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block body %}
+{# job-id lives in a data attribute, never an inline script -- the strict CSP
+   forbids inline JS. app.js reads it and polls while the job is running. #}
+<div id="job-meta" data-job-id="{{ job.id }}"
+     data-status="{{ job.status }}"></div>
+<h1>{{ t("job.title") }} {{ job.id }}</h1>
+<p>{{ t("job.status") }} <strong id="status">{{ t("status." ~ job.status) }}</strong></p>
+{% if job.status == "failed" %}<div class="err">{{ error }}</div>{% endif %}
+{% if job.status == "done" %}
+  <p>{{ t("job.downloads") }}
+     <a href="/download/{{ job.id }}/result.json">result.json</a>
+     {% if trace_name %}· <a href="/download/{{ job.id }}/{{ trace_name }}">{{ t("form.pdf") }}</a>{% endif %}
+     {% if has_tikz %}· <a href="/download/{{ job.id }}/tikz.tex">TikZ</a>{% endif %}
+  </p>
+  {% if version %}<p>{{ t("job.computed_with") }} <code>{{ version }}</code>.</p>{% endif %}
+  {% if references %}
+    <h2>{{ t("results.references") }}</h2>
+    <ul>
+    {% for r in references %}
+      <li>{{ r.formatted }}
+        {% if r.doi_url %}· <a href="{{ r.doi_url }}">DOI</a>{% endif %}
+        {% if r.arxiv_url %}· <a href="{{ r.arxiv_url }}">arXiv</a>{% endif %}
+      </li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+  {% if reproduce %}<h2>{{ t("job.reproduce") }}</h2><pre>{{ reproduce }}</pre>{% endif %}
+{% else %}
+  <p id="progress">{{ job.progress }}</p>
+{% endif %}
+<p><a href="{{ prefix }}/feedback?job={{ job.id }}">{{ t("job.report_problem") }}</a></p>
+{% endblock %}

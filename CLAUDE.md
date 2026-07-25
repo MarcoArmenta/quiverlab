@@ -145,4 +145,12 @@ GF(p) keeps the engine byte-unchanged; off GF(p): generic (b,B) mixed complex
 criterion + inner-ν symmetry (`invariants/frobenius.py`, self-certifying form,
 loud when inconclusive); `_require_prime_field` is gone — the only refusal
 left is structure-constants algebras off GF(p) for path-basis-needing
-invariants, honestly worded).
+invariants, honestly worded), Plan 09 (the server tier — `webapp/`, backlog
+Tier-1 item 7: FastAPI `create_app` + spawn-child resource-capped worker fleet
+over a single SQLite/WAL queue; two-tier compute (instant sync / queued jobs) +
+email magic-link big-job tier; bilingual EN/ES pages with vendored KaTeX,
+`/literature`, feedback+admin; deploy assets (Dockerfile/compose/Caddy/
+PROVISIONING). All algebra delegated to `import quiverlab` — no user-code exec,
+`quiverlab.engine.*` never imported, base wheel stays lean. Executed
+subagent-driven with adversarial critics; whole-branch review's four cross-layer
+majors fixed. Branch `plan-09-web`, UNMERGED).

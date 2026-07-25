@@ -1,0 +1,16 @@
+# Replace quiverlab.example.org with the DNS name pointed at the floating IP.
+# Caddy provisions a real Let's Encrypt certificate for this name automatically
+# and redirects :80 -> :443 by default; the app itself only ever sees HTTPS.
+#
+# Caddy MUST be the sole ingress to the app (the security group publishes only
+# 80/443 to Caddy; the app's :8000 is never exposed to the internet). The app's
+# per-IP rate limiting trusts the LAST X-Forwarded-For hop, which Caddy's
+# reverse_proxy appends with the real peer address -- that hop is only
+# trustworthy while Caddy is the one and only proxy in front of the app.
+quiverlab.example.org {
+    encode gzip
+    reverse_proxy app:8000
+    request_body {
+        max_size 256KB
+    }
+}
