@@ -134,6 +134,21 @@ REGISTRY: dict = {r.key: r for r in [
        "Finite global dimension iff finite Hochschild homology dimension -- the "
        "conjecture the zoo scans probe.",
        "conjecture"),
+    _r("priddy", "Priddy1970", "algorithm",
+       "Koszul resolutions",
+       "The Priddy PBW / G-quadratic certifier: a quadratic Gröbner basis (all "
+       "reduction tips length 2) proves the algebra is Koszul (Plan 27).",
+       "koszul"),
+    _r("froberg_koszul", "Froberg1999", "algorithm",
+       "Koszul algebras",
+       "The Hilbert-series Koszulity criterion P(t)*C_A(-t) = I -- quiverlab's "
+       "Fröberg numeric Koszulity falsifier (Plan 27).",
+       "koszul"),
+    _r("polishchuk_positselski", "PolishchukPositselski2005", "foundation",
+       "Quadratic Algebras",
+       "The quadratic-dual conventions (A^! = kQ^op/R^perp) behind quiverlab's "
+       "Koszul dual and the E(A) = (A^!)^op cross-check (Plan 27).",
+       "koszul"),
 ]}
 
 
