@@ -37,7 +37,8 @@ agreement. The tests are written so that agreement is never a tautology.
 ### The normalized bar complex is the base oracle
 
 Hochschild `HH^n` / `HH_n` from the exponential normalized bar complex
-(`hochschild/bar.py`) is the ground truth every deeper engine is measured against.
+(`hochschild/bar.py`) is the ground truth every deeper engine is measured against
+(Hochschild, *Ann. of Math.* 46 (1945), 58–67; registry key `bar`).
 It is simple, slow, and structurally different from the resolutions, so degreewise
 agreement with it is a genuine check. Its use is bounded only by the exponential
 blow-up `dim C_n = a·(a-1)^n` — the whole point of the deeper engines is to reach
@@ -56,33 +57,52 @@ only shows up in one characteristic cannot hide.
 
 `tests/resolutions_cs/test_battery_literature.py` and
 `tests/engine/test_qpa_reference_validation.py` pin values that exist **outside**
-the library, each with its provenance inline:
+the library, each with its provenance inline. Every source below has a full entry
+in the [References](#references) section at the bottom of this page; where a work
+carries a citations-registry key its bibliographic entry is the packaged
+`references.bib`, cited by that key.
 
 - **`k[x]/(x^n)`, classical.** In characteristic 0 (or whenever `n` is invertible)
-  `dim HH_0 = n` and `dim HH_i = n-1` for `i ≥ 1` (Loday, *Cyclic Homology*; the
-  BACH truncated-polynomial computations). The char-5 pathology on `k[x]/(x^5)`
-  (`p | n`) collapses both differentials, giving `HH_i = A` in every degree —
-  pinned as the vector `[5, 5, 5, 5, 5, 5, 5]`.
-- **Quantum complete intersection** `k⟨x,y⟩/(x², y², yx − 2xy)`
-  (Buchweitz–Green–Madsen–Solberg, *Math. Res. Lett.* 2005; Bergh–Erdmann,
-  *Algebra & Number Theory* 2008). Homology persists, `HH_• = [3, 2, 2, …]`, while
-  cohomology dies from degree 3, `HH^• = [2, 2, 1, 0, 0, …]` in characteristic 0 —
-  the homology/cohomology asymmetry the deeper engines exist to detect.
-- **Happel's theorem** (Happel, LNM 1404, 1989): a hereditary algebra has
-  `HH^i = 0` for `i ≥ 2`. Linear `A_3` is pinned to `HH^• = [1, 0, 0, 0, 0]`.
+  `dim HH_0 = n` and `dim HH_i = n-1` for `i ≥ 1`. Sources named in the tests:
+  Loday, *Cyclic Homology*, and the "BACH" truncated-polynomial computations
+  (CS battery); Happel (1989), registry key `happel_question`, for the same
+  values (QPA-reference file) — and both are cross-confirmed live by the bar
+  oracle. The char-5 pathology on `k[x]/(x^5)` (`p | n`) collapses both
+  differentials, giving `HH_i = A` in every degree — pinned as `[5, 5, 5, 5, 5, 5, 5]`.
+- **Quantum complete intersection** `k⟨x,y⟩/(x², y², yx − 2xy)`. The family (finite
+  Hochschild cohomology with infinite global dimension) is
+  Buchweitz–Green–Madsen–Solberg, *Math. Res. Lett.* 12 (2005), 805–816 (registry
+  key `quantum_ci`); the explicit `HH_•` / `HH^•` values are Bergh–Erdmann,
+  *Algebra & Number Theory* 2 (2008), 501–522 (key `qci_hh_oracle`). Homology
+  persists, `HH_• = [3, 2, 2, …]`, while cohomology dies from degree 3,
+  `HH^• = [2, 2, 1, 0, 0, …]` in characteristic 0 — the homology/cohomology
+  asymmetry the deeper engines exist to detect.
+- **Happel's theorem.** Happel, *Lecture Notes in Math.* 1404 (1989), 108–126
+  (registry key `happel_question`): a hereditary algebra has `HH^i = 0` for
+  `i ≥ 2`. Linear `A_3` is pinned to `HH^• = [1, 0, 0, 0, 0]`. (The tests state the
+  theorem in words; no theorem number is asserted here, because none is recorded in
+  the repository.)
 - **Commutative complete intersection** `k[x,y]/(x², y²)`: `HH_• = 4, 4, 5, 6, 7,
-  8, 9, …` (the Künneth square of `k[x]/(x²)`), and being symmetric it satisfies
-  `HH^n = HH_n` — an internal cross-check QPA also satisfies.
-- **Cyclic Nakayama** self-injective algebras `kZ_n/rad²`: low-degree dims frozen.
+  8, 9, …` — the value is attributed to Buchweitz–Green–Madsen–Solberg (2005) in
+  the QPA-reference file, via the Künneth square of `k[x]/(x²)` (Künneth formula:
+  Cartan–Eilenberg, *Homological Algebra*, 1956, registry key `tensor_product`).
+  Being symmetric it also satisfies `HH^n = HH_n` — an internal cross-check QPA
+  satisfies too.
+- **Cyclic Nakayama** self-injective algebras `kZ_n/rad²`: low-degree dims frozen;
+  the tests cite these as the standard QPA Nakayama-algebra examples (`references.bib`
+  key `qpa`), the family itself per Assem–Simson–Skowroński (2006), key `nakayama`.
 - **Gentle algebra** `kQ/(ab, ba)` on the 2-cycle: self-injective, so `HH^•` is
   nonzero in every degree (`[1, 1, 1, 1]`) — which makes the CS↔bar agreement a
-  discriminating check rather than a run of zeros (oracle: bar cross-check).
+  discriminating check rather than a run of zeros. Oracle: bar cross-check; the
+  gentle-algebra notion is attributed in the test to Assem–Skowroński, *Algebra i
+  Analiz* (1987).
 
 ### The read-only bank as a byte-level oracle
 
 `tests/resolutions_cs/test_battery_bank_oracle.py` pins the Plan-04 CS resolution
 against the original hanlab bank's *hand-derived closed-form* CS differentials — a
-wholly separate implementation of the Chouhy–Solotar formulae (arXiv:1406.2300)
+wholly separate implementation of the Chouhy–Solotar formulae (Chouhy–Solotar,
+*J. Algebra* 432 (2015), 22–61, arXiv:1406.2300; registry key `chouhy_solotar`)
 for `k[x]/(x^a)` and the quantum CI. Two tiers: **HH-dimension equality** family
 by family and prime by prime (rank-based, invariant under the correction's
 nullspace freedom, yet swap-sensitive to any genuine differential bug), and, since
@@ -112,11 +132,14 @@ Some facts need no external oracle because the defining axioms are the gate:
 Where a computation has a genuinely different classical model, that model is coded
 independently and required to agree:
 
-- **Cyclic homology** over a field containing `Q` is cross-checked against the
-  Connes **λ-complex** second model (Loday, Thm 2.1.5) — unnormalized chains, a
-  quotient model, disjoint from both `hochschild/bar.py` and
-  `hochschild/cyclic.py` (`tests/invariants/test_cyclic_generic.py`), plus the
-  mixed-complex identities `b² = 0`, `B² = 0`, `bB + Bb = 0` over QQ.
+- **Cyclic homology** rests on Connes' `B`-operator and mixed complex (Connes,
+  *Publ. Math. IHÉS* 62 (1985), 41–144, registry key `cyclic`). Over a field
+  containing `Q` it is cross-checked against the **λ-complex** second model
+  (Loday, *Cyclic Homology*, **Theorem 2.1.5** — the theorem number is recorded in
+  the test docstring) — unnormalized chains, a quotient model, disjoint from both
+  `hochschild/bar.py` and `hochschild/cyclic.py`
+  (`tests/invariants/test_cyclic_generic.py`), plus the mixed-complex identities
+  `b² = 0`, `B² = 0`, `bB + Bb = 0` over QQ.
 - **Complexity** off GF(p) is the relative-Tor (Cibils) Betti complex, with
   `H_n =` the minimal resolution's rank sequence over every field, gated against
   the GF(p) engine (`tests/invariants/test_betti_generic.py`).
@@ -145,7 +168,11 @@ independently re-derived as Bardzell chain counts (`6, 5, 2, 1, 0` on
 | minimal-coh ≡ CS-coh | Hom-collapse vs CS cohomology | to depth 8 | `test_minimal_cohomology.py` |
 
 Both differentials in each pair are built by disjoint code, so equal ranks and HH
-dimensions are a real cross-check, not a tautology.
+dimensions are a real cross-check, not a tautology. The engines are the bar complex
+(`bar` → Hochschild 1945), Bardzell's minimal resolution (`bardzell` → Bardzell,
+*J. Algebra* 188 (1997), 69–89), Chouhy–Solotar (`chouhy_solotar` → 2015), and the
+minimal projective `A^e` resolution (`minimal_resolution` → Green–Solberg–Zacharia,
+*Trans. Amer. Math. Soc.* 353 (2001), 2915–2939).
 
 ### numba vs pure-Python parity
 
@@ -273,6 +300,16 @@ page is the single living record of how each shipped feature is verified, and it
 kept honest: if a subsystem lacks an oracle, this page says so rather than implying
 one.
 
+**Every literature oracle carries its citation.** We cite the literature we test
+against, at the precision the repository can actually verify — author, year, venue,
+and a theorem / example / proposition number *only when it is actually recorded in
+a test, docstring, plan doc, or the read-only bank's attribution* — never a guessed
+number. Where a source already has a citations-registry key
+(`src/quiverlab/citations/`), the entry is the packaged `references.bib`, cited by
+that key so it stays consistent with `quiverlab.bibliography(...)` and the
+[References page](bibliography.md); where it does not, the source is named at the
+verified precision and listed below as such.
+
 ## Honest scope
 
 - `complexity` is a lower-bound estimate that can under-report; it is **exact only
@@ -286,3 +323,62 @@ one.
   cell as the always-on stand-in.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+
+---
+
+## References
+
+The literature these oracles test against. Entries with a **registry key** are
+rendered from the single packaged `src/quiverlab/citations/references.bib` and also
+appear, grouped and annotated, on the [References page](bibliography.md) (cite them
+in code via `quiverlab.bibliography(...)`). Entries **without** a registry key are
+cited only from test comments or the read-only bank's attributions, at the
+precision the repository verifies — no bibliographic detail is invented, and no
+theorem number is asserted unless it is actually recorded.
+
+**In the citations registry** (key → work):
+
+- `bar` — Hochschild, G. (1945). On the cohomology groups of an associative
+  algebra. *Annals of Mathematics* 46, 58–67.
+- `bardzell` — Bardzell, M. J. (1997). The alternating syzygy behavior of monomial
+  algebras. *Journal of Algebra* 188, 69–89.
+- `chouhy_solotar` — Chouhy, S.; Solotar, A. (2015). Projective resolutions of
+  associative algebras and ambiguities. *Journal of Algebra* 432, 22–61.
+  arXiv:1406.2300.
+- `happel_question` — Happel, D. (1989). Hochschild cohomology of
+  finite-dimensional algebras. *Lecture Notes in Mathematics* 1404, 108–126.
+- `quantum_ci` — Buchweitz, R.-O.; Green, E. L.; Madsen, D.; Solberg, Ø. (2005).
+  Finite Hochschild cohomology without finite global dimension. *Mathematical
+  Research Letters* 12, 805–816. arXiv:math/0407108.
+- `qci_hh_oracle` — Bergh, P. A.; Erdmann, K. (2008). Homology and cohomology of
+  quantum complete intersections. *Algebra & Number Theory* 2, 501–522.
+- `tensor_product` — Cartan, H.; Eilenberg, S. (1956). *Homological Algebra.*
+  Princeton University Press. (The Künneth formula for Hochschild (co)homology.)
+- `cyclic` — Connes, A. (1985). Non-commutative differential geometry.
+  *Publications Mathématiques de l'IHÉS* 62, 41–144.
+- `minimal_resolution`, `module_ext` — Green, E. L.; Solberg, Ø.; Zacharia, D.
+  (2001). Minimal projective resolutions. *Transactions of the American
+  Mathematical Society* 353, 2915–2939.
+- `assem_book`, `nakayama`, `path_algebra` — Assem, I.; Simson, D.; Skowroński, A.
+  (2006). *Elements of the Representation Theory of Associative Algebras, Vol. 1.*
+  Cambridge University Press.
+- `han_conjecture` — Han, Y. (2006). Hochschild (co)homology dimension. *Journal of
+  the London Mathematical Society* 73, 657–668. arXiv:math/0408402.
+- `qpa` (software; in `references.bib`, no registry key) — Green, E. L.; Solberg,
+  Ø. *QPA — Quivers, path algebras and representations*, a GAP package.
+
+**Cited in tests, no registry key** (verified only at the precision shown):
+
+- Loday, J.-L. *Cyclic Homology.* — the classical `k[x]/(x^n)` Hochschild homology
+  values and, at **Theorem 2.1.5**, the Connes λ-complex model
+  (`tests/invariants/test_cyclic_generic.py`,
+  `tests/resolutions_cs/test_battery_literature.py`). The tests name author, title,
+  and (for the λ-complex) theorem number; no publication year is asserted here.
+- "BACH" — named in `test_battery_literature.py` as the source of the
+  truncated-polynomial computations; the repository gives only this token, so
+  nothing further is claimed. Those `k[x]/(x^n)` values are additionally attributed
+  to Happel (1989) in `test_qpa_reference_validation.py` and cross-confirmed live by
+  the bar oracle.
+- Assem, I.; Skowroński, A. (1987). *Algebra i Analiz.* — the gentle-algebra notion
+  used to build the self-injective 2-cycle pin (`test_battery_literature.py`); cited
+  at author, venue, and year, exactly as the test states.

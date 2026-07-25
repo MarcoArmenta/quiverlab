@@ -86,6 +86,23 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   future plan adds its new oracles to the verification page as part of acceptance
   (mirrored in ROADMAP). Audit-first, no `src/` change; no sentence written that
   was not traced to an actual test file.
+- [x] **Literature citations for oracle tests** — DONE, Plan 22 follow-up (Marco,
+  2026-07-25), branch `plan-22-verification-transparency`. "For unit testing
+  against literature we should cite the literature we use to test it." Every
+  literature/theory pin on `docs/verification.md` now names its precise source
+  (author, year, venue; a theorem/example number only where actually recorded —
+  Loday *Cyclic Homology* Thm 2.1.5 is the one such number; Happel's is left as
+  "theorem" because no number is in the repo), reusing the `references.bib`
+  registry keys (`bar`, `bardzell`, `chouhy_solotar`, `happel_question`,
+  `quantum_ci`, `qci_hh_oracle`, `tensor_product`, `cyclic`, `minimal_resolution`,
+  `assem_book`/`nakayama`, `han_conjecture`, `qpa`) where they exist and naming
+  Loday / "BACH" / Assem–Skowroński (1987) at test-verified precision where they
+  do not. Added a full **References** section to the page (consistent with
+  `quiverlab.bibliography(...)`); added the citation obligation to the standing
+  rule (page + ROADMAP constraint); and added the missing citations to the
+  value-pin test docstrings (`test_tensor.py`, `test_minimal_cohomology.py`,
+  `test_ext.py`, `test_engine_validation.py`, `test_battery_bardzell.py` —
+  docstring/comment-only, no logic change). No theorem number guessed.
 
 ## Tier 1b — the module-theoretic surface (Marco, 2026-07-24)
 

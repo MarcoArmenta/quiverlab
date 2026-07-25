@@ -83,4 +83,10 @@ oracles to this page** (the same obligation as the internals chapters): when a p
 ships a new engine, invariant, or operation, it extends the verification tables
 with the oracle that guards it and the test file that runs it, and — where QPA
 cannot compare — names the theory oracle that covers that ground. The page must
-never overclaim: if a subsystem lacks an oracle, it says so.
+never overclaim: if a subsystem lacks an oracle, it says so. **Every
+literature/theory oracle carries its citation** (Marco, 2026-07-25 follow-up):
+cite the literature we test against at the precision the repo can verify — author,
+year, venue, and a theorem/example/proposition number *only when it is actually
+recorded* (test/docstring/plan/bank), never guessed — reusing a `references.bib`
+registry key (`src/quiverlab/citations/`) where one exists; the page keeps a
+References section rendered consistently with `quiverlab.bibliography(...)`.

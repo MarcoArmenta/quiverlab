@@ -82,3 +82,28 @@ page is the single living record of how each shipped feature is verified.
   (the new page is in the nav; no `[i][j]`-style autoref-breaking sequences).
 - No `src/` change; the float-ban gate and every existing release/docs test stay
   green.
+
+## Follow-up (2026-07-25) — literature citations for oracle tests
+
+Marco: "For unit testing against literature we should cite the literature we use to
+test it." Added:
+
+- **Precise citations on `docs/verification.md`.** Every literature/theory pin now
+  names author, year, venue, reusing the `references.bib` registry keys
+  (`src/quiverlab/citations/`) where they exist and naming Loday / "BACH" /
+  Assem–Skowroński (1987) at test-verified precision where they do not. A theorem
+  number is asserted only where recorded (Loday *Cyclic Homology* Thm 2.1.5);
+  Happel's is left as "theorem" — no number is in the repo, none is guessed.
+- **A full References section** at the bottom of the page, consistent with
+  `quiverlab.bibliography(...)` and linking the generated References page.
+- **Standing-rule wording** (page + the ROADMAP 2026-07-25 constraint): oracles
+  added to the page must carry their citation.
+- **Test docstrings.** Added the missing citations to the value-pin tests
+  (`tests/families/test_tensor.py`, `tests/engine/test_minimal_cohomology.py`,
+  `tests/modules/test_ext.py`, `tests/engine/test_engine_validation.py`,
+  `tests/resolutions_cs/test_battery_bardzell.py`) — docstring/comment-only, no
+  logic change. The two primary literature-pin files
+  (`test_battery_literature.py`, `test_qpa_reference_validation.py`) already carried
+  full inline citations.
+
+Gate: rerun the touched test files (`-m "deep or fast"`) + the strict docs build.
