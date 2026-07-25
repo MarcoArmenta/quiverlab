@@ -79,6 +79,67 @@ poset = two triangles glued on `{1,4}` = contractible ⟹ `HH^{>0}=0`); Künneth
 quiver is acyclic, so `C_1 = C_2 = 0` and `HH_0 = A/[A,A] = k^{|Q_0|} = k^4`); `A` is not symmetric,
 so `HH_0 = 4 ≠ 1 = HH^0`.
 
+## The lifted diagonal and the native cup (Plan 20)
+Past the bar window the cup product is computed **natively** on the CS small model,
+with no bar object ever built — a diagonal approximation `Δ: P → P ⊗_A P` built
+degreewise, the same way the comparison map `Φ` is built.
+
+**The ambient: `P_p ⊗_A P_q` as a double-PELT.** The tensor product of the CS
+resolution with itself,
+`P_p ⊗_A P_q = ⨁_{τ∈S_p, ρ∈S_q} A e_{o(τ)} ⊗ e_{t(τ)}A e_{o(ρ)} ⊗ e_{t(ρ)}A`,
+is again a projective `A^e`-resolution of `A`, so a diagonal chain map lifting
+`id_A` exists and is unique up to homotopy. Its elements live in a **double-PELT**
+dict (`resolutions_cs/diagonal.py`) that extends the single-PELT of `pelt.py`: a key
+`(a, τ, mid, ρ, c)` means `coeff·(b_a ⊗ τ ⊗ b_mid ⊗ ρ ⊗ b_c)`, where `b_a ∈ A e_{o(τ)}`,
+`b_mid ∈ e_{t(τ)}A e_{o(ρ)}` is the interior corner factor glued along the middle
+`A`-slot, and `b_c ∈ e_{t(ρ)}A`.
+
+**The tensor differential and its ONE sign.** `d^{P⊗P}_n = d_p⊗1 + (−1)^p·1⊗d_q` on
+the `P_p ⊗_A P_q` summand — the Koszul sign sits on the **second** summand only, and
+nowhere else. Each summand is applied by gluing a `d_terms` output into a slot exactly
+as `pelt.apply_lower` glues into a single-PELT (slot 1 multiplies the produced factors
+into the a- and mid-slots; slot 2 into the mid- and c-slots, carrying the `(−1)^p`).
+`(d^{P⊗P})² = 0` is gated as an exact matrix identity per corner, plus a hand-computed
+Koszul-sign pin on `k[x]/(x³)`.
+
+**The lift-solve — why no contracting homotopy is needed.** The CS resolution exposes
+**no** contracting homotopy (and the Ψ-synthesis routes are blocked by the unbuilt
+chain-level Ψ), so Δ is built degreewise by solving the lifting equation
+`d^{P⊗P}_n · Δ_n(σ) = Δ_{n−1}(d_n σ)` for each generator `σ ∈ S_n`. The right-hand side
+`ζ(σ) = Δ_{n−1}(d_n σ)` is assembled by the OUTER bimodule action of `d_n σ` on the
+cached `Δ_{n−1}` (distinct from the INTERIOR gluing of `apply_tensor_d`); the equation
+is then a plain linear system over the domain — coefficient matrix
+`tensor_matrix(n, o(σ), t(σ))`, one corner at a time. This is the exact structural
+clone of `_d_general`'s correction solve: `fields.linalg.solve` then
+`reduce_mod_nullspace`. Base case `Δ_0(σ_v) = e_v ⊗ σ_v ⊗ e_v ⊗ σ_v ⊗ e_v`.
+
+**Canonical, byte-reproducible.** As in Plan 17, the particular solution is reduced to
+its free-variables-zero coset representative, so Δ — and every native cup vector read
+off it — is byte-reproducible run to run (two fresh resolutions give identical Δ dicts).
+
+**The scope edge is the SAME one `_d_general` flags.** An inconsistent lift-solve raises
+the identical loud `NotImplementedError` ("higher CS homotopy correction … spec §6 risk
+register") — never a silent fallback, and reachable only where the correction solve is
+itself inconsistent (the same per-instance certification model the differential carries).
+
+**The cup collapse is sign-free.** For CS cochains `f ∈ C^p`, `g ∈ C^q`,
+`(f∪g)(σ) = Σ_Δ coeff · a·f(τ)·mid·g(ρ)·c` — the `a·w·b` cohomology collapse generalized
+to two interior values, matching the engine's bar cup convention. All Koszul sign already
+lives inside Δ; the collapse adds none. The **Leibniz identity**
+`δ(f∪g) = (δf)∪g + (−1)^p f∪(δg)` is the arbiter that pins the sign placement (an exact
+GF(p) gate on the full cochain basis); graded-commutativity and associativity hold mod
+coboundary on HH representatives, and in-window the native cup is cohomologous to the
+transported cup — a permanent anchor oracle (the multi-vertex `comm_square` even matches
+transport exactly as cochains, where `HH² = 0` makes the class test vacuous).
+
+**Honest scope table (CS Hochschild operations).**
+
+| operation | in the bar window | past the window |
+|-----------|-------------------|-----------------|
+| **cup** | transported (Plan 14) ≡ native, mod coboundary | **native ✓** (this section) |
+| **cap** | transported `cap_of_cs_classes` (Plan 14) | **Plan 21** — same Δ, homology-side `b·w·a` collapse |
+| **bracket** | transported (Plan 14) | window-bounded **by design** — going native needs the CS brace/circle machinery, not built in quiverlab v1 |
+
 ## What is certified, and what is not
 - Deep dims: certified for `k[x]/(x^a)` and the quantum CI (byte-oracle) to any depth.
 - General `kQ/I`: computed for **every admissible presentation** (Plan 12 lifted the
@@ -92,4 +153,6 @@ so `HH_0 = 4 ≠ 1 = HH^0`.
   single-arrow blocks; cap transports through the covariant collapse `A ⊗ Φ`,
   `Comparison.cap_of_cs_classes`). Per-instance gates: `assert_chain_map`,
   transport roundtrip, cup-route agreement, unit-cap and `(z∩f)∩g ~ z∩(f∪g)`.
-  Past the window: native CS cup via a lifted diagonal is a backlog Tier-2 item.
+  Past the window: the **cup** is delivered natively via the lifted diagonal
+  (Plan 20 — see "The lifted diagonal and the native cup" above); the **cap** is
+  Plan 21 (same Δ); the **bracket** stays transported/window-bounded by design.

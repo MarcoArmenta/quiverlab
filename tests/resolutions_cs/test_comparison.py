@@ -44,6 +44,15 @@ def test_transported_cup_consistent():
 
 
 def test_operation_window_boundary():
-    comp = Comparison(_kx2_gf())
-    with pytest.raises(NotImplementedError):
-        comp.cup_of_cs_classes(comp.hh_class_cs(20, 0), comp.hh_class_cs(20, 0))
+    # Plan 20 Task 4: cup is delivered NATIVELY past the bar-comparison window, so it
+    # no longer raises there -- it returns a CS cochain vector.  The Gerstenhaber
+    # bracket stays transported/window-bounded (needs CS brace/circle machinery) and
+    # still raises NotImplementedError.  A tiny max_cells shrinks the window to 0 so
+    # a degree-2 cup is already past it (cheap).
+    comp = Comparison(_kx2_gf(), max_cells=8)
+    assert comp.window == 0
+    u1 = comp.hh_class_cs(1, 0)
+    out = comp.cup_of_cs_classes(u1, u1)                   # deg 2 > window: computes
+    assert isinstance(out, list) and len(out) == len(comp._res._basis(2, "coh"))
+    with pytest.raises(NotImplementedError):               # bracket still window-bounded
+        comp.bracket_of_cs_classes(u1, u1)
