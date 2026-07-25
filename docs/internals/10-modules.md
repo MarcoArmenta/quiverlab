@@ -85,6 +85,76 @@ with the certified length. `M.projective_resolution(k)` returns a `ProjectiveRes
 `P_1 <- P_2 <- 0` repr. `global_dimension(A) = sup_v pd(S_v)` — exact when every simple
 resolves within the depth budget, else a labeled certified lower bound.
 
+### The opposite algebra, duality D, and the AR translates τ / τ⁻ (Plan 23)
+
+The Auslander–Reiten translate is built from two functors that share one engine.
+
+**A^op** (`modules/opposite.py::opposite_algebra`) is the same k-space with the
+reversed product x·^op y := y·x. It is realized as a **first-class `Algebra`**:
+the quiver reverses every arrow (a: s→t ↦ a: t→s), the structure constants
+transpose (`T^op[i][j] = T[j][i]`), the basis labels reverse (`e_v ↦ e_v`,
+`a*b*c ↦ c*b*a`), and the relations reverse word-wise. Reversing an arrow flips
+its source/target **and** the multiplication order, and the two flips are
+consistent because `reverse(q·p) = reverse(p)*reverse(q)` in Q^op. The **index
+set is preserved** (index i in A ↔ index i in A^op, same vector, reversed label),
+which is what makes the duality and the transpose coordinate-clean and lets us
+skip re-running Gröbner completion. `A.opposite()` is a cached involution
+(`A.opposite().opposite() is A`).
+
+**D = Hom_k(−, k)** (`modules/duality.py::dualize`) sends a right A-module M to a
+right A^op-module DM by transposing every action matrix and reversing every
+label: `action_{DM}[reverse(ℓ)] = action_M[ℓ]ᵀ`. This is exactly the anti-homo
+consistency `R_{y·x}ᵀ = (R_x R_y)ᵀ`. D **preserves dimension vectors** but
+transposes arrow actions; it is contravariant and `D∘D = id`. The injective
+builder `I_v = D(A e_v)` is the only prior (implicit) use of D — `D(P_v^{op})`
+reproduces `injective(A, v)` exactly (a tested agreement).
+
+**Tr** (`transpose_module`) reads the minimal presentation P₁ →d₁ P₀ → M → 0,
+extracts the corner elements y_{ij} ∈ e_{v_i}A e_{w_j} off d₁'s canonical-
+generator columns, and forms `Tr M = coker(d₁*)` as a right A^op-module, where
+d₁* is the corner-transpose: each source generator g_i ↦ Σ_j ȳ_{ij} (left-mult
+by ȳ in A^op), assembled through the target A^op-projectives just like a cover
+map, then a quotient. Minimality of the presentation is load-bearing (a
+non-minimal one gives Tr ⊕ projectives).
+
+    τ M = D(Tr M)         τ⁻ M = Tr(D M)          (`M.tau()`, `M.tau_minus()`)
+
+Both land back over A (since `(A^op)^op = A`). τ(projective) = 0 and
+τ⁻(injective) = 0 fall out of the construction (the projective's presentation has
+P₁ = 0; D(injective) is projective over A^op). For M indecomposable
+non-projective, τ⁻τM ≅ M — verified by `is_isomorphic` (`modules/hom.py`), which
+certifies an isomorphism by an **exact invertible-hom witness**: it searches
+combinations of a Hom-space basis (exhaustively over a small GF(p); by an exact
+generic-rank/function-field computation over char-0, sound by Noether–Deuring),
+returns a positive answer only with a witness, and refuses loudly rather than
+guess when a large GF(pⁿ) exceeds its budget.
+
+### Injective resolutions and injective dimension (Plan 23)
+
+The dual of the projective machinery, on the same op+D engine
+(`modules/injective.py`): the injective envelope E(M) = D(projective cover of DM
+over A^op), and more generally `E^n = D(P_n)` where P_• is the minimal projective
+resolution of DM over A^op. Because D preserves dimension vectors, the injective
+coresolution 0 → M → E⁰ → E¹ → … has term dimension vectors equal to those of the
+projective resolution of DM, and `inj.dim_A(M) = pd_{A^op}(DM)`.
+`M.injective_resolution(k)` returns an `InjectiveResolution` (mirroring
+`ProjectiveResolution`); `M.injective_dimension(bound)` is an int, or `None` when
+unresolved within the budget (infinite — e.g. a self-injective algebra's non-
+projective modules).
+
+### Cross-checks (Plan 23)
+
+Theory oracles pin values without the `[qpa]` extra: the hereditary Coxeter
+transformation `dim τM = Φ⁻ᵀ·dim M` (Φ = `A.coxeter_matrix()`, the e_iAe_j Cartan
+convention), the explicit kA₂/kA₃ AR tables, self-injective ⇒ inj.dim ∈ {0, ∞},
+Nakayama τ-orbits, and `max_v inj.dim S_v = gl.dim`. QPA/GAP is the independent
+oracle (`qpa/crosscheck.py`, `-m qpa`): our modules are emitted into QPA's
+representation form (`modules/qpa_module.py::graded_form`, transposing to QPA's
+row convention) and compared against `DTr`/`TrD` (dimension vectors +
+`IsomorphicModules`), `ProjectiveResolution`, `DualOfModule`, and
+`InjDimensionOfModule` across the zoo including the Plan-18 multi-vertex
+`line_abc_cde`.
+
 ## A worked micro-example — S_1 over the A₂ path algebra
 
 `linear_path_algebra(2)` is Q: 1 → 2 with basis `["e_1", "e_2", "a1"]` (the arrow is
@@ -105,7 +175,13 @@ dimvec {1:0, 2:1}), which is projective, so Q_1 = P_2 and Ω_2 = 0. The resoluti
 | exact matrix layer over a Domain | `modules/linalg_mod.py` | `matmul`, `kron`, `kernel_columns`, `independent_modulo`, `solve_columns` |
 | simples / projectives / injectives | `modules/builders.py` | `simple`, `projective`, `injective` |
 | radical / top / socle, submodule/quotient | `modules/radtopsoc.py` | `radical`, `top`, `socle`, `submodule`, `quotient` |
-| Hom / End | `modules/hom.py` | `hom_space`, `hom_dim`, `end_dim` |
+| Hom / End, module isomorphism | `modules/hom.py` | `hom_space`, `hom_dim`, `end_dim`, `is_isomorphic` |
 | minimal projective resolution | `modules/resolution.py` | `minimal_resolution`, `projective_cover`, `ProjectiveResolution` |
 | module Ext^n, global dimension | `modules/ext.py` | `ext`, `ext_dims`, `global_dimension` |
-| public methods on the algebra | `core/algebra.py` | `simple`, `projective`, `injective`, `hom`, `ext`, `global_dimension` |
+| opposite algebra A^op | `modules/opposite.py` | `opposite_algebra`, `reverse_label` |
+| duality D, transpose Tr, τ / τ⁻ | `modules/duality.py` | `dualize`, `transpose_module`, `tau`, `tau_minus` |
+| injective resolutions, injective dimension | `modules/injective.py` | `injective_resolution`, `injective_dimension`, `InjectiveResolution` |
+| module → QPA representation form | `modules/qpa_module.py` | `graded_form` |
+| QPA module oracles (τ/τ⁻, resolutions, inj.dim) | `qpa/crosscheck.py`, `qpa/scripts.py` | `crosscheck_tau`, `crosscheck_proj_resolution`, `crosscheck_inj_resolution`, `crosscheck_inj_dimension`, `module_decl` |
+| public methods on the algebra | `core/algebra.py` | `simple`, `projective`, `injective`, `opposite`, `hom`, `ext`, `global_dimension` |
+| public methods on the module | `modules/module.py` | `dualize`, `transpose`, `tau`, `tau_minus`, `is_isomorphic`, `injective_resolution`, `injective_dimension` |

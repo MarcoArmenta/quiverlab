@@ -164,4 +164,21 @@ cup collapse in `cup.py`; `Comparison.cup_of_cs_classes(engine="auto"/"native"/
 "transport")` routes native past-window, transported in-window (byte-unchanged).
 Leibniz is the sign arbiter; the transported cup anchors it in-window. Cap = Plan
 21 (same Δ); bracket stays transported/window-bounded by design. Branch
-`plan-20-native-cs-cup`, UNMERGED).
+`plan-20-native-cs-cup`, UNMERGED), Plan 23 (module-theoretic surface, engine
+slice — backlog Tier 1b items 1/2/4: the opposite algebra `A^op` as a
+first-class Algebra (reversed quiver + transposed structure constants,
+`modules/opposite.py`, cached involution), the duality `D` on modules
+(`modules/duality.py::dualize`; `D(P_v^{op})≅injective(A,v)` reconciles the
+implicit `I_v=D(Ae_v)`), the corner-transpose `Tr`, and the **AR translates**
+`τM=D(Tr M)` / `τ⁻M=Tr(DM)` (`M.tau()`, `M.tau_minus()`, `M.dualize()`,
+`M.transpose()`, `Algebra.opposite()`). Injective resolutions +
+`M.injective_dimension()=pd_{A^op}(DM)` dual to Plan 05 on the same engine
+(`modules/injective.py`). Exact module iso (`modules/hom.py::is_isomorphic`,
+invertible-hom certificate; char-0 generic-rank/Noether–Deuring; loud beyond
+budget). Oracles: theory (hereditary Coxeter `dim τM=Φ⁻ᵀ dim M`, kA_n tables,
+self-injective ⇒ inj.dim∈{0,∞}, Nakayama orbits, `max_v inj.dim S_v=gl.dim`)
+AND QPA `-m qpa` (`DTr`/`TrD`+`IsomorphicModules`, `ProjectiveResolution`,
+`DualOfModule`, `InjDimensionOfModule`; `modules/qpa_module.py::graded_form`
+translates our modules to QPA's row convention) across the zoo incl. Plan-18
+`line_abc_cde`. Tier 1b item 3 (no-code module GUI/webapp) SPECIFIED in the
+plan doc, NEXT slice. Branch `plan-23-module-surface`, UNMERGED).

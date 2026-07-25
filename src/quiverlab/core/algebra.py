@@ -315,6 +315,13 @@ class Algebra:
         from quiverlab.modules.builders import injective
         return injective(self, v)
 
+    def opposite(self):
+        """The opposite algebra A^op (reversed quiver, transposed structure
+        constants), as a first-class Algebra. Involutive: A.opposite().opposite()
+        is A (Plan 23)."""
+        from quiverlab.modules.opposite import opposite_algebra
+        return opposite_algebra(self)
+
     def hom(self, M, N):
         """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.hom import hom_dim
