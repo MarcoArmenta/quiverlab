@@ -11,8 +11,7 @@ research-practice survey (τ-tilting industry, torsion lattices, silting,
 higher AR, geometric models, …). The distilled, prioritized coverage program
 lives in `ROADMAP.md`; this file preserves the full evidence.
 
-**Status:** classical audit — LANDED; modern practice — LANDED; software
-systems — pending.
+**Status:** all three LANDED (classical audit; modern practice; software systems).
 
 ---
 
@@ -135,3 +134,88 @@ areas at once, killer n=2/3 wall-picture GUI), then gentle/string combinatorics
 (pairs with Nakayama), the findim/Igusa–Todorov family (pairs with
 gldim/ext/complexity), and Kac/Dynkin root combinatorics as the cheap
 high-visibility side-quest.
+
+## Report 3 — Software-systems gap inventory (QPA/QPA2, MeatAxe/Magma/CREP, SageMath, SBStrips/String Applet/FD Applet)
+
+Verified against quiverlab's public surface, the QPA `.gd` declaration files in
+the local `[qpa]` install, and fetched docs. **Structural driver of all
+priorities: quiverlab already owns the expensive primitives (τ/D/Tr/A^op,
+Ext/Hom dims, minimal proj+inj resolutions, exact module iso, End dims) — the
+missing top-tier features are COMPOSITION LAYERS over those primitives, not new
+kernels.**
+
+### QPA has / quiverlab lacks (from the .gd files)
+- **Module category as a category (biggest cluster):** `HomOverAlgebra`/
+  `EndOverAlgebra` return actual MAP BASES (we return dims);
+  Kernel/Image/CoKernel of maps; split mono/epi tests; right-minimal versions;
+  `DecomposeModule`(+multiplicities) via idempotent lifting;
+  `IsIndecomposableModule`; is_projective/injective/simple; direct sums +
+  `IsDirectSummand`/`CommonDirectSummand`; submodule lattices;
+  `EndOfModuleAsQuiverAlgebra`; Trace/Reject; minimal generating set;
+  annihilator; full Radical/Socle SERIES; ADR algebra.
+- **AR theory:** `AlmostSplitSequence`, `PredecessorsOfModule` (knitting),
+  `IrreducibleMorphisms*`.
+- **Tilting/approximation:** `IsTiltingModule`/cotilting, complements +
+  left/right mutation, minimal left/right approximations, `IsTauRigidModule`,
+  `IsRigidModule`, ProjectiveCover/InjectiveEnvelope AS MAPS, Iyama generator,
+  faithful dimension.
+- **Dimensions:** dominant dimension, Gorenstein dimension/`IsGorenstein`,
+  Ω/τ-periodicity tests.
+- **Unit forms (CHEAP for us — Cartan exists):** Tits/Euler forms, positive
+  roots, weak positivity/nonnegativity, reflections.
+- **Complexes/derived:** user-facing complexes, chain maps, cones, homology,
+  truncations, `YonedaProduct`, comparison liftings.
+- **Functors:** Nakayama functor ν on modules, `StarOfModule`, module tensor
+  products, restriction along algebra maps.
+- **Constructors/recognizers:** blocks; `IsHereditary/Gorenstein/Semisimple/
+  RadicalSquareZero/SpecialBiserial/String/Gentle/Nakayama/Canonical`;
+  Canonical/Kronecker/BrauerConfiguration/Poset algebras; quiver predicates
+  (connected/tree/Dynkin/components/subquiver); degeneration order + numeric AR
+  for finite type.
+- quiverlab EXCEEDS QPA on: all Hochschild/cyclic/TT-calculus, CS resolution,
+  Koszulity/quadratic dual, deep engines, exact CC/GF(p^n), certification.
+
+### String/gentle world (SBStrips, String Applet, FD Applet)
+Complete SB/string layer absent from quiverlab: strings/bands, string-module
+syzygies (SBStrips), SB AR quiver, delooping level; String Applet adds τ-tilting,
+g-matrices, complete gentle derived classification (AAG + Nakayama permutation),
+surface models. **FD Applet + String Applet are the UX template for the no-code
+metagoal.** AAG invariant + surface/winding derived invariant have NO maintained
+standalone package — genuine white space quiverlab could fill (ties to our HH).
+
+### SageMath
+Module theory essentially hereditary-only (no admissible kQ/I, no Ext/HH) — our
+core is absent there. Sage has what we lack: **cluster mutation**
+(ClusterQuiver/ClusterSeed: mutation type detection, g/c/d-vectors,
+F-polynomials, g-vector fan) and morphism objects (QuiverRepHom with
+kernel/cokernel — hereditary-only, silently wrong for kQ/I, an edge we already
+handle right).
+
+### MeatAxe/Magma/CREP — the decomposition flagship
+GAP `MTX.Indecomposition` (finite fields, Las Vegas — randomness affects
+runtime never correctness), Magma `IndecomposableSummands` (incl. number
+fields, via maximal orders in End(M)), CREP (historical: Tits forms, AR
+components). Math for our framework: decomposition = primitive orthogonal
+idempotents of End(M) (Azumaya); GF(p)/GF(p^n) = idempotent lifting through the
+radical; CC = clean once char-polys factor; Q/number fields decidable but
+bottlenecked — matches our "exact, refuse loudly beyond budget" stance.
+
+### τ-tilting
+No maintained calculator anywhere general (FD Applet = rep-finite-ish UX;
+feisele's `tautilting.g` = algorithmic blueprint; **QPA has no τ-tilting
+mutation command**). Building it would make quiverlab MORE general than every
+existing tool. Verification: QPA oracles almost every other new feature;
+τ-tilting oracles against theory + FD Applet + the blueprint.
+
+### Strategic summary
+1. One lever unlocks the top tier: morphisms + End(M) + decomposition.
+2. Two cheap immediate wins: unit forms; recognizer batch.
+3. τ-tilting = highest-leverage modern feature (white space).
+4. QPA extends the crosscheck harness to nearly all of it.
+5. Genuine white space: AAG/surface derived invariant; wall-and-chamber +
+   maximal green sequences; general-field no-code module decomposer.
+
+Out of scope (with reasons): species/valued quivers (refoundation);
+DWZ potential mutation/cluster categories (Jacobian-algebra CONSTRUCTOR is in
+scope as a family); DT/BPS/moduli counting; group-MeatAxe at scale;
+IsBasic/IsElementary (vacuous here).
