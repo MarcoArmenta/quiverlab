@@ -5,7 +5,8 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **1377 tests** (collected with the `[dev,fast,docs,web]` extras). It
+The suite is **1582 tests** (collected with the `[dev,fast,docs,web,qpa]` extras,
+2026-07-25 post-merge of Plans 21–26). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one.
 
@@ -96,6 +97,18 @@ carries a citations-registry key its bibliographic entry is the packaged
   discriminating check rather than a run of zeros. Oracle: bar cross-check; the
   gentle-algebra notion is attributed in the test to Assem–Skowroński, *Algebra i
   Analiz* (1987).
+- **Auslander–Reiten theory on worked examples** (Plans 23/24). For hereditary
+  algebras the translate satisfies the Coxeter-transformation law
+  `dim τM = Φ⁻ᵀ · dim M` (in quiverlab's `e_iAe_j` Cartan convention, calibrated
+  against QPA's `DTr`) — an independent path-counting check of the op+D+Tr
+  construction; plus the explicit kA₂/kA₃ AR tables, the Nakayama τ-orbit on
+  `kZ_3/rad²`, `τ(projective) = 0` / `τ⁻(injective) = 0`, self-injective ⟺
+  `inj.dim ∈ {0, ∞}` (`k[x]/(x²)`), `max_v inj.dim S_v = gl.dim` (commutative
+  square = 2, hereditary kAₙ = 1), and the honest kA₂ side asymmetry (right
+  `P(1) = e_1A` vs left `P(1) = Ae_1` have different dimension vectors). Source:
+  Assem–Simson–Skowroński (2006), registry keys `assem_book`/`nakayama`, cited at
+  chapter granularity (`tests/modules/test_duality_tau.py`, `test_injective.py`,
+  `test_left_modules.py`).
 
 ### The read-only bank as a byte-level oracle
 
@@ -119,6 +132,17 @@ Some facts need no external oracle because the defining axioms are the gate:
 - The native deep-degree cup (Plan 20) uses **Leibniz as the sign arbiter** —
   exact over GF(p) — with the transported cup as the in-window anchor; plus
   `(d^{P⊗P})² = 0`, chain-map, graded-commutativity and associativity gates.
+- The native deep-degree **cap** (Plan 21) reads the *same* lifted diagonal the
+  homology way; its sign convention is **arbitrated, not assumed** — the exact
+  unit cap `1 ∩ z = z`, exact cap-Leibniz, the module identity
+  `(z ∩ f) ∩ g ~ z ∩ (f ∪ g)` (via the native cup), and in-window agreement with
+  the transported cap all hold simultaneously, and the non-commutative quantum CI
+  distinguishes the correct `b·w·a` collapse from its `a·w·b` mirror
+  (`tests/resolutions_cs/test_native_cap.py`).
+- The module layer's functors self-certify: `(A^op)^op ≅ A`, `D∘D ≅ id`,
+  `D(P_v` over `A^op) ≅ I_v`, and `τ⁻τM ≅ M` for non-projective indecomposables
+  via an exact invertible-hom certificate (`tests/modules/test_opposite.py`,
+  `test_duality_tau.py`, `test_module_iso.py`).
 - The comparison maps (Plan 14) are gated by chain-map and roundtrip identities.
 - CS **canonicalization** (Plan 17) is pinned by an *adversarial-solver* test:
   shifting the correction solve by a nullspace vector must not move a single byte.
@@ -193,8 +217,17 @@ recompute independently and refuses to silently disagree
   (`HH^• = [1, 0, 0]`, Künneth) over GF(2), GF(3), and QQ.
 - **Module self-Ext** `Ext^*(M, M)` via `ExtAlgebraGenerators`, pinned on the
   simple `S_1` of `kA_2` (`[1, 0, 0]`).
+- **Module theory** (Plans 23/24): the AR translates **τ/τ⁻** via `DTr`/`TrD`
+  with `IsomorphicModules` on a translated module (dimension vectors *and* iso
+  class — `modules/qpa_module.py::graded_form` handles QPA's row convention),
+  **projective/injective resolution terms** via `ProjectiveResolution` /
+  `DualOfModule`, and **injective dimension** via `InjDimensionOfModule`
+  (`false ↔ None`), across the zoo including the multi-vertex records. **Left**-side
+  quantities are crosschecked by feeding QPA the opposite algebra — QPA is
+  right-module native (`tests/qpa/test_module_ar_crosscheck.py`,
+  `tests/qpa/test_left_modules_qpa.py`).
 
-The live QPA suite is `-m qpa` (5 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (31 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -206,9 +239,11 @@ present.
 
 ### Where QPA cannot be compared — and what covers that ground
 
-QPA's cross-check reaches only Hochschild dims and module self-Ext, over **QQ or a
-prime field GF(p)** (number-field CC and `GF(p^n)` are out of QPA scope, and raise
-loudly). Everything below is therefore covered by a **theory oracle**, not QPA:
+QPA's cross-check reaches Hochschild dims, module self-Ext, and — since Plans
+23/24 — the AR translates, projective/injective resolutions, and injective
+dimension, over **QQ or a prime field GF(p)** (number-field CC and `GF(p^n)` are
+out of QPA scope, and raise loudly). Everything below is therefore covered by a
+**theory oracle**, not QPA:
 
 | Feature QPA does not cover | Theory oracle that covers it |
 |---|---|
@@ -246,8 +281,8 @@ loudly). Everything below is therefore covered by a **theory oracle**, not QPA:
 ## Subsystem → oracles → tests
 
 Every `src/quiverlab/` subpackage, its test directory, the collected test count,
-and the oracle class that guards it. Counts are `pytest --collect-only` in the
-worktree venv (`[dev,fast,docs,web]`).
+and the oracle class that guards it. Counts are `pytest --collect-only` with the
+`[dev,fast,docs,web,qpa]` extras (2026-07-25, post-merge of Plans 21–26).
 
 | Subsystem (`src/quiverlab/`) | Tests | Bucket | Primary oracle class |
 |---|---:|---|---|
@@ -256,17 +291,17 @@ worktree venv (`[dev,fast,docs,web]`).
 | `groebner/` (overlap completion, admissibility) | 50 | fast | admissibility certificate; finiteness; lowering |
 | `hochschild/` (bar, cyclic) | 11 | fast | **the base bar oracle**; mixed-complex identities |
 | `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama) | 543 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
-| `resolutions_cs/` (CS; comparison; diagonal; cup) | 164 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz; canonicalization |
-| `modules/` (Ext, Hom, resolutions) | 57 | deep | exact Ext/Hom; live QPA self-Ext crosscheck |
+| `resolutions_cs/` (CS; comparison; diagonal; cup; cap) | 197 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization |
+| `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides) | 124 | deep | AR/duality literature pins (ASS2006); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks |
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius, scalar, sweep) | 53 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `families/` (catalog, zoo) | 72 | deep | closed-form family pins; zoo diversity gates; citations |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps) | 46 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
-| `qpa/` (GAP/QPA crosscheck) | 11 | 5 qpa + 6 fast | **live GAP/QPA** (HH dims, self-Ext); script builders + guards run without GAP |
-| `webapp/` (server tier — non-algebraic glue) | 161 | fast | API / schema / isolation / artifacts; all math delegated to the library |
-| `docs/gui/` (Pyodide GUI — non-algebraic glue) | 39 | fast | runner artifacts / invariants; build hook; freshness |
+| `qpa/` (GAP/QPA crosscheck) | 38 | 31 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim — left side via `A^op`); script builders + guards run without GAP |
+| `webapp/` (server tier + result cache — non-algebraic glue) | 227 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library |
+| `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 51 | fast | runner artifacts / invariants; build hook; freshness |
 | release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`) | 49 | fast | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage |
 
 Non-algebraic glue (`webapp/`, `docs/gui/`) carries no oracle *because it holds no
@@ -281,9 +316,9 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 504 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 868 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
-| `qpa` | 5 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `fast` | 583 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 968 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `qpa` | 31 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The

@@ -67,8 +67,7 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   review's four cross-layer majors fixed (async-error genericization, header
   admin token, last-hop XFF trust, lean base wheel). Post-merge backlog captured
   (error-envelope unification, app.js /es dynamic-label localization,
-  tier-ordered claim, real-SMTP/TLS/concurrency acceptance gaps). UNMERGED —
-  merge/push only when Marco asks.
+  tier-ordered claim, real-SMTP/TLS/concurrency acceptance gaps). Merged to main 2026-07-25.
 
 ## Tier 1a — verification transparency (Marco, 2026-07-25)
 
@@ -191,7 +190,7 @@ planned together even if delivered in slices.
   item below; the bracket stays transported/window-bounded by design.
 - [x] **Plan 21: native CS cap via the Plan-20 diagonal** — DONE, Plan 21,
   2026-07-25 (`2026-07-25-plan-21-native-cs-cap.md`, branch `plan-21-native-cs-cap`,
-  UNMERGED). The homology-side sign-free `b·w·a` collapse of the SAME lifted diagonal Δ
+  merged 2026-07-25). The homology-side sign-free `b·w·a` collapse of the SAME lifted diagonal Δ
   (`resolutions_cs/cap.py::native_cap`; `Comparison.cap_of_cs_classes(engine="auto"/
   "native"/"transport")` routes native past-window, transported in-window byte-unchanged).
   `f ∩ z = Σ_Δ coeff · b_c·x·b_a·f(τ)·b_mid` — f eats the degree-p first factor τ, ρ
@@ -299,4 +298,4 @@ planned together even if delivered in slices.
   (two oracle classes, subsystem→oracles→tests table, CI matrix, honest scope) +
   README section + the standing "every plan adds its oracles to the verification
   page" rule. Docs+audit only; no `src/` change. Branch
-  `plan-22-verification-transparency`, UNMERGED.
+  `plan-22-verification-transparency`, merged 2026-07-25.

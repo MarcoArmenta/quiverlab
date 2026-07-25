@@ -43,7 +43,8 @@ fail loudly by design.**
 `hochschild/`, `engine/` (fast GF(p) stack + resolutions), `resolutions_cs/` (CS,
 top-level), `modules/`, `invariants/`, `families/`, `batch/`, `citations/`,
 `trace/`, `viz/`. Plans+roadmap in `docs/plans/`; algebraist "under the hood"
-chapters in `docs/internals/`. GUI (Pyodide, Plans 10–11) in `docs/gui/`; Plan 09 is the *planned* server tier (not built).
+chapters in `docs/internals/`. GUI (Pyodide, Plans 10–11 + the Plan-26 no-code module panel) in `docs/gui/`;
+the server tier (Plan 09) + result cache (Plan 25) in `webapp/`.
 
 ## Deeper engines — the current focus
 
@@ -156,7 +157,7 @@ email magic-link big-job tier; bilingual EN/ES pages with vendored KaTeX,
 PROVISIONING). All algebra delegated to `import quiverlab` — no user-code exec,
 `quiverlab.engine.*` never imported, base wheel stays lean. Executed
 subagent-driven with adversarial critics; whole-branch review's four cross-layer
-majors fixed. Branch `plan-09-web`, UNMERGED), Plan 20 (native deep-degree CS
+majors fixed. Branch `plan-09-web`, merged 2026-07-25), Plan 20 (native deep-degree CS
 **cup** past the bar 2n+1 window — backlog Tier-2 item 1: a comparison-lifted
 diagonal `Δ: P → P ⊗_A P` in `resolutions_cs/diagonal.py` (double-PELT ambient,
 Koszul-signed tensor differential `d_p⊗1 + (−1)^p·1⊗d_q`), built degreewise by a
@@ -167,7 +168,7 @@ cup collapse in `cup.py`; `Comparison.cup_of_cs_classes(engine="auto"/"native"/
 "transport")` routes native past-window, transported in-window (byte-unchanged).
 Leibniz is the sign arbiter; the transported cup anchors it in-window. Cap = Plan
 21 (same Δ); bracket stays transported/window-bounded by design. Branch
-`plan-20-native-cs-cup`, UNMERGED), Plan 22 (verification transparency, backlog
+`plan-20-native-cs-cup`, merged 2026-07-25), Plan 22 (verification transparency, backlog
 Tier 1a — `docs/verification.md` documents HOW everything is tested: the two
 oracle classes (theory/literature pins on constructed examples; cross-engine +
 QPA/GAP agreement wherever QPA implements the feature), a subsystem→oracles→tests
@@ -176,7 +177,7 @@ table, the marker/bucket scheme with audited counts (1377 tests: fast 504 / deep
 compare and the theory oracle that covers each gap; wired into the mkdocs nav +
 a README section; standing rule: every future plan adds its new oracles to the
 verification page as part of acceptance. Docs+audit only, no `src/` change.
-Branch `plan-22-verification-transparency`, UNMERGED), Plan 21 (native deep-degree CS **cap** past the
+Branch `plan-22-verification-transparency`, merged 2026-07-25), Plan 21 (native deep-degree CS **cap** past the
 bar window — backlog Tier-2: the homology-side sign-free `b·w·a` collapse of the SAME
 Plan-20 diagonal Δ (`resolutions_cs/cap.py::native_cap`,
 `(f∩z)(ρ)=Σ_Δ coeff·b_c·x·b_a·f(τ)·b_mid`; f eats the degree-p first factor τ, ρ
@@ -190,8 +191,7 @@ anchor (non-commutative quantum CI distinguishes `b·w·a` from `a·w·b`), exac
 raises. Folded-in Plan-20 review backlog cleared (QCI skip-guards now FAIL not skip,
 element-wise CS-basis bridge, session-scoped Δ_4 fixture, `native_cup` chain-cache
 routing, constructed inconsistent-lift refusal). Branch `plan-21-native-cs-cap`,
-UNMERGED — `docs/verification.md` cap oracles owed at merge, that page lives on
-`plan-22-verification-transparency`), Plan 23 (module-theoretic surface, engine
+merged 2026-07-25 — cap oracles added to `docs/verification.md` at merge), Plan 23 (module-theoretic surface, engine
 slice — backlog Tier 1b items 1/2/4: the opposite algebra `A^op` as a
 first-class Algebra (reversed quiver + transposed structure constants,
 `modules/opposite.py`, cached involution), the duality `D` on modules
@@ -208,7 +208,7 @@ AND QPA `-m qpa` (`DTr`/`TrD`+`IsomorphicModules`, `ProjectiveResolution`,
 `DualOfModule`, `InjDimensionOfModule`; `modules/qpa_module.py::graded_form`
 translates our modules to QPA's row convention) across the zoo incl. Plan-18
 `line_abc_cde`. Tier 1b item 3 (no-code module GUI/webapp) SPECIFIED in the
-plan doc, NEXT slice. Branch `plan-23-module-surface`, UNMERGED), Plan 24
+plan doc, NEXT slice. Branch `plan-23-module-surface`, merged 2026-07-25), Plan 24
 (**left modules alongside right, right as default** — backlog Tier 1b: the
 module surface takes `side="right"|"left"`; right stays the default and
 byte-unchanged (right-module repr byte-identical, whole existing suite green).
@@ -228,7 +228,7 @@ dim-vector fast-paths). Two Plan-23 tests spelling `I_v=D(Ae_v)` via
 duality D, AR translates); QPA `-m qpa` crosschecks left τ/τ⁻/inj.dim/
 resolutions by FEEDING QPA THE OPPOSITE ALGEBRA (right-module native).
 `tests/modules/test_left_modules.py` + `tests/qpa/test_left_modules_qpa.py`.
-Branch `plan-24-left-modules`, UNMERGED). Plan 25 (webapp result cache — backlog Tier-3
+Branch `plan-24-left-modules`, merged 2026-07-25). Plan 25 (webapp result cache — backlog Tier-3
 item: never recompute a known example. `webapp/server/cache.py` canonicalizer
 (`canonical_key` = sha256 of sorted-keys JSON over the versioned request + library
 version; dict order irrelevant, tuple/list round-trip collides, version bump
@@ -244,7 +244,7 @@ records on success only (failures may be transient); `cache_put` is idempotent
 (benign identical-request race, in-flight dedup skipped as it needs a jobs-schema
 change); `sweep_cache_once` (version purge + LRU size cap) runs beside `sweep_once`.
 Rows are math-only (no email/ip/token). Config `QLWEB_CACHE_ENABLED`/
-`QLWEB_CACHE_MAX_ENTRIES`. Branch `plan-25-webapp-result-cache`, UNMERGED),
+`QLWEB_CACHE_MAX_ENTRIES`. Branch `plan-25-webapp-result-cache`, merged 2026-07-25),
 Plan 26 (no-code module input GUI + webapp — backlog Tier 1b item 3, the last:
 every representation theorist specifies a module with zero code and reads off the
 classical module invariants. Webapp request **schema v2** gains a `module` block
@@ -268,4 +268,4 @@ oversized families. Two runners carry the SAME dispatch: `webapp/server/runner.p
 panel on the canvas — per-vertex dimension picker, per-arrow matrix grid (dims
 follow source/target live), a right/left side toggle, S(v)/P(v)/I(v) pick-lists;
 results render like existing blocks (MathJax + citations); interface-freshness
-pins the module surface. Branch `plan-26-no-code-modules`, UNMERGED).
+pins the module surface. Branch `plan-26-no-code-modules`, merged 2026-07-25).
