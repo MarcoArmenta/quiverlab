@@ -326,8 +326,12 @@ def test_native_cup_bridge_to_longer_transport_kx2():
     native = small.cup_of_cs_classes(u1s, u2s)            # max(1,2)=2 > 0 -> native, deg 3
     transported = big.cup_of_cs_classes(u1b, u2b)         # max(1,2)=2 <= 9 -> transport
 
-    assert len(small._res._basis(3, "coh")) == len(big._res._basis(3, "coh")), \
-        "Plan-17 canonicalization must give identical CS bases across instances"
+    small_basis = [(ch.word, j) for ch, j in small._res._basis(3, "coh")]
+    big_basis = [(ch.word, j) for ch, j in big._res._basis(3, "coh")]
+    assert small_basis == big_basis, \
+        "Plan-17 canonicalization must give ELEMENT-WISE identical CS bases across " \
+        "instances (chain word + corner index), so the coordinate vectors are directly " \
+        "comparable"
     assert big.same_cohomology_class(native, transported, degree=3), \
         "native (tiny window) != longer transport (wide window) mod coboundary"
     zero3 = [0] * len(big._res._basis(3, "coh"))
