@@ -41,6 +41,38 @@ def test_invariant_surface():
     assert isinstance(A.citations(), tuple)
 
 
+def test_module_surface():
+    """Pin the module surface the no-code panel (Plan 26) consumes: the sided
+    builders, A.module, and the Module invariant methods. Drift here means STOP
+    and amend the plan -- never patch the runner around it."""
+    A = ql.Quiver(vertices=[1], arrows={"x": (1, 1)}).algebra(
+        relations=["x*x*x"], field=ql.GF(2))
+    # sided builders + constructor signatures
+    for name in ("simple", "projective", "injective"):
+        assert "side" in inspect.signature(getattr(A, name)).parameters, name
+    assert list(inspect.signature(A.module).parameters) == [
+        "dimension_vector", "arrow_action", "side", "name"]
+    assert hasattr(A, "opposite") and hasattr(A, "ext")
+    M = A.module({1: 2}, {"x": [[0, 0], [1, 0]]})
+    assert M.dimension_vector() == {1: 2} and M.dim == 2 and M.side == "right"
+    for meth in ("radical", "top", "socle", "tau", "tau_minus",
+                 "dualize", "transpose", "projective_resolution",
+                 "injective_resolution", "injective_dimension"):
+        assert hasattr(M, meth), meth
+    # resolution / dimension shapes the runner reads
+    pr = M.projective_resolution(3)
+    assert hasattr(pr, "dimension_vectors") and hasattr(pr, "betti") and hasattr(pr, "pd")
+    ir = M.injective_resolution(3)
+    assert hasattr(ir, "dimension_vectors") and hasattr(ir, "injective_dimension")
+    assert M.injective_dimension() is None or isinstance(M.injective_dimension(), int)
+    # module Ext + citation step-ids the module blocks attach
+    from quiverlab.modules.ext import ext_dims
+    assert ext_dims(A, M, A.simple(1), 2) == [1, 1, 1]
+    from quiverlab.trace.provenance import resolve_references
+    for key in ("assem_book", "minimal_resolution", "module_ext"):
+        assert len(resolve_references((key,))[0]) == 2, key
+
+
 def test_fields_zoo_bibliography():
     assert list(inspect.signature(ql.GF).parameters) == ["q", "modulus"]
     assert str(ql.GF(8)) == "GF(2^3)"  # q = p**n spelling the runner uses
