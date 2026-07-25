@@ -247,6 +247,12 @@ and `/literature` shows the full curated bibliography. The UI is bilingual
 (English at `/`, Spanish at `/es/`) with a public feedback form at `/feedback`
 (including a "suggest literature" category).
 
+Results are cached: because every computation is exact and deterministic, a
+previously computed example is never recomputed — an identical request is served
+instantly from the cache, across users. Email verification gates only the *cost* of
+computing a new big example, not access to the mathematics, so a big example that
+someone already computed is served immediately, with no email needed.
+
 Each finished computation exposes downloadable artifacts under
 `/download/<job-id>/…`: `result.json` (exact dimensions, references, and a
 copy-paste reproduction snippet), the worked-steps `trace.pdf` (or a

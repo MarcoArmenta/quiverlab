@@ -20,6 +20,8 @@
   "job.status": "Estado:",
   "job.downloads": "Descargas:",
   "job.computed_with": "Calculado con quiverlab",
+  "job.finished": "Finalizado:",
+  "job.cached_note": "Este resultado exacto está en caché: las solicitudes idénticas, de cualquier persona, se sirven al instante sin recalcular. Todos los números son exactos: esta es la respuesta, no una aproximación.",
   "job.reproduce": "Reproducir localmente",
   "job.report_problem": "Reportar un problema con este cálculo",
   "job.not_found": "no existe ese trabajo",

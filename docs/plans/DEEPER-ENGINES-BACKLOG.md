@@ -112,35 +112,70 @@ Ordering: these items come right after the in-flight native CS cup/cap (Plan 20)
 they share one engine (the opposite-algebra functor + the duality D) and should be
 planned together even if delivered in slices.
 
-- [ ] **AR translates τ / τ⁻** — native Auslander–Reiten translate of a f.d. right
+- [x] **AR translates τ / τ⁻** — DONE, Plan 23, 2026-07-25
+  (`2026-07-25-plan-23-module-surface.md`, branch `plan-23-module-surface`).
+  Native Auslander–Reiten translate of a f.d. right
   module: minimal projective presentation `P₁ → P₀ → M → 0` (exists —
   `modules/resolution.py::projective_cover` / `minimal_resolution`, Plan 05),
   transpose `Tr M = coker(Hom_A(P₀,A) → Hom_A(P₁,A))` as a right `A^op`-module,
   then `τM = D Tr M`, `τ⁻M = Tr D M`. New machinery: the opposite algebra `A^op`
-  as a first-class Algebra (reversed quiver, transposed structure constants), the
-  duality functor `D` on arbitrary Modules (today implicit only in
-  `builders.injective`: `I_v = D(Ae_v)`), and `Hom(−, A)` on projectives
-  (corner-transpose bookkeeping). Surface: `M.tau()`, `M.tau_minus()`; honest
-  gates: `τ⁻τM ≅ M` for non-projective indecomposables (iso test via
-  `modules/hom.py` + dim vectors; document the decomposability caveat loudly).
-- [ ] **Injective resolutions + injective dimension** — the dual of Plan 05's
-  `ProjectiveResolution`: `E(M) = D(projective cover of DM over A^op)`, cosyzygy
-  iteration, `injective_resolution(M, length)`, `injective_dimension(M)`. Same
-  op+D engine as τ — build in the same plan.
-- [ ] **No-code module input (GUI + webapp)** — the constructor already exists
-  (`modules/module.py`: dimension vector + one matrix per arrow, exact entries,
-  loud `RelationError` when the matrices violate the relations); expose it with
-  zero code: webapp request schema v2 gains a `module` block
-  (`{dims: {v: n_v}, maps: {arrow: [[…]]}}`) + module compute kinds (rad/top/soc
-  from `radtopsoc.py`, Ext from `modules/ext.py`, plus τ/τ⁻ and both resolutions
-  above); GUI: per-vertex dimension picker + per-arrow matrix grid, and
-  zero-typing pick-lists for S(v) / P(v) / I(v) (builders exist). Versioned
-  schema bump, served by BOTH tiers (Pyodide GUI + Plan-09 server).
-- [ ] **QPA (GAP) as the oracle** — the `[qpa]` extra and `qpa/crosscheck.py`
-  plumbing exist and are live locally; add `-m qpa` crosschecks pinning τ/τ⁻
-  (dimension vectors + iso class), projective/injective resolution terms/Betti
-  numbers, and injective dimension against QPA across the zoo incl. the Plan-18
-  multi-vertex records (libgap is single-statement-only — eval per line).
+  as a first-class Algebra (reversed quiver, transposed structure constants —
+  `modules/opposite.py`), the duality functor `D` on arbitrary Modules (was
+  implicit only in `builders.injective`: `I_v = D(Ae_v)`; explicit
+  `D(P_v^{op}) ≅ injective(A,v)` tested), and the corner-transpose `Tr`
+  (`modules/duality.py`). Surface: `M.tau()`, `M.tau_minus()`,
+  `M.dualize()`, `M.transpose()`, `Algebra.opposite()`; honest gates:
+  `τ⁻τM ≅ M` for non-projective indecomposables via `modules/hom.py::is_isomorphic`
+  (exact invertible-hom certificate; decomposability caveat documented).
+- [x] **Injective resolutions + injective dimension** — DONE, Plan 23, 2026-07-25.
+  The dual of Plan 05's `ProjectiveResolution` on the same op+D engine
+  (`modules/injective.py`): `E(M) = D(projective cover of DM over A^op)`, cosyzygy
+  iteration, `injective_resolution(M, length)`, `injective_dimension(M)` =
+  `pd_{A^op}(DM)` (int, or `None` = infinite).
+- [x] **Left modules alongside right, right as default** — DONE, Plan 24,
+  2026-07-25 (`2026-07-25-plan-24-left-modules.md`, branch `plan-24-left-modules`).
+  The module surface accepts `side="right" | "left"` (right stays the default and
+  byte-unchanged — right-module repr is byte-identical, whole existing suite green).
+  Internally a left A-module IS a right A^op-module; the Plan-23 op+D engine makes
+  the wrapper a presentation-only tag: constructors (`Algebra.module(...)` +
+  S/P/I builders), Hom/End/Ext, projective AND injective resolutions, τ/τ⁻,
+  dimensions all read only `(algebra, action)` and are blind to the side — no math
+  forked. `D` (now side-aware) exchanges the two sides over the SAME base algebra
+  (its classical contravariant form); `Tr` likewise. Two Plan-23 tests that spelled
+  `I_v = D(A e_v)` via `A.opposite().projective(v).dualize()` moved to the honest
+  side-aware form `A.projective(v, side="left").dualize()` (documented). QPA
+  crosschecks left-side τ/τ⁻/inj.dim/resolutions by feeding QPA the opposite
+  algebra. The no-code GUI/webapp item below inherits the side picker in its schema.
+- [x] **No-code module input (GUI + webapp)** — DONE, Plan 26, 2026-07-25
+  (`2026-07-25-plan-26-no-code-modules.md`, branch `plan-26-no-code-modules`).
+  The constructor already existed (`modules/module.py`: dimension vector + one
+  matrix per arrow, exact entries, loud `RelationError` when the matrices violate
+  the relations); now exposed with zero code. Webapp request **schema v2** gains a
+  `module` block (`{dims: {v: n_v}, maps: {arrow: [[…]]}, side}` OR
+  `{builtin: {kind, vertex, side}}`) + an `ext_target` (the N in Ext), guarded to
+  schema 2, canonicalizing through Plan-25 `canonical_key` (side default explicit;
+  a non-module request's key is byte-unchanged). Module compute kinds
+  (dimension_vector, rad_top_soc from `radtopsoc.py`, Ext from `modules/ext.py`,
+  τ/τ⁻, projective/injective resolution + projective/injective dimension) served
+  by ALL THREE tiers (instant/queued/big) with references/citations; a
+  relation-violating module surfaces as a clean typed 4xx (never a 500).
+  Module-aware tier sizing routes big modules off instant like oversized families.
+  GUI: a no-code module panel on the Pyodide canvas — per-vertex dimension picker,
+  per-arrow exact-entry matrix grid (dims follow source/target live), a right/left
+  side toggle, and the S(v)/P(v)/I(v) pick-lists; the client runner
+  (`docs/gui/runner.py`) carries the twin dispatch. Versioned schema bump, served
+  by BOTH tiers (Pyodide GUI + Plan-09 server).
+- [x] **QPA (GAP) as the oracle** — DONE, Plan 23, 2026-07-25. `-m qpa`
+  crosschecks (`tests/qpa/test_module_ar_crosscheck.py`,
+  `qpa/crosscheck.py::crosscheck_tau`/`crosscheck_proj_resolution`/
+  `crosscheck_inj_resolution`/`crosscheck_inj_dimension`) pin τ/τ⁻ (dimension
+  vectors + iso class via `IsomorphicModules` on a translated module —
+  `modules/qpa_module.py::graded_form`, `qpa/scripts.py::module_decl`),
+  projective/injective resolution term dim-vectors (`ProjectiveResolution` /
+  `DualOfModule`), and injective dimension (`InjDimensionOfModule`, `false ↔
+  None`) across the zoo incl. the Plan-18 multi-vertex `line_abc_cde`. Theory
+  oracles (Coxeter transformation, kA_n tables, self-injective/Nakayama,
+  inj.dim vs gl.dim) run without the extra.
 
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
@@ -208,6 +243,29 @@ planned together even if delivered in slices.
 
 ## Tier 3 — quiverlab-web (`plan-09-web`) post-merge polish (from the 2026-07-24 whole-branch review)
 
+- [x] **Result cache — never recompute a known example** (Marco, 2026-07-25) —
+  DONE, Plan 25, 2026-07-25 (`2026-07-25-plan-25-webapp-result-cache.md`, branch
+  `plan-25-webapp-result-cache`). Original item: cache finished results keyed by
+  the CANONICALIZED request (family/quiver/module spec + field + invariant +
+  parameters + library version — exact results are deterministic, so a key hit is
+  a correctness-safe replay). Identical requests are served from the cache
+  instantly, including across users. Big-job tier interaction: email verification
+  gates the COST of computing, not access to mathematics — so a big-job request
+  whose canonical key is already cached is served immediately WITHOUT email
+  verification (no token minted, no email stored); only genuinely new big examples
+  go through the magic-link flow, and their results enter the cache for everyone
+  after. Invalidate on library version bump; nothing user-identifying in the key
+  or the cached record; retention/size cap with LRU sweep alongside the existing
+  retention sweep. Delivered: `webapp/server/cache.py` canonicalizer + a
+  `result_cache` table (new table, not a jobs column) that "pins" its finished job
+  against retention; cache-first checks on `/api/compute`, `/api/jobs`, AND
+  `/api/jobs/big` (big check is the first statement, before `big_jobs_enabled`, so
+  a cached big example is served even with SMTP off, no token/email/pending row);
+  worker records on success only; `sweep_cache_once` (version purge + LRU) beside
+  `sweep_once`; bilingual "previously computed" note. In-flight dedup documented as
+  benign and skipped (would need a jobs-schema change — not "within the existing
+  schema"); `cache_put` is idempotent so concurrent identical completions never
+  crash.
 - [ ] **Unify client error envelopes**: the API mixes `{error_type,message}`
   (compute/feedback/bigjobs), `{detail}` (FastAPI 422 + the big-job 502
   `HTTPException`), and `{message}` (404s); `app.js` reads only the first, so an

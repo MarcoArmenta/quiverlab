@@ -20,13 +20,16 @@ _GUARD_HINT = ("module resolution term blew past max_term_dim; the certified len
                "in the message. Raise max_term_dim to push deeper.")
 
 
-def _direct_sum(modules, name="Q"):
+def _direct_sum(modules, name="Q", side=None):
     """Block-diagonal direct sum of Modules (all over the same algebra); returns the sum
-    Module plus the list of (start, dim) offsets of each summand."""
+    Module plus the list of (start, dim) offsets of each summand. The sum inherits the
+    summands' side unless overridden (Plan 24)."""
     if not modules:
         return None, []
     A = modules[0].algebra
     dom = A.domain
+    if side is None:
+        side = modules[0].side
     dims = [m.dim for m in modules]
     n = sum(dims)
     offs = []
@@ -44,7 +47,7 @@ def _direct_sum(modules, name="Q"):
                     M[s + i][s + j] = blk[i][j]
         action[label] = M
     from quiverlab.modules.module import Module
-    Q = Module(A, n, action, name=name)
+    Q = Module(A, n, action, name=name, side=side)
     Q._summand_vertices = [m._pv_vertex for m in modules]
     return Q, offs
 
@@ -74,10 +77,13 @@ def projective_cover(M):
     dom = M.domain
     gens = _homogeneous_top_generators(M)
     summands = [projective(M.algebra, v) for (v, _) in gens]
-    Q0, offs = _direct_sum(summands, name="Q0") if summands else (None, [])
+    # projective(A, v) always builds a RIGHT A-module; when covering a left module
+    # (M.algebra = A^op) the cover terms are the left A-projectives -> tag M.side.
+    Q0, offs = _direct_sum(summands, name="Q0", side=M.side) if summands else (None, [])
     if Q0 is None:
         from quiverlab.modules.module import Module
-        Q0 = Module(M.algebra, 0, {lab: lm.zeros(0, 0, dom) for lab in M.action}, name="Q0")
+        Q0 = Module(M.algebra, 0, {lab: lm.zeros(0, 0, dom) for lab in M.action},
+                    name="Q0", side=M.side)
     # cover matrix: column = image in M of each Q0 basis vector b = (canonical gen)*path.
     # For summand P_v with generator g (a column of M), the P_v basis vector indexed by
     # path label p (source v) maps to g * p = action_M[p] @ g.

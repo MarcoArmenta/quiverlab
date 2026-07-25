@@ -1,5 +1,5 @@
 from webapp.server.config import Config
-from webapp.server.estimator import classify, decide_tier, estimate_ops
+from webapp.server.estimator import classify, decide_tier, estimate_ops, sizing_dim
 from webapp.server.schema import ComputeRequest
 
 
@@ -61,3 +61,47 @@ def test_classify_carries_estimate_and_reason(tmp_path):
     assert info["estimate"]["cells"] > 0 and info["estimate"]["minutes"] >= 1
     beyond = classify(5000, _req({"kind": "CC"}, ["hh_cohomology:0..200"]), cfg)
     assert beyond["reason"] == "beyond_big_cap"
+
+
+# --------------------------------------------------------------------------- #
+# Module-aware sizing (Plan 26): a big module must size the job even over a small
+# algebra, exactly like an oversized family request.
+# --------------------------------------------------------------------------- #
+
+def _module_req(compute, module, ext_target=None):
+    body = {"schema": 2,
+            "algebra": {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+                        "relations": ["x*x"], "field": {"kind": "GF", "p": 2, "n": 1}},
+            "compute": compute, "artifacts": {"pdf": False, "tikz": False},
+            "module": module}
+    if ext_target is not None:
+        body["ext_target"] = ext_target
+    return ComputeRequest.model_validate(body)
+
+
+def test_sizing_dim_uses_module_when_larger():
+    req = _module_req(["dimension_vector"],
+                      {"dims": {"1": 50}, "maps": {"x": [[0] * 50 for _ in range(50)]}})
+    assert sizing_dim(2, req) == 50            # module (50) dwarfs the algebra (2)
+
+
+def test_sizing_dim_ignores_builtin_and_falls_back():
+    # A builtin pick-list is bounded by the algebra, so it adds nothing extra.
+    req = _module_req(["dimension_vector"], {"builtin": {"kind": "simple", "vertex": 1}})
+    assert sizing_dim(2, req) == 2
+
+
+def test_sizing_dim_unchanged_without_module():
+    req = _req({"kind": "GF", "p": 2, "n": 1}, ["cartan"])
+    assert sizing_dim(4, req) == 4             # every existing request classifies as before
+
+
+def test_big_module_routes_off_the_instant_tier(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    small = _module_req(["dimension_vector"],
+                        {"dims": {"1": 2}, "maps": {"x": [[0, 0], [1, 0]]}})
+    assert classify(sizing_dim(2, small), small, cfg)["tier"] == "instant"
+    big = _module_req(["ext:0..6"],
+                      {"dims": {"1": 400}, "maps": {"x": [[0] * 400 for _ in range(400)]}},
+                      ext_target={"builtin": {"kind": "simple", "vertex": 1}})
+    assert classify(sizing_dim(2, big), big, cfg)["tier"] != "instant"

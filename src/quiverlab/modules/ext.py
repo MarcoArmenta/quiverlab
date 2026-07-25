@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.modules.builders import _require_provenance
-from quiverlab.modules.hom import hom_space
+from quiverlab.modules.hom import _assert_comparable, hom_space
 from quiverlab.modules.resolution import minimal_resolution
 
 
@@ -26,6 +26,7 @@ def _delta_matrix(Hn, Hn1, dn1, dom):
 
 
 def ext_dims(A, M, N, top):
+    _assert_comparable(M, N, "Ext")             # left vs right is a category error
     dom = A.domain
     terms, dmats = minimal_resolution(M, top + 1)
     Qs = [t.module for t in terms]

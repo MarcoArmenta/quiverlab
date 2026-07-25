@@ -89,6 +89,32 @@ def hochschild_dims_script(algebra, top: int) -> str:
     ])
 
 
+def _gap_scalar(x, field: str) -> str:
+    """A single exact matrix entry as a GAP field element (QQ rational or GF(p))."""
+    from fractions import Fraction
+    if field == "Rationals":
+        fr = Fraction(x)
+        return f"{fr.numerator}" if fr.denominator == 1 else f"({fr.numerator}/{fr.denominator})"
+    # GF(p): x is an int mod p; k*One(GF(p)) is the field element k.1 (no Z(p) logs)
+    return f"({int(x)}*One({field}))"
+
+
+def _gap_matrix(mat, field: str) -> str:
+    rows = ["[" + ", ".join(_gap_scalar(x, field) for x in row) + "]" for row in mat]
+    return "[" + ", ".join(rows) + "]"
+
+
+def module_decl(algebra, dimvec_list, arrow_matrices, var: str) -> str:
+    """A single ``var := RightModuleOverPathAlgebra(A, dimvec, [[arrow, mat], ...]);;``
+    line (assumes the quiver+algebra script `A := ...` is already in the session).
+    `arrow_matrices` carries only nonzero arrows (QPA defaults omitted arrows to 0);
+    matrices are in QPA's row convention (see modules/qpa_module.graded_form)."""
+    field = _gap_field(algebra.domain)
+    parts = [f'["{a}", {_gap_matrix(mat, field)}]' for a, mat in arrow_matrices.items()]
+    arrows_gap = "[" + ", ".join(parts) + "]"
+    return f"{var} := RightModuleOverPathAlgebra(A, {list(dimvec_list)}, {arrows_gap});;"
+
+
 def module_self_ext_dims_script(algebra, dimvec_M, top: int) -> str:
     """Bind `ext := [dim Ext^0(M,M), ..., dim Ext^top(M,M)]` (self-Ext of one module
     given by its dimension vector) via the SAME idiom `ExtAlgebraGenerators(M, top)[1]`.

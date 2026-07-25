@@ -11,11 +11,33 @@ from quiverlab.errors import QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 
 
+_SIDES = ("right", "left")
+
+
+def _other_side(side):
+    """The categorical opposite side ("right" <-> "left"), used by the contravariant
+    functors D and Tr, which exchange the two sides over the same base algebra."""
+    return "left" if side == "right" else "right"
+
+
 class Module:
-    def __init__(self, algebra, dim, action, name="M"):
+    """A finite-dimensional A-module over an exact Domain (Plan 05; Plan 24 sides).
+
+    The action is ALWAYS stored as a RIGHT action of ``self.algebra`` (the
+    *representation* algebra). ``self.side`` records how the user reads it:
+    ``"right"`` (default) means a right ``self.algebra``-module; ``"left"`` means a
+    left ``base_algebra``-module, represented as a right ``self.algebra =
+    base_algebra^op``-module (a left A-module IS a right A^op-module). All algorithms
+    read only ``(self.algebra, self.action)`` and are blind to ``side`` -- the left
+    side reuses every right-module algorithm run over A^op, no duplicated math."""
+
+    def __init__(self, algebra, dim, action, name="M", side="right"):
+        if side not in _SIDES:
+            raise QuiverlabError(f"Module side must be one of {_SIDES}, got {side!r}")
         self.algebra = algebra
         self.domain = algebra.domain
         self.dim = dim
+        self.side = side
         # Action entries may be given as plain int / rational literals for
         # convenience; normalize them into the algebra's exact field (mirroring
         # Algebra.from_structure_constants). Entries already in the field (e.g.
@@ -23,6 +45,22 @@ class Module:
         self.action = {label: _coerce_matrix(mat, self.domain)
                        for label, mat in action.items()}
         self.name = name
+
+    @property
+    def base_algebra(self):
+        """The algebra the user reads this module as a (side)-module over: the
+        representation algebra when right, its opposite when left."""
+        return self.algebra if self.side == "right" else self.algebra.opposite()
+
+    def with_side(self, side):
+        """A re-tagged twin over the SAME representation (same algebra + action),
+        read on the given side. This is the exact "side translation" between a right
+        A^op-module and a left A-module -- a relabelling, no recomputation."""
+        import copy
+        twin = copy.copy(self)
+        twin.side = side
+        twin.action = dict(self.action)      # shallow copy so mutations don't alias
+        return twin
 
     def _idem_label(self, v):
         return f"e_{v}"
@@ -188,9 +226,51 @@ class Module:
         terms, dmats = minimal_resolution(self, length, max_term_dim=max_term_dim)
         return ProjectiveResolution(self, terms, dmats)
 
+    # -- duality, transpose, AR translates (Plan 23; Plan 24 sides) -----------
+    def dualize(self):
+        """D M = Hom_k(M, k). Contravariant, exchanging the two sides over the SAME
+        base algebra (Plan 24): D of a right A-module is a LEFT A-module and vice
+        versa. D preserves dimension vectors and D.D = id."""
+        from quiverlab.modules.duality import dualize
+        return dualize(self)
+
+    def transpose(self):
+        """Tr M = coker(Hom(P_0,A) -> Hom(P_1,A)); Hom_A(-,A) lands in the OTHER-side
+        modules, so Tr flips the side over the same base algebra (Plan 24)."""
+        from quiverlab.modules.duality import transpose_module
+        return transpose_module(self)
+
+    def tau(self):
+        """Auslander-Reiten translate tau M = D(Tr M). tau(projective) = 0."""
+        from quiverlab.modules.duality import tau
+        return tau(self)
+
+    def tau_minus(self):
+        """inverse AR translate tau^- M = Tr(D M). tau^-(injective) = 0."""
+        from quiverlab.modules.duality import tau_minus
+        return tau_minus(self)
+
+    def is_isomorphic(self, other):
+        """True iff self and other are isomorphic right modules (exact certificate)."""
+        from quiverlab.modules.hom import is_isomorphic
+        return is_isomorphic(self, other)
+
+    def injective_resolution(self, length, max_term_dim=200000):
+        """Minimal injective coresolution 0 -> M -> E^0 -> E^1 -> ... (Plan 23)."""
+        from quiverlab.modules.injective import injective_resolution
+        return injective_resolution(self, length, max_term_dim=max_term_dim)
+
+    def injective_dimension(self, bound=32, max_term_dim=200000):
+        """inj.dim_A(M) = pd_{A^op}(DM): int, or None if unresolved within bound."""
+        from quiverlab.modules.injective import injective_dimension
+        return injective_dimension(self, bound=bound, max_term_dim=max_term_dim)
+
     def __repr__(self):
         dv = self.dimension_vector()
-        return f"{self.name}: right {self.algebra} module, dim {self.dim}, dimvec {dv}"
+        # side="right" reproduces the pre-Plan-24 string byte-for-byte (base_algebra
+        # is self.algebra for right modules); left modules show "left <base algebra>".
+        return (f"{self.name}: {self.side} {self.base_algebra} module, "
+                f"dim {self.dim}, dimvec {dv}")
 
 
 def _coerce_matrix(mat, dom):

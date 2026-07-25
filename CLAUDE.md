@@ -191,4 +191,81 @@ raises. Folded-in Plan-20 review backlog cleared (QCI skip-guards now FAIL not s
 element-wise CS-basis bridge, session-scoped Δ_4 fixture, `native_cup` chain-cache
 routing, constructed inconsistent-lift refusal). Branch `plan-21-native-cs-cap`,
 UNMERGED — `docs/verification.md` cap oracles owed at merge, that page lives on
-`plan-22-verification-transparency`).
+`plan-22-verification-transparency`), Plan 23 (module-theoretic surface, engine
+slice — backlog Tier 1b items 1/2/4: the opposite algebra `A^op` as a
+first-class Algebra (reversed quiver + transposed structure constants,
+`modules/opposite.py`, cached involution), the duality `D` on modules
+(`modules/duality.py::dualize`; `D(P_v^{op})≅injective(A,v)` reconciles the
+implicit `I_v=D(Ae_v)`), the corner-transpose `Tr`, and the **AR translates**
+`τM=D(Tr M)` / `τ⁻M=Tr(DM)` (`M.tau()`, `M.tau_minus()`, `M.dualize()`,
+`M.transpose()`, `Algebra.opposite()`). Injective resolutions +
+`M.injective_dimension()=pd_{A^op}(DM)` dual to Plan 05 on the same engine
+(`modules/injective.py`). Exact module iso (`modules/hom.py::is_isomorphic`,
+invertible-hom certificate; char-0 generic-rank/Noether–Deuring; loud beyond
+budget). Oracles: theory (hereditary Coxeter `dim τM=Φ⁻ᵀ dim M`, kA_n tables,
+self-injective ⇒ inj.dim∈{0,∞}, Nakayama orbits, `max_v inj.dim S_v=gl.dim`)
+AND QPA `-m qpa` (`DTr`/`TrD`+`IsomorphicModules`, `ProjectiveResolution`,
+`DualOfModule`, `InjDimensionOfModule`; `modules/qpa_module.py::graded_form`
+translates our modules to QPA's row convention) across the zoo incl. Plan-18
+`line_abc_cde`. Tier 1b item 3 (no-code module GUI/webapp) SPECIFIED in the
+plan doc, NEXT slice. Branch `plan-23-module-surface`, UNMERGED), Plan 24
+(**left modules alongside right, right as default** — backlog Tier 1b: the
+module surface takes `side="right"|"left"`; right stays the default and
+byte-unchanged (right-module repr byte-identical, whole existing suite green).
+A left A-module IS a right A^op-module, so the Plan-23 op+D engine makes the
+side a presentation-only tag on `Module` (`self.side`, `self.base_algebra`,
+`self.with_side`); ALL algorithms read only `(algebra, action)` and are blind
+to the side — no math forked. `Algebra.simple/projective/injective/module`
+gain `side=` (left routes through `A^op` + re-tag); `D` and `Tr` are now
+**side-aware** (exchange left↔right over the SAME base algebra — the classical
+contravariant form), so `M.dualize()` of a right A-module is now a LEFT
+A-module (representation byte-identical, only the tag/repr move — `injective.py`,
+`τ`, `τ⁻` numerically unchanged). `is_isomorphic`/`hom`/`ext` refuse loudly
+across sides/algebras (`modules/hom.py::_assert_comparable`, before the
+dim-vector fast-paths). Two Plan-23 tests spelling `I_v=D(Ae_v)` via
+`A.opposite().projective(v).dualize()` moved to the honest
+`A.projective(v, side="left").dualize()`. Oracles: ASS2006 (left/right
+duality D, AR translates); QPA `-m qpa` crosschecks left τ/τ⁻/inj.dim/
+resolutions by FEEDING QPA THE OPPOSITE ALGEBRA (right-module native).
+`tests/modules/test_left_modules.py` + `tests/qpa/test_left_modules_qpa.py`.
+Branch `plan-24-left-modules`, UNMERGED). Plan 25 (webapp result cache — backlog Tier-3
+item: never recompute a known example. `webapp/server/cache.py` canonicalizer
+(`canonical_key` = sha256 of sorted-keys JSON over the versioned request + library
+version; dict order irrelevant, tuple/list round-trip collides, version bump
+invalidates) + a new `result_cache` table in the single SQLite/WAL store — NOT a
+jobs column — that maps the canonical key → a finished job and "pins" that job
+against the retention purge so its artifacts survive to back replays. All three
+tiers check the cache FIRST (`/api/compute`, `/api/jobs`, `/api/jobs/big`); a hit
+replays instantly across users with zero recompute. Big-job crux: the cache check
+is the first statement in `submit_big`, BEFORE `big_jobs_enabled`, so a cached big
+example is served with NO token/email/`email_hash` — email verification gates the
+COST of computing, not access to the mathematics — even when SMTP is off. Worker
+records on success only (failures may be transient); `cache_put` is idempotent
+(benign identical-request race, in-flight dedup skipped as it needs a jobs-schema
+change); `sweep_cache_once` (version purge + LRU size cap) runs beside `sweep_once`.
+Rows are math-only (no email/ip/token). Config `QLWEB_CACHE_ENABLED`/
+`QLWEB_CACHE_MAX_ENTRIES`. Branch `plan-25-webapp-result-cache`, UNMERGED),
+Plan 26 (no-code module input GUI + webapp — backlog Tier 1b item 3, the last:
+every representation theorist specifies a module with zero code and reads off the
+classical module invariants. Webapp request **schema v2** gains a `module` block
+(explicit `{dims, maps, side}` — one exact-entry matrix per arrow — OR a
+zero-typing `{builtin: {kind: simple|projective|injective, vertex, side}}`) plus
+`ext_target` (the N in Ext), guarded to schema 2, canonicalizing through the
+Plan-25 `canonical_key` (side default explicit so an omitted `side` and `"right"`
+collide; a `ComputeRequest.model_dump` override drops an absent module block so
+every existing family/quiver request keeps its byte-identical key). Module compute
+kinds — dimension_vector, rad_top_soc, ext, tau/tau_minus, projective/injective
+_resolution, projective/injective_dimension — served by ALL THREE tiers with
+references/citations (GSZ2001 `minimal_resolution`/`module_ext`, ASS2006
+`assem_book`); a relation-violating module raises the library's loud error as a
+clean typed 4xx (never a 500). Matrix entries are exact DATA (int/`"1/2"` strings,
+never eval, floats refused); per-arrow BLOCK matrices `dim[t]×dim[s]` expand to
+the full vertex-ordered action `A.module` consumes, using the representation
+quiver's directions — right (A) and left (A^op) alike. `estimator.sizing_dim`
+sizes on the larger of algebra/module dim so big modules route off instant like
+oversized families. Two runners carry the SAME dispatch: `webapp/server/runner.py`
+(server) and `docs/gui/runner.py` (Pyodide client). GUI: a "Module (no code)"
+panel on the canvas — per-vertex dimension picker, per-arrow matrix grid (dims
+follow source/target live), a right/left side toggle, S(v)/P(v)/I(v) pick-lists;
+results render like existing blocks (MathJax + citations); interface-freshness
+pins the module surface. Branch `plan-26-no-code-modules`, UNMERGED).

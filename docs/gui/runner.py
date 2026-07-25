@@ -10,6 +10,7 @@ All public functions take and return JSON STRINGS (postMessage-friendly)."""
 import json
 import os
 import traceback
+from fractions import Fraction
 
 os.environ.setdefault("MPLBACKEND", "Agg")   # never let matplotlib probe for a display
 
@@ -17,8 +18,19 @@ import quiverlab
 
 SCHEMA_VERSION = 1
 MAX_DEGREE = 10
+# Depth to which projective dimension is probed before reporting "infinite"
+# (matches the library's injective_dimension(bound=32) default).
+_PD_BOUND = 32
 
-_state = {"algebra": None, "request": None, "events": None, "results": None}
+# Module compute kinds (Plan 26). `ext` also needs a second module (`ext_target`).
+_MODULE_KINDS = frozenset({
+    "dimension_vector", "rad_top_soc", "ext", "tau", "tau_minus",
+    "projective_resolution", "injective_resolution",
+    "projective_dimension", "injective_dimension",
+})
+
+_state = {"algebra": None, "request": None, "events": None, "results": None,
+          "module": None, "ext_target": None}
 
 
 class RequestError(Exception):
@@ -50,7 +62,8 @@ def _field_from_spec(spec):
 
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
-    _state.update(algebra=None, request=None, events=[], results=[])
+    _state.update(algebra=None, request=None, events=[], results=[],
+                  module=None, ext_target=None)
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
@@ -82,7 +95,11 @@ def run_build(request_json):
         Q = quiverlab.Quiver(vertices=vertices,
                              arrows={k: (s, t) for k, (s, t) in arrows.items()})
         A = Q.algebra(relations=relations, field=field)
-        _state.update(algebra=A, request=req)
+        # Module blocks (Plan 26) ride alongside the algebra; the module itself is
+        # built lazily in compute_one, so a relation-violating matrix surfaces as a
+        # per-computation error (rendered on the page), never a build crash.
+        _state.update(algebra=A, request=req, module=req.get("module"),
+                      ext_target=req.get("ext_target"))
         out = {"ok": True, "dim": A.dim, "n_vertices": len(vertices),
                "n_arrows": len(arrows), "algebra": repr(A).splitlines()[0]}
     except Exception as exc:
@@ -113,6 +130,167 @@ def _latex_matrix(rows):
     return r"\begin{pmatrix} %s \end{pmatrix}" % body
 
 
+# --- module block (Plan 26): build a module from the request + dispatch ------
+# The webapp server tier (webapp/server/runner.py) carries the SAME logic; this
+# is the Pyodide/client copy (the two runners already duplicate the algebra
+# dispatch -- they cannot import each other).
+
+def _parse_entry(x):
+    """Parse an exact matrix entry to int/Fraction. Entries are DATA (never
+    evaluated); a float is refused (exactness is the point)."""
+    if isinstance(x, bool):
+        raise RequestError("module entry %r is not a number" % (x,))
+    if isinstance(x, int):
+        return x
+    if isinstance(x, float):
+        raise RequestError("module entry %r is a float; entries must be exact "
+                           "(integers or strings like '1/2')" % (x,))
+    if isinstance(x, str):
+        s = x.strip()
+        try:
+            return int(s)
+        except ValueError:
+            pass
+        try:
+            return Fraction(s)
+        except (ValueError, ZeroDivisionError):
+            raise RequestError("module entry %r is not an exact integer or "
+                               "fraction" % (x,))
+    raise RequestError("module entry %r is not a number" % (x,))
+
+
+def _full_matrices(A, mspec):
+    """Expand per-arrow BLOCK matrices (dim[target] x dim[source] in the
+    representation quiver) into the full vertex-ordered arrow actions A.module
+    consumes. side selects the representation quiver (right=A, left=A^op)."""
+    rep = A if mspec.get("side", "right") == "right" else A.opposite()
+    verts = list(rep.quiver.vertices)
+    by_str = {str(v): v for v in verts}
+    dimvec = {v: 0 for v in verts}
+    for key, n in (mspec.get("dims") or {}).items():
+        if key not in by_str:
+            raise RequestError("module: no vertex %r in the algebra" % (key,))
+        dimvec[by_str[key]] = int(n)
+    start, off = {}, 0
+    for v in verts:
+        start[v] = off
+        off += dimvec[v]
+    n = off
+    arrow_names = list(rep.quiver.arrows)
+    for a in (mspec.get("maps") or {}):
+        if a not in arrow_names:
+            raise RequestError("module: no arrow %r in the algebra" % (a,))
+    action = {}
+    for a in arrow_names:
+        s, t = rep.quiver.source(a), rep.quiver.target(a)
+        rows, cols = dimvec[t], dimvec[s]
+        full = [[0] * n for _ in range(n)]
+        block = (mspec.get("maps") or {}).get(a)
+        if block is not None:
+            if len(block) != rows or any(len(r) != cols for r in block):
+                raise RequestError("module map %r must be %dx%d (target x source "
+                                   "dims)" % (a, rows, cols))
+            for i in range(rows):
+                for j in range(cols):
+                    full[start[t] + i][start[s] + j] = _parse_entry(block[i][j])
+        action[a] = full
+    return dimvec, action
+
+
+def _build_module(A, mspec, name):
+    if not isinstance(mspec, dict):
+        raise RequestError("this computation needs a module block")
+    b = mspec.get("builtin")
+    if b is not None:
+        v, kind, side = b.get("vertex"), b.get("kind"), mspec.get("side", "right")
+        builder = {"simple": A.simple, "projective": A.projective,
+                   "injective": A.injective}.get(kind)
+        if builder is None:
+            raise RequestError("unknown builtin module kind %r" % (kind,))
+        for vv in A.quiver.vertices:
+            if vv == v or str(vv) == str(v):
+                return builder(vv, side=side)
+        raise RequestError("module: no vertex %r in the algebra" % (v,))
+    dimvec, action = _full_matrices(A, mspec)
+    return A.module(dimvec, action, side=mspec.get("side", "right"), name=name)
+
+
+def _dv(dimvec):
+    return {str(v): int(n) for v, n in sorted(dimvec.items(), key=lambda kv: str(kv[0]))}
+
+
+def _dv_latex(dimvec):
+    d = _dv(dimvec)
+    return "(" + ",\\, ".join(str(d[k]) for k in d) + ")" if d else "()"
+
+
+def _mod_view(m):
+    return {"dimvec": _dv(m.dimension_vector()), "dim": m.dim}
+
+
+_MOD_REFS = {
+    "dimension_vector": ["assem_book"], "rad_top_soc": ["assem_book"],
+    "tau": ["assem_book"], "tau_minus": ["assem_book"], "ext": ["module_ext"],
+    "projective_resolution": ["minimal_resolution"],
+    "projective_dimension": ["minimal_resolution"],
+    "injective_resolution": ["minimal_resolution", "assem_book"],
+    "injective_dimension": ["minimal_resolution", "assem_book"],
+}
+
+
+def _module_block(name, top):
+    """Dispatch one module compute kind against the built module(s). Blocks carry
+    a `latex` display and `citations`, like the algebra invariants."""
+    A = _state["algebra"]
+    M = _build_module(A, _state.get("module"), "M")
+    keys = _MOD_REFS[name]
+    cites = _citation_pairs(keys)
+    if name == "dimension_vector":
+        return {"kind": name, "side": M.side, "citations": cites, **_mod_view(M),
+                "latex": r"\underline{\dim}\, M = " + _dv_latex(M.dimension_vector())}
+    if name == "rad_top_soc":
+        return {"kind": name, "side": M.side, "citations": cites,
+                "radical": _mod_view(M.radical()), "top": _mod_view(M.top()),
+                "socle": _mod_view(M.socle())}
+    if name in ("tau", "tau_minus"):
+        t = M.tau() if name == "tau" else M.tau_minus()
+        sym = r"\tau M" if name == "tau" else r"\tau^{-} M"
+        latex = (sym + " = 0") if t.dim == 0 else (r"\underline{\dim}\, " + sym
+                                                   + " = " + _dv_latex(t.dimension_vector()))
+        return {"kind": name, "side": t.side, "is_zero": t.dim == 0,
+                "citations": cites, "latex": latex, **_mod_view(t)}
+    if name == "ext":
+        if top is None:
+            raise RequestError("ext needs a range, e.g. 'ext:0..4'")
+        from quiverlab.modules.ext import ext_dims
+        N = _build_module(A, _state.get("ext_target"), "N")
+        dims = [int(d) for d in ext_dims(A, M, N, top)]
+        return {"kind": name, "top": top, "dims": dims, "target": _mod_view(N),
+                "citations": cites}
+    if name in ("projective_resolution", "injective_resolution"):
+        if top is None:
+            raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+        res = (M.projective_resolution(top) if name == "projective_resolution"
+               else M.injective_resolution(top))
+        terms = [_dv(dv) for dv in res.dimension_vectors()]
+        block = {"kind": name, "top": top, "terms": terms,
+                 "betti": [res.betti(i) for i in range(len(terms))], "citations": cites}
+        if name == "projective_resolution":
+            block["pd"] = res.pd()
+        else:
+            block["injective_dimension"] = res.injective_dimension()
+        return block
+    if name == "projective_dimension":
+        pd = M.projective_resolution(_PD_BOUND).pd()
+        return {"kind": name, "value": pd, "finite": pd is not None, "citations": cites,
+                "latex": r"\operatorname{pd} M = " + (str(pd) if pd is not None else r"\infty")}
+    if name == "injective_dimension":
+        idim = M.injective_dimension(bound=_PD_BOUND)
+        return {"kind": name, "value": idim, "finite": idim is not None, "citations": cites,
+                "latex": r"\operatorname{id} M = " + (str(idim) if idim is not None else r"\infty")}
+    raise RequestError("unknown module invariant %r" % (name,))
+
+
 def compute_one(spec):
     """Run ONE Plan-09 compute string against the built algebra."""
     A = _state["algebra"]
@@ -120,7 +298,9 @@ def compute_one(spec):
         if A is None:
             raise RequestError("no algebra built (run_build first)")
         name, top = _parse_compute(spec)
-        if name in ("hh_cohomology", "hh_homology"):
+        if name in _MODULE_KINDS:
+            block = _module_block(name, top)
+        elif name in ("hh_cohomology", "hh_homology"):
             if top is None:
                 raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
             method = (A.hochschild_cohomology if name == "hh_cohomology"
@@ -201,15 +381,58 @@ def python_snippet():
                                                    field_expr),
         "print(A.dim)",
     ]
+    if req.get("module"):
+        lines += _module_snippet_lines(req["module"], "M")
+    if req.get("ext_target"):
+        lines += _module_snippet_lines(req["ext_target"], "N")
     calls = {"hh_cohomology": "A.hochschild_cohomology(%d)",
              "hh_homology": "A.hochschild_homology(%d)",
              "cartan": "A.cartan_matrix()", "coxeter_polynomial": "A.coxeter_polynomial()",
-             "global_dimension": "A.global_dimension()", "center": "A.center()"}
+             "global_dimension": "A.global_dimension()", "center": "A.center()",
+             "dimension_vector": "M.dimension_vector()",
+             "rad_top_soc": "(M.radical(), M.top(), M.socle())",
+             "tau": "M.tau()", "tau_minus": "M.tau_minus()",
+             "ext": "[A.ext(M, N, i) for i in range(%d + 1)]",
+             "projective_resolution": "M.projective_resolution(%d).dimension_vectors()",
+             "injective_resolution": "M.injective_resolution(%d).dimension_vectors()",
+             "projective_dimension": "M.projective_resolution(%d).pd()" % _PD_BOUND,
+             "injective_dimension": "M.injective_dimension()"}
     for spec in req.get("compute", []):
         name, top = _parse_compute(spec)
-        call = calls[name] % top if "%d" in calls[name] else calls[name]
+        tmpl = calls[name]
+        call = tmpl % top if ("%d" in tmpl and top is not None) else tmpl
         lines.append("print(%s)" % call)
     return "\n".join(lines) + "\n"
+
+
+def _fmt_scalar(x):
+    if isinstance(x, Fraction):
+        return (str(x.numerator) if x.denominator == 1
+                else "Fraction(%d, %d)" % (x.numerator, x.denominator))
+    return str(x)
+
+
+def _pymat(mat):
+    return ("[" + ", ".join("[" + ", ".join(_fmt_scalar(x) for x in row) + "]"
+                            for row in mat) + "]")
+
+
+def _module_snippet_lines(mspec, varname):
+    """Runnable lines rebuilding `varname`: a builtin call, or the FULL exact
+    arrow-action matrices A.module consumes."""
+    b = mspec.get("builtin")
+    if b is not None:
+        return ['%s = A.%s(%r, side="%s")'
+                % (varname, b.get("kind"), b.get("vertex"), mspec.get("side", "right"))]
+    dimvec, action = _full_matrices(_state["algebra"], mspec)
+    lines = []
+    if any(isinstance(x, Fraction) for m in action.values() for row in m for x in row):
+        lines.append("from fractions import Fraction")
+    dv_lit = "{" + ", ".join("%r: %d" % (v, n) for v, n in dimvec.items()) + "}"
+    maps_lit = "{" + ", ".join('"%s": %s' % (a, _pymat(m)) for a, m in action.items()) + "}"
+    lines.append('%s = A.module(%s, %s, side="%s", name="%s")'
+                 % (varname, dv_lit, maps_lit, mspec.get("side", "right"), varname))
+    return lines
 
 
 def result_bundle():
@@ -229,7 +452,13 @@ ETA_MODEL = {
     "bar":  {"alpha": 1.4622e-07, "p": 1.3},
     "fast": {"alpha": 5.3447e-07, "p": 1.1},
     "scalars": {"cartan": 0.01, "coxeter_polynomial": 0.2,
-                "center": 0.05, "global_dimension": 0.5},
+                "center": 0.05, "global_dimension": 0.5,
+                # module kinds (Plan 26): cheap dim-vector reads up to
+                # resolution/dimension probes that build syzygies to depth.
+                "dimension_vector": 0.02, "rad_top_soc": 0.05,
+                "tau": 0.1, "tau_minus": 0.1, "ext": 0.2,
+                "projective_resolution": 0.2, "injective_resolution": 0.2,
+                "projective_dimension": 0.3, "injective_dimension": 0.3},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

@@ -55,3 +55,16 @@
 #qlgui-eta { min-height: 1.1em; }
 #qlgui-eta.err { color: #c62828; }
 [data-md-color-scheme="slate"] #qlgui-eta.err { color: #ef9a9a; }
+/* Plan 26: no-code module panel */
+#qlgui-module { border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 6px; padding: 4px 12px 8px; margin: 8px 0; }
+#qlgui-module legend { font-size: .72rem; padding: 0 6px; }
+#qlgui-module:disabled, #qlgui-module select:disabled,
+#qlgui-module input:disabled { opacity: .5; }
+#qlgui .qlgui-mrow { display: flex; flex-wrap: wrap; gap: 8px;
+  align-items: flex-start; margin: 6px 0; }
+#qlgui .qlgui-mlabel { font-size: .68rem; font-style: italic; min-width: 8em;
+  color: var(--md-default-fg-color--light); padding-top: 4px; }
+#qlgui .qlgui-mgrid { display: inline-grid; gap: 3px; }
+#qlgui .qlgui-mgrid input[type="text"] { width: 3.2em; text-align: center; }
+#qlgui-mod-kinds label { display: inline-flex; align-items: center; gap: 3px; }

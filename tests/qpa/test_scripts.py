@@ -35,3 +35,20 @@ def test_builder_reads_public_attrs_not_private():
     # and Domain.characteristic is an int, not a callable.
     A = Quiver([1, 2], {"a": (1, 2)}).algebra(field=GF(5))
     quiver_and_algebra_script(A)  # must not raise
+
+
+def test_module_decl_shape_gfp_and_qq():
+    # Plan 23: RightModuleOverPathAlgebra emitter (graded form -> QPA module). Runs
+    # without GAP; pins the row-convention matrix + GF(p) element syntax.
+    from quiverlab.fields import QQ
+    from quiverlab.modules.qpa_module import graded_form
+    from quiverlab.qpa.scripts import module_decl
+    A = Quiver([1, 2], {"a": (1, 2)}).algebra(field=GF(5))
+    dv, arr = graded_form(A.projective(1))            # P_1 = [1,1], a acts nonzero
+    line = module_decl(A, dv, arr, "M")
+    assert line.startswith("M := RightModuleOverPathAlgebra(A, [1, 1], [")
+    assert '"a"' in line and "One(GF(5))" in line
+    Aq = Quiver([1, 2], {"a": (1, 2)}).algebra(field=QQ)
+    dvq, arrq = graded_form(Aq.projective(1))
+    lineq = module_decl(Aq, dvq, arrq, "M")
+    assert "One(" not in lineq                          # QQ entries are bare rationals

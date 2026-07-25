@@ -300,20 +300,55 @@ class Algebra:
         return table
 
     # -- modules --------------------------------------------------------------
-    def simple(self, v):
-        """The simple right module S_v (spec §3.6)."""
-        from quiverlab.modules.builders import simple
-        return simple(self, v)
+    def _sided_builder(self, name, v, side):
+        """Build S/P/I on the requested side (Plan 24). A left A-module IS a right
+        A^op-module: route left construction through A^op and re-tag "left"."""
+        if side == "right":
+            from quiverlab.modules import builders
+            return getattr(builders, name)(self, v)
+        if side == "left":
+            from quiverlab.modules.opposite import opposite_algebra
+            return getattr(opposite_algebra(self), name)(v).with_side("left")
+        from quiverlab.errors import QuiverlabError
+        raise QuiverlabError(f'side must be "right" or "left", got {side!r}')
 
-    def projective(self, v):
-        """The indecomposable projective right module P_v = e_v A (spec §3.6)."""
-        from quiverlab.modules.builders import projective
-        return projective(self, v)
+    def simple(self, v, side="right"):
+        """The simple S_v (spec §3.6). ``side="left"`` for the left A-module (Plan 24)."""
+        return self._sided_builder("simple", v, side)
 
-    def injective(self, v):
-        """The indecomposable injective right module I_v = D(A e_v) (spec §3.6)."""
-        from quiverlab.modules.builders import injective
-        return injective(self, v)
+    def projective(self, v, side="right"):
+        """The indecomposable projective P_v: right ``e_v A`` (default) or, with
+        ``side="left"``, the left projective ``A e_v`` (Plan 24)."""
+        return self._sided_builder("projective", v, side)
+
+    def injective(self, v, side="right"):
+        """The indecomposable injective I_v = D(A e_v) (right, default) or the left
+        injective with ``side="left"`` (Plan 24)."""
+        return self._sided_builder("injective", v, side)
+
+    def module(self, dimension_vector, arrow_action, side="right", name="M"):
+        """Build a module from a dimension vector + one exact matrix per arrow
+        (Plan 05 `Module.from_arrow_action`). ``side="right"`` (default) reads the
+        matrices as a right A-module (arrow a: s->t acting M_s -> M_t); ``side="left"``
+        builds a left A-module = right A^op-module, so the matrices are the opposite-
+        quiver representation (Plan 24)."""
+        from quiverlab.modules.module import Module
+        if side == "right":
+            return Module.from_arrow_action(self, dimension_vector, arrow_action, name=name)
+        if side == "left":
+            from quiverlab.modules.opposite import opposite_algebra
+            m = Module.from_arrow_action(opposite_algebra(self), dimension_vector,
+                                         arrow_action, name=name)
+            return m.with_side("left")
+        from quiverlab.errors import QuiverlabError
+        raise QuiverlabError(f'side must be "right" or "left", got {side!r}')
+
+    def opposite(self):
+        """The opposite algebra A^op (reversed quiver, transposed structure
+        constants), as a first-class Algebra. Involutive: A.opposite().opposite()
+        is A (Plan 23)."""
+        from quiverlab.modules.opposite import opposite_algebra
+        return opposite_algebra(self)
 
     def hom(self, M, N):
         """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""

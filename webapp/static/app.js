@@ -122,6 +122,9 @@ if (form) form.addEventListener("submit", async (e) => {
     return;
   }
   if (r.status === 202 && data.tier === "queued") { window.location = "/job/" + data.job_id; return; }
+  // Cache hit (Plan 25): this exact computation was done before -- go straight to
+  // its result page (downloads + references + the "previously computed" note).
+  if (r.status === 200 && data.tier === "cached") { window.location = "/job/" + data.job_id; return; }
   // Beyond big caps, or big tier disabled: honest message + local hint.
   if (r.status === 422 && data.reason) {
     const tmpl = data.reason === "beyond_big_cap" ? form.dataset.bigReject : form.dataset.bigDisabled;
@@ -144,6 +147,10 @@ if (bigSend && form) bigSend.addEventListener("click", async () => {
   const r = await fetch("/api/jobs/big", {method: "POST",
     headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
   const sent = document.getElementById("big-sent");
+  // Cache hit (Plan 25): already computed by someone -- served with NO email, NO
+  // token. Skip the inbox message and go straight to the cached result page.
+  if (r.status === 200) { const d = await r.json();
+    if (d.status === "cached") { window.location = "/job/" + d.job_id; return; } }
   if (r.status === 202) { sent.textContent = form.dataset.bigSent || "Check your inbox."; }
   else { const d = await r.json(); sent.replaceChildren(errDiv(d.message || "error")); }
 });
