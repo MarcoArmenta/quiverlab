@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from webapp.server import cache
 from webapp.server.catalog import build_catalog
 from webapp.server.config import Config, get_config
-from webapp.server.estimator import classify
+from webapp.server.estimator import classify, sizing_dim
 from webapp.server.instant import run_with_timeout
 from webapp.server.limits import check_can_queue
 from webapp.server.runner import RunError, build_algebra
@@ -173,7 +173,10 @@ def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
         except RunError as exc:
             return _error_response(exc.error_type, exc.message)
 
-        info = classify(dim, req, cfg)
+        # Module requests size on the larger of the algebra and module dimension
+        # (Plan 26): a big module over a small algebra must still route to a
+        # heavier tier, exactly like an oversized family request.
+        info = classify(sizing_dim(dim, req), req, cfg)
         tier = info["tier"]
 
         if tier == "instant":

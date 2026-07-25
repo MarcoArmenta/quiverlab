@@ -28,7 +28,7 @@ from pydantic import field_validator
 
 from webapp.server import cache
 from webapp.server.app import _build_or_error, _cached_body, _error_response, _now_iso
-from webapp.server.estimator import classify
+from webapp.server.estimator import classify, sizing_dim
 from webapp.server.i18n import t as _t
 from webapp.server.mail import smtp_mailer
 from webapp.server.runner import RunError
@@ -205,7 +205,7 @@ def register_big_jobs(app, cfg, store, mailer=None) -> None:
             dim = A.dim
         except RunError as exc:
             return _error_response(exc.error_type, exc.message)
-        info = classify(dim, req, cfg)
+        info = classify(sizing_dim(dim, req), req, cfg)   # module-aware (Plan 26)
         if info["tier"] != "big":
             # Only genuinely over-anonymous-cap work belongs here.
             return JSONResponse(status_code=422, content={

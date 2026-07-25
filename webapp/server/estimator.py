@@ -25,6 +25,25 @@ def _max_degree(req: ComputeRequest) -> int:
     return hi
 
 
+def _module_dim(mspec) -> int:
+    """The declared total dimension of a module spec, WITHOUT building it. A
+    builtin (simple/projective/injective) is bounded by the algebra itself, so it
+    contributes nothing extra; an explicit module contributes the sum of its
+    dimension vector (the cost driver for its resolutions / Ext)."""
+    if mspec is None or mspec.builtin is not None or mspec.dims is None:
+        return 0
+    return sum(int(n) for n in mspec.dims.values())
+
+
+def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
+    """Effective dimension for tier classification. Module resolutions and Ext
+    scale with the MODULE dimension, so a big module must size the job even over a
+    small algebra -- otherwise it would be mis-classified as instant. Falls back to
+    the algebra dimension when there is no explicit module, so every existing
+    family/quiver request classifies exactly as before (Plan 26)."""
+    return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target))
+
+
 # Heuristic throughput used to turn the op estimate into a human "minutes"
 # figure for the warning UX (config-overridable would be trivial; a constant is
 # fine for an order-of-magnitude hint).
