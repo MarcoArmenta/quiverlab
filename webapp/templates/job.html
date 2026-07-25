@@ -27,6 +27,7 @@
     </ul>
   {% endif %}
   {% if reproduce %}<h2>{{ t("job.reproduce") }}</h2><pre>{{ reproduce }}</pre>{% endif %}
+  {% if cluster_yaml %}<h2>{{ t("job.reproduce_cluster") }}</h2><pre>{{ cluster_yaml }}</pre>{% endif %}
 {% else %}
   <p id="progress">{{ job.progress }}</p>
 {% endif %}

@@ -6,11 +6,13 @@
 // and reference links are built with document.createElement("a"), accepting
 // http(s) hrefs only.
 
-// Interpolate {cells}/{minutes}/{maxcells} into a t()-sourced template string.
+// Interpolate {cells}/{minutes}/{mem}/{maxcells} into a t()-sourced template
+// string. {mem} is the server's human-readable memory estimate (estimate.mem_human).
 function interp(tmpl, est, maxcells) {
   return (tmpl || "")
     .replace("{cells}", (est && est.cells != null) ? est.cells.toLocaleString() : "?")
     .replace("{minutes}", (est && est.minutes != null) ? est.minutes : "?")
+    .replace("{mem}", (est && est.mem_human != null) ? est.mem_human : "?")
     .replace("{maxcells}", maxcells ? Number(maxcells).toLocaleString() : "?");
 }
 

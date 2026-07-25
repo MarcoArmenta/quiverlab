@@ -30,6 +30,19 @@
   <footer>
     <a href="{{ prefix }}/feedback">{{ t("nav.feedback") }}</a>
     {% if docs_url %}· <a href="{{ docs_url }}">{{ t("nav.docs") }}</a>{% endif %}
+    {# Offline GUI only (Plan 28): the detected host resources + the worker caps
+       the local user computes under. Absent on the deployed server (offline flag
+       unset), so those pages stay byte-unchanged. #}
+    {% if offline and caps %}
+    <p class="offline-caps">
+      {{ t("offline.limits") }}
+      {{ t("offline.host") }} {{ caps.cores }} ·
+      {{ t("offline.ram") }} {{ caps.ram_human }} ·
+      {{ t("offline.worker_mem") }} {{ caps.worker_mem_human }} ·
+      {{ caps.workers }} {{ t("offline.workers") }}
+      {% if caps.gpus %}<br><span class="offline-gpu">{{ t("offline.gpu_note").replace("{n}", caps.gpus|string) }}</span>{% endif %}
+    </p>
+    {% endif %}
   </footer>
   {# External scripts only (CSP script-src 'self'): KaTeX, its auto-render
      contrib, then the app. No inline <script> anywhere. #}

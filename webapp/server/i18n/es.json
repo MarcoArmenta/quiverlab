@@ -51,7 +51,7 @@
   "lit.intro": "La bibliografía curada tras los algoritmos y familias de quiverlab, agrupada por tema.",
   "results.references": "Referencias",
   "nav.docs": "Documentación",
-  "big.warn": "Este cálculo construye matrices de ~{cells} celdas (~{minutes} min): supera el límite anónimo. Introduce un correo y lo ejecutaremos como trabajo grande y te avisaremos cuando termine.",
+  "big.warn": "Este cálculo construye matrices de ~{cells} celdas (~{minutes} min, ~{mem} de memoria): supera el límite anónimo. Introduce un correo y lo ejecutaremos como trabajo grande y te avisaremos cuando termine.",
   "big.disabled": "Este cálculo construye matrices de ~{cells} celdas: supera el límite anónimo, y los trabajos grandes no están disponibles ahora. Ejecútalo localmente: pip install quiverlab.",
   "big.reject": "Este cálculo construye matrices de ~{cells} celdas, más allá del límite de trabajos grandes de ~{maxcells} celdas. Ejecútalo localmente: pip install quiverlab.",
   "big.email": "Correo electrónico",
@@ -65,5 +65,12 @@
   "mail.done_subject": "Tu trabajo de quiverlab ha terminado",
   "mail.done_body": "Tu cálculo está listo:\n{url}",
   "mail.failed_subject": "Tu trabajo de quiverlab ha fallado",
-  "mail.failed_body": "Tu cálculo no se completó:\n{url}"
+  "mail.failed_body": "Tu cálculo no se completó:\n{url}",
+  "job.reproduce_cluster": "Reproducir en un clúster",
+  "offline.limits": "Límites locales:",
+  "offline.host": "núcleos de CPU",
+  "offline.ram": "RAM detectada",
+  "offline.worker_mem": "límite de memoria del proceso",
+  "offline.workers": "proceso(s) de trabajo",
+  "offline.gpu_note": "{n} GPU detectada(s) — sin usar: los motores de quiverlab son cálculo exacto en CPU."
 }
