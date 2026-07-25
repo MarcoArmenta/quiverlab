@@ -151,9 +151,98 @@ def crosscheck_inj_dimension(algebra, M, bound: int) -> ModuleCrosscheckReport:
     return ModuleCrosscheckReport("inj_dimension", ours, qpa, ours == qpa)
 
 
+# ---------------------------------------------------------------------------
+# Plan 27: the Yoneda / Ext-algebra E(A) = Ext^*(A/J, A/J) crosschecks
+# ---------------------------------------------------------------------------
+def crosscheck_ext_algebra_dims(algebra, top: int) -> CrosscheckReport:
+    """Total graded Ext-algebra dimensions ``dim E^n = sum_{i,j} dim Ext^n(S_i, S_j)``
+    (our engine, summed over corners) vs QPA's ``ExtAlgebraGenerators(M, top)[1]`` for
+    ``M = (+) SimpleModules(A)`` (Plan 27). Both indexed n = 0..top; degree 0 is
+    ``|Q_0|`` on both sides."""
+    session.require_gap()
+    ours = algebra.ext_algebra(top=top).graded_dims_through(top)
+    script = scripts.ext_algebra_generators_script(algebra, top)
+    qpa = _read_int_list(session.run(script + "\ninfo[1];"))
+    return CrosscheckReport("ext_algebra_dims", list(ours), qpa, list(ours) == qpa)
+
+
+def crosscheck_ext_generator_degrees(algebra, top: int) -> CrosscheckReport:
+    """Per-degree counts of NEW minimal E-algebra generators vs QPA's
+    ``ExtAlgebraGenerators(M, top)[2]`` (Plan 27).
+
+    DEGREE-0 MAPPING (documented, honest): our engine treats degree 0 as the semisimple
+    base R = k^{Q_0} (the augmentation ideal starts in degree 1) and so does NOT list it
+    in ``generators_by_degree``; QPA instead counts the ``|Q_0|`` vertex idempotents as
+    the degree-0 generators. We align by reporting our degree-0 count as
+    ``len(A.quiver.vertices)``; for n >= 1 the count is
+    ``len(generators_by_degree[n])``. This makes the Koszulity discriminator explicit:
+    rad^2 = 0 A_3 and the cubic A_4 BOTH have ``dim Ext^2 = 1``, but A_3's degree-2
+    class is decomposable (generator count 0) while A_4's is a genuine new generator
+    (count 1)."""
+    session.require_gap()
+    P = algebra.ext_algebra(top=top)
+    nv = len(algebra.quiver.vertices)
+    ours = [nv] + [len(P.generators_by_degree.get(n, [])) for n in range(1, top + 1)]
+    script = scripts.ext_algebra_generators_script(algebra, top)
+    qpa = _read_int_list(session.run(script + "\ninfo[2];"))
+    return CrosscheckReport("ext_generator_degrees", ours, qpa, ours == qpa)
+
+
+def crosscheck_ext_quiver(algebra) -> CrosscheckReport:
+    """The Ext-quiver / Ext^1 corner matrix ``dim Ext^1(S_i, S_j)`` (our corner (i, j))
+    vs QPA's ``Length(ExtOverAlgebra(S_i, S_j)[2])`` (Plan 27). Pins the corner /
+    direction convention: our corner (i, j) must equal QPA's ``ExtOverAlgebra(S_i, S_j)``.
+    Both matrices are indexed in quiver-vertex order."""
+    session.require_gap()
+    eng = algebra.ext_algebra(top=2)._eng
+    verts = list(algebra.quiver.vertices)
+    ours = [[eng.ext_dim(vi, 1, vj) for vj in verts] for vi in verts]
+    base = scripts.ext_quiver_script(algebra)
+    qpa = [[int(session.run(base + "\n" + scripts.ext_quiver_entry(i + 1, j + 1)))
+            for j in range(len(verts))] for i in range(len(verts))]
+    return CrosscheckReport("ext_quiver", ours, qpa, ours == qpa)
+
+
+def crosscheck_quadratic(algebra) -> CrosscheckReport:
+    """``modules.koszul.is_quadratic(A)`` (defining ideal generated in degree 2) vs
+    QPA's ``IsQuadraticIdeal(rels)`` (Plan 27)."""
+    session.require_gap()
+    from quiverlab.modules.koszul import is_quadratic
+    ours = is_quadratic(algebra)
+    qpa = bool(session.run(scripts.quadratic_ideal_script(algebra) + "\nisquad;"))
+    return CrosscheckReport("quadratic", ours, qpa, ours == qpa)
+
+
+def crosscheck_koszul_derived(algebra, top: int) -> CrosscheckReport:
+    """The DERIVED Koszul verdict (Plan 27). QPA ships no ``IsKoszul``/``KoszulDual``,
+    so the QPA-side verdict is derived from primitives it DOES compute: A is
+    (QPA-)derived-Koszul iff ``IsQuadraticIdeal(rels)`` AND no new E-algebra generator
+    appears in any degree 2..top (``ExtAlgebraGenerators(M, top)[2][n] = 0`` for
+    n >= 2). This is compared against our ``YonedaPresentation.koszul``:
+
+    * ours is not None (a certified True/False): agree iff ``ours == qpa_derived``.
+    * ours is None ("no obstruction through degree top", not certified): we only
+      require QPA NOT CONTRADICT us -- i.e. QPA must not exhibit a degree->=2 generator
+      (which would be a certain not-Koszul that our engine, computing the same
+      generators, would also have caught as False). Note the derived verdict is the
+      honest one QPA can back; the certifier itself (G-quadratic / Priddy PBW) is our
+      theory oracle, which QPA cannot compare."""
+    session.require_gap()
+    ours = algebra.ext_algebra(top=top).koszul
+    script = scripts.ext_algebra_generators_script(algebra, top)
+    gens = _read_int_list(session.run(script + "\ninfo[2];"))
+    qpa_high_gen = any(gens[n] for n in range(2, len(gens)))
+    qpa_quadratic = bool(session.run(scripts.quadratic_ideal_script(algebra) + "\nisquad;"))
+    qpa_derived = qpa_quadratic and not qpa_high_gen
+    agree = (not qpa_high_gen) if ours is None else (ours == qpa_derived)
+    return CrosscheckReport("koszul_derived", ours, qpa_derived, agree)
+
+
 def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     """Dispatch. what="hochschild"|"module_ext" (Plan 08); "tau"|"tau_minus"|
-    "proj_resolution"|"inj_resolution"|"inj_dimension" (Plan 23 module surface)."""
+    "proj_resolution"|"inj_resolution"|"inj_dimension" (Plan 23 module surface);
+    "ext_algebra_dims"|"ext_generator_degrees"|"ext_quiver"|"quadratic"|
+    "koszul_derived" (Plan 27 Yoneda/Ext-algebra)."""
     if what == "hochschild":
         return crosscheck_hochschild(algebra, *args, **kwargs)
     if what == "module_ext":
@@ -168,7 +257,19 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_inj_resolution(algebra, *args, **kwargs)
     if what == "inj_dimension":
         return crosscheck_inj_dimension(algebra, *args, **kwargs)
+    if what == "ext_algebra_dims":
+        return crosscheck_ext_algebra_dims(algebra, *args, **kwargs)
+    if what == "ext_generator_degrees":
+        return crosscheck_ext_generator_degrees(algebra, *args, **kwargs)
+    if what == "ext_quiver":
+        return crosscheck_ext_quiver(algebra, *args, **kwargs)
+    if what == "quadratic":
+        return crosscheck_quadratic(algebra, *args, **kwargs)
+    if what == "koszul_derived":
+        return crosscheck_koszul_derived(algebra, *args, **kwargs)
     # An unrecognized `what` is a usage error, NOT "QPA unavailable".
     raise QuiverlabError(f"unknown cross-check {what!r}",
                          hint='use "hochschild", "module_ext", "tau", "tau_minus", '
-                              '"proj_resolution", "inj_resolution", or "inj_dimension"')
+                              '"proj_resolution", "inj_resolution", "inj_dimension", '
+                              '"ext_algebra_dims", "ext_generator_degrees", '
+                              '"ext_quiver", "quadratic", or "koszul_derived"')

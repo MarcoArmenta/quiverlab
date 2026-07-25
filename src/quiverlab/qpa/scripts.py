@@ -115,6 +115,58 @@ def module_decl(algebra, dimvec_list, arrow_matrices, var: str) -> str:
     return f"{var} := RightModuleOverPathAlgebra(A, {list(dimvec_list)}, {arrows_gap});;"
 
 
+def ext_algebra_generators_script(algebra, top: int) -> str:
+    """Bind ``info := ExtAlgebraGenerators(M, top)`` for ``M = (+) SimpleModules(A)``
+    (Plan 27 Yoneda-algebra crosscheck). QPA's ``ExtAlgebraGenerators`` returns a
+    three-entry list; the crosscheck reads back two of them, each on its OWN trailing
+    statement (``session.run`` returns only the last statement's value):
+
+    * ``info[1]`` = ``[dim Ext^n(M, M)]`` for n = 0..top. Since
+      ``Ext^n((+)S_i, (+)S_j) = (+)_{i,j} Ext^n(S_i, S_j)``, this is exactly the TOTAL
+      graded dimension ``dim E^n = sum_{i,j} dim Ext^n(S_i, S_j)`` of the Yoneda
+      algebra E(A). (Degree 0: ``dim Ext^0(M, M) = dim Hom(M, M) = |Q_0|``.)
+    * ``info[2]`` = ``[# minimal E-algebra generators in degree n]`` for n = 0..top,
+      where degree 0 counts the ``|Q_0|`` vertex idempotents QPA treats as the
+      semisimple base R = k^{Q_0}.
+
+    ``M`` is built in quiver-vertex order (QPA's ``SimpleModules`` ordering)."""
+    base = quiver_and_algebra_script(algebra)
+    return base + "\n" + "\n".join([
+        "M := DirectSumOfQPAModules(SimpleModules(A));;",
+        f"info := ExtAlgebraGenerators(M, {top});;",
+    ])
+
+
+def ext_quiver_script(algebra) -> str:
+    """Bind ``SS := SimpleModules(A)`` (QPA lists the simples in quiver-vertex order)
+    so the caller can read the Ext^1 corner matrix pairwise. Pair each read with
+    :func:`ext_quiver_entry` -- one ``ExtOverAlgebra`` eval per corner, honouring the
+    one-statement-per-line rule of ``session.run``."""
+    return quiver_and_algebra_script(algebra) + "\nSS := SimpleModules(A);;"
+
+
+def ext_quiver_entry(i: int, j: int) -> str:
+    """The single read-back statement giving ``dim Ext^1(S_i, S_j)`` for the corner
+    (i, j) (1-based QPA indices, matching :func:`ext_quiver_script`'s ``SS``):
+    ``dim Ext^1(S_i, S_j) = Length(ExtOverAlgebra(S_i, S_j)[2])`` (the second entry of
+    ``ExtOverAlgebra`` is the basis of Ext^1)."""
+    return f"Length(ExtOverAlgebra(SS[{i}], SS[{j}])[2]);"
+
+
+def quadratic_ideal_script(algebra) -> str:
+    """Bind ``isquad := IsQuadraticIdeal(rels)`` -- QPA's quadraticity test on the
+    defining ideal I of A = kQ/I (I generated in degree 2). ``quiver_and_algebra_script``
+    emits the ``rels`` list only when A HAS relations; a hereditary/semisimple A (I = 0,
+    the ``A := kQ`` branch) gets an explicit empty ``rels := []`` -- ``IsQuadraticIdeal([])``
+    is ``true`` (vacuously quadratic). Read back ``isquad;``."""
+    base = quiver_and_algebra_script(algebra)
+    lines = [base]
+    if not algebra.relations:
+        lines.append("rels := [];;")
+    lines.append("isquad := IsQuadraticIdeal(rels);;")
+    return "\n".join(lines)
+
+
 def module_self_ext_dims_script(algebra, dimvec_M, top: int) -> str:
     """Bind `ext := [dim Ext^0(M,M), ..., dim Ext^top(M,M)]` (self-Ext of one module
     given by its dimension vector) via the SAME idiom `ExtAlgebraGenerators(M, top)[1]`.
