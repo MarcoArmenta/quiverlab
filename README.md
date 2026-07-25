@@ -125,6 +125,35 @@ print(families())                       # the whole v1 catalog with signatures
 print(bibliography(A.citations()))      # grouped, annotated references
 ```
 
+## How quiverlab is verified
+
+Every shipped feature is unit tested (the suite is 1377 tests over the
+`[dev,fast,docs,web]` extras), and the mathematics is pinned by **two classes of
+oracle**:
+
+- **Theory and literature, on constructed examples.** We build many algebras the
+  literature (or a theorem we know) has already resolved and assert quiverlab
+  reproduces the published value exactly — Happel's hereditary vanishing, the
+  Buchweitz–Green–Madsen–Solberg / Bergh–Erdmann quantum complete intersection,
+  the classical `k[x]/(x^n)` and Künneth commutative-CI values, and more. Where no
+  single published vector is at hand we cross-check an *independent* path in the
+  library and say so inline. The read-only hanlab bank supplies byte-level
+  closed-form oracles.
+- **Cross-engine and external agreement.** The bar complex, the minimal `A^e`,
+  Bardzell, and Chouhy–Solotar resolutions are independent engines; where two
+  overlap they must agree degreewise over the primes `{32003, 2, 3, 5}`. And
+  wherever the GAP package **QPA** implements a feature we recompute with it and
+  demand equality (`A.crosscheck(...)`). QPA does not implement everything
+  quiverlab does; the docs page names exactly where it is used and which theory
+  oracle stands in where it cannot.
+
+Exactness is enforced structurally: an AST gate bans every float from `src/`, and
+the entire deep suite runs twice in CI — once on the numba kernels, once on the
+pure-Python path (`QUIVERLAB_NO_NUMBA=1`) — with the two required to agree exactly.
+The full methodology, a subsystem → oracles → test-file table, the CI matrix, and
+an honest-scope section live in **[How quiverlab is verified](https://marcoarmenta.github.io/quiverlab/verification/)**
+(`docs/verification.md`).
+
 ## Status
 
 Engine, module, and families phase (Plans 01–06 delivered, together with the

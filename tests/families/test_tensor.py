@@ -1,4 +1,10 @@
-"""TensorProduct(A, B) = A (x) B, Kunneth. Fixture N9."""
+"""TensorProduct(A, B) = A (x) B, Kunneth. Fixture N9.
+
+Kunneth oracle: Cartan-Eilenberg, "Homological Algebra", Princeton Univ. Press
+(1956) -- the isomorphism HH^n(A (x) B) = (+)_{i+j=n} HH^i(A) (x) HH^j(B) that
+makes HH multiplicative on tensor factors (citations registry key
+``tensor_product`` -> CartanEilenberg1956).
+"""
 from quiverlab.combinat import Quiver
 from quiverlab.families import TensorProduct
 from quiverlab.families.basic import truncated_polynomial

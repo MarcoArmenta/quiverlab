@@ -9,7 +9,11 @@ Two INDEPENDENT engines are compared over GF(32003):
     order-condition correction (resolutions_cs/resolution.py).
   * Bardzell side: BardzellResolution(pres) built from the hand-written
     MonomialPresentation; its differential is Bardzell's alternating big/small
-    formula (engine/resolutions_bardzell.py).
+    formula (engine/resolutions_bardzell.py). Source: Bardzell, "The alternating
+    syzygy behavior of monomial algebras", J. Algebra 188 (1997), 69-89
+    (citations registry key ``bardzell`` -> Bardzell1997); the CS side is
+    Chouhy-Solotar, J. Algebra 432 (2015), 22-61, arXiv:1406.2300 (key
+    ``chouhy_solotar``).
 
 The differentials are constructed by disjoint code, so agreement of ranks and HH
 dimensions is a genuine cross-check, not a tautology. (The associated-path /

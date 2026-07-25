@@ -1,5 +1,11 @@
 """Module Ext^n and global dimension (spec §3.5, §3.6). Literature oracles: ASS III /
-Happel for hereditary A_n; Kunneth for the commutative square; bank diamond for Ext^2."""
+Happel for hereditary A_n; Kunneth for the commutative square; bank diamond for Ext^2.
+
+Sources: Assem-Simson-Skowronski, "Elements of the Representation Theory of
+Associative Algebras, Vol. 1", Cambridge Univ. Press (2006), Ch. III (citations
+registry key ``assem_book``); Happel, Lecture Notes in Math. 1404 (1989),
+108-126 (key ``happel_question``); Kunneth via Cartan-Eilenberg, "Homological
+Algebra", Princeton Univ. Press (1956) (key ``tensor_product``)."""
 import pytest
 from quiverlab import Quiver, CC, GF, linear_path_algebra
 

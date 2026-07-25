@@ -7,7 +7,16 @@ homology side is b.w.a), and on the corner path the block of a generator tagged
 
 Oracles: the dual normalized bar complex (scan3.hochschild_cohomology_dims,
 live), the CS coh side (second deep engine), and the Happel/Kunneth [1,0,0]
-pins."""
+pins.
+
+Literature pins:
+  * Happel -- a hereditary algebra has HH^i = 0 for i >= 2: Happel,
+    "Hochschild cohomology of finite-dimensional algebras", Lecture Notes in
+    Math. 1404 (1989), 108-126 (citations registry key ``happel_question``).
+  * Kunneth -- HH(A (x) B) = (+) HH(A) (x) HH(B): Cartan-Eilenberg,
+    "Homological Algebra", Princeton Univ. Press (1956) (key ``tensor_product``);
+    the commutative square kA_2 (x) kA_2 gives HH^. = 1, 0, 0.
+"""
 import pytest
 
 import quiverlab as ql
