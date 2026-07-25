@@ -136,4 +136,13 @@ Plan 18 (standing-zoo diversity — zoo records may carry `vertices`/`arrows`
 monomial + 3 multi-vertex incl. `line_abc_cde`), diversity gates in
 `test_zoo.py`, batch specs carry quiver data, and `_analyze_open` no longer
 unit-adapts multi-vertex algebras — unit-adaptation is a local-only convention
-that trips the Plan-13 radical guard).
+that trips the Plan-13 radical guard), Plan 19 (field generality — the five
+engine-backed invariants (`cyclic_homology`, `complexity`, `is_frobenius`,
+`nakayama_automorphism`, `is_symmetric`) compute over EVERY exact Domain:
+GF(p) keeps the engine byte-unchanged; off GF(p): generic (b,B) mixed complex
+(`hochschild/cyclic.py`, no quiver needed), relative-Tor Betti complex
+(`invariants/betti.py`, H_n = engine rks[n], GF(p)-parity-gated), socle
+criterion + inner-ν symmetry (`invariants/frobenius.py`, self-certifying form,
+loud when inconclusive); `_require_prime_field` is gone — the only refusal
+left is structure-constants algebras off GF(p) for path-basis-needing
+invariants, honestly worded).

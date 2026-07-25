@@ -46,9 +46,15 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   Original item: add mixed-length-tip (straddling) and multi-vertex presentations
   to the *standing* zoo (`families/`, batch scans), not just the Plan-12/13 test
   files. Uniform-length zoos hid both 2026-07-22 bugs.
-- [ ] **6. Field generality of engine-backed invariants** — `complexity`, cyclic
-  homology etc. are GF(p)-only; `_require_prime_field`'s hint promises a "later phase
-  that generalizes this invariant". Deliver a generic-Domain path or reword.
+- [x] **6. Field generality of engine-backed invariants** — DONE, Plan 19
+  (`2026-07-23-plan-19-field-generality.md`, branch `plan-19-field-generality`).
+  Delivered the generic-Domain path for all five (generic (b,B) mixed complex;
+  relative-Tor Betti complex ≡ engine rks over every field; socle-criterion
+  Frobenius + inner-ν symmetry) AND the reword (the residual refusal —
+  structure-constants algebras off GF(p) needing a path-type basis — no longer
+  promises a "later phase"). Original item: `complexity`, cyclic homology etc.
+  are GF(p)-only; `_require_prime_field`'s hint promises a "later phase that
+  generalizes this invariant". Deliver a generic-Domain path or reword.
 - [ ] **7. Plan 09 — the server tier** — spec exists
   (`docs/specs/2026-07-18-quiverlab-web-design.md`); citations/trace already carry its
   hooks; the only planned-but-unbuilt tier.

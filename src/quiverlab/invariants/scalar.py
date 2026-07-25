@@ -71,8 +71,10 @@ def center(A):
 
 def complexity(A, n):
     """Apparent complexity of A from the minimal A^e (bimodule) resolution's term-
-    dimension growth up to degree n (fast GF(p) engine). Returns complexity_of's honest
-    label (int / None / '>=2').
+    dimension growth up to degree n. GF(p): the fast engine. Any other exact
+    Domain: the E-relative (Cibils) Betti complex on a path-type basis (Plan 19)
+    — same generator counts, gated by GF(p) parity tests. Returns complexity_of's
+    honest label (int / None / '>=2').
 
     Plan 13: multi-vertex algebras are now exact — the engine builds the corner-typed
     minimal PROJECTIVE resolution (terms ``A^e·(e_v ⊗ e_w)``), so e.g. the
@@ -84,10 +86,15 @@ def complexity(A, n):
     (``truncated_at`` / the discarded fourth return value below) is NOT consulted
     here, so a run that stopped early for memory reasons is read as if complete.
     """
+    from quiverlab.engine.scan3 import complexity_of
+    from quiverlab.fields.primefield import PrimeField
+    if not isinstance(A.domain, PrimeField):
+        from quiverlab.invariants.betti import relative_betti_numbers
+        # engine minimal_resolution(N) yields rks for degrees 0..N+1; feed
+        # complexity_of the same-length growth sequence on the generic path
+        return complexity_of(relative_betti_numbers(A, n + 1))
     from quiverlab.engine.adapter import to_engine
     from quiverlab.engine.resolutions_minimal import minimal_resolution
-    from quiverlab.engine.scan3 import complexity_of
-    A._require_prime_field("complexity")             # loud FieldError off a prime field
     eng = to_engine(A)
     p = A.domain.p
     rks, cols, _e, _trunc = minimal_resolution(eng, n, p)

@@ -36,6 +36,6 @@ def test_complexity_gfp():
     assert truncated_polynomial(2, field=GF(32003)).complexity(6) == 1
 
 
-def test_complexity_cc_loud():
-    with pytest.raises(FieldError):
-        truncated_polynomial(2, field=CC).complexity(4)
+def test_complexity_cc_computes():
+    # Plan 19: off GF(p) complexity runs on the relative-Tor Betti complex
+    assert truncated_polynomial(2, field=CC).complexity(4) == 1
