@@ -207,8 +207,28 @@ planned together even if delivered in slices.
   `NotImplementedError` scope edge. NOTE: `docs/verification.md` (concurrent
   `plan-22-verification-transparency` branch) must gain Plan 21's cap oracles at merge time.
 
-- [ ] **Ext-algebra / Yoneda-ring presentations** (v1 non-goal): generators/relations
-  of `Ext_A(⊕S, ⊕S)` from Plan-05 module resolutions + deep CS; Koszulity checks.
+- [x] **Ext-algebra / Yoneda-ring presentations** — DELIVERED on branch 2026-07-25
+  (merge pending Marco), Plan 27 (`2026-07-25-plan-27-ext-algebra.md`, branch
+  `plan-27-ext-algebra`). The Yoneda algebra `E(A) = Ext•_A(A/J, A/J)` for any
+  admissible kQ/I over any exact Domain: Ext dims = graded Betti numbers off the
+  Plan-05 minimal resolutions (minimality ⇒ δ≡0, cocycles = summand
+  projections), the product by canonical chain-map lifting
+  (`reduce_mod_nullspace`, byte-reproducible), degreewise minimal
+  generators/relations over R = k^{Q_0}, `YonedaPresentation` with honest
+  certification (`as_algebra()` iff gl.dim exact-finite), and the locked
+  convention Ext-quiver = Q / `E(A) ≅ (A^!)^op` (arbitrated by worked anchors +
+  the QPA ext-quiver pin). Koszulity three-valued: G-quadratic certifier
+  (Priddy PBW), non-quadratic/new-generator/Fröberg falsifiers, quadratic dual
+  on Q^op (`modules/koszul.py`). Surface: `Algebra.ext_algebra(top)`. Oracles:
+  the 7-battery (k[x]/xⁿ char-independent, hereditary round-trip, rad²=0 path
+  counts, QCI n+1 = CS chain count, commutative square self-hosting) + monomial
+  Anick gate + 43 live QPA tests (`ExtAlgebraGenerators` dims/generator-degrees,
+  `ExtOverAlgebra` ext-quiver, `IsQuadraticIdeal`; QPA has NO IsKoszul — honest
+  scope on the verification page). Citations added: `priddy`, `froberg_koszul`,
+  `polishchuk_positselski`. Deferred: CS tensored-down deep-Ext accelerator,
+  native CS Yoneda coproduct, N-Koszul certifier, Ext(M,M) for arbitrary M.
+  Original item: generators/relations of `Ext_A(⊕S, ⊕S)` from Plan-05 module
+  resolutions + deep CS; Koszulity checks.
 - [ ] **HH cohomology ring structure + support varieties**: after Tier-1 item 1,
   finite generation over the even part; support varieties per module.
 - [ ] **BV structure** for symmetric/Frobenius algebras: Connes B is ported
