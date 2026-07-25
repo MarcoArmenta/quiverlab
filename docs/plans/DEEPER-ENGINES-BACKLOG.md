@@ -112,15 +112,25 @@ planned together even if delivered in slices.
   side-aware form `A.projective(v, side="left").dualize()` (documented). QPA
   crosschecks left-side τ/τ⁻/inj.dim/resolutions by feeding QPA the opposite
   algebra. The no-code GUI/webapp item below inherits the side picker in its schema.
-- [ ] **No-code module input (GUI + webapp)** — the constructor already exists
-  (`modules/module.py`: dimension vector + one matrix per arrow, exact entries,
-  loud `RelationError` when the matrices violate the relations); expose it with
-  zero code: webapp request schema v2 gains a `module` block
-  (`{dims: {v: n_v}, maps: {arrow: [[…]]}}`) + module compute kinds (rad/top/soc
-  from `radtopsoc.py`, Ext from `modules/ext.py`, plus τ/τ⁻ and both resolutions
-  above); GUI: per-vertex dimension picker + per-arrow matrix grid, and
-  zero-typing pick-lists for S(v) / P(v) / I(v) (builders exist). Versioned
-  schema bump, served by BOTH tiers (Pyodide GUI + Plan-09 server).
+- [x] **No-code module input (GUI + webapp)** — DONE, Plan 26, 2026-07-25
+  (`2026-07-25-plan-26-no-code-modules.md`, branch `plan-26-no-code-modules`).
+  The constructor already existed (`modules/module.py`: dimension vector + one
+  matrix per arrow, exact entries, loud `RelationError` when the matrices violate
+  the relations); now exposed with zero code. Webapp request **schema v2** gains a
+  `module` block (`{dims: {v: n_v}, maps: {arrow: [[…]]}, side}` OR
+  `{builtin: {kind, vertex, side}}`) + an `ext_target` (the N in Ext), guarded to
+  schema 2, canonicalizing through Plan-25 `canonical_key` (side default explicit;
+  a non-module request's key is byte-unchanged). Module compute kinds
+  (dimension_vector, rad_top_soc from `radtopsoc.py`, Ext from `modules/ext.py`,
+  τ/τ⁻, projective/injective resolution + projective/injective dimension) served
+  by ALL THREE tiers (instant/queued/big) with references/citations; a
+  relation-violating module surfaces as a clean typed 4xx (never a 500).
+  Module-aware tier sizing routes big modules off instant like oversized families.
+  GUI: a no-code module panel on the Pyodide canvas — per-vertex dimension picker,
+  per-arrow exact-entry matrix grid (dims follow source/target live), a right/left
+  side toggle, and the S(v)/P(v)/I(v) pick-lists; the client runner
+  (`docs/gui/runner.py`) carries the twin dispatch. Versioned schema bump, served
+  by BOTH tiers (Pyodide GUI + Plan-09 server).
 - [x] **QPA (GAP) as the oracle** — DONE, Plan 23, 2026-07-25. `-m qpa`
   crosschecks (`tests/qpa/test_module_ar_crosscheck.py`,
   `qpa/crosscheck.py::crosscheck_tau`/`crosscheck_proj_resolution`/

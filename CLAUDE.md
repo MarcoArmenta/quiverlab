@@ -217,4 +217,28 @@ records on success only (failures may be transient); `cache_put` is idempotent
 (benign identical-request race, in-flight dedup skipped as it needs a jobs-schema
 change); `sweep_cache_once` (version purge + LRU size cap) runs beside `sweep_once`.
 Rows are math-only (no email/ip/token). Config `QLWEB_CACHE_ENABLED`/
-`QLWEB_CACHE_MAX_ENTRIES`. Branch `plan-25-webapp-result-cache`, UNMERGED).
+`QLWEB_CACHE_MAX_ENTRIES`. Branch `plan-25-webapp-result-cache`, UNMERGED),
+Plan 26 (no-code module input GUI + webapp — backlog Tier 1b item 3, the last:
+every representation theorist specifies a module with zero code and reads off the
+classical module invariants. Webapp request **schema v2** gains a `module` block
+(explicit `{dims, maps, side}` — one exact-entry matrix per arrow — OR a
+zero-typing `{builtin: {kind: simple|projective|injective, vertex, side}}`) plus
+`ext_target` (the N in Ext), guarded to schema 2, canonicalizing through the
+Plan-25 `canonical_key` (side default explicit so an omitted `side` and `"right"`
+collide; a `ComputeRequest.model_dump` override drops an absent module block so
+every existing family/quiver request keeps its byte-identical key). Module compute
+kinds — dimension_vector, rad_top_soc, ext, tau/tau_minus, projective/injective
+_resolution, projective/injective_dimension — served by ALL THREE tiers with
+references/citations (GSZ2001 `minimal_resolution`/`module_ext`, ASS2006
+`assem_book`); a relation-violating module raises the library's loud error as a
+clean typed 4xx (never a 500). Matrix entries are exact DATA (int/`"1/2"` strings,
+never eval, floats refused); per-arrow BLOCK matrices `dim[t]×dim[s]` expand to
+the full vertex-ordered action `A.module` consumes, using the representation
+quiver's directions — right (A) and left (A^op) alike. `estimator.sizing_dim`
+sizes on the larger of algebra/module dim so big modules route off instant like
+oversized families. Two runners carry the SAME dispatch: `webapp/server/runner.py`
+(server) and `docs/gui/runner.py` (Pyodide client). GUI: a "Module (no code)"
+panel on the canvas — per-vertex dimension picker, per-arrow matrix grid (dims
+follow source/target live), a right/left side toggle, S(v)/P(v)/I(v) pick-lists;
+results render like existing blocks (MathJax + citations); interface-freshness
+pins the module surface. Branch `plan-26-no-code-modules`, UNMERGED).
