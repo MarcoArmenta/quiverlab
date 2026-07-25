@@ -99,3 +99,119 @@ year, venue, and a theorem/example/proposition number *only when it is actually
 recorded* (test/docstring/plan/bank), never guessed — reusing a `references.bib`
 registry key (`src/quiverlab/citations/`) where one exists; the page keeps a
 References section rendered consistently with `quiverlab.bibliography(...)`.
+
+---
+
+# The two metagoals and the coverage program (Marco, 2026-07-25 →)
+
+quiverlab is measured against two standing metagoals (stated at the top of the
+README):
+
+1. **No code required.** Every computation must be reachable with zero code:
+   GUI canvas + no-code module panel, config-file/container workflows, rendered
+   results/PDF reports. Every coverage-program plan below carries a "GUI story"
+   as part of acceptance — a feature is not done until a representation
+   theorist can click it. (UX reference points: Enomoto's FD Applet and
+   Geuenich's String Applet.)
+2. **Any computation done in representation theory** (of finite-dimensional
+   algebras). Whatever a representation theorist computes in a paper should be
+   computable here, exactly, with certified, oracle-tested results — or the
+   page says honestly why not yet.
+
+Evidence base: `2026-07-25-metagoal-coverage-deep-research.md` (three
+deep-research reports: classical-curriculum audit; modern research practice;
+software-systems inventory incl. a QPA `.gd`-level feature diff). Key
+structural findings: (i) quiverlab already owns the expensive kernels — the
+top-tier gaps are **composition layers** (morphisms, decomposition), not new
+math engines; (ii) τ-tilting / torsion lattices / stability walls / 2-term
+silting are **one engine** (AIR mutation), and no maintained general tool
+exists anywhere — QPA included; (iii) the gentle/string world and the AAG /
+surface derived invariants are white space outside two web applets.
+
+## Coverage program (phases; each becomes one or more numbered plans)
+
+**C1 — The categorical glue (P1, unlocks everything).** Module homomorphisms
+as first-class objects (Hom BASES, not dims; kernel/image/cokernel as Modules;
+composition; split-mono/epi; short-exact-sequence + is-split utilities;
+projective cover / injective envelope as maps); direct sums with
+inclusions/projections + `is_direct_summand`; `End(M)` as an algebra;
+**Krull–Schmidt decomposition** into indecomposables with multiplicities +
+`is_indecomposable` (End-local): GF(p)/GF(p^n) via idempotent lifting through
+the radical (MeatAxe-style, Las-Vegas-exact), char-0 via exact idempotent
+lifting, loud beyond budget; radical/socle SERIES + Loewy-diagram display;
+composition-factor listing. Internals exist (`radtopsoc.submodule/quotient`,
+`hom_space` matrices) — largely a surfacing job. Oracles: QPA
+(`HomOverAlgebra`, `DecomposeModule`, `AlmostSplitSequence` inputs), theory.
+
+**C2 — Forms, roots, recognition (P1, cheap off the existing Cartan).**
+Euler bilinear form `⟨d,e⟩ = d C^{-T} e^T` + Tits quadratic form + definiteness
+⇒ Dynkin/Euclidean/wild classification for hereditary; **type DETECTION**
+(recognize A/D/E/affine from a quiver); Kac/Gabriel root combinatorics —
+indecomposable dimension vectors = positive roots (hereditary), real/imaginary
+roots, reflections; recognizer batch (`is_hereditary`, `is_gentle`,
+`is_string`, `is_special_biserial`, `is_nakayama`, `is_radical_square_zero`,
+`is_gorenstein`, `is_semisimple`, `is_weakly_symmetric`, `is_connected`,
+`is_basic`, blocks); quiver graph predicates. Oracles: QPA unit forms +
+Gabriel/Kac literature pins.
+
+**C3 — Auslander–Reiten theory completed (P1).** Almost-split sequence with
+its MIDDLE TERM `0→τM→E→M→0`; irreducible maps / rad(M,N)/rad²; **AR-quiver
+knitting** (semi-decides rep-finiteness; loud budget cap); Nakayama functor
+`ν(M)` named; stable Hom. Needs C1. Oracles: QPA `AlmostSplitSequence` /
+`PredecessorsOfModule`; ASS/ARS worked examples.
+
+**C4 — The τ-tilting engine (P1, the modern flagship; one engine = four
+areas).** `is_tau_rigid` (= `Hom(M, τM) = 0`, composable TODAY); support
+τ-tilting pairs via mutation BFS from `(A, 0)` (semi-algorithm: complete iff
+τ-tilting finite — loud cap otherwise); g-vectors from minimal projective
+presentations; exchange graph + Hasse poset; torsion-class lattice with
+brick-labelled arrows; bricks/semibricks ↔ wide subcategories; 2-term silting
+relabeling; King θ-stability + the **wall-and-chamber picture drawn live in
+the GUI for n = 2, 3** (the killer no-code demo); maximal green sequences.
+Needs C1 (decomposition) for summand handling. Oracles: theory (AIR/DIJ/DIRRT
+identities — e.g. #sτ-tilt = #torsion classes = #chambers), FD Applet /
+feisele-blueprint spot values; QPA cannot compare (state on the verification
+page).
+
+**C5 — The gentle/string subsystem (P1 for the class; complete combinatorial
+answers).** String & band module classification (Butler–Ringel), string-module
+syzygies/τ (SBStrips-style), the special-biserial AR quiver, **AAG derived
+invariant** + surface-model data (Opper–Plamondon–Schroll) — white space, ties
+to our HH (Redondo–Román oracles already researched); Gorenstein-projectives +
+singularity category for gentle (Kalck, combinatorial); Brauer graph algebra
+constructor family. Oracles: literature pins + SBStrips/String Applet spot
+values + our own bar/CS engines.
+
+**C6 — Homological-dimensions family (P1/P2).** Finitistic dimension (findim),
+dominant dimension, Igusa–Todorov φ/ψ, Gorenstein dimension + `is_gorenstein`,
+delooping level (Gélinas), Ω/τ-periodicity tests. Composes on existing
+syzygy/Ext engines. Oracles: QPA (domdim/Gorenstein/periodicity) + literature.
+
+**C7 — Tilting & new-algebra constructions (P2).** `is_tilting`/cotilting +
+Bongartz completion + complement mutation; minimal left/right approximations;
+**`End(M)` as a quiver-with-relations algebra** (tilted algebras); Gabriel
+quiver recovery / basic-ization of structure-constant algebras (unlocks
+End(M)-as-algebra and consuming kG-block basic algebras); one-point
+(co)extensions `A[M]`; repetitive algebra; Jacobian-algebra constructor from
+(Q, W). Oracles: QPA tilting/approximations; ASS VI examples.
+
+**C8 — Geometry, derived fingerprints, complexes (P2/P3).** Kac canonical
+decomposition (Schofield / Derksen–Weyman); orbit dimensions + Voigt
+(`dim Ext¹(M,M)` rigidity); degeneration/hom order for finite type; the
+"derived fingerprint" compare-two-algebras panel (HH/HC/Cartan/center — all
+already computed); user-facing complex/chain-map API (cones, truncations,
+homology of complexes); Hall numbers over GF(q) (P3). Oracles: QPA
+degeneration + literature (Zwara/Bongartz).
+
+**Explicit out-of-scope (stated, with reasons):** species/valued quivers
+(different foundation: division-algebra bimodules — recorded, not planned);
+DWZ potential mutation / cluster categories (the Jacobian-algebra CONSTRUCTOR
+is in scope above; the mutation engine is a separate field — Sage covers its
+combinatorial shadow); DT/BPS/moduli-counting; group-algebra MeatAxe at scale
+(we CONSUME block basic algebras, we don't derive them); coalgebras/comodules
+(Simson vols 2–3).
+
+**Standing rules for every coverage plan:** oracle-first acceptance per Plan 22
+(verification page + citations); a GUI story per feature (metagoal 1); honest
+semi-decision contracts ("complete: N" vs "budget hit — uncertified") wherever
+termination is equivalent to finiteness (knitting, τ-tilting BFS).
