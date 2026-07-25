@@ -176,6 +176,23 @@ planned together even if delivered in slices.
   oracles (Coxeter transformation, kA_n tables, self-injective/Nakayama,
   inj.dim vs gl.dim) run without the extra.
 
+## Tier 1c — container & HPC surface (Marco, 2026-07-25)
+
+- [ ] **Plan 28 — quiverlab as a container: HPC batch tier + offline laptop app**
+  — IN PROGRESS, branch `plan-28-hpc-container`
+  (`2026-07-25-plan-28-hpc-container.md`). Marco's workflow: download an
+  Apptainer-ready image; send to a SLURM cluster with extremely simple
+  instructions; edit a sample config YAML (or design in the GUI, which prints
+  the config); sbatch → `result.json` on disk; download; render a PDF with the
+  same container locally. PLUS (Marco, same day): the image doubles as a fully
+  OFFLINE laptop app — `quiverlab-hpc gui` serves the Plan-09 webapp locally
+  (no internet, zero code), showing memory limits and time estimates, with a
+  build-time-seeded Plan-25 result cache of precomputed examples (curated list
+  = Marco's open decision; mechanism + placeholder manifest ship). Wheel-level:
+  `[hpc]` extra, `quiverlab-hpc` CLI, `quiverlab/hpc/` spec core (runner
+  delegation, byte-stable cache keys), `engine/deepen.py` finally wired
+  (checkpoint/resume, exit-75 requeue).
+
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
