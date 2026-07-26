@@ -7,7 +7,7 @@ import re
 from quiverlab.citations import references_bib_path
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
-PAPER = (ROOT / "paper" / "paper.md").read_text()
+PAPER = (ROOT / "paper" / "paper.md").read_text(encoding="utf-8")
 BIB = references_bib_path().read_text(encoding="utf-8")
 
 _REQUIRED = ["# Summary", "# Statement of need", "# State of the field",
