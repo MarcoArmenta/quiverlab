@@ -26,6 +26,8 @@ PRIME = 32003
 
 P = PRIME
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def kxy():
     """Commutative complete intersection k[x,y]/(x^2,y^2): x^2=0, y^2=0, yx=xy."""

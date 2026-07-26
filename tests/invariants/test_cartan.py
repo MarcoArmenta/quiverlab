@@ -21,6 +21,7 @@ def test_cartan_dual_numbers():
     assert truncated_polynomial(2).cartan_matrix() == [[2]]
 
 
+@pytest.mark.oracle_literature
 def test_coxeter_polynomial_A2():
     # Phi = -C^{-T} C for kA_2 has characteristic polynomial t^2 + t + 1 (Coxeter number 3)
     A = linear_path_algebra(2)

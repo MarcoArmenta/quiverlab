@@ -52,6 +52,8 @@ from quiverlab.resolutions_cs.homology import cs_cohomology_dims, cs_homology_di
 from quiverlab.hochschild.bar import hochschild_cohomology_dims
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def _build_gentle():
     """A small GENTLE algebra: the 2-cycle 1 ->a 2 ->b 1 with rad^2 = 0, i.e.
@@ -101,6 +103,7 @@ def test_hereditary_dynkin_happel():
     assert d[0] == 1 and d[2:] == [0, 0, 0]
 
 
+@pytest.mark.oracle_crossengine
 def test_gentle_case_matches_bar():
     # ORACLE: bar cross-check (see _build_gentle docstring for the source of the
     # algebra).  CS cohomology must agree degreewise with the disjoint bar engine.

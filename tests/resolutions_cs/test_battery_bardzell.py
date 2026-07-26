@@ -28,6 +28,8 @@ from quiverlab.engine.adapter import to_engine
 from quiverlab.resolutions_cs.engine_facade import CSResolution
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_crossengine]
+
 # ---------------------------------------------------------------------------
 # TRANSCRIPTION DEVIATION (flagged per brief): the brief's third case is
 # ("local_radsq", 3, 10). local_radsq(3) is radical-square-zero, so dim C_n grows

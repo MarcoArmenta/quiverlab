@@ -7,6 +7,8 @@ import pytest
 
 from quiverlab.engine.resolutions_bardzell import MonomialPresentation
 
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_selfcert]
+
 
 def _s1():
     # one vertex, loops x,y; tips {xx, yy, xyx} — the minimal straddle presentation

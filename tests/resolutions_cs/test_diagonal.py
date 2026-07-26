@@ -29,6 +29,8 @@ from quiverlab.resolutions_cs.diagonal import TensorComplex
 
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_selfcert]
+
 
 # --------------------------------------------------------------------------- #
 # fixtures — single/double-loop quivers matching the mathematical intent       #

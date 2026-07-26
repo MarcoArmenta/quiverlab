@@ -1,4 +1,7 @@
+import pytest
 from quiverlab import CC, GF, Quiver
+
+pytestmark = [pytest.mark.oracle_literature]
 
 
 def _dual(field):

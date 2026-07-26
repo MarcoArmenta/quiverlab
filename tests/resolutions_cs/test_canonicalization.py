@@ -13,6 +13,8 @@ from quiverlab import Quiver, GF
 from quiverlab.fields import QQ
 from quiverlab.fields.linalg import nullspace, reduce_mod_nullspace, solve
 
+pytestmark = [pytest.mark.oracle_selfcert]
+
 
 def _dom_cases():
     return (GF(5), QQ)

@@ -26,6 +26,8 @@ from quiverlab import (CC, GF, Quiver, QuantumCI, RadicalSquareZero,
                        linear_path_algebra, truncated_polynomial)
 from quiverlab.errors import QuiverlabError
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 # the koszul sibling (quadraticity / G-quadratic / Froberg) may or may not have landed;
 # gate every verdict-dependent assertion on its availability.
 try:

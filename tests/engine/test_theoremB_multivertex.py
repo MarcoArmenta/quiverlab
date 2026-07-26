@@ -26,6 +26,8 @@ PRIME = 32003
 P = PRIME
 t = sp.symbols('t')
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def _nakayama_setup(n, ell):
     """Build kZ_n/rad^ell and the Nakayama rotation Theta (and its inverse) in the f-basis."""

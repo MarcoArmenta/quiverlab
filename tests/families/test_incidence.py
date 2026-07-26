@@ -6,6 +6,8 @@ from quiverlab.families import IncidenceAlgebra
 from quiverlab.families.poset import Poset
 from quiverlab.fields import CC, GF
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 DIAMOND = [("b", "x"), ("b", "y"), ("x", "t"), ("y", "t")]
 

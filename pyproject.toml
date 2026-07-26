@@ -97,4 +97,14 @@ markers = [
     "deep: heavy engine/resolution/Chouhy-Solotar suites; one Linux cell (~19 min)",
     "qpa: requires the [qpa] extra (passagemath-gap + QPA); the CI QPA job only",
     "slow: individually long tests; opt-in via -m slow",
+    # --- Oracle-class markers (Plan 32) -------------------------------------
+    # ORTHOGONAL to the fast/deep/qpa runtime buckets above: they classify HOW
+    # a test verifies, not where it runs. A test may carry more than one (a
+    # battery pins a literature value AND asserts cross-engine agreement). The
+    # QPA oracle class is the existing `qpa` marker -- no new marker for it.
+    # Unmarked = contract & infrastructure. See docs/verification.md and
+    # docs/plans/2026-07-26-plan-32-oracle-markers.md.
+    "oracle_literature: pass criterion is a value/identity from the literature or classical theory (paper-pinned dims, closed forms, theorem identities, bank closed-forms)",
+    "oracle_crossengine: two INDEPENDENT implementations must agree (CS/bar/Bardzell/minimal degreewise, numba/pure parity, presented/-|x iso-invariance, native/transported cup-cap, engine/generic-Domain)",
+    "oracle_selfcert: an internal mathematical certificate is the assertion (d-d=0, CS order condition, dimension/iso certificates, byte-reproducibility/canonicality, adversarial-solver determinism, arbitration identities)",
 ]

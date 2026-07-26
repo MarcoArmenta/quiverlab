@@ -40,6 +40,8 @@ EXPECTED = {
 COX_NUMBER = {("A", 4): 5, ("D", 4): 6, ("D", 5): 8,
               ("E", 6): 12, ("E", 7): 18, ("E", 8): 30}
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def _cartan(typ, n):
     nv, arrows, h = dynkin_quiver(typ, n)

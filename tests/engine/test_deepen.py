@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pytest
 
 from quiverlab.engine.hh_engine import truncated_polynomial
 from quiverlab.engine.scan3 import quantum_ci
@@ -7,6 +8,7 @@ from quiverlab.engine.deepen import deepen
 from quiverlab.engine.resolutions_minimal import minimal_homology_dims
 
 
+@pytest.mark.oracle_crossengine
 def test_deepen_matches_minimal_homology_dims(tmp_path):
     """deepen's HH_* equals the batch minimal_homology_dims up to the same degree."""
     A = truncated_polynomial(3)               # k[x]/x^3
@@ -17,6 +19,7 @@ def test_deepen_matches_minimal_homology_dims(tmp_path):
     assert out["HH"][0] == ref[0]
 
 
+@pytest.mark.oracle_crossengine
 def test_deepen_resume(tmp_path):
     """A stop-early run then a continue run == one full run (resume correctness)."""
     A = truncated_polynomial(3)

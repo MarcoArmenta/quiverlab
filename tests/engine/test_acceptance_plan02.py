@@ -15,6 +15,8 @@ Three things the engine port must demonstrate end-to-end:
 The whole-suite pure-path check (QUIVERLAB_NO_NUMBA=1 sweep) is run by the task
 checklist, not from inside a test.
 """
+import pytest
+
 from quiverlab import GF, Quiver
 from quiverlab.engine.adapter import to_engine
 from quiverlab.engine.hh_engine import (
@@ -29,6 +31,8 @@ from quiverlab.engine.resolutions_bardzell import (
 # hanlab __init__ alias, reproduced locally:
 homology_dims = hochschild_homology_dims
 CHAR0_PROXY = 32003  # large prime standing in for characteristic 0
+
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_crossengine]
 
 
 def test_deep_monomial_homology_beyond_bar_reach():

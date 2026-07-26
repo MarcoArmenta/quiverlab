@@ -17,12 +17,14 @@ def test_cyclic_homology_cc_computes():
     assert len(t.dims) == 3 and all(isinstance(d, int) for d in t.dims)
 
 
+@pytest.mark.oracle_literature
 def test_symmetric_dual_numbers_gfp():
     A = truncated_polynomial(2, field=GF(5))
     assert A.is_frobenius() is True
     assert A.is_symmetric() is True
 
 
+@pytest.mark.oracle_literature
 def test_frobenius_cc_computes():
     # Plan 19: off GF(p) the exact socle criterion serves any Domain
     A = truncated_polynomial(2, field=CC)

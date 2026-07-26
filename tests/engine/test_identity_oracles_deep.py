@@ -11,9 +11,13 @@ exponential bar blow-up.
 
 tests/engine/ auto-assigns to the deep bucket (tests/conftest.py).
 """
+import pytest
+
 from quiverlab import GF, Quiver
 
 F = GF(32003)
+
+pytestmark = [pytest.mark.oracle_literature]
 
 
 def _trace(A):

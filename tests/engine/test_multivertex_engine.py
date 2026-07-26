@@ -41,6 +41,7 @@ def _is_two_sided_identity(A, idx):
     (lambda: cyclic_nakayama(3, 2)[0], "kZ_3/rad^2", 6),
     (lambda: kA(3), "kA_3", 6),
 ])
+@pytest.mark.oracle_selfcert
 def test_multivertex_unit_adaptation_invariants(builder, label, dim):
     A = builder()
     assert A.m == dim
@@ -54,6 +55,8 @@ def test_multivertex_unit_adaptation_invariants(builder, label, dim):
     assert len(A.R) == A.m - 1
 
 
+@pytest.mark.oracle_selfcert
+@pytest.mark.oracle_literature
 def test_genuine_multi_idempotent_change_of_basis():
     # k x k with 1 = e_0 + e_1 (TWO idempotents): the change-of-basis B has column t equal
     # to [1, 1], so B != I -- this is the transport single-idempotent tests never reach.
@@ -69,6 +72,8 @@ def test_genuine_multi_idempotent_change_of_basis():
     assert homology_dims(A, 3)[P] == [2, 0, 0, 0]
 
 
+@pytest.mark.oracle_crossengine
+@pytest.mark.oracle_literature
 def test_multivertex_homology_matches_bardzell_oracle():
     # The transported multi-vertex algebra must give the SAME homology as the independent
     # Bardzell backend on the same monomial algebra.

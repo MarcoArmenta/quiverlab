@@ -4,6 +4,8 @@ from quiverlab.groebner import build_reduction_system
 from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def _res(field=CC, xi="2"):
     Q = Quiver([1], {"x": (1, 1), "y": (1, 1)})

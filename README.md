@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-2096_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-2099_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -148,9 +148,11 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 2096 tests over the
-`[dev,fast,docs,web,qpa]` extras), and the mathematics is pinned by **two classes
-of oracle**:
+Every shipped feature is unit tested (the suite is 2099 tests over the
+`[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
+of oracle** — surfaced since Plan 32 as four orthogonal, runnable marker classes
+(`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa`), audited
+against live collection:
 
 - **Theory and literature, on constructed examples.** We build many algebras the
   literature (or a theorem we know) has already resolved and assert quiverlab

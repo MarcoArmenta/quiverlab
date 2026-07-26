@@ -46,6 +46,8 @@ from quiverlab.resolutions_cs.cup import native_cup
 
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_selfcert, pytest.mark.oracle_crossengine]
+
 
 # --------------------------------------------------------------------------- #
 # fixtures                                                                     #

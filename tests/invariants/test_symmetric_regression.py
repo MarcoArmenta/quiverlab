@@ -18,6 +18,8 @@ from quiverlab.families import NakayamaAlgebra, QuantumCI, TrivialExtension
 from quiverlab.errors import FieldError
 from quiverlab.fields import QQ
 
+pytestmark = [pytest.mark.oracle_literature]
+
 _FIELDS = [GF(32003), GF(2), QQ]                      # GF(p^n)/CC covered per-case below
 
 

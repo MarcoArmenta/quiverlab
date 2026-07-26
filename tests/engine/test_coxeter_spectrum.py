@@ -26,6 +26,8 @@ P = 32003
 
 LEHMER = t**10 + t**9 - t**7 - t**6 - t**5 - t**4 - t**3 + t + 1
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 
 # --------------------------------------------------------------------
 # spectral layer

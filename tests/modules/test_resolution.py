@@ -1,6 +1,10 @@
 """Minimal projective resolutions of right modules, generalized from the bridge engine
 (spec §5 component 7). Fixtures A & B; any vertex set, any Domain."""
+import pytest
+
 from quiverlab import Quiver, CC, GF, linear_path_algebra
+
+pytestmark = [pytest.mark.oracle_selfcert]
 
 
 def _square(field=CC):

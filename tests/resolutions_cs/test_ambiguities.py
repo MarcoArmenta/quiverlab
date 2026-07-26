@@ -73,6 +73,7 @@ def test_ssequence_straddle_chains_present():
     assert len(ss.S(4)) == 9                              # Betti sequence 2,3,5,9,17
 
 
+@pytest.mark.oracle_literature
 def test_ssequence_qci32_matches_cs_phi_formula():
     """CS §7.2 (TeX ~2110–2140): for k<x,y>/(x^n, y^m, yx−ξxy), 𝒜_N =
     {y^{φ(s,m)} x^{φ(t,n)} : s+t = N+1}, φ(s,k) = (s/2)k if s even else ((s−1)/2)k + 1.

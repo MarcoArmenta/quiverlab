@@ -6,6 +6,8 @@ from quiverlab.resolutions_cs import cs_cohomology_dims, cs_homology_dims
 from quiverlab.fields.linalg import rank
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_selfcert]
+
 
 def _kx2(field=CC):
     Q = Quiver([1], {"x": (1, 1)})
@@ -44,6 +46,7 @@ def test_qci_dd_zero_and_order_condition():
         res.assert_order_condition(upto=8)                   # CS Theorem 4.1 condition (2)
 
 
+@pytest.mark.oracle_literature
 def test_qci_d3_correction_matches_paper():
     """CS §6 (verbatim), STRICT since Plan 17: d_2^{CS}(1⊗y²x⊗1) =
     y⊗yx⊗1 + ξ 1⊗yx⊗y + ξ² x⊗y²⊗1 − 1⊗y²⊗x  (ξ=2). The correction γ is

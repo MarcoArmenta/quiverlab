@@ -8,6 +8,8 @@ from quiverlab.engine.scan3 import quantum_ci, hochschild_cohomology_dims
 
 PRIMES = (32003, 2, 3)
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 @pytest.mark.parametrize("alg,N", [
     (truncated_polynomial(3), 5),

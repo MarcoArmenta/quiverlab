@@ -2,6 +2,8 @@
 import pytest
 from quiverlab import Quiver, CC, GF, linear_path_algebra, Algebra
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def _square(field=CC):
     return Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3),

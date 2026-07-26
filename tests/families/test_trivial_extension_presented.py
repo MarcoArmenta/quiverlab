@@ -55,6 +55,12 @@ from quiverlab.families.zoo import build_from_record, load_catalog
 from quiverlab.errors import FieldError
 from quiverlab.fields import QQ
 
+pytestmark = [
+    pytest.mark.oracle_literature,
+    pytest.mark.oracle_crossengine,
+    pytest.mark.oracle_selfcert,
+]
+
 F = GF(32003)      # characteristic-0 proxy (large prime; fast int64 rank engine)
 F2 = GF(2)
 

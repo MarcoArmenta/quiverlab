@@ -16,6 +16,7 @@ from quiverlab.engine.scan3 import complexity_of
     ([4, 4, 5, 6, 7, 8, 9], 2),  # HH_0 then linear growth      -> cx 2
     ([3, 3, 3, 3], 1),           # constant                     -> cx 1
 ])
+@pytest.mark.oracle_literature
 def test_complexity_diagnostic_known(seq, expected_cx):
     assert complexity_diagnostic(seq)["complexity"] == expected_cx
 
@@ -28,6 +29,7 @@ def test_complexity_diagnostic_known(seq, expected_cx):
     [3, 2, 1, 0, 0, 0],
     [5, 3, 2, 1, 0, 0],
 ])
+@pytest.mark.oracle_literature
 def test_complexity_diagnostic_detects_eventual_vanishing(seq):
     assert complexity_diagnostic(seq)["complexity"] == 0
 
@@ -40,5 +42,6 @@ def test_complexity_diagnostic_detects_eventual_vanishing(seq):
     [3, 3, 3, 3],
     [2, 2, 1, 0, 0],
 ])
+@pytest.mark.oracle_crossengine
 def test_estimators_agree(seq):
     assert complexity_diagnostic(seq)["complexity"] == complexity_of(seq)

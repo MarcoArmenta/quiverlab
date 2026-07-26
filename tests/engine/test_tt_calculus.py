@@ -46,6 +46,8 @@ cohomology_dims = hochschild_cohomology_dims    # dim HH^n(A)
 PRIME = 32003
 P = PRIME
 
+pytestmark = [pytest.mark.oracle_selfcert]
+
 
 # --- panel of small algebras ------------------------------------------------
 def _panel():
@@ -305,6 +307,7 @@ def test_HH0_cup_is_center_multiplication():
     assert np.array_equal(prod(u1, u1) % P, np.zeros(dout, dtype=np.int64))  # x·x = 0
 
 
+@pytest.mark.oracle_literature
 def test_kx2_cup_ring_known_structure():
     """HH^*(k[x]/x^2) over char 0 is k[u,v]/(u^2), deg u = 1, deg v = 2:
     the degree-1 generator squares to zero, the degree-2 generator does not."""

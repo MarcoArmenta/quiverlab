@@ -32,6 +32,7 @@ def _cn32(p=32003):
                 ["a*b", "b*c", "c*a"], p=p)
 
 
+@pytest.mark.oracle_crossengine
 def test_deepen_corner_matches_minimal_homology_dims(tmp_path):
     """CN(3,2) over four primes: deepen's HH_* == the batch corner engine."""
     for p in PRIMES:
@@ -41,6 +42,7 @@ def test_deepen_corner_matches_minimal_homology_dims(tmp_path):
         assert out["HH"] == ref, "p=%d: %s != %s" % (p, out["HH"], ref)
 
 
+@pytest.mark.oracle_crossengine
 def test_deepen_corner_termination_ka2(tmp_path):
     """kA_2 (hereditary): the corner resolution terminates; deepen must report it
     (stop_reason='terminated', hochschild_dim=1) with HH == the batch engine."""
@@ -52,6 +54,7 @@ def test_deepen_corner_termination_ka2(tmp_path):
     assert out["HH"] == ref
 
 
+@pytest.mark.oracle_crossengine
 def test_deepen_corner_nonmonomial_square(tmp_path):
     """kQ/(ab - cd) (dim 9, non-monomial multi-vertex): HH_0 = 4 (Plan-13 pin)."""
     A = _eng([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)},
@@ -96,6 +99,7 @@ def test_deepen_corner_finalize_only(tmp_path):
     assert fin["max_degree_reached"] == full["max_degree_reached"]
 
 
+@pytest.mark.oracle_crossengine
 def test_deepen_corner_resume(tmp_path):
     """A stop-early run then a continue run == one full fresh run == the oracle."""
     A = _cn32()

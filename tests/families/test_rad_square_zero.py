@@ -1,7 +1,11 @@
 """RadicalSquareZero(Q) = kQ/rad^2. Fixture N4."""
+import pytest
+
 from quiverlab.combinat import Quiver
 from quiverlab.families import RadicalSquareZero
 from quiverlab.fields import CC
+
+pytestmark = [pytest.mark.oracle_literature]
 
 
 def test_two_loop_is_finite_dim3():

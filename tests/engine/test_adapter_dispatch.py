@@ -17,6 +17,7 @@ def _zoo(field):
 
 
 @pytest.mark.parametrize("p", [2, 3, 5])
+@pytest.mark.oracle_crossengine
 def test_engine_matches_bar_cohomology_and_homology(p):
     # The central correctness gate: engine (fast, numpy mod-p rank) vs the pure
     # bar complex (exact Gaussian elimination over the Domain) -- genuinely

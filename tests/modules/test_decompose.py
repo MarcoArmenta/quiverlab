@@ -15,6 +15,8 @@ from quiverlab.errors import QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.modules.module import Module
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 # char > dim M for every module tested below -> the trace-form indecomposability
 # certificate is rigorous (Dickson / Cohen-Ivanyos-Wales). GF(2) is handled separately.
 _BIG_CHAR = [CC, GF(7), GF(32003)]
