@@ -309,4 +309,36 @@ representation theory — with the C1–C8 coverage program in
 `docs/plans/ROADMAP.md` (C1 categorical glue: morphisms + Krull–Schmidt; C4
 τ-tilting engine = τ-tilting/torsion/stability/silting in one, white space
 even in QPA) grounded in `2026-07-25-metagoal-coverage-deep-research.md`.
-Suite recounted post-merge: 1795 tests (fast 690 / deep 1031 / qpa 74).
+ Plan 29 (literature-oracle batteries + fixes, Tier 1a — 79 new oracle tests
+across invariants/engine/resolutions_cs/families with ZERO
+literature-vs-engine mismatches except the DOCUMENTED CRS-2004 Example-2.20
+discrepancy (bar oracle gives dim HH¹=1, not the paper's 0 — the verified
+value is pinned, honest-scope entry on the verification page); the
+`is_symmetric` bug FIXED (the GF(p) ν==identity branch was
+sufficient-not-necessary — silent False on Brauer stars kZ_n/J^L with
+n|(L−1); replaced by the Skowroński–Yamagata nondegenerate-trace-form
+certifier, loud on small fields) + `is_weakly_symmetric` + QPA symmetry
+crosschecks; **module Tor**: `modules/tor.py::tor_dims(A, M, N, top)` right⊗left
+with `Algebra.tor`, anchored by `dim Tor_n(M,N) = dim Ext^n(M, DN)` on every
+test + resolve-either-side balance (QPA has NO native Tor — probed live; the
+QPA bridge computes Ext-via-NthSyzygy dimension shifting); 17 citation keys
+added; TrivialExtension symmetry now refuses LOUDLY pending its double-quiver
+presentation (backlogged, xfail fences auto-flip). Branch
+`plan-29-literature-batteries`, merged 2026-07-25), Plan 30 (Krull–Schmidt +
+GUI/report completeness, Tier 1d — Marco's feedback: `modules/decompose.py`
+`decompose`/`is_indecomposable` (exact Fitting splitting on Domain-native
+minimal polynomials; Dickson/CIW trace-rank locality certificate rigorous for
+char 0 or char > dim M; LOUD char-p refusals; QPA
+`DecomposeModuleWithMultiplicities` crosschecks); webapp/GUI: `tor` +
+`decompose` compute kinds (schema v2, cache keys byte-stable), the
+second-argument no-code matrix editor for Ext/Tor targets, τ/τ⁻ blocks
+certify indecomposability (honest omission when uncertifiable), resolution
+tables render term | `P_1^{2} ⊕ P_3` (dropped #summands + dim-vector columns
+per Marco); the exhaustive worked-steps bundle: module trace events with
+rendered differential matrices (stated elision past the size threshold), the
+"projectives and injectives of A" Loewy section, `trace.tex` downloadable
+everywhere (webapp whitelist + job page, `quiverlab-hpc render --format tex`,
+GUI button), kA₂ replay golden (every differential of the S₁ resolution
+verbatim). Branch `plan-30-decompose-reporting`, merged 2026-07-25 after
+Plan 29 — the skip-guarded tor wiring auto-activated in the merged tree).
+Suite recounted post-merge: 2031 tests (fast 804 / deep 1120 / qpa 107).
