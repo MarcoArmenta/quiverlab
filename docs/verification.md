@@ -363,6 +363,20 @@ verified precision and listed below as such.
   cell as the always-on stand-in.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+- **Krull–Schmidt decomposition is certificate-bounded** (Plan 30): Fitting
+  splits are exact everywhere, but the LOCALITY certificate (End/rad via the
+  natural trace form) is rigorous exactly when char 0 or char > dim M — in the
+  small-char regime with no split found, `decompose`/`is_indecomposable` raise
+  loudly (naming QPA / a larger characteristic) rather than guess. The τ/τ⁻
+  result blocks therefore attach the indecomposability certificate only when
+  it is certifiable, and omit it honestly otherwise. Oracles: live QPA
+  `DecomposeModuleWithMultiplicities`/`IsIndecomposableModule` (dim-vector
+  multisets + multiplicities, GF(7)), constructed direct-sum round-trips,
+  Krull–Schmidt uniqueness, and τ-additivity.
+- **The worked-steps bundle is replayable by construction** (Plan 30): the
+  kA₂ golden asserts every differential of the S₁ resolution appears verbatim
+  in the `.tex`; larger objects render as stated shape+rank elisions, never
+  silent omissions; the `.tex` source itself is a served artifact.
 - The Plan-28 container tier: what pytest verifies is the **wheel-side story**
   (CLI ≡ public-API parity, renderer goldens, checkpoint-resume, byte-stable
   runner delegation, asset-file gates) plus the CI image smoke (build → run a

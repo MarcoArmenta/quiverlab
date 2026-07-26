@@ -226,8 +226,9 @@ planned together even if delivered in slices.
 
 ## Tier 1d — GUI/report completeness + module decomposition (Marco, 2026-07-25)
 
-- [ ] **Plan 30 — Krull–Schmidt decomposition + GUI/report completeness** — IN
-  PROGRESS, branch `plan-30-decompose-reporting`
+- [x] **Plan 30 — Krull–Schmidt decomposition + GUI/report completeness** —
+  DONE, delivered on branch 2026-07-25 (merge pre-authorized), branch
+  `plan-30-decompose-reporting`
   (`2026-07-25-plan-30-decompose-reporting.md`). Marco's GUI/PDF feedback:
   τ must certify indecomposability (with `decompose()` into indecomposables —
   coverage-program C1 flagship pulled forward, End-idempotent splitting, QPA
