@@ -18,7 +18,7 @@ SYMMETRY (Plan 29): A is symmetric iff it admits a NONDEGENERATE symmetric
 bimodules (Skowronski–Yamagata, Frobenius Algebras I). Decision: (a) not
 Frobenius or a nontrivial Nakayama vertex permutation -> False (weakly-
 symmetric fails); (b) else CERTIFY symmetry by an EXACT witness — some
-lambda in the trace-form space whose Gram G[i][j] = lambda(f_i f_j) has full
+lambda in the trace-form space whose Gram ``G[i][j] = lambda(f_i f_j)`` has full
 rank (no false positives, no sweep); (c) if no cheap witness is found decide
 the negative by a CONCLUSIVE Schwartz–Zippel sweep of the trace-form space
 (det Gram has degree <= dim A, so > dim A distinct samples per coordinate is
@@ -167,8 +167,8 @@ def _sample_values(dom, need):
 def _trace_form_space(A):
     """Basis of the SYMMETRIC linear forms lambda with lambda(ab) = lambda(ba)
     for all a, b — equivalently Hom_{A-A}(A, DA) = (A/[A, A])^*. Presentation-
-    free (structure constants only): each constraint is lambda . (T[i][j] -
-    T[j][i]) = 0, and i < j suffices (the (j, i) pair is its negation)."""
+    free (structure constants only): each constraint is ``lambda . (T[i][j] -
+    T[j][i]) = 0``, and i < j suffices (the (j, i) pair is its negation)."""
     dom = A.domain
     m = A.dim
     rows = []
@@ -184,7 +184,7 @@ def _trace_form_space(A):
 
 
 def _gram(A, lam):
-    """Gram matrix G[i][j] = lambda(f_i f_j) of a linear form lam (full coords)."""
+    """Gram matrix ``G[i][j] = lambda(f_i f_j)`` of a linear form lam (full coords)."""
     dom = A.domain
     m = A.dim
     return [[_lam_of(lam, A.T[i][j], dom) for j in range(m)] for i in range(m)]

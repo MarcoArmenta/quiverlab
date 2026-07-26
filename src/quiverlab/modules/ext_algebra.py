@@ -112,7 +112,7 @@ def _build_module_map(src_res, src_deg, tgt_res, tgt_deg, ys, dom):
 def _solve_in_component(dQ, dimQ, Qmod, v, rhs, dom):
     """Solve d^Q y = rhs for a generator image y living in the vertex-v component of Q
     (Q * e_v).  The idempotent action is diagonal on a direct sum of P_w's, so the
-    component is the set of basis columns c with action[e_v][c][c] != 0.  The solve is
+    component is the set of basis columns c with ``action[e_v][c][c] != 0``.  The solve is
     canonicalised with reduce_mod_nullspace so the lift is byte-reproducible (Plan 17)."""
     ev = Qmod.action[f"e_{v}"]
     cols_v = [c for c in range(dimQ) if not dom.is_zero(ev[c][c])]
