@@ -493,20 +493,36 @@ class Algebra:
         return is_frobenius_generic(self)
 
     def is_symmetric(self):
-        """Is the algebra symmetric? GF(p): Frobenius with identity Nakayama
-        automorphism (engine). Other exact Domains: Frobenius with INNER
-        Nakayama automorphism (Plan 19, the definitional test)."""
-        from quiverlab.fields.primefield import PrimeField
-        if isinstance(self.domain, PrimeField):
-            if not self.is_frobenius():
-                return False
-            from quiverlab.engine.adapter import to_engine
-            from quiverlab.engine.coxeter import is_identity, nakayama_automorphism
-            E = to_engine(self.unit_adapted())
-            S, _ = nakayama_automorphism(E, self.domain.p)
-            return bool(is_identity(S, self.domain.p))
+        """Is the algebra symmetric — does it carry a nondegenerate trace form
+        lambda(ab) = lambda(ba) (equivalently A ~= DA as bimodules)? Exact over
+        every exact Domain via the trace-form certificate on the path-type basis
+        (Plan 29; Skowronski–Yamagata). Loud refusal on a presentation-less
+        algebra, like the other path-basis invariants.
+
+        Plan 29 replaced the former GF(p) shortcut ``is_frobenius and the
+        engine's Nakayama automorphism == identity matrix``, which was
+        sufficient-not-necessary and returned a silent wrong False on
+        multi-vertex symmetric Nakayama (Brauer star) algebras."""
         from quiverlab.invariants.frobenius import is_symmetric_generic
         return is_symmetric_generic(self)
+
+    def is_weakly_symmetric(self):
+        """Is the algebra weakly symmetric — Frobenius with the identity Nakayama
+        permutation (soc P_v = top P_v for every indecomposable projective)?
+        Exact over every exact Domain (Plan 29). For self-injective Nakayama
+        kZ_n/J^L this is n | (L - 1) (Skowronski–Yamagata, Frobenius Algebras I).
+        Every symmetric algebra is weakly symmetric; the converse can fail."""
+        from quiverlab.invariants.frobenius import is_weakly_symmetric_generic
+        return is_weakly_symmetric_generic(self)
+
+    def tor(self, M, N, n):
+        """dim Tor_n^A(M, N) for a RIGHT A-module M and a LEFT A-module N (Plan 29).
+
+        The homological sibling of ``ext``: H_n(P_* (x)_A N) with P_* the minimal
+        projective resolution of the right module M. Certified against ``ext`` by the
+        duality dim Tor_n(M, N) = dim Ext^n(M, DN) (D side-aware, Plan 24)."""
+        from quiverlab.modules.tor import tor
+        return tor(self, M, N, n)
 
     def __repr__(self):
         base = f"Algebra of dimension {self.dim} over {self.domain.name}"
