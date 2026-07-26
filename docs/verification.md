@@ -5,10 +5,16 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2096 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
-2026-07-25 post-merge of Plans 21–30). It
+The suite is **2099 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+2026-07-26 post-merge of Plans 21–31; Plan 32 added the oracle-class markers + the
+audit gate). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
-oracle**, and most numbers are checked by more than one.
+oracle**, and most numbers are checked by more than one. Every test is
+**classifiable** into exactly this scheme — one of four oracle classes (literature,
+cross-engine, self-certifying, or live QPA) or the contract/infrastructure
+remainder — and since Plan 32 each oracle class is also a **standalone one-liner** a
+reviewer can run (`pytest -m oracle_literature`, and so on), with the counts audited
+against live collection (see [Oracle classes as runnable markers](#oracle-classes-as-runnable-markers)).
 
 ## The two oracle classes
 
@@ -353,7 +359,7 @@ and the oracle class that guards it. Counts are `pytest --collect-only` with the
 | `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 313 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
 | `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 53 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 61 | fast | runner artifacts / invariants; build hook; freshness |
-| release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`) | 50 | fast | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage |
+| release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`; the Plan-32 `test_oracle_classes` audit gate) | 53 | fast (audit gates: deep) | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage; **oracle-class count audit** (page == live collection) |
 
 Non-algebraic glue (`webapp/`, `docs/gui/`) carries no oracle *because it holds no
 mathematics of its own* — it calls `import quiverlab` and is tested for correct
@@ -363,18 +369,74 @@ plumbing, not for algebra.
 
 Test buckets are auto-assigned by directory in `tests/conftest.py` (an explicit
 marker wins); the partition is disjoint and exhaustive, enforced by a partition
-test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`.
+test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`;
+plus the **orthogonal** oracle-class markers below (which never change a bucket).
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
 | `fast` | 804 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1180 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `deep` | 1183 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 112 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The
 docs site is built `--strict` in its own workflow, so any internals chapter or
 page missing from the nav fails the build.
+
+## Oracle classes as runnable markers
+
+The two-oracle narrative above is also carried by **orthogonal pytest markers**
+(Plan 32), so a reviewer can run each oracle class as a one-liner. These markers
+classify *how* a test verifies, not *where it runs* — they are independent of the
+`fast`/`deep`/`qpa` runtime buckets (adding them changed no bucket: the sweep was
+byte-identical), and a test may carry **more than one** (a battery pins a literature
+value *and* asserts cross-engine agreement in the same test, so it carries both).
+The assignment lives at module level in each battery file; see
+`docs/plans/2026-07-26-plan-32-oracle-markers.md` for the class boundary and every
+edge-case ruling.
+
+- **`oracle_literature`** — the pass criterion is a value or identity from the
+  literature or classical theory, frozen as a constant the engine must reproduce:
+  paper-pinned dims and closed forms, theorem identities (Coxeter/spectral tables,
+  Happel trace, Theorem B/C, Cartan identities, symmetric ⇒ `HH^n = HH_n`,
+  `dim Tor_n = dim Ext^n`, the `kZ_n/J^L` symmetry classification, Künneth), and the
+  read-only bank's closed-form differentials. The marker face of **Class 1**.
+- **`oracle_crossengine`** — two *independent* implementations are run and required
+  to agree live: CS ≡ bar ≡ Bardzell ≡ minimal degreewise, numba ≡ pure and
+  sparse ≡ dense parity, presented ≡ ⋉ iso-invariance, native ≡ transported
+  cup/cap, generic-Domain ≡ GF(p) engine, and the Connes λ-complex second model.
+  The library-internal face of **Class 2**.
+- **`oracle_selfcert`** — an internal mathematical certificate *is* the assertion:
+  `d∘d = 0`, the CS order condition, canonicalization / adversarial-solver
+  byte-reproducibility, dimension and iso certificates, the self-certifying
+  Nakayama `λ`/`ν` identities, and the unit/Leibniz/module identities that arbitrate
+  a sign convention. (These are the "self-certifying internal identities" of Class 1,
+  surfaced as their own runnable class.)
+- **`qpa`** — the existing bucket marker *is* the fourth oracle class: our value ≡
+  live GAP/QPA. It needs no new marker; the live-QPA face of **Class 2**.
+
+Everything else is **contract & infrastructure** (unmarked): refusal/error
+surfaces, API and protocol contracts, the float-ban AST gate, freshness/interface
+gates, the Gröbner admissibility certificate, worked-steps golden plumbing, the
+foundational field/algebra/linear-algebra datatype contracts, and the
+GUI/webapp/HPC/release/docs tiers.
+
+The counts below are **audited against live collection** by
+`tests/release/test_oracle_classes.py` (the badge==page doctrine, cf. the buckets):
+if a future plan adds a battery and forgets to bump a number here, that test fails.
+They overlap by design, so the union is smaller than their sum.
+
+| Oracle class | Run | Tests | What agreement means |
+|---|---|---:|---|
+| Literature / theory pins | `-m oracle_literature` | 670 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 396 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 604 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 112 | an independent external system (QPA) recomputes and agrees |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1227 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+
+Collected 2026-07-26 (Plan 32). The oracle markers live only on the pure-library
+`engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` / `families` /
+`batch` suites, so these counts do **not** depend on the `[web]`/`[hpc]` extras.
 
 ## The standing rule
 

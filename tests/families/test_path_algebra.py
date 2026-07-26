@@ -5,6 +5,8 @@ from quiverlab.errors import NotFiniteDimensionalError
 from quiverlab.families import PathAlgebra
 from quiverlab.fields import CC, GF
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def test_D4_linear_orientation_dim9_hh_100():
     A = PathAlgebra("D4", field=CC)                 # arrows 1->2, 2->3, 2->4

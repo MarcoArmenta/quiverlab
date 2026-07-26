@@ -14,6 +14,8 @@ import pytest
 from quiverlab import Quiver, CC, GF, linear_path_algebra
 from quiverlab.fields import QQ
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 
 def _cn(n, field=CC):
     """Cyclic Nakayama kZ_n / rad^2 (self-injective): vertices 1..n in a cycle."""

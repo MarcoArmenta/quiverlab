@@ -1,12 +1,16 @@
 """Plan 06 acceptance. Three construction routes yield the SAME dim-9 algebra
 (commutative square == diamond incidence == kA_2 (x) kA_2), all HH=[1,0,0]; and
 citations flow from family -> A.citations() -> bibliography()."""
+import pytest
+
 from quiverlab import (
     ExteriorAlgebra, IncidenceAlgebra, NakayamaAlgebra, PathAlgebra, QuantumCI,
     TensorProduct, bibliography, families,
 )
 from quiverlab.combinat import Quiver
 from quiverlab.fields import CC, GF
+
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_literature]
 
 
 def _kA2(field=CC):

@@ -1,6 +1,10 @@
 """ExteriorAlgebra(n) = Lambda(k^n), dim 2^n."""
+import pytest
+
 from quiverlab.families import ExteriorAlgebra
 from quiverlab.fields import CC, GF
+
+pytestmark = [pytest.mark.oracle_literature]
 
 
 def test_dims_are_powers_of_two():

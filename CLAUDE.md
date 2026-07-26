@@ -366,4 +366,16 @@ the old structure-constant build). No Fernández–Platzeck citation by design
 QPA-oracled). New tests: `tests/families/test_trivial_extension_presented.py`
 (deep), `tests/qpa/test_trivial_extension_qpa.py` (qpa). Branch
 `plan-31-trivial-extension`).
-Suite recounted post-Plan-31: 2096 tests (fast 804 / deep 1180 / qpa 112).
+Plan 32 (oracle-class markers, 2026-07-26, branch `plan-32-oracle-markers`,
+Marco's four-part test taxonomy as ORTHOGONAL pytest markers — v0.1.0 release
+gate): every test classifiable and each class runnable standalone —
+`oracle_literature` (670: frozen literature/theory values), `oracle_crossengine`
+(396: two independent implementations agree), `oracle_selfcert` (604: internal
+certificates — d∘d=0, order, dimension/canonicality), the existing `qpa` marker
+IS the fourth class (112, never double-marked); unmarked = contract &
+infrastructure; overlap allowed (union 1227). Audited: the verification-page
+class table == live collection, gated by `tests/release/test_oracle_classes.py`
+(3 deep tests — the only count delta; the sweep itself is bucket-byte-identical,
+verified 804/1180/112 excluding the gate). 89 files marked; 12 edge rulings in
+the plan doc (`2026-07-26-plan-32-oracle-markers.md`).
+Suite recounted post-Plan-32: 2099 tests (fast 804 / deep 1183 / qpa 112).

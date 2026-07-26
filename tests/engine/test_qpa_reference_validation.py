@@ -40,6 +40,8 @@ PRIME = 32003
 
 P = PRIME  # large-prime characteristic-0 proxy
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def kxy():
     """Commutative complete intersection k[x,y]/(x^2,y^2)."""

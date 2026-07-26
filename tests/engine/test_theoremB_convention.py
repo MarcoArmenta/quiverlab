@@ -8,6 +8,7 @@ the AR-bimodule action (item A) must use.
 """
 import numpy as np
 import sympy as sp
+import pytest
 
 from quiverlab.engine.coxeter2 import coxeter_polynomial_from_cartan, cartan_from_raw
 
@@ -16,6 +17,8 @@ coxeter_polynomial = coxeter_polynomial_from_cartan
 cartan_matrix = cartan_from_raw
 
 t = sp.symbols('t')
+
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
 
 
 def _perm_charpoly(P):

@@ -129,7 +129,19 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   trace-form certifier (verified: every tested `T(A)` has a nondegenerate
   symmetric trace form); the `xfail(strict=False)` fences in
   `tests/invariants/test_symmetric_regression.py` auto-flip to xpass.
-- [ ] **Oracle-class test markers (v0.1.0 release gate — Marco, 2026-07-26):**
+- [x] **Oracle-class test markers (v0.1.0 release gate — Marco, 2026-07-26):**
+  DONE, Plan 32, 2026-07-26, branch `plan-32-oracle-markers`
+  (`2026-07-26-plan-32-oracle-markers.md`). Three orthogonal markers registered
+  (`oracle_literature` 670 / `oracle_crossengine` 396 / `oracle_selfcert` 604;
+  the existing `qpa` = 112 IS the fourth class, no new marker); the sweep marks
+  every oracle test across engine/resolutions_cs/hochschild/modules/invariants/
+  families/batch (module-level `pytestmark`, per-test splits in mixed files),
+  contract/infra left UNMARKED; audited class×count table on
+  `docs/verification.md` gated by `tests/release/test_oracle_classes.py`
+  (badge==page, subprocess collection). The marker sweep is byte-identical
+  (fast/deep/qpa still 804/1180/112 excluding the new gate); the gate adds 3
+  deep tests -> 1183/2099 (page + README badge bumped). Zero file moves.
+  Original item text follows. —
   the four-way test taxonomy as ORTHOGONAL pytest markers, not a file
   reorganization (tests overlap classes — batteries pin a literature value AND
   assert cross-engine agreement in one test; directories stay the runtime-bucket

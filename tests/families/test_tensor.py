@@ -5,10 +5,14 @@ Kunneth oracle: Cartan-Eilenberg, "Homological Algebra", Princeton Univ. Press
 makes HH multiplicative on tensor factors (citations registry key
 ``tensor_product`` -> CartanEilenberg1956).
 """
+import pytest
+
 from quiverlab.combinat import Quiver
 from quiverlab.families import TensorProduct
 from quiverlab.families.basic import truncated_polynomial
 from quiverlab.fields import CC
+
+pytestmark = [pytest.mark.oracle_literature]
 
 
 def _kA2(field=CC):

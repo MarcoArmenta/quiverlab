@@ -34,6 +34,8 @@ from quiverlab.engine.scan3 import quantum_ci
 
 P = 32003
 
+pytestmark = [pytest.mark.oracle_selfcert, pytest.mark.oracle_literature]
+
 
 def kk_semisimple():
     """A = k x k (two orthogonal idempotents); separable, unit = e_0 + e_1."""

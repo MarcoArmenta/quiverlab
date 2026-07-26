@@ -23,6 +23,8 @@ induced_cohomology = induced_on_HH_cohomology
 PRIME = 32003
 P = PRIME
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 
 # ---- identity automorphism induces the identity on every HH_n and HH^n ----
 @pytest.mark.parametrize("n", [0, 1, 2, 3])

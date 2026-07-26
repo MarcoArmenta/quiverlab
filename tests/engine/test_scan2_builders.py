@@ -34,6 +34,7 @@ P = PRIME
     (lambda: truncated_polynomial(3), 3),
     (lambda: kA(2), 3),
 ])
+@pytest.mark.oracle_literature
 def test_trivial_extension_is_symmetric(Bfn, N):
     scan3 = pytest.importorskip("quiverlab.engine.scan3")   # cohomology_dims (Task 4)
     cohomology_dims = scan3.hochschild_cohomology_dims
@@ -43,6 +44,7 @@ def test_trivial_extension_is_symmetric(Bfn, N):
     assert homology_dims(TB, N)[P] == cohomology_dims(TB, N)[P]
 
 
+@pytest.mark.oracle_literature
 def test_trivial_extension_of_kx2_matches_commutative_ci():
     # T(k[x]/(x^2)) is the dim-4 symmetric algebra with the same HH as k[x,y]/(x^2,y^2).
     TB = trivial_extension(truncated_polynomial(2), "T(k[x]/(x^2))")
@@ -50,6 +52,7 @@ def test_trivial_extension_of_kx2_matches_commutative_ci():
 
 
 # ---- one-point (triangular) extension: NOT self-injective, frozen oracle ----
+@pytest.mark.oracle_literature
 def test_triangular_extension_frontier_homology():
     # k[x]/(x^3)[k]: the Search II frontier (no 2-truncated cycle, non-self-injective).
     a3 = truncated_polynomial(3)
@@ -61,6 +64,7 @@ def test_triangular_extension_frontier_homology():
     assert homology_dims(T, 5)[P] == [4, 2, 2, 2, 2, 2]
 
 
+@pytest.mark.oracle_literature
 def test_triangular_extension_kx2_simple():
     a2 = truncated_polynomial(2)
     acts, d = module_simple(2)
@@ -70,6 +74,7 @@ def test_triangular_extension_kx2_simple():
 
 
 # ---- module builders satisfy the module axioms ----
+@pytest.mark.oracle_selfcert
 def test_module_simple_unit_acts_as_identity():
     acts, dim = module_simple(3)
     assert dim == 1
@@ -77,6 +82,7 @@ def test_module_simple_unit_acts_as_identity():
     assert np.array_equal(acts[1], np.zeros((1, 1), dtype=np.int64))  # x acts as 0
 
 
+@pytest.mark.oracle_selfcert
 def test_module_regular_is_left_multiplication():
     # regular module of k[x]/(x^3): action of x^p is the shift x^p . x^j = x^{p+j}.
     acts, dim = module_regular(3)
@@ -89,6 +95,7 @@ def test_module_regular_is_left_multiplication():
     assert np.array_equal((x @ x) % P, acts[2] % P)
 
 
+@pytest.mark.oracle_selfcert
 def test_module_semisimple_identity_action():
     acts, dim = module_semisimple(2, 3)
     assert dim == 3

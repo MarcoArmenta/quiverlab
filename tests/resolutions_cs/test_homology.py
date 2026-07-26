@@ -3,6 +3,8 @@ from quiverlab import Quiver, CC, GF
 from quiverlab.resolutions_cs.homology import cs_cohomology_dims, cs_homology_dims
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def _A(field=CC, rels=("x*x",), arrows=None, verts=(1,)):
     return Quiver(list(verts), arrows or {"x": (1, 1)}).algebra(relations=list(rels), field=field)
@@ -26,6 +28,7 @@ def test_qci_homology_matches_bank_vector():
     assert cs_homology_dims(A, 12).dims == [3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 
 
+@pytest.mark.oracle_selfcert
 def test_hh_dims_unchanged_and_gate_green_after_go_loud(kx2_rs, qci_rs):
     """Regression for GO-LOUD (open-item #1): making SSequence.S(n>max_degree) raise
     must NOT change any HH dimension, and assert_dd_zero(upto=top+1, side="coh") must

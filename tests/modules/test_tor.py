@@ -25,6 +25,8 @@ from quiverlab.errors import QuiverlabError
 from quiverlab.fields import QQ
 from quiverlab.modules.tor import tor_dims
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 
 def _anchor(A, M, N, top):
     """Return tor_dims(A, M, N, top) after asserting the duality oracle

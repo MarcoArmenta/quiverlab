@@ -43,6 +43,8 @@ PRIME = 32003
 P = PRIME
 t = sp.symbols("t")
 
+pytestmark = [pytest.mark.oracle_selfcert, pytest.mark.oracle_literature]
+
 
 def _build(key):
     """Resolve an algebra key to its algebra.  The coxeter2 cyclic_nakayama case

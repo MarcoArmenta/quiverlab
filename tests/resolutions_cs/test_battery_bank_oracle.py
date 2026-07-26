@@ -84,6 +84,8 @@ from quiverlab.resolutions_cs.engine_facade import CSResolution
 
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_crossengine]
+
 BANK = pathlib.Path(
     "/Users/marco/Desktop/HomologicalNetworks/HomologicalAlgebra/HansConjecture")
 

@@ -27,6 +27,8 @@ from quiverlab.engine.resolutions_minimal import minimal_cohomology_dims
 
 PRIMES = (32003, 2, 3, 5)
 
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_literature]
+
 
 def _eng(vertices, arrows, relations, p=32003):
     Q = ql.Quiver(vertices, arrows)

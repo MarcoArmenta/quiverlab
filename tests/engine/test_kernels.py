@@ -12,6 +12,8 @@ from quiverlab.engine._kernels import HAS_NUMBA, pow_mod, inv_mod
 PRIMES = [2, 3, 5, 32003]
 requires_numba = pytest.mark.skipif(not HAS_NUMBA, reason="numba not installed")
 
+pytestmark = [pytest.mark.oracle_crossengine]
+
 
 def test_has_numba_is_bool():
     assert isinstance(HAS_NUMBA, bool)

@@ -13,6 +13,8 @@ from quiverlab.engine.linalg_fast import sparse_rank_mod_p, to_sparse_cols, rank
 
 PRIMES = [2, 3, 5, 32003]
 
+pytestmark = [pytest.mark.oracle_crossengine]
+
 
 def test_edge_cases():
     p = 32003

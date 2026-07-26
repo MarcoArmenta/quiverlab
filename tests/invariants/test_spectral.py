@@ -1,10 +1,13 @@
 """Exact spectral radius / Mahler measure (spec section 5 component 8), SOUND for complex
 off-circle roots. The bank floats survive only as test oracles here; src is float-free
 (asserted by tests/test_no_floats.py)."""
+import pytest
 import sympy as sp
 from quiverlab import Quiver, CC
 from quiverlab.invariants.spectral import spectral_radius, mahler_measure
 from quiverlab.engine.coxeter_spectrum import is_cyclotomic_product
+
+pytestmark = [pytest.mark.oracle_literature]
 
 t = sp.symbols("t")
 LEHMER = t**10 + t**9 - t**7 - t**6 - t**5 - t**4 - t**3 + t + 1

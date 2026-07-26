@@ -1,7 +1,11 @@
 """TruncatedPathAlgebra kQ/rad^r. Fixture N3."""
+import pytest
+
 from quiverlab.combinat import Quiver
 from quiverlab.families import TruncatedPathAlgebra
 from quiverlab.fields import CC
+
+pytestmark = [pytest.mark.oracle_literature]
 
 
 def test_A3_rad2_dim5():

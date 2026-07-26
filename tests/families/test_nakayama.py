@@ -5,6 +5,8 @@ from quiverlab.errors import AdmissibilityError
 from quiverlab.families import NakayamaAlgebra
 from quiverlab.fields import CC, GF
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def test_kupisch_322_is_cyclic_dim7_cartan_det1():
     A = NakayamaAlgebra([3, 2, 2], field=CC)

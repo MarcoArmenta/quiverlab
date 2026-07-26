@@ -47,6 +47,8 @@ from quiverlab.engine.resolutions_minimal import minimal_cohomology_dims
 
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 # --------------------------------------------------------------------------- #
 # builders                                                                     #
@@ -111,6 +113,7 @@ def test_tri_string_even_and_kronecker(n, top, expected, fld):
     assert cs_cohomology_dims(A, top).dims == expected
 
 
+@pytest.mark.oracle_crossengine
 @pytest.mark.parametrize("p", [2, 3])
 def test_tri_string_A3_revival_with_minimal_crosscheck(p):
     """A_3 = [1, 3, 0, 2, 0] over GF(p): HH^2 vanishes then HH^3 = 2 REVIVES (a

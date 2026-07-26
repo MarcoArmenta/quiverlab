@@ -14,6 +14,7 @@ pytestmark = [
         os.environ.get("QLAB_RUN_HEAVY_GOLDENS") != "1",
         reason="needs ~2.5GB+ RSS; run with QLAB_RUN_HEAVY_GOLDENS=1 on a machine "
                "with memory headroom"),
+    pytest.mark.oracle_literature,
 ]
 
 from quiverlab.engine.coxeter import is_frobenius, nakayama_automorphism

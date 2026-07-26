@@ -20,6 +20,8 @@ from quiverlab.modules.koszul import (
     g_quadratic_certificate, is_quadratic, quadratic_dual,
 )
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 
 # -- fixtures --------------------------------------------------------------
 def _radsq_line(field=CC):

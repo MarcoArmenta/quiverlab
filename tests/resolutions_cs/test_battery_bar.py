@@ -63,6 +63,8 @@ from quiverlab.resolutions_cs.homology import cs_cohomology_dims, cs_homology_di
 from quiverlab.hochschild.bar import hochschild_cohomology_dims, hochschild_homology_dims
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_crossengine]
+
 
 def _square(field):
     # Commutative-square quiver with the single BINOMIAL (non-monomial) relation.

@@ -12,6 +12,8 @@ from quiverlab import Quiver, GF
 from quiverlab.resolutions_cs.comparison import Comparison
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_selfcert]
+
 
 def _mk(rels, p=32003):
     Q = Quiver([1], {"x": (1, 1), "y": (1, 1)})

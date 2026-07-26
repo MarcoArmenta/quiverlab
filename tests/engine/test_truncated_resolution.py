@@ -13,6 +13,8 @@ PRIME = 32003
 
 P = PRIME
 
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_literature]
+
 
 @pytest.mark.parametrize("a", [2, 3, 4])
 def test_matches_bar_engine_char0(a):

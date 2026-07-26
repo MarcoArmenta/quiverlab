@@ -38,6 +38,8 @@ from quiverlab.families import NakayamaAlgebra
 
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 # =========================================================================== #
 # 2a.  Cibils (1998) radical-square-zero char discriminator                     #

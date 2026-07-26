@@ -8,6 +8,8 @@ from quiverlab.families import QuantumCI
 from quiverlab.families.zoo import build_from_record, load_catalog
 from quiverlab.fields import QQ
 
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_literature]
+
 
 def _rec(name):
     return next(r for r in load_catalog() if r.get("name") == name)

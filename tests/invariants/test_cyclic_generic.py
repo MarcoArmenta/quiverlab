@@ -3,9 +3,17 @@ mixed-complex identities over QQ, the char-0 Connes lambda-complex second
 model (Loday Thm 2.1.5), and closed-form pins."""
 import itertools
 
+import pytest
+
 from quiverlab import CC, GF, Quiver, truncated_polynomial
 from quiverlab.families import QuantumCI
 from quiverlab.fields import QQ, linalg
+
+pytestmark = [
+    pytest.mark.oracle_crossengine,
+    pytest.mark.oracle_selfcert,
+    pytest.mark.oracle_literature,
+]
 
 
 def _k(field):

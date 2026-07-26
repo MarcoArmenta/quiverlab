@@ -30,6 +30,8 @@ from quiverlab.engine.bimodule import (
 
 P = 32003
 
+pytestmark = [pytest.mark.oracle_selfcert]
+
 
 # The self-injective zoo, as string keys so the coxeter2-dependent cyclic_nakayama
 # cases are not built at collection time; `_zoo_build` importorskips coxeter2 (Task 11)

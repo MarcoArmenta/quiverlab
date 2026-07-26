@@ -17,6 +17,8 @@ PRIME = 32003
 
 PRIMES = (32003, 2, 3, 5)
 
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_literature]
+
 
 # ---------------------------------------------------------------------------
 # QuantumCIResolution: the NON-monomial headline algebra

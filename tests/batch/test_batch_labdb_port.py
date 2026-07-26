@@ -29,6 +29,7 @@ def test_analyze_is_deterministic_and_serial_equals_parallel():
     assert run_scan(specs, 1) == run_scan(specs, 1)
 
 
+@pytest.mark.oracle_literature
 @pytest.mark.skipif(
     __import__("importlib").util.find_spec("quiverlab.resolutions_cs") is None,
     reason="open-zone analyze needs the Plan 04 CS backend")

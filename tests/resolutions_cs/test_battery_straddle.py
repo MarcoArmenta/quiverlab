@@ -25,6 +25,8 @@ from quiverlab.hochschild.bar import (
 )
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_selfcert, pytest.mark.oracle_crossengine]
+
 
 def _mk(rels, field):
     Q = Quiver([1], {"x": (1, 1), "y": (1, 1)})

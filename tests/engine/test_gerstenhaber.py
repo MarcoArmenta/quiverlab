@@ -31,6 +31,8 @@ from quiverlab.engine.tt_calculus import (
 
 P = 32003
 
+pytestmark = [pytest.mark.oracle_selfcert]
+
 
 def _zoo():
     return [

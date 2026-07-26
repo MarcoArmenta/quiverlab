@@ -19,7 +19,11 @@ characteristic-independent, so the fast GF(p) rank engine is used off A_3.
 Provenance: ``docs/plans/2026-07-25-literature-oracles-deep-research.md``
 (Happel / Keller / Rickard cluster; values re-verified live here).
 """
+import pytest
+
 from quiverlab import CC, GF, IncidenceAlgebra, Quiver
+
+pytestmark = [pytest.mark.oracle_literature]
 
 F = GF(32003)               # the fast GF(p) rank engine (identities are char-independent)
 _DIAMOND = [("b", "x"), ("b", "y"), ("x", "t"), ("y", "t")]   # 2x2 grid = comm. square

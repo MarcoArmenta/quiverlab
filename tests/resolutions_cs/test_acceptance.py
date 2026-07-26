@@ -19,6 +19,8 @@ from quiverlab.errors import DepthLimitError
 
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_crossengine]
+
 BGMS_QCI_XI2 = [3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]     # bank-derived, degree 0..12
 
 

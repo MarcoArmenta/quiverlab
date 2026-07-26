@@ -14,6 +14,8 @@ from quiverlab import Quiver, GF
 from quiverlab.resolutions_cs.comparison import Comparison
 pytest.importorskip("quiverlab.groebner")
 
+pytestmark = [pytest.mark.oracle_crossengine, pytest.mark.oracle_selfcert]
+
 
 def _kx2_gf():
     return Quiver([1], {"x": (1, 1)}).algebra(relations=["x*x"], field=GF(32003))

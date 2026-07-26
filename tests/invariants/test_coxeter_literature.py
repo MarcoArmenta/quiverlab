@@ -24,11 +24,14 @@ are all sub-second (the degree-14 Coxeter-number-126 case runs in ~0.01 s).
 """
 import math
 
+import pytest
 import sympy as sp
 
 from quiverlab import CC, GF, Quiver, linear_path_algebra
 from quiverlab.families import dynkin_quiver, TruncatedPathAlgebra
 from quiverlab.invariants.spectral import spectral_radius, mahler_measure
+
+pytestmark = [pytest.mark.oracle_literature]
 
 t = sp.Symbol("t")
 

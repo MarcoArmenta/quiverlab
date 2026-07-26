@@ -2,6 +2,8 @@ import pytest
 from quiverlab import CC, GF, Quiver
 from quiverlab.errors import DepthLimitError
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def _dual(field):
     Q = Quiver(vertices=[1], arrows={"x": (1, 1)})

@@ -1,8 +1,12 @@
 """QuantumCI k<x,y>/(x^2, y^2, xy + q yx). Fixtures N6, N7."""
 from fractions import Fraction
 
+import pytest
+
 from quiverlab.families import ExteriorAlgebra, QuantumCI
 from quiverlab.fields import CC, GF
+
+pytestmark = [pytest.mark.oracle_literature]
 
 
 def test_quantum_ci_i_dim4_hh0_2():

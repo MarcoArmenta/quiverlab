@@ -1,6 +1,9 @@
 """Plan-05 acceptance: the modules + invariants surface, end to end (spec 3.5/3.6/3.9)."""
+import pytest
 import sympy as sp
 from quiverlab import Quiver, CC, GF, linear_path_algebra, truncated_polynomial, sweep
+
+pytestmark = [pytest.mark.oracle_literature]
 
 t = sp.Symbol("t")
 

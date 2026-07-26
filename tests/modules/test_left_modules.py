@@ -16,6 +16,8 @@ import pytest
 from quiverlab import Quiver, CC, GF, linear_path_algebra, truncated_polynomial
 from quiverlab.errors import QuiverlabError
 
+pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_selfcert]
+
 
 def _square(field=CC):
     # commutative square 1->2->4, 1->3->4 with a*b = c*d.

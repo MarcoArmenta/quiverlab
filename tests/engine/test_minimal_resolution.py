@@ -39,6 +39,7 @@ _VALIDATION = [
 
 
 @pytest.mark.parametrize("alg,N", _VALIDATION, ids=[a.name for a, _ in _VALIDATION])
+@pytest.mark.oracle_crossengine
 def test_minimal_matches_bar_oracle(alg, N):
     mh = minimal_homology_dims(alg, N, primes=PRIMES)
     bh = hochschild_homology_dims(alg, N, primes=PRIMES)
@@ -47,6 +48,7 @@ def test_minimal_matches_bar_oracle(alg, N):
 
 
 @pytest.mark.skipif(not _kernels.HAS_NUMBA, reason="numba not installed")
+@pytest.mark.oracle_crossengine
 def test_kernel_path_equals_pure_path():
     A = quantum_ci(2)
     save = _kernels.USE_KERNELS
@@ -61,6 +63,7 @@ def test_kernel_path_equals_pure_path():
     # (open-zone second half not ported: builds _open_33_0 via reduction_algebra, excluded)
 
 
+@pytest.mark.oracle_literature
 def test_truncated_poly_closed_form():
     # k[x]/x^2: HH_* char 0 proxy = [2,1,1,1,...]; char 2 = [2,2,2,...]
     A = truncated_polynomial(2)

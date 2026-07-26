@@ -5,6 +5,8 @@ from quiverlab.errors import QuiverlabError
 from quiverlab.families import PreprojectiveAlgebra
 from quiverlab.fields import CC
 
+pytestmark = [pytest.mark.oracle_literature]
+
 
 def test_preprojective_A2_dim4():
     A = PreprojectiveAlgebra("A2", field=CC)

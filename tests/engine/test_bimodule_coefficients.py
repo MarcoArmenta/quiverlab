@@ -74,6 +74,7 @@ DEG = 3   # depth for the (co)homology cross-checks (bar complex blows up with n
 # (1) reproduction: M = A gives the standard engines
 # ===========================================================================
 @pytest.mark.parametrize("key", _PANEL_KEYS)
+@pytest.mark.oracle_crossengine
 def test_regular_bimodule_reproduces_homology(key):
     alg = _build(key)
     M = regular_bimodule(alg)
@@ -83,6 +84,7 @@ def test_regular_bimodule_reproduces_homology(key):
 
 
 @pytest.mark.parametrize("key", _PANEL_KEYS)
+@pytest.mark.oracle_crossengine
 def test_regular_bimodule_reproduces_cohomology(key):
     alg = _build(key)
     M = regular_bimodule(alg)
@@ -95,12 +97,14 @@ def test_regular_bimodule_reproduces_cohomology(key):
 # (2) DA is a genuine bimodule
 # ===========================================================================
 @pytest.mark.parametrize("key", _PANEL_KEYS)
+@pytest.mark.oracle_selfcert
 def test_dual_bimodule_axioms(key):
     alg = _build(key)
     assert check_bimodule(dual_bimodule(alg), P)
     assert check_bimodule(regular_bimodule(alg), P)
 
 
+@pytest.mark.oracle_selfcert
 def test_dual_bimodule_dimension():
     """dim DA = dim A."""
     for key in _PANEL_KEYS:
@@ -112,6 +116,7 @@ def test_dual_bimodule_dimension():
 # (3) the classical dualities  HH_n(A,DA) = HH^n(A),  HH^n(A,DA) = HH_n(A)
 # ===========================================================================
 @pytest.mark.parametrize("key", _PANEL_KEYS)
+@pytest.mark.oracle_literature
 def test_homology_with_DA_equals_cohomology(key):
     alg = _build(key)
     DA = dual_bimodule(alg)
@@ -121,6 +126,7 @@ def test_homology_with_DA_equals_cohomology(key):
 
 
 @pytest.mark.parametrize("key", _PANEL_KEYS)
+@pytest.mark.oracle_literature
 def test_cohomology_with_DA_equals_homology(key):
     alg = _build(key)
     DA = dual_bimodule(alg)
@@ -129,6 +135,7 @@ def test_cohomology_with_DA_equals_homology(key):
     assert coh_DA == hom
 
 
+@pytest.mark.oracle_literature
 def test_duality_is_nontrivial_on_quantum_ci():
     """On the quantum CI HH_*(A,A) != HH^*(A,A), so DA genuinely swaps them:
     HH_*(A,DA) tracks cohomology, HH^*(A,DA) tracks homology."""
@@ -145,6 +152,7 @@ def test_duality_is_nontrivial_on_quantum_ci():
 # (4) degree 0
 # ===========================================================================
 @pytest.mark.parametrize("key", _PANEL_KEYS)
+@pytest.mark.oracle_literature
 def test_degree0_DA_homology_is_center_dimension(key):
     """dim HH_0(A, DA) = dim HH^0(A) = dim Z(A)."""
     alg = _build(key)
@@ -157,6 +165,7 @@ def test_degree0_DA_homology_is_center_dimension(key):
 # ===========================================================================
 # non-self-injective frontier: the dualities still hold (DA always exists)
 # ===========================================================================
+@pytest.mark.oracle_literature
 def test_dualities_hold_on_non_frobenius_frontier():
     """DA = Hom_k(A,k) exists for every A; the dualities hold even where there is
     no Nakayama automorphism (the open frontier k[x]/(x^3)[k])."""

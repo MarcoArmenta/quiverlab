@@ -19,8 +19,12 @@ Sources (registry keys):
 Provenance: ``docs/plans/2026-07-25-literature-oracles-deep-research.md``
 (Cibils cluster); values re-verified live here.
 """
+import pytest
+
 from quiverlab import CC, GF, IncidenceAlgebra, Quiver, TrivialExtension
 from quiverlab.fields import QQ
+
+pytestmark = [pytest.mark.oracle_literature]
 
 F = GF(32003)
 _DIAMOND = [("b", "x"), ("b", "y"), ("x", "t"), ("y", "t")]   # 2x2 grid = comm. square
@@ -56,6 +60,7 @@ def test_trivial_extension_HH1_never_vanishes():
         assert hh1 >= 1, f"{name}: HH^1(T(A)) must be nonzero"
 
 
+@pytest.mark.oracle_crossengine
 def test_cs_now_computes_on_presented_trivial_extension():
     """Plan 31 STRENGTHENING (was: CS refuses the presentation-free T(A) with a
     ValueError). The presented T(kA_2) carries a quiver + relations -- exactly what
