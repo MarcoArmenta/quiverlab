@@ -12,11 +12,16 @@
   var S = { vertices: [], arrows: [], nextId: 1, selected: null, dragFrom: null,
             dragMoved: false, dragOrigin: null, pressOnEmpty: false,
             worker: null, engineReady: false, manifest: null, busy: false,
-            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "" },
+            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "", traceTex: "" },
             // Plan 26 no-code module panel: dims/maps hold the explicit module the
             // user types (matrix entries are exact strings); side/vertex track the
             // toggle + builtin pick-list. All read back in buildRequest().
             module: { enabled: false, side: "right", vertex: null,
+                      dims: {}, maps: {} },
+            // Plan 30: the SECOND argument N (Ext/Tor target). Same no-code editor
+            // as the main module -- an explicit dims+matrices module OR an S/P/I
+            // pick-list, over the same quiver. Tor forces N to a LEFT A-module.
+            target: { mode: "simple", side: "right", vertex: null,
                       dims: {}, maps: {} } };
 
   // ---------- tiny DOM helpers ----------
@@ -86,17 +91,34 @@
     '    <label><input type="checkbox" id="qlgui-injective_dimension"> inj.dim</label>' +
     '    <label><input type="checkbox" id="qlgui-projective_resolution"> proj.res 0..<select id="qlgui-pr-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-injective_resolution"> inj.res 0..<select id="qlgui-ir-top"></select></label>' +
-    '    <label><input type="checkbox" id="qlgui-ext"> Ext 0..<select id="qlgui-ext-top"></select> with ' +
-    '      <select id="qlgui-ext-kind"><option value="simple">S</option>' +
-    '      <option value="projective">P</option><option value="injective">I</option></select>' +
-    '      (<select id="qlgui-ext-vertex"></select>)</label>' +
+    '    <label><input type="checkbox" id="qlgui-decompose"> decompose</label>' +
+    '    <label><input type="checkbox" id="qlgui-ext"> Ext 0..<select id="qlgui-ext-top"></select></label>' +
+    '    <label><input type="checkbox" id="qlgui-tor"> Tor 0..<select id="qlgui-tor-top"></select></label>' +
     '  </div>' +
+    // ---- Plan 30: second-argument N editor (Ext/Tor target) ----
+    '  <fieldset id="qlgui-target" class="qlgui-fieldset" style="display:none">' +
+    '    <legend>second argument N (Ext / Tor target)</legend>' +
+    '    <div class="qlgui-row">' +
+    '      <label>build <select id="qlgui-target-mode">' +
+    '        <option value="explicit">explicit (dims + matrices)</option>' +
+    '        <option value="simple">S(v) simple</option>' +
+    '        <option value="projective">P(v) projective</option>' +
+    '        <option value="injective">I(v) injective</option>' +
+    '      </select></label>' +
+    '      <label>side <select id="qlgui-target-side">' +
+    '        <option value="right">right</option><option value="left">left</option>' +
+    '      </select></label>' +
+    '    </div>' +
+    '    <div id="qlgui-target-body"></div>' +
+    '    <p class="qlgui-hint" id="qlgui-target-note"></p>' +
+    '  </fieldset>' +
     '</fieldset>' +
     '<div id="qlgui-eta" class="qlgui-hint"></div>' +
     '<div class="qlgui-row">' +
     '  <button id="qlgui-compute" type="button" disabled>Compute</button>' +
     '  <button id="qlgui-cancel" class="qlgui-secondary" type="button" disabled>Cancel</button>' +
     '  <button id="qlgui-print" class="qlgui-secondary" type="button" disabled>Print report (PDF)</button>' +
+    '  <button id="qlgui-worked-tex" class="qlgui-secondary" type="button" disabled>Worked steps (TeX)</button>' +
     '  <button id="qlgui-tikz" class="qlgui-secondary" type="button" disabled>TikZ</button>' +
     '  <button id="qlgui-json" class="qlgui-secondary" type="button" disabled>JSON</button>' +
     '  <button id="qlgui-snippet" class="qlgui-secondary" type="button" disabled>Copy Python</button>' +
@@ -108,15 +130,17 @@
   ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
-   "cancel", "print", "tikz", "json", "snippet", "config", "results", "eta",
-   // Plan 26 module panel
+   "cancel", "print", "worked-tex", "tikz", "json", "snippet", "config", "results", "eta",
+   // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
    "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
    "projective_dimension", "injective_dimension",
    "projective_resolution", "pr-top", "injective_resolution", "ir-top",
-   "ext", "ext-top", "ext-kind", "ext-vertex"]
+   "decompose", "ext", "ext-top", "tor", "tor-top",
+   "target", "target-mode", "target-side", "target-body", "target-note"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
-  [el["hhc-top"], el["hhh-top"], el["pr-top"], el["ir-top"], el["ext-top"]]
+  [el["hhc-top"], el["hhh-top"], el["pr-top"], el["ir-top"], el["ext-top"],
+   el["tor-top"]]
     .forEach(function (sel) {
       for (var i = 0; i <= 10; i++) sel.appendChild(h("option", { text: String(i) }));
       sel.value = "4";
@@ -256,30 +280,33 @@
   // ---------- Plan 26: no-code module panel ----------
   var MOD_KIND_IDS = ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
     "projective_dimension", "injective_dimension",
-    "projective_resolution", "injective_resolution", "ext"];
+    "projective_resolution", "injective_resolution", "decompose", "ext", "tor"];
 
-  function modDim(id) { var n = S.module.dims[id]; return (n == null) ? 0 : n; }
+  // Generic matrix-editor helpers over a module-state {dims, maps} + a side. Used
+  // by BOTH the main module panel (S.module) and the second-argument editor
+  // (S.target), so the target gets the SAME explicit dims+matrices editor (Plan 30).
+  function stDim(mstate, id) { var n = mstate.dims[id]; return (n == null) ? 0 : n; }
 
-  function syncModuleDims() {   // one dim per current vertex (default 1); drop stale
+  function syncDims(mstate) {    // one dim per current vertex (default 1); drop stale
     var d = {};
     S.vertices.forEach(function (v) {
-      d[v.id] = (S.module.dims[v.id] != null) ? S.module.dims[v.id] : 1;
+      d[v.id] = (mstate.dims[v.id] != null) ? mstate.dims[v.id] : 1;
     });
-    S.module.dims = d;
+    mstate.dims = d;
   }
 
-  function matrixDims(a) {      // [rows, cols] of arrow a's block, per side
-    var ds = modDim(a.s), dt = modDim(a.t);
+  function matrixDimsFor(a, mstate, side) {   // [rows, cols] of arrow a's block, per side
+    var ds = stDim(mstate, a.s), dt = stDim(mstate, a.t);
     // right: a:s→t acts M_s→M_t, block is dim[t]×dim[s]; left is over A^op, so the
     // block is transposed (dim[s]×dim[t]) — the runner places it by the rep quiver.
-    return (S.module.side === "left") ? [ds, dt] : [dt, ds];
+    return (side === "left") ? [ds, dt] : [dt, ds];
   }
 
-  function syncModuleMaps() {   // rows×cols string grid per arrow, preserving overlap
+  function syncMaps(mstate, side) {   // rows×cols string grid per arrow, preserving overlap
     var maps = {};
     S.arrows.forEach(function (a) {
-      var rc = matrixDims(a), rows = rc[0], cols = rc[1];
-      var old = S.module.maps[a.name] || [];
+      var rc = matrixDimsFor(a, mstate, side), rows = rc[0], cols = rc[1];
+      var old = mstate.maps[a.name] || [];
       var grid = [];
       for (var i = 0; i < rows; i++) {
         var row = [];
@@ -290,7 +317,54 @@
       }
       maps[a.name] = grid;
     });
-    S.module.maps = maps;
+    mstate.maps = maps;
+  }
+
+  // Thin S.module-bound wrappers (keep the main panel's existing call sites terse).
+  function modDim(id) { return stDim(S.module, id); }
+  function syncModuleDims() { syncDims(S.module); }
+  function matrixDims(a) { return matrixDimsFor(a, S.module, S.module.side); }
+  function syncModuleMaps() { syncMaps(S.module, S.module.side); }
+
+  // Render the explicit dims-picker + per-arrow matrix grids for `mstate`/`side`
+  // into `bodyEl`. `onEdit` fires on every dim change (rebuild) or cell edit.
+  function renderExplicitBody(bodyEl, mstate, side, onDimChange) {
+    syncDims(mstate); syncMaps(mstate, side);
+    var dimRow = h("div", { "class": "qlgui-row" });
+    S.vertices.forEach(function (v) {
+      var inp = h("input", { type: "number", min: "0",
+                             value: String(stDim(mstate, v.id)) });
+      inp.addEventListener("input", function () {
+        mstate.dims[v.id] = Math.max(0, parseInt(inp.value, 10) || 0);
+      });
+      inp.addEventListener("change", onDimChange);
+      dimRow.appendChild(h("label", { text: "dim " + v.id + " " }, inp));
+    });
+    bodyEl.appendChild(h("div", { "class": "qlgui-mrow" },
+      h("span", { "class": "qlgui-mlabel", text: "dimension vector" }), dimRow));
+    S.arrows.forEach(function (a) {
+      var rc = matrixDimsFor(a, mstate, side), rows = rc[0], cols = rc[1];
+      var grid = h("div", { "class": "qlgui-mgrid" });
+      grid.style.gridTemplateColumns = "repeat(" + Math.max(cols, 1) + ", 3.2em)";
+      if (rows === 0 || cols === 0) {
+        grid.appendChild(h("span", { "class": "qlgui-hint",
+          text: rows + "×" + cols + " (empty block)" }));
+      }
+      for (var i = 0; i < rows; i++) {
+        for (var j = 0; j < cols; j++) {
+          (function (ii, jj) {
+            var cell = h("input", { type: "text", value: mstate.maps[a.name][ii][jj] });
+            cell.addEventListener("input", function () {
+              mstate.maps[a.name][ii][jj] = cell.value; scheduleProbe();
+            });
+            grid.appendChild(cell);
+          })(i, j);
+        }
+      }
+      bodyEl.appendChild(h("div", { "class": "qlgui-mrow" },
+        h("span", { "class": "qlgui-mlabel",
+          text: a.name + ": " + a.s + "→" + a.t + "  [" + rows + "×" + cols + "]" }), grid));
+    });
   }
 
   function fillVertexOptions(sel, current) {
@@ -309,20 +383,64 @@
     S.module.side = el["mod-side"].value;
     el["mod-mode"].disabled = el["mod-side"].disabled = !on;
     MOD_KIND_IDS.forEach(function (k) { if (el[k]) el[k].disabled = !on; });
-    ["pr-top", "ir-top", "ext-top", "ext-kind", "ext-vertex"].forEach(function (k) {
-      if (el[k]) el[k].disabled = !on;
-    });
-    fillVertexOptions(el["ext-vertex"], parseInt(el["ext-vertex"].value, 10));
+    ["pr-top", "ir-top", "ext-top", "tor-top", "target-mode", "target-side"]
+      .forEach(function (k) { if (el[k]) el[k].disabled = !on; });
     var body = el["mod-body"];
     body.innerHTML = "";
-    if (!on) return;
-    var mode = el["mod-mode"].value;
+    if (on) {
+      var mode = el["mod-mode"].value;
+      if (mode !== "explicit") {                  // S(v)/P(v)/I(v) pick-list
+        var vsel = h("select", {});
+        fillVertexOptions(vsel, S.module.vertex);
+        S.module.vertex = parseInt(vsel.value, 10);
+        vsel.addEventListener("change", function () {
+          S.module.vertex = parseInt(vsel.value, 10); scheduleProbe();
+        });
+        body.appendChild(h("div", { "class": "qlgui-row" },
+          h("label", { text: mode + " at vertex " }, vsel)));
+      } else if (!S.vertices.length) {
+        body.appendChild(h("p", { "class": "qlgui-hint",
+          text: "add vertices on the canvas to define the module" }));
+      } else {
+        renderExplicitBody(body, S.module, S.module.side, function () {
+          renderModulePanel(); scheduleProbe();
+        });
+      }
+    }
+    renderTargetPanel(on);
+  }
+
+  // ---------- Plan 30: the second-argument N editor (Ext/Tor target) ----------
+  function renderTargetPanel(moduleOn) {
+    // Shown only when the module panel is on AND Ext or Tor is requested.
+    var wantExt = moduleOn && el.ext.checked, wantTor = moduleOn && el.tor.checked;
+    var show = wantExt || wantTor;
+    el.target.style.display = show ? "" : "none";
+    var note = el["target-note"];
+    // Tor's N must be a LEFT A-module: force + lock the side toggle when Tor is on
+    // (and Ext is not competing for a right N). The note states it honestly.
+    if (wantTor && !wantExt) {
+      el["target-side"].value = "left";
+      el["target-side"].disabled = true;
+      S.target.side = "left";
+      note.textContent = "Tor's second argument N is a LEFT A-module (side forced left).";
+    } else {
+      el["target-side"].disabled = !moduleOn;
+      S.target.side = el["target-side"].value;
+      note.textContent = wantExt && wantTor
+        ? "Ext uses N as typed; Tor reads the same N as a LEFT module."
+        : "";
+    }
+    var body = el["target-body"];
+    body.innerHTML = "";
+    if (!show) return;
+    var mode = el["target-mode"].value;
     if (mode !== "explicit") {                    // S(v)/P(v)/I(v) pick-list
       var vsel = h("select", {});
-      fillVertexOptions(vsel, S.module.vertex);
-      S.module.vertex = parseInt(vsel.value, 10);
+      fillVertexOptions(vsel, S.target.vertex);
+      S.target.vertex = parseInt(vsel.value, 10);
       vsel.addEventListener("change", function () {
-        S.module.vertex = parseInt(vsel.value, 10); scheduleProbe();
+        S.target.vertex = parseInt(vsel.value, 10); scheduleProbe();
       });
       body.appendChild(h("div", { "class": "qlgui-row" },
         h("label", { text: mode + " at vertex " }, vsel)));
@@ -330,45 +448,11 @@
     }
     if (!S.vertices.length) {
       body.appendChild(h("p", { "class": "qlgui-hint",
-        text: "add vertices on the canvas to define the module" }));
+        text: "add vertices on the canvas to define N" }));
       return;
     }
-    syncModuleDims(); syncModuleMaps();
-    var dimRow = h("div", { "class": "qlgui-row" });
-    S.vertices.forEach(function (v) {
-      var inp = h("input", { type: "number", min: "0", value: String(modDim(v.id)) });
-      // update on every keystroke; rebuild grids only on `change` (blur/Enter) so
-      // typing a multi-digit dimension never loses focus mid-edit.
-      inp.addEventListener("input", function () {
-        S.module.dims[v.id] = Math.max(0, parseInt(inp.value, 10) || 0);
-      });
-      inp.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
-      dimRow.appendChild(h("label", { text: "dim " + v.id + " " }, inp));
-    });
-    body.appendChild(h("div", { "class": "qlgui-mrow" },
-      h("span", { "class": "qlgui-mlabel", text: "dimension vector" }), dimRow));
-    S.arrows.forEach(function (a) {
-      var rc = matrixDims(a), rows = rc[0], cols = rc[1];
-      var grid = h("div", { "class": "qlgui-mgrid" });
-      grid.style.gridTemplateColumns = "repeat(" + Math.max(cols, 1) + ", 3.2em)";
-      if (rows === 0 || cols === 0) {
-        grid.appendChild(h("span", { "class": "qlgui-hint",
-          text: rows + "×" + cols + " (empty block)" }));
-      }
-      for (var i = 0; i < rows; i++) {
-        for (var j = 0; j < cols; j++) {
-          (function (ii, jj) {
-            var cell = h("input", { type: "text", value: S.module.maps[a.name][ii][jj] });
-            cell.addEventListener("input", function () {
-              S.module.maps[a.name][ii][jj] = cell.value; scheduleProbe();
-            });
-            grid.appendChild(cell);
-          })(i, j);
-        }
-      }
-      body.appendChild(h("div", { "class": "qlgui-mrow" },
-        h("span", { "class": "qlgui-mlabel",
-          text: a.name + ": " + a.s + "→" + a.t + "  [" + rows + "×" + cols + "]" }), grid));
+    renderExplicitBody(body, S.target, S.target.side, function () {
+      renderModulePanel(); scheduleProbe();
     });
   }
 
@@ -394,11 +478,25 @@
     return { dims: dims, maps: maps, side: side };
   }
 
-  function extTargetSpec() {    // N is a zero-typing S/P/I pick-list, same side as M
-    return { builtin: { kind: el["ext-kind"].value,
-                        vertex: parseInt(el["ext-vertex"].value, 10) },
-             side: el["mod-side"].value };
+  // The second argument N, read from the S.target editor at the requested side.
+  // Same no-code surface as the main module: explicit dims+matrices OR an S/P/I
+  // pick-list (Plan 30). Ext reads N at S.target.side; Tor forces N to a LEFT module.
+  function targetSpecWith(side) {
+    var mode = el["target-mode"].value;
+    var fallbackV = S.vertices.length ? S.vertices[0].id : null;
+    if (mode !== "explicit") {
+      return { builtin: { kind: mode,
+                          vertex: (S.target.vertex != null ? S.target.vertex : fallbackV) },
+               side: side };
+    }
+    syncDims(S.target); syncMaps(S.target, side);
+    var dims = {}, maps = {};
+    S.vertices.forEach(function (v) { dims[String(v.id)] = stDim(S.target, v.id); });
+    S.arrows.forEach(function (a) { maps[a.name] = normGrid(S.target.maps[a.name]); });
+    return { dims: dims, maps: maps, side: side };
   }
+  function extTargetSpec() { return targetSpecWith(S.target.side); }
+  function torTargetSpec() { return targetSpecWith("left"); }
 
   function canvasPoint(e) {
     var pt = el.canvas.createSVGPoint();
@@ -480,8 +578,11 @@
   el.clear.addEventListener("click", function () {
     S.vertices = []; S.arrows = []; S.nextId = 1; S.selected = null;
     S.module = { enabled: false, side: "right", vertex: null, dims: {}, maps: {} };
+    S.target = { mode: "simple", side: "right", vertex: null, dims: {}, maps: {} };
     el["mod-enable"].checked = false; el["mod-mode"].value = "explicit";
     el["mod-side"].value = "right";
+    el["target-mode"].value = "explicit"; el["target-side"].value = "right";
+    el.ext.checked = false; el.tor.checked = false;
     el.relations.value = ""; el.results.innerHTML = ""; render();
   });
   el.field.addEventListener("change", function () {
@@ -530,11 +631,11 @@
     ["cartan", "coxeter_polynomial", "global_dimension", "center"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
-    var module = null, extTarget = null;
+    var module = null, extTarget = null, torTarget = null;
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
       ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
-       "projective_dimension", "injective_dimension"].forEach(function (k) {
+       "projective_dimension", "injective_dimension", "decompose"].forEach(function (k) {
         if (el[k].checked) compute.push(k);
       });
       if (el.projective_resolution.checked)
@@ -545,6 +646,10 @@
         compute.push("ext:0.." + el["ext-top"].value);
         extTarget = extTargetSpec();
       }
+      if (el.tor.checked) {
+        compute.push("tor:0.." + el["tor-top"].value);
+        torTarget = torTargetSpec();
+      }
     }
     var req = { schema: 1,
                 algebra: { kind: "quiver",
@@ -554,6 +659,7 @@
                 artifacts: { pdf: el.trace.checked, tikz: true } };
     if (module) req.module = module;
     if (extTarget) req.ext_target = extTarget;
+    if (torTarget) req.tor_target = torTarget;
     return req;
   }
 
@@ -725,7 +831,9 @@
       if (m.eta) S.eta = m.eta;
     } else if (m.type === "trace") {
       S.artifacts.traceHtml = m.html;
+      S.artifacts.traceTex = m.tex || "";
       el.print.disabled = !m.html;
+      el["worked-tex"].disabled = !S.artifacts.traceTex;   // .tex download (Plan 30 C1)
     } else if (m.type === "artifacts") {
       S.artifacts.tikz = m.tikz; S.artifacts.snippet = m.snippet;
       S.artifacts.bundle = m.bundle;
@@ -782,20 +890,59 @@
     });
     return tbl;
   }
-  function resTable(b) {                    // term n | betti | dim vector
+  // Plan 30 (Marco #3): term | ⊕-decomposition. The "# summands" and dim-vector
+  // columns are gone from the RENDERING; the raw `betti`/`terms` fields stay in the
+  // block JSON for backward-compat. `b.summands[n]` is the LaTeX P_1^2 ⊕ P_3.
+  function resTable(b) {
     var head = h("tr");
-    ["term", "# summands", "dim vector"].forEach(function (t) {
+    ["term", "⊕-decomposition"].forEach(function (t) {
       head.appendChild(h("th", { text: t }));
     });
     var tbl = h("table", {}, head);
-    b.terms.forEach(function (dv, n) {
+    var summ = b.summands || [];
+    (b.terms || []).forEach(function (dv, n) {
       var r = h("tr");
       r.appendChild(h("td", { text: String(n) }));
-      r.appendChild(h("td", { text: String((b.betti || [])[n] != null ? b.betti[n] : "") }));
-      r.appendChild(h("td", { text: dvText(dv) }));
+      var latex = (summ[n] != null) ? summ[n] : "0";
+      // className EXACTLY "arithmatex" so the site MathJax config typesets it.
+      r.appendChild(h("td", {}, h("span", { "class": "arithmatex",
+        text: "\\(" + latex + "\\)" })));
       tbl.appendChild(r);
     });
     return tbl;
+  }
+
+  // Krull–Schmidt summand table: summand | multiplicity | dim vector (Plan 30).
+  function decompTable(summands) {
+    var head = h("tr");
+    ["summand", "multiplicity", "dim vector"].forEach(function (t) {
+      head.appendChild(h("th", { text: t }));
+    });
+    var tbl = h("table", {}, head);
+    (summands || []).forEach(function (s, i) {
+      var r = h("tr");
+      r.appendChild(h("td", { text: "M_" + (i + 1) }));
+      r.appendChild(h("td", { text: String(s.multiplicity) }));
+      r.appendChild(h("td", { text: dvText(s.dim_vector) }));
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
+
+  // The AR-translate input certificate (Marco #1): indecomposable, or M's
+  // Krull–Schmidt decomposition + the additivity note. No-op when the block
+  // carries no certificate (the decompose engine was unavailable).
+  var TAU_NOTES = { "mod.tau_additive": "τ computed summand-wise (τ is additive)" };
+  function appendInputCert(div, b) {
+    if (b.indecomposable === true) {
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "input M is indecomposable" }));
+    } else if (b.decomposition) {
+      var parts = b.decomposition.map(function (s) {
+        return dvText(s.dim_vector) + (s.multiplicity > 1 ? "^" + s.multiplicity : "");
+      }).join("  ⊕  ");
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "input M ≅ " + parts + " — " + (TAU_NOTES[b.note_key] || "") }));
+    }
   }
 
   function renderBlock(res) {
@@ -828,12 +975,20 @@
     } else if (name === "dimension_vector" || name === "tau" || name === "tau_minus" ||
                name === "projective_dimension" || name === "injective_dimension") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
+      if (name === "tau" || name === "tau_minus") appendInputCert(div, b);
     } else if (name === "rad_top_soc") {
       div.appendChild(h("p", { text: "radical / top / socle:" }));
       div.appendChild(dvTable([["rad", b.radical], ["top", b.top], ["soc", b.socle]]));
+    } else if (name === "decompose") {
+      div.appendChild(h("p", { text: "Krull–Schmidt decomposition — " + b.iso_classes +
+        " indecomposable summand(s):" }));
+      div.appendChild(decompTable(b.summands));
     } else if (name === "ext") {
       div.appendChild(h("p", { text: "Ext to the target module — dim vector " + dvText(b.target.dimvec) + ":" }));
       div.appendChild(degreeTable("dim Ext^n", b.dims));
+    } else if (name === "tor") {
+      div.appendChild(h("p", { text: "Tor with the target left module — dim vector " + dvText(b.target.dimvec) + ":" }));
+      div.appendChild(degreeTable("dim Tor_n", b.dims));
     } else if (name === "projective_resolution" || name === "injective_resolution") {
       var proj = name === "projective_resolution";
       div.appendChild(h("p", { text: proj ? "projective resolution" : "injective resolution" }));
@@ -856,8 +1011,9 @@
   el.compute.addEventListener("click", function () {
     if (S.busy || !S.engineReady) return;
     el.results.innerHTML = "";
-    S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "" };
+    S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "", traceTex: "" };
     el.print.disabled = el.tikz.disabled = el.json.disabled = el.snippet.disabled = true;
+    el["worked-tex"].disabled = true;
     S.eta = null;
     setBusy(true);
     setStatus("computing…");
@@ -886,10 +1042,15 @@
     x.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
   });
   [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
-   el.projective_dimension, el.injective_dimension,
+   el.projective_dimension, el.injective_dimension, el.decompose,
    el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
-   el.ext, el["ext-top"], el["ext-kind"], el["ext-vertex"]]
+   el["ext-top"], el["tor-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
+  // Ext/Tor toggles + the second-argument editor's mode/side rebuild the target
+  // panel (show/hide, S/P/I vs explicit, side) then re-probe.
+  [el.ext, el.tor, el["target-mode"], el["target-side"]].forEach(function (x) {
+    x.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
+  });
   function download(name, text, type) {
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([text], { type: type }));
@@ -901,6 +1062,9 @@
     var url = URL.createObjectURL(new Blob([S.artifacts.traceHtml], { type: "text/html" }));
     var w = window.open(url, "_blank");
     if (w) w.addEventListener("load", function () { w.print(); });
+  });
+  el["worked-tex"].addEventListener("click", function () {   // Plan 30 C1: the .tex bundle
+    download("worked-steps.tex", S.artifacts.traceTex, "text/x-tex");
   });
   el.tikz.addEventListener("click", function () {
     download("quiver.tex", S.artifacts.tikz, "text/x-tex");

@@ -172,11 +172,45 @@ def _section_for(name: str, block: dict) -> _Section:
     return _Section(name, [json.dumps(block, default=str, sort_keys=True)])
 
 
+def _projectives_injectives_section(result: dict):
+    """The "projectives and injectives of A" section (Plan 30, Marco #4): rebuild
+    the algebra from the result's algebra spec and describe each P_v / I_v by its
+    dimension vector and Loewy (radical) layers. Descriptive-only: any failure to
+    rebuild (an exotic spec, a version skew) skips the section rather than sinking
+    the whole report. The simples S_v are omitted (Marco: obvious)."""
+    algebra = result.get("algebra")
+    if not isinstance(algebra, dict):
+        return None
+    try:
+        from quiverlab.hpc.spec import build_algebra
+        from quiverlab.trace.modules import algebra_objects
+        from quiverlab.trace.render_text import factor_stack_text
+        A = build_algebra(algebra)
+        objects = algebra_objects(A)
+    except Exception:
+        return None
+    if not objects:
+        return None
+    rows = ["Loewy layers listed top to bottom; the simples S_v are omitted."]
+    for row in objects:
+        v = row["vertex"]
+        for sym in ("P", "I"):
+            d = row[sym]
+            stack = " | ".join(factor_stack_text(L) for L in d["layers"]) or "0"
+            rows.append(f"{sym}_{v}: dim {d['dim']}  {_dimvec_str(d['dimvec'])}  "
+                        f"Loewy: {stack}  (top {factor_stack_text(d['top'])}, "
+                        f"soc {factor_stack_text(d['socle'])})")
+    return _Section("The projectives and injectives of A", rows)
+
+
 def build_sections(result: dict) -> list:
     algebra = result.get("algebra", {})
     head_rows = [f"quiverlab version: {result.get('quiverlab_version', '?')}",
                  "algebra: " + json.dumps(algebra, default=str, sort_keys=True)]
     sections = [_Section("Computation", head_rows)]
+    pi = _projectives_injectives_section(result)
+    if pi is not None:
+        sections.append(pi)
     for name, block in result.get("results", {}).items():
         if isinstance(block, dict):
             sections.append(_section_for(name, block))
@@ -268,15 +302,17 @@ def _compile_pdf(tex: str, out_pdf: pathlib.Path, engine: str) -> None:
 # --------------------------------------------------------------------------- #
 
 def default_out_name(fmt: str) -> str:
-    return "report." + {"pdf": "pdf", "html": "html", "txt": "txt"}.get(fmt, "txt")
+    return "report." + {"pdf": "pdf", "html": "html", "txt": "txt",
+                        "tex": "tex"}.get(fmt, "txt")
 
 
 def render(result, out_path=None, fmt: str = "auto", on_warn=None):
     """Render ``result`` (a dict or a path to result.json) to ``out_path``.
 
-    ``fmt`` in {auto, pdf, html, txt}. ``auto`` compiles a PDF when tectonic/
+    ``fmt`` in {auto, pdf, html, txt, tex}. ``auto`` compiles a PDF when tectonic/
     pdflatex is on PATH, else writes HTML. ``pdf`` without a toolchain raises
-    ``ReportError``. Returns ``(pathlib.Path, actual_fmt)``."""
+    ``ReportError``; ``tex`` writes the LaTeX SOURCE (no toolchain needed -- Plan 30
+    C1: the .tex is available everywhere). Returns ``(pathlib.Path, actual_fmt)``."""
     if not isinstance(result, dict):
         result = load_result(result)
     check_result_schema(result)
@@ -298,6 +334,8 @@ def render(result, out_path=None, fmt: str = "auto", on_warn=None):
             out.write_text(render_text(result), encoding="utf-8")
         elif actual == "html":
             out.write_text(render_html(result), encoding="utf-8")
+        elif actual == "tex":
+            out.write_text(render_latex(result), encoding="utf-8")
         elif actual == "pdf":
             try:
                 _compile_pdf(render_latex(result), out, engine)
@@ -305,7 +343,7 @@ def render(result, out_path=None, fmt: str = "auto", on_warn=None):
                 raise ReportError(f"LaTeX compilation failed ({engine}): {exc}; "
                                   "use --format html or --format txt")
         else:
-            raise ReportError(f"unknown format {fmt!r} (expected auto/pdf/html/txt)")
+            raise ReportError(f"unknown format {fmt!r} (expected auto/pdf/html/txt/tex)")
     except OSError as exc:
         raise ReportWriteError(f"cannot write report to {out}: {exc}")
     return out, actual

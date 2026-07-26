@@ -76,9 +76,10 @@ async function run(request, factor) {
       }
       self.postMessage({ type: "result", data: res, elapsed_ms: elapsed, eta: eta });
     }
+    var wantReport = request.artifacts && request.artifacts.pdf;
     self.postMessage({ type: "trace",
-                       html: request.artifacts && request.artifacts.pdf
-                             ? runner.trace_html() : "" });
+                       html: wantReport ? runner.trace_html() : "",
+                       tex: wantReport ? runner.trace_tex() : "" });
     self.postMessage({ type: "artifacts", tikz: runner.tikz(),
                        snippet: runner.python_snippet(),
                        bundle: runner.result_bundle() });

@@ -99,6 +99,34 @@ def test_html_fallback_when_compile_fails(tmp_path, monkeypatch):
     assert "no LaTeX toolchain found" not in line
 
 
+def test_tex_source_persisted_alongside_the_html(tmp_path, monkeypatch):
+    """Plan 30 C1: write_trace persists the LaTeX .tex next to the produced doc,
+    whether or not a toolchain compiled a PDF (here: no toolchain -> html + tex)."""
+    A, ev, table = _events()
+    monkeypatch.setattr(W, "have_latex", lambda: None)
+    monkeypatch.setattr("builtins.print", lambda *a, **k: None)
+    path = W.write_trace(ev, table, algebra=A, kind="HH", top=2, references=REFS,
+                         out_dir=str(tmp_path))
+    p = pathlib.Path(path)
+    tex = p.with_suffix(".tex")
+    assert tex.exists() and tex.read_text().startswith(r"\documentclass")
+
+
+def test_tex_source_persisted_alongside_the_pdf(tmp_path, monkeypatch):
+    A, ev, table = _events()
+    monkeypatch.setattr(W, "have_latex", lambda: "tectonic")
+    def fake_compile(tex, out_pdf, engine):
+        pathlib.Path(out_pdf).write_bytes(b"%PDF-1.5 fake\n%%EOF\n")
+        return 1
+    monkeypatch.setattr(W, "_compile_pdf", fake_compile)
+    monkeypatch.setattr("builtins.print", lambda *a, **k: None)
+    path = W.write_trace(ev, table, algebra=A, kind="HH", top=2, references=REFS,
+                         out_dir=str(tmp_path))
+    assert path.endswith(".pdf")
+    tex = pathlib.Path(path).with_suffix(".tex")
+    assert tex.exists() and r"\begin{pmatrix}" in tex.read_text()
+
+
 def test_output_dir_and_filename_contract(tmp_path, monkeypatch):
     A, ev, table = _events()
     monkeypatch.setattr(W, "have_latex", lambda: None)

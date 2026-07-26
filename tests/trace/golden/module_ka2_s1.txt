@@ -1,0 +1,40 @@
+Worked steps: proj res of S_1
+
+The projectives and injectives of A
+  (simples S_v omitted; Loewy layers listed top to bottom)
+  P_1: dim 2, dimvec (1:1, 2:1)
+      Loewy layers: S_1 / S_2
+      top = S_1, soc = S_2
+  I_1: dim 1, dimvec (1:1, 2:0)
+      Loewy layers: S_1
+      top = S_1, soc = S_1
+  P_2: dim 1, dimvec (1:0, 2:1)
+      Loewy layers: S_2
+      top = S_2, soc = S_2
+  I_2: dim 2, dimvec (1:1, 2:1)
+      Loewy layers: S_1 / S_2
+      top = S_1, soc = S_2
+
+Worked module steps
+  Matrices with more than 400 entries are shown as [shape r x c, rank k -- elided]; every step still appears.
+
+Minimal projective resolution of S_1 (top generators chosen modulo rad M)
+  projective cover of M: top M has composition factors (1:1, 2:0)
+
+term Q_0 = P_1 (dim 2, dimvec (1:1, 2:1))
+
+  \varepsilon : P_1 -> M, 1 x 2 over GF(2):
+    [ 1  0 ]
+
+term Q_1 = P_2 (dim 1, dimvec (1:0, 2:1))
+
+  d_{1} : P_2 -> P_1, 2 x 1 over GF(2):
+    [ 0 ]
+    [ 1 ]
+
+term Q_2 = 0 (dim 0, dimvec ())
+
+  d_{2} : 0 -> P_2, 1 x 0 over GF(2):
+    [  ]
+
+projective dimension pd(M) = 1

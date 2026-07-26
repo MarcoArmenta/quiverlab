@@ -9,9 +9,46 @@ RankStep / the event list and return plain data, with no text-format assumptions
 baked in beyond the ASCII bracket layout pinned by the golden."""
 from quiverlab.trace.events import (
     Dispatch, ResolutionTerm, RankStep, DifferentialEvent, LiftStep,
-    AmbiguityEvent, ReductionStep,
+    AmbiguityEvent, ReductionStep, ModuleTerm, ModuleDifferential, ExtDegree,
+    StepNote,
 )
-from quiverlab.trace.recorder import TERMS_ELISION
+from quiverlab.trace.recorder import TERMS_ELISION, MATRIX_ELISION_CELLS
+
+# The single sentence stating the matrix-elision threshold, emitted once per report
+# (spec: "the threshold stated once in the preamble") whenever module matrices are
+# present; per-matrix notes then stay terse.
+ELISION_PREAMBLE = (
+    "Matrices with more than %d entries are shown as [shape r x c, rank k -- "
+    "elided]; every step still appears." % MATRIX_ELISION_CELLS)
+
+# The direct-sum / composition-factor formatting shared by all three renderers.
+# `oplus_text` groups a vertex list with repetition into `P_1^2 (+) P_3`; the
+# LaTeX/HTML renderers reuse `oplus_tex` (defined in render_latex).
+
+
+def oplus_text(summands, sym):
+    """A direct-sum of indecomposables ``P_1^2 (+) P_3`` from a vertex list with
+    repetition; ``0`` for an empty term. ASCII (plain-text renderer)."""
+    if not summands:
+        return "0"
+    groups = []
+    for v in summands:
+        for g in groups:
+            if g[0] == v:
+                g[1] += 1
+                break
+        else:
+            groups.append([v, 1])
+    return " (+) ".join("%s_%s" % (sym, v) if c == 1 else "%s_%s^%d" % (sym, v, c)
+                        for v, c in groups)
+
+
+def factor_stack_text(dimvec):
+    """A semisimple composition-factor layer ``S_1 + S_2^2`` from a str-keyed
+    multiplicity dict; ``0`` when empty."""
+    parts = ["S_%s" % v if m == 1 else "S_%s^%d" % (v, m)
+             for v, m in dimvec.items() if m > 0]
+    return " + ".join(parts) if parts else "0"
 
 
 def derive_dims(events):
@@ -54,7 +91,93 @@ def _matrix_block(rs):
     return out
 
 
-def render_text(events, title="", references=()):
+def compute_algebra_objects(algebra):
+    """``trace.modules.algebra_objects(algebra)`` guarded: a description of the
+    projectives/injectives of A, or ``None`` (the report degrades to no P/I section)
+    with a reason string. Descriptive-only, so a hiccup must not sink the bundle."""
+    if algebra is None:
+        return None, None
+    try:
+        from quiverlab.trace.modules import algebra_objects
+        return algebra_objects(algebra), None
+    except Exception as exc:                                   # pragma: no cover
+        return None, "%s: %s" % (type(exc).__name__, exc)
+
+
+def pi_section_lines(objects, note=None):
+    """The "projectives and injectives of A" section as plain-text lines; empty when
+    there is nothing to show."""
+    if not objects:
+        return ["The projectives and injectives of A",
+                "  (unavailable: %s)" % note] if note else []
+    lines = ["The projectives and injectives of A",
+             "  (simples S_v omitted; Loewy layers listed top to bottom)"]
+    for row in objects:
+        v = row["vertex"]
+        for sym in ("P", "I"):
+            d = row[sym]
+            stack = " / ".join(factor_stack_text(L) for L in d["layers"]) or "0"
+            lines.append("  %s_%s: dim %d, dimvec %s"
+                         % (sym, v, d["dim"], _fmt_dimvec(d["dimvec"])))
+            lines.append("      Loewy layers: %s" % stack)
+            lines.append("      top = %s, soc = %s"
+                         % (factor_stack_text(d["top"]),
+                            factor_stack_text(d["socle"])))
+    lines.append("")
+    return lines
+
+
+def _fmt_dimvec(dv):
+    return "(" + ", ".join("%s:%s" % (k, v) for k, v in dv.items()) + ")"
+
+
+def ext_result_dims(events):
+    """The Ext/Tor result dims, in degree order, from the ExtDegree events."""
+    exts = sorted((e for e in events if isinstance(e, ExtDegree)), key=lambda e: e.degree)
+    return [e.result_dim for e in exts], (exts[0].op if exts else None)
+
+
+def _module_steps_lines(events):
+    """The module worked-steps (ModuleTerm / ModuleDifferential / ExtDegree /
+    StepNote) rendered in emission order; empty when there are none."""
+    mods = [e for e in events
+            if isinstance(e, (ModuleTerm, ModuleDifferential, ExtDegree, StepNote))]
+    if not mods:
+        return []
+    lines = ["Worked module steps", "  " + ELISION_PREAMBLE, ""]
+    for e in mods:
+        if isinstance(e, StepNote):
+            lines.append(e.text)
+            if e.detail:
+                lines.append("  " + e.detail)
+        elif isinstance(e, ModuleTerm):
+            what = "term Q_%d" % e.degree if e.sym == "P" else "term E^%d" % e.degree
+            lines.append("%s = %s (dim %d, dimvec %s)"
+                         % (what, oplus_text(e.summands, e.sym), e.dim,
+                            _fmt_dimvec(e.dimvec or {})))
+        elif isinstance(e, ModuleDifferential):
+            cod = "M" if e.cod_is_module else oplus_text(e.cod_summands, e.sym)
+            lines.append("  %s : %s -> %s, %d x %d over %s:"
+                         % (e.symbol, oplus_text(e.dom_summands, e.sym), cod,
+                            e.nrows, e.ncols, e.field))
+            lines.extend(_matrix_block(e))
+        elif isinstance(e, ExtDegree):
+            lines.append("%s^%d: dim Hom = %d, rank = %d (prev %d) -> %s^%d = %d"
+                         % (e.op, e.degree, e.space_dim, e.rank_here, e.rank_prev,
+                            e.op, e.degree, e.result_dim))
+            lines.append("  connecting map, %d x %d over %s:"
+                         % (e.nrows, e.ncols, e.field))
+            lines.extend(_matrix_block(e))
+        lines.append("")
+    dims, op = ext_result_dims(events)
+    if dims:
+        lines.append("Result: " + "   ".join("%s^%d = %d" % (op, i, d)
+                                              for i, d in enumerate(dims)))
+        lines.append("")
+    return lines
+
+
+def render_text(events, title="", references=(), algebra=None):
     events = list(events)
     lines = []
     if title:
@@ -66,6 +189,8 @@ def render_text(events, title="", references=()):
             lines.append("  reason: " + e.reason)
             lines.append("  defining relations: %d" % e.n_relations)
             lines.append("")
+    objects, note = compute_algebra_objects(algebra)
+    lines.extend(pi_section_lines(objects, note))
     terms = {e.degree: e for e in events if isinstance(e, ResolutionTerm)}
     ranks = {e.degree: e for e in events if isinstance(e, RankStep)}
     # Drive per-degree rendering over the union of recorded terms and ranks so a
@@ -97,6 +222,7 @@ def render_text(events, title="", references=()):
         elif isinstance(e, AmbiguityEvent):
             lines.append("Ambiguity chain (degree %d): %d word(s)"
                          % (e.degree, len(e.chain_words)))
+    lines.extend(_module_steps_lines(events))
     dims = derive_dims(events)
     if dims:
         kind = _dims_kind(events)

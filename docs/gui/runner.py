@@ -3,8 +3,8 @@
 Runs IDENTICALLY under CPython (pytest, tests/gui/) and Pyodide (the docs-site
 Web Worker) — this exact file is shipped into the built site and imported in
 the browser. Import policy: the public quiverlab surface + three sanctioned
-trace helpers (render_html / references_for / resolve_references); pinned by
-tests/gui/test_interface_freshness.py. quiverlab.engine.* is forbidden.
+trace helpers (render_html / render_latex / references_for / resolve_references);
+pinned by tests/gui/test_interface_freshness.py. quiverlab.engine.* is forbidden.
 
 All public functions take and return JSON STRINGS (postMessage-friendly)."""
 import json
@@ -22,15 +22,16 @@ MAX_DEGREE = 10
 # (matches the library's injective_dimension(bound=32) default).
 _PD_BOUND = 32
 
-# Module compute kinds (Plan 26). `ext` also needs a second module (`ext_target`).
+# Module compute kinds (Plan 26; Plan 30 adds `tor`/`decompose`). `ext`/`tor` also
+# need a second module (`ext_target`/`tor_target`, the latter a LEFT A-module).
 _MODULE_KINDS = frozenset({
-    "dimension_vector", "rad_top_soc", "ext", "tau", "tau_minus",
+    "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
-    "projective_dimension", "injective_dimension",
+    "projective_dimension", "injective_dimension", "decompose",
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
-          "module": None, "ext_target": None}
+          "module": None, "ext_target": None, "tor_target": None}
 
 
 class RequestError(Exception):
@@ -99,7 +100,8 @@ def run_build(request_json):
         # built lazily in compute_one, so a relation-violating matrix surfaces as a
         # per-computation error (rendered on the page), never a build crash.
         _state.update(algebra=A, request=req, module=req.get("module"),
-                      ext_target=req.get("ext_target"))
+                      ext_target=req.get("ext_target"),
+                      tor_target=req.get("tor_target"))
         out = {"ok": True, "dim": A.dim, "n_vertices": len(vertices),
                "n_arrows": len(arrows), "algebra": repr(A).splitlines()[0]}
     except Exception as exc:
@@ -215,6 +217,19 @@ def _build_module(A, mspec, name):
     return A.module(dimvec, action, side=mspec.get("side", "right"), name=name)
 
 
+def _tor_target_spec():
+    """The Tor second module N (a LEFT A-module). An omitted side defaults to
+    ``"left"`` -- mirrors the schema/spec-core default -- so the GUI need not force
+    the toggle. A builtin's own nested side is honored as-is."""
+    ts = _state.get("tor_target")
+    if isinstance(ts, dict):
+        b = ts.get("builtin")
+        has_side = "side" in ts or (isinstance(b, dict) and "side" in b)
+        if not has_side:
+            ts = dict(ts, side="left")
+    return ts
+
+
 def _dv(dimvec):
     return {str(v): int(n) for v, n in sorted(dimvec.items(), key=lambda kv: str(kv[0]))}
 
@@ -231,11 +246,72 @@ def _mod_view(m):
 _MOD_REFS = {
     "dimension_vector": ["assem_book"], "rad_top_soc": ["assem_book"],
     "tau": ["assem_book"], "tau_minus": ["assem_book"], "ext": ["module_ext"],
+    "tor": ["minimal_resolution", "module_ext"],
     "projective_resolution": ["minimal_resolution"],
     "projective_dimension": ["minimal_resolution"],
     "injective_resolution": ["minimal_resolution", "assem_book"],
     "injective_dimension": ["minimal_resolution", "assem_book"],
+    "decompose": ["assem_book"],
 }
+
+
+# The additive-tau note carried by an AR-translate block whose input decomposes.
+# The block ships a stable KEY; each renderer localizes it (app.js via i18n, gui.js
+# via its own English map) -- so the block stays language-neutral data.
+_TAU_ADDITIVE_KEY = "mod.tau_additive"
+
+
+def _summands_latex(vertices, letter):
+    """A resolution term's summand multiset as LaTeX, e.g. ``P_{1}^{2} \\oplus P_{3}``
+    (``letter`` = ``P`` projectives / ``I`` injectives). ``0`` for the zero term."""
+    if not vertices:
+        return "0"
+    counts = {}
+    for v in vertices:
+        counts[v] = counts.get(v, 0) + 1
+
+    def key(v):
+        return (0, v) if isinstance(v, int) and not isinstance(v, bool) else (1, str(v))
+    parts = []
+    for v in sorted(counts, key=key):
+        base = "%s_{%s}" % (letter, v)
+        parts.append(base if counts[v] == 1 else "%s^{%d}" % (base, counts[v]))
+    return " \\oplus ".join(parts)
+
+
+def _summand_view(mod, mult):
+    return {"dim_vector": _dv(mod.dimension_vector()), "multiplicity": int(mult),
+            "indecomposable": True}
+
+
+def _decompose_engine():
+    """(is_indecomposable, decompose) from the Plan-30 Part-A engine, or ``None``
+    when not yet importable (so callers degrade to the pre-Plan-30 block shape)."""
+    try:
+        from quiverlab.modules.decompose import decompose, is_indecomposable
+    except ImportError:
+        return None
+    return is_indecomposable, decompose
+
+
+def _input_certificate(M):
+    """Certify the INPUT of an AR translate (Marco #1): indecomposable, or its
+    Krull-Schmidt decomposition + the additivity note. Best-effort + honest: ``{}``
+    (no claim) when the decompose engine is unavailable OR cannot certify within
+    budget (it is LOUD, e.g. char <= dim M) -- tau itself stays valid, so the block
+    omits the certificate rather than assert what it could not prove."""
+    eng = _decompose_engine()
+    if eng is None:
+        return {}
+    is_indec, decompose = eng
+    try:
+        if is_indec(M):
+            return {"indecomposable": True}
+        return {"indecomposable": False,
+                "decomposition": [_summand_view(s, m) for (s, m) in decompose(M)],
+                "note_key": _TAU_ADDITIVE_KEY}
+    except quiverlab.QuiverlabError:
+        return {}
 
 
 def _module_block(name, top):
@@ -257,8 +333,19 @@ def _module_block(name, top):
         sym = r"\tau M" if name == "tau" else r"\tau^{-} M"
         latex = (sym + " = 0") if t.dim == 0 else (r"\underline{\dim}\, " + sym
                                                    + " = " + _dv_latex(t.dimension_vector()))
-        return {"kind": name, "side": t.side, "is_zero": t.dim == 0,
-                "citations": cites, "latex": latex, **_mod_view(t)}
+        block = {"kind": name, "side": t.side, "is_zero": t.dim == 0,
+                 "citations": cites, "latex": latex, **_mod_view(t)}
+        block.update(_input_certificate(M))       # Marco #1: certify the input M
+        return block
+    if name == "decompose":
+        eng = _decompose_engine()
+        if eng is None:
+            raise RequestError("module decomposition needs the Krull-Schmidt engine "
+                               "(Plan 30 Part A); not available in this build")
+        _, decompose = eng
+        summands = [_summand_view(s, m) for (s, m) in decompose(M)]
+        return {"kind": name, "side": M.side, "summands": summands,
+                "iso_classes": len(summands), "citations": cites}
     if name == "ext":
         if top is None:
             raise RequestError("ext needs a range, e.g. 'ext:0..4'")
@@ -267,14 +354,30 @@ def _module_block(name, top):
         dims = [int(d) for d in ext_dims(A, M, N, top)]
         return {"kind": name, "top": top, "dims": dims, "target": _mod_view(N),
                 "citations": cites}
+    if name == "tor":
+        if top is None:
+            raise RequestError("tor needs a range, e.g. 'tor:0..4'")
+        try:
+            from quiverlab.modules.tor import tor_dims
+        except ImportError:
+            raise RequestError("Tor requires the Tor engine (Plan 29); not available "
+                               "in this build")
+        N = _build_module(A, _tor_target_spec(), "N")
+        dims = [int(d) for d in tor_dims(A, M, N, top)]
+        return {"kind": name, "top": top, "dims": dims, "target": _mod_view(N),
+                "citations": cites}
     if name in ("projective_resolution", "injective_resolution"):
         if top is None:
             raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
         res = (M.projective_resolution(top) if name == "projective_resolution"
                else M.injective_resolution(top))
+        letter = "P" if name == "projective_resolution" else "I"
         terms = [_dv(dv) for dv in res.dimension_vectors()]
         block = {"kind": name, "top": top, "terms": terms,
-                 "betti": [res.betti(i) for i in range(len(terms))], "citations": cites}
+                 "betti": [res.betti(i) for i in range(len(terms))],
+                 "summands": [_summands_latex(res.term(i), letter)
+                              for i in range(len(terms))],
+                 "citations": cites}
         if name == "projective_resolution":
             block["pd"] = res.pd()
         else:
@@ -291,6 +394,45 @@ def _module_block(name, top):
     raise RequestError("unknown module invariant %r" % (name,))
 
 
+# Module kinds with a Plan-30 Part-C worked-steps hook (quiverlab.trace.modules):
+# when the report is requested (artifacts.pdf), a module compute also emits the
+# exhaustive step events, so the HTML/.tex bundle covers modules like HH does.
+_MODULE_TRACE_KINDS = frozenset({
+    "projective_resolution", "injective_resolution", "ext", "tau", "tau_minus",
+})
+
+
+def _wants_trace():
+    req = _state.get("request") or {}
+    return bool((req.get("artifacts") or {}).get("pdf"))
+
+
+def _emit_module_trace(name, top):
+    """Append the worked-step events for a traceable module compute into
+    ``_state['events']`` (only when the report is requested). Best-effort: the
+    compute already succeeded, so a trace re-run failure silently skips the report
+    enhancement rather than break the (already-rendered) result."""
+    if name not in _MODULE_TRACE_KINDS or not _wants_trace():
+        return
+    A = _state["algebra"]
+    try:
+        from quiverlab.trace import modules as tm
+        M = _build_module(A, _state.get("module"), "M")
+        if name == "projective_resolution":
+            events, _ = tm.trace_projective_resolution(M, top)
+        elif name == "injective_resolution":
+            events, _ = tm.trace_injective_resolution(M, top)
+        elif name == "ext":
+            N = _build_module(A, _state.get("ext_target"), "N")
+            events, _ = tm.trace_ext(A, M, N, top)
+        else:                                       # tau / tau_minus
+            events, _ = tm.trace_tau(M, kind=name)
+        if _state["events"] is not None:
+            _state["events"].extend(events)
+    except Exception:                               # best-effort report adornment
+        pass
+
+
 def compute_one(spec):
     """Run ONE Plan-09 compute string against the built algebra."""
     A = _state["algebra"]
@@ -300,6 +442,7 @@ def compute_one(spec):
         name, top = _parse_compute(spec)
         if name in _MODULE_KINDS:
             block = _module_block(name, top)
+            _emit_module_trace(name, top)
         elif name in ("hh_cohomology", "hh_homology"):
             if top is None:
                 raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
@@ -351,8 +494,24 @@ def trace_html():
     from quiverlab.trace.provenance import references_for, resolve_references
     from quiverlab.trace.render_html import render_html
     title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
-    return render_html(list(events), title=title,
+    return render_html(list(events), title=title, algebra=_state["algebra"],
                        references=resolve_references(references_for(events)))
+
+
+def trace_tex():
+    """The worked-steps report as LaTeX SOURCE ('' when nothing was traced).
+
+    Plan 30 C1: the .tex is downloadable everywhere. A GUI download button hooks
+    this accessor through the existing gui.js download helper (a self-contained,
+    one-button addition owned by the GUI layer)."""
+    events = _state["events"] or []
+    if not events:
+        return ""
+    from quiverlab.trace.provenance import references_for, resolve_references
+    from quiverlab.trace.render_latex import render_latex
+    title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
+    return render_latex(list(events), title=title, algebra=_state["algebra"],
+                        references=resolve_references(references_for(events)))
 
 
 def tikz():
@@ -385,6 +544,8 @@ def python_snippet():
         lines += _module_snippet_lines(req["module"], "M")
     if req.get("ext_target"):
         lines += _module_snippet_lines(req["ext_target"], "N")
+    if req.get("tor_target"):
+        lines += _module_snippet_lines(_tor_target_spec(), "N")
     calls = {"hh_cohomology": "A.hochschild_cohomology(%d)",
              "hh_homology": "A.hochschild_homology(%d)",
              "cartan": "A.cartan_matrix()", "coxeter_polynomial": "A.coxeter_polynomial()",
@@ -393,6 +554,8 @@ def python_snippet():
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
              "ext": "[A.ext(M, N, i) for i in range(%d + 1)]",
+             "tor": "tor_dims(A, M, N, %d)  # from quiverlab.modules.tor",
+             "decompose": "M.decompose()",
              "projective_resolution": "M.projective_resolution(%d).dimension_vectors()",
              "injective_resolution": "M.injective_resolution(%d).dimension_vectors()",
              "projective_dimension": "M.projective_resolution(%d).pd()" % _PD_BOUND,
@@ -456,7 +619,8 @@ ETA_MODEL = {
                 # module kinds (Plan 26): cheap dim-vector reads up to
                 # resolution/dimension probes that build syzygies to depth.
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,
-                "tau": 0.1, "tau_minus": 0.1, "ext": 0.2,
+                "tau": 0.1, "tau_minus": 0.1, "ext": 0.2, "tor": 0.2,
+                "decompose": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
                 "projective_dimension": 0.3, "injective_dimension": 0.3},
 }

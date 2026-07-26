@@ -19,6 +19,7 @@
   "job.title": "Trabajo",
   "job.status": "Estado:",
   "job.downloads": "Descargas:",
+  "job.tex": "fuente LaTeX",
   "job.computed_with": "Calculado con quiverlab",
   "job.finished": "Finalizado:",
   "job.cached_note": "Este resultado exacto está en caché: las solicitudes idénticas, de cualquier persona, se sirven al instante sin recalcular. Todos los números son exactos: esta es la respuesta, no una aproximación.",
@@ -72,5 +73,14 @@
   "offline.ram": "RAM detectada",
   "offline.worker_mem": "límite de memoria del proceso",
   "offline.workers": "proceso(s) de trabajo",
-  "offline.gpu_note": "{n} GPU detectada(s) — sin usar: los motores de quiverlab son cálculo exacto en CPU."
+  "offline.gpu_note": "{n} GPU detectada(s) — sin usar: los motores de quiverlab son cálculo exacto en CPU.",
+  "res.term": "término",
+  "res.decomposition": "⊕-descomposición",
+  "mod.tau_additive": "τ calculado sumando a sumando (τ es aditivo)",
+  "mod.indecomposable": "el módulo de entrada M es indescomponible",
+  "mod.decompose_heading": "Descomposición de Krull–Schmidt",
+  "mod.summand": "sumando",
+  "mod.multiplicity": "multiplicidad",
+  "mod.dim_vector": "vector de dimensión",
+  "mod.tor_unavailable": "Tor requiere el motor Tor (Plan 29); no disponible en esta compilación."
 }

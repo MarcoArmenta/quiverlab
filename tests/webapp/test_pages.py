@@ -227,6 +227,52 @@ def test_download_trace_html_fallback_served(tmp_path):
     assert r.headers["content-type"].startswith("text/html")
 
 
+def test_download_trace_tex_served(tmp_path):
+    # Plan 30 C1: the persisted LaTeX source is whitelisted + served as text/plain.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    jid = _done_job(cfg, '{"ok": true}')
+    (cfg.artifacts_dir / jid / "trace.tex").write_text(r"\documentclass{article}")
+    r = TestClient(create_app(cfg)).get(f"/download/{jid}/trace.tex")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/plain")
+    assert "documentclass" in r.text
+
+
+def test_trace_tex_written_end_to_end_and_served(tmp_path):
+    """The runner (spec core) persists trace.tex alongside the pdf/html, and the
+    whitelist serves it -- exercised end to end via TestClient."""
+    from quiverlab.hpc.spec import run as spec_run
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    store = JobStore(cfg.db_path)
+    store.init_schema()
+    jid = store.create_job({}, ip="h")
+    store.claim_next()
+    art = cfg.artifacts_dir / jid
+    art.mkdir(parents=True, exist_ok=True)
+    spec_run({"schema": 1,
+              "algebra": {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+                          "relations": ["x*x*x"], "field": {"kind": "GF", "p": 2, "n": 1}},
+              "compute": ["hh_cohomology:0..2"],
+              "artifacts": {"pdf": True, "tikz": False}}, art)
+    store.mark_done(jid, str(art))
+    assert (art / "trace.tex").exists(), "the runner must persist trace.tex"
+    r = TestClient(create_app(cfg)).get(f"/download/{jid}/trace.tex")
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/plain")
+    assert "documentclass" in r.text
+
+
+def test_job_page_shows_tex_link_when_present(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    jid = _done_job(cfg, '{"quiverlab_version": "9.9.9", "results": {}}')
+    (cfg.artifacts_dir / jid / "trace.tex").write_text(r"\documentclass{article}")
+    en = TestClient(create_app(cfg)).get(f"/job/{jid}")
+    assert f"/download/{jid}/trace.tex" in en.text
+    assert "LaTeX source" in en.text
+    es = TestClient(create_app(cfg)).get(f"/es/job/{jid}")
+    assert "fuente LaTeX" in es.text                     # bilingual label
+
+
 _KEY_SHAPE = re.compile(r"[a-z][a-z_]*\.[a-z_]+")
 _TAG = re.compile(r"<[^>]+>")
 _SCRIPT_OPEN = re.compile(r"<script\b[^>]*>", re.IGNORECASE)

@@ -54,17 +54,23 @@ def _compile_pdf(tex, out_pdf, engine):
 
 
 def write_trace(events, table, algebra, kind, top, references=(), out_dir=None):
+    events = list(events)
     out = pathlib.Path(out_dir) if out_dir is not None else (pathlib.Path.cwd() / "quiverlab_traces")
     out.mkdir(parents=True, exist_ok=True)
     stem = "%s_%s" % (_SAFE_STEM.get(kind, kind), _hash(algebra, kind, top))
     title = "%s of %s" % (kind, repr(algebra).splitlines()[0])
+    # Build the LaTeX source ONCE and persist it next to the produced pdf/html:
+    # the .tex is the exhaustive, downloadable-everywhere source (Plan 30 C1), so it
+    # is written whether or not a toolchain is present -- persisted, not
+    # temp-discarded by the compile step.
+    tex = render_latex(events, title=title, references=references, algebra=algebra)
+    (out / (stem + ".tex")).write_text(tex)
     engine = have_latex()
     html_note = "no LaTeX toolchain found -- install pdflatex or tectonic for a PDF"
     if engine is not None:
         pdf = out / (stem + ".pdf")
         try:
-            pages = _compile_pdf(render_latex(events, title=title, references=references),
-                                 str(pdf), engine)
+            pages = _compile_pdf(tex, str(pdf), engine)
             print("Worked steps: %s (%d pp)" % (_rel(pdf), pages))
             return str(pdf)
         except Exception:
@@ -72,7 +78,7 @@ def write_trace(events, table, algebra, kind, top, references=(), out_dir=None):
             # claim "no toolchain found" when one is on PATH.
             html_note = "LaTeX compilation failed (%s); wrote HTML fallback" % engine
     html = out / (stem + ".html")
-    html.write_text(render_html(events, title=title, references=references))
+    html.write_text(render_html(events, title=title, references=references, algebra=algebra))
     print("Worked steps: %s (HTML, no JavaScript; %s)" % (_rel(html), html_note))
     return str(html)
 

@@ -5,7 +5,13 @@
 <form id="compute-form" data-refs-label="{{ t('results.references') }}"
       data-lang="{{ lang }}" data-big-cap="{{ big_max_cells }}"
       data-big-warn="{{ t('big.warn') }}" data-big-disabled="{{ t('big.disabled') }}"
-      data-big-reject="{{ t('big.reject') }}" data-big-sent="{{ t('big.sent') }}">
+      data-big-reject="{{ t('big.reject') }}" data-big-sent="{{ t('big.sent') }}"
+      data-col-term="{{ t('res.term') }}" data-col-decomp="{{ t('res.decomposition') }}"
+      data-mod-summand="{{ t('mod.summand') }}" data-mod-mult="{{ t('mod.multiplicity') }}"
+      data-mod-dimvec="{{ t('mod.dim_vector') }}"
+      data-mod-decomp-heading="{{ t('mod.decompose_heading') }}"
+      data-mod-indecomposable="{{ t('mod.indecomposable') }}"
+      data-mod-tau-additive="{{ t('mod.tau_additive') }}">
   <label for="family">{{ t("form.family") }}</label>
   <select id="family" name="family">
     {% for f in catalog.families %}<option value="{{ f.name }}">{{ f.name }}</option>{% endfor %}
