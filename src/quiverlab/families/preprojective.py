@@ -28,6 +28,35 @@ from quiverlab.families.dynkin import dynkin_quiver
 # _TYPE = ^(~|t)?([ADE])(\d+)$). These diagrams give INFINITE-dimensional Pi(Q).
 _AFFINE_TYPE = re.compile(r"^\s*(~|t)([ADE]\d+)\s*$")
 
+# A finite Dynkin type string, split into (letter, n) exactly as dynkin.py parses it
+# (sans the already-rejected affine prefix) -- used only for the auto-bound lookup.
+_FINITE_TYPE = re.compile(r"^([ADE])(\d+)$")
+
+# Per-type Groebner degree_bound needed to CERTIFY completion when the caller passes
+# no explicit degree_bound. Pi(Q)'s mesh relations are quadratic, so the shipped
+# adaptive default (max(8, 2*maxlen+4) = 8) certifies only the smallest cases
+# (A2-A4 build at 8); larger Dynkin diagrams complete to longer leading words and
+# need a larger bound. Values are the feasibility-probe working bounds (each is >= the
+# minimum certifiable bound and, since the reduction system is bound-STABLE above that
+# minimum, yields the same certified system any larger bound would). Types NOT listed
+# fall through to the adaptive default: A2-A4 build there; D6+ and E6/E7/E8 hit the
+# loud AdmissibilityError (with its "raise degree_bound to at least N" hint) -- those
+# exceptional/large cases are cluster-scale and deliberately NOT auto-lifted here.
+_AUTO_DEGREE_BOUND = {
+    ("A", 5): 12, ("A", 6): 14, ("A", 7): 16,
+    ("D", 4): 12, ("D", 5): 16,
+}
+
+
+def _auto_degree_bound(type_str):
+    """The auto degree_bound for a finite Dynkin type string, or None to leave the
+    adaptive default in force (both for unlisted small types and for the large
+    exceptional types that must keep raising AdmissibilityError)."""
+    m = _FINITE_TYPE.match(type_str)
+    if not m:
+        return None
+    return _AUTO_DEGREE_BOUND.get((m.group(1), int(m.group(2))))
+
 
 def _reject_infinite_type(type_str):
     """Refuse an affine (Euclidean) type string loudly and honestly: its
@@ -49,13 +78,21 @@ def PreprojectiveAlgebra(type_or_quiver, field=None, degree_bound=None):
         explicit Quiver that is (an orientation of) a finite Dynkin A/D/E diagram.
         Affine/non-Dynkin input is infinite-dimensional and is refused (see module
         docstring for exactly how each form is refused).
-    degree_bound: forwarded to the Groebner engine to cap completion (default:
-        adaptive). Raise it if certification refuses a large but finite Dynkin case.
+    degree_bound: forwarded to the Groebner engine to cap completion. If None (the
+        default), a per-type auto-bound is applied for the type strings that the
+        shipped adaptive default cannot certify (A5:12, A6:14, A7:16, D4:12, D5:16),
+        so PreprojectiveAlgebra("A5"), ("D5"), etc. build with no kwarg. An explicit
+        degree_bound always overrides the auto-bound. Large exceptional types (D6+,
+        E6/E7/E8) are NOT auto-lifted: they keep the loud AdmissibilityError with its
+        bound hint -- certifying them is cluster-scale. An explicit Quiver never gets
+        an auto-bound (there is no type string to key on); pass degree_bound yourself.
     """
     if isinstance(type_or_quiver, Quiver):
         base = type_or_quiver                          # PRECONDITION: finite Dynkin A/D/E
     else:
         _reject_infinite_type(type_or_quiver)          # loud refusal of affine ~/t types
+        if degree_bound is None:                       # fill in the certifiable bound for A5+/D4+
+            degree_bound = _auto_degree_bound(type_or_quiver)
         base = dynkin_quiver(type_or_quiver, "linear")
     arrows = {}
     star = {}

@@ -158,6 +158,41 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   Zero file moves; fast/deep/qpa buckets byte-identical. SHIPS ON MAIN BEFORE
   THE v0.1.0 TAG (right after Plan 31 merges; a JOSS reviewer can then run
   each oracle class as a one-liner).
+- [x] **Nontrivial literature examples at scale** — DONE, Plan 33, 2026-07-26,
+  branch `plan-33-nontrivial-examples`
+  (`2026-07-26-plan-33-nontrivial-examples.md`). Marco's feedback: the test/paper
+  examples were too small (kA₂/kA₃/single loops); scale them to the
+  books-and-literature cases and push the quantum ones to higher degree.
+  Delivered as SCALE, not new theorems (Plan 29 already pins the small
+  directions). Scale batteries: the generalized quantum CI
+  `k⟨x,y⟩/(x^a,y^b,yx−q·xy)` for `(a,b) ∈ {(2,4),(3,4),(4,4),(2,5),(5,5)}` with
+  Bergh–Erdmann cohomology `[2,2,1,0,…]` pushed past degree 8 and homology
+  `[a+b−1,…]` (`qci_hh_oracle`); the preprojective family Π(A₄/A₅/D₄/D₅) (dims
+  20/35/28/60) with dim / `is_selfinjective` / Loewy = h−1 structural pins
+  (`preprojective`, `assem_book`); the Bardzell depth showcase kZ₂₀/J¹¹ (dim 220)
+  reaching Hochschild degree 300, guarded by a context-managed recursion-limit
+  raise around the Bardzell walk (`bardzell`); the symmetric Brauer stars
+  kZ₄/J⁹, kZ₅/J¹¹ (`skowronski_yamagata`); Taft Λ₅/Λ₆ HH + cyclic homology
+  (`taillefer_taft`); the canonical algebra C(2,2,2,2,2) with `HH² = t−3 = 2`, the
+  first ≥2 case (`schremmer_wpl`); the Boolean-lattice B₃ incidence algebra (dim
+  27, nerve vanishing `HH^{≥1}=0`, `cibils_incidence`); presented trivial
+  extensions T(kD₄)/T(kA₅)/T(kA₆) (`cmrs_split`); the wild m-Kronecker
+  `HH¹ = m²−1` with Coxeter `t²−(m²−2)t+1` (`happel_question`,
+  `lenzing_delapena_spectral`); the exterior algebras Λ(k³)/Λ(k⁴) Koszul via
+  `g_quadratic_certificate` (`priddy`, `froberg_koszul`). Builders (C2 src):
+  `QuantumCI(q, a, b)` generalization (`QuantumCI(q)` byte-identical), the
+  preprojective auto degree-bound table, and the Bardzell recursion-limit guard.
+  Papers (C3): the JSC manuscript's worked-examples section rebuilt around the
+  research top-10 (Π(D₅) dim 60; QCI dim 16 cohomology-dies / homology-persists;
+  Bardzell deg-300 at dim 220; Brauer star dim 55; canonical t=5; B₃ incidence
+  dim 27; T(kD₄); 3-Kronecker; Taft Λ₅; Λ(k⁴)) with every printed number
+  recomputed by replayable scripts in `paper-jsc/computations/`, plus the
+  representation-theory-first interior pass; the JOSS Research-impact folds in the
+  QCI-(a,b), m-Kronecker, and Bardzell-depth one-liners in band. Honest-scope
+  labels binding: preprojective and exterior HH values are cross-engine-only (no
+  published table); Π(D₅) HH at scale, Λ(kⁿ≥4) depth, decompose ≳ dim 50,
+  dim-30+ non-monomial HH past ~degree 10, and the Π(E₆)/Π(D₆) builds are
+  deferred to the SUBMISSION step-4 cluster list.
 - [x] **Literature-oracle battery expansion** — DONE, Plan 29, delivered on
   branch 2026-07-25 (merge pre-authorized), branch
   `plan-29-literature-batteries` (`2026-07-25-plan-29-literature-batteries.md`).
@@ -383,6 +418,14 @@ planned together even if delivered in slices.
   `minimal_cohomology_dims`; wire it in and drop the None-side special-casing.
 - [ ] **A∞-structure (Kadeishvili) on Ext** — ambitious flagship; CS small models make
   it feasible.
+- [ ] **Propagate `degree_bound` into the CS reduction system** (found by
+  Plan 33's paper agent): `PreprojectiveAlgebra("D5")` builds fine with its
+  auto bound, but `engine="cs"` on the result rebuilds a reduction system via
+  `resolutions_cs/build.py::reduction_system_of(A)` WITHOUT the constructor's
+  bound, so deep HH on Π(D₅)-scale algebras refuses/stalls where the build
+  succeeded. Thread the certified bound (store it on the Algebra at build
+  time, read it in `reduction_system_of`) so CS serves what the constructor
+  certifies. Unblocks preprojective deep HH (currently cluster-deferred).
 - [ ] **Performance**: numba kernels for the Plan-13 corner path (pure Python today);
   GF(p^n) fast-engine acceleration (int64 stack is GF(p)-only). GPU exploration
   (Marco, 2026-07-25): exact GF(p) rank/elimination on GPUs (FFLAS-style

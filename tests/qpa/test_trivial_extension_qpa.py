@@ -25,7 +25,7 @@ qpa-marked: skips locally when GAP is absent, mandatory under
 import pytest
 
 from quiverlab import Quiver, linear_path_algebra
-from quiverlab.families import TrivialExtension
+from quiverlab.families import TrivialExtension, dynkin_quiver
 from quiverlab.fields import QQ
 from quiverlab.qpa import session
 
@@ -60,6 +60,7 @@ def test_presented_TA_symmetric_agrees_with_qpa(build):
     (lambda: linear_path_algebra(2, field=QQ), 6, 2),    # kA_2 -> T dim 6, 2 arrows
     (lambda: linear_path_algebra(3, field=QQ), 12, 3),   # kA_3 -> T dim 12, 3 arrows
     (lambda: _kron(QQ), 8, 4),                           # 2-Kronecker -> T dim 8, 4 arrows
+    (lambda: dynkin_quiver("D4", "linear").algebra(relations=[], field=QQ), 18, 5),  # Plan 33: kD_4 -> T dim 18, 5 arrows
 ])
 def test_native_trivial_extension_construction_agrees_with_qpa(build, dim, arrows):
     base = build()

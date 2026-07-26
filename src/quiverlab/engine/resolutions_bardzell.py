@@ -82,9 +82,37 @@ which the present test families do not exercise; for the verified families the m
 are sign-correct (exact agreement on all primes, all overlap degrees).
 """
 
+import sys
+from contextlib import contextmanager
+
 import numpy as np
 
 from quiverlab.engine.resolutions import Resolution
+
+
+# ----------------------------------------------------------------------
+# Recursion guard for deep monomial resolutions
+# ----------------------------------------------------------------------
+# The associated-path enumeration (associated_paths) and the basis-path walk
+# (_all_basis_paths) are recursive, and their depth grows with the homological
+# degree / nilpotency length: kZ_20/J^11 to degree 300 (dim 220) or k[x]/(x^100)
+# past degree ~20 both overflow CPython's default 1000-frame limit with a
+# RecursionError. This context manager lifts the limit to a fixed 50_000 frames
+# around ONLY those recursive walks and restores the caller's prior limit in a
+# finally, so users reach the same depth the deep-engine tests do. The recursion
+# is entirely Python-side -- the numba/pure kernel parity and the public API are
+# untouched.
+_BARDZELL_RECURSION_LIMIT = 50_000
+
+
+@contextmanager
+def _raised_recursion_limit(minimum=_BARDZELL_RECURSION_LIMIT):
+    prev = sys.getrecursionlimit()
+    sys.setrecursionlimit(max(prev, minimum))
+    try:
+        yield
+    finally:
+        sys.setrecursionlimit(prev)
 
 
 # ----------------------------------------------------------------------
@@ -224,8 +252,9 @@ class MonomialPresentation:
             for a in self.bysrc.get(cur, []):
                 ext([a], self.tgt[a])
 
-        for (a, s, t) in self.arrows:
-            rec([(a,)], [a])
+        with _raised_recursion_limit():                 # deep chains overflow the default limit
+            for (a, s, t) in self.arrows:
+                rec([(a,)], [a])
         return sorted(res, key=lambda p: (len(p), p))
 
     def left_decomposition(self, p, n):
@@ -299,9 +328,10 @@ class MonomialPresentation:
                 if not self.contains_relation(cand):
                     rec(list(cand), self.tgt[a])
 
-        for (a, s, t) in self.arrows:
-            if not self.contains_relation((a,)):
-                rec([a], self.tgt[a])
+        with _raised_recursion_limit():                 # long nonzero paths overflow the default limit
+            for (a, s, t) in self.arrows:
+                if not self.contains_relation((a,)):
+                    rec([a], self.tgt[a])
         return out
 
     def loops(self, o, t, basis_paths):
