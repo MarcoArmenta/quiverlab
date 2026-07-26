@@ -149,6 +149,95 @@ REGISTRY: dict = {r.key: r for r in [
        "The quadratic-dual conventions (A^! = kQ^op/R^perp) behind quiverlab's "
        "Koszul dual and the E(A) = (A^!)^op cross-check (Plan 27).",
        "koszul"),
+    # --- Plan 29: literature-oracle batteries ---
+    _r("happel_trace", "Happel1997", "foundation",
+       "The trace of the Coxeter matrix and Hochschild cohomology",
+       "Happel's trace identity tr(Coxeter) = sum (-1)^i dim HH^i for finite "
+       "global dimension -- the Hochschild/Coxeter cross-invariant consistency "
+       "oracle (Plan 29).",
+       "hochschild", "coxeter", "oracle"),
+    _r("keller_cyclic_invariance", "Keller1998cyclic", "foundation",
+       "Invariance and localization for cyclic homology of DG algebras",
+       "Derived invariance of cyclic homology (with HH^*/HH_*): reflection-"
+       "equivalent orientations of one graph share HH^*/HH_*/HC_* -- the derived-"
+       "invariance oracle scheme.",
+       "derived", "cyclic", "oracle"),
+    _r("rickard_derived", "Rickard1989", "foundation",
+       "Morita theory for derived categories",
+       "Derived-equivalent algebras (e.g. a Brauer tree and its Brauer star) "
+       "share Hochschild and cyclic homology -- the derived-invariance oracle.",
+       "derived", "oracle"),
+    _r("lenzing_meltzer_ruan", "LenzingMeltzerRuan2022nakayama", "family",
+       "Nakayama algebras and Fuchsian singularities",
+       "Exact Coxeter polynomials of the uniserial Nakayama algebras N_n(r) -- "
+       "the spectral oracle for the Nakayama family (Plan 29).",
+       "spectral", "nakayama", "oracle"),
+    _r("lenzing_delapena_spectral", "LenzingdlPena2008spectral", "foundation",
+       "Spectral analysis of finite dimensional algebras and singularities",
+       "The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and "
+       "Happel's trace identity -- the spectral-invariant oracle.",
+       "spectral", "coxeter", "oracle"),
+    _r("delapena_mahler", "dlPena2014mahler", "foundation",
+       "On the Mahler measure of the Coxeter polynomial of an algebra",
+       "The wild star [2,3,7] realizes Lehmer's polynomial -- the "
+       "spectral_radius / mahler_measure oracle (Plan 29).",
+       "spectral", "oracle"),
+    _r("redondo_roman_2014", "RedondoRoman2014", "family",
+       "Hochschild cohomology of triangular string algebras and its ring structure",
+       "HH^* of the triangular string algebras A_n (with the degree-(2m+1) "
+       "revival) and its trivial positive-degree cup product -- the string-"
+       "algebra HH oracle.",
+       "hochschild", "oracle"),
+    _r("taillefer_taft", "taillefer2001taft", "family",
+       "Cyclic homology of the Taft algebras and of their Auslander algebras",
+       "HH_* and HC_* of the cyclic Nakayama (Taft) algebras in characteristic "
+       "zero -- the cyclic-homology oracle.",
+       "cyclic", "nakayama", "oracle"),
+    _r("cibils_radsq", "cibils1998radsq", "family",
+       "Hochschild cohomology algebra of radical square zero algebras",
+       "The parallel-path cochain complex for kQ/J^2 (with the characteristic-2 "
+       "doubling of k[x]/(x^2)) -- the radical-square-zero HH oracle.",
+       "hochschild", "oracle"),
+    _r("cibils_incidence", "cibils1989incidence", "family",
+       "Cohomology of incidence algebras and simplicial complexes",
+       "HH^n of an incidence algebra equals the simplicial cohomology of the "
+       "poset order complex -- the incidence-vs-nerve HH oracle.",
+       "hochschild", "incidence", "oracle"),
+    _r("redondo_incidence", "redondo2008incidence", "family",
+       "Hochschild cohomology via incidence algebras",
+       "The simplicial-cohomology identification of HH^* underpinning the "
+       "incidence-vs-nerve oracle (with Cibils 1989).",
+       "hochschild", "incidence", "oracle"),
+    _r("cmrs_split", "cibilsmarcosredondosolotar2003", "foundation",
+       "Cohomology of split algebras and of trivial extensions",
+       "HH^1(T(A)) is never zero -- Z(A) is always a summand -- for every "
+       "finite-dimensional A; the trivial-extension HH^1 oracle.",
+       "hochschild", "oracle"),
+    _r("crs_trivial_ext_hh1", "cibilsredondosaorin2004", "foundation",
+       "The first cohomology group of the trivial extension of a monomial algebra",
+       "The HH^1(T(A)) decomposition and Example 2.20 (the Z_5 cycle) -- the "
+       "trivial-extension first-cohomology oracle.",
+       "hochschild", "oracle"),
+    _r("xhj_truncated", "xuhanjiang2007truncated", "foundation",
+       "Hochschild cohomology of truncated quiver algebras",
+       "For a truncated algebra kQ/R^N, dim HH^* is finite iff Q is acyclic -- "
+       "the truncated finiteness boolean oracle.",
+       "hochschild", "oracle"),
+    _r("cibils_acyclic", "cibils1986nocycles", "foundation",
+       "Hochschild homology of an algebra whose quiver has no oriented cycles",
+       "An acyclic quiver has HH_n = 0 for n >= 1 -- the acyclic Hochschild-"
+       "homology vanishing oracle.",
+       "hochschild", "oracle"),
+    _r("skowronski_yamagata", "SkowronskiYamagata2011", "foundation",
+       "Frobenius Algebras I: Basic Representation Theory",
+       "Symmetric and Frobenius representation theory, incl. the symmetric "
+       "Nakayama criterion n | (L-1) -- the is_symmetric regression oracle.",
+       "frobenius", "symmetric"),
+    _r("schremmer_wpl", "Schremmer2025wpl", "foundation",
+       "Weighted projective lines and Hochschild cohomology",
+       "HH^* of the canonical algebras (dim HH^2 = t-3, after Happel LNM 1404) "
+       "-- the canonical-algebra Hochschild oracle.",
+       "hochschild", "oracle"),
 ]}
 
 
