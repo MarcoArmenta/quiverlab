@@ -31,12 +31,14 @@ _TEMPLATES = Jinja2Templates(
     directory=str(Path(__file__).resolve().parent.parent / "templates"))
 
 # The runner (webapp/server/runner.py) writes these exact names: result.json,
-# the worked-steps trace.pdf OR its HTML fallback trace_steps.html, and tikz.tex.
-# The whitelist is also the traversal defense -- a name outside it is a 404.
+# the worked-steps trace.pdf OR its HTML fallback trace_steps.html, the LaTeX
+# source trace.tex (Plan 30 C1 -- always persisted, downloadable everywhere), and
+# tikz.tex. The whitelist is also the traversal defense -- a name outside it is a 404.
 _CONTENT_TYPES = {
     "result.json": "application/json",
     "trace.pdf": "application/pdf",
     "trace_steps.html": "text/html; charset=utf-8",
+    "trace.tex": "text/plain; charset=utf-8",
     "tikz.tex": "text/plain; charset=utf-8",
 }
 _ALLOWED = frozenset(_CONTENT_TYPES)
@@ -111,6 +113,8 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
         trace_name = ("trace.pdf" if (art / "trace.pdf").exists()
                       else "trace_steps.html" if (art / "trace_steps.html").exists()
                       else None)
+        # The LaTeX source of the worked steps (Plan 30 C1) is offered alongside.
+        has_tex = (art / "trace.tex").exists()
         has_tikz = (art / "tikz.tex").exists()
         reproduce = version = None
         references: list = []
@@ -139,8 +143,8 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
         return _TEMPLATES.TemplateResponse(
             request, "job.html",
             _ctx(request, cfg, lang, prefix, job=job, trace_name=trace_name,
-                 has_tikz=has_tikz, reproduce=reproduce, version=version,
-                 references=references, cluster_yaml=cluster_yaml,
+                 has_tex=has_tex, has_tikz=has_tikz, reproduce=reproduce,
+                 version=version, references=references, cluster_yaml=cluster_yaml,
                  error=sanitize_error_string(job.error)))
 
 

@@ -7,9 +7,11 @@ Typed step events (events.py), a recording buffer with size-eliding rules
 from quiverlab.trace.events import (  # noqa: F401
     Dispatch, ReductionStep, AmbiguityEvent, ResolutionTerm,
     DifferentialEvent, LiftStep, RankStep,
+    ModuleTerm, ModuleDifferential, ExtDegree, StepNote,
 )
 
 __all__ = [
     "Dispatch", "ReductionStep", "AmbiguityEvent", "ResolutionTerm",
     "DifferentialEvent", "LiftStep", "RankStep",
+    "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote",
 ]

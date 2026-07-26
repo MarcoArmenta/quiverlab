@@ -19,6 +19,7 @@
   "job.title": "Job",
   "job.status": "Status:",
   "job.downloads": "Downloads:",
+  "job.tex": "LaTeX source",
   "job.computed_with": "Computed with quiverlab",
   "job.finished": "Finished:",
   "job.cached_note": "This exact result is cached — identical requests, from anyone, are served instantly without recomputing. Every number is exact: this is the answer, not an approximation.",
@@ -72,5 +73,14 @@
   "offline.ram": "RAM detected",
   "offline.worker_mem": "worker memory cap",
   "offline.workers": "worker process(es)",
-  "offline.gpu_note": "{n} GPU(s) detected — not used: quiverlab's engines are exact CPU computation."
+  "offline.gpu_note": "{n} GPU(s) detected — not used: quiverlab's engines are exact CPU computation.",
+  "res.term": "term",
+  "res.decomposition": "⊕-decomposition",
+  "mod.tau_additive": "τ computed summand-wise (τ is additive)",
+  "mod.indecomposable": "input M is indecomposable",
+  "mod.decompose_heading": "Krull–Schmidt decomposition",
+  "mod.summand": "summand",
+  "mod.multiplicity": "multiplicity",
+  "mod.dim_vector": "dim vector",
+  "mod.tor_unavailable": "Tor requires the Tor engine (Plan 29); not available in this build."
 }

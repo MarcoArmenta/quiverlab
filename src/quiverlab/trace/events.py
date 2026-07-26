@@ -42,7 +42,85 @@ class RankStep:
     note: str = ""
 
 
+# --------------------------------------------------------------------------- #
+# Plan 30, Part C: module-computation worked-step events. These carry the actual
+# ALGEBRA a module computation manipulates -- projective/injective resolution
+# terms and their differentials as matrices, the Hom/tensor collapse of Ext/Tor
+# with the per-degree rank bookkeeping, and free-form narrative lines (the chosen
+# projective-cover generators, the D/Tr steps of an AR translate). They mirror the
+# RankStep contract: a matrix is a list[list[str]] of domain-element renderings,
+# or None with `elided=True` + a stated-shape `note` when it exceeds the threshold.
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class ModuleTerm:
+    """One term of a module (co)resolution: the direct sum of indecomposable
+    projectives (P_v) or injectives (I_v). `summands` is the vertex list WITH
+    repetition (e.g. [1, 1, 3] renders as ``P_1^{2} + P_3``); `sym` is "P" or "I";
+    `kind` is "projective" or "injective"; `dim` is the k-dimension; `dimvec` maps
+    vertex -> multiplicity (a dict with str/int keys, or None)."""
+    degree: int
+    kind: str
+    sym: str
+    summands: object
+    dim: int
+    dimvec: object = None
+
+
+@dataclass
+class ModuleDifferential:
+    """A differential of a module (co)resolution rendered AS A MATRIX over the
+    stated field. `dom_summands`/`cod_summands` are the source/target summand
+    vertex lists (with repetition); `cod_is_module` is True for the augmentation
+    d_0: Q_0 -> M (whose target is the module M itself, not a projective term).
+    `sym` is "P"/"I", `kind` "projective"/"injective". `matrix` is list[list[str]]
+    or None (elided). `symbol` is the differential's TeX name (e.g. "d_1")."""
+    degree: int
+    kind: str
+    sym: str
+    symbol: str
+    dom_summands: object
+    cod_summands: object
+    nrows: int
+    ncols: int
+    field: str
+    cod_is_module: bool = False
+    matrix: object = None
+    elided: bool = False
+    note: str = ""
+
+
+@dataclass
+class ExtDegree:
+    """One degree of an Ext/Tor computation over a minimal resolution: the
+    collapsed Hom (Ext) / tensor (Tor) space dimension at degree n, the connecting
+    map (delta^n for Ext / d_n for Tor) as a matrix, its rank and the neighbouring
+    rank, and the resulting Ext^n / Tor_n dimension. `op` is "Ext" or "Tor"."""
+    degree: int
+    op: str
+    space_dim: int
+    rank_here: int
+    rank_prev: int
+    result_dim: int
+    nrows: int
+    ncols: int
+    field: str
+    matrix: object = None
+    elided: bool = False
+    note: str = ""
+
+
+@dataclass
+class StepNote:
+    """A free-form narrative worked-step line (a projective-cover generator choice,
+    the D/Tr steps of an AR translate, ...). `text` is the headline; `detail` is an
+    optional indented continuation. Rendered verbatim (escaped per format)."""
+    text: str
+    detail: str = ""
+
+
 __all__ = [
     "Dispatch", "ReductionStep", "AmbiguityEvent", "ResolutionTerm",
     "DifferentialEvent", "LiftStep", "RankStep",
+    "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote",
 ]

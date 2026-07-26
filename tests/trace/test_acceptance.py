@@ -70,10 +70,15 @@ def test_end_to_end_draw_tikz_and_worked_steps(tmp_path, monkeypatch):
     finally:
         quiverlab.verbose = False
     out = tmp_path / "quiverlab_traces"
-    files = list(out.glob("HHc_*"))
-    assert files, "verbose run must write a worked-steps file (D9)"
-    assert len(files) == 1, "exactly one worked-steps file per computation"
-    assert files[0].suffix in (".pdf", ".html")
+    # Plan 30 C1: a verbose run writes exactly ONE rendered doc (.pdf or its .html
+    # fallback) AND persists its LaTeX .tex source alongside (downloadable
+    # everywhere) -- so the glob now sees the doc + the tex companion.
+    docs = list(out.glob("HHc_*.pdf")) + list(out.glob("HHc_*.html"))
+    texs = list(out.glob("HHc_*.tex"))
+    assert docs, "verbose run must write a worked-steps file (D9)"
+    assert len(docs) == 1, "exactly one rendered worked-steps doc per computation"
+    assert docs[0].suffix in (".pdf", ".html")
+    assert len(texs) == 1, "the LaTeX source is persisted alongside (Plan 30 C1)"
 
     # The document's claim is re-derived independently from the recorded events and
     # required to equal the engine's own dimensions (the binding golden discipline):
@@ -81,7 +86,8 @@ def test_end_to_end_draw_tikz_and_worked_steps(tmp_path, monkeypatch):
     tr = Trace()
     again = A.hochschild_cohomology(2, trace=tr)          # explicit trace => NO file
     assert derive_dims(list(tr)) == table.dims == again.dims == [2, 1, 1]
-    assert len(list(out.glob("HHc_*"))) == 1              # explicit trace wrote no file
+    # explicit trace wrote no file: still exactly one rendered doc from the verbose run
+    assert len(list(out.glob("HHc_*.pdf")) + list(out.glob("HHc_*.html"))) == 1
 
     # The result carries the merged family+engine citation union; here, no family, so
     # exactly ("bar",). Task 11 must NOT overwrite it engine-only.

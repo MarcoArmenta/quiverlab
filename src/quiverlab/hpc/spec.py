@@ -45,17 +45,25 @@ _log = logging.getLogger("quiverlab.hpc")
 SIDES = ("right", "left")
 
 MODULE_KINDS = frozenset({
-    "dimension_vector", "rad_top_soc", "ext", "tau", "tau_minus",
+    "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
-    "projective_dimension", "injective_dimension",
+    "projective_dimension", "injective_dimension", "decompose",
 })
-MODULE_RANGE_KINDS = frozenset({"ext", "projective_resolution", "injective_resolution"})
+MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
+                                "injective_resolution"})
+# Module kinds with a Plan-30 Part-C worked-steps hook (quiverlab.trace.modules):
+# a pdf-requesting module computation auto-emits the exhaustive bundle, like HH.
+# (decompose/tor have no hook yet -- follow-up.)
+_MODULE_TRACE_KINDS = frozenset({
+    "projective_resolution", "injective_resolution", "ext", "tau", "tau_minus",
+})
 
 # Honest labels for ``meta["pdf"]`` (mirrors the runner verbatim).
 _PDF_OK = "trace.pdf"
 _PDF_HTML_FALLBACK = ("PDF toolchain (pdflatex/tectonic) not found -- "
                       "worked steps in trace_steps.html")
 _PDF_NO_HH = "no traced computation requested (PDF covers HH worked steps)"
+_PDF_MODULE_FAIL = "worked-steps bundle could not be generated for this module computation"
 
 _MOD_REFS = {
     "dimension_vector": ["assem_book"],
@@ -63,10 +71,12 @@ _MOD_REFS = {
     "tau": ["assem_book"],
     "tau_minus": ["assem_book"],
     "ext": ["module_ext"],
+    "tor": ["minimal_resolution", "module_ext"],
     "projective_resolution": ["minimal_resolution"],
     "projective_dimension": ["minimal_resolution"],
     "injective_resolution": ["minimal_resolution", "assem_book"],
     "injective_dimension": ["minimal_resolution", "assem_book"],
+    "decompose": ["assem_book"],
 }
 
 
@@ -178,6 +188,7 @@ class ComputeRequest:
     artifacts: Artifacts
     module: ModuleSpec | None
     ext_target: ModuleSpec | None
+    tor_target: ModuleSpec | None    # Plan 30: the N in Tor^A_n(M, N), a left module
     hpc: HpcConfig | None
     raw_algebra: dict            # verbatim echo for the result envelope
 
@@ -433,6 +444,27 @@ def _parse_module(data, what: str) -> ModuleSpec:
                       side=side)
 
 
+def _parse_tor_target(data) -> ModuleSpec | None:
+    """Parse the ``tor_target`` (the N in Tor^A_n(M, N)) -- a LEFT A-module. An
+    omitted side defaults to ``"left"`` (so it canonicalizes with an explicit
+    ``"left"``); an explicit ``"right"`` is rejected loudly. Mirrors schema.py's
+    ``_default_tor_side_left`` + the ``_module_rules`` side check."""
+    if data is None:
+        return None
+    if not isinstance(data, dict):
+        raise SpecError("tor_target must be an object")
+    tt = dict(data)
+    b = tt.get("builtin")
+    has_side = "side" in tt or (isinstance(b, dict) and "side" in b)
+    if not has_side:
+        tt["side"] = "left"
+    spec = _parse_module(tt, "tor_target")
+    if spec.side != "left":
+        raise SpecError("Tor's second module 'tor_target' must be a LEFT A-module "
+                        "(side='left'); Tor^A_n(M, N) pairs a right M with a left N")
+    return spec
+
+
 def _parse_hpc(data) -> HpcConfig:
     if not isinstance(data, dict):
         raise SpecError("hpc block must be an object")
@@ -527,20 +559,26 @@ def parse_request(data) -> ComputeRequest:
     module = _parse_module(data["module"], "module") if data.get("module") is not None else None
     ext_target = (_parse_module(data["ext_target"], "ext_target")
                   if data.get("ext_target") is not None else None)
+    tor_target = _parse_tor_target(data.get("tor_target"))
     hpc = _parse_hpc(data["hpc"]) if data.get("hpc") is not None else None
 
-    if (module is not None or ext_target is not None) and schema_version != 2:
-        raise SpecError("a 'module'/'ext_target' block requires schema 2")
+    if (module is not None or ext_target is not None or tor_target is not None) \
+            and schema_version != 2:
+        raise SpecError("a 'module'/'ext_target'/'tor_target' block requires schema 2")
     kinds = {it.kind for it in items}
     if kinds & MODULE_KINDS and module is None:
         need = sorted(kinds & MODULE_KINDS)
         raise SpecError(f"module compute kind(s) {need} require a 'module' block")
     if "ext" in kinds and ext_target is None:
         raise SpecError("Ext needs a second module 'ext_target' (the N in Ext^n(M, N))")
+    if "tor" in kinds and tor_target is None:
+        raise SpecError("Tor needs a second module 'tor_target' (the N in "
+                        "Tor^A_n(M, N), a LEFT A-module)")
 
     return ComputeRequest(schema_version=schema_version, algebra=algebra,
                           compute=list(compute), artifacts=artifacts,
-                          module=module, ext_target=ext_target, hpc=hpc,
+                          module=module, ext_target=ext_target,
+                          tor_target=tor_target, hpc=hpc,
                           raw_algebra=data["algebra"])
 
 
@@ -594,6 +632,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     artifact_dir.mkdir(parents=True, exist_ok=True)
     tikz_src = None
     hh_trace = None
+    module_trace = None
     A = None
     events: list = []
     hh_kwargs = _hh_kwargs(req.hpc)
@@ -616,12 +655,19 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                  if any(it.kind in MODULE_KINDS for it in items) else None)
             N = (_build_module(A, req.ext_target, "N")
                  if any(it.kind == "ext" for it in items) else None)
+            T = (_build_module(A, req.tor_target, "N")
+                 if any(it.kind == "tor" for it in items) else None)
             results: dict = {}
             for i, item in enumerate(items):
                 if progress_cb:
                     progress_cb({"step": i, "of": len(items), "kind": item.kind})
                 if item.kind in MODULE_KINDS:
-                    results[item.kind] = _dispatch_module(A, item, M, N)
+                    results[item.kind] = _dispatch_module(A, item, M, N, T)
+                    if (req.artifacts.pdf and module_trace is None
+                            and item.kind in _MODULE_TRACE_KINDS):
+                        # the first traceable module kind backs the worked-steps
+                        # bundle (a single trace.pdf); HH still takes precedence.
+                        module_trace = (item.kind, item.hi, M, N)
                     continue
                 if _deepen_applies(req.hpc, item, req.algebra):
                     results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
@@ -678,6 +724,11 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
         meta["pdf"] = _write_worked_steps(events, table, A, kind, top,
                                           used_keys, artifact_dir)
         payload = json.dumps(result, indent=2, default=str)
+    elif req.artifacts.pdf and module_trace is not None:
+        m_kind, m_top, m_M, m_N = module_trace
+        meta["pdf"] = _write_module_worked_steps(A, m_kind, m_top, m_M, m_N,
+                                                 used_keys, artifact_dir)
+        payload = json.dumps(result, indent=2, default=str)
     if write_result:
         (artifact_dir / "result.json").write_text(payload)
     if tikz_src is not None:
@@ -698,18 +749,56 @@ def _hh_kwargs(hpc: HpcConfig | None) -> dict:
     return out
 
 
+def _promote_trace_artifacts(produced, artifact_dir) -> str:
+    """Promote the writer's ``<stem>.<ext>`` (+ sidecar ``.tex``) to the fixed
+    artifact names ``trace.pdf`` / ``trace_steps.html`` and ``trace.tex`` so
+    ``pages.py`` can serve them (Plan 30 C1: the .tex is downloadable everywhere).
+    Returns the honest ``meta['pdf']`` label."""
+    if produced.suffix == ".pdf":
+        target, label = artifact_dir / "trace.pdf", _PDF_OK
+    else:
+        target, label = artifact_dir / "trace_steps.html", _PDF_HTML_FALLBACK
+    tex_src = produced.with_suffix(".tex")
+    tex_target = artifact_dir / "trace.tex"
+    if tex_src.exists() and tex_src.resolve() != tex_target.resolve():
+        tex_src.replace(tex_target)
+    if produced.resolve() != target.resolve():
+        produced.replace(target)
+    return label
+
+
 def _write_worked_steps(events, table, A, kind, top, used_keys, artifact_dir) -> str:
     from quiverlab.trace.writer import write_trace
     produced = Path(write_trace(list(events), table, algebra=A, kind=kind, top=top,
                                 references=_trace_references(used_keys, events),
                                 out_dir=str(artifact_dir)))
-    if produced.suffix == ".pdf":
-        target, label = artifact_dir / "trace.pdf", _PDF_OK
-    else:
-        target, label = artifact_dir / "trace_steps.html", _PDF_HTML_FALLBACK
-    if produced.resolve() != target.resolve():
-        produced.replace(target)
-    return label
+    return _promote_trace_artifacts(produced, artifact_dir)
+
+
+def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir) -> str:
+    """Render the worked-steps bundle (pdf/tex/html) for a MODULE computation via
+    the Plan-30 Part-C trace hooks (``quiverlab.trace.modules``), mirroring the HH
+    bundle. Best-effort: a trace failure never loses the already-computed JSON
+    result -- it degrades to an honest note."""
+    from quiverlab.trace import modules as _tm
+    from quiverlab.trace.writer import write_trace
+    try:
+        if kind == "projective_resolution":
+            events, _ = _tm.trace_projective_resolution(M, top)
+        elif kind == "injective_resolution":
+            events, _ = _tm.trace_injective_resolution(M, top)
+        elif kind == "ext":
+            events, _ = _tm.trace_ext(A, M, N, top)
+        else:                                  # tau / tau_minus
+            events, _ = _tm.trace_tau(M, kind=kind)
+        produced = Path(write_trace(list(events), None, algebra=A, kind=kind,
+                                    top=(top if top is not None else 0),
+                                    references=_trace_references(used_keys, events),
+                                    out_dir=str(artifact_dir)))
+        return _promote_trace_artifacts(produced, artifact_dir)
+    except Exception:
+        _log.exception("module worked-steps bundle failed for kind=%s", kind)
+        return _PDF_MODULE_FAIL
 
 
 def _trace_references(used_keys, events):
@@ -917,7 +1006,69 @@ def _with_refs(block: dict, kind: str) -> dict:
     return block
 
 
-def _dispatch_module(A, item, M, N) -> dict:
+def _sort_key(v):
+    """Deterministic vertex order for displayed summands (ints numerically, then
+    everything else by string)."""
+    return (0, v) if isinstance(v, int) and not isinstance(v, bool) else (1, str(v))
+
+
+def _summands_latex(vertices, letter: str) -> str:
+    """A resolution term's summand multiset as LaTeX, e.g. ``P_{1}^{2} \\oplus P_{3}``
+    (``letter`` = ``P`` projectives / ``I`` injectives). ``0`` for the zero term."""
+    if not vertices:
+        return "0"
+    counts: dict = {}
+    for v in vertices:
+        counts[v] = counts.get(v, 0) + 1
+    parts = []
+    for v in sorted(counts, key=_sort_key):
+        base = f"{letter}_{{{v}}}"
+        parts.append(base if counts[v] == 1 else f"{base}^{{{counts[v]}}}")
+    return r" \oplus ".join(parts)
+
+
+def _summand_view(mod, mult) -> dict:
+    """One indecomposable summand of a module: its dimension vector + multiplicity."""
+    return {"dim_vector": _dv(mod.dimension_vector()), "multiplicity": int(mult),
+            "indecomposable": True}
+
+
+def _decompose(M):
+    """(is_indecomposable, decompose) from the Plan-30 Part-A engine, or ``None``
+    when it is not yet importable (so callers degrade to the pre-Plan-30 shape)."""
+    try:
+        from quiverlab.modules.decompose import decompose, is_indecomposable
+    except ImportError:
+        return None
+    return is_indecomposable, decompose
+
+
+def _input_certificate(M) -> dict:
+    """Certify the INPUT of an AR translate (Marco #1): ``indecomposable: true`` or
+    its Krull-Schmidt ``decomposition`` + the additivity note (tau is additive, so a
+    decomposable input's tau is still exact -- computed summand-wise).
+
+    Best-effort + honest: returns ``{}`` (no claim) when the decomposition engine is
+    unavailable (Part A not merged) OR cannot certify within budget -- the engine is
+    LOUD (e.g. char <= dim M), and tau itself stays valid, so the block simply omits
+    the certificate rather than assert something it could not prove. The block is
+    then byte-identical to the pre-Plan-30 shape (an explicit ``decompose`` request
+    still surfaces the loud refusal for the user who asks for it)."""
+    eng = _decompose(M)
+    if eng is None:
+        return {}
+    is_indec, decompose = eng
+    try:
+        if is_indec(M):
+            return {"indecomposable": True}
+        return {"indecomposable": False,
+                "decomposition": [_summand_view(s, m) for (s, m) in decompose(M)],
+                "note_key": "mod.tau_additive"}
+    except qerr.QuiverlabError:
+        return {}
+
+
+def _dispatch_module(A, item, M, N, T=None) -> dict:
     kind = item.kind
     if kind == "dimension_vector":
         return _with_refs({"kind": "dimension_vector", "side": M.side,
@@ -929,8 +1080,18 @@ def _dispatch_module(A, item, M, N) -> dict:
                            "socle": _mod_view(M.socle())}, kind)
     if kind in ("tau", "tau_minus"):
         t = M.tau() if kind == "tau" else M.tau_minus()
-        return _with_refs({"kind": kind, "side": t.side, "is_zero": t.dim == 0,
-                           **_mod_view(t)}, kind)
+        block = {"kind": kind, "side": t.side, "is_zero": t.dim == 0, **_mod_view(t)}
+        block.update(_input_certificate(M))
+        return _with_refs(block, kind)
+    if kind == "decompose":
+        eng = _decompose(M)
+        if eng is None:
+            raise SpecError("module decomposition requires the Krull-Schmidt engine "
+                            "(Plan 30 Part A); not available in this build")
+        _, decompose = eng
+        summands = [_summand_view(s, m) for (s, m) in decompose(M)]
+        return _with_refs({"kind": "decompose", "side": M.side,
+                           "summands": summands, "iso_classes": len(summands)}, kind)
     if kind == "ext":
         top = item.hi
         if top is None:
@@ -940,6 +1101,19 @@ def _dispatch_module(A, item, M, N) -> dict:
         return _with_refs({"kind": "ext", "top": top,
                            "dims": [int(d) for d in dims],
                            "target": _mod_view(N)}, kind)
+    if kind == "tor":
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError", "tor needs a degree range, e.g. 'tor:0..4'")
+        try:
+            from quiverlab.modules.tor import tor_dims
+        except ImportError:
+            raise SpecError("Tor requires the Tor engine (Plan 29); not available in "
+                            "this build")
+        dims = tor_dims(A, M, T, top)
+        return _with_refs({"kind": "tor", "top": top,
+                           "dims": [int(d) for d in dims],
+                           "target": _mod_view(T)}, kind)
     if kind in ("projective_resolution", "injective_resolution"):
         top = item.hi
         if top is None:
@@ -947,9 +1121,12 @@ def _dispatch_module(A, item, M, N) -> dict:
                                f"'{kind}:0..4'")
         res = (M.projective_resolution(top) if kind == "projective_resolution"
                else M.injective_resolution(top))
+        letter = "P" if kind == "projective_resolution" else "I"
         terms = [_dv(dv) for dv in res.dimension_vectors()]
         block = {"kind": kind, "top": top, "terms": terms,
-                 "betti": [res.betti(i) for i in range(len(terms))]}
+                 "betti": [res.betti(i) for i in range(len(terms))],
+                 "summands": [_summands_latex(res.term(i), letter)
+                              for i in range(len(terms))]}
         if kind == "projective_resolution":
             block["pd"] = res.pd()
         else:
@@ -1017,6 +1194,8 @@ def _snippet(req: ComputeRequest, A) -> str:
         lines += _module_construction(req.module, "M", A)
     if req.ext_target is not None:
         lines += _module_construction(req.ext_target, "N", A)
+    if req.tor_target is not None:
+        lines += _module_construction(req.tor_target, "N", A)
     _snip = {"hh_cohomology": lambda it: f"A.hochschild_cohomology({it.hi})",
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
@@ -1029,6 +1208,10 @@ def _snippet(req: ComputeRequest, A) -> str:
              "tau": lambda it: "M.tau()",
              "tau_minus": lambda it: "M.tau_minus()",
              "ext": lambda it: f"[A.ext(M, N, i) for i in range({it.hi} + 1)]",
+             "tor": lambda it: ("from quiverlab.modules.tor import tor_dims\n"
+                                f"tor_dims(A, M, N, {it.hi})"),
+             "decompose": lambda it: ("from quiverlab.modules.decompose import "
+                                      "decompose\ndecompose(M)"),
              "projective_resolution":
                  lambda it: f"M.projective_resolution({it.hi}).dimension_vectors()",
              "injective_resolution":

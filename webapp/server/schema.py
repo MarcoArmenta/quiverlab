@@ -79,16 +79,19 @@ class Artifacts(BaseModel):
 
 SIDES = ("right", "left")
 
-# The module compute kinds served on top of a `module` block. `ext` also needs a
-# second module (`ext_target`); the rest act on the single `module`. Kept here so
-# both the schema (routing rules) and the runner agree on the set by construction.
+# The module compute kinds served on top of a `module` block. `ext`/`tor` also need
+# a second module (`ext_target`/`tor_target`); the rest act on the single `module`.
+# Kept here so both the schema (routing rules) and the runner agree on the set by
+# construction. `tor`/`decompose` are Plan 30 additions (Tor needs the Plan-29
+# engine; decompose is the Krull-Schmidt splitter).
 MODULE_KINDS = frozenset({
-    "dimension_vector", "rad_top_soc", "ext", "tau", "tau_minus",
+    "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
-    "projective_dimension", "injective_dimension",
+    "projective_dimension", "injective_dimension", "decompose",
 })
 # Module kinds that consume a degree range (`kind:0..n`); the rest are scalars.
-MODULE_RANGE_KINDS = frozenset({"ext", "projective_resolution", "injective_resolution"})
+MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
+                                "injective_resolution"})
 
 
 def _valid_entry(x: Any) -> bool:
@@ -193,6 +196,24 @@ class ComputeRequest(BaseModel):
     artifacts: Artifacts = Field(default_factory=Artifacts)
     module: ModuleSpec | None = None          # v2 (Plan 26)
     ext_target: ModuleSpec | None = None      # v2: the N in Ext^n(M, N)
+    tor_target: ModuleSpec | None = None      # v2 (Plan 30): the N in Tor^A_n(M, N)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _default_tor_side_left(cls, data):
+        """A ``tor_target`` (the N in Tor^A_n(M, N)) is a LEFT A-module. Default an
+        omitted side to ``"left"`` BEFORE the ModuleSpec validates (whose own default
+        is ``"right"``), so an omitted side and an explicit ``"left"`` canonicalize to
+        the SAME cache key (mirrors the Plan-25/26 side-default discipline). An
+        explicit ``"right"`` is left in place and rejected loudly after validation."""
+        if isinstance(data, dict) and isinstance(data.get("tor_target"), dict):
+            tt = dict(data["tor_target"])
+            b = tt.get("builtin")
+            has_side = "side" in tt or (isinstance(b, dict) and "side" in b)
+            if not has_side:
+                tt["side"] = "left"
+                data = {**data, "tor_target": tt}
+        return data
 
     @field_validator("schema_version")
     @classmethod
@@ -213,10 +234,11 @@ class ComputeRequest(BaseModel):
     @model_validator(mode="after")
     def _module_rules(self):
         """The module block is a v2 feature; and any module compute kind needs a
-        ``module`` (and, for ``ext``, an ``ext_target``)."""
-        if (self.module is not None or self.ext_target is not None) \
-                and self.schema_version != 2:
-            raise SchemaError("a 'module'/'ext_target' block requires schema 2")
+        ``module`` (and, for ``ext``/``tor``, an ``ext_target``/``tor_target``)."""
+        if (self.module is not None or self.ext_target is not None
+                or self.tor_target is not None) and self.schema_version != 2:
+            raise SchemaError("a 'module'/'ext_target'/'tor_target' block requires "
+                              "schema 2")
         kinds = {parse_compute_item(s).kind for s in self.compute}
         if kinds & MODULE_KINDS and self.module is None:
             need = sorted(kinds & MODULE_KINDS)
@@ -224,15 +246,22 @@ class ComputeRequest(BaseModel):
         if "ext" in kinds and self.ext_target is None:
             raise SchemaError("Ext needs a second module 'ext_target' (the N in "
                               "Ext^n(M, N))")
+        if "tor" in kinds and self.tor_target is None:
+            raise SchemaError("Tor needs a second module 'tor_target' (the N in "
+                              "Tor^A_n(M, N), a LEFT A-module)")
+        if self.tor_target is not None and self.tor_target.side != "left":
+            raise SchemaError("Tor's second module 'tor_target' must be a LEFT "
+                              "A-module (side='left'); Tor^A_n(M, N) pairs a right M "
+                              "with a left N")
         return self
 
     def model_dump(self, *args, **kwargs):
-        """Drop ``module``/``ext_target`` when absent so a non-module request
-        canonicalizes byte-identically to the pre-Plan-26 shape (the cache key of
-        every existing family/quiver request is unchanged; only genuine module
-        requests carry the extra block)."""
+        """Drop ``module``/``ext_target``/``tor_target`` when absent so a non-module
+        request canonicalizes byte-identically to the pre-Plan-26 shape (the cache
+        key of every existing family/quiver request -- and every Plan-26 ext request
+        -- is unchanged; only genuine Tor requests carry the extra block)."""
         d = super().model_dump(*args, **kwargs)
-        for k in ("module", "ext_target"):
+        for k in ("module", "ext_target", "tor_target"):
             if d.get(k) is None:
                 d.pop(k, None)
         return d

@@ -115,6 +115,25 @@ def module_decl(algebra, dimvec_list, arrow_matrices, var: str) -> str:
     return f"{var} := RightModuleOverPathAlgebra(A, {list(dimvec_list)}, {arrows_gap});;"
 
 
+def decompose_multiplicities_script(algebra, dimvec_list, arrow_matrices) -> str:
+    """Bind ``d := DecomposeModuleWithMultiplicities(M)`` for the module ``M`` given by
+    its graded form (Plan 30). ``d[1]`` is the list of DISTINCT indecomposable summands
+    and ``d[2]`` the parallel list of multiplicities; the caller reads each on its own
+    trailing statement (``List(d[1], DimensionVector);`` and ``d[2];``). QPA's
+    ``DecomposeModule`` needs a FINITE field, so the cross-check runs over GF(p) only."""
+    base = quiver_and_algebra_script(algebra)
+    base += "\n" + module_decl(algebra, dimvec_list, arrow_matrices, "M")
+    base += "\nd := DecomposeModuleWithMultiplicities(M);;"
+    return base
+
+
+def is_indecomposable_script(algebra, dimvec_list, arrow_matrices) -> str:
+    """Bind ``M`` (graded form) so the caller can read ``IsIndecomposableModule(M);``
+    (Plan 30). Finite-field only, like every QPA decomposition primitive."""
+    return quiver_and_algebra_script(algebra) + "\n" + \
+        module_decl(algebra, dimvec_list, arrow_matrices, "M")
+
+
 def ext_algebra_generators_script(algebra, top: int) -> str:
     """Bind ``info := ExtAlgebraGenerators(M, top)`` for ``M = (+) SimpleModules(A)``
     (Plan 27 Yoneda-algebra crosscheck). QPA's ``ExtAlgebraGenerators`` returns a

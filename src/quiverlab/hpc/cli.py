@@ -372,11 +372,11 @@ def _build_parser() -> _Parser:
                     help="permit large results (relaxes result guards)")
     pr.set_defaults(func=_cmd_run)
 
-    pd = sub.add_parser("render", help="render result.json to PDF/HTML/text")
+    pd = sub.add_parser("render", help="render result.json to PDF/HTML/text/tex")
     pd.add_argument("result", help="path to result.json")
     pd.add_argument("-o", "--output", default=None, help="report output path")
-    pd.add_argument("--format", choices=("auto", "pdf", "html", "txt"),
-                    default="auto", help="output format (default auto)")
+    pd.add_argument("--format", choices=("auto", "pdf", "html", "txt", "tex"),
+                    default="auto", help="output format (default auto; tex = LaTeX source)")
     pd.set_defaults(func=_cmd_render)
 
     ps = sub.add_parser("sample-config", help="print an annotated config YAML")

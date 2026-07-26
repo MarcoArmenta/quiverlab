@@ -44,6 +44,115 @@ function appendLink(li, url, label) {
   li.appendChild(a);
 }
 
+// Format a dimension-vector object like {"1": 2, "2": 0} as "{1: 2, 2: 0}".
+function dvText(dv) {
+  return "{" + Object.keys(dv || {}).map(function (k) {
+    return k + ": " + dv[k];
+  }).join(", ") + "}";
+}
+
+// Build a small <table> with a header row of textContent strings.
+function tableWithHeader(headers) {
+  const tbl = document.createElement("table");
+  const hr = document.createElement("tr");
+  for (const label of headers) {
+    const th = document.createElement("th");
+    th.textContent = label;
+    hr.appendChild(th);
+  }
+  tbl.appendChild(hr);
+  return tbl;
+}
+
+function cellText(text) {
+  const td = document.createElement("td");
+  td.textContent = text;
+  return td;
+}
+
+// Plan 30 (Marco #3): a resolution's rendered table shows term | ⊕-decomposition.
+// The "# summands" and dim-vector columns are gone from the RENDERING; the raw
+// betti/terms fields stay in the JSON dump above. The decomposition cell carries
+// the block's LaTeX (P_1^2 ⊕ P_3), typeset later by renderMath.
+function resolutionTable(block, d) {
+  const tbl = tableWithHeader([d.colTerm || "term",
+                               d.colDecomp || "⊕-decomposition"]);
+  const summands = block.summands || [];
+  const terms = block.terms || [];
+  for (let n = 0; n < terms.length; n++) {
+    const tr = document.createElement("tr");
+    tr.appendChild(cellText(String(n)));
+    const td = document.createElement("td");
+    const span = document.createElement("span");
+    span.className = "arithmatex";
+    span.textContent = "\\(" + (summands[n] != null ? summands[n] : "0") + "\\)";
+    td.appendChild(span);
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+  return tbl;
+}
+
+// Krull–Schmidt summand table: summand | multiplicity | dim vector (Plan 30).
+function decomposeBlock(block, d) {
+  const wrap = document.createElement("div");
+  const p = document.createElement("p");
+  p.textContent = (d.modDecompHeading || "Krull–Schmidt decomposition")
+    + " (" + block.iso_classes + ")";
+  wrap.appendChild(p);
+  const tbl = tableWithHeader([d.modSummand || "summand",
+                               d.modMult || "multiplicity",
+                               d.modDimvec || "dim vector"]);
+  (block.summands || []).forEach(function (s, i) {
+    const tr = document.createElement("tr");
+    tr.appendChild(cellText("M_" + (i + 1)));
+    tr.appendChild(cellText(String(s.multiplicity)));
+    tr.appendChild(cellText(dvText(s.dim_vector)));
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  return wrap;
+}
+
+// The AR-translate input certificate (Marco #1): indecomposable, or the input's
+// decomposition + the additivity note. null when the block carries no certificate
+// (the decompose engine was unavailable), so the note never lies.
+function tauCertNote(block, d) {
+  const p = document.createElement("p");
+  if (block.indecomposable === true) {
+    p.textContent = d.modIndecomposable || "input M is indecomposable";
+    return p;
+  }
+  if (block.decomposition) {
+    const parts = block.decomposition.map(function (s) {
+      return dvText(s.dim_vector) + (s.multiplicity > 1 ? "^" + s.multiplicity : "");
+    }).join("  ⊕  ");
+    p.textContent = "M ≅ " + parts + " — "
+      + (d.modTauAdditive || "τ computed summand-wise (τ is additive)");
+    return p;
+  }
+  return null;
+}
+
+// Render structured tables for any module blocks in the result (reachable via the
+// /api/compute API). Additive: it complements the raw JSON dump, never replaces it.
+function renderModuleBlocks(out, res) {
+  const results = res.results || {};
+  const d = form ? form.dataset : {};
+  for (const kind of Object.keys(results)) {
+    const b = results[kind];
+    if (!b || typeof b !== "object") continue;
+    if (kind === "projective_resolution" || kind === "injective_resolution") {
+      out.appendChild(resolutionTable(b, d));
+    } else if (kind === "decompose") {
+      out.appendChild(decomposeBlock(b, d));
+    } else if (kind === "tau" || kind === "tau_minus") {
+      const note = tauCertNote(b, d);
+      if (note) out.appendChild(note);
+    }
+  }
+}
+
 // Render a compute result into `out` using DOM nodes (server strings via
 // textContent). Keeps the same visual structure as before (h2/pre/p/ul/li/h3).
 function renderResult(out, res) {
@@ -56,6 +165,8 @@ function renderResult(out, res) {
   const pre = document.createElement("pre");
   pre.textContent = JSON.stringify(res.results, null, 2);
   out.appendChild(pre);
+
+  renderModuleBlocks(out, res);   // Plan 30: structured module tables
 
   if (res.quiverlab_version) {
     const p = document.createElement("p");
