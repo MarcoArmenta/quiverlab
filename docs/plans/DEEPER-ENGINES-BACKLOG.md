@@ -224,6 +224,19 @@ planned together even if delivered in slices.
   delegation, byte-stable cache keys), `engine/deepen.py` finally wired
   (checkpoint/resume, exit-75 requeue).
 
+## Tier 1d — GUI/report completeness + module decomposition (Marco, 2026-07-25)
+
+- [ ] **Plan 30 — Krull–Schmidt decomposition + GUI/report completeness** — IN
+  PROGRESS, branch `plan-30-decompose-reporting`
+  (`2026-07-25-plan-30-decompose-reporting.md`). Marco's GUI/PDF feedback:
+  τ must certify indecomposability (with `decompose()` into indecomposables —
+  coverage-program C1 flagship pulled forward, End-idempotent splitting, QPA
+  `DecomposeModule` oracle); Ext/Tor accept ANY module both-args in the GUI;
+  resolution tables per-term as `P₁²⊕P₃` (drop #summands + dim-vector
+  columns); the pdf/tex bundle exhaustive (P_v/I_v description section,
+  rendered differential matrices in worked steps, `.tex` downloadable
+  everywhere). Merges AFTER Plan 29 (tor-GUI wiring skip-guarded).
+
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
