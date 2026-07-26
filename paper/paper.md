@@ -152,12 +152,18 @@ certifies a result the library refuses rather than guess.
 `quiverlab` makes exact Hochschild and module computations routine where they were
 manual, so that Gerstenhaber structure, homological finiteness, and Auslander–Reiten
 data can be studied across families of algebras and across characteristics rather
-than one example at a time. It reproduces published invariants, among them the
-Hochschild dimensions of quantum complete intersections [@BGMS2005; @BerghErdmann2008]
-and the vanishing behavior of hereditary algebras [@Happel1989], and then extends them
-along parameter sweeps that would be impractical by hand. The tool grew out of, and
-now serves, work on Han's conjecture [@Han2006] and the finiteness questions around
-it, but it is independent of the application that produced it.
+than one example at a time. It reproduces published invariants — the Hochschild
+dimensions of quantum complete intersections [@BGMS2005; @BerghErdmann2008] and the
+vanishing behavior of hereditary algebras [@Happel1989] — and extends them along
+parameter sweeps impractical by hand: the quantum-complete-intersection cohomology
+`[2,2,1,0,…]` is confirmed independent of the exponents `(a,b)` through `(5,5)` while
+the homology `[a+b−1, a+b−2, …]` grows with them, the `m`-Kronecker algebra is
+verified to have `HH¹ = m²−1` [@Happel1989], and Bardzell's minimal resolution
+[@Bardzell1997] reaches Hochschild degree 300 on the dimension-220 self-injective
+Nakayama algebra `kZ₂₀/J¹¹`, far past the degree at which the bar complex is
+buildable. The tool grew out of, and now serves, work on Han's conjecture [@Han2006]
+and the finiteness questions around it, but it is independent of the application that
+produced it.
 
 Exactness and per-instance certification also change what a computation can be used
 for. Because every reported number is checked, a disagreement with the literature is
