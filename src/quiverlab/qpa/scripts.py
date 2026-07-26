@@ -167,6 +167,15 @@ def quadratic_ideal_script(algebra) -> str:
     return "\n".join(lines)
 
 
+def symmetric_predicates_script(algebra) -> str:
+    """Bind ``A := kQ/rels`` (via :func:`quiver_and_algebra_script`) so the caller can
+    read QPA's ``IsSymmetricAlgebra(A)`` and ``IsWeaklySymmetricAlgebra(A)`` each on its
+    own trailing statement (``session.run`` returns only the last statement's value).
+    Plan 29: crosschecks quiverlab's ``is_symmetric`` / ``is_weakly_symmetric`` against
+    QPA for algebras that carry a quiver presentation (QQ or prime GF(p))."""
+    return quiver_and_algebra_script(algebra)
+
+
 def module_self_ext_dims_script(algebra, dimvec_M, top: int) -> str:
     """Bind `ext := [dim Ext^0(M,M), ..., dim Ext^top(M,M)]` (self-Ext of one module
     given by its dimension vector) via the SAME idiom `ExtAlgebraGenerators(M, top)[1]`.

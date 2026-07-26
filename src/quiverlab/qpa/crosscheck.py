@@ -51,6 +51,24 @@ def crosscheck_module_ext(algebra, M, top: int) -> CrosscheckReport:
     return CrosscheckReport("module_ext", list(ours), qpa, list(ours) == qpa)
 
 
+def crosscheck_symmetric(algebra) -> CrosscheckReport:
+    """``is_symmetric`` / ``is_weakly_symmetric`` vs QPA's ``IsSymmetricAlgebra`` /
+    ``IsWeaklySymmetricAlgebra`` (Plan 29). Both verdicts are compared at once; ``ours``
+    and ``qpa`` are ``[symmetric, weakly_symmetric]`` boolean pairs. Reproduces the fixed
+    live bug: multi-vertex symmetric Nakayama (Brauer star) algebras kZ_n/J^L with
+    n | (L-1) that the former engine shortcut wrongly reported non-symmetric.
+
+    Scope: the algebra must carry a quiver presentation over QQ or a prime GF(p) (QPA's
+    ``kQ/rels`` route). Presentation-less algebras (e.g. ``TrivialExtension``) cannot be
+    fed to QPA and are out of this crosscheck's scope."""
+    session.require_gap()
+    ours = [bool(algebra.is_symmetric()), bool(algebra.is_weakly_symmetric())]
+    base = scripts.symmetric_predicates_script(algebra)
+    qpa = [bool(session.run(base + "\nIsSymmetricAlgebra(A);")),
+           bool(session.run(base + "\nIsWeaklySymmetricAlgebra(A);"))]
+    return CrosscheckReport("symmetric", ours, qpa, ours == qpa)
+
+
 @dataclass
 class ModuleCrosscheckReport:
     """A module-level QPA crosscheck (tau/tau^-, resolutions, injective dimension).
@@ -239,14 +257,16 @@ def crosscheck_koszul_derived(algebra, top: int) -> CrosscheckReport:
 
 
 def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
-    """Dispatch. what="hochschild"|"module_ext" (Plan 08); "tau"|"tau_minus"|
-    "proj_resolution"|"inj_resolution"|"inj_dimension" (Plan 23 module surface);
-    "ext_algebra_dims"|"ext_generator_degrees"|"ext_quiver"|"quadratic"|
-    "koszul_derived" (Plan 27 Yoneda/Ext-algebra)."""
+    """Dispatch. what="hochschild"|"module_ext" (Plan 08); "symmetric" (Plan 29);
+    "tau"|"tau_minus"|"proj_resolution"|"inj_resolution"|"inj_dimension" (Plan 23
+    module surface); "ext_algebra_dims"|"ext_generator_degrees"|"ext_quiver"|
+    "quadratic"|"koszul_derived" (Plan 27 Yoneda/Ext-algebra)."""
     if what == "hochschild":
         return crosscheck_hochschild(algebra, *args, **kwargs)
     if what == "module_ext":
         return crosscheck_module_ext(algebra, *args, **kwargs)
+    if what == "symmetric":
+        return crosscheck_symmetric(algebra, *args, **kwargs)
     if what == "tau":
         return crosscheck_tau(algebra, *args, minus=False, **kwargs)
     if what == "tau_minus":
@@ -269,7 +289,8 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_koszul_derived(algebra, *args, **kwargs)
     # An unrecognized `what` is a usage error, NOT "QPA unavailable".
     raise QuiverlabError(f"unknown cross-check {what!r}",
-                         hint='use "hochschild", "module_ext", "tau", "tau_minus", '
-                              '"proj_resolution", "inj_resolution", "inj_dimension", '
-                              '"ext_algebra_dims", "ext_generator_degrees", '
-                              '"ext_quiver", "quadratic", or "koszul_derived"')
+                         hint='use "hochschild", "module_ext", "symmetric", "tau", '
+                              '"tau_minus", "proj_resolution", "inj_resolution", '
+                              '"inj_dimension", "ext_algebra_dims", '
+                              '"ext_generator_degrees", "ext_quiver", "quadratic", '
+                              'or "koszul_derived"')
