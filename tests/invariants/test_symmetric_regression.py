@@ -96,14 +96,15 @@ def test_presentationless_symmetry_refuses_like_frobenius():
 
 
 # -- Trivial extension T(A) = A |x D(A) is ALWAYS symmetric (Happel; ASS2006) --
-# ROOT CAUSE (documented): T(A) is built from structure constants with NO quiver
-# presentation, so the path-type-basis certifier cannot run and is_symmetric
-# refuses loudly (honest -- consistent with is_frobenius also refusing). Turning
-# this True requires a double-quiver presentation for TrivialExtension
-# (families/trivial_extension.py), owned by a Plan-29 sibling; the trace-form
-# certifier here then returns True unchanged (each T(A) already has a
-# nondegenerate trace form -- verified during Plan 29 diagnosis). xfail until the
-# presentation lands, at which point these flip to xpass.
+# Plan 31 (fence flipped): TrivialExtension(A) of a quiver-presented A now returns a
+# genuine kQ_T/I_T-presented Algebra (families/trivial_extension.py), certified per
+# instance by dim T(A) == 2*dim A. The path-type-basis certifier therefore runs, and
+# the Skowronski-Yamagata trace-form test returns True on every T(A) (each carries a
+# nondegenerate trace form). QPA-crosschecked -- both our presentation through
+# IsSymmetricAlgebra AND QPA's native TrivialExtensionOfQuiverAlgebra -- in
+# tests/qpa/test_trivial_extension_qpa.py; the full oracle battery lives in
+# tests/families/test_trivial_extension_presented.py. This was xfail while T(A) was
+# presentation-free (is_symmetric refused loudly); it is now a real assert.
 def _kronecker(field):
     return Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=field)
 
@@ -114,9 +115,6 @@ def _comm_square(field):
                   ).algebra(relations=["a*c - b*d"], field=field)
 
 
-@pytest.mark.xfail(raises=FieldError, strict=False,
-                   reason="TrivialExtension needs a double-quiver presentation "
-                          "(Plan 29 families/ sibling) for the path-type certifier")
 @pytest.mark.parametrize("build", [
     lambda: linear_path_algebra(2, field=QQ),            # kA_2
     lambda: linear_path_algebra(3, field=QQ),            # kA_3
@@ -125,5 +123,8 @@ def _comm_square(field):
 ])
 def test_trivial_extension_is_symmetric(build):
     T = TrivialExtension(build())
+    assert T.quiver is not None                          # presented route (Plan 31)
     assert T.is_frobenius() is True
     assert T.is_symmetric() is True
+    assert T.is_weakly_symmetric() is True
+    assert T.is_selfinjective() is True

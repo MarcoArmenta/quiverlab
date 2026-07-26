@@ -103,14 +103,49 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   `test_ext.py`, `test_engine_validation.py`, `test_battery_bardzell.py` —
   docstring/comment-only, no logic change). No theorem number guessed.
 
-- [ ] **TrivialExtension double-quiver presentation** (found by Plan 29's
-  is_symmetric fix): give `families/trivial_extension.py` a genuine
-  quiver+relations presentation (quiver of `T(A)` = Q plus the dual arrows;
-  relations from the ⋉ structure) so the path-basis invariants serve it —
-  `is_symmetric(T(A))` then returns True via the trace-form certifier
-  (verified: every tested `T(A)` has a nondegenerate symmetric trace form);
-  the `xfail(strict=False)` fences in
+- [x] **TrivialExtension double-quiver presentation** — DONE, Plan 31,
+  2026-07-26, branch `plan-31-trivial-extension`
+  (`2026-07-26-plan-31-trivial-extension.md`). `TrivialExtension(A)` of a
+  presented `A` over QQ/GF(p) now returns a genuine `kQ_T/I_T` (quiver of `A`
+  plus one arrow dual to each corner-homogeneous bimodule-socle basis element,
+  direction reversed; relations extracted from the ⋉ structure by a length-lex
+  kernel enumeration), certified per instance by `dim = 2·dim A` (a loud
+  `QuiverlabError` otherwise) and QPA-oracled against the native
+  `TrivialExtensionOfQuiverAlgebra`. `is_symmetric`/`is_weakly_symmetric`/
+  `is_frobenius`/`is_selfinjective` return True on every `T(A)` via the Plan-29
+  trace-form certifier; the four `xfail(strict=False)` fences in
+  `tests/invariants/test_symmetric_regression.py` are now real asserts.
+  Presentation-less bases keep the unchanged ⋉ structure-constants build (honest
+  refusals preserved, doubling as the iso-invariance oracle). Oracles:
+  `T(kA_n) ≅ kZ_n/J^{n+1}` (n=2,3,4), `T(k[x]/(x^a)) = k⟨x,y⟩/(x^a,y²,xy−yx)`,
+  Cartan `C_T = C_A + C_Aᵀ`, presented ≡ ⋉ iso-invariance, CS ≡ bar on presented
+  `T`; new `tests/families/test_trivial_extension_presented.py` (deep) +
+  `tests/qpa/test_trivial_extension_qpa.py` (qpa). No Fernández–Platzeck
+  citation (metadata not BibTeX-verifiable; per-instance-certified + QPA-oracled).
+  Original item (found by Plan 29's is_symmetric fix): give
+  `families/trivial_extension.py` a genuine quiver+relations presentation (quiver
+  of `T(A)` = Q plus the dual arrows; relations from the ⋉ structure) so the
+  path-basis invariants serve it — `is_symmetric(T(A))` then returns True via the
+  trace-form certifier (verified: every tested `T(A)` has a nondegenerate
+  symmetric trace form); the `xfail(strict=False)` fences in
   `tests/invariants/test_symmetric_regression.py` auto-flip to xpass.
+- [ ] **Oracle-class test markers (v0.1.0 release gate — Marco, 2026-07-26):**
+  the four-way test taxonomy as ORTHOGONAL pytest markers, not a file
+  reorganization (tests overlap classes — batteries pin a literature value AND
+  assert cross-engine agreement in one test; directories stay the runtime-bucket
+  dimension): `oracle_qpa` (= the existing `-m qpa`), `oracle_literature`
+  (literature/theory value pins), `oracle_crossengine` (independent
+  implementations agreeing: CS≡bar≡Bardzell≡minimal, pure/numba parity,
+  presented≡⋉ iso-invariance), `oracle_selfcert` (internal certificates:
+  d∘d=0, order gates, dimension certificates, byte-reproducibility pins);
+  unmarked = contract & infrastructure (refusal honesty, no-floats gate,
+  freshness gates, webapp/GUI/release). Deliverables: markers registered in
+  `pyproject.toml`, the assignment sweep, an audited oracle-class × count
+  table on `docs/verification.md` gated by a collection test (the badge==page
+  doctrine), and the forward-going battery file-naming convention recorded.
+  Zero file moves; fast/deep/qpa buckets byte-identical. SHIPS ON MAIN BEFORE
+  THE v0.1.0 TAG (right after Plan 31 merges; a JOSS reviewer can then run
+  each oracle class as a one-liner).
 - [x] **Literature-oracle battery expansion** — DONE, Plan 29, delivered on
   branch 2026-07-25 (merge pre-authorized), branch
   `plan-29-literature-batteries` (`2026-07-25-plan-29-literature-batteries.md`).

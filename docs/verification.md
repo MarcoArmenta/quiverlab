@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2031 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2096 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-07-25 post-merge of Plans 21–30). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one.
@@ -133,6 +133,22 @@ carries a citations-registry key its bibliographic entry is the packaged
   guards the `is_symmetric` fix. Module Tor: the duality anchor
   `dim Tor_n(M,N) = dim Ext^n(M, DN)` on every case, the resolve-either-side
   balance, and vanishing laws (`tensor_product`/`assem_book`).
+- **The Plan-31 trivial-extension presentation** (2026-07-26). The certified
+  `kQ_T/I_T` build is pinned to classical special cases: `T(kA_n) ≅ kZ_n/J^{n+1}`
+  (the symmetric Brauer star, verified n = 2, 3, 4 — dims 6/12/20, Loewy length
+  n+1, all four symmetry booleans), and `T(k[x]/(x^a)) = k⟨x,y⟩/(x^a, y², xy−yx)`
+  — the plain commutator in **every** characteristic (`D(A)` is an honest
+  bimodule, no Koszul sign), whose a = 2 case is `k[x,y]/(x², y²)`, reproducing
+  the existing `HH_• = [4,4,5,6]` pin above. The Cartan identity
+  `C_T = C_A + C_Aᵀ` (repo convention: entry `dim e_i A e_j`) holds on every case
+  including the zoo's `line_abc_cde`; the presented and ⋉ structure-constant
+  builds agree degreewise on bar-HH (iso-invariance), and CS ≡ bar now serves the
+  presented `T(kA₂)` (CS refused the old structure-constant build). Sources:
+  Assem–Simson–Skowroński (2006, `assem_book`) and the symmetric-Nakayama
+  criterion of Skowroński–Yamagata (`skowronski_yamagata`); the `HH¹(T(A)) ≠ 0`
+  summand (`cmrs_split`) is the Plan-29 companion. The presentation itself cites
+  no closed-form theorem — it is per-instance dimension-certified and QPA-oracled
+  (see [Honest scope](#honest-scope)). `tests/families/test_trivial_extension_presented.py`.
 
 ### The read-only bank as a byte-level oracle
 
@@ -250,8 +266,16 @@ recompute independently and refuses to silently disagree
   quantities are crosschecked by feeding QPA the opposite algebra — QPA is
   right-module native (`tests/qpa/test_module_ar_crosscheck.py`,
   `tests/qpa/test_left_modules_qpa.py`).
+- **Trivial-extension construction** (Plan 31): QPA 1.37 builds `T(A)` natively
+  via `TrivialExtensionOfQuiverAlgebra`, so the crosscheck compares its
+  dimension, arrow count, and the `IsSymmetricAlgebra` / `IsWeaklySymmetricAlgebra`
+  / `IsSelfinjectiveAlgebra` predicates against quiverlab's presented `T(A)`
+  (QPA's arrow labels differ — `te_a1_i_j` vs `te0` — so counts, not names, are
+  compared). Pinned on `T(kA₂)` (dim 6, 2 arrows, all predicates true), `T(kA₃)`
+  (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
+  square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (31 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (112 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -320,12 +344,12 @@ and the oracle class that guards it. Counts are `pytest --collect-only` with the
 | `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries) | 213 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition) | 235 | deep | AR/duality literature pins (ASS2006); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks |
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 112 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
-| `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries) | 79 | deep | closed-form family pins; zoo diversity gates; citations |
+| `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 139 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events + kA₂ replay golden) | 60 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
-| `qpa/` (GAP/QPA crosscheck) | 114 | 107 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim — left side via `A^op`); script builders + guards run without GAP |
+| `qpa/` (GAP/QPA crosscheck) | 119 | 112 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
 | `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 313 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
 | `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 53 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 61 | fast | runner artifacts / invariants; build hook; freshness |
@@ -344,8 +368,8 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 | Bucket | Tests | Runs where |
 |---|---:|---|
 | `fast` | 804 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1120 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
-| `qpa` | 107 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `deep` | 1180 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `qpa` | 112 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The
@@ -397,11 +421,25 @@ verified precision and listed below as such.
   `Ext^n(M, DN)` inside QPA by dimension-shifting through `NthSyzygy` and uses
   the duality identity as the bridge — plus quiverlab's own self-certifying
   duality/balance anchors.
-- **`TrivialExtension` symmetry refuses loudly** (was a silent wrong False):
-  `T(A)` is symmetric classically, but it carries no quiver presentation, so
-  `is_symmetric`/`is_frobenius` coherently refuse; the strict pins are
-  `xfail` fences that auto-flip when the double-quiver presentation lands
-  (backlogged).
+- **`TrivialExtension(A)` is now a certified quiver presentation** (Plan 31; was
+  a silent wrong `False`, then a loud refusal). For a presented `A` over QQ or
+  GF(p), `T(A)` is returned as a genuine `kQ_T/I_T` — the quiver of `A` plus one
+  arrow dual to each corner-homogeneous basis element of the bimodule socle
+  `soc_{A^e}A` (direction reversed), with relations extracted algorithmically
+  from the ⋉ structure by a length-lex kernel enumeration. It carries **no
+  closed-form theorem citation**: the Fernández–Platzeck presentation was not
+  obtained to BibTeX precision, so nothing is transcribed. Each instance is
+  instead **self-certified** by the dimension identity `dim kQ_T/I_T = 2·dim A`
+  (a `QuiverlabError` otherwise) and **QPA-oracled** against the native
+  `TrivialExtensionOfQuiverAlgebra` — consistent with this page's
+  no-unverified-pins doctrine. `is_symmetric`, `is_weakly_symmetric`,
+  `is_frobenius`, and `is_selfinjective` now return `True` on every `T(A)`
+  through the unchanged Plan-29 trace-form certifier, and the four former
+  `xfail` fences in `tests/invariants/test_symmetric_regression.py` are real
+  asserts. A base with no usable path presentation falls back to the unchanged
+  ⋉ structure-constants build (honest refusals preserved, doubling as the
+  iso-invariance oracle); the per-instance certificate never lets a wrong
+  algebra through.
 - **Redondo–Román 2018 cup-nonvanishing is deferred**: the paper presents
   `HH^n` as combinatorial sets, not integer vectors; without a clean bar
   anchor the exact nonzero products are convention-risky, so the predicate is
@@ -453,6 +491,11 @@ theorem number is asserted unless it is actually recorded.
   arXiv:1406.2300.
 - `happel_question` — Happel, D. (1989). Hochschild cohomology of
   finite-dimensional algebras. *Lecture Notes in Mathematics* 1404, 108–126.
+- `happel_trivial_extension` — Happel, D. (1988). *Triangulated Categories in
+  the Representation Theory of Finite Dimensional Algebras.* London
+  Mathematical Society Lecture Note Series 119, Cambridge University Press.
+  (The trivial extension `T(A) = A ⋉ DA` is symmetric for every
+  finite-dimensional `A`; the repetitive-algebra framework.)
 - `quantum_ci` — Buchweitz, R.-O.; Green, E. L.; Madsen, D.; Solberg, Ø. (2005).
   Finite Hochschild cohomology without finite global dimension. *Mathematical
   Research Letters* 12, 805–816. arXiv:math/0407108.

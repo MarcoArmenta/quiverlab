@@ -186,6 +186,18 @@ def quadratic_ideal_script(algebra) -> str:
     return "\n".join(lines)
 
 
+def trivial_extension_script(algebra) -> str:
+    """Bind ``TE := TrivialExtensionOfQuiverAlgebra(A)`` (QPA's native trivial
+    extension of the presented ``A := kQ/rels``) so the caller can read each
+    property on its OWN trailing statement (``session.run`` returns only the last
+    statement's value): ``Dimension(TE);``, the arrow count of
+    ``QuiverOfPathAlgebra(TE)``, and the three self-injectivity predicates. Plan
+    31: cross-checks the certified double-quiver ``TrivialExtension`` build against
+    QPA (QPA labels its dual arrows differently, so compare counts, not names)."""
+    return quiver_and_algebra_script(algebra) + \
+        "\nTE := TrivialExtensionOfQuiverAlgebra(A);;"
+
+
 def symmetric_predicates_script(algebra) -> str:
     """Bind ``A := kQ/rels`` (via :func:`quiver_and_algebra_script`) so the caller can
     read QPA's ``IsSymmetricAlgebra(A)`` and ``IsWeaklySymmetricAlgebra(A)`` each on its
