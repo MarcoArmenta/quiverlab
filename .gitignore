@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 site/
 .cache/
+quiverlab_traces/
 docs/tutorials/quiverlab_traces/
 paper/paper.bib
 build/

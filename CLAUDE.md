@@ -378,4 +378,31 @@ class table == live collection, gated by `tests/release/test_oracle_classes.py`
 (3 deep tests — the only count delta; the sweep itself is bucket-byte-identical,
 verified 804/1180/112 excluding the gate). 89 files marked; 12 edge rulings in
 the plan doc (`2026-07-26-plan-32-oracle-markers.md`).
-Suite recounted post-Plan-32: 2099 tests (fast 804 / deep 1183 / qpa 112).
+Suite recounted post-Plan-33: 2151 tests (fast 804 / deep 1234 / qpa 113).
+Plan 33 (nontrivial literature examples at scale, Tier 1a — Marco: the
+test/paper examples were too small (kA₂/kA₃/single loops); scale them to the
+books/literature and push the quantum ones deeper. SCALE, not new theorems —
+Plan 29 already pins the small directions. Scale batteries: generalized quantum
+CI `k⟨x,y⟩/(x^a,y^b,yx−q·xy)` for `(a,b)∈{(2,4),(3,4),(4,4),(2,5),(5,5)}`
+(Bergh–Erdmann coh `[2,2,1,0,…]` past deg 8, hom `[a+b−1,…]`; char-0 branch
+only, `qci_hh_oracle`); preprojective Π(A₄/A₅/D₄/D₅) dims 20/35/28/60,
+self-injective, Loewy = h−1 (Coxeter 5/6/6/8) — HH values xeng/QPA-only;
+Bardzell depth kZ₂₀/J¹¹ dim 220 to degree 300 (context-managed
+`sys.setrecursionlimit` raise around the Bardzell walk in
+`engine/resolutions_bardzell.py`, pure/numba parity unaffected; deg-300
+regression); symmetric Brauer stars kZ₄/J⁹, kZ₅/J¹¹; Taft Λ₅/Λ₆ HH + cyclic;
+canonical C(2,2,2,2,2) `HH²=t−3=2` (first ≥2 case); Boolean B₃ incidence dim 27
+(nerve vanishing `HH^{≥1}=0`); presented T(kD₄)/T(kA₅)/T(kA₆); wild m-Kronecker
+`HH¹=m²−1`, Coxeter `t²−(m²−2)t+1`; exterior Λ(k³)/Λ(k⁴) Koszul via
+`modules.koszul.g_quadratic_certificate`. Builders (C2 src): `QuantumCI(q,a,b)`
+(byte-identical `QuantumCI(q)`), preprojective auto degree-bound table, the
+Bardzell recursion guard. Papers (C3): JSC worked-examples rebuilt around the
+research top-10 with every number recomputed by replayable
+`paper-jsc/computations/` scripts + the representation-theory-first interior
+pass; JOSS Research-impact folds the QCI-(a,b), m-Kronecker, and Bardzell-depth
+one-liners in band. Honest-scope labels binding (verification page):
+preprojective and exterior HH values are cross-engine-only (no published table);
+Π(D₅) HH-at-scale, Λ(kⁿ≥4) depth, decompose ≳ dim 50, dim-30+ non-monomial HH
+past ~degree 10, and the Π(E₆)/Π(D₆) builds are deferred to the SUBMISSION
+step-4 cluster list. Oracle-class markers per Plan 32. Branch
+`plan-33-nontrivial-examples`.)

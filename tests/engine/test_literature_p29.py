@@ -31,6 +31,7 @@ CHAR NOTES:
 ===========================================================================
 """
 import pytest
+import sympy as sp
 
 from quiverlab import Quiver, CC, GF
 from quiverlab.resolutions_cs.homology import cs_cohomology_dims, cs_homology_dims
@@ -39,6 +40,18 @@ from quiverlab.families import NakayamaAlgebra
 pytest.importorskip("quiverlab.groebner")
 
 pytestmark = [pytest.mark.oracle_literature]
+
+
+# --------------------------------------------------------------------------- #
+# shared cross-invariant helpers (Happel's trace identity, Plan 29 convention)  #
+# --------------------------------------------------------------------------- #
+def _cox_trace(A):
+    M = A.coxeter_matrix()
+    return sum(M[i][i] for i in range(len(M)))
+
+
+def _euler(dims):
+    return sum((-1) ** i * d for i, d in enumerate(dims))
 
 
 # =========================================================================== #
@@ -157,3 +170,77 @@ def test_canonical_C2222_t4(fld):
     A = _canonical_equal2(4, [2, 3], fld)
     assert cs_cohomology_dims(A, 4).dims == [1, 0, 1, 0, 0]
     assert cs_homology_dims(A, 4).dims == [6, 0, 0, 0, 0]
+
+
+@pytest.mark.parametrize("fld", [CC, GF(32003)], ids=["CC", "GF32003"])
+def test_canonical_C22222_t5(fld):
+    """Plan 33 SCALE of the canonical battery: C(2,2,2,2,2) (t=5, dim 19, 7 vertices)
+    is the FIRST case with dim HH^2 = t-3 = 2 (>= 2).  HH^* = [1, 0, 2, 0, 0];
+    HH_0 = 7 = #vertices, HH_{>=1} = 0 (``schremmer_wpl``, Prop 4.2.8 / Cor 4.2.9,
+    after Happel LNM 1404).  CC and GF(32003) agree (char-0-claimed, no discrepancy).
+    Non-monomial admissible => engine = CS.  Happel-trace cross-link: quiverlab's
+    Coxeter matrix has tr = -3 = -Euler(HH^*) = -(1 - 0 + 2) (``happel_trace``, the
+    Plan-29 sign convention tr(Coxeter) == -sum (-1)^i dim HH^i)."""
+    A = _canonical_equal2(5, [2, 3, 4], fld)
+    hh = cs_cohomology_dims(A, 4).dims
+    assert hh == [1, 0, 2, 0, 0]
+    assert cs_homology_dims(A, 4).dims == [7, 0, 0, 0, 0]
+    assert _cox_trace(A) == -_euler(hh) == -3       # Happel's trace identity
+
+
+# =========================================================================== #
+# 2d.  m-Kronecker  HH^* = [1, m^2-1, 0, 0]  +  Coxeter polynomial (Plan 33)     #
+# =========================================================================== #
+# Citation: Happel's question (``happel_question``) -- the m-arrow Kronecker quiver
+# is hereditary (gl.dim 1), so HH^{>=2} = 0; HH^0 = 1 (connected), HH^1 = m^2 - 1.
+# The Coxeter polynomial is t^2 - (m^2-2) t + 1 (Dynkin/wild spectral table,
+# ``lenzing_delapena_spectral``).  Happel's trace identity (``happel_trace``)
+# cross-links them: tr(Coxeter) = m^2 - 2 = -Euler(HH^*).  The m=2 value [1,3,0]
+# is the Cibils Kronecker pin above; m=3 [1,8,0] also appears in the Plan-29 Happel
+# battery -- here both are pinned WITH the exact Coxeter polynomial (m=4 is new).
+@pytest.mark.parametrize("m", [3, 4])
+def test_m_kronecker_hh_and_coxeter(m):
+    """m-Kronecker (2 vertices, m parallel arrows, no relations, hereditary):
+    HH^* = [1, m^2-1, 0, 0] (``happel_question``), Coxeter polynomial
+    t^2 - (m^2-2) t + 1 (``lenzing_delapena_spectral``), cross-linked by Happel's
+    trace identity tr(Coxeter) = -Euler(HH^*) (``happel_trace``).  m=3: [1,8,0,0],
+    t^2-7t+1; m=4: [1,15,0,0], t^2-14t+1 (spectral radius > 1 => a WILD algebra)."""
+    t = sp.symbols("t")
+    A = Quiver([1, 2], {f"a{i}": (1, 2) for i in range(m)}).algebra(relations=[], field=GF(32003))
+    hh = A.hochschild_cohomology(3).dims
+    assert hh == [1, m * m - 1, 0, 0]
+    poly = A.coxeter_polynomial().as_expr()
+    assert sp.expand(poly - (t**2 - (m * m - 2) * t + 1)) == 0
+    assert _cox_trace(A) == -_euler(hh)              # Happel's trace identity
+
+
+# =========================================================================== #
+# 2e.  Taillefer Taft algebras AT SCALE  (Lambda_5, Lambda_6)  (Plan 33)         #
+# =========================================================================== #
+# Extends the Plan-29 ``test_taillefer_taft_*`` (n = 2, 3) to n = 5, 6.  Same
+# citation R. Taillefer, arXiv:math/0009214 (``taillefer_taft``): the Taft algebra
+# Lambda_n = kZ_n/J^n is self-injective cyclic Nakayama, dim n^2 (25, 36), and
+# HH_p = k^{n-1} (p >= 1), HH_0 = k^n; HC_{2c} = k^n, HC_{2c+1} = k^{n-1}.  Char 0.
+@pytest.mark.parametrize("n", [5, 6])
+def test_taillefer_taft_scale_hh_homology(n):
+    """HH_*(Lambda_n) = [n, n-1, n-1, ...] over CC (genuine char 0) for the Taft
+    algebra Lambda_n = kZ_n/J^n (dim n^2 = 25, 36), n in {5, 6} -- the Plan-29
+    n in {2,3} pins pushed to the larger self-injective members.  Computed via the CS
+    engine (monomial; cheap where the bar oracle blows up at dim n^2) (``taillefer_taft``,
+    Thm 2.2).  Recomputed live (Plan 33); ~0.1-0.35 s/case."""
+    A = NakayamaAlgebra(n=n, l=n, cyclic=True, field=CC)
+    assert cs_homology_dims(A, 6).dims == [n] + [n - 1] * 6
+
+
+@pytest.mark.parametrize("n", [5, 6])
+def test_taillefer_taft_scale_cyclic_start(n):
+    """HC_0 = n, HC_1 = n-1 -- the even/odd (n / n-1) alternation START for the Taft
+    algebra Lambda_n (dim n^2), pinned over GF(32003) as an explicit char-0 proxy
+    (p = 32003 divides neither n nor n-1 for n in {5, 6}, so the proxy is faithful --
+    same convention as the Plan-29 ``test_taillefer_taft_cyclic_homology_*`` tests).
+    Only degree 1 is feasible at this dimension: the Connes (b, B) mixed complex
+    costs > 4 GB at degree 2 for dim >= 25 (OOM-risky in the deep bucket; the full
+    even/odd alternation is pinned deeper at dim <= 9 by Plan 29) (``taillefer_taft``,
+    Cor 2.8)."""
+    A = NakayamaAlgebra(n=n, l=n, cyclic=True, field=GF(32003))
+    assert A.cyclic_homology(1).dims == [n, n - 1]

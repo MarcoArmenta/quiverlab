@@ -92,6 +92,23 @@ def test_bergh_erdmann_qci_general_ab(a, b):
     assert cs_homology_dims(A, 6).dims == [a + b - 1] + [a + b - 2] * 6
 
 
+# --- Plan 33: the (a,b) QCI oracle pushed to degree 8 at higher dimension ----
+@pytest.mark.parametrize("a,b", [(2, 4), (3, 4), (4, 4), (2, 5), (5, 5)])
+def test_bergh_erdmann_qci_scale_deg8(a, b):
+    """Plan 33 SCALE of ``test_bergh_erdmann_qci_general_ab``: the same Bergh-Erdmann
+    Thm 3.2 dim HH^* = [2,2,1,0,...] and Thm 3.1 dim HH_* = [a+b-1] + [a+b-2]*(...)
+    pushed to DEGREE 8 over the enlarged family (a,b) in {(2,4),(3,4),(4,4),(2,5),
+    (5,5)}, dim A = a*b up to 25 at (5,5).  The [2,2,1] cohomology plateau is
+    independent of (a,b) and of degree; the homology plateau tracks a+b-2 -- the
+    Bergh-Erdmann signature at scale (``qci_hh_oracle``, DOI 10.2140/ant.2008.2.501,
+    Thms 3.1/3.2).  CC ONLY (q = 2 is not a root of unity -- see the module CHAR
+    CAVEAT).  Recomputed live (Plan 33) before pinning; the CS engine handles the
+    dim-25 (5,5) case in ~13 s/direction (the deep-bucket ceiling here)."""
+    A = _qci(a, b, CC)
+    assert cs_cohomology_dims(A, 8).dims == [2, 2, 1, 0, 0, 0, 0, 0, 0]
+    assert cs_homology_dims(A, 8).dims == [a + b - 1] + [a + b - 2] * 8
+
+
 # =========================================================================== #
 # 1b.  Redondo-Roman triangular string A_n family  (all char)                   #
 # =========================================================================== #
@@ -134,6 +151,25 @@ def test_tri_string_A3_revival_cc():
     """A_3 = [1, 3, 0, 2, 0] over CC.  Char-independence of the revival is anchored by
     the GF(p) minimal-engine cross-check above (Thm 4.3 is a combinatorial count)."""
     assert cs_cohomology_dims(_tri_string(3, CC), 4).dims == [1, 3, 0, 2, 0]
+
+
+# --- Plan 33: the revival at scale -- A_5 (the deepest revival reached here) --
+@pytest.mark.parametrize("fld", [GF(2), GF(3), CC], ids=["GF2", "GF3", "CC"])
+def test_tri_string_A5_revival_scale(fld):
+    """Plan 33 SCALE of the A_3 revival: A_5 = A_{2m+1} (m = 2, dim 36) has
+    HH^* = [1, 5, 0, 0, 0, 2, 0] -- HH^{2,3,4} vanish then HH^5 = 2 REVIVES (the
+    A_{2m+1} family has HH^{2m+1} = 2; this is the deepest revival reached in the
+    battery).  Pinned over GF(2), GF(3) AND CC: char-independence is Redondo-Roman
+    Thm 4.3 (the dim is a combinatorial count), the very theorem that lets the A_3
+    GF(p) minimal-A^e anchor above carry to every characteristic
+    (``redondo_roman_2014``, Ex 3 / Thm 4.3).
+
+    DEVIATION from the A_3 pattern: no in-test minimal-engine cross-check.  A_5 has
+    dim 36, where the minimal A^e engine's iterated syzygies exceed the deep budget
+    (minutes vs CS's ~0.15 s to degree 6); the revival MECHANISM is already anchored
+    by the dim-16 A_3 minimal cross-check, and Thm 4.3's char-independence (verified
+    here across three characteristics) carries it two degrees deeper."""
+    assert cs_cohomology_dims(_tri_string(5, fld), 6).dims == [1, 5, 0, 0, 0, 2, 0]
 
 
 # =========================================================================== #
@@ -182,3 +218,49 @@ def test_cup_nonvanishing_rr2018_deferred():
     (vertices 1,2; arrows a1,b1:1->2, a2:2->1; dim 6, infinite gl.dim) once an exact
     nonzero product is anchored through the bar/transported route."""
     pass
+
+
+# =========================================================================== #
+# 3.  Multi-vertex ZOO depth to degree 24 (Plan 33 -- CS is ~free this deep)     #
+# =========================================================================== #
+# The CS engine reaches degree 24 in milliseconds on the standing multi-vertex zoo
+# records (Plan 18), far past the bar oracle's degree-5 ceiling on such algebras.
+from quiverlab.families.zoo import load_catalog, build_from_record  # noqa: E402
+
+
+def _zoo(name, field):
+    rec = next(r for r in load_catalog() if r.get("name") == name)
+    return build_from_record(rec, field=field)
+
+
+@pytest.mark.parametrize("name,nverts", [("comm_square", 4), ("line_abc_cde", 6)])
+def test_zoo_acyclic_depth_cs_deg24(name, nverts):
+    """The ACYCLIC multi-vertex zoo records (Plan 18): comm_square (dim 9) and
+    line_abc_cde (dim 16) have no oriented cycles, so HH_n = 0 for n >= 1 to any
+    depth (Cibils' acyclic vanishing, ``cibils_acyclic``) and HH^* = [1, 0, ...]
+    (connected).  Pinned to DEGREE 24 via CS (~0.01 s) -- a depth showcase where the
+    bar oracle is hopeless.  HH_0 = #vertices (the separable degree-0 part)."""
+    A = _zoo(name, GF(32003))
+    assert cs_cohomology_dims(A, 24).dims == [1] + [0] * 24
+    assert cs_homology_dims(A, 24).dims == [nverts] + [0] * 24
+
+
+@pytest.mark.oracle_crossengine
+def test_zoo_cyclic_nakayama_depth_cs_vs_bardzell_deg24():
+    """The CYCLIC zoo record cn_3_2 = kZ_3/rad^2 (dim 6, self-injective, radical
+    square zero): its HH_* is PERIODIC (period 6) and nonzero infinitely often
+    (complexity 1) -- a Cibils rad^2 = 0 computation (``cibils_radsq``).  Cross-engine
+    at DEPTH: the CS engine (general reduction-system route) and the Bardzell engine
+    (monomial minimal bimodule resolution) agree degreewise to degree 24 --
+    HH_* = [3, 0, 1, 1, 0, 0, ...] repeating (``bardzell``; ``chouhy_solotar``).  The
+    bar oracle cannot reach this depth on a self-injective algebra."""
+    A = _zoo("cn_3_2", GF(32003))
+    cs = cs_homology_dims(A, 24).dims
+    from quiverlab.engine.hh_engine import hochschild_homology_dims
+    from quiverlab.engine.resolutions_bardzell import BardzellResolution, MonomialPresentation
+    from quiverlab.engine.coxeter2 import cyclic_nakayama
+    Ae, _ = cyclic_nakayama(3, 2)
+    res = BardzellResolution(MonomialPresentation.cyclic_nakayama(3, 2))
+    bard = hochschild_homology_dims(Ae, 24, resolution=res)[32003]
+    assert cs == bard, f"CS vs Bardzell disagree on cn_3_2 to deg 24: {cs} vs {bard}"
+    assert cs[:8] == [3, 0, 1, 1, 0, 0, 0, 0]      # period-6 revival pattern
