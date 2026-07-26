@@ -32,13 +32,16 @@ _TEMPLATES = Jinja2Templates(
 
 # The runner (webapp/server/runner.py) writes these exact names: result.json,
 # the worked-steps trace.pdf OR its HTML fallback trace_steps.html, the LaTeX
-# source trace.tex (Plan 30 C1 -- always persisted, downloadable everywhere), and
-# tikz.tex. The whitelist is also the traversal defense -- a name outside it is a 404.
+# source trace.tex (Plan 30 C1 -- always persisted, downloadable everywhere), the
+# JSON machine record trace.json (Plan 34 -- the complete worked-steps event stream,
+# always persisted), and tikz.tex. The whitelist is also the traversal defense -- a
+# name outside it is a 404.
 _CONTENT_TYPES = {
     "result.json": "application/json",
     "trace.pdf": "application/pdf",
     "trace_steps.html": "text/html; charset=utf-8",
     "trace.tex": "text/plain; charset=utf-8",
+    "trace.json": "application/json; charset=utf-8",
     "tikz.tex": "text/plain; charset=utf-8",
 }
 _ALLOWED = frozenset(_CONTENT_TYPES)
@@ -109,23 +112,47 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
         if job is None:
             return HTMLResponse(_t("job.not_found", lang), status_code=404)
         art = cfg.artifacts_dir / job_id
-        # The worked-steps artifact is either the PDF or its HTML fallback.
-        trace_name = ("trace.pdf" if (art / "trace.pdf").exists()
-                      else "trace_steps.html" if (art / "trace_steps.html").exists()
-                      else None)
+        # The worked-steps artifact is a typeset PDF and/or the print-ready HTML
+        # report (Plan 34): expose each with an HONEST label rather than tagging the
+        # HTML fallback "PDF". When the PDF is absent but a report exists, say WHY
+        # (no LaTeX toolchain here, or a compile that failed) -- the repo's
+        # loud-honesty doctrine, mirrored at the read boundary.
+        has_pdf = (art / "trace.pdf").exists()
+        has_html_report = (art / "trace_steps.html").exists()
         # The LaTeX source of the worked steps (Plan 30 C1) is offered alongside.
         has_tex = (art / "trace.tex").exists()
+        # The JSON machine record of the worked steps (Plan 34 -- the complete event
+        # stream) is offered alongside the tex/pdf/html.
+        has_trace_json = (art / "trace.json").exists()
         has_tikz = (art / "tikz.tex").exists()
         reproduce = version = None
         references: list = []
+        recorded_pdf_reason = None
         if job.status == "done" and (art / "result.json").exists():
             try:
                 data = json.loads((art / "result.json").read_text(encoding="utf-8"))
                 reproduce = data.get("reproduce")
                 version = data.get("quiverlab_version")
                 references = data.get("references", []) or []  # runner-resolved
+                # The WORKER records why no PDF was produced (Plan 34 MAJOR-3) --
+                # engine-present-but-compile-failed vs no-toolchain -- so we report
+                # the reason the worker actually saw, not a re-probe on this web tier
+                # (which may have a different LaTeX install than the worker's).
+                recorded_pdf_reason = (data.get("meta") or {}).get("pdf_fallback_reason")
             except (json.JSONDecodeError, OSError):
                 pass
+        pdf_missing_reason = None
+        if has_html_report and not has_pdf:
+            if recorded_pdf_reason in ("compile", "no_toolchain"):
+                pdf_missing_reason = recorded_pdf_reason
+            else:
+                # Legacy row (pre-Plan-34, no recorded reason): fall back to a live
+                # probe -- the best we can do without the worker's record.
+                try:
+                    from quiverlab.trace.writer import have_latex
+                    pdf_missing_reason = "compile" if have_latex() else "no_toolchain"
+                except Exception:
+                    pdf_missing_reason = "no_toolchain"
         # "Reproduce on a cluster" (Plan 28): the request spec as a runnable YAML
         # config, rendered next to the local-Python snippet. Only for a done job
         # whose stored spec is a real request (skips e.g. empty test fixtures); a
@@ -142,8 +169,10 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
         # internal type/message is rendered into the page.
         return _TEMPLATES.TemplateResponse(
             request, "job.html",
-            _ctx(request, cfg, lang, prefix, job=job, trace_name=trace_name,
-                 has_tex=has_tex, has_tikz=has_tikz, reproduce=reproduce,
+            _ctx(request, cfg, lang, prefix, job=job, has_pdf=has_pdf,
+                 has_html_report=has_html_report, pdf_missing_reason=pdf_missing_reason,
+                 has_tex=has_tex, has_trace_json=has_trace_json,
+                 has_tikz=has_tikz, reproduce=reproduce,
                  version=version, references=references, cluster_yaml=cluster_yaml,
                  error=sanitize_error_string(job.error)))
 

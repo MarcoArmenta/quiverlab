@@ -33,9 +33,15 @@ def test_default_auto_is_unchanged():
     t = _square().hochschild_cohomology(2)               # engine="auto", auto_cs default False
     assert "Chouhy-Solotar" not in (t.engine or "") and t.dims == [1, 0, 0]
 
-    # (2) Pillar-4: default auto did NOT silently route to CS — it still hits the bar wall.
+    # (2) Pillar-4, as AMENDED 2026-07-26 (Marco): default auto no longer DIES at the
+    # bar wall — at the exact depth where bar would raise DepthLimitError it reroutes
+    # to Chouhy-Solotar (recorded in the dispatch trace, never silent). In-window
+    # results (pin (1) above) are byte-unchanged. engine="bar" keeps the honest wall.
+    t4 = _square().hochschild_cohomology(4)
+    assert "Chouhy-Solotar" in (t4.engine or "")
+    assert t4.dims[:3] == [1, 0, 0]          # agrees with the in-window bar values
     with pytest.raises(DepthLimitError):
-        _square().hochschild_cohomology(4)
+        _square().hochschild_cohomology(4, engine="bar")
 
 
 def test_opt_in_auto_cs_routes_to_cs():

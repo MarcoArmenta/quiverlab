@@ -114,6 +114,110 @@ function decomposeBlock(block, d) {
   return wrap;
 }
 
+// Plan 34 (Marco): rad/top/soc as FULL representations -- the dim VECTOR per object
+// (the redundant total-dim column is gone) plus each arrow's exact action matrix,
+// typeset by renderMath (KaTeX). The LaTeX is built from the block's {dims, maps}.
+
+// Matrices are the COMPLETE human record (Plan 34, Marco): shown IN FULL, wrapped in
+// a horizontally-scrollable container (mathScroll) so the page body never scrolls
+// sideways -- NOT elided at a small size. MAT_BACKSTOP_CELLS is only a SANITY cap
+// mirroring the trace recorder's record-time memory backstop: a pathological/corrupt
+// payload past it is stated by shape instead of hanging the browser. One constant per
+// file (gui.js has the same one, same comment).
+const MAT_BACKSTOP_CELLS = 250000;
+function matTooBig(mat) {
+  const rows = (mat || []).length;
+  const cols = rows ? (mat[0] || []).length : 0;
+  return rows * cols > MAT_BACKSTOP_CELLS;
+}
+function matLatex(mat) {                    // [[..],[..]] -> \begin{pmatrix}..\end{pmatrix}
+  mat = mat || [];
+  if (matTooBig(mat)) {                     // sanity backstop only (never normal use)
+    const cols = mat.length ? (mat[0] || []).length : 0;
+    return "\\text{[" + mat.length + "\\times" + cols + " matrix beyond the display backstop]}";
+  }
+  const body = mat.map(function (row) {
+    return row.map(String).join(" & ");
+  }).join(" \\\\ ");
+  return "\\begin{pmatrix} " + body + " \\end{pmatrix}";
+}
+
+// A matrix wrapped in a horizontally-scrollable inline box (Plan 34, Marco): the
+// full matrix scrolls INSIDE this box, so a wide differential never makes the page
+// body scroll sideways. Inline-block keeps it inside the surrounding <p>.
+function mathScroll(latex) {
+  const box = document.createElement("span");
+  box.style.display = "inline-block";
+  box.style.maxWidth = "100%";
+  box.style.overflowX = "auto";
+  box.style.verticalAlign = "middle";
+  const span = document.createElement("span");
+  span.className = "arithmatex";
+  span.textContent = "\\(" + latex + "\\)";
+  box.appendChild(span);
+  return box;
+}
+
+// A pre-Plan-34 cached rad/top/soc lacked the per-view {dims, maps}; guard so an old
+// shape is called out honestly (MINOR-6) rather than silently rendering a fabricated
+// "every arrow acts as zero".
+function radTopSocStale(block) {
+  return [block.radical, block.top, block.socle].some(function (v) {
+    return !v || v.dims == null || v.maps == null;
+  });
+}
+function radTopSocDisplayOnly(block) {      // any view carries non-re-enterable entries
+  return [block.radical, block.top, block.socle].some(function (v) {
+    return v && v.display_only === true;
+  });
+}
+
+function radTopSocBlock(block, d) {
+  const wrap = document.createElement("div");
+  const p = document.createElement("p");
+  p.textContent = d.modRadTopSoc || "radical / top / socle";
+  wrap.appendChild(p);
+  if (radTopSocStale(block)) {              // MINOR-6: honest "recompute", never a fake zero
+    wrap.appendChild(errDiv(d.modStale ||
+      "this result was computed by an older version — recompute to see the full representation."));
+    return wrap;
+  }
+  if (radTopSocDisplayOnly(block)) {        // MAJOR-4: extension-field entries are not re-enterable
+    const note = document.createElement("p");
+    note.className = "pdf-note";
+    note.textContent = d.modDisplayOnly || "display only — entries are not re-enterable in the module panel.";
+    wrap.appendChild(note);
+  }
+  const trio = [["rad M", block.radical], ["top M", block.top], ["soc M", block.socle]];
+  const tbl = tableWithHeader(["", d.modDimvec || "dim vector"]);
+  for (const pair of trio) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = pair[0];
+    tr.appendChild(th);
+    tr.appendChild(cellText(dvText((pair[1] || {}).dims)));
+    tbl.appendChild(tr);
+  }
+  wrap.appendChild(tbl);
+  for (const pair of trio) {
+    const label = pair[0], maps = (pair[1] || {}).maps || {};
+    const arrows = Object.keys(maps);
+    if (!arrows.length) {
+      const q = document.createElement("p");
+      q.textContent = label + ": " + (d.modArrowsZero || "every arrow acts as zero");
+      wrap.appendChild(q);
+      continue;
+    }
+    for (const a of arrows) {
+      const q = document.createElement("p");
+      q.appendChild(document.createTextNode(label + ", arrow " + a + ": "));
+      q.appendChild(mathScroll(matLatex(maps[a])));   // full matrix, scrollable box
+      wrap.appendChild(q);
+    }
+  }
+  return wrap;
+}
+
 // The AR-translate input certificate (Marco #1): indecomposable, or the input's
 // decomposition + the additivity note. null when the block carries no certificate
 // (the decompose engine was unavailable), so the note never lies.
@@ -144,6 +248,8 @@ function renderModuleBlocks(out, res) {
     if (!b || typeof b !== "object") continue;
     if (kind === "projective_resolution" || kind === "injective_resolution") {
       out.appendChild(resolutionTable(b, d));
+    } else if (kind === "rad_top_soc") {
+      out.appendChild(radTopSocBlock(b, d));
     } else if (kind === "decompose") {
       out.appendChild(decomposeBlock(b, d));
     } else if (kind === "tau" || kind === "tau_minus") {

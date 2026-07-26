@@ -19,7 +19,12 @@
   "job.title": "Job",
   "job.status": "Status:",
   "job.downloads": "Downloads:",
+  "job.report_pdf": "Report (PDF)",
+  "job.report_html": "Report (HTML, print to PDF)",
+  "job.pdf_none_toolchain": "No typeset PDF was produced: this deployment has no LaTeX toolchain (tectonic/pdflatex). The HTML report above is print-ready — open it and use your browser's Print → Save as PDF.",
+  "job.pdf_none_compile": "No typeset PDF was produced: LaTeX is installed but this report failed to compile. The HTML report above is print-ready — open it and use your browser's Print → Save as PDF.",
   "job.tex": "LaTeX source",
+  "job.report_json": "Report data (JSON)",
   "job.computed_with": "Computed with quiverlab",
   "job.finished": "Finished:",
   "job.cached_note": "This exact result is cached — identical requests, from anyone, are served instantly without recomputing. Every number is exact: this is the answer, not an approximation.",
@@ -82,5 +87,7 @@
   "mod.summand": "summand",
   "mod.multiplicity": "multiplicity",
   "mod.dim_vector": "dim vector",
-  "mod.tor_unavailable": "Tor requires the Tor engine (Plan 29); not available in this build."
+  "mod.tor_unavailable": "Tor requires the Tor engine (Plan 29); not available in this build.",
+  "mod.display_only": "display only — these entries lie outside the integer/fraction input grammar (e.g. GF(p^n) elements) and cannot be re-entered in the module panel.",
+  "mod.stale_recompute": "this result was computed by an older version and lacks the full representation — recompute to see the arrow actions."
 }

@@ -414,7 +414,9 @@ def test_module_instant_compute(tmp_path):
     assert r.json()["tier"] == "instant"
     results = r.json()["result"]["results"]
     assert results["dimension_vector"]["dimvec"] == {"1": 2}
-    assert results["rad_top_soc"]["socle"]["dimvec"] == {"1": 1}
+    # Plan 34: rad/top/soc carry the dim VECTOR under `dims` (+ per-arrow `maps`).
+    assert results["rad_top_soc"]["socle"]["dims"] == {"1": 1}
+    assert results["rad_top_soc"]["socle"]["maps"] == {"x": [[0]]}
     assert results["tau"]["dimvec"] == {"1": 2}
     # References carry through like every other kind.
     keys = {e["key"] for e in r.json()["result"]["references"]}

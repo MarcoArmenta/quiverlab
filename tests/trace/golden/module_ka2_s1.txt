@@ -16,15 +16,21 @@ The projectives and injectives of A
       top = S_1, soc = S_2
 
 Worked module steps
-  Matrices with more than 400 entries are shown as [shape r x c, rank k -- elided]; every step still appears.
+  Matrices with more than 250000 entries are shown as [shape r x c, rank k -- elided]; every step still appears.
 
-Minimal projective resolution of S_1 (top generators chosen modulo rad M)
-  projective cover of M: top M has composition factors (1:1, 2:0)
+Minimal projective resolution of S_1
+  We build ... -> Q_1 -> Q_0 -> M -> 0 by iterated projective covers (Green-Solberg-Zacharia, Minimal projective resolutions, Trans. AMS 353 (2001) 2915-2939): cover M by Q_0 = (+) P_v over a basis of top M, take the syzygy Omega_1 = ker(Q_0 -> M), cover that, and repeat. Choosing the generators modulo the radical keeps the resolution minimal, so the number of P_v summands in Q_n is the true n-th Betti number.
+
+Projective cover: top S_1 has composition factors (1:1, 2:0), so its projective cover is Q_0 = P_1 (one P_v per simple in the top).
 
 term Q_0 = P_1 (dim 2, dimvec (1:1, 2:1))
 
   \varepsilon : P_1 -> M, 1 x 2 over GF(2):
     [ 1  0 ]
+
+Column-reducing epsilon over GF(2): pivots at column(s) [0], so rank epsilon = 1.
+
+Syzygy: Omega_1 = ker(epsilon) has dimension 1 (the nullity of the previous differential). Its top needs 1 generator(s), so it is covered by Q_1 = P_2.
 
 term Q_1 = P_2 (dim 1, dimvec (1:0, 2:1))
 
@@ -32,9 +38,15 @@ term Q_1 = P_2 (dim 1, dimvec (1:0, 2:1))
     [ 0 ]
     [ 1 ]
 
+Column-reducing d_1 over GF(2): pivots at column(s) [0], so rank d_1 = 1.
+
+Syzygy: Omega_2 = ker(d_1) has dimension 0; it is zero (or projective), so the resolution stops here.
+
 term Q_2 = 0 (dim 0, dimvec ())
 
   d_{2} : 0 -> P_2, 1 x 0 over GF(2):
     [  ]
 
-projective dimension pd(M) = 1
+Column-reducing d_2 over GF(2): pivots at column(s) [], so rank d_2 = 0.
+
+The resolution terminates once a syzygy is zero, so the projective dimension is pd(S_1) = 1.

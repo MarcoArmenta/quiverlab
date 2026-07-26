@@ -109,44 +109,62 @@ def test_pi_section_in_hh_report_too():
 
 
 # --------------------------------------------------------------------------- #
-# Elision: past the threshold, shape + rank in place of the matrix (never silent).
+# Elision (Plan 34 artifact contract): the events carry EVERY matrix in full (recorder);
+# text/HTML show them all in full; only the page-bounded PDF scales/elides wide matrices;
+# past the 250k MEMORY backstop even recording keeps just shape+rank (never a giant dump).
 # --------------------------------------------------------------------------- #
-def test_module_differential_elides_past_threshold():
+def test_module_differential_elides_only_past_memory_backstop():
     A = _ka2()
     dom = A.domain
-    n = 21                                          # 21*21 = 441 > 400 cells
-    big = [[dom.zero()] * n for _ in range(n)]
-    e = module_differential(degree=2, kind="projective", sym="P", symbol="d_{2}",
-                            dom_summands=[1] * n, cod_summands=[1] * n, D=big,
-                            nrows=n, ncols=n, dom=dom, rank=0)
+    # A wide-but-recordable matrix is kept IN FULL (the events are the complete record);
+    # its readability scaling is the PDF renderer's job, not the recorder's.
+    small_wide = [[dom.zero()] * 30 for _ in range(3)]       # 90 cells: recorded in full
+    e_full = module_differential(1, "projective", "P", "d_{1}", [1] * 3, [1] * 30,
+                                 small_wide, 3, 30, dom, rank=0)
+    assert e_full.elided is False and e_full.matrix is not None
+    assert len(e_full.matrix[0]) == 30                      # the 30th column survives
+    # Only past the 250k memory backstop is the body dropped to shape + rank.
+    huge = [[dom.zero()] * 130000 for _ in range(2)]        # 260000 cells > backstop
+    e = module_differential(2, "projective", "P", "d_{2}", [1] * 2, [1] * 130000, huge,
+                            nrows=2, ncols=130000, dom=dom, rank=0)
     assert e.elided is True and e.matrix is None
-    assert "elided" in e.note and "21x21" in e.note and "rank 0" in e.note
+    assert "elided" in e.note and "2x130000" in e.note and "rank 0" in e.note
 
 
-def test_elided_step_appears_in_every_format_never_dropped():
-    """A large (elided) differential and a small (full) one both appear -- the
-    elided one as a shape+rank note, the small one as a matrix."""
+def test_matrix_rendering_follows_the_artifact_contract():
+    """Plan 34 artifact contract: text/HTML show every recorded matrix IN FULL; only the
+    page-bounded PDF (render_latex) scales/elides a matrix past 25 rows/columns, pointing
+    at the complete HTML/JSON report; a >250k matrix is a shape+rank note in EVERY format."""
     A = _ka2()
     dom = A.domain
-    n = 25
-    big = [[dom.zero()] * n for _ in range(n)]      # 625 > 400 -> elided
-    small = [[dom.one(), dom.zero()]]               # 1x2 -> full
+    one, zero = dom.one(), dom.zero()
+    wide = [[one] + [zero] * 29 for _ in range(3)]          # 3 x 30, recorded in full
+    huge = [[zero] * 130000 for _ in range(2)]              # > 250k -> record-elided
+    small = [[one, zero]]                                   # 1 x 2 -> matrix everywhere
     events = [
         ModuleTerm(degree=0, kind="projective", sym="P", summands=[1], dim=2,
                    dimvec={"1": 2}),
         module_differential(0, "projective", "P", r"\varepsilon", [1], [], small,
                             1, 2, dom, cod_is_module=True, rank=1),
-        module_differential(1, "projective", "P", "d_{1}", [1] * n, [1] * n, big,
-                            n, n, dom, rank=3),
+        module_differential(1, "projective", "P", "d_{1}", [1] * 3, [1] * 30, wide,
+                            3, 30, dom, rank=1),
+        module_differential(2, "projective", "P", "d_{2}", [1] * 2, [1] * 130000, huge,
+                            2, 130000, dom, rank=0),
     ]
-    for render in (render_text, render_latex, render_html):
-        s = render(events, title="t")
-        assert "elided" in s and "shape 25x25" in s          # the note is present
-        assert dom.zero().__str__() * 50 not in s            # no 625-cell body dumped
-    # the small differential is still shown as a real matrix (not elided):
-    assert r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in render_latex(events, title="t")
-    # the threshold is stated once in the preamble:
+    tex = render_latex(events, title="t")
     txt = render_text(events, title="t")
+    html = render_html(events, title="t")
+    # small matrix: a real matrix everywhere
+    assert r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in tex
+    # wide (3x30): page-elided in the PDF (points at the complete report), FULL in text
+    assert "shown in full in the HTML/JSON report" in tex
+    assert "shown in full in the HTML/JSON report" not in txt      # text is complete
+    assert "shown in full in the HTML/JSON report" not in html     # HTML is complete
+    assert "  ".join(["1"] + ["0"] * 29) in txt                    # the full 30-col row
+    # >250k memory backstop: a shape+rank note in EVERY format (never a 260k-cell body)
+    for s in (tex, txt, html):
+        assert "2x130000" in s and "elided" in s
+    # the elision policy is stated once in the text preamble (now the 250k backstop):
     assert txt.count("Matrices with more than %d entries" % MATRIX_ELISION_CELLS) == 1
 
 

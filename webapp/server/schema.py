@@ -195,7 +195,7 @@ class ComputeRequest(BaseModel):
     compute: list[str]
     artifacts: Artifacts = Field(default_factory=Artifacts)
     module: ModuleSpec | None = None          # v2 (Plan 26)
-    ext_target: ModuleSpec | None = None      # v2: the N in Ext^n(M, N)
+    ext_target: ModuleSpec | None = None      # v2: the N in Ext^n(M, N), a RIGHT A-module
     tor_target: ModuleSpec | None = None      # v2 (Plan 30): the N in Tor^A_n(M, N)
 
     @model_validator(mode="before")
@@ -249,6 +249,10 @@ class ComputeRequest(BaseModel):
         if "tor" in kinds and self.tor_target is None:
             raise SchemaError("Tor needs a second module 'tor_target' (the N in "
                               "Tor^A_n(M, N), a LEFT A-module)")
+        if self.ext_target is not None and self.ext_target.side != "right":
+            raise SchemaError("Ext's second module 'ext_target' must be a RIGHT "
+                              "A-module (side='right'); Ext^n(M, N) pairs a right M "
+                              "with a right N")
         if self.tor_target is not None and self.tor_target.side != "left":
             raise SchemaError("Tor's second module 'tor_target' must be a LEFT "
                               "A-module (side='left'); Tor^A_n(M, N) pairs a right M "

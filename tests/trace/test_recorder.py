@@ -35,14 +35,28 @@ def test_rankstep_keeps_small_matrix():
     assert r.field == dom.name
 
 
-def test_rankstep_elides_large_matrix():
+def test_rankstep_keeps_wide_matrix_in_full():
+    # Plan 34 contract: the recorder keeps the FULL matrix (the events are the complete
+    # record); a merely-wide matrix (well under the 250k memory backstop) is NOT elided
+    # at record time -- the PDF renderer scales/elides it, the HTML/JSON show it in full.
     dom = CC.make_domain([CC.parse_entry(0), CC.parse_entry(1)])
-    n = 30  # 30*30 = 900 > MATRIX_ELISION_CELLS (400)
-    D = [[dom.zero()] * n for _ in range(n)]
-    r = rankstep(4, "cochain", D, n, n, 0, dom)
+    nrows, ncols = 40, 40  # 1600 cells, but 1600 << MATRIX_ELISION_CELLS (250_000)
+    D = [[dom.zero()] * ncols for _ in range(nrows)]
+    r = rankstep(4, "cochain", D, nrows, ncols, 0, dom)
+    assert r.elided is False and r.matrix is not None
+    assert len(r.matrix) == nrows and len(r.matrix[0]) == ncols  # full body kept
+
+
+def test_rankstep_elides_only_past_memory_backstop():
+    # Past the 250k-cell MEMORY backstop the body is dropped (shape + rank survive) so a
+    # pathological deep run stays bounded.
+    dom = CC.make_domain([CC.parse_entry(0), CC.parse_entry(1)])
+    nrows, ncols = 2, MATRIX_ELISION_CELLS  # 2 * 250_000 = 500_000 > backstop
+    D = [[dom.zero()] * ncols for _ in range(nrows)]
+    r = rankstep(4, "cochain", D, nrows, ncols, 0, dom)
     assert r.elided is True and r.matrix is None
     assert str(MATRIX_ELISION_CELLS) in r.note or "elided" in r.note.lower()
-    assert r.nrows == n and r.ncols == n and r.rank == 0  # shape + rank always kept
+    assert r.nrows == nrows and r.ncols == ncols and r.rank == 0  # shape + rank kept
 
 
 def test_resolve_verbose_per_call_overrides_global():

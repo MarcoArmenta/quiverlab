@@ -79,7 +79,8 @@ async function run(request, factor) {
     var wantReport = request.artifacts && request.artifacts.pdf;
     self.postMessage({ type: "trace",
                        html: wantReport ? runner.trace_html() : "",
-                       tex: wantReport ? runner.trace_tex() : "" });
+                       tex: wantReport ? runner.trace_tex() : "",
+                       json: wantReport ? runner.trace_json() : "" });
     self.postMessage({ type: "artifacts", tikz: runner.tikz(),
                        snippet: runner.python_snippet(),
                        bundle: runner.result_bundle() });

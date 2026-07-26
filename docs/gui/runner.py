@@ -243,6 +243,16 @@ def _mod_view(m):
     return {"dimvec": _dv(m.dimension_vector()), "dim": m.dim}
 
 
+def _mod_repr(m):
+    """A module as the no-code INPUT schema ``{"dims": {v: n}, "maps": {arrow: [[..]]}}``
+    (Plan 34, Marco): the per-vertex dimension VECTOR + the exact per-arrow action
+    matrices, redundant total dim dropped. Routed through the SAME library serializer as
+    the server tier (``quiverlab.modules.qpa_module.module_blocks``) so the two runners
+    cannot drift."""
+    from quiverlab.modules.qpa_module import module_blocks
+    return module_blocks(m)
+
+
 _MOD_REFS = {
     "dimension_vector": ["assem_book"], "rad_top_soc": ["assem_book"],
     "tau": ["assem_book"], "tau_minus": ["assem_book"], "ext": ["module_ext"],
@@ -326,8 +336,8 @@ def _module_block(name, top):
                 "latex": r"\underline{\dim}\, M = " + _dv_latex(M.dimension_vector())}
     if name == "rad_top_soc":
         return {"kind": name, "side": M.side, "citations": cites,
-                "radical": _mod_view(M.radical()), "top": _mod_view(M.top()),
-                "socle": _mod_view(M.socle())}
+                "radical": _mod_repr(M.radical()), "top": _mod_repr(M.top()),
+                "socle": _mod_repr(M.socle())}
     if name in ("tau", "tau_minus"):
         t = M.tau() if name == "tau" else M.tau_minus()
         sym = r"\tau M" if name == "tau" else r"\tau^{-} M"
@@ -512,6 +522,24 @@ def trace_tex():
     title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
     return render_latex(list(events), title=title, algebra=_state["algebra"],
                         references=resolve_references(references_for(events)))
+
+
+def trace_json():
+    """The worked-steps report as the JSON machine record ('' when nothing was traced).
+
+    Plan 34: the third mandated artifact (PDF/HTML + this) -- the complete event
+    stream, deterministic and schema-versioned. A GUI download button hooks this
+    accessor beside trace_tex()/trace_html(). Uses the SAME (events, title,
+    references) inputs as the other two renderers, so the byte-for-byte machine
+    record matches what the writer persists for the same computation."""
+    events = _state["events"] or []
+    if not events:
+        return ""
+    from quiverlab.trace.provenance import references_for, resolve_references
+    from quiverlab.trace.render_json import render_json
+    title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
+    return render_json(list(events), title=title, algebra=_state["algebra"],
+                       references=resolve_references(references_for(events)))
 
 
 def tikz():

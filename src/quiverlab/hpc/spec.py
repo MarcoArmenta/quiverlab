@@ -722,12 +722,12 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     if req.artifacts.pdf and hh_trace is not None:
         table, kind, top = hh_trace
         meta["pdf"] = _write_worked_steps(events, table, A, kind, top,
-                                          used_keys, artifact_dir)
+                                          used_keys, artifact_dir, meta)
         payload = json.dumps(result, indent=2, default=str)
     elif req.artifacts.pdf and module_trace is not None:
         m_kind, m_top, m_M, m_N = module_trace
         meta["pdf"] = _write_module_worked_steps(A, m_kind, m_top, m_M, m_N,
-                                                 used_keys, artifact_dir)
+                                                 used_keys, artifact_dir, meta)
         payload = json.dumps(result, indent=2, default=str)
     if write_result:
         (artifact_dir / "result.json").write_text(payload)
@@ -750,32 +750,48 @@ def _hh_kwargs(hpc: HpcConfig | None) -> dict:
 
 
 def _promote_trace_artifacts(produced, artifact_dir) -> str:
-    """Promote the writer's ``<stem>.<ext>`` (+ sidecar ``.tex``) to the fixed
-    artifact names ``trace.pdf`` / ``trace_steps.html`` and ``trace.tex`` so
-    ``pages.py`` can serve them (Plan 30 C1: the .tex is downloadable everywhere).
-    Returns the honest ``meta['pdf']`` label."""
+    """Promote the writer's ``<stem>.<ext>`` (+ sidecars ``.tex`` / ``.json``) to the
+    fixed artifact names ``trace.pdf`` / ``trace_steps.html``, ``trace.tex`` and
+    ``trace.json`` so ``pages.py`` can serve them (Plan 30 C1: the .tex is
+    downloadable everywhere; Plan 34: the .json machine record likewise). Returns the
+    honest ``meta['pdf']`` label."""
     if produced.suffix == ".pdf":
         target, label = artifact_dir / "trace.pdf", _PDF_OK
     else:
         target, label = artifact_dir / "trace_steps.html", _PDF_HTML_FALLBACK
-    tex_src = produced.with_suffix(".tex")
-    tex_target = artifact_dir / "trace.tex"
-    if tex_src.exists() and tex_src.resolve() != tex_target.resolve():
-        tex_src.replace(tex_target)
+    # The always-present sidecars share the produced stem (writer.py); promote each to
+    # its stable name so every worked-steps run yields trace.tex + trace.json too.
+    for suffix, name in ((".tex", "trace.tex"), (".json", "trace.json")):
+        src = produced.with_suffix(suffix)
+        dst = artifact_dir / name
+        if src.exists() and src.resolve() != dst.resolve():
+            src.replace(dst)
     if produced.resolve() != target.resolve():
         produced.replace(target)
     return label
 
 
-def _write_worked_steps(events, table, A, kind, top, used_keys, artifact_dir) -> str:
+def _write_worked_steps(events, table, A, kind, top, used_keys, artifact_dir,
+                        meta=None) -> str:
     from quiverlab.trace.writer import write_trace
+    w_meta: dict = {}
     produced = Path(write_trace(list(events), table, algebra=A, kind=kind, top=top,
                                 references=_trace_references(used_keys, events),
-                                out_dir=str(artifact_dir)))
+                                out_dir=str(artifact_dir), meta_out=w_meta))
+    _record_pdf_reason(meta, w_meta)
     return _promote_trace_artifacts(produced, artifact_dir)
 
 
-def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir) -> str:
+def _record_pdf_reason(meta, w_meta) -> None:
+    """Copy the writer's recorded why-no-PDF reason into the result ``meta`` so
+    ``pages.py`` reads the reason the WORKER saw (Plan 34 MAJOR-3), not a re-probe on a
+    possibly-different web tier. Only present when the HTML fallback was taken."""
+    if meta is not None and "pdf_fallback_reason" in w_meta:
+        meta["pdf_fallback_reason"] = w_meta["pdf_fallback_reason"]
+
+
+def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir,
+                               meta=None) -> str:
     """Render the worked-steps bundle (pdf/tex/html) for a MODULE computation via
     the Plan-30 Part-C trace hooks (``quiverlab.trace.modules``), mirroring the HH
     bundle. Best-effort: a trace failure never loses the already-computed JSON
@@ -791,10 +807,12 @@ def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir) -> s
             events, _ = _tm.trace_ext(A, M, N, top)
         else:                                  # tau / tau_minus
             events, _ = _tm.trace_tau(M, kind=kind)
+        w_meta: dict = {}
         produced = Path(write_trace(list(events), None, algebra=A, kind=kind,
                                     top=(top if top is not None else 0),
                                     references=_trace_references(used_keys, events),
-                                    out_dir=str(artifact_dir)))
+                                    out_dir=str(artifact_dir), meta_out=w_meta))
+        _record_pdf_reason(meta, w_meta)
         return _promote_trace_artifacts(produced, artifact_dir)
     except Exception:
         _log.exception("module worked-steps bundle failed for kind=%s", kind)
@@ -999,6 +1017,18 @@ def _mod_view(m) -> dict:
     return {"dimvec": _dv(m.dimension_vector()), "dim": m.dim}
 
 
+def _mod_repr(m) -> dict:
+    """A module as the no-code INPUT schema ``{"dims": {v: n}, "maps": {arrow: [[..]]}}``
+    (Plan 34, Marco): the per-vertex dimension VECTOR and the exact per-arrow action
+    matrices. The redundant total dim is intentionally dropped (the vector carries it),
+    and the shape mirrors the module INPUT so a computed rad/top/soc feeds straight back
+    into the panel. Both tiers route ``rad_top_soc`` through the SAME library serializer
+    (``quiverlab.modules.qpa_module.module_blocks``), so the webapp and the Pyodide GUI
+    cannot drift."""
+    from quiverlab.modules.qpa_module import module_blocks
+    return module_blocks(m)
+
+
 def _with_refs(block: dict, kind: str) -> dict:
     keys = _MOD_REFS[kind]
     block["references"] = list(keys)
@@ -1075,9 +1105,9 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            **_mod_view(M)}, kind)
     if kind == "rad_top_soc":
         return _with_refs({"kind": "rad_top_soc", "side": M.side,
-                           "radical": _mod_view(M.radical()),
-                           "top": _mod_view(M.top()),
-                           "socle": _mod_view(M.socle())}, kind)
+                           "radical": _mod_repr(M.radical()),
+                           "top": _mod_repr(M.top()),
+                           "socle": _mod_repr(M.socle())}, kind)
     if kind in ("tau", "tau_minus"):
         t = M.tau() if kind == "tau" else M.tau_minus()
         block = {"kind": kind, "side": t.side, "is_zero": t.dim == 0, **_mod_view(t)}

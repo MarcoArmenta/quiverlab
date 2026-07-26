@@ -8,9 +8,11 @@ from quiverlab.hochschild.table import HHTable
 from quiverlab.trace.events import ResolutionTerm
 from quiverlab.trace.recorder import rankstep
 
-_GUARD_HINT = ("the bar oracle is exponential; deeper engines (Bardzell, minimal, "
-               "Chouhy-Solotar) arrive in later phases — raise max_cells only if you "
-               "know what you are doing")
+_GUARD_HINT = ("the bar oracle is exponential; for a quiver-presented algebra the "
+               "deeper engines serve this depth: pass engine=\"cs\" (Chouhy-Solotar, "
+               "any admissible presentation over any exact field), or over GF(p) the "
+               "fast/minimal/Bardzell stack — raise max_cells only if you know what "
+               "you are doing")
 
 
 def _abar_tuples(m, n):

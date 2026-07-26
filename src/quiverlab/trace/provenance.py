@@ -23,20 +23,41 @@ _OPERATION_REFERENCES = ()
 
 def references_for(events):
     """Plan-06 REGISTRY keys implied by a trace: the engine (from every Dispatch
-    whose route names a known engine) plus operation keys when LiftSteps are present.
-    These registry keys are what a result's `.references` stores (they resolve to
-    formatted citations at render time via resolve_references)."""
-    from quiverlab.trace.events import Dispatch, LiftStep
+    whose route names a known engine) plus operation keys when LiftSteps are present,
+    plus the module-theory keys implied by any module worked-steps (Plan 34). These
+    registry keys are what a result's `.references` stores (they resolve to formatted
+    citations at render time via resolve_references)."""
+    from quiverlab.trace.events import (
+        Dispatch, LiftStep, ModuleTerm, ModuleDifferential, ExtDegree, StepNote,
+    )
     keys = []
+
+    def _add(k):
+        if k not in keys:
+            keys.append(k)
+
     for e in events:
         if isinstance(e, Dispatch):
             for k in ENGINE_REFERENCES.get(e.route, ()):
-                if k not in keys:
-                    keys.append(k)
+                _add(k)
     if any(isinstance(e, LiftStep) for e in events):
         for k in _OPERATION_REFERENCES:
-            if k not in keys:
-                keys.append(k)
+            _add(k)
+    # Module worked-steps (Plan 34): the module theory is ASS2006 (`assem_book`); a
+    # projective/injective resolution adds Green-Solberg-Zacharia (`minimal_resolution`);
+    # Ext adds `module_ext` (GSZ2001), Tor adds `tensor_product` (Cartan-Eilenberg).
+    module_events = [e for e in events
+                     if isinstance(e, (ModuleTerm, ModuleDifferential, ExtDegree, StepNote))]
+    if module_events:
+        _add("assem_book")
+        if any(isinstance(e, (ModuleTerm, ModuleDifferential))
+               and getattr(e, "kind", None) in ("projective", "injective")
+               for e in events):
+            _add("minimal_resolution")
+        if any(isinstance(e, ExtDegree) and e.op == "Ext" for e in events):
+            _add("module_ext")
+        if any(isinstance(e, ExtDegree) and e.op == "Tor" for e in events):
+            _add("tensor_product")
     return tuple(keys)
 
 
@@ -57,5 +78,11 @@ def resolve_references(keys):
                 "citation registry has no key %r (Plan 06 bibliography drift; update "
                 "ENGINE_REFERENCES / the freshness gate)" % (k,))
         e = by_key[k]
-        pairs.append((getattr(e, "bibtex_key", k), e.formatted))
+        pair = (getattr(e, "bibtex_key", k), e.formatted)
+        # Distinct registry keys can share one bibliographic source (e.g. the GSZ2001
+        # `minimal_resolution` and `module_ext` keys); collapse identical (bibtex_key,
+        # formatted) pairs so the References list carries each source once (a duplicate
+        # \bibitem label would be "multiply defined" in LaTeX). Order preserved.
+        if pair not in pairs:
+            pairs.append(pair)
     return tuple(pairs)

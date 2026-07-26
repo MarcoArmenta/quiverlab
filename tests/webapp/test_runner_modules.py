@@ -42,9 +42,16 @@ def test_dimension_vector(tmp_path):
 
 def test_rad_top_soc(tmp_path):
     b = _run(tmp_path, _LOOP, ["rad_top_soc"], _M2)["results"]["rad_top_soc"]
-    assert b["radical"]["dimvec"] == {"1": 1}
-    assert b["top"]["dimvec"] == {"1": 1}
-    assert b["socle"]["dimvec"] == {"1": 1}
+    # Plan 34 (Marco): each of rad/top/soc is a FULL representation -- the dim
+    # VECTOR (`dims`) + the exact per-arrow action matrices (`maps`); the redundant
+    # total-dim field is gone. The shape mirrors the module INPUT (feedable back in).
+    assert b["radical"]["dims"] == {"1": 1}
+    assert b["top"]["dims"] == {"1": 1}
+    assert b["socle"]["dims"] == {"1": 1}
+    assert b["radical"]["maps"] == {"x": [[0]]}
+    assert b["top"]["maps"] == {"x": [[0]]}
+    assert b["socle"]["maps"] == {"x": [[0]]}
+    assert "dim" not in b["radical"] and "dimvec" not in b["radical"]
 
 
 def test_tau_and_tau_minus(tmp_path):

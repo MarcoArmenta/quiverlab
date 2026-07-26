@@ -1,23 +1,33 @@
-"""Trace recorder: a bounded, list-compatible event buffer with size-eliding rules
-(spec §3.8 performance guard). verbose must NOT blow up a long computation:
+"""Trace recorder: a bounded, list-compatible event buffer (spec §3.8 performance
+guard). verbose must NOT blow up a long computation:
 
   * the buffer is capped at MAX_EVENTS (5000); beyond that, events are dropped and
     counted (one elision note), so memory is O(MAX_EVENTS) regardless of depth;
-  * a differential matrix larger than MATRIX_ELISION_CELLS (400 = 20x20) is not
-    stored -- only its (shape, rank) survive, with an explicit elision note (so a
-    deep resolution records at most one small ResolutionTerm + one RankStep per
-    degree, i.e. O(top) small records, never a giant matrix dump);
+  * events carry the FULL differential matrix (Plan 34 artifact contract: the events
+    are the complete record -- the HTML and trace.json reports show every matrix in
+    full; only the PDF, which is a page-bounded homework document, scales/elides wide
+    matrices, and it does so in the LaTeX RENDERER, not here). Recording drops a
+    matrix body only past MATRIX_ELISION_CELLS (250_000), a pure MEMORY backstop set
+    orders of magnitude above the old 400-cell rule so a pathological deep run cannot
+    exhaust memory; past it only (shape, rank) survive with an explicit elision note.
+    The column-based readability elision (>25 rows/cols scaled or stated-elided) lives
+    ENTIRELY in trace.render_latex / hpc.report -- see those modules;
   * DifferentialEvent term lists over TERMS_ELISION (100) are the renderers'
     responsibility to truncate (Task 9/10) -- the recorder keeps the cap constant
     available to them.
 
 Concretely: a top=40 monomial resolution records ~41 ResolutionTerm + ~41 RankStep
-(each RankStep either a <=400-cell matrix or a one-line elision note) plus the
-capped construction ReductionSteps -- well under MAX_EVENTS, bounded memory."""
+(each a full matrix under the 250k backstop) plus the capped construction
+ReductionSteps -- well under MAX_EVENTS, bounded memory."""
 from quiverlab.trace.events import RankStep, ModuleDifferential, ExtDegree
 
 MAX_EVENTS = 5000
-MATRIX_ELISION_CELLS = 400
+# MEMORY backstop only (Plan 34): matrices up to this many cells are recorded IN FULL so
+# the events are the complete record; past it, recording keeps just (shape, rank) so a
+# pathological deep run stays bounded. This is NOT the report's readability policy -- the
+# PDF renderer scales/elides matrices past 25 rows/cols itself (render_latex), pointing at
+# the full HTML/JSON report; the HTML/JSON reports show every recorded matrix in full.
+MATRIX_ELISION_CELLS = 250_000
 TERMS_ELISION = 100
 
 
@@ -52,10 +62,10 @@ class Trace:
 def rankstep(degree, side, D, nrows, ncols, rank, dom):
     """Build a RankStep from a domain-element matrix D (list of lists, row-major
     `D[row][col]`). Param order (nrows, ncols) matches the RankStep field order and
-    D's indexing. Elide the matrix body (keep shape + rank) when it exceeds
-    MATRIX_ELISION_CELLS."""
-    cells = nrows * ncols
-    if cells > MATRIX_ELISION_CELLS:
+    D's indexing. The full matrix is recorded; only past the MATRIX_ELISION_CELLS
+    MEMORY backstop is the body dropped (shape + rank kept). Report-side readability
+    scaling/elision of wide matrices is the LaTeX renderer's job, not the recorder's."""
+    if nrows * ncols > MATRIX_ELISION_CELLS:
         return RankStep(
             degree=degree, side=side, nrows=nrows, ncols=ncols, rank=rank,
             field=dom.name, matrix=None, elided=True,
@@ -68,11 +78,11 @@ def rankstep(degree, side, D, nrows, ncols, rank, dom):
 
 
 def _render_or_elide(D, nrows, ncols, dom, rank=None):
-    """(matrix_or_None, elided, note) for a domain-element matrix D, applying the
-    same MATRIX_ELISION_CELLS rule as `rankstep`. Beyond the threshold the body is
+    """(matrix_or_None, elided, note) for a domain-element matrix D, applying the same
+    MATRIX_ELISION_CELLS MEMORY backstop as `rankstep`. Beyond the backstop the body is
     dropped and only the shape (+ rank, when supplied) is kept, in the spec's
-    ``[shape r x c, rank k -- elided]`` form (the threshold is stated once in the
-    renderer preamble, so the per-matrix note stays terse)."""
+    ``[shape r x c, rank k -- elided]`` form. (Wide-but-recordable matrices are kept in
+    full here; the LaTeX renderer scales/elides them for the page.)"""
     if nrows * ncols > MATRIX_ELISION_CELLS:
         shape = "shape %dx%d" % (nrows, ncols)
         note = ("[%s, rank %d -- elided]" % (shape, rank) if rank is not None
@@ -83,15 +93,19 @@ def _render_or_elide(D, nrows, ncols, dom, rank=None):
 
 
 def module_differential(degree, kind, sym, symbol, dom_summands, cod_summands,
-                        D, nrows, ncols, dom, cod_is_module=False, rank=None):
+                        D, nrows, ncols, dom, cod_is_module=False, rank=None,
+                        dom_is_module=False, mod_name="M"):
     """Build a ModuleDifferential from a domain-element matrix D (row-major
-    `D[row][col]`), eliding the body past MATRIX_ELISION_CELLS."""
+    `D[row][col]`), eliding the body past MATRIX_ELISION_CELLS. `dom_is_module` /
+    `cod_is_module` render that endpoint as the traced module itself (self-maps),
+    labeled by its actual name via ``mod_name``."""
     matrix, elided, note = _render_or_elide(D, nrows, ncols, dom, rank=rank)
     return ModuleDifferential(
         degree=degree, kind=kind, sym=sym, symbol=symbol,
         dom_summands=list(dom_summands), cod_summands=list(cod_summands),
         nrows=nrows, ncols=ncols, field=dom.name, cod_is_module=cod_is_module,
-        matrix=matrix, elided=elided, note=note)
+        dom_is_module=dom_is_module, mod_name=mod_name, matrix=matrix,
+        elided=elided, note=note)
 
 
 def ext_degree(degree, op, space_dim, rank_here, rank_prev, result_dim,
