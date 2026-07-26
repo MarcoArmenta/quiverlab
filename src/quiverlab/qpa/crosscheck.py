@@ -152,6 +152,50 @@ def crosscheck_inj_dimension(algebra, M, bound: int) -> ModuleCrosscheckReport:
 
 
 # ---------------------------------------------------------------------------
+# Plan 30: Krull-Schmidt decomposition crosschecks (finite fields only -- QPA's
+# DecomposeModule requires GF(p))
+# ---------------------------------------------------------------------------
+def _flat_dimvec_multiset(algebra, pairs):
+    """A ``(summand_dimvec, multiplicity)`` list expanded into the SORTED multiset of
+    per-summand dimension-vector tuples (each summand repeated by its multiplicity).
+    This is the order- and grouping-independent invariant compared against QPA -- robust
+    even if two non-isomorphic summands happen to share a dimension vector."""
+    flat = []
+    for dv, mult in pairs:
+        flat.extend([tuple(dv)] * mult)
+    return sorted(flat)
+
+
+def crosscheck_decompose(algebra, M) -> ModuleCrosscheckReport:
+    """Krull-Schmidt summand dimension-vectors + multiplicities vs QPA's
+    ``DecomposeModuleWithMultiplicities`` (Plan 30). Both sides are reduced to the sorted
+    multiset of per-indecomposable-summand dimension vectors (expanded by multiplicity),
+    so ordering and grouping conventions do not matter. GF(p) only (QPA requirement)."""
+    session.require_gap()
+    ours_pairs = [(_dv_list(algebra, s), mult) for s, mult in M.decompose()]
+    ours = _flat_dimvec_multiset(algebra, ours_pairs)
+    dvM, arrM = _graded(algebra, M)
+    base = scripts.decompose_multiplicities_script(algebra, dvM, arrM)
+    qpa_dimvecs = [_read_int_list(row)
+                   for row in session.run(base + "\nList(d[1], DimensionVector);")]
+    qpa_mults = _read_int_list(session.run(base + "\nd[2];"))
+    qpa = _flat_dimvec_multiset(algebra, list(zip(qpa_dimvecs, qpa_mults)))
+    return ModuleCrosscheckReport("decompose", ours, qpa, ours == qpa)
+
+
+def crosscheck_indecomposable(algebra, M) -> ModuleCrosscheckReport:
+    """``M.is_indecomposable()`` vs QPA's ``IsIndecomposableModule`` (Plan 30). GF(p)
+    only. (Over ``char <= dim M`` our engine may refuse loudly rather than answer -- run
+    the crosscheck over a characteristic ``> dim M`` so both sides decide.)"""
+    session.require_gap()
+    ours = M.is_indecomposable()
+    dvM, arrM = _graded(algebra, M)
+    base = scripts.is_indecomposable_script(algebra, dvM, arrM)
+    qpa = bool(session.run(base + "\nIsIndecomposableModule(M);"))
+    return ModuleCrosscheckReport("indecomposable", ours, qpa, ours == qpa)
+
+
+# ---------------------------------------------------------------------------
 # Plan 27: the Yoneda / Ext-algebra E(A) = Ext^*(A/J, A/J) crosschecks
 # ---------------------------------------------------------------------------
 def crosscheck_ext_algebra_dims(algebra, top: int) -> CrosscheckReport:
@@ -257,6 +301,10 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_inj_resolution(algebra, *args, **kwargs)
     if what == "inj_dimension":
         return crosscheck_inj_dimension(algebra, *args, **kwargs)
+    if what == "decompose":
+        return crosscheck_decompose(algebra, *args, **kwargs)
+    if what == "indecomposable":
+        return crosscheck_indecomposable(algebra, *args, **kwargs)
     if what == "ext_algebra_dims":
         return crosscheck_ext_algebra_dims(algebra, *args, **kwargs)
     if what == "ext_generator_degrees":
@@ -271,5 +319,6 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     raise QuiverlabError(f"unknown cross-check {what!r}",
                          hint='use "hochschild", "module_ext", "tau", "tau_minus", '
                               '"proj_resolution", "inj_resolution", "inj_dimension", '
-                              '"ext_algebra_dims", "ext_generator_degrees", '
-                              '"ext_quiver", "quadratic", or "koszul_derived"')
+                              '"decompose", "indecomposable", "ext_algebra_dims", '
+                              '"ext_generator_degrees", "ext_quiver", "quadratic", or '
+                              '"koszul_derived"')

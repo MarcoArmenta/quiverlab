@@ -255,6 +255,25 @@ class Module:
         from quiverlab.modules.hom import is_isomorphic
         return is_isomorphic(self, other)
 
+    # -- Krull-Schmidt decomposition (Plan 30) --------------------------------
+    def decompose(self, budget=None):
+        """Krull-Schmidt decomposition ``[(M_i, m_i), ...]`` into indecomposable
+        summands with multiplicities, ``(+) M_i^{m_i} ~ self`` (each summand certified
+        indecomposable; grouped up to iso). Raises loudly when a summand cannot be
+        certified within budget -- never a silent wrong answer.
+
+        tau-additivity: ``tau(self) = (+) tau(M_i)^{m_i}`` (the AR translate is additive),
+        so a translate of a decomposable module is certified summand-wise."""
+        from quiverlab.modules.decompose import decompose
+        return decompose(self) if budget is None else decompose(self, budget=budget)
+
+    def is_indecomposable(self, budget=None):
+        """True iff self is indecomposable (End local, certified); False iff a Fitting
+        split exists. Raises loudly if undecidable within budget (see decompose)."""
+        from quiverlab.modules.decompose import is_indecomposable
+        return (is_indecomposable(self) if budget is None
+                else is_indecomposable(self, budget=budget))
+
     def injective_resolution(self, length, max_term_dim=200000):
         """Minimal injective coresolution 0 -> M -> E^0 -> E^1 -> ... (Plan 23)."""
         from quiverlab.modules.injective import injective_resolution
