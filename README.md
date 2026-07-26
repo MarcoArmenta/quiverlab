@@ -8,7 +8,10 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 <!-- [![DOI](https://joss.theoj.org/papers/<id>/status.svg)](https://doi.org/<doi>) -- added at JOSS acceptance -->
 
-**Quivers with relations and Hochschild theory, exactly, for algebraists.**
+**Exact representation theory of quivers with relations, for algebraists** —
+modules and Auslander–Reiten theory, resolutions, Ext-algebras and Koszulity,
+Hochschild (co)homology with its Gerstenhaber calculus, cyclic homology, and
+Cartan/Coxeter/spectral invariants, all exactly.
 
 ## The two metagoals
 
