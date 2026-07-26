@@ -1,5 +1,5 @@
 site_name: quiverlab
-site_description: Quivers with relations and Hochschild theory, exactly, for algebraists
+site_description: Exact representation theory of quivers with relations, for algebraists — modules and AR theory, resolutions, Ext-algebras, Hochschild and cyclic (co)homology, invariants
 site_url: https://marcoarmenta.github.io/quiverlab/
 repo_url: https://github.com/MarcoArmenta/quiverlab
 repo_name: MarcoArmenta/quiverlab

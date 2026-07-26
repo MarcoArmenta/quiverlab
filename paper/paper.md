@@ -1,5 +1,5 @@
 ---
-title: "quiverlab: exact Hochschild and representation theory for quivers with relations in Python"
+title: "quiverlab: exact representation theory of quivers with relations in Python"
 tags:
   - Python
   - representation theory
@@ -24,16 +24,16 @@ bibliography: paper.bib
 
 # Summary
 
-`quiverlab` is a pure-Python library for exact computation with finite-dimensional
-associative algebras presented as quivers with relations, `A = kQ/I`. Given a quiver
-and a list of relation strings it certifies that the algebra is finite-dimensional,
-builds an exact multiplication table, and computes a wide range of homological and
-representation-theoretic invariants: Hochschild cohomology and homology with their
-Gerstenhaber operations (cup product, cap action, and bracket), cyclic homology,
-module Ext and Tor, minimal projective and injective resolutions, the
-Auslander–Reiten translates, Krull–Schmidt decomposition into indecomposables,
-Yoneda Ext-algebras with a Koszulity verdict, and Cartan, Coxeter, and spectral
-data. Every number is exact. The library works over the rationals, over exact
+`quiverlab` is a pure-Python library for exact computation in the representation
+theory of finite-dimensional associative algebras, presented as quivers with
+relations, `A = kQ/I`. Given a quiver and a list of relation strings it certifies
+that the algebra is finite-dimensional, builds an exact multiplication table, and
+computes the working invariants of the field: modules with their Ext and Tor,
+minimal projective and injective resolutions, the Auslander–Reiten translates,
+Krull–Schmidt decomposition into indecomposables, Yoneda Ext-algebras with a
+Koszulity verdict, Hochschild cohomology and homology with their Gerstenhaber
+operations (cup product, cap action, and bracket), cyclic homology, and Cartan,
+Coxeter, and spectral data. Every number is exact. The library works over the rationals, over exact
 subfields of the complex numbers (algebraic number fields `Q(α)`), and over every
 finite field `GF(p^n)`, and it fails loudly on any floating-point input rather than
 returning an approximation. It is built for research algebraists and does not require
