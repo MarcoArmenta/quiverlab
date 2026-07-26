@@ -84,13 +84,19 @@ from quiverlab.resolutions_cs.engine_facade import CSResolution
 
 pytest.importorskip("quiverlab.groebner")
 
-pytestmark = [pytest.mark.oracle_literature, pytest.mark.oracle_crossengine]
-
 BANK = pathlib.Path(
     "/Users/marco/Desktop/HomologicalNetworks/HomologicalAlgebra/HansConjecture")
 
-if not (BANK / "hanlab" / "resolutions_cs.py").exists():
-    pytest.skip("bank HansConjecture/hanlab not present", allow_module_level=True)
+# Collection-stable bank guard: the module must COLLECT identically on every
+# machine (the oracle-class audit gate pins page counts == live collection),
+# so an absent bank SKIPS at runtime instead of vanishing at collection.
+pytestmark = [
+    pytest.mark.oracle_literature,
+    pytest.mark.oracle_crossengine,
+    pytest.mark.skipif(
+        not (BANK / "hanlab" / "resolutions_cs.py").exists(),
+        reason="bank HansConjecture/hanlab not present"),
+]
 
 
 @functools.lru_cache(maxsize=1)
