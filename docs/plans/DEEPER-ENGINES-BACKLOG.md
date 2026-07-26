@@ -103,7 +103,28 @@ markers in `src/` (`NotImplementedError` / "later phase" strings).
   `test_ext.py`, `test_engine_validation.py`, `test_battery_bardzell.py` —
   docstring/comment-only, no logic change). No theorem number guessed.
 
-- [ ] **Literature-oracle battery expansion (Marco, 2026-07-25 deep research)** —
+- [ ] **TrivialExtension double-quiver presentation** (found by Plan 29's
+  is_symmetric fix): give `families/trivial_extension.py` a genuine
+  quiver+relations presentation (quiver of `T(A)` = Q plus the dual arrows;
+  relations from the ⋉ structure) so the path-basis invariants serve it —
+  `is_symmetric(T(A))` then returns True via the trace-form certifier
+  (verified: every tested `T(A)` has a nondegenerate symmetric trace form);
+  the `xfail(strict=False)` fences in
+  `tests/invariants/test_symmetric_regression.py` auto-flip to xpass.
+- [x] **Literature-oracle battery expansion** — DONE, Plan 29, delivered on
+  branch 2026-07-25 (merge pre-authorized), branch
+  `plan-29-literature-batteries` (`2026-07-25-plan-29-literature-batteries.md`).
+  Delivered: the is_symmetric fix (trace-form certifier; the GF(p)
+  ν==identity branch was sufficient-not-necessary — silent False on Brauer
+  stars, QPA-confirmed) + is_weakly_symmetric + QPA symmetry crosschecks;
+  the Coxeter/spectral, identity-oracle, and HH/HC value batteries (79 new
+  tests across invariants/engine/resolutions_cs/families, zero
+  literature-vs-engine mismatches EXCEPT the documented CRS-2004 Ex. 2.20
+  discrepancy where the verified engine value is pinned instead); module
+  **Tor_n(M,N)** (Marco request — duality-anchored, QPA-bridged); 17 new
+  citation registry keys. Honest-scope entries on the verification page for
+  Ex. 2.20, no-native-QPA-Tor, the T(A) refusal, and the RR-2018 deferral.
+  Original item text follows. —
   implement the test batteries from
   `docs/plans/2026-07-25-literature-oracles-deep-research.md` (four cluster
   reports — Cibils, Solotar, Happel/Keller/Rickard, de la Peña/Lenzing/Marcos —

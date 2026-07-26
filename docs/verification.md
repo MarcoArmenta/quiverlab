@@ -109,6 +109,30 @@ carries a citations-registry key its bibliographic entry is the packaged
   Assem–Simson–Skowroński (2006), registry keys `assem_book`/`nakayama`, cited at
   chapter granularity (`tests/modules/test_duality_tau.py`, `test_injective.py`,
   `test_left_modules.py`).
+- **The Plan-29 literature batteries** (2026-07-25; sources per test docstring +
+  the registry keys added with them). Coxeter/spectral: the six exact Nakayama
+  Coxeter polynomials + the `χ(r+7,r)` family and Coxeter numbers up to 126
+  (Lenzing–Meltzer–Ruan, `lenzing_meltzer_ruan`), the Dynkin/affine/canonical
+  tables and the star formula (Lenzing–de la Peña, `lenzing_delapena_spectral`),
+  Lehmer's polynomial as the `[2,3,7]` Coxeter polynomial with the Mahler/spectral
+  ordering (de la Peña, `delapena_mahler`), and the `χ(−1)`-perfect-square sweep.
+  Identity oracles: Happel's trace formula `tr Φ = −Σ(−1)^i dim HH^i`
+  (`happel_trace`, sign pinned on A₃), derived-invariance of HH^•/HH_•/HC_•
+  across quiver orientations (`keller_cyclic_invariance`/`rickard_derived`),
+  `HH¹(T(A)) ≠ 0` (`cmrs_split`), incidence ≅ nerve cohomology
+  (`cibils_incidence`/`redondo_incidence`), acyclic HH_{≥1} = 0
+  (`cibils_acyclic`), and the truncated finiteness boolean (`xhj_truncated`).
+  Value batteries: Bergh–Erdmann quantum-CI cohomology `[2,2,1,0,…]` for
+  general `(a,b)` over char 0 (`qci_hh_oracle`), the Redondo–Román
+  triangular-string family with its degree-(2m+1) revival — anchored by the
+  independent minimal-A^e engine (`redondo_roman_2014`), the radical-square-zero
+  char-2 doubling (`cibils_radsq`), Taillefer's Taft-algebra cyclic homology
+  (`taillefer_taft`), and canonical-algebra `HH² = t−3` (`schremmer_wpl`,
+  attributing Happel) cross-linked to the trace identity. Symmetry: the
+  Brauer-star battery (`skowronski_yamagata`, `n | (L−1)`) that exposed and now
+  guards the `is_symmetric` fix. Module Tor: the duality anchor
+  `dim Tor_n(M,N) = dim Ext^n(M, DN)` on every case, the resolve-either-side
+  balance, and vanishing laws (`tensor_product`/`assem_book`).
 
 ### The read-only bank as a byte-level oracle
 
@@ -363,6 +387,25 @@ verified precision and listed below as such.
   cell as the always-on stand-in.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+- **CRS-2004 Example 2.20 does not reproduce** (Plan 29): the paper states
+  `HH¹ = 0` for its Z₅-cycle monomial example, but the validated bar oracle
+  robustly gives `dim HH¹ = 1` (an explicit surviving oriented 5-cycle; both
+  orientations, all 2-relation variants, CC and GF(32003)). The test pins the
+  VERIFIED value and documents the discrepancy — no literature number is frozen
+  against a live engine disagreement.
+- **QPA has no native Tor** (probed live): the module-Tor crosscheck computes
+  `Ext^n(M, DN)` inside QPA by dimension-shifting through `NthSyzygy` and uses
+  the duality identity as the bridge — plus quiverlab's own self-certifying
+  duality/balance anchors.
+- **`TrivialExtension` symmetry refuses loudly** (was a silent wrong False):
+  `T(A)` is symmetric classically, but it carries no quiver presentation, so
+  `is_symmetric`/`is_frobenius` coherently refuse; the strict pins are
+  `xfail` fences that auto-flip when the double-quiver presentation lands
+  (backlogged).
+- **Redondo–Román 2018 cup-nonvanishing is deferred**: the paper presents
+  `HH^n` as combinatorial sets, not integer vectors; without a clean bar
+  anchor the exact nonzero products are convention-risky, so the predicate is
+  a documented skip, not a pin.
 - The Plan-28 container tier: what pytest verifies is the **wheel-side story**
   (CLI ≡ public-API parity, renderer goldens, checkpoint-resume, byte-stable
   runner delegation, asset-file gates) plus the CI image smoke (build → run a
