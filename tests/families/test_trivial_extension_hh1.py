@@ -19,20 +19,24 @@ Sources (registry keys):
 Provenance: ``docs/plans/2026-07-25-literature-oracles-deep-research.md``
 (Cibils cluster); values re-verified live here.
 """
-import pytest
-
 from quiverlab import CC, GF, IncidenceAlgebra, Quiver, TrivialExtension
+from quiverlab.fields import QQ
 
 F = GF(32003)
 _DIAMOND = [("b", "x"), ("b", "y"), ("x", "t"), ("y", "t")]   # 2x2 grid = comm. square
 
 
 def _base_algebras():
+    # QQ (a presented-eligible field per Plan-31 D3: QQ/GF(p) coefficients are
+    # string-representable for Quiver.algebra, so T(A) takes the genuine
+    # presented route). Char 0, so the CMRS HH^1 values are unchanged from the
+    # former CC bases; CC-algebraic bases fall back to the structure-constant
+    # build (a distinct D3 branch, guarded in test_trivial_extension_presented.py).
     return {
-        "kA2": Quiver([1, 2], {"a": (1, 2)}).algebra(relations=[], field=CC),
-        "kA3": Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(relations=[], field=CC),
-        "2-Kronecker": Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=CC),
-        "comm-square": IncidenceAlgebra(_DIAMOND, field=CC),
+        "kA2": Quiver([1, 2], {"a": (1, 2)}).algebra(relations=[], field=QQ),
+        "kA3": Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(relations=[], field=QQ),
+        "2-Kronecker": Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=QQ),
+        "comm-square": IncidenceAlgebra(_DIAMOND, field=QQ),
     }
 
 
@@ -40,25 +44,31 @@ def _base_algebras():
 
 def test_trivial_extension_HH1_never_vanishes():
     """HH^1(T(A)) != 0 for every finite-dimensional A (CMRS 2003, ``cmrs_split``):
-    Z(A) is always a summand. T(A) carries NO quiver presentation (it is built
-    from structure constants), so HH runs on the normalized-bar oracle over CC.
-    Characteristic-independent; pinned here over char 0."""
+    Z(A) is always a summand. Since Plan 31 T(A) over QQ carries a genuine quiver
+    presentation; over QQ the auto engine is still the normalized-bar oracle (QQ
+    is not a prime field). The HH dims are iso-invariant (unchanged from the
+    retained structure-constant build). Characteristic-independent; pinned here
+    over char 0."""
     for name, A in _base_algebras().items():
         TA = TrivialExtension(A)
-        assert TA.quiver is None                       # no path basis
+        assert TA.quiver is not None                   # presented route (Plan 31)
         hh1 = TA.hochschild_cohomology(1).dims[1]
         assert hh1 >= 1, f"{name}: HH^1(T(A)) must be nonzero"
 
 
-def test_structure_constant_algebra_HH_engine_scope():
-    """FINDING (Plan 29): the bar oracle serves the presentation-free T(A); only
-    the Chouhy-Solotar engine refuses it (it needs a quiver + relations). No HH
-    engine is broken on structure-constant algebras -- bar (and the fast GF(p)
-    bar-rank) accept them because they read only the multiplication table."""
-    TA = TrivialExtension(Quiver([1, 2], {"a": (1, 2)}).algebra(relations=[], field=CC))
-    assert TA.hochschild_cohomology(1, engine="bar").dims[1] >= 1     # bar works
-    with pytest.raises(ValueError):
-        TA.hochschild_cohomology(1, engine="cs")                     # CS refuses (no presentation)
+def test_cs_now_computes_on_presented_trivial_extension():
+    """Plan 31 STRENGTHENING (was: CS refuses the presentation-free T(A) with a
+    ValueError). The presented T(kA_2) carries a quiver + relations -- exactly what
+    the Chouhy-Solotar engine needs -- so ``engine="cs"`` now COMPUTES and agrees
+    with the normalized-bar oracle. Over GF(32003) the auto engine is the fast
+    bar-rank engine (same bar complex; identical dims): [3, 1, 1] at top 2.
+    (``chouhy_solotar``; ``bar``; ``assem_book``.) The fuller cross-engine +
+    iso-invariance battery is in tests/families/test_trivial_extension_presented.py."""
+    TA = TrivialExtension(Quiver([1, 2], {"a": (1, 2)}).algebra(relations=[], field=GF(32003)))
+    assert TA.quiver is not None
+    cs = TA.hochschild_cohomology(2, engine="cs").dims
+    bar = TA.hochschild_cohomology(2).dims                           # auto = fast bar-rank over GF(p)
+    assert cs == bar == [3, 1, 1]
 
 
 def test_crs2004_example_2_20_cyclic_hh1_finding():

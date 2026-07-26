@@ -1,4 +1,4 @@
-"""TrivialExtension(A) = A |x D(A), symmetric. Fixture N10."""
+"""TrivialExtension(A) = A |x D(A): a presented symmetric algebra (Plan 31). Fixture N10."""
 from quiverlab.combinat import Quiver
 from quiverlab.families import TrivialExtension
 from quiverlab.fields import GF
@@ -16,12 +16,12 @@ def test_trivial_extension_kA2_dim6():
 
 def test_trivial_extension_is_symmetric_hh_duality():
     A = TrivialExtension(_kA2(GF(32003)))                  # symmetric: HH^n dim = HH_n dim
-    # T(A) carries no quiver, so HH runs on the exponential normalized-bar complex:
-    # dim C^n = m*(m-1)^n with m = 6, so the degree-3 coboundary d^3 is 3750 x 750
-    # = 2.8M cells, under the 4M default guard -- no max_cells override needed.
-    # Degree 4 was verified once at implementation time (HH^4 == HH_4, values equal) but is
-    # excluded here for cost (~61s / ~1.3 GB at max_cells=71M); the degree-3 check pins the
-    # same symmetric-duality property HH^n == HH_n.
+    # Plan 31: T(A) is now a genuine kQ_T/I_T-presented Algebra; over GF(32003) the
+    # auto engine is the fast bar-rank engine (int64 mod-p rank on the normalized-bar
+    # complex). The values are iso-invariant (unchanged from the retained
+    # structure-constant build). Degree 3 pins the symmetric-duality HH^n == HH_n;
+    # degree 4 is excluded for cost.
+    assert A.is_symmetric() is True
     co = A.hochschild_cohomology(3).dims
     ho = A.hochschild_homology(3).dims
     assert co == ho

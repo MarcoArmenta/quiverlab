@@ -233,6 +233,12 @@ REGISTRY: dict = {r.key: r for r in [
        "Symmetric and Frobenius representation theory, incl. the symmetric "
        "Nakayama criterion n | (L-1) -- the is_symmetric regression oracle.",
        "frobenius", "symmetric"),
+    _r("happel_trivial_extension", "Happel1988", "foundation",
+       "Triangulated Categories in the Representation Theory of Finite Dimensional Algebras",
+       "The trivial extension T(A) = A |x D(A) is symmetric for every "
+       "finite-dimensional A; the repetitive-algebra framework -- the anchor for "
+       "the certified double-quiver TrivialExtension presentation (Plan 31).",
+       "frobenius", "symmetric"),
     _r("schremmer_wpl", "Schremmer2025wpl", "foundation",
        "Weighted projective lines and Hochschild cohomology",
        "HH^* of the canonical algebras (dim HH^2 = t-3, after Happel LNM 1404) "

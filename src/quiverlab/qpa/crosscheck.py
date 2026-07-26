@@ -59,14 +59,43 @@ def crosscheck_symmetric(algebra) -> CrosscheckReport:
     n | (L-1) that the former engine shortcut wrongly reported non-symmetric.
 
     Scope: the algebra must carry a quiver presentation over QQ or a prime GF(p) (QPA's
-    ``kQ/rels`` route). Presentation-less algebras (e.g. ``TrivialExtension``) cannot be
-    fed to QPA and are out of this crosscheck's scope."""
+    ``kQ/rels`` route). A presented ``TrivialExtension(A)`` (Plan 31 double-quiver build)
+    qualifies and can be fed here directly; the ``trivial_extension`` crosscheck below
+    additionally compares it against QPA's native ``TrivialExtensionOfQuiverAlgebra``."""
     session.require_gap()
     ours = [bool(algebra.is_symmetric()), bool(algebra.is_weakly_symmetric())]
     base = scripts.symmetric_predicates_script(algebra)
     qpa = [bool(session.run(base + "\nIsSymmetricAlgebra(A);")),
            bool(session.run(base + "\nIsWeaklySymmetricAlgebra(A);"))]
     return CrosscheckReport("symmetric", ours, qpa, ours == qpa)
+
+
+def crosscheck_trivial_extension(algebra) -> CrosscheckReport:
+    """Our certified double-quiver ``TrivialExtension(algebra)`` vs QPA's native
+    ``TrivialExtensionOfQuiverAlgebra`` (Plan 31). Compares the 5-tuple
+    ``[dim, #arrows, IsSymmetric, IsWeaklySymmetric, IsSelfinjective]``.
+
+    ``algebra`` (the BASE A) must carry a quiver presentation over QQ or a prime
+    GF(p); our TrivialExtension then takes the presented route, so ``B.quiver`` is
+    non-None and its arrows are countable. QPA labels its dual arrows differently
+    (``te_a1_i_j``), so the arrow COUNT is compared, not names."""
+    session.require_gap()
+    from quiverlab.families.trivial_extension import TrivialExtension
+    B = TrivialExtension(algebra)
+    if B.quiver is None:
+        raise QuiverlabError(
+            "crosscheck_trivial_extension needs a presented base algebra",
+            hint="give a Quiver(...).algebra(...) over QQ or a prime GF(p) so "
+                 "TrivialExtension takes its double-quiver route")
+    ours = [B.dim, len(B.quiver.arrows), bool(B.is_symmetric()),
+            bool(B.is_weakly_symmetric()), bool(B.is_selfinjective())]
+    base = scripts.trivial_extension_script(algebra)
+    qpa = [int(session.run(base + "\nDimension(TE);")),
+           int(session.run(base + "\nNumberOfArrows(QuiverOfPathAlgebra(TE));")),
+           bool(session.run(base + "\nIsSymmetricAlgebra(TE);")),
+           bool(session.run(base + "\nIsWeaklySymmetricAlgebra(TE);")),
+           bool(session.run(base + "\nIsSelfinjectiveAlgebra(TE);"))]
+    return CrosscheckReport("trivial_extension", ours, qpa, ours == qpa)
 
 
 @dataclass
@@ -302,15 +331,18 @@ def crosscheck_koszul_derived(algebra, top: int) -> CrosscheckReport:
 
 def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     """Dispatch. what="hochschild"|"module_ext" (Plan 08); "symmetric" (Plan 29);
-    "tau"|"tau_minus"|"proj_resolution"|"inj_resolution"|"inj_dimension" (Plan 23
-    module surface); "ext_algebra_dims"|"ext_generator_degrees"|"ext_quiver"|
-    "quadratic"|"koszul_derived" (Plan 27 Yoneda/Ext-algebra)."""
+    "trivial_extension" (Plan 31); "tau"|"tau_minus"|"proj_resolution"|
+    "inj_resolution"|"inj_dimension" (Plan 23 module surface);
+    "ext_algebra_dims"|"ext_generator_degrees"|"ext_quiver"|"quadratic"|
+    "koszul_derived" (Plan 27 Yoneda/Ext-algebra)."""
     if what == "hochschild":
         return crosscheck_hochschild(algebra, *args, **kwargs)
     if what == "module_ext":
         return crosscheck_module_ext(algebra, *args, **kwargs)
     if what == "symmetric":
         return crosscheck_symmetric(algebra, *args, **kwargs)
+    if what == "trivial_extension":
+        return crosscheck_trivial_extension(algebra, *args, **kwargs)
     if what == "tau":
         return crosscheck_tau(algebra, *args, minus=False, **kwargs)
     if what == "tau_minus":
@@ -337,8 +369,9 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_koszul_derived(algebra, *args, **kwargs)
     # An unrecognized `what` is a usage error, NOT "QPA unavailable".
     raise QuiverlabError(f"unknown cross-check {what!r}",
-                         hint='use "hochschild", "module_ext", "symmetric", "tau", '
-                              '"tau_minus", "proj_resolution", "inj_resolution", '
+                         hint='use "hochschild", "module_ext", "symmetric", '
+                              '"trivial_extension", "tau", "tau_minus", '
+                              '"proj_resolution", "inj_resolution", '
                               '"inj_dimension", "decompose", "indecomposable", '
                               '"ext_algebra_dims", "ext_generator_degrees", '
                               '"ext_quiver", "quadratic", or "koszul_derived"')

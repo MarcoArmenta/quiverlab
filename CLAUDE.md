@@ -323,7 +323,7 @@ with `Algebra.tor`, anchored by `dim Tor_n(M,N) = dim Ext^n(M, DN)` on every
 test + resolve-either-side balance (QPA has NO native Tor — probed live; the
 QPA bridge computes Ext-via-NthSyzygy dimension shifting); 17 citation keys
 added; TrivialExtension symmetry now refuses LOUDLY pending its double-quiver
-presentation (backlogged, xfail fences auto-flip). Branch
+presentation (backlogged, xfail fences auto-flip — delivered by Plan 31). Branch
 `plan-29-literature-batteries`, merged 2026-07-25), Plan 30 (Krull–Schmidt +
 GUI/report completeness, Tier 1d — Marco's feedback: `modules/decompose.py`
 `decompose`/`is_indecomposable` (exact Fitting splitting on Domain-native
@@ -341,4 +341,29 @@ everywhere (webapp whitelist + job page, `quiverlab-hpc render --format tex`,
 GUI button), kA₂ replay golden (every differential of the S₁ resolution
 verbatim). Branch `plan-30-decompose-reporting`, merged 2026-07-25 after
 Plan 29 — the skip-guarded tor wiring auto-activated in the merged tree).
-Suite recounted post-merge: 2031 tests (fast 804 / deep 1120 / qpa 107).
+Plan 31 (TrivialExtension double-quiver presentation, Tier 1a —
+`TrivialExtension(A)` of a presented `A` over QQ/GF(p) now returns a genuine
+`kQ_T/I_T`-presented Algebra (via `Quiver.algebra`): quiver = Q_A plus one
+arrow dual to each corner-homogeneous basis element of the bimodule socle
+`soc_{A^e}(A)` (direction reversed), relations extracted from the ⋉ structure
+by a length-lex kernel enumeration, certified per instance by
+`dim kQ_T/I_T = 2·dim A` (loud `QuiverlabError` otherwise); presentation-less
+bases keep the unchanged ⋉ structure-constants build as
+`_trivial_extension_structure_constants` (honest refusals preserved, and that
+build doubles as the internal iso-invariance oracle). `is_symmetric`/
+`is_weakly_symmetric`/`is_frobenius`/`is_selfinjective` are now True on every
+`T(A)` via the unchanged Plan-29 trace-form certifier, and the four
+`xfail(strict=False)` fences in `tests/invariants/test_symmetric_regression.py`
+are real asserts. QPA 1.37's native `TrivialExtensionOfQuiverAlgebra` is a
+construction oracle (dim + arrow count + `IsSymmetricAlgebra`/
+`IsWeaklySymmetricAlgebra`/`IsSelfinjectiveAlgebra`). Oracles: `T(kA_n) ≅
+kZ_n/J^{n+1}` (n=2,3,4), `T(k[x]/(x^a)) = k⟨x,y⟩/(x^a,y²,xy−yx)` (plain
+commutator in every characteristic; a=2 reproduces the `k[x,y]/(x²,y²)`
+`HH_• = [4,4,5,6]` pin), Cartan identity `C_T = C_A + C_Aᵀ`, presented ≡ ⋉
+iso-invariance (bar-HH degreewise), and CS ≡ bar on presented `T` (CS refused
+the old structure-constant build). No Fernández–Platzeck citation by design
+(metadata not BibTeX-verifiable; the build is per-instance-certified +
+QPA-oracled). New tests: `tests/families/test_trivial_extension_presented.py`
+(deep), `tests/qpa/test_trivial_extension_qpa.py` (qpa). Branch
+`plan-31-trivial-extension`).
+Suite recounted post-Plan-31: 2096 tests (fast 804 / deep 1180 / qpa 112).

@@ -20,7 +20,17 @@ three construction *routes*:
   `x*y + q*y*x`); the algebra is completed by the Plan-03 Gröbner engine.
   QuantumCI, ExteriorAlgebra, PreprojectiveAlgebra, IncidenceAlgebra.
 - **structure-constant** — the multiplication table `T` is written directly from
-  the factors, with no quiver. TensorProduct, TrivialExtension.
+  the factors, with no quiver. TensorProduct.
+
+`TrivialExtension` lived in the structure-constant route too, but since Plan 31 it
+returns a genuine `kQ_T/I_T`: the quiver of `A` plus one arrow dual to each
+corner-homogeneous socle-basis element (direction reversed), with relations
+extracted from the ⋉ multiplication by a length-lex kernel enumeration and the
+build certified per instance by `dim = 2·dim A` (a loud `QuiverlabError`
+otherwise). A base with no usable path presentation falls back to the old
+structure-constant ⋉ build (kept verbatim, and doubling as the iso-invariance
+oracle).
+
 A family stamps the algebra with `_family_citations`, a tuple of registry keys.
 The registry itself is a dict `key -> Reference(key, bibtex_key, kind, title,
 annotation, tags)`; the annotations are the ground truth the web /literature page

@@ -9,11 +9,11 @@ shortcut; QPA's ``IsSymmetricAlgebra`` returns ``true``.
 qpa-marked: skips locally when GAP is absent, mandatory under
 ``QUIVERLAB_REQUIRE_QPA=1`` in CI.
 
-SCOPE NOTE: ``TrivialExtension(A) = A |x D(A)`` is classically symmetric but
-carries NO quiver presentation, so it cannot be fed to QPA's ``kQ/rels`` route
-and is out of this crosscheck's scope; the Nakayama/Brauer-star side (which
-QPA does accept) is crosschecked here, and the trivial-extension case is
-covered by the theory oracle in ``tests/invariants/test_symmetric_regression``.
+Plan 31 update: ``TrivialExtension(A)`` is now a genuine ``kQ/rels``-presented
+Algebra, so it CAN be fed to QPA's ``IsSymmetricAlgebra`` route; both that
+crosscheck and QPA's native ``TrivialExtensionOfQuiverAlgebra`` construction
+oracle live in ``tests/qpa/test_trivial_extension_qpa.py``. This file covers the
+Nakayama / Brauer-star side (the original fixed-bug reproduction).
 """
 import pytest
 
