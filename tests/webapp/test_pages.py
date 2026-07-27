@@ -227,20 +227,18 @@ def test_download_trace_html_fallback_served(tmp_path):
     assert r.headers["content-type"].startswith("text/html")
 
 
-def test_download_trace_tex_served(tmp_path):
-    # Plan 30 C1: the persisted LaTeX source is whitelisted + served as text/plain.
+def test_download_trace_tex_refused(tmp_path):
+    # PDF/TeX report artifacts are OFF the whitelist: a stale trace.tex 404s (never 500).
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
     jid = _done_job(cfg, '{"ok": true}')
     (cfg.artifacts_dir / jid / "trace.tex").write_text(r"\documentclass{article}")
     r = TestClient(create_app(cfg)).get(f"/download/{jid}/trace.tex")
-    assert r.status_code == 200
-    assert r.headers["content-type"].startswith("text/plain")
-    assert "documentclass" in r.text
+    assert r.status_code == 404
 
 
-def test_trace_tex_written_end_to_end_and_served(tmp_path):
-    """The runner (spec core) persists trace.tex alongside the pdf/html, and the
-    whitelist serves it -- exercised end to end via TestClient."""
+def test_worked_steps_written_end_to_end_and_served(tmp_path):
+    """The runner (spec core) persists the HTML report + JSON machine record (no
+    pdf/tex), and the whitelist serves them -- exercised end to end via TestClient."""
     from quiverlab.hpc.spec import run as spec_run
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
     store = JobStore(cfg.db_path)
@@ -255,22 +253,17 @@ def test_trace_tex_written_end_to_end_and_served(tmp_path):
               "compute": ["hh_cohomology:0..2"],
               "artifacts": {"pdf": True, "tikz": False}}, art)
     store.mark_done(jid, str(art))
-    assert (art / "trace.tex").exists(), "the runner must persist trace.tex"
-    r = TestClient(create_app(cfg)).get(f"/download/{jid}/trace.tex")
-    assert r.status_code == 200
-    assert r.headers["content-type"].startswith("text/plain")
-    assert "documentclass" in r.text
-
-
-def test_job_page_shows_tex_link_when_present(tmp_path):
-    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
-    jid = _done_job(cfg, '{"quiverlab_version": "9.9.9", "results": {}}')
-    (cfg.artifacts_dir / jid / "trace.tex").write_text(r"\documentclass{article}")
-    en = TestClient(create_app(cfg)).get(f"/job/{jid}")
-    assert f"/download/{jid}/trace.tex" in en.text
-    assert "LaTeX source" in en.text
-    es = TestClient(create_app(cfg)).get(f"/es/job/{jid}")
-    assert "fuente LaTeX" in es.text                     # bilingual label
+    assert (art / "trace_steps.html").exists(), "the runner must persist the HTML report"
+    assert (art / "trace.json").exists(), "the runner must persist trace.json"
+    assert not (art / "trace.tex").exists() and not (art / "trace.pdf").exists()
+    client = TestClient(create_app(cfg))
+    r = client.get(f"/download/{jid}/trace_steps.html")
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/html")
+    j = client.get(f"/download/{jid}/trace.json")
+    assert j.status_code == 200
+    # the removed artifacts are not served:
+    assert client.get(f"/download/{jid}/trace.pdf").status_code == 404
+    assert client.get(f"/download/{jid}/trace.tex").status_code == 404
 
 
 _KEY_SHAPE = re.compile(r"[a-z][a-z_]*\.[a-z_]+")

@@ -76,12 +76,15 @@ def _module_dim(mspec) -> int:
 
 
 def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
-    """Effective dimension for tier classification. Module resolutions and Ext
-    scale with the MODULE dimension, so a big module must size the job even over a
-    small algebra -- otherwise it would be mis-classified as instant. Falls back to
-    the algebra dimension when there is no explicit module, so every existing
-    family/quiver request classifies exactly as before (Plan 26)."""
-    return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target))
+    """Effective dimension for tier classification. Module resolutions, Ext and Tor
+    scale with the MODULE dimension, so a big module -- INCLUDING the Tor second
+    module ``tor_target`` -- must size the job even over a small algebra, otherwise
+    it would be mis-classified as instant and let an oversized Tor target drive a
+    multi-GB dense-matrix allocation in the sync tier. Falls back to the algebra
+    dimension when there is no explicit module, so every existing family/quiver
+    request classifies exactly as before (Plan 26/30)."""
+    return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
+               _module_dim(req.tor_target))
 
 
 # Heuristic throughput used to turn the op estimate into a human "minutes"

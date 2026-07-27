@@ -94,12 +94,12 @@ def test_end_to_end_queued_job(tmp_path):
     dims = result["results"]["hh_cohomology"]["dims"]
     assert isinstance(dims, list) and dims == [4, 8, 12, 16, 20]
 
-    # The worked-steps artifact (pdf=True) is downloadable -- PDF when a LaTeX
-    # toolchain is present, else the self-contained HTML fallback.
-    trace = client.get(f"/download/{jid}/trace.pdf")
-    if trace.status_code != 200:
-        trace = client.get(f"/download/{jid}/trace_steps.html")
-    assert trace.status_code == 200, "worked-steps artifact should be downloadable"
+    # The worked-steps artifact (pdf=True) is downloadable: the self-contained,
+    # print-ready HTML report (PDF/TeX report artifacts have been removed).
+    trace = client.get(f"/download/{jid}/trace_steps.html")
+    assert trace.status_code == 200, "worked-steps HTML report should be downloadable"
+    # the removed pdf/tex artifacts are never served:
+    assert client.get(f"/download/{jid}/trace.pdf").status_code == 404
 
 
 def test_instant_path_end_to_end(tmp_path):
@@ -146,6 +146,10 @@ def test_big_job_end_to_end_mocked_smtp(tmp_path):
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
                            "QLWEB_SMTP_HOST": "relay", "QLWEB_SMTP_FROM": "q@e.org",
                            "QLWEB_PUBLIC_BASE_URL": "https://ql.example",
+                           # a real signing secret: the big-job tier is enabled, so
+                           # create_app's production-secret guard (correction #4)
+                           # refuses the public repo default.
+                           "QLWEB_TOKEN_SECRET": "test-secret-not-the-default",
                            "QLWEB_INSTANT_OPS_THRESHOLD": "0",
                            "QLWEB_QUEUED_OPS_THRESHOLD": "0",
                            "QLWEB_INSTANT_MAX_DEGREE": "0",
@@ -268,6 +272,9 @@ def test_big_job_cache_hit_sends_no_email_and_mints_no_token(tmp_path):
     # -- across users. Only genuinely new big examples take the magic-link path.
     over = {"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_SMTP_HOST": "relay",
             "QLWEB_SMTP_FROM": "q@e.org", "QLWEB_PUBLIC_BASE_URL": "https://ql.example",
+            # a real signing secret: the big-job tier is enabled, so create_app's
+            # production-secret guard (correction #4) refuses the public repo default.
+            "QLWEB_TOKEN_SECRET": "test-secret-not-the-default",
             "QLWEB_INSTANT_OPS_THRESHOLD": "0", "QLWEB_QUEUED_OPS_THRESHOLD": "0",
             "QLWEB_INSTANT_MAX_DEGREE": "0", "QLWEB_QUEUED_MAX_DEGREE": "0"}
     cfg = Config.from_env(over)
@@ -475,6 +482,9 @@ def test_big_module_cache_hit_sends_no_email(tmp_path):
     # request is served from cache with NO email, NO token, NO pending row.
     over = {"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_SMTP_HOST": "relay",
             "QLWEB_SMTP_FROM": "q@e.org", "QLWEB_PUBLIC_BASE_URL": "https://ql.example",
+            # a real signing secret: the big-job tier is enabled, so create_app's
+            # production-secret guard (correction #4) refuses the public repo default.
+            "QLWEB_TOKEN_SECRET": "test-secret-not-the-default",
             "QLWEB_INSTANT_OPS_THRESHOLD": "0", "QLWEB_QUEUED_OPS_THRESHOLD": "0",
             "QLWEB_INSTANT_MAX_DEGREE": "0", "QLWEB_QUEUED_MAX_DEGREE": "0"}
     cfg = Config.from_env(over)

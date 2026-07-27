@@ -28,6 +28,7 @@ We focus on LOCAL Frobenius algebras (one idempotent = the unit), where sigma pr
 import json
 import sys
 import numpy as np
+from quiverlab.errors import QuiverlabError
 from quiverlab.engine.hh_engine import (Algebra, differential_matrix, cn_basis,
                        hochschild_homology_dims, truncated_polynomial, two_gen_local)
 from quiverlab.engine.scan3 import (cochain_basis, coboundary_matrix, hochschild_cohomology_dims)
@@ -345,10 +346,12 @@ def nakayama_automorphism(alg, p):
     trivially on Hochschild (co)homology, so the induced Theta -- and its Coxeter
     characteristic polynomial -- is independent of the choice.
 
-    Raises ValueError if `alg` is not Frobenius (no non-degenerate form exists)."""
+    Raises QuiverlabError if `alg` is not Frobenius (no non-degenerate form exists) --
+    the same taxonomy as the QQ/generic path (invariants.frobenius), so
+    `except quiverlab.QuiverlabError` catches the refusal over every domain."""
     found = frobenius_form(alg, p)
     if found is None:
-        raise ValueError(
+        raise QuiverlabError(
             "algebra %r is not Frobenius over F_%d (no non-degenerate Frobenius "
             "form), so it has no Nakayama automorphism -- the genuine "
             "non-self-injective Theta is the open PLAN item A frontier."

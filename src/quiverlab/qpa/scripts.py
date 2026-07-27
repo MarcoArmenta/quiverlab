@@ -8,6 +8,40 @@ the fields QPA supports exactly. Number-field CC entries and GF(p^n) are out of
 the cross-check scope (raise QpaUnavailableError with that reason)."""
 from __future__ import annotations
 
+import re
+
+from quiverlab.errors import QuiverlabError
+
+# GAP reserved words (keywords). An arrow named one of these renders into GAP source
+# unescaped -- as the bare generator identifier `kQ.<name>` in a relation term -- and
+# GAP then rejects it with a confusing syntax error at cross-check time. From the GAP
+# reference manual's keyword list.
+_GAP_RESERVED = frozenset({
+    "and", "atomic", "break", "continue", "do", "elif", "else", "end", "false", "fi",
+    "for", "function", "if", "in", "local", "mod", "not", "od", "or", "quit", "readonly",
+    "readwrite", "rec", "repeat", "return", "then", "true", "until", "while",
+})
+# A GAP identifier used unescaped: a letter/underscore then letters/digits/underscores.
+_GAP_IDENT = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
+
+
+def _validate_arrow_name(name) -> None:
+    """Refuse an arrow name that cannot be emitted into GAP source unescaped -- a GAP
+    reserved word or a non-identifier -- with a clean typed error that names the arrow,
+    BEFORE any GAP source is built. Valid names (letters/digits/underscores, not a
+    keyword) pass through untouched, so existing cross-checks are byte-identical."""
+    s = str(name)
+    if _GAP_IDENT.match(s) is None:
+        raise QuiverlabError(
+            f"arrow name {name!r} is not a valid GAP identifier for the QPA cross-check "
+            f"(must match [A-Za-z_][A-Za-z0-9_]*)",
+            hint="rename the arrow before crosschecking against QPA")
+    if s in _GAP_RESERVED:
+        raise QuiverlabError(
+            f"arrow name {name!r} is a GAP reserved word; it would render into GAP "
+            f"source unescaped (as the generator kQ.{s}) and break the QPA cross-check",
+            hint="rename the arrow (e.g. append a digit) before crosschecking against QPA")
+
 
 def _gap_field(domain) -> str:
     """QPA base field literal for a quiverlab Domain (QQ or GF(p))."""
@@ -31,6 +65,8 @@ def quiver_and_algebra_script(algebra) -> str:
     Q = algebra.quiver
     verts = list(Q.vertices)
     idx = {v: i + 1 for i, v in enumerate(verts)}               # QPA is 1-based
+    for a in Q.arrows:                                          # reject GAP-unsafe names
+        _validate_arrow_name(a)                                 # BEFORE emitting source
     arrows = [[idx[Q.source(a)], idx[Q.target(a)], a] for a in Q.arrows]
     arrow_gap = ", ".join(f'[{s}, {t}, "{name}"]' for s, t, name in arrows)
     field = _gap_field(algebra.domain)

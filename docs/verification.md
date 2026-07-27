@@ -428,11 +428,11 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 721 | the engine reproduces a value/identity that exists outside the library |
+| Literature / theory pins | `-m oracle_literature` | 722 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 410 | two independent implementations compute the same thing and match live |
 | Self-certifying certificates | `-m oracle_selfcert` | 613 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 122 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1301 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1302 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-07-26 (Plan 32). The oracle markers live only on the pure-library
 `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` / `families` /
@@ -551,8 +551,8 @@ verified precision and listed below as such.
   Krull–Schmidt uniqueness, and τ-additivity.
 - **The worked-steps bundle is replayable by construction** (Plan 30): the
   kA₂ golden asserts every differential of the S₁ resolution appears verbatim
-  in the `.tex`; larger objects render as stated shape+rank elisions, never
-  silent omissions; the `.tex` source itself is a served artifact.
+  in the `.html`; larger objects render as stated shape+rank elisions, never
+  silent omissions; the `trace_steps.html` source itself is a served artifact.
 - The Plan-28 container tier: what pytest verifies is the **wheel-side story**
   (CLI ≡ public-API parity, renderer goldens, checkpoint-resume, byte-stable
   runner delegation, asset-file gates) plus the CI image smoke (build → run a

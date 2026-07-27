@@ -15,6 +15,13 @@ def _int(env: Mapping[str, str], key: str, default: int) -> int:
     return int(raw) if raw is not None and raw != "" else default
 
 
+# The public repo-default magic-link signing secret. Fine for dev/tests
+# (deterministic), but a PRODUCTION boot with the big-job tier enabled MUST
+# override it via QLWEB_TOKEN_SECRET -- otherwise anyone can read this default and
+# forge a valid single-use token. See assert_production_secrets().
+_DEFAULT_TOKEN_SECRET = "quiverlab-dev-token-secret"
+
+
 @dataclass(frozen=True)
 class Config:
     data_dir: Path
@@ -23,6 +30,8 @@ class Config:
     instant_wall_seconds: int
     instant_ops_threshold: int
     instant_max_degree: int
+    instant_rate_max: int
+    instant_rate_window_seconds: int
     job_wall_seconds: int
     job_mem_bytes: int
     result_max_bytes: int
@@ -74,6 +83,13 @@ class Config:
             instant_wall_seconds=_int(env, "QLWEB_INSTANT_WALL_SECONDS", 5),
             instant_ops_threshold=_int(env, "QLWEB_INSTANT_OPS_THRESHOLD", 2_000_000),
             instant_max_degree=_int(env, "QLWEB_INSTANT_MAX_DEGREE", 8),
+            # Per-IP instant-tier flood throttle (each instant request spawns a
+            # resource-capped child, so unbounded instant traffic is a CPU/spawn
+            # DoS the queue limiter cannot see). At most this many instant computes
+            # per window, per IP hash; <= 0 disables. 60/60s is generous for a human
+            # while cutting a scripted flood.
+            instant_rate_max=_int(env, "QLWEB_INSTANT_RATE_MAX", 60),
+            instant_rate_window_seconds=_int(env, "QLWEB_INSTANT_RATE_WINDOW_SECONDS", 60),
             job_wall_seconds=_int(env, "QLWEB_JOB_WALL_SECONDS", 900),
             job_mem_bytes=_int(env, "QLWEB_JOB_MEM_BYTES", 4 * 1024 ** 3),
             result_max_bytes=_int(env, "QLWEB_RESULT_MAX_BYTES", 32 * 1024 ** 2),
@@ -106,13 +122,13 @@ class Config:
             smtp_user=env.get("QLWEB_SMTP_USER", ""),
             smtp_pass=env.get("QLWEB_SMTP_PASS", ""),
             smtp_from=env.get("QLWEB_SMTP_FROM", ""),
-            token_secret=env.get("QLWEB_TOKEN_SECRET", "quiverlab-dev-token-secret"),
+            token_secret=env.get("QLWEB_TOKEN_SECRET", _DEFAULT_TOKEN_SECRET),
             # Salt for the per-email rate-limit hash. Optional: defaults to
             # token_secret (the original choice) so nothing breaks if it is unset;
             # set it to decouple the two secrets and to rotate rate-limit buckets
             # independently of the magic-link signing key.
             email_hash_salt=(env.get("QLWEB_EMAIL_HASH_SALT")
-                             or env.get("QLWEB_TOKEN_SECRET", "quiverlab-dev-token-secret")),
+                             or env.get("QLWEB_TOKEN_SECRET", _DEFAULT_TOKEN_SECRET)),
             big_token_ttl_seconds=_int(env, "QLWEB_BIG_TOKEN_TTL_SECONDS", 3600),
             public_base_url=env.get("QLWEB_PUBLIC_BASE_URL", "http://127.0.0.1:8000"),
             # Empty by default: the Docs nav link is absent (no dead href) unless
@@ -124,6 +140,27 @@ class Config:
             cache_enabled=_int(env, "QLWEB_CACHE_ENABLED", 1) != 0,
             cache_max_entries=_int(env, "QLWEB_CACHE_MAX_ENTRIES", 1000),
         )
+
+
+def assert_production_secrets(cfg: Config) -> None:
+    """Refuse an insecure production boot. If the big-job tier is enabled (an SMTP
+    relay is configured) while the magic-link signing secret is still the public
+    repo default, the single-use tokens are FORGEABLE -- anyone can read the default
+    and mint a valid link. Raise loudly so the server never comes up in that state.
+
+    This is called ONLY on the env-config boot path (``create_app()`` with no cfg --
+    the documented production entrypoint ``uvicorn ... create_app --factory``). A
+    Config passed explicitly (tests, the offline embedded app) is trusted as a
+    deliberate configuration and is not second-guessed. The deploy compose already
+    fails fast on a missing ``QLWEB_TOKEN_SECRET`` (``${VAR:?}``); this is the
+    in-process backstop for any boot that bypasses it."""
+    if cfg.big_jobs_enabled and cfg.token_secret == _DEFAULT_TOKEN_SECRET:
+        raise RuntimeError(
+            "insecure configuration: the big-job tier is enabled "
+            "(QLWEB_SMTP_HOST/QLWEB_SMTP_FROM are set) but QLWEB_TOKEN_SECRET is "
+            "still the public repo default, so magic-link tokens would be forgeable. "
+            "Set QLWEB_TOKEN_SECRET to a long random secret, e.g. "
+            "`openssl rand -hex 32`.")
 
 
 @lru_cache(maxsize=1)

@@ -98,7 +98,7 @@ def _max_degree(items) -> int:
 SAMPLE_CONFIG = """\
 # quiverlab-hpc run config (Plan 28).
 # Usage:  quiverlab-hpc run this-file.yaml -o result.json
-#         quiverlab-hpc render result.json -o report.pdf
+#         quiverlab-hpc render result.json -o report.html
 schema: 1                 # request schema (1, or 2 to add a `module` block)
 algebra:
   kind: quiver            # "quiver" (below) or "family" (a named builder)
@@ -114,7 +114,7 @@ compute:                  # each item is "kind" or "kind:lo..hi"
   - hh_cohomology:0..4    # HH^0..HH^4
   - cartan                # the Cartan matrix
 artifacts:
-  pdf: false              # worked-steps trace.pdf (or trace_steps.html)
+  pdf: false              # worked-steps report (trace_steps.html + trace.json)
   tikz: false             # the quiver as tikz.tex
 hpc:                      # optional batch/checkpoint knobs (CLI-only)
   checkpoint_dir: null    # a dir on $SCRATCH -> resumable big hh_homology
@@ -373,12 +373,12 @@ def _build_parser() -> _Parser:
     pr.set_defaults(func=_cmd_run)
 
     pd = sub.add_parser("render",
-                        help="render result.json to PDF/HTML/text/tex, or emit trace.json")
+                        help="render result.json to HTML/text, or emit trace.json")
     pd.add_argument("result", help="path to result.json")
     pd.add_argument("-o", "--output", default=None, help="report output path")
-    pd.add_argument("--format", choices=("auto", "pdf", "html", "txt", "tex", "json"),
+    pd.add_argument("--format", choices=("auto", "html", "txt", "json"),
                     default="auto",
-                    help="output format (default auto; tex = LaTeX source; "
+                    help="output format (default auto = HTML; "
                          "json = worked-steps event stream trace.json)")
     pd.set_defaults(func=_cmd_render)
 

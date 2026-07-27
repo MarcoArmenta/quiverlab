@@ -235,7 +235,10 @@ def _cc_body(compute):
 
 def test_memory_field_in_big_estimate_payload(tmp_path):
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
-                           "QLWEB_SMTP_HOST": "relay", "QLWEB_SMTP_FROM": "q@e.org"})
+                           "QLWEB_SMTP_HOST": "relay", "QLWEB_SMTP_FROM": "q@e.org",
+                           # big-job tier enabled -> a real signing secret, else
+                           # create_app's production-secret guard (correction #4) refuses.
+                           "QLWEB_TOKEN_SECRET": "test-secret-not-the-default"})
     c = TestClient(create_app(cfg))
     r = c.post("/api/compute", json=_cc_body(["hh_cohomology:0..30"]))
     assert r.status_code == 202 and r.json()["tier"] == "big"

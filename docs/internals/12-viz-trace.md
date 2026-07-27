@@ -47,15 +47,15 @@ computation cannot blow up memory.
    `quiverlab.verbose`, default `True`), records the engine-choice `Dispatch`, and
    runs the engine with the recorder; the bar engine appends a `ResolutionTerm` and
    a `RankStep` at each degree.
-4. **Rendering** (`trace.writer.write_trace`). If `pdflatex` or `tectonic` is on
-   `PATH`, compile the LaTeX rendering to `./quiverlab_traces/HHc_<hash>.pdf` and
-   print `Worked steps: quiverlab_traces/HHc_<hash>.pdf (N pp)`; otherwise write
-   the self-contained, JavaScript-free HTML rendering (math as TeX source) and print
-   a loud one-line explanation (no toolchain found, or — if one was found — that
-   compilation failed). The resulting
-   dimensions in every rendering are *derived from the recorded ranks*
-   (`HH^n = dim C^n − rank_n − rank_{n-1}`), so a golden test can assert the
-   document's claims equal the engine's own `.dims`.
+4. **Rendering** (`trace.writer.write_trace`). Write the self-contained,
+   JavaScript-free, print-ready HTML report to `./quiverlab_traces/HHc_<hash>.html`
+   (math typeset as MathML with the LaTeX source embedded for copy/paste; export to
+   PDF via the browser's Print → Save as PDF) plus its JSON machine record
+   `HHc_<hash>.json`, and print `Worked steps: quiverlab_traces/HHc_<hash>.html
+   (…)`. (PDF/TeX report output has been removed.) The resulting dimensions in every
+   rendering are *derived from the recorded ranks* (`HH^n = dim C^n − rank_n −
+   rank_{n-1}`), so a golden test can assert the document's claims equal the
+   engine's own `.dims`.
 5. **References.** The engine's `route` maps (via `trace.provenance`) to Plan 06
    REGISTRY keys (e.g. `bar`); those resolve through Plan 06's `bibliography()`
    (`.keys` tuple + entry-view iteration exposing `.key/.formatted/.bibtex_key`)
@@ -88,6 +88,6 @@ numbers were produced by running the code (they are the golden trace).
 | event taxonomy | `src/quiverlab/trace/events.py` | `Dispatch`, `ResolutionTerm`, `RankStep`, `DifferentialEvent`, `LiftStep`, `AmbiguityEvent`, `ReductionStep` |
 | recorder + elision | `src/quiverlab/trace/recorder.py` | `Trace`, `rankstep`, `resolve_verbose` |
 | engine emission | `src/quiverlab/hochschild/bar.py` | `hochschild_cohomology_dims` |
-| renderers | `src/quiverlab/trace/render_text.py` / `render_latex.py` / `render_html.py` | `render_text`, `render_latex`, `render_html`, `derive_dims` |
-| selection + output path | `src/quiverlab/trace/writer.py` | `write_trace`, `have_latex` |
+| renderers | `src/quiverlab/trace/render_text.py` / `render_html.py` / `render_json.py` | `render_text`, `render_html`, `render_json`, `derive_dims` |
+| output path | `src/quiverlab/trace/writer.py` | `write_trace` |
 | provenance + References | `src/quiverlab/trace/provenance.py` | `references_for`, `resolve_references` |

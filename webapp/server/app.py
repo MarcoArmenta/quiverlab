@@ -15,9 +15,9 @@ from fastapi.staticfiles import StaticFiles
 
 from webapp.server import cache
 from webapp.server.catalog import build_catalog
-from webapp.server.config import Config, get_config
+from webapp.server.config import Config, assert_production_secrets, get_config
 from webapp.server.estimator import classify, sizing_dim
-from webapp.server.instant import run_with_timeout
+from webapp.server.instant import InstantRateLimiter, run_with_timeout
 from webapp.server.limits import check_can_queue
 from webapp.server.runner import RunError, build_algebra
 from webapp.server.schema import ComputeRequest
@@ -118,10 +118,26 @@ def _cached_response(store: JobStore, job_id: str) -> JSONResponse:
                         content={"tier": "cached", **_cached_body(store, job_id)})
 
 
-def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
+def create_app(cfg: Config | None = None, mailer=None, *,
+               enforce_secrets: bool = True) -> FastAPI:
+    # Refuse an insecure production boot on EVERY path (Marco correction #4): the
+    # earlier version only checked the env-config boot (cfg is None), so a real
+    # deployment that constructs Config EXPLICITLY -- big-job tier enabled while the
+    # magic-link signing secret is still the public repo default -- came up with
+    # forgeable tokens. Now the guard runs whenever ``enforce_secrets`` (the default),
+    # covering both the ``uvicorn --factory create_app()`` boot and any explicit-cfg
+    # production embed. Tests / dev harnesses that deliberately enable SMTP with the
+    # default secret opt out with ``enforce_secrets=False`` (or set a real secret);
+    # the offline app never configures SMTP, so the check is a no-op there.
     cfg = cfg or get_config()
+    if enforce_secrets:
+        assert_production_secrets(cfg)
     store = JobStore(cfg.db_path)
     store.init_schema()
+    # Per-IP instant-tier flood throttle (see InstantRateLimiter): owned by THIS app
+    # instance, so tests using distinct apps never share a window.
+    instant_limiter = InstantRateLimiter(cfg.instant_rate_max,
+                                         cfg.instant_rate_window_seconds)
     app = FastAPI(title="quiverlab-web")
     if _STATIC.exists():
         app.mount("/static", StaticFiles(directory=_STATIC), name="static")
@@ -180,6 +196,21 @@ def create_app(cfg: Config | None = None, mailer=None) -> FastAPI:
         tier = info["tier"]
 
         if tier == "instant":
+            # Rate-limit the instant tier too (it spawns a resource-capped child per
+            # request): the SAME per-IP/queue gate the queued path uses, so instant
+            # cannot be hammered while an IP is already at its running/daily limits.
+            refusal = check_can_queue(store, cfg, iph, _now_iso())
+            if refusal:
+                return JSONResponse(status_code=429,
+                                    content={"error_type": "RateLimited", "message": refusal})
+            # AND a per-IP sliding-window flood gate: check_can_queue never sees
+            # instant traffic (instant enqueues nothing), so without this an IP could
+            # fire unbounded instant computes -- each a fresh spawned interpreter.
+            if not instant_limiter.allow(iph):
+                return JSONResponse(status_code=429, content={
+                    "error_type": "RateLimited",
+                    "message": ("Too many instant computations in a short window. "
+                                "Please slow down, or run locally: pip install quiverlab")})
             try:
                 result = run_with_timeout(req, cfg)   # built algebra NOT retained
             except RunError as exc:

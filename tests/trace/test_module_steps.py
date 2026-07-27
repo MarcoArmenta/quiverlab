@@ -16,8 +16,8 @@ from quiverlab.trace.modules import (
 )
 from quiverlab.trace.events import ExtDegree
 from quiverlab.trace.render_text import render_text
-from quiverlab.trace.render_latex import render_latex
 from quiverlab.trace.render_html import render_html
+from quiverlab.trace.render_json import render_json
 
 GOLDEN = pathlib.Path(__file__).parent / "golden" / "module_ka2_s1.txt"
 
@@ -38,30 +38,21 @@ def test_ka2_s1_golden_text_replay():
     assert txt == GOLDEN.read_text(), "kA_2 S_1 worked-steps text drifted from golden"
 
 
-def test_ka2_s1_tex_every_differential_verbatim():
-    A = _ka2()
-    ev, res = trace_projective_resolution(A.simple(1), 3)
-    tex = render_latex(ev, title="proj res of S_1", algebra=A)
-    # every differential of the resolution appears verbatim, as a matrix:
-    assert r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in tex           # epsilon: Q_0 -> M
-    assert r"\begin{pmatrix} 0 \\ 1 \end{pmatrix}" in tex           # d_1: Q_1 -> Q_0
-    # ...labelled with the direct-sum notation and the arrows:
-    assert r"\varepsilon : P_{1} \to M" in tex
-    assert r"d_{1} : P_{2} \to P_{1}" in tex
-    assert r"Q_{0} = P_{1}" in tex and r"Q_{1} = P_{2}" in tex
-    # ...and the projectives/injectives section is present.
-    assert r"The projectives and injectives of $A$" in tex
-
-
-def test_ka2_s1_html_parity_shows_matrices_and_pi():
+def test_ka2_s1_html_every_differential_verbatim():
     A = _ka2()
     ev, res = trace_projective_resolution(A.simple(1), 3)
     html = render_html(ev, title="proj res of S_1", algebra=A)
     assert "<script" not in html.lower()                           # no JS, ever
-    # the same TeX-source matrices are shown (escaped inside <pre><code>):
+    # every differential appears verbatim (TeX source in the x-tex <annotation>; the
+    # `&` of a matrix column separator is HTML-escaped to `&amp;`):
     assert r"\begin{pmatrix} 1 &amp; 0 \end{pmatrix}" in html or \
-        r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in html
-    assert r"\begin{pmatrix} 0 \\ 1 \end{pmatrix}" in html
+        r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in html             # epsilon: Q_0 -> M
+    assert r"\begin{pmatrix} 0 \\ 1 \end{pmatrix}" in html          # d_1: Q_1 -> Q_0
+    # ...labelled with the direct-sum notation and the arrows:
+    assert r"\varepsilon : P_{1} \to M" in html
+    assert r"d_{1} : P_{2} \to P_{1}" in html
+    assert r"Q_{0} = P_{1}" in html and r"Q_{1} = P_{2}" in html
+    # ...and the projectives/injectives section is present.
     assert "The projectives and injectives of A" in html
 
 
@@ -69,7 +60,7 @@ def test_multiplicity_oplus_notation():
     """P_1^{2} (+) P_3 style labels when a term repeats a summand."""
     ev = [ModuleTerm(degree=0, kind="projective", sym="P",
                      summands=[1, 1, 3], dim=5, dimvec={"1": 4, "3": 1})]
-    assert r"P_{1}^{2} \oplus P_{3}" in render_latex(ev, title="t")
+    assert r"P_{1}^{2} \oplus P_{3}" in render_html(ev, title="t")
     assert "P_1^2 (+) P_3" in render_text(ev, title="t")
 
 
@@ -103,21 +94,20 @@ def test_pi_section_in_hh_report_too():
     A = truncated_polynomial(3, field=CC)          # k[x]/(x^3), one vertex
     tr = Trace()
     A.hochschild_cohomology(2, trace=tr)
-    tex = render_latex(list(tr), title="HH", algebra=A)
-    assert r"The projectives and injectives of $A$" in tex
-    assert r"P_{1}" in tex                          # the one projective is described
+    html = render_html(list(tr), title="HH", algebra=A)
+    assert "The projectives and injectives of A" in html
+    assert r"P_{1}" in html                         # the one projective is described
 
 
 # --------------------------------------------------------------------------- #
 # Elision (Plan 34 artifact contract): the events carry EVERY matrix in full (recorder);
-# text/HTML show them all in full; only the page-bounded PDF scales/elides wide matrices;
-# past the 250k MEMORY backstop even recording keeps just shape+rank (never a giant dump).
+# text/HTML/JSON show them all in full; past the 250k MEMORY backstop even recording keeps
+# just shape+rank (never a giant dump). (PDF/TeX report output has been removed.)
 # --------------------------------------------------------------------------- #
 def test_module_differential_elides_only_past_memory_backstop():
     A = _ka2()
     dom = A.domain
-    # A wide-but-recordable matrix is kept IN FULL (the events are the complete record);
-    # its readability scaling is the PDF renderer's job, not the recorder's.
+    # A wide-but-recordable matrix is kept IN FULL (the events are the complete record).
     small_wide = [[dom.zero()] * 30 for _ in range(3)]       # 90 cells: recorded in full
     e_full = module_differential(1, "projective", "P", "d_{1}", [1] * 3, [1] * 30,
                                  small_wide, 3, 30, dom, rank=0)
@@ -132,9 +122,9 @@ def test_module_differential_elides_only_past_memory_backstop():
 
 
 def test_matrix_rendering_follows_the_artifact_contract():
-    """Plan 34 artifact contract: text/HTML show every recorded matrix IN FULL; only the
-    page-bounded PDF (render_latex) scales/elides a matrix past 25 rows/columns, pointing
-    at the complete HTML/JSON report; a >250k matrix is a shape+rank note in EVERY format."""
+    """Plan 34 artifact contract: text/HTML/JSON show every recorded matrix IN FULL (no
+    page bound, since PDF/TeX output has been removed); a >250k matrix is a shape+rank
+    note in EVERY format."""
     A = _ka2()
     dom = A.domain
     one, zero = dom.one(), dom.zero()
@@ -151,19 +141,20 @@ def test_matrix_rendering_follows_the_artifact_contract():
         module_differential(2, "projective", "P", "d_{2}", [1] * 2, [1] * 130000, huge,
                             2, 130000, dom, rank=0),
     ]
-    tex = render_latex(events, title="t")
     txt = render_text(events, title="t")
     html = render_html(events, title="t")
-    # small matrix: a real matrix everywhere
-    assert r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in tex
-    # wide (3x30): page-elided in the PDF (points at the complete report), FULL in text
-    assert "shown in full in the HTML/JSON report" in tex
+    js = render_json(events, title="t")
+    # small matrix: a real matrix in text and (as x-tex source) in HTML
+    assert r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in html or \
+        r"\begin{pmatrix} 1 &amp; 0 \end{pmatrix}" in html
+    # wide (3x30): shown IN FULL everywhere -- nothing page-elides it away now
     assert "shown in full in the HTML/JSON report" not in txt      # text is complete
     assert "shown in full in the HTML/JSON report" not in html     # HTML is complete
     assert "  ".join(["1"] + ["0"] * 29) in txt                    # the full 30-col row
-    # >250k memory backstop: a shape+rank note in EVERY format (never a 260k-cell body)
-    for s in (tex, txt, html):
+    # >250k memory backstop: a shape+rank note in text and HTML (never a 260k-cell body)
+    for s in (txt, html):
         assert "2x130000" in s and "elided" in s
+    assert "130000" in js                                          # JSON records the shape too
     # the elision policy is stated once in the text preamble (now the 250k backstop):
     assert txt.count("Matrices with more than %d entries" % MATRIX_ELISION_CELLS) == 1
 
@@ -189,9 +180,9 @@ def test_ext_trace_dims_match_engine():
 def test_injective_coresolution_terms_traced_with_I_labels():
     A = _ka2()
     ev, res = trace_injective_resolution(A.simple(2), 3)
-    tex = render_latex(ev, title="inj res of S_2", algebra=A)
+    html = render_html(ev, title="inj res of S_2", algebra=A)
     # the injective terms E^n are shown with I-labels + the D(P over A^op) narration.
-    assert r"E^{0} = I_" in tex
+    assert r"E^{0} = I_" in html
     assert "E^n = D(P_n)" in render_text(ev, title="t") or \
         "D(P_n)" in render_text(ev, title="t")
 
@@ -211,7 +202,11 @@ def test_tau_of_simple_traces_presentation_and_translate():
     S2 = A.simple(2)
     ev, t = trace_tau(S2, "tau")
     txt = render_text(ev, title="tau")
-    # S_2 is not projective here (P_2 = S_2 IS projective actually) -> tau = 0;
+    # S_2 = P_2 IS projective in kA_2, so tau S_2 = 0 -- and the trace must SAY so and
+    # still narrate the transpose step (this subject used to assert nothing at all).
+    assert t.dim == 0
+    assert "tau S_2 = 0" in txt
+    assert "Tr M = coker" in txt
     # use tau^- of S_1 instead to exercise a non-trivial translate narration.
     ev2, t2 = trace_tau(A.simple(1), "tau_minus")
     txt2 = render_text(ev2, title="tau-")

@@ -12,7 +12,7 @@
   var S = { vertices: [], arrows: [], nextId: 1, selected: null, dragFrom: null,
             dragMoved: false, dragOrigin: null, pressOnEmpty: false,
             worker: null, engineReady: false, manifest: null, busy: false,
-            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "", traceTex: "", traceJson: "" },
+            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "", traceJson: "" },
             // Plan 26 no-code module panel: dims/maps hold the explicit module the
             // user types (matrix entries are exact strings); side/vertex track the
             // toggle + builtin pick-list. All read back in buildRequest().
@@ -119,7 +119,6 @@
     '  <button id="qlgui-cancel" class="qlgui-secondary" type="button" disabled>Cancel</button>' +
     '  <button id="qlgui-print" class="qlgui-secondary" type="button" disabled title="Open the typeset report and print it to PDF from your browser">Print report</button>' +
     '  <button id="qlgui-report-html" class="qlgui-secondary" type="button" disabled title="Download the print-ready HTML report (print to PDF from your browser)">Report (HTML)</button>' +
-    '  <button id="qlgui-worked-tex" class="qlgui-secondary" type="button" disabled title="Download the LaTeX source and compile it yourself">Report (TeX)</button>' +
     '  <button id="qlgui-report-json" class="qlgui-secondary" type="button" disabled title="Download the complete worked-steps event stream (exact, machine-readable JSON)">Report data (JSON)</button>' +
     '  <button id="qlgui-tikz" class="qlgui-secondary" type="button" disabled>TikZ</button>' +
     '  <button id="qlgui-json" class="qlgui-secondary" type="button" disabled>JSON</button>' +
@@ -132,7 +131,7 @@
   ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
-   "cancel", "print", "report-html", "worked-tex", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
+   "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
    "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
@@ -833,10 +832,8 @@
       if (m.eta) S.eta = m.eta;
     } else if (m.type === "trace") {
       S.artifacts.traceHtml = m.html;
-      S.artifacts.traceTex = m.tex || "";
       S.artifacts.traceJson = m.json || "";
       el.print.disabled = el["report-html"].disabled = !m.html;  // typeset MathML report
-      el["worked-tex"].disabled = !S.artifacts.traceTex;   // .tex download (Plan 30 C1)
       el["report-json"].disabled = !S.artifacts.traceJson; // .json machine record (Plan 34)
     } else if (m.type === "artifacts") {
       S.artifacts.tikz = m.tikz; S.artifacts.snippet = m.snippet;
@@ -1089,9 +1086,9 @@
   el.compute.addEventListener("click", function () {
     if (S.busy || !S.engineReady) return;
     el.results.innerHTML = "";
-    S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "", traceTex: "" };
+    S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "", traceJson: "" };
     el.print.disabled = el.tikz.disabled = el.json.disabled = el.snippet.disabled = true;
-    el["report-html"].disabled = el["worked-tex"].disabled = el["report-json"].disabled = true;
+    el["report-html"].disabled = el["report-json"].disabled = true;
     S.eta = null;
     setBusy(true);
     setStatus("computing…");
@@ -1152,9 +1149,6 @@
   });
   el["report-html"].addEventListener("click", function () {  // print-ready typeset report
     download("report.html", S.artifacts.traceHtml, "text/html");
-  });
-  el["worked-tex"].addEventListener("click", function () {   // Plan 30 C1: the .tex source
-    download("worked-steps.tex", S.artifacts.traceTex, "text/x-tex");
   });
   el["report-json"].addEventListener("click", function () {  // Plan 34: the JSON machine record
     download("trace.json", S.artifacts.traceJson, "application/json");

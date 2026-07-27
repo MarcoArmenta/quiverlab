@@ -55,10 +55,7 @@ def test_cs_engine_yields_chouhy_solotar_citation():
 
 def test_verbose_run_writes_html_with_references(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    # Force the HTML path so the citation is greppable (a compiled PDF may compress it);
-    # PDF selection is covered separately in test_writer.py.
-    from quiverlab.trace import writer as W
-    monkeypatch.setattr(W, "have_latex", lambda: None)
+    # The writer produces the HTML report (+ JSON); the citation is greppable in it.
     quiverlab.verbose = True
     try:
         A = truncated_polynomial(2, field=CC)

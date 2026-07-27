@@ -62,20 +62,21 @@ def _run(algebra, compute, module=None, tor_target=None):
 # --------------------------------------------------------------------------- #
 
 def test_pdf_module_request_produces_worked_steps_bundle(tmp_path):
-    # A pdf-requesting module computation auto-emits the exhaustive .tex/.pdf bundle
-    # (like HH), and the .tex names the resolution steps verbatim -- the acceptance
-    # bar (an algebraist can replay by hand). Byte-stability is unaffected: this
-    # activates only on artifacts.pdf=True, which no delegation golden uses.
+    # A report-requesting module computation auto-emits the worked-steps bundle (like
+    # HH): the print-ready trace_steps.html + the trace.json machine record. The HTML
+    # names the resolution steps verbatim -- the acceptance bar (an algebraist can
+    # replay by hand). Byte-stability is unaffected: this activates only on
+    # artifacts.pdf=True, which no delegation golden uses. (PDF/TeX output removed.)
     body = {"schema": 2, "algebra": _LOOP,
             "compute": ["projective_resolution:0..3"],
             "artifacts": {"pdf": True, "tikz": False}, "module": _M2}
     r = run_spec(ComputeRequest.model_validate(body), tmp_path)
-    assert r["meta"]["pdf"] in ("trace.pdf",
-                                "PDF toolchain (pdflatex/tectonic) not found -- "
-                                "worked steps in trace_steps.html")
-    tex = tmp_path / "trace.tex"
-    assert tex.exists(), "the downloadable .tex must be written (Plan 30 C1)"
-    txt = tex.read_text(encoding="utf-8")
+    assert r["meta"]["pdf"] == "worked steps in trace_steps.html"
+    html = tmp_path / "trace_steps.html"
+    assert html.exists(), "the worked-steps HTML report must be written"
+    assert (tmp_path / "trace.json").exists(), "the JSON machine record must be written"
+    assert not (tmp_path / "trace.tex").exists() and not (tmp_path / "trace.pdf").exists()
+    txt = html.read_text(encoding="utf-8")
     assert "projective" in txt and "P_" in txt
 
 

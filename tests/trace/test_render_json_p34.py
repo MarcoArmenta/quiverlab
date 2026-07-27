@@ -1,14 +1,13 @@
 """Plan 34 -- the JSON worked-steps leg: the COMPLETE machine record.
 
-Marco's contract: every worked-steps computation delivers PDF + HTML + JSON, all
-cached/served. This pins the JSON renderer (quiverlab.trace.render_json): a
-schema-versioned, deterministic, exact serialization of the recorder's event
-stream; the writer's three-artifact output; the hpc ``render --format json`` byte
-match; and honest handling of a record-elided matrix.
+Marco's contract: every worked-steps computation delivers HTML + JSON, all
+cached/served (PDF/TeX report output has been removed). This pins the JSON renderer
+(quiverlab.trace.render_json): a schema-versioned, deterministic, exact serialization
+of the recorder's event stream; the writer's two-artifact output; the hpc ``render
+--format json`` byte match; and honest handling of a record-elided matrix.
 """
 import json
 import pathlib
-import shutil
 
 import pytest
 
@@ -159,66 +158,34 @@ def test_recorder_backstop_produces_an_elided_event():
 
 
 # --------------------------------------------------------------------------- #
-# The writer persists all three artifacts (JSON always; tex always; pdf-or-html).
+# The writer persists both artifacts (the HTML report + the JSON machine record).
 # --------------------------------------------------------------------------- #
-def test_writer_writes_json_beside_html_fallback(tmp_path, monkeypatch):
+def test_writer_writes_json_beside_html(tmp_path, monkeypatch):
     A, ev, table, _refs = _hh_events()
-    monkeypatch.setattr(W, "have_latex", lambda: None)      # no toolchain -> HTML
     monkeypatch.setattr("builtins.print", lambda *a, **k: None)
     path = W.write_trace(ev, table, algebra=A, kind="HH^", top=2, out_dir=str(tmp_path))
     stem = pathlib.Path(path)
     assert stem.suffix == ".html"
-    assert stem.with_suffix(".tex").exists()
+    # PDF/TeX report artifacts are never produced:
+    assert not stem.with_suffix(".tex").exists()
+    assert not stem.with_suffix(".pdf").exists()
     j = stem.with_suffix(".json")
     assert j.exists()
     obj = json.loads(j.read_text())
     assert obj["quiverlab_trace_schema"] == 1 and obj["events"]
 
 
-def test_writer_writes_json_beside_pdf(tmp_path, monkeypatch):
-    A, ev, table, _refs = _hh_events()
-    monkeypatch.setattr(W, "have_latex", lambda: "tectonic")
-
-    def fake_compile(tex, out_pdf, engine):
-        pathlib.Path(out_pdf).write_bytes(b"%PDF-1.5 fake\n%%EOF\n")
-        return 1
-
-    monkeypatch.setattr(W, "_compile_pdf", fake_compile)
-    monkeypatch.setattr("builtins.print", lambda *a, **k: None)
-    path = W.write_trace(ev, table, algebra=A, kind="HH^", top=2, out_dir=str(tmp_path))
-    stem = pathlib.Path(path)
-    assert stem.suffix == ".pdf" and stem.exists()
-    assert stem.with_suffix(".tex").exists()
-    assert stem.with_suffix(".json").exists()
-    assert json.loads(stem.with_suffix(".json").read_text())["events"]
-
-
 def test_writer_json_is_pure_function_of_events(tmp_path, monkeypatch):
-    """The JSON sidecar is byte-identical whichever PDF/HTML branch the writer takes
-    (a pure function of the events), so the machine record never depends on the
-    toolchain."""
+    """The JSON sidecar is a pure function of the events: two independent writes
+    produce byte-identical machine records."""
     A, ev, table, refs = _hh_events()
     monkeypatch.setattr("builtins.print", lambda *a, **k: None)
-
-    monkeypatch.setattr(W, "have_latex", lambda: None)
     p1 = pathlib.Path(W.write_trace(ev, table, algebra=A, kind="HH^", top=2,
-                                    references=refs, out_dir=str(tmp_path / "html")))
-    monkeypatch.setattr(W, "have_latex", lambda: "tectonic")
-    monkeypatch.setattr(W, "_compile_pdf",
-                        lambda tex, o, e: (pathlib.Path(o).write_bytes(b"%PDF\n"), 1)[1])
+                                    references=refs, out_dir=str(tmp_path / "a")))
     p2 = pathlib.Path(W.write_trace(ev, table, algebra=A, kind="HH^", top=2,
-                                    references=refs, out_dir=str(tmp_path / "pdf")))
+                                    references=refs, out_dir=str(tmp_path / "b")))
     assert (p1.with_suffix(".json").read_text()
             == p2.with_suffix(".json").read_text())
-
-
-@pytest.mark.skipif(W.have_latex() is None, reason="no LaTeX toolchain on PATH")
-def test_writer_real_pdf_plus_json(tmp_path):
-    A, ev, table, _refs = _hh_events()
-    path = pathlib.Path(W.write_trace(ev, table, algebra=A, kind="HH^", top=2,
-                                      out_dir=str(tmp_path)))
-    assert path.suffix == ".pdf" and path.read_bytes()[:5] == b"%PDF-"
-    assert path.with_suffix(".json").exists() and path.with_suffix(".tex").exists()
 
 
 # --------------------------------------------------------------------------- #
@@ -234,20 +201,21 @@ _HPC_SPEC = {
 }
 
 
-def test_spec_run_promotes_trace_json(tmp_path, monkeypatch):
-    monkeypatch.setattr(W, "have_latex", lambda: None)
+def test_spec_run_promotes_trace_json(tmp_path):
     from quiverlab.hpc.spec import run as spec_run
     art = tmp_path / "art"
     art.mkdir()
     spec_run(_HPC_SPEC, art)
     tj = art / "trace.json"
     assert tj.exists(), "the worked-steps run must promote trace.json"
+    # ...alongside the HTML report, and never a pdf/tex artifact:
+    assert (art / "trace_steps.html").exists()
+    assert not (art / "trace.pdf").exists() and not (art / "trace.tex").exists()
     obj = json.loads(tj.read_text())
     assert obj["quiverlab_trace_schema"] == 1 and obj["events"]
 
 
-def test_hpc_render_format_json_byte_matches(tmp_path, monkeypatch):
-    monkeypatch.setattr(W, "have_latex", lambda: None)
+def test_hpc_render_format_json_byte_matches(tmp_path):
     from quiverlab.hpc.spec import run as spec_run
     from quiverlab.hpc import report
     art = tmp_path / "art"
@@ -282,14 +250,11 @@ def test_hpc_render_json_from_dict_raises(tmp_path):
                       tmp_path / "o.json", fmt="json")
 
 
-@pytest.mark.skipif(shutil.which("tectonic") is None and shutil.which("pdflatex") is None,
-                    reason="no LaTeX toolchain on PATH")
-def test_hpc_render_json_alongside_real_pdf(tmp_path):
-    from quiverlab.hpc.spec import run as spec_run
+def test_hpc_render_pdf_and_tex_are_refused(tmp_path):
+    """PDF/TeX report output has been removed: an explicit request is refused with a
+    typed ReportError, never a silent fallback."""
     from quiverlab.hpc import report
-    art = tmp_path / "art"
-    art.mkdir()
-    spec_run(_HPC_SPEC, art)
-    assert (art / "trace.pdf").exists() and (art / "trace.json").exists()
-    out, fmt = report.render(str(art / "result.json"), art / "emitted.json", fmt="json")
-    assert out.read_text() == (art / "trace.json").read_text()
+    result = {"quiverlab_version": "x", "results": {}}
+    for bad in ("pdf", "tex"):
+        with pytest.raises(report.ReportError):
+            report.render(result, tmp_path / ("o." + bad), fmt=bad)

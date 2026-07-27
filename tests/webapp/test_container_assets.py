@@ -55,11 +55,15 @@ def test_dockerfile_core_directives():
     assert _dockerfile_from().startswith("python:3.12-slim@sha256:")
 
 
-def test_dockerfile_tectonic_prewarm_present():
-    low = _read(CONTAINER / "Dockerfile").lower()
-    assert "tectonic" in low
-    # A build-time bundle pre-warm so runtime is offline.
-    assert "pre-warm" in low or "prewarm" in low
+def test_dockerfile_has_no_pdf_toolchain():
+    # PDF/TeX report output was removed (reports are HTML + JSON; text for console).
+    # The image must no longer carry a TeX engine or a PDF text-extraction tool -- the
+    # Apptainer def mirrors the Dockerfile, so pin both.
+    for name in ("Dockerfile", "quiverlab.def"):
+        low = _read(CONTAINER / name).lower()
+        assert "tectonic" not in low, name
+        assert "pdftotext" not in low, name
+        assert "poppler" not in low, name
 
 
 def test_dockerfile_is_cpu_only_by_design():
@@ -178,9 +182,11 @@ def test_container_workflow_shape():
     assert "ghcr.io" in text
     assert "docker push" in text
     assert "packages: write" in text
-    # Renders inside docker and checks the PDF has text.
+    # Renders an HTML report inside docker and checks it has real content -- no PDF
+    # toolchain (reports are HTML + JSON now).
     assert "render" in text
-    assert "pdftotext" in text
+    assert "report.html" in text
+    assert "pdftotext" not in text
     # SIF fallback asset with the < 2 GiB assertion.
     assert "apptainer build" in text
     assert "1024 * 1024 * 1024" in text

@@ -2,8 +2,8 @@
 
 Runs IDENTICALLY under CPython (pytest, tests/gui/) and Pyodide (the docs-site
 Web Worker) — this exact file is shipped into the built site and imported in
-the browser. Import policy: the public quiverlab surface + three sanctioned
-trace helpers (render_html / render_latex / references_for / resolve_references);
+the browser. Import policy: the public quiverlab surface + the sanctioned trace
+helpers (render_html / render_json / references_for / resolve_references);
 pinned by tests/gui/test_interface_freshness.py. quiverlab.engine.* is forbidden.
 
 All public functions take and return JSON STRINGS (postMessage-friendly)."""
@@ -64,7 +64,7 @@ def _field_from_spec(spec):
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
-                  module=None, ext_target=None)
+                  module=None, ext_target=None, tor_target=None)
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
@@ -482,6 +482,11 @@ def compute_one(spec):
             block = {"dim": dim_z,
                      "basis": [[str(x) for x in row] for row in basis],
                      "citations": _citation_pairs(A.citations())}
+        elif name == "dimension":
+            # Parity with the server/HPC runner (quiverlab.hpc.spec._dispatch),
+            # which serves `dimension` = A.dim; same `value` semantics, GUI block
+            # shape (value + citations, like global_dimension).
+            block = {"value": A.dim, "citations": _citation_pairs(A.citations())}
         else:
             raise RequestError("unknown invariant %r" % (name,))
         _state["results"].append(dict(block, invariant=spec))
@@ -506,22 +511,6 @@ def trace_html():
     title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
     return render_html(list(events), title=title, algebra=_state["algebra"],
                        references=resolve_references(references_for(events)))
-
-
-def trace_tex():
-    """The worked-steps report as LaTeX SOURCE ('' when nothing was traced).
-
-    Plan 30 C1: the .tex is downloadable everywhere. A GUI download button hooks
-    this accessor through the existing gui.js download helper (a self-contained,
-    one-button addition owned by the GUI layer)."""
-    events = _state["events"] or []
-    if not events:
-        return ""
-    from quiverlab.trace.provenance import references_for, resolve_references
-    from quiverlab.trace.render_latex import render_latex
-    title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
-    return render_latex(list(events), title=title, algebra=_state["algebra"],
-                        references=resolve_references(references_for(events)))
 
 
 def trace_json():
@@ -578,6 +567,9 @@ def python_snippet():
              "hh_homology": "A.hochschild_homology(%d)",
              "cartan": "A.cartan_matrix()", "coxeter_polynomial": "A.coxeter_polynomial()",
              "global_dimension": "A.global_dimension()", "center": "A.center()",
+             # `dimension` is a scalar invariant compute_one serves (A.dim) -- it MUST
+             # have a snippet entry or python_snippet() KeyErrors when it is requested.
+             "dimension": "A.dim",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",

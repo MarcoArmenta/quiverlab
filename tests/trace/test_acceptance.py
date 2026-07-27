@@ -62,23 +62,22 @@ def test_end_to_end_draw_tikz_and_worked_steps(tmp_path, monkeypatch):
     L = _assert_draw_matches_layout(fig, A.quiver, relations)
     _assert_tikz_shares_layout(A.tikz(), A.quiver, relations, L)
 
-    # Verbose default (D9) writes exactly one worked-steps file (.pdf or .html per
-    # the toolchain) to ./quiverlab_traces/.
+    # Verbose default (D9) writes exactly one worked-steps HTML report to
+    # ./quiverlab_traces/, with its JSON machine record alongside (Plan 34).
     quiverlab.verbose = True
     try:
         table = A.hochschild_cohomology(2)
     finally:
         quiverlab.verbose = False
     out = tmp_path / "quiverlab_traces"
-    # Plan 30 C1: a verbose run writes exactly ONE rendered doc (.pdf or its .html
-    # fallback) AND persists its LaTeX .tex source alongside (downloadable
-    # everywhere) -- so the glob now sees the doc + the tex companion.
-    docs = list(out.glob("HHc_*.pdf")) + list(out.glob("HHc_*.html"))
-    texs = list(out.glob("HHc_*.tex"))
+    docs = list(out.glob("HHc_*.html"))
+    jsons = list(out.glob("HHc_*.json"))
     assert docs, "verbose run must write a worked-steps file (D9)"
     assert len(docs) == 1, "exactly one rendered worked-steps doc per computation"
-    assert docs[0].suffix in (".pdf", ".html")
-    assert len(texs) == 1, "the LaTeX source is persisted alongside (Plan 30 C1)"
+    assert docs[0].suffix == ".html"
+    assert len(jsons) == 1, "the JSON machine record is persisted alongside (Plan 34)"
+    # PDF/TeX report artifacts are never produced:
+    assert not list(out.glob("HHc_*.pdf")) and not list(out.glob("HHc_*.tex"))
 
     # The document's claim is re-derived independently from the recorded events and
     # required to equal the engine's own dimensions (the binding golden discipline):
@@ -87,7 +86,7 @@ def test_end_to_end_draw_tikz_and_worked_steps(tmp_path, monkeypatch):
     again = A.hochschild_cohomology(2, trace=tr)          # explicit trace => NO file
     assert derive_dims(list(tr)) == table.dims == again.dims == [2, 1, 1]
     # explicit trace wrote no file: still exactly one rendered doc from the verbose run
-    assert len(list(out.glob("HHc_*.pdf")) + list(out.glob("HHc_*.html"))) == 1
+    assert len(list(out.glob("HHc_*.html"))) == 1
 
     # The result carries the merged family+engine citation union; here, no family, so
     # exactly ("bar",). Task 11 must NOT overwrite it engine-only.

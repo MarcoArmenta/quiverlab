@@ -3,10 +3,10 @@
 # ONE image, two user stories:
 #   * HPC batch      -- `quiverlab-hpc run config.yaml -o result.json` on a cluster
 #                       (Apptainer/Singularity preferred; Docker works too), then
-#                       `quiverlab-hpc render result.json -o report.pdf` locally.
+#                       `quiverlab-hpc render result.json -o report.html` locally.
 #   * Offline laptop -- `quiverlab-hpc gui` serves the webapp on localhost with an
-#                       embedded worker, fully offline (vendored KaTeX, pre-warmed
-#                       tectonic bundle, seeded example cache).
+#                       embedded worker, fully offline (vendored KaTeX,
+#                       seeded example cache).
 #
 # The CLI itself lives in the WHEEL (the `quiverlab-hpc` console script from the
 # [hpc] extra); this image is a convenience wrapper. The webapp deploy assets in
@@ -14,8 +14,8 @@
 # the two.
 #
 # KEEP THE BUILD STEPS IN SYNC with container/quiverlab.def -- the Apptainer
-# definition's %post mirrors every RUN below (same base digest, same tectonic pin
-# + pre-warm, same `pip install -e ".[fast,hpc,web]"`, same guarded seed).
+# definition's %post mirrors every RUN below (same base digest, same
+# `pip install -e ".[fast,hpc,web]"`, same guarded seed).
 #
 # ---------------------------------------------------------------------------
 # Base: python:3.12-slim, PINNED BY DIGEST for linux/amd64 (HPC clusters + CI are
@@ -35,8 +35,6 @@ FROM python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033a
 # --build-arg QUIVERLAB_VERSION=<git tag without the leading v> and asserts the
 # running image reports it (see the "Image version" step in the workflow).
 ARG QUIVERLAB_VERSION=0.0.0-dev
-ARG TECTONIC_VERSION=0.15.0
-ARG TECTONIC_ARCH=x86_64-unknown-linux-gnu
 
 LABEL org.opencontainers.image.title="quiverlab" \
       org.opencontainers.image.description="Exact Hochschild theory for quivers with relations -- HPC batch + offline GUI container" \
@@ -45,7 +43,6 @@ LABEL org.opencontainers.image.title="quiverlab" \
       org.opencontainers.image.version="${QUIVERLAB_VERSION}"
 
 # Fully offline, reproducible, headless runtime.
-#   TECTONIC_CACHE_DIR  -> shared cache the build pre-warms and the runtime reads.
 #   QUIVERLAB_SEED_CACHE-> build->runtime handoff path for the seeded Plan-25 cache
 #                          DB; the `gui` verb copies it into the data dir on first run.
 ENV LANG=C.UTF-8 \
@@ -57,22 +54,9 @@ ENV LANG=C.UTF-8 \
     NUMBA_NUM_THREADS=2 \
     OMP_NUM_THREADS=2 \
     QUIVERLAB_IMAGE_VERSION=${QUIVERLAB_VERSION} \
-    TECTONIC_CACHE_DIR=/opt/quiverlab/tectonic-cache \
     QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
 
 WORKDIR /app
-
-# --- tectonic (static release binary, pinned) ------------------------------
-# Real trace.pdf / rendered reports need a TeX engine; tectonic is the light choice
-# (~50 MB). Fetch the pinned static release, then PRE-WARM its bundle below so the
-# runtime never touches the network.
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl ca-certificates \
-    && curl -fsSL "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40${TECTONIC_VERSION}/tectonic-${TECTONIC_VERSION}-${TECTONIC_ARCH}.tar.gz" \
-       | tar xz -C /usr/local/bin tectonic \
-    && tectonic --version \
-    && apt-get purge -y curl && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
 
 # --- sources + install -----------------------------------------------------
 # LICENSE + README back the pyproject metadata (setuptools>=77 aborts without
@@ -86,20 +70,6 @@ COPY src ./src
 COPY webapp ./webapp
 COPY container ./container
 RUN pip install -e ".[fast,hpc,web]"
-
-# --- tectonic bundle pre-warm ----------------------------------------------
-# Compile a representative document pulling the packages every worked-steps report
-# uses (amsmath/amssymb/amsfonts/geometry/hyperref) so the bundle lands in
-# TECTONIC_CACHE_DIR. After this, `render ... -o report.pdf` runs with NO network.
-RUN mkdir -p "$TECTONIC_CACHE_DIR" \
-    && printf '%s\n' \
-        '\documentclass{article}' \
-        '\usepackage{amsmath,amssymb,amsfonts,geometry,hyperref}' \
-        '\begin{document}' \
-        'quiverlab tectonic pre-warm: $\mathrm{HH}^{\bullet}(A)=\bigoplus_{n}\operatorname{Ext}^{n}_{A^{e}}(A,A)$.' \
-        '\end{document}' > /tmp/prewarm.tex \
-    && tectonic --outdir /tmp /tmp/prewarm.tex \
-    && rm -f /tmp/prewarm.tex /tmp/prewarm.pdf
 
 # --- offline example cache seed (Plan 25 result_cache) ---------------------
 # OPTIONAL + GUARDED. The seeding script (container/seed_cache.py) and the manifest
@@ -117,8 +87,7 @@ RUN mkdir -p /opt/quiverlab \
 
 # --- non-root user (defense in depth; mirrors webapp/deploy/Dockerfile) ----
 # Apptainer/Singularity run as the calling user regardless; under Docker we drop to
-# uid 10001. The user owns /opt/quiverlab so the pre-warmed tectonic cache is
-# writable (if a report needs a new resource) and the seed DB is readable.
+# uid 10001. The user owns /opt/quiverlab so the seed DB is readable.
 RUN useradd --create-home --uid 10001 quiverlab \
     && chown -R quiverlab:quiverlab /app /opt/quiverlab
 USER quiverlab

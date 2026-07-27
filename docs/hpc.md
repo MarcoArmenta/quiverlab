@@ -68,21 +68,22 @@ you pass `--allow-large`.)
 
 ### 5. Render a report locally
 
-`result.json` renders to a PDF (or self-contained HTML, or plain text) with the
-**same** container -- pick whichever runtime you have:
+`result.json` renders to a self-contained, print-ready HTML report (or plain text)
+with the **same** container -- pick whichever runtime you have:
 
 ```bash
 # Apptainer:
-apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.pdf
+apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.html
 # Docker:
-docker run --rm -v "$PWD:/w" -w /w ghcr.io/MarcoArmenta/quiverlab:latest render result.json -o report.pdf
+docker run --rm -v "$PWD:/w" -w /w ghcr.io/MarcoArmenta/quiverlab:latest render result.json -o report.html
 # Plain pip install (no container):
-pip install "quiverlab[hpc]" && quiverlab-hpc render result.json -o report.pdf
+pip install "quiverlab[hpc]" && quiverlab-hpc render result.json -o report.html
 ```
 
-The image pre-warms tectonic's bundle at build time, so PDF rendering works fully
-offline. Without a TeX engine the renderer falls back honestly to self-contained
-HTML; `--format txt` always works.
+The HTML report is print-ready (export to PDF via the browser's Print → Save as
+PDF); `--format json` emits the worked-steps event stream (`trace.json`). PDF/TeX
+report output has been removed. The output is fully self-contained;
+`--format txt` always works.
 
 ---
 
@@ -155,7 +156,7 @@ Pull with `singularity pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverla
 If the compute nodes cannot reach GHCR, download the **SIF release asset** attached
 to each [GitHub release](https://github.com/MarcoArmenta/quiverlab/releases) on an
 internet-connected host and `scp` it up. It is a single self-contained file with the
-tectonic bundle and the seeded example cache baked in -- nothing else to fetch.
+seeded example cache baked in -- nothing else to fetch.
 
 ## `APPTAINER_CACHEDIR`
 

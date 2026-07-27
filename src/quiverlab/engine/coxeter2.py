@@ -28,6 +28,7 @@ import sympy as sp
 from quiverlab.engine.hh_engine import Algebra, hochschild_homology_dims
 from quiverlab.engine.scan3 import hochschild_cohomology_dims
 from quiverlab.engine.coxeter import (induced_on_HH_homology, induced_on_HH_cohomology, is_identity)
+from quiverlab.errors import QuiverlabError
 
 
 # ====================================================================
@@ -223,11 +224,18 @@ def auto_to_f_basis(alg, unit, S_orig):
     """transform an automorphism matrix from the original basis to the unit-adapted f-basis."""
     m = alg.m
     t = alg.t
+    unit = np.asarray(unit, dtype=np.int64)
     B = np.eye(m, dtype=np.int64)
-    B[:, t] = np.asarray(unit, dtype=np.int64)
-    Binv = np.round(np.linalg.inv(B.astype(float))).astype(np.int64)
-    assert np.array_equal(B @ Binv, np.eye(m, dtype=np.int64)), (
-        "auto_to_f_basis: change-of-basis B is not unimodular (need unit[t] == 1); "
-        "the float-rounded integer inverse is unreliable here."
-    )
+    B[:, t] = unit
+    # Exact integer inverse (Sherman-Morrison): B = I + (unit - e_t) e_t^T with
+    # unit[t] == 1 has det 1, so Binv = I - (unit - e_t) e_t^T is integral. No
+    # float linalg (spec 4.1). The guard below is loud (python -O safe) -- a bare
+    # assert would be stripped under -O and silently return a wrong matrix.
+    e_t = np.zeros(m, dtype=np.int64)
+    e_t[t] = 1
+    Binv = np.eye(m, dtype=np.int64) - np.outer(unit - e_t, e_t)
+    if not np.array_equal(B @ Binv, np.eye(m, dtype=np.int64)):
+        raise QuiverlabError(
+            "auto_to_f_basis: change-of-basis B is not unimodular (need unit[t] == 1)."
+        )
     return (Binv @ S_orig @ B)

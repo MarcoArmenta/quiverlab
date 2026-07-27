@@ -15,7 +15,7 @@ def test_en_es_key_parity():
 def test_translates_known_keys():
     assert t("inv.coxeter", "en") == "Coxeter polynomial"
     assert t("inv.coxeter", "es") == "Polinomio de Coxeter"
-    assert t("form.pdf", "es") == "PDF de pasos detallados"
+    assert t("form.pdf", "es") == "reporte de pasos detallados"
 
 
 def test_unknown_lang_uses_english():

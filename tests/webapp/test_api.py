@@ -133,7 +133,10 @@ def test_queue_cap_returns_429(tmp_path):
 
 
 def test_over_anonymous_cap_offers_big_with_estimate(tmp_path):
-    client = _client(tmp_path, QLWEB_SMTP_HOST="relay", QLWEB_SMTP_FROM="q@e.org")
+    # SMTP set -> big-job tier enabled -> create_app's production-secret guard
+    # (correction #4) needs a real (non-default) signing secret.
+    client = _client(tmp_path, QLWEB_SMTP_HOST="relay", QLWEB_SMTP_FROM="q@e.org",
+                     QLWEB_TOKEN_SECRET="test-secret-not-the-default")
     r = client.post("/api/compute", json=_cc_body(["hh_cohomology:0..30"]))
     assert r.status_code == 202          # NOT a hard reject
     body = r.json()
@@ -142,7 +145,8 @@ def test_over_anonymous_cap_offers_big_with_estimate(tmp_path):
 
 
 def test_beyond_big_cap_returns_structured_422(tmp_path):
-    client = _client(tmp_path, QLWEB_SMTP_HOST="relay", QLWEB_SMTP_FROM="q@e.org")
+    client = _client(tmp_path, QLWEB_SMTP_HOST="relay", QLWEB_SMTP_FROM="q@e.org",
+                     QLWEB_TOKEN_SECRET="test-secret-not-the-default")
     r = client.post("/api/compute", json=_cc_body(["hh_cohomology:0..200"]))
     assert r.status_code == 422
     assert r.json()["reason"] == "beyond_big_cap"

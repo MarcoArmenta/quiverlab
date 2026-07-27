@@ -52,25 +52,20 @@ def max_term_dim_for_dim(d):
 def han_verdict(seq):
     """Classify an HH_* sequence (char-0 proxy) for the Han question.
 
-    Returns one of:
-      'nonzero-tail'      : HH_n > 0 for every computed n (consistent with Han);
-      'COUNTEREXAMPLE?'   : HH_n = 0 for the last computed n (and some earlier n>0),
-                            i.e. homology appears to vanish in high degree -- the
-                            shape a Han counterexample would take;
-      'all-zero-after'    : trailing run of zeros (subset of the above).
-    Plus the growth descriptor: 'bounded' if the tail is eventually constant/period,
-    else 'growing'."""
+    Returns a ``(verdict, growth)`` pair.  ``verdict`` is one of:
+      'empty'             : the sequence is empty (no data);
+      'nonzero-tail'      : HH_n > 0 for the LAST computed n (consistent with Han);
+      'COUNTEREXAMPLE?'   : HH_n = 0 for the last computed n -- homology appears to
+                            vanish in high degree, the shape a Han counterexample
+                            would take.
+    ``growth`` is the tail descriptor:
+      'growing'           : >= 6 terms and the last term exceeds the term four back;
+      'bounded'           : otherwise (eventually constant / periodic / too short);
+      '?'                 : only for the empty sequence."""
     if not seq:
         return "empty", "?"
-    nz = [i for i, v in enumerate(seq) if v != 0]
-    last = seq[-1]
-    if last == 0:
-        verdict = "COUNTEREXAMPLE?"
-    else:
-        verdict = "nonzero-tail"
-    # growth: compare second half max to first-half max
-    h = len(seq) // 2
-    tail_max = max(seq[h:]) if seq[h:] else 0
+    verdict = "COUNTEREXAMPLE?" if seq[-1] == 0 else "nonzero-tail"
+    # growth: the last term still rising above the term four back
     growth = "growing" if (len(seq) >= 6 and seq[-1] > seq[max(0, len(seq) - 4)]) else "bounded"
     return verdict, growth
 

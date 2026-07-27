@@ -31,6 +31,29 @@ _T = sp.symbols("t")
 _Y = sp.symbols("y_spec")
 
 
+def _as_expr(poly):
+    """Accept a `sympy.Poly` (what `Algebra.coxeter_polynomial()` returns, in the same
+    `t = Symbol('t')` this module's `_T` uses) as well as a bare expr. A Poly has no
+    `.expand`, so `sp.expand(Poly)` raises a raw `AttributeError` downstream -- convert
+    it to its expr up front so `spectral_radius(A.coxeter_polynomial())` just works. None
+    and plain exprs pass through unchanged.
+
+    A `Poly` whose generator is NOT the expected Coxeter variable `_T` is out of contract
+    (nothing in the repo produces one -- `coxeter_polynomial` always builds in `t`). Refuse
+    it LOUDLY here rather than `.as_expr()`-ing a foreign variable and drifting into a
+    silent `None` from the degree/cyclotomic machinery downstream."""
+    if isinstance(poly, sp.Poly):
+        if poly.gens != (_T,):
+            from quiverlab.errors import QuiverlabError
+            raise QuiverlabError(
+                f"spectral_radius/mahler_measure expect a polynomial in the Coxeter "
+                f"variable {_T!r}; got a sympy.Poly in {poly.gens}",
+                hint="pass Algebra.coxeter_polynomial() (a Poly in t) or a bare sympy "
+                     "expression in t")
+        return poly.as_expr()
+    return poly
+
+
 def _degree_below_one(poly):
     """True for a constant or zero polynomial (degree < 1). Such an input has no
     reciprocal-root structure (the y = z + 1/z machinery assumes even degree >= 2), so
@@ -92,6 +115,7 @@ def spectral_radius(poly):
     constant/zero polynomial (degree < 1), matching the poly-is-None convention."""
     if poly is None:
         return None
+    poly = _as_expr(poly)
     if _degree_below_one(poly):
         return None
     if is_cyclotomic_product(poly):
@@ -111,6 +135,7 @@ def mahler_measure(poly):
     None on a constant/zero polynomial (degree < 1), matching the poly-is-None convention."""
     if poly is None:
         return None
+    poly = _as_expr(poly)
     if _degree_below_one(poly):
         return None
     if is_cyclotomic_product(poly):

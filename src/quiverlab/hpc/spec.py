@@ -40,6 +40,27 @@ RESULT_SCHEMA = 1
 _PD_BOUND = 32
 _DEEPEN_PRIME = 32003
 
+# Absolute ceiling on a single module's total dimension (sum of its dimension
+# vector), enforced at PARSE time -- before ``_full_matrices`` builds the
+# per-arrow dense n x n action matrices (n = total module dim). This is the last
+# line of defence for the WEBAPP entry paths (instant/queued/big, which all reach
+# a module through :func:`parse_request` -> ``_parse_module`` and NEVER send an
+# ``hpc`` block): without it a request like ``tor_target = {dims: {0: 10000}}``
+# would allocate ~10^8 Python-int cells per arrow (multi-GB) regardless of tier.
+# 2048 caps each arrow matrix at ~4.2M cells (~34 MB), and is ~5x above the largest
+# module any test/legitimate request constructs (a dim-400 module, and only in a
+# classification test that never builds it) -- so nothing legitimate is refused
+# while a pathological module fails loudly instead of OOMing the box.
+#
+# The offline/cluster ``quiverlab-hpc run`` CLI is DIFFERENT: it is a local
+# large-compute tool with its own memory budget. When its ``hpc`` block opts into
+# large compute (``allow_large`` -- set by ``quiverlab-hpc run --allow-large``),
+# this parse cap is BYPASSED (``parse_request`` passes ``max_total_dim=None``): the
+# user has explicitly accepted the cost, and the real memory bound on that path is
+# the CLI's own ``max_mem_bytes`` / RLIMIT deepen guard, not this webapp-shaped
+# ceiling. The webapp never sets ``allow_large``, so it stays capped at 2048.
+_MAX_MODULE_DIM = 2048
+
 _log = logging.getLogger("quiverlab.hpc")
 
 SIDES = ("right", "left")
@@ -52,18 +73,17 @@ MODULE_KINDS = frozenset({
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
 # Module kinds with a Plan-30 Part-C worked-steps hook (quiverlab.trace.modules):
-# a pdf-requesting module computation auto-emits the exhaustive bundle, like HH.
-# (decompose/tor have no hook yet -- follow-up.)
+# an ``artifacts.pdf``-requesting module computation auto-emits the exhaustive
+# worked-steps bundle, like HH. (decompose/tor have no hook yet -- follow-up.)
 _MODULE_TRACE_KINDS = frozenset({
     "projective_resolution", "injective_resolution", "ext", "tau", "tau_minus",
 })
 
-# Honest labels for ``meta["pdf"]`` (mirrors the runner verbatim).
-_PDF_OK = "trace.pdf"
-_PDF_HTML_FALLBACK = ("PDF toolchain (pdflatex/tectonic) not found -- "
-                      "worked steps in trace_steps.html")
-_PDF_NO_HH = "no traced computation requested (PDF covers HH worked steps)"
-_PDF_MODULE_FAIL = "worked-steps bundle could not be generated for this module computation"
+# Honest labels for ``meta["pdf"]`` (the request flag is still named ``pdf``; the
+# worked-steps report is now HTML + JSON, PDF/TeX output having been removed).
+_WORKED_STEPS_OK = "worked steps in trace_steps.html"
+_WORKED_STEPS_NO_HH = "no traced computation requested (the worked-steps report covers HH)"
+_WORKED_STEPS_MODULE_FAIL = "worked-steps bundle could not be generated for this module computation"
 
 _MOD_REFS = {
     "dimension_vector": ["assem_book"],
@@ -210,6 +230,13 @@ def parse_compute_item(s: str) -> ComputeItem:
     hi = int(m["hi"]) if m["hi"] is not None else None
     if lo is not None and hi is not None and hi < lo:
         raise SpecError(f"empty degree range in {s!r}")
+    # Degreewise dispatch always computes 0..hi (the engines return the full
+    # 0..hi vector); a non-zero lower bound would be silently dropped, so reject it
+    # loudly to match the GUI, which forbids lo != 0 (docs/gui/runner.py).
+    if lo is not None and lo != 0:
+        raise SpecError(
+            f"compute range must start at 0 (got {s!r}); results are computed "
+            f"0..N degreewise -- use '{m['kind']}:0..{hi}'")
     return ComputeItem(kind=m["kind"], lo=lo, hi=hi)
 
 
@@ -395,7 +422,10 @@ def _lift_builtin_side(data: dict) -> dict:
     return data
 
 
-def _parse_module(data, what: str) -> ModuleSpec:
+def _parse_module(data, what: str, max_total_dim: int | None = _MAX_MODULE_DIM) -> ModuleSpec:
+    """Validate a module block. ``max_total_dim`` caps the total module dimension
+    at parse time (before any matrix is allocated); pass ``None`` to disable the cap
+    -- the large-compute opt-in path (``hpc.allow_large``) does exactly that."""
     if not isinstance(data, dict):
         raise SpecError(f"{what} must be an object")
     data = _lift_builtin_side(data)
@@ -421,6 +451,17 @@ def _parse_module(data, what: str) -> ModuleSpec:
     for v, n in dims.items():
         if not isinstance(n, int) or isinstance(n, bool) or n < 0:
             raise SpecError(f"{what} dims[{v!r}] must be a non-negative integer")
+    # Absolute allocation guard: the total module dimension drives the size of the
+    # per-arrow dense action matrices ``_full_matrices`` builds (n x n each), so cap
+    # it here -- before any matrix is allocated -- on the webapp entry paths. The
+    # large-compute CLI opt-in (``hpc.allow_large``) passes ``max_total_dim=None`` to
+    # bypass this ceiling (its own ``max_mem_bytes``/RLIMIT is the real bound).
+    total = sum(int(n) for n in dims.values())
+    if max_total_dim is not None and total > max_total_dim:
+        raise SpecError(
+            f"{what}: total module dimension {total} exceeds the {max_total_dim} "
+            "cap; such a module would allocate a matrix too large to compute here -- "
+            "narrow the dimension vector or run locally: pip install quiverlab")
     if maps is not None:
         if not isinstance(maps, dict):
             raise SpecError(f"{what}.maps must be an object mapping arrow -> matrix")
@@ -444,11 +485,12 @@ def _parse_module(data, what: str) -> ModuleSpec:
                       side=side)
 
 
-def _parse_tor_target(data) -> ModuleSpec | None:
+def _parse_tor_target(data, max_total_dim: int | None = _MAX_MODULE_DIM) -> ModuleSpec | None:
     """Parse the ``tor_target`` (the N in Tor^A_n(M, N)) -- a LEFT A-module. An
     omitted side defaults to ``"left"`` (so it canonicalizes with an explicit
     ``"left"``); an explicit ``"right"`` is rejected loudly. Mirrors schema.py's
-    ``_default_tor_side_left`` + the ``_module_rules`` side check."""
+    ``_default_tor_side_left`` + the ``_module_rules`` side check. ``max_total_dim``
+    is forwarded to :func:`_parse_module` (``None`` under ``hpc.allow_large``)."""
     if data is None:
         return None
     if not isinstance(data, dict):
@@ -458,7 +500,7 @@ def _parse_tor_target(data) -> ModuleSpec | None:
     has_side = "side" in tt or (isinstance(b, dict) and "side" in b)
     if not has_side:
         tt["side"] = "left"
-    spec = _parse_module(tt, "tor_target")
+    spec = _parse_module(tt, "tor_target", max_total_dim)
     if spec.side != "left":
         raise SpecError("Tor's second module 'tor_target' must be a LEFT A-module "
                         "(side='left'); Tor^A_n(M, N) pairs a right M with a left N")
@@ -556,11 +598,17 @@ def parse_request(data) -> ComputeRequest:
         raise SpecError("artifacts must be an object")
     artifacts = Artifacts(bool(artifacts_in.get("pdf", False)),
                           bool(artifacts_in.get("tikz", False)))
-    module = _parse_module(data["module"], "module") if data.get("module") is not None else None
-    ext_target = (_parse_module(data["ext_target"], "ext_target")
-                  if data.get("ext_target") is not None else None)
-    tor_target = _parse_tor_target(data.get("tor_target"))
+    # Parse the hpc block FIRST so the module-dimension cap can respect the
+    # large-compute opt-in: ``allow_large`` (the offline/cluster CLI's --allow-large)
+    # bypasses the 2048 parse ceiling. The webapp never sends an hpc block, so its
+    # modules stay capped exactly as before.
     hpc = _parse_hpc(data["hpc"]) if data.get("hpc") is not None else None
+    module_cap = None if (hpc is not None and hpc.allow_large) else _MAX_MODULE_DIM
+    module = (_parse_module(data["module"], "module", module_cap)
+              if data.get("module") is not None else None)
+    ext_target = (_parse_module(data["ext_target"], "ext_target", module_cap)
+                  if data.get("ext_target") is not None else None)
+    tor_target = _parse_tor_target(data.get("tor_target"), module_cap)
 
     if (module is not None or ext_target is not None or tor_target is not None) \
             and schema_version != 2:
@@ -666,7 +714,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                     if (req.artifacts.pdf and module_trace is None
                             and item.kind in _MODULE_TRACE_KINDS):
                         # the first traceable module kind backs the worked-steps
-                        # bundle (a single trace.pdf); HH still takes precedence.
+                        # bundle (trace_steps.html); HH still takes precedence.
                         module_trace = (item.kind, item.hi, M, N)
                     continue
                 if _deepen_applies(req.hpc, item, req.algebra):
@@ -691,7 +739,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
 
         meta: dict = {}
         if req.artifacts.pdf:
-            meta["pdf"] = _PDF_NO_HH if hh_trace is None else _PDF_HTML_FALLBACK
+            meta["pdf"] = _WORKED_STEPS_NO_HH if hh_trace is None else _WORKED_STEPS_OK
 
         result = {
             "quiverlab_version": getattr(ql, "__version__", "unknown"),
@@ -750,49 +798,34 @@ def _hh_kwargs(hpc: HpcConfig | None) -> dict:
 
 
 def _promote_trace_artifacts(produced, artifact_dir) -> str:
-    """Promote the writer's ``<stem>.<ext>`` (+ sidecars ``.tex`` / ``.json``) to the
-    fixed artifact names ``trace.pdf`` / ``trace_steps.html``, ``trace.tex`` and
-    ``trace.json`` so ``pages.py`` can serve them (Plan 30 C1: the .tex is
-    downloadable everywhere; Plan 34: the .json machine record likewise). Returns the
-    honest ``meta['pdf']`` label."""
-    if produced.suffix == ".pdf":
-        target, label = artifact_dir / "trace.pdf", _PDF_OK
-    else:
-        target, label = artifact_dir / "trace_steps.html", _PDF_HTML_FALLBACK
-    # The always-present sidecars share the produced stem (writer.py); promote each to
-    # its stable name so every worked-steps run yields trace.tex + trace.json too.
-    for suffix, name in ((".tex", "trace.tex"), (".json", "trace.json")):
-        src = produced.with_suffix(suffix)
-        dst = artifact_dir / name
-        if src.exists() and src.resolve() != dst.resolve():
-            src.replace(dst)
+    """Promote the writer's ``<stem>.html`` (+ sidecar ``.json``) to the fixed
+    artifact names ``trace_steps.html`` and ``trace.json`` so ``pages.py`` can serve
+    them (Plan 34: the .json machine record beside the print-ready HTML report).
+    Returns the honest ``meta['pdf']`` label."""
+    target = artifact_dir / "trace_steps.html"
+    # The always-present JSON sidecar shares the produced stem (writer.py); promote it
+    # to its stable name so every worked-steps run yields trace.json too.
+    src = produced.with_suffix(".json")
+    dst = artifact_dir / "trace.json"
+    if src.exists() and src.resolve() != dst.resolve():
+        src.replace(dst)
     if produced.resolve() != target.resolve():
         produced.replace(target)
-    return label
+    return _WORKED_STEPS_OK
 
 
 def _write_worked_steps(events, table, A, kind, top, used_keys, artifact_dir,
                         meta=None) -> str:
     from quiverlab.trace.writer import write_trace
-    w_meta: dict = {}
     produced = Path(write_trace(list(events), table, algebra=A, kind=kind, top=top,
                                 references=_trace_references(used_keys, events),
-                                out_dir=str(artifact_dir), meta_out=w_meta))
-    _record_pdf_reason(meta, w_meta)
+                                out_dir=str(artifact_dir)))
     return _promote_trace_artifacts(produced, artifact_dir)
-
-
-def _record_pdf_reason(meta, w_meta) -> None:
-    """Copy the writer's recorded why-no-PDF reason into the result ``meta`` so
-    ``pages.py`` reads the reason the WORKER saw (Plan 34 MAJOR-3), not a re-probe on a
-    possibly-different web tier. Only present when the HTML fallback was taken."""
-    if meta is not None and "pdf_fallback_reason" in w_meta:
-        meta["pdf_fallback_reason"] = w_meta["pdf_fallback_reason"]
 
 
 def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir,
                                meta=None) -> str:
-    """Render the worked-steps bundle (pdf/tex/html) for a MODULE computation via
+    """Render the worked-steps bundle (HTML + JSON) for a MODULE computation via
     the Plan-30 Part-C trace hooks (``quiverlab.trace.modules``), mirroring the HH
     bundle. Best-effort: a trace failure never loses the already-computed JSON
     result -- it degrades to an honest note."""
@@ -807,16 +840,14 @@ def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir,
             events, _ = _tm.trace_ext(A, M, N, top)
         else:                                  # tau / tau_minus
             events, _ = _tm.trace_tau(M, kind=kind)
-        w_meta: dict = {}
         produced = Path(write_trace(list(events), None, algebra=A, kind=kind,
                                     top=(top if top is not None else 0),
                                     references=_trace_references(used_keys, events),
-                                    out_dir=str(artifact_dir), meta_out=w_meta))
-        _record_pdf_reason(meta, w_meta)
+                                    out_dir=str(artifact_dir)))
         return _promote_trace_artifacts(produced, artifact_dir)
     except Exception:
         _log.exception("module worked-steps bundle failed for kind=%s", kind)
-        return _PDF_MODULE_FAIL
+        return _WORKED_STEPS_MODULE_FAIL
 
 
 def _trace_references(used_keys, events):

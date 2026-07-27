@@ -18,12 +18,13 @@ The key is ``sha256`` of a canonical JSON encoding of ``{"lib": <library version
     schema version rides along inside the request spec, so it invalidates too.
   * **Compute-list order is significant** (a deliberately conservative choice): the
     order changes the produced artifacts (``result.json`` key order, the
-    ``reproduce`` snippet, and -- with two HH kinds -- which one's worked-steps PDF
-    is rendered). Treating a permuted list as a distinct entry guarantees a cache
-    hit replays EXACTLY what this request would have produced, never a subtly
+    ``reproduce`` snippet, and -- with two HH kinds -- which one's worked-steps
+    report is rendered). Treating a permuted list as a distinct entry guarantees a
+    cache hit replays EXACTLY what this request would have produced, never a subtly
     different artifact. Dict key order is the only thing normalised away.
-  * **Artifact flags are in the key** -- a ``pdf: true`` request produces a
-    ``trace.pdf`` a ``pdf: false`` run does not, so they are distinct entries.
+  * **Artifact flags are in the key** -- a ``pdf: true`` request produces the
+    worked-steps report (``trace_steps.html`` + ``trace.json``) a ``pdf: false`` run
+    does not, so they are distinct entries.
 
 Nothing user-identifying enters the key: it is a hash of mathematics + version
 only. Big-job requests key on the spec with ``email``/``lang`` stripped (the same

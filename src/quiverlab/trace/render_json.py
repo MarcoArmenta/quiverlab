@@ -5,7 +5,7 @@ cached/served. This module renders the JSON leg: the recorder's full event strea
 serialized EXACTLY -- every step, every matrix entry exact -- deterministically and
 schema-versioned, so a downstream tool re-reads precisely what the engine computed.
 
-The calling convention MIRRORS render_text/render_html/render_latex exactly:
+The calling convention MIRRORS render_text/render_html exactly:
 ``render_json(events, title="", references=(), algebra=None) -> str`` (whatever
 ``writer.py`` and the GUI/hpc callers pass). The three human renderers DERIVE a
 resulting-dimensions / projectives-injectives view from the events + ``algebra``;
@@ -104,11 +104,20 @@ def render_json(events, title="", references=(), algebra=None):
     """The trace as a schema-versioned, deterministic JSON string -- the complete
     machine record of the event stream. See the module docstring for the envelope
     and determinism contract."""
+    events = list(events)
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.trace.events import ALL_EVENTS
+    for e in events:
+        if not isinstance(e, ALL_EVENTS):
+            raise QuiverlabError(
+                "render_json received a non-event object of type %r -- likely an "
+                "unpacked (events, result) tuple from a trace_* helper; the machine "
+                "record must serialize only trace events" % type(e).__name__)
     envelope = {
         "quiverlab_trace_schema": TRACE_SCHEMA,
         "library_version": getattr(quiverlab, "__version__", "unknown"),
         "title": title,
         "citations": [{"key": k, "formatted": v} for k, v in references],
-        "events": [_event_dict(e) for e in list(events)],
+        "events": [_event_dict(e) for e in events],
     }
     return json.dumps(envelope, sort_keys=True, ensure_ascii=False, indent=2) + "\n"
