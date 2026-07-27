@@ -341,6 +341,28 @@ planned together even if delivered in slices.
   rendered differential matrices in worked steps, `.tex` downloadable
   everywhere). Merges AFTER Plan 29 (tor-GUI wiring skip-guarded).
 
+- [x] **Plan 34 — homework-grade reports, honest artifacts, Ext/Tor test gaps,
+  the auto→CS depth fallback** — DONE, 2026-07-26, branch
+  `plan-34-homework-reports` (`2026-07-26-plan-34-homework-reports.md`),
+  RELEASE-GATING (Marco: "I don't think it is ready"). /spawn /devils: 4
+  workers + 4 paired adversarial critics (verdicts: NEEDS WORK / HOLDS UP /
+  NEEDS WORK / REJECTED — all findings reproduced, adjudicated, fixed) + a
+  3-agent fix round. Delivered: rad/top/soc as full representations in
+  GUI/webapp/CLI (shared `module_blocks`, dim column dropped); Ext/Tor
+  batteries over certified non-projective/non-injective/non-simple modules
+  (kA₅ interiors, Euler-form arbiter, Tor≡Ext∘D + balance + QPA anchors);
+  the PDF+HTML+JSON artifact contract, all cached (HTML complete/no-elision,
+  trace.json exact versioned event stream, PDF page-bounded with
+  event-computed MaxMatrixCols + resizebox + stated elision; recorder keeps
+  full matrices); homework-depth worked steps (definitions, matrices,
+  pivot/rank lines, justifications, side-aware, drift-gated); loud renderers
+  (ALL_EVENTS gate), segmented Result footers, named self-map labels;
+  worker-recorded why-no-PDF; MathML fallback + leak guard. PLUS the
+  dispatch amendment: engine="auto" falls back to Chouhy-Solotar exactly
+  where bar/fast raised DepthLimitError (presented algebras only, recorded
+  in the trace, in-window byte-unchanged; stale "later phases" hint
+  rewritten; Pillar-4 pin updated).
+
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),

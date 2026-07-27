@@ -12,14 +12,31 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import tempfile
 
 import quiverlab as ql
 from quiverlab.hpc.spec import RESULT_SCHEMA
-from quiverlab.trace.render_latex import _tex_escape
+from quiverlab.trace.render_latex import _tex_escape, matrix_preamble_lines
 from quiverlab.trace.writer import have_latex
+
+# The widest row (max &-count + 1) inside any pmatrix/bmatrix/matrix in a rendered TeX
+# string -- used to size \setcounter{MaxMatrixCols} and to decide whether a displayed
+# matrix must be scaled to the page (\qlmat). Plan 34: hpc reports of dim>10 modules
+# emit >10-column action matrices, which abort the compile without the raised ceiling.
+_MATRIX_ENV_RE = re.compile(
+    r"\\begin\{[pbvV]?matrix\*?\}(.*?)\\end\{[pbvV]?matrix\*?\}", re.DOTALL)
+
+
+def _tex_matrix_cols(s: str) -> int:
+    best = 0
+    for body in _MATRIX_ENV_RE.findall(s):
+        for row in body.split(r"\\"):
+            if row.strip():
+                best = max(best, row.count("&") + 1)
+    return best
 
 
 class ReportError(Exception):
@@ -101,6 +118,37 @@ def _module_view_row(label, view) -> str:
     return f"{label}: dim {view.get('dim')}  {_dimvec_str(view.get('dimvec', {}))}"
 
 
+def _pmatrix_latex(mat) -> str:
+    """A raw matrix as pmatrix TeX for the PAGE-BOUNDED PDF (Plan 34): a matrix past 25
+    rows or columns is STATED-elided (shown in full in the HTML/JSON report -- here the
+    HTML dumps the matrix source and the JSON is result.json itself), so an oversized
+    module action matrix neither aborts the compile nor runs off the page. Matrices of
+    11..25 columns are scaled by the caller (\\qlmat)."""
+    nrows = len(mat)
+    ncols = max((len(row) for row in mat), default=0)
+    if nrows > 25 or ncols > 25:
+        return (r"\text{[%d$\times$%d matrix -- shown in full in the HTML/JSON report]}"
+                % (nrows, ncols))
+    body = r" \\ ".join(" & ".join(str(x) for x in row) for row in mat)
+    return r"\begin{pmatrix} %s \end{pmatrix}" % body
+
+
+def _module_repr_rows(label, view, math) -> list:
+    """Rows (plain text) + appended displayed-math (pmatrix) for a full-representation
+    module block ``{"dims": ..., "maps": ...}`` (Plan 34): the dimension VECTOR and the
+    exact per-arrow action matrices. The total dim is intentionally omitted -- the
+    vector carries it."""
+    rows = [f"{label}: {_dimvec_str(view.get('dims', {}))}"]
+    maps = view.get("maps") or {}
+    if not maps:
+        rows.append("    (all arrow actions vanish)")
+    for a in sorted(maps):
+        rows.append(f"    {a}: {maps[a]}")
+        math.append(r"\text{%s: } %s = %s"
+                    % (_tex_escape(label), _tex_escape(a), _pmatrix_latex(maps[a])))
+    return rows
+
+
 def _section_for(name: str, block: dict) -> _Section:
     if name == "hh_cohomology":
         return _hh_section("HH^", block)
@@ -130,11 +178,12 @@ def _section_for(name: str, block: dict) -> _Section:
                         [f"side: {block.get('side')}",
                          _module_view_row("module", block)])
     if name == "rad_top_soc":
-        return _Section("Radical / top / socle",
-                        [f"side: {block.get('side')}",
-                         _module_view_row("rad M", block.get("radical", {})),
-                         _module_view_row("top M", block.get("top", {})),
-                         _module_view_row("soc M", block.get("socle", {}))])
+        rows = [f"side: {block.get('side')}"]
+        math: list = []
+        rows += _module_repr_rows("rad M", block.get("radical", {}), math)
+        rows += _module_repr_rows("top M", block.get("top", {}), math)
+        rows += _module_repr_rows("soc M", block.get("socle", {}), math)
+        return _Section("Radical / top / socle", rows, math)
     if name in ("tau", "tau_minus"):
         sym = "tau M" if name == "tau" else "tau^- M"
         rows = [f"side: {block.get('side')}"]
@@ -257,8 +306,9 @@ def render_html(result: dict) -> str:
     body = ["<!doctype html><html><head><meta charset='utf-8'>", _HTML_STYLE,
             "<title>quiverlab report</title></head><body>",
             "<h1>quiverlab report</h1>",
-            "<p><i>Math is shown as TeX source (no JavaScript); compile a PDF with "
-            "pdflatex/tectonic for typeset output.</i></p>"]
+            "<p><i>This report is print-ready. Math is shown as LaTeX source; render "
+            "the .tex with pdflatex/tectonic, or use your browser's Print &rarr; Save "
+            "as PDF, for a typeset copy.</i></p>"]
     for sec in build_sections(result):
         body.append("<h2>%s</h2>" % _esc(sec.title))
         if sec.rows:
@@ -270,15 +320,22 @@ def render_html(result: dict) -> str:
 
 
 def render_latex(result: dict) -> str:
+    sections = build_sections(result)
+    max_cols = max((_tex_matrix_cols(m) for sec in sections for m in sec.math),
+                   default=0)
     out = [r"\documentclass{article}", r"\usepackage{amsmath}",
-           r"\usepackage[T1]{fontenc}", r"\begin{document}",
-           r"\section*{quiverlab report}"]
-    for sec in build_sections(result):
+           r"\usepackage[T1]{fontenc}"]
+    out.extend(matrix_preamble_lines(max_cols))   # graphicx + \qlmat + MaxMatrixCols
+    out += [r"\begin{document}", r"\section*{quiverlab report}"]
+    for sec in sections:
         out.append(r"\subsection*{%s}" % _tex_escape(sec.title))
         for row in sec.rows:
             out.append(r"\noindent %s\\" % _tex_escape(row))
         for m in sec.math:
-            out.append(r"\[ %s \]" % m)
+            # a >10-column matrix is scaled to the page so it neither aborts the compile
+            # nor runs off it (matches trace.render_latex's \qlmat treatment).
+            out.append(r"\[ %s \]"
+                       % (r"\qlmat{%s}" % m if _tex_matrix_cols(m) > 10 else m))
     out.append(r"\end{document}")
     return "\n".join(out) + "\n"
 
@@ -302,17 +359,46 @@ def _compile_pdf(tex: str, out_pdf: pathlib.Path, engine: str) -> None:
 # --------------------------------------------------------------------------- #
 
 def default_out_name(fmt: str) -> str:
+    # ``json`` is the worked-steps EVENT STREAM (trace.json), not a rendered report,
+    # so it keeps that name rather than ``report.json``.
+    if fmt == "json":
+        return "trace.json"
     return "report." + {"pdf": "pdf", "html": "html", "txt": "txt",
                         "tex": "tex"}.get(fmt, "txt")
+
+
+def _sibling_trace_json(src_path) -> str:
+    """The worked-steps machine record (``trace.json``) that the writer produced
+    beside ``result.json`` (Plan 34). ``--format json`` emits it VERBATIM -- the same
+    bytes the writer wrote, promoted by the hpc spec -- rather than re-rendering the
+    result envelope, since the JSON deliverable IS the complete event stream. Raises
+    ``ReportError`` when the source was an in-memory dict (no directory to look in) or
+    no trace.json exists (no worked-steps computation ran)."""
+    if src_path is None:
+        raise ReportError(
+            "--format json emits the worked-steps event stream (trace.json), which "
+            "lives beside result.json; pass the result.json path, not an in-memory dict")
+    tj = pathlib.Path(src_path).parent / "trace.json"
+    try:
+        return tj.read_text(encoding="utf-8")
+    except OSError:
+        raise ReportError(
+            f"no trace.json beside {src_path} (the worked-steps event stream is "
+            "produced only when a traced computation ran); use --format "
+            "html/txt/tex/pdf for the result report")
 
 
 def render(result, out_path=None, fmt: str = "auto", on_warn=None):
     """Render ``result`` (a dict or a path to result.json) to ``out_path``.
 
-    ``fmt`` in {auto, pdf, html, txt, tex}. ``auto`` compiles a PDF when tectonic/
-    pdflatex is on PATH, else writes HTML. ``pdf`` without a toolchain raises
+    ``fmt`` in {auto, pdf, html, txt, tex, json}. ``auto`` compiles a PDF when
+    tectonic/pdflatex is on PATH, else writes HTML. ``pdf`` without a toolchain raises
     ``ReportError``; ``tex`` writes the LaTeX SOURCE (no toolchain needed -- Plan 30
-    C1: the .tex is available everywhere). Returns ``(pathlib.Path, actual_fmt)``."""
+    C1: the .tex is available everywhere); ``json`` emits the worked-steps event
+    stream (trace.json) that lives beside the result (Plan 34). Returns
+    ``(pathlib.Path, actual_fmt)``."""
+    # Remember the source PATH before loading (``json`` reads the sibling trace.json).
+    src_path = None if isinstance(result, dict) else result
     if not isinstance(result, dict):
         result = load_result(result)
     check_result_schema(result)
@@ -336,6 +422,8 @@ def render(result, out_path=None, fmt: str = "auto", on_warn=None):
             out.write_text(render_html(result), encoding="utf-8")
         elif actual == "tex":
             out.write_text(render_latex(result), encoding="utf-8")
+        elif actual == "json":
+            out.write_text(_sibling_trace_json(src_path), encoding="utf-8")
         elif actual == "pdf":
             try:
                 _compile_pdf(render_latex(result), out, engine)
@@ -343,7 +431,8 @@ def render(result, out_path=None, fmt: str = "auto", on_warn=None):
                 raise ReportError(f"LaTeX compilation failed ({engine}): {exc}; "
                                   "use --format html or --format txt")
         else:
-            raise ReportError(f"unknown format {fmt!r} (expected auto/pdf/html/txt/tex)")
+            raise ReportError(
+                f"unknown format {fmt!r} (expected auto/pdf/html/txt/tex/json)")
     except OSError as exc:
         raise ReportWriteError(f"cannot write report to {out}: {exc}")
     return out, actual

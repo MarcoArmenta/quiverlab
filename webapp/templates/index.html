@@ -11,7 +11,9 @@
       data-mod-dimvec="{{ t('mod.dim_vector') }}"
       data-mod-decomp-heading="{{ t('mod.decompose_heading') }}"
       data-mod-indecomposable="{{ t('mod.indecomposable') }}"
-      data-mod-tau-additive="{{ t('mod.tau_additive') }}">
+      data-mod-tau-additive="{{ t('mod.tau_additive') }}"
+      data-mod-display-only="{{ t('mod.display_only') }}"
+      data-mod-stale="{{ t('mod.stale_recompute') }}">
   <label for="family">{{ t("form.family") }}</label>
   <select id="family" name="family">
     {% for f in catalog.families %}<option value="{{ f.name }}">{{ f.name }}</option>{% endfor %}

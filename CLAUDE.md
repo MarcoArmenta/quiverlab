@@ -378,7 +378,34 @@ class table == live collection, gated by `tests/release/test_oracle_classes.py`
 (3 deep tests — the only count delta; the sweep itself is bucket-byte-identical,
 verified 804/1180/112 excluding the gate). 89 files marked; 12 edge rulings in
 the plan doc (`2026-07-26-plan-32-oracle-markers.md`).
-Suite recounted post-Plan-33: 2151 tests (fast 804 / deep 1234 / qpa 113).
+Plan 34 (homework-grade reports + honest artifacts, 2026-07-26, branch
+`plan-34-homework-reports`, /spawn /devils: 4 workers + 4 paired adversarial
+critics + 3-agent fix round, RELEASE-GATING — Marco: "I don't think it is
+ready"): rad/top/soc returned/rendered as FULL representations ({dims, maps}
+in the Plan-26 input schema via the shared `module_blocks` serializer, dim
+column dropped, GF(p^n) entries domain-notated + display_only); Ext/Tor
+batteries with certified interior modules (kA5 intervals — kA4 has exactly
+one; Euler-form asymmetric arbiter, Tor≡Ext∘D + balance + live QPA anchors,
+symmetric ext_target schema guard); the artifact contract PDF+HTML+JSON all
+cached (HTML = complete record, no elision, scrollable; trace.json = exact
+versioned event stream, served/promoted/downloadable everywhere; PDF = the
+page-bounded homework document — event-computed MaxMatrixCols preamble +
+shrink-only resizebox 11–25 cols, stated elision >25 pointing at HTML/JSON;
+recorder keeps FULL matrices, 250k-cell memory backstop only); homework-depth
+content (definitions + matrices + pivot/rank lines + justifications for
+rad/top/soc/resolutions/Ext/Tor/tau/tau-minus/decompose, side-aware left
+narration, loud drift gates vs engine dims, correct rad=MJ attribution);
+renderers REFUSE foreign stream objects loudly (ALL_EVENTS gate), Result
+footers segmented per computation, self-map labels carry the module's name;
+worker-recorded why-no-PDF reasons; MathML converter with a real
+escaped-source fallback + leak-guard test. PLUS the Marco-2026-07-26 DISPATCH
+AMENDMENT: engine="auto" no longer dies at the bar/fast depth wall — it falls
+back to Chouhy-Solotar for quiver-presented algebras exactly where
+DepthLimitError fired (recorded in the dispatch trace, in-window results
+byte-unchanged, explicit engines keep honest walls, presentation-less refuses;
+the stale "later phases" bar hint rewritten; Pillar-4 pin updated;
+`tests/hochschild/test_auto_cs_fallback_p34.py`).
+Suite recounted post-Plan-34: 2295 tests (fast 930 / deep 1243 / qpa 122).
 Plan 33 (nontrivial literature examples at scale, Tier 1a — Marco: the
 test/paper examples were too small (kA₂/kA₃/single loops); scale them to the
 books/literature and push the quantum ones deeper. SCALE, not new theorems —

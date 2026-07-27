@@ -132,9 +132,30 @@ def _fmt_dimvec(dv):
 
 
 def ext_result_dims(events):
-    """The Ext/Tor result dims, in degree order, from the ExtDegree events."""
-    exts = sorted((e for e in events if isinstance(e, ExtDegree)), key=lambda e: e.degree)
-    return [e.result_dim for e in exts], (exts[0].op if exts else None)
+    """The FIRST Ext/Tor computation's result dims, in degree order (kept for
+    backward compatibility -- prefer :func:`ext_result_runs`)."""
+    runs = ext_result_runs(events)
+    return (runs[0][1], runs[0][0]) if runs else ([], None)
+
+
+def ext_result_runs(events):
+    """All Ext/Tor computations in the stream, each as ``(op, dims)`` in emission
+    order.  A composed document may contain SEVERAL Ext/Tor computations; a new
+    run starts whenever the degree resets to 0 or the op changes.  Merging them
+    into one list (the old behaviour) mislabels and concatenates unrelated
+    computations."""
+    runs, cur_op, cur = [], None, []
+    for e in events:
+        if not isinstance(e, ExtDegree):
+            continue
+        if cur and (e.op != cur_op or e.degree == 0):
+            runs.append((cur_op, cur))
+            cur = []
+        cur_op = e.op
+        cur.append(e.result_dim)
+    if cur:
+        runs.append((cur_op, cur))
+    return runs
 
 
 def _module_steps_lines(events):

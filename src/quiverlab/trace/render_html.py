@@ -1,15 +1,22 @@
-"""HTML worked-steps renderer -- NO JavaScript, NO external resources (Marco's
-decision). LaTeX->PDF (pdflatex/tectonic) is the PRIMARY, typeset math output;
-this HTML is the self-contained, offline fallback for when no LaTeX toolchain is on
-PATH. Math is shown as readable *TeX source* (inside <pre><code>), NOT typeset --
-there is no MathJax, no CDN <script>, and no external <link>, so the file renders
-identically in any browser with the network off. Float-free: all numbers come from
-event fields (ints/strings).
+"""HTML worked-steps renderer -- self-contained, NO JavaScript, NO external
+resources (no CDN ``<script>``, no ``<link>``, no network fetch), so the file
+renders identically with the network off. Math is TYPESET as MathML (rendered
+natively by every current browser, print-to-PDF included) with the original LaTeX
+kept verbatim in a ``<annotation encoding="application/x-tex">`` -- so the typeset
+display and the copy/paste-able source coexist in one self-contained file. The page
+is print-ready (print CSS: ``@page`` margins, page-break control, a screen-only
+"print to PDF" hint): the GUI opens it in a tab and calls ``window.print()``, and a
+downloaded ``report.html`` prints to PDF from any browser. Float-free: all numbers
+come from event fields (ints/strings).
 
 Shared helpers: `derive_dims` + `_dims_kind` are REUSED from Task 9's render_text,
 and the matrix->pmatrix TeX helper `_pmatrix` is REUSED from render_latex -- so both
 renderers emit identical `pmatrix` source and identical resulting dimensions from a
-single definition, never duplicated here."""
+single definition, never duplicated here. The LaTeX source those helpers produce is
+carried through into the MathML ``<annotation>`` (and typeset by the converter
+below), so the two renderers stay in lock-step."""
+import re
+
 from quiverlab.trace.events import (
     Dispatch, ResolutionTerm, RankStep, ModuleTerm, ModuleDifferential,
     ExtDegree, StepNote,
@@ -22,14 +29,300 @@ from quiverlab.trace.render_latex import (
     _pmatrix, oplus_tex, factor_stack_tex, _dimvec_tex,
 )
 
-# Inline-only styling (no external stylesheet); keeps the file fully self-contained.
-_STYLE = ("<style>body{font-family:sans-serif}"
-          "pre{background:#f4f4f4;padding:6px;overflow-x:auto}</style>")
+# Inline-only styling (no external stylesheet); keeps the file fully self-contained
+# AND print-ready. Light-forced (a report is printed on white); the screen-only
+# ".ql-hint" banner is hidden by the print stylesheet.
+_STYLE = (
+    "<style>"
+    "html{background:#fff;color:#111}"
+    "body{font-family:Georgia,'Times New Roman',serif;line-height:1.5;"
+    "max-width:46em;margin:2em auto;padding:0 1.5em;background:#fff;color:#111}"
+    "h1{font-size:1.6em;border-bottom:2px solid #333;padding-bottom:.25em}"
+    "h2{font-size:1.15em;margin-top:1.5em;border-bottom:1px solid #ccc;"
+    "padding-bottom:.12em}"
+    "p{margin:.5em 0}"
+    "math{font-size:1.05em}"
+    ".ql-eq{margin:.7em 0;overflow-x:auto}"
+    ".ql-hint{background:#eef3ff;border:1px solid #9db8e8;border-radius:6px;"
+    "padding:.6em .85em;margin:0 0 1.4em;font-family:sans-serif;font-size:.92em;"
+    "color:#123}"
+    "ol,ul{padding-left:1.4em}"
+    "@media print{.ql-hint{display:none}"
+    "body{max-width:none;margin:0;font-size:11pt}"
+    "h2,.ql-eq,math{break-inside:avoid;page-break-inside:avoid}"
+    "h1,h2{break-after:avoid}}"
+    "@page{margin:2cm}"
+    "</style>")
+
+# --------------------------------------------------------------------------- #
+# LaTeX -> presentation MathML converter (self-contained, no JS).
+#
+# The trace renderers emit a small, CLOSED grammar (pmatrix/matrix environments,
+# sub/superscripts, a fixed handful of commands, spacing, atoms). This converts
+# exactly THAT grammar to presentation MathML. Anything OUTSIDE the covered grammar
+# -- an unknown command or environment -- raises `_UnknownTeX`, and `_math` catches
+# it and routes the WHOLE math run to a `<mtext>` of the escaped LaTeX source (the
+# real, advertised fallback: the source is shown verbatim, WITH its backslashes,
+# never a backslash-stripped command name masquerading as typeset math). So the
+# document is always well-formed and never shows a garbled glyph, and any command
+# the LaTeX renderer starts emitting that we have not taught the converter degrades
+# HONESTLY (readable source) instead of leaking (e.g. `\frac`->"frac 1 2"). The
+# fidelity guard test (tests/trace/test_render_html_fidelity_p34.py) pins this:
+# every real module+HH sample converts with no leaked command name.
+# Deterministic: a pure function of the input string.
+# --------------------------------------------------------------------------- #
+
+
+class _UnknownTeX(Exception):
+    """A command/environment outside the covered grammar. Caught by `_math`, which
+    then renders the whole run as `<mtext>` of the escaped source (the real fallback)."""
+
+
+_ROWBREAK = "\\\\"          # the TeX row separator: two backslash characters
+
+_TOK = re.compile(
+    r"\\begin\{[A-Za-z*]+\}"    # \begin{env}
+    r"|\\end\{[A-Za-z*]+\}"     # \end{env}
+    r"|\\[A-Za-z]+"             # \command
+    r"|\\."                     # \\  \  \; \, and other escaped symbols
+    r"|[A-Za-z]+"              # identifier run
+    r"|[0-9]+"                # number run
+    r"|\s+"                  # whitespace
+    r"|.",                   # any single character
+    re.DOTALL)
+
+# \command -> a MathML <mi> identifier (upright when >1 char, per spec).
+_CMD_MI = {
+    r"\dim": "dim", r"\Hom": "Hom", r"\ker": "ker", r"\coker": "coker",
+    # lowercase Greek (incl. the var- forms the module symbols use, e.g. \varphi
+    # from the decompose splitting endomorphism, \varepsilon from the augmentation)
+    r"\alpha": "&#945;", r"\beta": "&#946;", r"\gamma": "&#947;",
+    r"\delta": "&#948;", r"\epsilon": "&#949;", r"\varepsilon": "&#949;",
+    r"\zeta": "&#950;", r"\eta": "&#951;", r"\theta": "&#952;",
+    r"\vartheta": "&#977;", r"\iota": "&#953;", r"\kappa": "&#954;",
+    r"\lambda": "&#955;", r"\mu": "&#956;", r"\nu": "&#957;", r"\xi": "&#958;",
+    r"\pi": "&#960;", r"\varpi": "&#982;", r"\rho": "&#961;",
+    r"\varrho": "&#961;", r"\sigma": "&#963;", r"\varsigma": "&#962;",
+    r"\tau": "&#964;", r"\upsilon": "&#965;", r"\phi": "&#966;",
+    r"\varphi": "&#966;", r"\chi": "&#967;", r"\psi": "&#968;", r"\omega": "&#969;",
+    # uppercase Greek
+    r"\Gamma": "&#915;", r"\Delta": "&#916;", r"\Theta": "&#920;",
+    r"\Lambda": "&#923;", r"\Xi": "&#926;", r"\Pi": "&#928;",
+    r"\Sigma": "&#931;", r"\Phi": "&#934;", r"\Psi": "&#936;", r"\Omega": "&#937;",
+    r"\partial": "&#8706;", r"\infty": "&#8734;",
+}
+# Matrix-like environments the parser understands, and their fence delimiters. An
+# environment OUTSIDE this set raises `_UnknownTeX` (honest fallback). `array` carries
+# a ``{colspec}`` argument (consumed); ``matrix``/``smallmatrix`` render undelimited.
+_MATRIX_ENVS = frozenset({
+    "matrix", "smallmatrix", "pmatrix", "bmatrix", "vmatrix", "Vmatrix",
+    "array", "cases",
+})
+_MATRIX_DELIMS = {
+    "pmatrix": ("(", ")"), "bmatrix": ("[", "]"),
+    "vmatrix": ("|", "|"), "Vmatrix": ("&#8214;", "&#8214;"),
+    "cases": ("{", ""),
+}
+# \command -> a MathML <mo> operator (entity glyphs).
+_CMD_MO = {
+    r"\oplus": "&#8853;", r"\otimes": "&#8855;", r"\to": "&#8594;",
+    r"\rightarrow": "&#8594;", r"\mapsto": "&#8614;", r"\cdot": "&#8901;",
+    r"\times": "&#215;", r"\cong": "&#8773;", r"\leq": "&#8804;",
+    r"\geq": "&#8805;",
+}
+# \command -> an <mspace> of the given width.
+_CMD_SPACE = {
+    r"\qquad": "2em", r"\quad": "1em", r"\;": "0.278em", r"\:": "0.222em",
+    r"\,": "0.167em", "\\ ": "0.25em",
+}
+# Size/layout commands with no MathML analogue -- consumed, emit nothing.
+_CMD_IGNORE = frozenset({
+    r"\big", r"\bigl", r"\bigr", r"\Big", r"\Bigl", r"\Bigr",
+    r"\left", r"\right", r"\displaystyle", r"\noindent", r"\!",
+})
+
+
+def _skip_ws(tokens, i):
+    while i < len(tokens) and tokens[i].isspace():
+        i += 1
+    return i
+
+
+def _read_raw_group(tokens, i):
+    """Return (verbatim-text, next-i) for the ``{...}`` at ``i`` (brace-matched),
+    or the single following token when there is no group. Used for the literal
+    arguments of ``\\text{}`` / ``\\operatorname{}``."""
+    i = _skip_ws(tokens, i)
+    if i >= len(tokens) or tokens[i] != "{":
+        return (tokens[i], i + 1) if i < len(tokens) else ("", i)
+    i += 1
+    depth, buf = 1, []
+    while i < len(tokens) and depth > 0:
+        t = tokens[i]
+        if t == "{":
+            depth += 1
+            buf.append(t)
+        elif t == "}":
+            depth -= 1
+            if depth == 0:
+                return "".join(buf), i + 1
+            buf.append(t)
+        else:
+            buf.append(t)
+        i += 1
+    return "".join(buf), i
+
+
+def _symbol_atom(ch):
+    if ch.isspace():
+        return ""
+    return "<mo>%s</mo>" % _esc(ch)
+
+
+def _parse_matrix(tokens, i, endtok):
+    """Parse a matrix body (cells split on ``&``, rows on ``\\\\``) into an
+    <mtable>, consuming the closing ``\\end{...}``."""
+    rows, cur = [], []
+    while i < len(tokens):
+        cell, i = _parse_seq(tokens, i, {"&", _ROWBREAK, endtok})
+        cur.append(cell)
+        if i >= len(tokens):
+            break
+        sep = tokens[i]
+        i += 1
+        if sep == "&":
+            continue
+        if sep == _ROWBREAK:
+            rows.append(cur)
+            cur = []
+        else:                                    # endtok
+            break
+    if cur:
+        rows.append(cur)
+    # A trailing "\\" leaves an empty final row -- drop it.
+    if rows and len(rows[-1]) == 1 and rows[-1][0] == "":
+        rows.pop()
+    body = "".join(
+        "<mtr>%s</mtr>" % "".join("<mtd>%s</mtd>" % c for c in r) for r in rows)
+    return "<mtable>%s</mtable>" % body, i
+
+
+def _parse_command(tokens, i, stops):
+    cmd = tokens[i]
+    i += 1
+    if cmd == r"\operatorname":
+        content, i = _read_raw_group(tokens, i)
+        return "<mi>%s</mi>" % _esc(content), i
+    if cmd in (r"\text", r"\mathrm", r"\textit", r"\mathit", r"\mathbf"):
+        content, i = _read_raw_group(tokens, i)
+        return "<mtext>%s</mtext>" % _esc(content), i
+    if cmd == r"\underline":
+        inner, i = _parse_atom(tokens, i, stops)
+        return ('<munder accentunder="true"><mrow>%s</mrow><mo>&#8213;</mo>'
+                '</munder>' % inner), i
+    if cmd in _CMD_MO:
+        return "<mo>%s</mo>" % _CMD_MO[cmd], i
+    if cmd in _CMD_MI:
+        return "<mi>%s</mi>" % _CMD_MI[cmd], i
+    if cmd in _CMD_SPACE:
+        return '<mspace width="%s"></mspace>' % _CMD_SPACE[cmd], i
+    if cmd in _CMD_IGNORE:
+        return "", i
+    if cmd == r"\resizebox":
+        # \resizebox{width}{height}{content}: a graphicx sizing wrapper with no MathML
+        # analogue -- discard the two size args and typeset only the content (Plan 34:
+        # if render_latex starts wrapping wide matrices in \resizebox, MathML unwraps it).
+        _, i = _read_raw_group(tokens, i)
+        _, i = _read_raw_group(tokens, i)
+        return _parse_atom(tokens, i, stops)
+    # Outside the covered grammar: raise so `_math` routes the WHOLE run to the
+    # <mtext>-of-escaped-source fallback -- NEVER a backslash-stripped command name
+    # typeset as if it were math (the old `\frac`->"frac" leak).
+    raise _UnknownTeX(cmd)
+
+
+def _parse_atom(tokens, i, stops):
+    i = _skip_ws(tokens, i)
+    if i >= len(tokens):
+        return "", i
+    t = tokens[i]
+    if t == "{":
+        inner, i = _parse_seq(tokens, i + 1, {"}"})
+        if i < len(tokens) and tokens[i] == "}":
+            i += 1
+        return "<mrow>%s</mrow>" % inner, i
+    if t.startswith(r"\begin{"):
+        env = t[len(r"\begin{"):-1]
+        if env not in _MATRIX_ENVS:
+            raise _UnknownTeX(t)                  # honest fallback for an unknown env
+        i += 1
+        if env == "array":
+            _, i = _read_raw_group(tokens, i)     # consume the {colspec} argument
+        table, i = _parse_matrix(tokens, i, r"\end{%s}" % env)
+        delim = _MATRIX_DELIMS.get(env)
+        if delim:
+            close = "<mo>%s</mo>" % delim[1] if delim[1] else ""
+            return "<mrow><mo>%s</mo>%s%s</mrow>" % (delim[0], table, close), i
+        return table, i                          # matrix/smallmatrix: no delimiters
+    if t.startswith("\\"):
+        return _parse_command(tokens, i, stops)
+    if t[:1].isalpha():
+        return "<mi>%s</mi>" % _esc(t), i + 1
+    if t[:1].isdigit():
+        return "<mn>%s</mn>" % _esc(t), i + 1
+    return _symbol_atom(t), i + 1
+
+
+def _parse_element(tokens, i, stops):
+    """One atom plus any trailing ``_``/``^`` scripts, as msub/msup/msubsup."""
+    base, i = _parse_atom(tokens, i, stops)
+    sub = sup = None
+    while True:
+        i = _skip_ws(tokens, i)
+        if i < len(tokens) and tokens[i] == "_":
+            sub, i = _parse_atom(tokens, i + 1, stops)
+        elif i < len(tokens) and tokens[i] == "^":
+            sup, i = _parse_atom(tokens, i + 1, stops)
+        else:
+            break
+    if sub is not None and sup is not None:
+        return "<msubsup>%s%s%s</msubsup>" % (base, sub, sup), i
+    if sub is not None:
+        return "<msub>%s%s</msub>" % (base, sub), i
+    if sup is not None:
+        return "<msup>%s%s</msup>" % (base, sup), i
+    return base, i
+
+
+def _parse_seq(tokens, i, stops):
+    parts = []
+    while i < len(tokens):
+        i = _skip_ws(tokens, i)
+        if i >= len(tokens) or tokens[i] in stops:
+            break
+        node, i = _parse_element(tokens, i, stops)
+        parts.append(node)
+    return "".join(parts), i
+
+
+def _tex_to_mathml_body(expr):
+    tokens = _TOK.findall(expr)
+    body, _ = _parse_seq(tokens, 0, frozenset())
+    return body
 
 
 def _math(expr):
-    """Show the TeX SOURCE as text (no MathJax); escape HTML metachars only."""
-    return "<pre><code>%s</code></pre>" % _esc(expr)
+    """A display equation: typeset presentation MathML with the LaTeX source kept
+    verbatim in an x-tex ``<annotation>`` (self-contained, no JavaScript). On any
+    conversion surprise, fall back to ``<mtext>`` of the escaped source so the
+    document stays well-formed and the source is still readable."""
+    try:
+        pres = _tex_to_mathml_body(expr) or ("<mtext>%s</mtext>" % _esc(expr))
+    except Exception:
+        pres = "<mtext>%s</mtext>" % _esc(expr)
+    return ('<div class="ql-eq"><math display="block"><semantics><mrow>%s</mrow>'
+            '<annotation encoding="application/x-tex">%s</annotation>'
+            '</semantics></math></div>' % (pres, _esc(expr)))
 
 
 def _pi_section_html(objects, note):
@@ -52,45 +345,89 @@ def _pi_section_html(objects, note):
     return out
 
 
+def _ext_degree_html(e):
+    """One Ext/Tor degree with the full rank arithmetic spelled out, op-aware -- the
+    HTML mirror of ``render_latex._ext_degree_latex`` (Plan 34 MAJOR-2). For Ext:
+    ``\\delta^n``, ``dim Hom``, ``Ext^n`` (superscript). For Tor: ``d_{n+1}``, tensor
+    dimension, ``Tor_n`` (subscript). The dimension count ``space - rank - rank =
+    result`` is rendered too, so the no-toolchain HTML surface matches the PDF."""
+    if e.op == "Tor":
+        # homology: Tor_n = ker d_n / im d_{n+1}; the SHOWN matrix is d_{n+1}
+        # (the map INTO degree n, rank_here); the outgoing d_n has rank_prev.
+        shown, other = "d_{%d}" % (e.degree + 1), "d_{%d}" % e.degree
+        space_word = r"\dim(Q_{%d}\otimes_A N)" % e.degree
+        quotient = r"\ker d_{%d}/\operatorname{im}d_{%d}" % (e.degree, e.degree + 1)
+        arith = "%d - %d - %d" % (e.space_dim, e.rank_prev, e.rank_here)
+        label = r"\operatorname{Tor}_{%d}(M,N)" % e.degree
+    else:  # Ext (cohomology): Ext^n = ker delta^n / im delta^{n-1}
+        shown, other = r"\delta^{%d}" % e.degree, r"\delta^{%d}" % (e.degree - 1)
+        space_word = r"\dim\operatorname{Hom}(Q_{%d},N)" % e.degree
+        quotient = r"\ker\delta^{%d}/\operatorname{im}\delta^{%d}" % (e.degree, e.degree - 1)
+        arith = "%d - %d - %d" % (e.space_dim, e.rank_here, e.rank_prev)
+        label = r"\operatorname{Ext}^{%d}(M,N)" % e.degree
+    return [
+        _math(r"%s: %s = %d,\quad \operatorname{rank}%s = %d,\quad "
+              r"\operatorname{rank}%s = %d"
+              % (label, space_word, e.space_dim, shown, e.rank_here, other, e.rank_prev)),
+        _math(r"%s = %s" % (shown, _pmatrix(e))),
+        _math(r"%s = %s,\qquad \dim = %s = %d"
+              % (label, quotient, arith, e.result_dim)),
+    ]
+
+
 def _module_steps_html(events):
     mods = [e for e in events
             if isinstance(e, (ModuleTerm, ModuleDifferential, ExtDegree, StepNote))]
     if not mods:
         return []
     out = ["<h2>Worked module steps</h2>", "<p><i>%s</i></p>" % _esc(ELISION_PREAMBLE)]
+    step_no = 0
     for e in mods:
         if isinstance(e, StepNote):
-            out.append("<p>%s%s</p>" % (
-                _esc(e.text),
-                "<br><i>%s</i>" % _esc(e.detail) if e.detail else ""))
+            if getattr(e, "heading", False):
+                # A numbered worked step (homework style): the HTML mirror of the LaTeX
+                # renderer's run-in ``\paragraph{Step N. ...}`` (Plan 34 MAJOR-2).
+                step_no += 1
+                out.append("<p><b>Step %d. %s</b>%s</p>" % (
+                    step_no, _esc(e.text),
+                    " " + _esc(e.detail) if e.detail else ""))
+            else:
+                out.append("<p>%s%s</p>" % (
+                    _esc(e.text),
+                    "<br><i>%s</i>" % _esc(e.detail) if e.detail else ""))
         elif isinstance(e, ModuleTerm):
             what = "Q_{%d}" % e.degree if e.sym == "P" else "E^{%d}" % e.degree
             out.append(_math(r"%s = %s \qquad \dim = %d"
                              % (what, oplus_tex(e.summands, e.sym), e.dim)))
         elif isinstance(e, ModuleDifferential):
-            cod = "M" if e.cod_is_module else oplus_tex(e.cod_summands, e.sym)
+            name = getattr(e, "mod_name", "M") or "M"
+            dom = name if getattr(e, "dom_is_module", False) \
+                else oplus_tex(e.dom_summands, e.sym)
+            cod = name if e.cod_is_module else oplus_tex(e.cod_summands, e.sym)
             out.append(_math(r"%s : %s \to %s \qquad %s = %s"
-                             % (e.symbol, oplus_tex(e.dom_summands, e.sym), cod,
-                                e.symbol, _pmatrix(e))))
+                             % (e.symbol, dom, cod, e.symbol, _pmatrix(e))))
         elif isinstance(e, ExtDegree):
-            out.append("<p>%s<sup>%d</sup>: dim Hom = %d, rank = %d (prev %d)</p>"
-                       % (_esc(e.op), e.degree, e.space_dim, e.rank_here, e.rank_prev))
-            out.append(_math(r"\delta^{%d} = %s \qquad %s^{%d} = %d"
-                             % (e.degree, _pmatrix(e), e.op, e.degree, e.result_dim)))
+            out.extend(_ext_degree_html(e))
     dims, op = ext_result_dims(events)
     if dims:
+        sep = "_" if op == "Tor" else "^"
         out.append("<h2>Result</h2>" + _math(",\\quad ".join(
-            r"%s^{%d} = %d" % (op, i, d) for i, d in enumerate(dims))))
+            r"\operatorname{%s}%s{%d} = %d" % (op, sep, i, d)
+            for i, d in enumerate(dims))))
     return out
 
 
 def render_html(events, title="", references=(), algebra=None):
     events = list(events)
-    body = ["<!doctype html><html><head><meta charset='utf-8'>", _STYLE,
+    body = ["<!doctype html><html><head><meta charset='utf-8'>",
+            "<meta name='viewport' content='width=device-width, initial-scale=1'>",
+            _STYLE,
             "<title>Worked steps: %s</title></head><body>" % _esc(title),
             "<h1>Worked steps: %s</h1>" % _esc(title),
-            "<p><i>Math is shown as TeX source (no JavaScript); compile the PDF with "
-            "pdflatex/tectonic for typeset output.</i></p>"]
+            "<p class='ql-hint'>This report is print-ready. Use your browser's "
+            "<b>Print &rarr; Save as PDF</b> (or the app's Print button) to export "
+            "a PDF. Math is typeset (MathML); the LaTeX source is embedded for "
+            "copy/paste.</p>"]
     for e in events:
         if isinstance(e, Dispatch):
             body.append("<p><b>Chosen resolution:</b> %s<br><i>%s</i><br>"

@@ -1,7 +1,7 @@
 """The structure-constant Algebra: quiverlab's internal currency (spec §5).
 `T[i][j]` is the coordinate vector of b_i * b_j. 'Unit-adapted' means b_0 = 1_A
 (hanlab's convention), which the bar complex requires."""
-from quiverlab.errors import QuiverlabError
+from quiverlab.errors import DepthLimitError, QuiverlabError
 from quiverlab.fields.linalg import rank, solve
 
 
@@ -186,11 +186,34 @@ class Algebra:
     def _route_to_cs(self, engine, auto_cs):
         """Explicit engine='cs' always routes to CS; engine='auto' routes ONLY when the
         caller opts in with auto_cs=True AND the algebra is non-monomial admissible.
-        Default engine='auto' (auto_cs=False) can never reach CS — the shipped dispatch
-        is UNCHANGED (Pillar-4: no silent 'auto' redefinition)."""
+        Default engine='auto' (auto_cs=False) reaches CS in exactly one further way:
+        the depth FALLBACK (see _cs_depth_fallback) at the point where bar/fast would
+        raise DepthLimitError — the Marco-2026-07-26 amendment to Pillar-4 (recorded
+        in the dispatch trace, in-window results byte-unchanged)."""
         if engine == "cs":
             return True
         return engine == "auto" and auto_cs and self._auto_cs_routes()
+
+
+    def _cs_depth_fallback(self, side, rec, top, max_cells, cause):
+        """The Marco-2026-07-26 dispatch amendment: engine='auto' no longer DIES at
+        the bar/fast depth wall when the algebra carries a quiver presentation -- it
+        reroutes to the Chouhy-Solotar engine (recorded in the dispatch trace, never
+        silent; every in-window result is byte-unchanged because the fallback fires
+        only where auto previously raised DepthLimitError). Presentation-less
+        algebras still refuse honestly (CS needs the presentation)."""
+        from quiverlab.trace.events import Dispatch
+        if rec is not None:
+            rec.append(Dispatch(
+                route="chouhy-solotar",
+                reason="the %s exceeded max_cells at this depth; auto reroutes to the "
+                       "Chouhy-Solotar resolution over the admissible presentation "
+                       "(exact, certified per instance)" % cause,
+                n_relations=len(self.relations or ())))
+        from quiverlab.resolutions_cs.homology import (cs_cohomology_dims,
+                                                       cs_homology_dims)
+        fn = cs_cohomology_dims if side == "coh" else cs_homology_dims
+        return fn(self, top, max_cells=max_cells, trace=rec)
 
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
                               auto_cs=False, verbose=None, trace=None):
@@ -198,7 +221,10 @@ class Algebra:
         bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise),
         'cs' (Chouhy-Solotar, any admissible presentation over any field). Set
         auto_cs=True to let engine='auto' route non-monomial admissible algebras to CS
-        (the default engine='auto' behaviour is unchanged). verbose: per-call override
+        up front. Default 'auto' additionally FALLS BACK to CS at the exact depth
+        where the bar/fast route would raise DepthLimitError, for quiver-presented
+        algebras (recorded in the dispatch trace; in-window results byte-unchanged;
+        presentation-less algebras still refuse). verbose: per-call override
         of quiverlab.verbose (None defers to it); when on, a recorder captures the
         worked steps. trace: an explicit event sink (list or Trace) the engines fill
         with resolution/rank/dispatch events; passing it is programmatic and does not
@@ -229,16 +255,29 @@ class Algebra:
                     route="hanlab fast GF(p) rank",
                     reason="domain is a prime field; the exact mod-p rank engine applies",
                     n_relations=len(self.relations or ())))
-            dims = engine_cohomology_dims(self, top, max_cells=max_cells)   # plain list[int]
-            table = HHTable(dims, "HH^", repr(self).splitlines()[0],
-                            engine="hanlab engine (F_p fast rank)")         # WRAP the list
+            try:
+                dims = engine_cohomology_dims(self, top, max_cells=max_cells)  # plain list[int]
+                table = HHTable(dims, "HH^", repr(self).splitlines()[0],
+                                engine="hanlab engine (F_p fast rank)")     # WRAP the list
+            except DepthLimitError:
+                if engine != "auto" or self.quiver is None:
+                    raise
+                table = self._cs_depth_fallback("coh", rec, top, max_cells,
+                                                "fast GF(p) bar basis")
         else:
             if rec is not None:
                 rec.append(Dispatch(
                     route="normalized bar complex",
                     reason="domain is not a prime field; the exact bar oracle is used",
                     n_relations=len(self.relations or ())))
-            table = hochschild_cohomology_dims(self, top, max_cells=max_cells, trace=rec)
+            try:
+                table = hochschild_cohomology_dims(self, top, max_cells=max_cells,
+                                                   trace=rec)
+            except DepthLimitError:
+                if engine != "auto" or self.quiver is None:
+                    raise
+                table = self._cs_depth_fallback("coh", rec, top, max_cells,
+                                                "bar oracle")
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
         if want and trace is None and rec is not None:
             from quiverlab.trace.provenance import references_for, resolve_references
@@ -279,16 +318,29 @@ class Algebra:
                     route="hanlab fast GF(p) rank",
                     reason="domain is a prime field; the exact mod-p rank engine applies",
                     n_relations=len(self.relations or ())))
-            dims = engine_homology_dims(self, top, max_cells=max_cells)   # plain list[int]
-            table = HHTable(dims, "HH_", repr(self).splitlines()[0],
-                            engine="hanlab engine (F_p fast rank)")       # WRAP the list
+            try:
+                dims = engine_homology_dims(self, top, max_cells=max_cells)  # plain list[int]
+                table = HHTable(dims, "HH_", repr(self).splitlines()[0],
+                                engine="hanlab engine (F_p fast rank)")   # WRAP the list
+            except DepthLimitError:
+                if engine != "auto" or self.quiver is None:
+                    raise
+                table = self._cs_depth_fallback("hom", rec, top, max_cells,
+                                                "fast GF(p) bar basis")
         else:
             if rec is not None:
                 rec.append(Dispatch(
                     route="normalized bar complex",
                     reason="domain is not a prime field; the exact bar oracle is used",
                     n_relations=len(self.relations or ())))
-            table = hochschild_homology_dims(self, top, max_cells=max_cells, trace=rec)
+            try:
+                table = hochschild_homology_dims(self, top, max_cells=max_cells,
+                                                 trace=rec)
+            except DepthLimitError:
+                if engine != "auto" or self.quiver is None:
+                    raise
+                table = self._cs_depth_fallback("hom", rec, top, max_cells,
+                                                "bar oracle")
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
         if want and trace is None and rec is not None:
             from quiverlab.trace.provenance import references_for, resolve_references

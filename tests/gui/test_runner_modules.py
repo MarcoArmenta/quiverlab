@@ -38,8 +38,12 @@ def test_module_goldens(runner):
     assert dv["dimvec"] == {"1": 2} and dv["dim"] == 2 and dv["side"] == "right"
     assert dv["latex"] and len(dv["citations"][0]) == 2       # [key, formatted]
     rts = _one(runner, "rad_top_soc")["block"]
-    assert rts["radical"]["dimvec"] == {"1": 1}
-    assert rts["socle"]["dimvec"] == {"1": 1}
+    # Plan 34 (Marco): rad/top/soc are FULL representations -- dim VECTOR (`dims`)
+    # + exact per-arrow matrices (`maps`); no redundant total-dim field.
+    assert rts["radical"]["dims"] == {"1": 1}
+    assert rts["socle"]["dims"] == {"1": 1}
+    assert rts["radical"]["maps"] == {"x": [[0]]}
+    assert "dim" not in rts["radical"] and "dimvec" not in rts["radical"]
     assert _one(runner, "tau")["block"]["dimvec"] == {"1": 2}
     assert _one(runner, "tau_minus")["block"]["dimvec"] == {"1": 2}
     pr = _one(runner, "projective_resolution:0..3")["block"]

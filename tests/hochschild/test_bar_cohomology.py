@@ -44,8 +44,10 @@ def test_hereditary_kA2():
 def test_guard_fails_loudly():
     Q = Quiver(vertices=[1], arrows={"x": (1, 1)})
     A = Q.algebra(relations=["x^4"], field=GF(3))
+    # engine="fast" explicit: default auto now falls back to CS at this wall
+    # (the Marco-2026-07-26 dispatch amendment); the guard itself must stay loud.
     with pytest.raises(DepthLimitError):
-        A.hochschild_cohomology(30, max_cells=1000)
+        A.hochschild_cohomology(30, max_cells=1000, engine="fast")
 
 
 def test_repr_is_a_table():

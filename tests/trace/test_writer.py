@@ -46,7 +46,11 @@ def test_html_is_self_contained_no_js_tex_source():
     assert "onload=" not in html.lower()
     import re as _re
     assert not _re.search(r"\son[a-z]+\s*=", html.lower())
-    # math is shown as readable TeX source (not typeset)
+    # math is TYPESET as MathML, with the LaTeX source preserved verbatim in an
+    # x-tex <annotation> (self-contained, no JS) -- the display renders/prints
+    # typeset AND the source stays available for copy/paste (Plan 34).
+    assert "<math" in html and "<mtable>" in html          # typeset display
+    assert 'encoding="application/x-tex"' in html           # embedded source
     assert r"\begin{pmatrix}" in html and r"\operatorname{rank}" in html
     assert "HH" in html and "Refkey2020" in html
 

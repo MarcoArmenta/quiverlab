@@ -12,7 +12,7 @@
   var S = { vertices: [], arrows: [], nextId: 1, selected: null, dragFrom: null,
             dragMoved: false, dragOrigin: null, pressOnEmpty: false,
             worker: null, engineReady: false, manifest: null, busy: false,
-            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "", traceTex: "" },
+            artifacts: { tikz: "", snippet: "", bundle: "", traceHtml: "", traceTex: "", traceJson: "" },
             // Plan 26 no-code module panel: dims/maps hold the explicit module the
             // user types (matrix entries are exact strings); side/vertex track the
             // toggle + builtin pick-list. All read back in buildRequest().
@@ -117,8 +117,10 @@
     '<div class="qlgui-row">' +
     '  <button id="qlgui-compute" type="button" disabled>Compute</button>' +
     '  <button id="qlgui-cancel" class="qlgui-secondary" type="button" disabled>Cancel</button>' +
-    '  <button id="qlgui-print" class="qlgui-secondary" type="button" disabled>Print report (PDF)</button>' +
-    '  <button id="qlgui-worked-tex" class="qlgui-secondary" type="button" disabled>Worked steps (TeX)</button>' +
+    '  <button id="qlgui-print" class="qlgui-secondary" type="button" disabled title="Open the typeset report and print it to PDF from your browser">Print report</button>' +
+    '  <button id="qlgui-report-html" class="qlgui-secondary" type="button" disabled title="Download the print-ready HTML report (print to PDF from your browser)">Report (HTML)</button>' +
+    '  <button id="qlgui-worked-tex" class="qlgui-secondary" type="button" disabled title="Download the LaTeX source and compile it yourself">Report (TeX)</button>' +
+    '  <button id="qlgui-report-json" class="qlgui-secondary" type="button" disabled title="Download the complete worked-steps event stream (exact, machine-readable JSON)">Report data (JSON)</button>' +
     '  <button id="qlgui-tikz" class="qlgui-secondary" type="button" disabled>TikZ</button>' +
     '  <button id="qlgui-json" class="qlgui-secondary" type="button" disabled>JSON</button>' +
     '  <button id="qlgui-snippet" class="qlgui-secondary" type="button" disabled>Copy Python</button>' +
@@ -130,7 +132,7 @@
   ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
-   "cancel", "print", "worked-tex", "tikz", "json", "snippet", "config", "results", "eta",
+   "cancel", "print", "report-html", "worked-tex", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
    "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
@@ -832,8 +834,10 @@
     } else if (m.type === "trace") {
       S.artifacts.traceHtml = m.html;
       S.artifacts.traceTex = m.tex || "";
-      el.print.disabled = !m.html;
+      S.artifacts.traceJson = m.json || "";
+      el.print.disabled = el["report-html"].disabled = !m.html;  // typeset MathML report
       el["worked-tex"].disabled = !S.artifacts.traceTex;   // .tex download (Plan 30 C1)
+      el["report-json"].disabled = !S.artifacts.traceJson; // .json machine record (Plan 34)
     } else if (m.type === "artifacts") {
       S.artifacts.tikz = m.tikz; S.artifacts.snippet = m.snippet;
       S.artifacts.bundle = m.bundle;
@@ -877,18 +881,79 @@
     });
     return h("table", {}, head, row);
   }
-  function dvTable(pairs) {                 // label | dim | dim vector
+  // Plan 34 (Marco): rad/top/soc are shown as FULL representations -- the dim
+  // VECTOR per object (the redundant total-dim column is gone) PLUS each arrow's
+  // exact action matrix, typeset like the other matrix blocks.
+
+  // Matrices are the COMPLETE human record (Plan 34, Marco): shown IN FULL, wrapped in
+  // a horizontally-scrollable container (mathScroll) so the page body never scrolls
+  // sideways -- NOT elided at a small size. MAT_BACKSTOP_CELLS is only a SANITY cap
+  // mirroring the trace recorder's record-time memory backstop: a pathological/corrupt
+  // payload past it is stated by shape instead of hanging the browser. One constant per
+  // file (app.js has the same one, same comment).
+  var MAT_BACKSTOP_CELLS = 250000;
+  function matTooBig(mat) {
+    var rows = (mat || []).length, cols = rows ? (mat[0] || []).length : 0;
+    return rows * cols > MAT_BACKSTOP_CELLS;
+  }
+  function matLatex(mat) {                  // [[..],[..]] -> \begin{pmatrix}..\end{pmatrix}
+    mat = mat || [];
+    if (matTooBig(mat)) {                   // sanity backstop only (never normal use)
+      var c = mat.length ? (mat[0] || []).length : 0;
+      return "\\text{[" + mat.length + "\\times" + c + " matrix beyond the display backstop]}";
+    }
+    var body = mat.map(function (row) {
+      return row.map(String).join(" & ");
+    }).join(" \\\\ ");
+    return "\\begin{pmatrix} " + body + " \\end{pmatrix}";
+  }
+  // A matrix wrapped in a horizontally-scrollable inline box (Plan 34, Marco): the
+  // full matrix scrolls INSIDE this box, so a wide differential never makes the page
+  // body scroll sideways.
+  function mathScroll(latex) {
+    var box = h("span");
+    box.style.display = "inline-block";
+    box.style.maxWidth = "100%";
+    box.style.overflowX = "auto";
+    box.style.verticalAlign = "middle";
+    box.appendChild(h("span", { "class": "arithmatex", text: "\\(" + latex + "\\)" }));
+    return box;
+  }
+  // A pre-Plan-34 cached rad/top/soc lacked the per-view {dims, maps} (MINOR-6); an
+  // extension-field module carries non-re-enterable entries (MAJOR-4). Pure predicates.
+  function radTopSocStale(block) {
+    return [block.radical, block.top, block.socle].some(function (v) {
+      return !v || v.dims == null || v.maps == null;
+    });
+  }
+  function radTopSocDisplayOnly(block) {
+    return [block.radical, block.top, block.socle].some(function (v) {
+      return v && v.display_only === true;
+    });
+  }
+  function repDimTable(pairs) {             // label | dim vector (NO total-dim column)
     var head = h("tr");
-    ["", "dim", "dim vector"].forEach(function (t) { head.appendChild(h("th", { text: t })); });
+    ["", "dim vector"].forEach(function (t) { head.appendChild(h("th", { text: t })); });
     var tbl = h("table", {}, head);
     pairs.forEach(function (p) {
       var r = h("tr");
       r.appendChild(h("th", { text: p[0] }));
-      r.appendChild(h("td", { text: String(p[1].dim) }));
-      r.appendChild(h("td", { text: dvText(p[1].dimvec) }));
+      r.appendChild(h("td", { text: dvText(p[1].dims) }));
       tbl.appendChild(r);
     });
     return tbl;
+  }
+  function appendRepMaps(div, label, view) {   // one arrow-matrix line per arrow
+    var maps = (view && view.maps) || {}, arrows = Object.keys(maps);
+    if (!arrows.length) {
+      div.appendChild(h("p", { "class": "qlgui-cites",
+        text: label + ": every arrow acts as zero" }));
+      return;
+    }
+    arrows.forEach(function (a) {
+      div.appendChild(h("p", {}, document.createTextNode(label + ", arrow " + a + ": "),
+        mathScroll(matLatex(maps[a]))));   // full matrix, horizontally-scrollable box
+    });
   }
   // Plan 30 (Marco #3): term | ⊕-decomposition. The "# summands" and dim-vector
   // columns are gone from the RENDERING; the raw `betti`/`terms` fields stay in the
@@ -978,7 +1043,20 @@
       if (name === "tau" || name === "tau_minus") appendInputCert(div, b);
     } else if (name === "rad_top_soc") {
       div.appendChild(h("p", { text: "radical / top / socle:" }));
-      div.appendChild(dvTable([["rad", b.radical], ["top", b.top], ["soc", b.socle]]));
+      if (radTopSocStale(b)) {              // MINOR-6: honest "recompute", never a fake zero
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "this result was computed by an older version — recompute to see the "
+                + "full representation." }));
+      } else {
+        if (radTopSocDisplayOnly(b)) {      // MAJOR-4: extension-field entries not re-enterable
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: "display only — entries lie outside the integer/fraction input grammar "
+                  + "(e.g. GF(p^n) elements) and cannot be re-entered in the module panel." }));
+        }
+        var trio = [["rad M", b.radical], ["top M", b.top], ["soc M", b.socle]];
+        div.appendChild(repDimTable(trio));
+        trio.forEach(function (p) { appendRepMaps(div, p[0], p[1]); });
+      }
     } else if (name === "decompose") {
       div.appendChild(h("p", { text: "Krull–Schmidt decomposition — " + b.iso_classes +
         " indecomposable summand(s):" }));
@@ -1013,7 +1091,7 @@
     el.results.innerHTML = "";
     S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "", traceTex: "" };
     el.print.disabled = el.tikz.disabled = el.json.disabled = el.snippet.disabled = true;
-    el["worked-tex"].disabled = true;
+    el["report-html"].disabled = el["worked-tex"].disabled = el["report-json"].disabled = true;
     S.eta = null;
     setBusy(true);
     setStatus("computing…");
@@ -1059,12 +1137,27 @@
     URL.revokeObjectURL(a.href);
   }
   el.print.addEventListener("click", function () {
+    // The report is self-contained typeset MathML (render_html) -- open it in a
+    // new tab and print it; the browser's "Save as PDF" produces the PDF. MathML
+    // typesets during layout (no async), so printing on load is safe.
     var url = URL.createObjectURL(new Blob([S.artifacts.traceHtml], { type: "text/html" }));
     var w = window.open(url, "_blank");
-    if (w) w.addEventListener("load", function () { w.print(); });
+    if (w) {
+      w.addEventListener("load", function () { w.print(); });
+    } else {
+      // MINOR-7: window.open returns null when the browser blocks the popup -- say so
+      // visibly (the existing notice channel) instead of silently doing nothing.
+      setStatus("popup blocked — allow popups to print, or use “Report (HTML)” to download it", "err");
+    }
   });
-  el["worked-tex"].addEventListener("click", function () {   // Plan 30 C1: the .tex bundle
+  el["report-html"].addEventListener("click", function () {  // print-ready typeset report
+    download("report.html", S.artifacts.traceHtml, "text/html");
+  });
+  el["worked-tex"].addEventListener("click", function () {   // Plan 30 C1: the .tex source
     download("worked-steps.tex", S.artifacts.traceTex, "text/x-tex");
+  });
+  el["report-json"].addEventListener("click", function () {  // Plan 34: the JSON machine record
+    download("trace.json", S.artifacts.traceJson, "application/json");
   });
   el.tikz.addEventListener("click", function () {
     download("quiver.tex", S.artifacts.tikz, "text/x-tex");

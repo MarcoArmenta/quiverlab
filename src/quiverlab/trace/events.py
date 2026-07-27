@@ -74,7 +74,14 @@ class ModuleDifferential:
     vertex lists (with repetition); `cod_is_module` is True for the augmentation
     d_0: Q_0 -> M (whose target is the module M itself, not a projective term).
     `sym` is "P"/"I", `kind` "projective"/"injective". `matrix` is list[list[str]]
-    or None (elided). `symbol` is the differential's TeX name (e.g. "d_1")."""
+    or None (elided). `symbol` is the differential's TeX name (e.g. "d_1").
+
+    `dom_is_module` / `cod_is_module` (Plan 34 adds the domain flag) render that
+    endpoint as the module ``M`` itself rather than a direct sum of summands -- used for
+    the self-maps of a module (an arrow action ``rho_M(a): M -> M`` or a splitting
+    endomorphism), keeping the map declaration narrow. Both default False (byte-stable);
+    the text/HTML renderers read only the summand lists, so a flagged endpoint falls back
+    to its ``*_summands`` rendering there (still honest: M = (+)_v M e_v)."""
     degree: int
     kind: str
     sym: str
@@ -85,6 +92,8 @@ class ModuleDifferential:
     ncols: int
     field: str
     cod_is_module: bool = False
+    dom_is_module: bool = False
+    mod_name: str = "M"
     matrix: object = None
     elided: bool = False
     note: str = ""
@@ -114,13 +123,29 @@ class ExtDegree:
 class StepNote:
     """A free-form narrative worked-step line (a projective-cover generator choice,
     the D/Tr steps of an AR translate, ...). `text` is the headline; `detail` is an
-    optional indented continuation. Rendered verbatim (escaped per format)."""
+    optional indented continuation. Rendered verbatim (escaped per format).
+
+    `heading` (Plan 34) marks a line that OPENS a new worked step: the LaTeX renderer
+    turns it into a numbered ``\\paragraph{Step N. ...}`` run-in heading (homework
+    style); the text/HTML renderers, which read only `text`/`detail`, show it as a
+    plain paragraph (the flag defaults False, so every pre-Plan-34 StepNote renders
+    exactly as before -- byte-stable)."""
     text: str
     detail: str = ""
+    heading: bool = False
 
 
 __all__ = [
     "Dispatch", "ReductionStep", "AmbiguityEvent", "ResolutionTerm",
     "DifferentialEvent", "LiftStep", "RankStep",
     "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote",
+    "ALL_EVENTS",
 ]
+
+# The complete tuple of trace event types.  Renderers validate their input
+# against this and refuse loudly on anything else -- a foreign object in an
+# event stream is a caller bug (e.g. an unpacked (events, result) tuple) and
+# silently skipping it would drop worked steps from the report.
+ALL_EVENTS = (Dispatch, ReductionStep, AmbiguityEvent, ResolutionTerm,
+              DifferentialEvent, LiftStep, RankStep,
+              ModuleTerm, ModuleDifferential, ExtDegree, StepNote)

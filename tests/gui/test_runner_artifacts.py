@@ -31,6 +31,31 @@ def test_trace_html_empty_without_hh(runner):
     assert runner.trace_html() == ""
 
 
+def test_trace_json_is_the_machine_record(runner):
+    """Plan 34: trace_json() returns the schema-versioned event stream, and its
+    events are IDENTICAL to a direct render_json of the same computation ("the
+    writer's" bytes)."""
+    _run_all(runner, KRONECKER_CC)
+    got = json.loads(runner.trace_json())
+    assert got["quiverlab_trace_schema"] == 1 and got["library_version"]
+    assert got["events"]
+
+    from quiverlab import Quiver, CC
+    from quiverlab.trace.render_json import render_json
+    A = Quiver(vertices=[1, 2], arrows={"a": (1, 2), "b": (1, 2)}).algebra(
+        relations=[], field=CC)
+    tr = []
+    A.hochschild_cohomology(2, verbose=False, trace=tr)
+    want = json.loads(render_json(list(tr)))
+    assert got["events"] == want["events"]     # same computation -> same event stream
+
+
+def test_trace_json_empty_without_hh(runner):
+    req = dict(KRONECKER_CC, compute=["cartan"])
+    _run_all(runner, req)
+    assert runner.trace_json() == ""
+
+
 def test_tikz(runner):
     _run_all(runner, KRONECKER_CC)
     assert runner.tikz().startswith(r"\begin{tikzpicture}")

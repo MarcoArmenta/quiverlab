@@ -10,10 +10,14 @@
 {% if job.status == "done" %}
   <p>{{ t("job.downloads") }}
      <a href="/download/{{ job.id }}/result.json">result.json</a>
-     {% if trace_name %}· <a href="/download/{{ job.id }}/{{ trace_name }}">{{ t("form.pdf") }}</a>{% endif %}
+     {% if has_pdf %}· <a href="/download/{{ job.id }}/trace.pdf">{{ t("job.report_pdf") }}</a>{% endif %}
+     {% if has_html_report %}· <a href="/download/{{ job.id }}/trace_steps.html">{{ t("job.report_html") }}</a>{% endif %}
      {% if has_tex %}· <a href="/download/{{ job.id }}/trace.tex">{{ t("job.tex") }}</a>{% endif %}
+     {% if has_trace_json %}· <a href="/download/{{ job.id }}/trace.json">{{ t("job.report_json") }}</a>{% endif %}
      {% if has_tikz %}· <a href="/download/{{ job.id }}/tikz.tex">TikZ</a>{% endif %}
   </p>
+  {% if pdf_missing_reason == "no_toolchain" %}<p class="pdf-note"><em>{{ t("job.pdf_none_toolchain") }}</em></p>
+  {% elif pdf_missing_reason == "compile" %}<p class="pdf-note"><em>{{ t("job.pdf_none_compile") }}</em></p>{% endif %}
   {% if version %}<p>{{ t("job.computed_with") }} <code>{{ version }}</code>{% if job.finished_at %} · {{ t("job.finished") }} {{ job.finished_at }}{% endif %}.</p>{% endif %}
   <p class="cached-note">{{ t("job.cached_note") }}</p>{# Plan 25: exact => THE answer; identical requests replay from cache #}
   {% if references %}
