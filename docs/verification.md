@@ -429,10 +429,10 @@ They overlap by design, so the union is smaller than their sum.
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 721 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 412 | two independent implementations compute the same thing and match live |
+| Cross-engine agreement | `-m oracle_crossengine` | 410 | two independent implementations compute the same thing and match live |
 | Self-certifying certificates | `-m oracle_selfcert` | 613 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 122 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1303 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1301 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-07-26 (Plan 32). The oracle markers live only on the pure-library
 `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` / `families` /

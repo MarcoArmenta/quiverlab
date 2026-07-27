@@ -64,7 +64,6 @@ def _interval(A, i, j, n):
 # --------------------------------------------------------------------------- #
 # Ext with two explicit non-builtin interior modules == library
 # --------------------------------------------------------------------------- #
-@pytest.mark.oracle_crossengine
 def test_ext_both_explicit_modules_match_library(tmp_path):
     b = _run(tmp_path, _KA5, ["ext:0..3"], _M_23, ext_target=_N_34_right)["results"]["ext"]
     A = linear_path_algebra(5, field=GF(5))
@@ -77,7 +76,6 @@ def test_ext_both_explicit_modules_match_library(tmp_path):
 # --------------------------------------------------------------------------- #
 # Tor with an explicit right module + an explicit LEFT tor_target == library
 # --------------------------------------------------------------------------- #
-@pytest.mark.oracle_crossengine
 def test_tor_explicit_left_target_matches_library(tmp_path):
     b = _run(tmp_path, _KA5, ["tor:0..3"], _M_23, tor_target=_N_34_left)["results"]["tor"]
     assert b["target"]["dimvec"] == {"1": 0, "2": 0, "3": 1, "4": 1, "5": 0}

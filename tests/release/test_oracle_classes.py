@@ -110,3 +110,24 @@ def test_union_is_bounded_by_the_parts():
     union = page[CANON[4]]
     assert union >= max(parts), (union, parts)
     assert union <= sum(parts), (union, parts)
+
+
+def test_no_oracle_markers_in_extras_gated_dirs():
+    """Oracle-class markers may live ONLY in always-collectible directories.
+    tests/{webapp,gui,hpc} collect only when their extras are installed, so a
+    marker there makes the audited class counts environment-dependent -- the
+    float-gate CI job ([dev]-only) would see different numbers than a full
+    checkout (the 2026-07-27 shakeout; same lesson as the bank-battery
+    collection guard). Those directories are contract & infrastructure by the
+    Plan-32 ruling; their cross-checks stay unmarked."""
+    import re
+    root = pathlib.Path(__file__).resolve().parent.parent
+    offenders = []
+    for d in ("webapp", "gui", "hpc"):
+        for f in (root / d).rglob("test_*.py"):
+            src = f.read_text(encoding="utf-8")
+            if re.search(r"pytest\.mark\.oracle_(literature|crossengine|selfcert)", src):
+                offenders.append(str(f.relative_to(root)))
+    assert not offenders, (
+        "oracle-class markers inside extras-gated test dirs (breaks the audited "
+        "count invariant): %s" % offenders)
