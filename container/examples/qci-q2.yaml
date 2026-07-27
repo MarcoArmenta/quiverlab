@@ -1,0 +1,55 @@
+# Nontrivial worked example for the Plan-28 container: the quantum complete
+# intersection  Lambda_q = k<x,y>/(x^2, y^2, xy + 2*yx)  (QuantumCI q=2) over
+# GF(32003) -- dim 4, non-monomial, noncommutative, self-injective but NOT
+# symmetric (q != 1), Koszul. The module block puts the unique simple S = S(1)
+# through the whole module surface; Ext^n(S,S) recovers the Koszul-dual graded
+# dimensions n+1.
+#
+# Same document runs IDENTICALLY through the container and the wheel CLI:
+#   docker run --rm -v "$PWD/container/examples:/cfg:ro" -v "$PWD/out:/out" \
+#       quiverlab:local run /cfg/qci-q2.yaml -o /out/result-container.json
+#   quiverlab-hpc run container/examples/qci-q2.yaml -o out/result-local.json
+# The result payloads are byte-identical (Plan-28 spec-core byte-stability).
+schema: 2
+algebra:
+  kind: family
+  family: QuantumCI
+  params:
+    q: 2
+    a: 2
+    b: 2
+  field:
+    kind: GF
+    p: 32003
+    n: 1
+compute:
+  - "hh_cohomology:0..8"
+  - "hh_homology:0..8"
+  - cartan
+  - coxeter_polynomial
+  - global_dimension
+  - center
+  - dimension
+  - dimension_vector
+  - rad_top_soc
+  - tau
+  - tau_minus
+  - "projective_resolution:0..6"
+  - "injective_resolution:0..6"
+  - projective_dimension
+  - injective_dimension
+  - decompose
+  - "ext:0..8"
+  - "tor:0..8"
+module:
+  builtin: {kind: simple, vertex: 1, side: right}
+ext_target:
+  builtin: {kind: simple, vertex: 1, side: right}
+tor_target:
+  builtin: {kind: simple, vertex: 1, side: left}
+artifacts:
+  pdf: false
+  tikz: true
+hpc:
+  time_limit_s: 3600
+  max_mem_bytes: 4294967296

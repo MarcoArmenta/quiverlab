@@ -45,6 +45,10 @@ LABEL org.opencontainers.image.title="quiverlab" \
 # Fully offline, reproducible, headless runtime.
 #   QUIVERLAB_SEED_CACHE-> build->runtime handoff path for the seeded Plan-25 cache
 #                          DB; the `gui` verb copies it into the data dir on first run.
+#   PYTHONPATH=/app     -> `import webapp` for the `gui` verb: webapp/ is not
+#                          packaged into the wheel, and a console script does not
+#                          put the WORKDIR on sys.path, so without this the gui
+#                          verb dies with "No module named 'webapp'".
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     MPLBACKEND=Agg \
@@ -53,6 +57,7 @@ ENV LANG=C.UTF-8 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     NUMBA_NUM_THREADS=2 \
     OMP_NUM_THREADS=2 \
+    PYTHONPATH=/app \
     QUIVERLAB_IMAGE_VERSION=${QUIVERLAB_VERSION} \
     QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
 

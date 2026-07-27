@@ -48,6 +48,9 @@ From: python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033
     export LANG=C.UTF-8 LC_ALL=C.UTF-8
     export MPLBACKEND=Agg PYTHONUNBUFFERED=1
     export NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2
+    # `import webapp` for the gui verb (webapp/ is not in the wheel; console
+    # scripts do not put the source tree on sys.path). Mirrors the Dockerfile ENV.
+    export PYTHONPATH=/app
     export QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
 
 # Default entrypoint mirrors the Dockerfile ENTRYPOINT ["quiverlab-hpc"].
