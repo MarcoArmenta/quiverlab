@@ -1,4 +1,4 @@
-.venv/
+.venv*/
 __pycache__/
 *.egg-info/
 .superpowers/
@@ -9,3 +9,6 @@ quiverlab_traces/
 docs/tutorials/quiverlab_traces/
 paper/paper.bib
 build/
+
+# container/SMOKE.md + container/examples runbooks write artifacts here
+out/
