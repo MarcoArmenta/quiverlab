@@ -29,12 +29,13 @@ mkdir -p out && chmod 777 out
 docker run --rm -v "$PWD/container:/cfg:ro" -v "$PWD/out:/out" \
     quiverlab:local run /cfg/ci-tiny.yaml -o /out/result.json
 docker run --rm -v "$PWD/out:/out" \
-    quiverlab:local render /out/result.json -o /out/report.pdf
+    quiverlab:local render /out/result.json -o /out/report.html --format html
 
-# Assert: result envelope + a non-empty rendered PDF.
+# Assert: result envelope + a non-empty rendered HTML report (no PDF toolchain;
+# math is KaTeX/MathML, so no network is needed).
 python -c "import json; d=json.load(open('out/result.json')); print('keys:', sorted(d)); assert 'result_schema' in d"
-test -s out/report.pdf && echo "report.pdf OK ($(wc -c < out/report.pdf) bytes)"
-pdftotext out/report.pdf - | head            # tokens, no network needed (bundle pre-warmed)
+test -s out/report.html && echo "report.html OK ($(wc -c < out/report.html) bytes)"
+grep -q "quiverlab report" out/report.html && echo "report.html has rendered content"
 ```
 
 Offline GUI (the laptop app):
@@ -60,8 +61,8 @@ apptainer run quiverlab.sif selftest
 
 # tiny run + render (bind $PWD so the SIF sees your files)
 apptainer run --bind "$PWD" quiverlab.sif run container/ci-tiny.yaml -o result.json
-apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.pdf
-test -s report.pdf && echo "report.pdf OK"
+apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.html --format html
+test -s report.html && echo "report.html OK"
 
 # named app entrypoints also work:
 apptainer run --app gui quiverlab.sif           # offline GUI on :8000

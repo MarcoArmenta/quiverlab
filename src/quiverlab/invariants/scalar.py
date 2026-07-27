@@ -81,10 +81,14 @@ def complexity(A, n):
     ``linear_path_algebra(2) -> 0`` pin holds because the resolution genuinely
     terminates (2, 1, 0), not by the pre-Plan-13 silent zero-resolution bug.
 
-    CAVEAT — SILENT TRUNCATION PREFIX. A memory-truncated resolution build contributes
-    a silent prefix to the growth sequence: the build's truncation marker
-    (``truncated_at`` / the discarded fourth return value below) is NOT consulted
-    here, so a run that stopped early for memory reasons is read as if complete.
+    HONESTY GUARD — TRUNCATION REFUSED. A memory-truncated resolution build would
+    contribute a silent prefix to the growth sequence, under-reporting the complexity
+    (an early stop reads as if the resolution had genuinely terminated). The build's
+    truncation marker (``truncated_at`` / the fourth return value below) is now
+    consulted: if the minimal A^e resolution was truncated (memory or term-dimension
+    cap) short of the full degree-``n`` growth sequence, this raises ``QuiverlabError``
+    rather than certify a wrong number. Not reached in normal use -- the default caps
+    are generous -- so the non-truncated return value is byte-identical to before.
     """
     from quiverlab.engine.scan3 import complexity_of
     from quiverlab.fields.primefield import PrimeField
@@ -95,9 +99,18 @@ def complexity(A, n):
         return complexity_of(relative_betti_numbers(A, n + 1))
     from quiverlab.engine.adapter import to_engine
     from quiverlab.engine.resolutions_minimal import minimal_resolution
+    from quiverlab.errors import QuiverlabError
     eng = to_engine(A)
     p = A.domain.p
     rks, cols, _e, _trunc = minimal_resolution(eng, n, p)
+    if _trunc is not None:
+        raise QuiverlabError(
+            f"the minimal A^e resolution was truncated at degree {_trunc}: a "
+            f"memory/term-dimension budget stopped the build short of the full "
+            f"degree-{n} growth sequence, so the complexity growth sequence is "
+            f"incomplete and complexity cannot be certified",
+            hint="lower the target degree n below the truncation point, or raise the "
+                 "resolution budget (max_term_dim / max_transient_bytes)")
     # rks[k] = number of A^e generators of P_k; term k-dimension is m^2 * rks[k].
     # MINIMAL FIX vs brief: minimal_resolution returns `rks` as a dict keyed by degree,
     # so `for r in rks` iterates the KEYS (0,1,2,..) not the ranks. Iterate the rank

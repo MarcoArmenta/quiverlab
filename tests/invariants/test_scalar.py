@@ -39,3 +39,38 @@ def test_complexity_gfp():
 def test_complexity_cc_computes():
     # Plan 19: off GF(p) complexity runs on the relative-Tor Betti complex
     assert truncated_polynomial(2, field=CC).complexity(4) == 1
+
+
+def test_complexity_refuses_a_truncated_resolution(monkeypatch):
+    # Honesty guard: a memory/term-dimension-truncated minimal A^e resolution would
+    # under-report complexity (an early stop reads as a genuine termination). The build's
+    # truncation marker (4th return value) is now consulted -- a non-None marker raises
+    # QuiverlabError instead of certifying a wrong number. The default caps never
+    # truncate in normal use, so this monkeypatches the engine to simulate a truncated
+    # build (cheap + deterministic) and asserts the loud refusal.
+    from quiverlab.errors import QuiverlabError
+    import quiverlab.engine.resolutions_minimal as rm
+    A = truncated_polynomial(2, field=GF(32003))
+
+    real = rm.minimal_resolution
+
+    def _truncated(*args, **kwargs):
+        rks, cols, eng, _ = real(*args, **kwargs)
+        return rks, cols, eng, 1                 # pretend the build stopped at degree 1
+    monkeypatch.setattr(rm, "minimal_resolution", _truncated)
+    with pytest.raises(QuiverlabError, match="truncated"):
+        A.complexity(6)
+
+
+def test_complexity_untruncated_value_is_byte_identical(monkeypatch):
+    # The guard must NOT touch the normal (untruncated) return: with the marker forced
+    # to None (the untruncated case) the value equals the shipped complexity.
+    import quiverlab.engine.resolutions_minimal as rm
+    A = truncated_polynomial(2, field=GF(32003))
+    real = rm.minimal_resolution
+
+    def _untruncated(*args, **kwargs):
+        rks, cols, eng, _ = real(*args, **kwargs)
+        return rks, cols, eng, None
+    monkeypatch.setattr(rm, "minimal_resolution", _untruncated)
+    assert A.complexity(6) == 1                   # k[x]/x^2 self-injective -> complexity 1

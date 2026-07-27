@@ -205,9 +205,12 @@ def _frontier():
 
 @pytest.mark.parametrize("alg", _frontier(), ids=lambda a: a.name)
 def test_non_frobenius_detected(alg):
+    from quiverlab.errors import QuiverlabError
     assert is_frobenius(alg, P) is False
     assert frobenius_form(alg, P) is None
-    with pytest.raises(ValueError):
+    # taxonomy: the GF(p) refusal is a QuiverlabError -- same type as the QQ path
+    # (invariants.frobenius), so `except quiverlab.QuiverlabError` catches both.
+    with pytest.raises(QuiverlabError):
         nakayama_automorphism(alg, P)
 
 

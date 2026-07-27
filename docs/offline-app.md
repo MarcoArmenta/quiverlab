@@ -29,8 +29,9 @@ docker run --rm -p 8000:8000 ghcr.io/MarcoArmenta/quiverlab:latest gui
 
 Open **<http://localhost:8000>**. Draw or pick an algebra, choose a field and what
 to compute, and read exact results with rendered mathematics -- no code, no account,
-no network. Math renders from vendored KaTeX and worked-steps PDFs from the
-pre-warmed tectonic bundle, so nothing is fetched at runtime.
+no network. Math renders from vendored KaTeX, and the print-ready worked-steps HTML
+report (export to PDF from your browser) is self-contained, so nothing is fetched at
+runtime.
 
 ---
 

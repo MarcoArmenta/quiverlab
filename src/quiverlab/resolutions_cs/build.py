@@ -8,8 +8,10 @@ constants live in one field."""
 
 
 def reduction_system_of(A):
+    from quiverlab.errors import QuiverlabError
     from quiverlab.groebner import build_reduction_system
     from quiverlab.resolutions_cs._fieldshim import field_for_domain
     if A.quiver is None or A.relations is None:
-        raise ValueError("CS needs an algebra built by Quiver.algebra (quiver+relations present)")
+        raise QuiverlabError(
+            "CS needs an algebra built by Quiver.algebra (quiver+relations present)")
     return build_reduction_system(A.quiver, list(A.relations), field_for_domain(A.domain))

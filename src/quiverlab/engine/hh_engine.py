@@ -24,6 +24,8 @@ Everything is exact integer arithmetic reduced mod p.
 import numpy as np
 import itertools
 
+from quiverlab.errors import QuiverlabError
+
 
 # ----------------------------------------------------------------------
 # Exact rank over F_p (dense Gaussian elimination, vectorised per pivot)
@@ -101,11 +103,24 @@ class Algebra:
         # non-t vertex vectors stay standard basis vectors).
         self.unit_input = unit.copy()
         self.T_input = np.array(T, dtype=np.int64, copy=True)
-        # change-of-basis matrix B: identity with column t replaced by unit
+        # change-of-basis matrix B: identity with column t replaced by unit.
+        # B = I + (unit - e_t) e_t^T is a rank-1 elementary column update; since
+        # unit[t] == 1 (chosen above) its determinant is 1 + e_t^T(unit - e_t) =
+        # unit[t] = 1, so B is unimodular and its inverse is EXACT and integral by
+        # Sherman-Morrison:  Binv = I - (unit - e_t) e_t^T  (denominator 1, no
+        # fractions ever). This keeps the basis change exact -- no float linalg
+        # (spec 4.1 no-float gate). The guard below is a loud (python -O safe)
+        # unimodularity check -- a bare assert would be stripped under -O.
         B = np.eye(m, dtype=np.int64)
         B[:, t] = unit
-        Binv = np.round(np.linalg.inv(B.astype(float))).astype(np.int64)
-        assert np.array_equal(B @ Binv, np.eye(m, dtype=np.int64)), "B not unimodular"
+        e_t = np.zeros(m, dtype=np.int64)
+        e_t[t] = 1
+        Binv = np.eye(m, dtype=np.int64) - np.outer(unit - e_t, e_t)
+        if not np.array_equal(B @ Binv, np.eye(m, dtype=np.int64)):
+            raise QuiverlabError(
+                "change-of-basis B is not unimodular (need unit[t] == 1)",
+                hint="the unit vector must have a coordinate equal to 1",
+            )
         # recompute structure constants in new basis f_i = B[:,i]
         # f_i * f_j = sum_{p,q} B[p,i] B[q,j] T[p,q,:]  (old coords) -> Binv @ (...)
         Tnew = np.zeros((m, m, m), dtype=np.int64)

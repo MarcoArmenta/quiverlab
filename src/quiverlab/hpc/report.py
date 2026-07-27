@@ -1,9 +1,10 @@
-"""Plan 28 -- render a ``result.json`` into a human report (LaTeX PDF / HTML /
-plain text), reusing ``quiverlab.trace``'s LaTeX escaping + engine detection.
+"""Plan 28 -- render a ``result.json`` into a human report (HTML / plain text),
+reusing ``quiverlab.trace``'s TeX-source escaping for the math it shows.
 
-The engine ladder mirrors ``quiverlab.trace.writer``: tectonic/pdflatex on PATH
--> compile a standalone article to PDF; otherwise a self-contained no-JS HTML
-(math shown as TeX source). ``--format txt`` always works with no toolchain.
+The report is a self-contained, no-JS HTML page (math shown as TeX source) or plain
+text; ``--format txt`` and ``--format html`` always work with no toolchain, and
+``--format json`` emits the worked-steps event stream (trace.json). PDF/TeX report
+output has been removed -- ``fmt="pdf"``/``"tex"`` is refused loudly.
 
 The envelope carries ``result_schema`` (an int; absent == legacy 1). ``render``
 refuses a NEWER ``result_schema`` loudly (the CLI maps that to exit 65) and warns
@@ -12,36 +13,15 @@ from __future__ import annotations
 
 import json
 import pathlib
-import re
-import shutil
-import subprocess
-import tempfile
 
 import quiverlab as ql
 from quiverlab.hpc.spec import RESULT_SCHEMA
-from quiverlab.trace.render_latex import _tex_escape, matrix_preamble_lines
-from quiverlab.trace.writer import have_latex
-
-# The widest row (max &-count + 1) inside any pmatrix/bmatrix/matrix in a rendered TeX
-# string -- used to size \setcounter{MaxMatrixCols} and to decide whether a displayed
-# matrix must be scaled to the page (\qlmat). Plan 34: hpc reports of dim>10 modules
-# emit >10-column action matrices, which abort the compile without the raised ceiling.
-_MATRIX_ENV_RE = re.compile(
-    r"\\begin\{[pbvV]?matrix\*?\}(.*?)\\end\{[pbvV]?matrix\*?\}", re.DOTALL)
-
-
-def _tex_matrix_cols(s: str) -> int:
-    best = 0
-    for body in _MATRIX_ENV_RE.findall(s):
-        for row in body.split(r"\\"):
-            if row.strip():
-                best = max(best, row.count("&") + 1)
-    return best
+from quiverlab.trace.render_html import _tex_escape
 
 
 class ReportError(Exception):
     """The report could not be produced (unsupported result_schema, unwritable
-    output, or a required LaTeX toolchain that was explicitly requested)."""
+    output, or a removed output format that was explicitly requested)."""
 
 
 class ResultSchemaError(ReportError):
@@ -119,11 +99,10 @@ def _module_view_row(label, view) -> str:
 
 
 def _pmatrix_latex(mat) -> str:
-    """A raw matrix as pmatrix TeX for the PAGE-BOUNDED PDF (Plan 34): a matrix past 25
-    rows or columns is STATED-elided (shown in full in the HTML/JSON report -- here the
-    HTML dumps the matrix source and the JSON is result.json itself), so an oversized
-    module action matrix neither aborts the compile nor runs off the page. Matrices of
-    11..25 columns are scaled by the caller (\\qlmat)."""
+    """A raw matrix as pmatrix TeX source (shown as source in the HTML/text report):
+    a matrix past 25 rows or columns is STATED-elided (shown in full in the HTML/JSON
+    report -- here the HTML dumps the matrix source and the JSON is result.json
+    itself), so an oversized module action matrix does not dominate the page."""
     nrows = len(mat)
     ncols = max((len(row) for row in mat), default=0)
     if nrows > 25 or ncols > 25:
@@ -306,9 +285,8 @@ def render_html(result: dict) -> str:
     body = ["<!doctype html><html><head><meta charset='utf-8'>", _HTML_STYLE,
             "<title>quiverlab report</title></head><body>",
             "<h1>quiverlab report</h1>",
-            "<p><i>This report is print-ready. Math is shown as LaTeX source; render "
-            "the .tex with pdflatex/tectonic, or use your browser's Print &rarr; Save "
-            "as PDF, for a typeset copy.</i></p>"]
+            "<p><i>This report is print-ready. Math is shown as LaTeX source; use "
+            "your browser's Print &rarr; Save as PDF for a typeset copy.</i></p>"]
     for sec in build_sections(result):
         body.append("<h2>%s</h2>" % _esc(sec.title))
         if sec.rows:
@@ -319,52 +297,20 @@ def render_html(result: dict) -> str:
     return "\n".join(body) + "\n"
 
 
-def render_latex(result: dict) -> str:
-    sections = build_sections(result)
-    max_cols = max((_tex_matrix_cols(m) for sec in sections for m in sec.math),
-                   default=0)
-    out = [r"\documentclass{article}", r"\usepackage{amsmath}",
-           r"\usepackage[T1]{fontenc}"]
-    out.extend(matrix_preamble_lines(max_cols))   # graphicx + \qlmat + MaxMatrixCols
-    out += [r"\begin{document}", r"\section*{quiverlab report}"]
-    for sec in sections:
-        out.append(r"\subsection*{%s}" % _tex_escape(sec.title))
-        for row in sec.rows:
-            out.append(r"\noindent %s\\" % _tex_escape(row))
-        for m in sec.math:
-            # a >10-column matrix is scaled to the page so it neither aborts the compile
-            # nor runs off it (matches trace.render_latex's \qlmat treatment).
-            out.append(r"\[ %s \]"
-                       % (r"\qlmat{%s}" % m if _tex_matrix_cols(m) > 10 else m))
-    out.append(r"\end{document}")
-    return "\n".join(out) + "\n"
-
-
-def _compile_pdf(tex: str, out_pdf: pathlib.Path, engine: str) -> None:
-    with tempfile.TemporaryDirectory() as d:
-        src = pathlib.Path(d) / "report.tex"
-        src.write_text(tex, encoding="utf-8")
-        if engine == "tectonic":
-            cmd = ["tectonic", "-o", d, str(src)]
-        else:
-            cmd = ["pdflatex", "-interaction=nonstopmode", "-output-directory", d, str(src)]
-        subprocess.run(cmd, cwd=d, stdout=subprocess.DEVNULL,
-                       stderr=subprocess.DEVNULL, check=True)
-        built = pathlib.Path(d) / "report.pdf"
-        shutil.copyfile(built, out_pdf)
-
-
 # --------------------------------------------------------------------------- #
 # Public entry point
 # --------------------------------------------------------------------------- #
+
+# PDF/TeX report output has been removed; only these formats are produced.
+_REMOVED_FORMATS = frozenset({"pdf", "tex"})
+
 
 def default_out_name(fmt: str) -> str:
     # ``json`` is the worked-steps EVENT STREAM (trace.json), not a rendered report,
     # so it keeps that name rather than ``report.json``.
     if fmt == "json":
         return "trace.json"
-    return "report." + {"pdf": "pdf", "html": "html", "txt": "txt",
-                        "tex": "tex"}.get(fmt, "txt")
+    return "report." + {"html": "html", "txt": "txt"}.get(fmt, "txt")
 
 
 def _sibling_trace_json(src_path) -> str:
@@ -385,17 +331,16 @@ def _sibling_trace_json(src_path) -> str:
         raise ReportError(
             f"no trace.json beside {src_path} (the worked-steps event stream is "
             "produced only when a traced computation ran); use --format "
-            "html/txt/tex/pdf for the result report")
+            "html/txt for the result report")
 
 
 def render(result, out_path=None, fmt: str = "auto", on_warn=None):
     """Render ``result`` (a dict or a path to result.json) to ``out_path``.
 
-    ``fmt`` in {auto, pdf, html, txt, tex, json}. ``auto`` compiles a PDF when
-    tectonic/pdflatex is on PATH, else writes HTML. ``pdf`` without a toolchain raises
-    ``ReportError``; ``tex`` writes the LaTeX SOURCE (no toolchain needed -- Plan 30
-    C1: the .tex is available everywhere); ``json`` emits the worked-steps event
-    stream (trace.json) that lives beside the result (Plan 34). Returns
+    ``fmt`` in {auto, html, txt, json}. ``auto`` writes the self-contained HTML
+    report; ``txt`` writes the plain-text report; ``json`` emits the worked-steps
+    event stream (trace.json) that lives beside the result (Plan 34). PDF/TeX report
+    output has been removed -- ``fmt="pdf"``/``"tex"`` raises ``ReportError``. Returns
     ``(pathlib.Path, actual_fmt)``."""
     # Remember the source PATH before loading (``json`` reads the sibling trace.json).
     src_path = None if isinstance(result, dict) else result
@@ -406,13 +351,10 @@ def render(result, out_path=None, fmt: str = "auto", on_warn=None):
     if warn and on_warn is not None:
         on_warn(warn)
 
-    engine = have_latex()
-    actual = fmt
-    if fmt == "auto":
-        actual = "pdf" if engine else "html"
-    if actual == "pdf" and engine is None:
-        raise ReportError("no LaTeX toolchain (tectonic/pdflatex) on PATH; use "
-                          "--format html or --format txt")
+    if fmt in _REMOVED_FORMATS:
+        raise ReportError("PDF/TeX output has been removed; use html or json "
+                          f"(requested {fmt!r})")
+    actual = "html" if fmt == "auto" else fmt
 
     out = pathlib.Path(out_path) if out_path is not None else pathlib.Path(default_out_name(actual))
     try:
@@ -420,19 +362,11 @@ def render(result, out_path=None, fmt: str = "auto", on_warn=None):
             out.write_text(render_text(result), encoding="utf-8")
         elif actual == "html":
             out.write_text(render_html(result), encoding="utf-8")
-        elif actual == "tex":
-            out.write_text(render_latex(result), encoding="utf-8")
         elif actual == "json":
             out.write_text(_sibling_trace_json(src_path), encoding="utf-8")
-        elif actual == "pdf":
-            try:
-                _compile_pdf(render_latex(result), out, engine)
-            except (subprocess.SubprocessError, OSError) as exc:
-                raise ReportError(f"LaTeX compilation failed ({engine}): {exc}; "
-                                  "use --format html or --format txt")
         else:
             raise ReportError(
-                f"unknown format {fmt!r} (expected auto/pdf/html/txt/tex/json)")
+                f"unknown format {fmt!r} (expected auto/html/txt/json)")
     except OSError as exc:
         raise ReportWriteError(f"cannot write report to {out}: {exc}")
     return out, actual

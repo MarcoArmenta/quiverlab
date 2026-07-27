@@ -56,6 +56,40 @@ def test_cartan_latex_is_pmatrix(runner):
     assert latex == r"\begin{pmatrix} 1 & 2 \\ 0 & 1 \end{pmatrix}"
 
 
+def test_dimension_kind_matches_server(runner):
+    # Fix F1-4: the GUI runner now serves `dimension` = A.dim, at parity with the
+    # server/HPC runner (quiverlab.hpc.spec._dispatch). Same `value` semantics.
+    _ready(runner, LOOP_GF2)          # k[x]/(x^3): dim 3
+    out = _one(runner, "dimension")
+    assert out["ok"] and out["block"]["value"] == 3
+    assert "citations" in out["block"]
+    _ready(runner, KRONECKER_CC)      # 2-Kronecker path algebra: dim 4
+    assert _one(runner, "dimension")["block"]["value"] == 4
+
+
+def test_python_snippet_serves_dimension_kind(runner):
+    # Correction #3: `dimension` was added to compute_one but MISSING from the
+    # snippet `calls` dict, so python_snippet() KeyError'd on `calls['dimension']`.
+    # Now it maps to A.dim -- exercise the whole build -> compute -> snippet path.
+    req = dict(LOOP_GF2, compute=["dimension"])
+    _ready(runner, req)
+    assert _one(runner, "dimension")["ok"]
+    snippet = runner.python_snippet()          # must not KeyError
+    assert "print(A.dim)" in snippet
+
+
+def test_failed_rebuild_clears_stale_tor_target(runner):
+    # Fix F1-5: run_build's state reset now clears tor_target too, so a stale Tor
+    # second module cannot survive a FAILED rebuild into the next computation.
+    ok = dict(LOOP_GF2, tor_target={"builtin": {"kind": "simple", "vertex": 1}})
+    assert json.loads(runner.run_build(json.dumps(ok)))["ok"]
+    assert runner._state["tor_target"] is not None
+    bad = {"schema": 1, "algebra": {"kind": "quiver", "vertices": [1],
+           "arrows": {"x": [1, 1]}, "relations": [], "field": {"kind": "BOGUS"}}}
+    assert not json.loads(runner.run_build(json.dumps(bad)))["ok"]
+    assert runner._state["tor_target"] is None
+
+
 def test_results_and_events_accumulate(runner):
     _ready(runner, KRONECKER_CC)
     _one(runner, "hh_cohomology:0..1")

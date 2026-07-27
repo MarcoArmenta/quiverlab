@@ -36,11 +36,35 @@ class FieldSpec(BaseModel):
         return v
 
 
+def _reject_float_params(value: Any, path: str) -> None:
+    """Recursively refuse any float/complex inside family params. The library is
+    exact-only, so a float param can never build -- it would surface as a genericised
+    500 in the runner. Vetting it at the boundary yields a clean typed 4xx instead
+    (consistent with how matrix entries reject floats). Ints/strings/bools pass."""
+    if isinstance(value, (float, complex)):
+        raise SchemaError(
+            f"family param {path} is a float ({value!r}); parameters must be exact "
+            "(integers or strings, never floats)")
+    if isinstance(value, dict):
+        for k, v in value.items():
+            _reject_float_params(v, f"{path}[{k!r}]")
+    elif isinstance(value, (list, tuple)):
+        for i, v in enumerate(value):
+            _reject_float_params(v, f"{path}[{i}]")
+
+
 class FamilyAlgebraSpec(BaseModel):
     kind: Literal["family"]
     family: str
     params: dict[str, Any] = Field(default_factory=dict)
     field: FieldSpec
+
+    @field_validator("params")
+    @classmethod
+    def _params_exact(cls, v: dict[str, Any]) -> dict[str, Any]:
+        for key, val in v.items():
+            _reject_float_params(val, repr(key))
+        return v
 
 
 class QuiverAlgebraSpec(BaseModel):
@@ -289,4 +313,11 @@ def parse_compute_item(s: str) -> ComputeItem:
     hi = int(m["hi"]) if m["hi"] is not None else None
     if lo is not None and hi is not None and hi < lo:
         raise SchemaError(f"empty degree range in {s!r}")
+    # Degreewise dispatch always computes 0..hi; a non-zero lower bound would be
+    # silently dropped by the runner, so reject it here to match the GUI (which
+    # forbids lo != 0, docs/gui/runner.py) -- server and GUI agree.
+    if lo is not None and lo != 0:
+        raise SchemaError(
+            f"compute range must start at 0 (got {s!r}); results are computed "
+            f"0..N degreewise -- use '{m['kind']}:0..{hi}'")
     return ComputeItem(kind=m["kind"], lo=lo, hi=hi)

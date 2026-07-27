@@ -36,9 +36,13 @@ class FakeMailer:
 
 
 def _big_cfg(tmp_path, **over):
+    # A real (non-default) signing secret: the big-job tier is enabled here (SMTP
+    # set), so create_app's production-secret guard (correction #4) refuses the
+    # public repo default. Tests supply a deliberate secret instead.
     e = {"QLWEB_DATA_DIR": str(tmp_path), "QLWEB_SMTP_HOST": "relay",
          "QLWEB_SMTP_FROM": "quiverlab@example.org",
-         "QLWEB_PUBLIC_BASE_URL": "https://ql.example"}
+         "QLWEB_PUBLIC_BASE_URL": "https://ql.example",
+         "QLWEB_TOKEN_SECRET": "test-secret-not-the-default"}
     e.update(over)
     return Config.from_env(e)
 

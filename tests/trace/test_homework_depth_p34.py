@@ -2,24 +2,19 @@
 feedback: "say how every object is computed as I would demand an undergraduate student
 in his homework, writing everything and with justifications").
 
-The bar, pinned here on the rendered LaTeX of a small module report: every traced
-object states WHAT is computed, the DEFINITION used, the ACTUAL matrices, and WHY the
-conclusion follows, with a literature justification. We assert stable, phrase-level
-markers (chosen brace/underscore-free so they survive TeX escaping) for each of
-rad / top / soc / resolution / Ext / tau / decompose, plus byte-determinism and a
-LaTeX-compile smoke (skipped when no toolchain is on PATH -- so the fast CI matrix,
-which has no TeX, skips it and it stays quick locally)."""
-import shutil
-import subprocess
-
-import pytest
-
+The bar, pinned here on the rendered HTML report of a small module report: every
+traced object states WHAT is computed, the DEFINITION used, the ACTUAL matrices, and
+WHY the conclusion follows, with a literature justification. We assert stable,
+phrase-level markers for each of rad / top / soc / resolution / Ext / tau / decompose,
+plus byte-determinism. (PDF/TeX report output has been removed; the HTML report -- the
+same event stream, with the math typeset as MathML and the TeX source embedded in an
+x-tex annotation -- is the homework document, exported to PDF via the browser.)"""
 from quiverlab import Quiver, GF
 from quiverlab.trace.modules import (
     trace_module_report, trace_radical, trace_top, trace_socle,
     trace_projective_resolution, trace_ext, trace_tor, trace_tau, trace_decompose,
 )
-from quiverlab.trace.render_latex import render_latex
+from quiverlab.trace.render_html import render_html
 from quiverlab.trace.provenance import references_for, resolve_references
 
 
@@ -30,26 +25,23 @@ def _square():
     return Q.algebra(relations=["a*b - c*d"], field=GF(2))
 
 
-def _kA2():
-    return Quiver(vertices=[1, 2], arrows={"a": (1, 2)}).algebra(relations=[], field=GF(2))
-
-
-def _square_report_tex():
+def _square_report_html():
     A = _square()
     M = A.projective(1).radical()          # dim 3, non-projective, rich rad/top/soc
     M.name = "M"
     ev = trace_module_report(A, M, N=A.simple(4), top=3)
     refs = resolve_references(references_for(ev))
-    return render_latex(ev, title="M = rad P_1 over the square", references=refs, algebra=A)
+    return render_html(ev, title="M = rad P_1 over the square", references=refs, algebra=A)
 
 
 # --------------------------------------------------------------------------- #
 # Homework depth: the definition sentences, matrices, rank arithmetic, justifications.
+# The narration prose rides in <p> paragraphs; every math run keeps its TeX source
+# verbatim in the x-tex <annotation>, so the LaTeX-source markers below are present.
 # --------------------------------------------------------------------------- #
 
-# Phrase markers introduced by Plan 34, chosen to be STABLE BY DESIGN: each avoids
-# TeX-special characters (_, ^, {, }) so it survives _tex_escape verbatim in prose, or
-# is genuine display-math source (not escaped). Grouped by the object they certify.
+# Phrase markers introduced by Plan 34 -- prose (in <p>) or genuine display-math source
+# (in the x-tex annotation). Grouped by the object they certify.
 _DEFINITION_MARKERS = [
     "rad M = M J",                                   # radical: rad M = M J
     "top M = M / rad M",                             # top:  M / rad M
@@ -71,59 +63,59 @@ _JUSTIFICATION_MARKERS = [
 def test_nakayama_misattribution_removed():
     """MINOR-6: the radical justification no longer claims 'Nakayama's lemma' identifies
     rad M with the arrow-image sum (that is a consequence of A/J being semisimple)."""
-    tex = _square_report_tex()
-    assert "Nakayama" not in tex, "the mis-attributed Nakayama justification is back"
-    assert "A/J is semisimple" in tex
+    html = _square_report_html()
+    assert "Nakayama" not in html, "the mis-attributed Nakayama justification is back"
+    assert "A/J is semisimple" in html
 
 
 def test_definition_sentences_present():
-    tex = _square_report_tex()
+    html = _square_report_html()
     for marker in _DEFINITION_MARKERS:
-        assert marker in tex, "missing definition sentence: %r" % marker
+        assert marker in html, "missing definition sentence: %r" % marker
 
 
 def test_justification_markers_present():
-    tex = _square_report_tex()
+    html = _square_report_html()
     for marker in _JUSTIFICATION_MARKERS:
-        assert marker in tex, "missing justification/citation marker: %r" % marker
+        assert marker in html, "missing justification/citation marker: %r" % marker
 
 
 def test_numbered_worked_steps():
-    """Each object opens a numbered \\paragraph step (rad/top/soc/resolution/Ext/tau/
-    decompose = at least seven numbered steps)."""
-    tex = _square_report_tex()
+    """Each object opens a numbered Step (rad/top/soc/resolution/Ext/tau/decompose =
+    at least seven numbered steps)."""
+    html = _square_report_html()
     for n in range(1, 8):
-        assert r"\paragraph{Step %d." % n in tex, "missing numbered Step %d" % n
+        assert "<b>Step %d. " % n in html, "missing numbered Step %d" % n
 
 
 def test_per_arrow_matrices_shown():
     """rad shows each arrow's action matrix rho_M(a): M -> M as a pmatrix."""
-    tex = _square_report_tex()
-    assert r"\rho_M(a)" in tex and r"\rho_M(b)" in tex
-    assert r"\begin{pmatrix}" in tex                         # matrices are rendered
-    assert r"\rho_M(a) : M \to M" in tex                     # self-map declaration
+    html = _square_report_html()
+    assert r"\rho_M(a)" in html and r"\rho_M(b)" in html
+    assert r"\begin{pmatrix}" in html                        # matrices are rendered
+    assert r"\rho_M(a) : M \to M" in html                    # self-map declaration
 
 
 def test_radical_column_reduction_shown():
     """rad = colspace(G): the assembled matrix and its column reduction appear."""
-    tex = _square_report_tex()
-    assert "colspace(G)" in tex
-    assert "Column-reducing" in tex                          # the reduction step
-    assert r"G :" in tex and r"G = " in tex                  # G shown as a map + matrix
+    html = _square_report_html()
+    assert "colspace(G)" in html
+    assert "Column-reducing" in html                         # the reduction step
+    assert r"G :" in html and r"G = " in html                # G shown as a map + matrix
 
 
 def test_socle_stacked_kernel_shown():
-    tex = _square_report_tex()
-    assert "intersection over the arrows" in tex             # soc definition
-    assert r"K :" in tex and r"K = " in tex                  # the stacked system K
+    html = _square_report_html()
+    assert "intersection over the arrows" in html            # soc definition
+    assert r"K :" in html and r"K = " in html                # the stacked system K
 
 
 def test_ext_rank_arithmetic_spelled_out():
     """Ext^n = ker delta^n / im delta^{n-1} with dim = space - rank - rank = result."""
-    tex = _square_report_tex()
-    assert r"\ker\delta" in tex and r"\operatorname{im}\delta" in tex
-    assert r"\operatorname{rank}\delta" in tex               # the rank lines
-    assert r"\dim = " in tex                                 # the dimension count
+    html = _square_report_html()
+    assert r"\ker\delta" in html and r"\operatorname{im}\delta" in html
+    assert r"\operatorname{rank}\delta" in html              # the rank lines
+    assert r"\dim = " in html                                # the dimension count
     # the emitted Ext dims equal the engine's ext_dims (the binding discipline):
     A = _square()
     from quiverlab.modules.ext import ext_dims
@@ -132,25 +124,25 @@ def test_ext_rank_arithmetic_spelled_out():
 
 
 def test_tau_step_shows_transpose_matrix():
-    tex = _square_report_tex()
-    assert "transpose" in tex
-    assert r"d_{1}^{*}" in tex                               # the transposed differential
-    assert "IV.2" in tex                                     # ASS IV.2 (AR translate)
+    html = _square_report_html()
+    assert "transpose" in html
+    assert r"d_{1}^{*}" in html                              # the transposed differential
+    assert "IV.2" in html                                    # ASS IV.2 (AR translate)
 
 
 def test_resolution_syzygy_and_cover_narrated():
-    tex = _square_report_tex()
-    assert "iterated projective covers" in tex
-    assert "Syzygy: Omega" in tex                            # the syzygy computation
-    assert r"\varepsilon : P" in tex                         # the augmentation
-    assert "Betti number" in tex                             # minimality justification
+    html = _square_report_html()
+    assert "iterated projective covers" in html
+    assert "Syzygy: Omega" in html                           # the syzygy computation
+    assert r"\varepsilon : P" in html                        # the augmentation
+    assert "Betti number" in html                            # minimality justification
 
 
 def test_decompose_certificate_labelled():
-    tex = _square_report_tex()
-    assert "indecomposable" in tex
+    html = _square_report_html()
+    assert "indecomposable" in html
     # M = rad P_1 is indecomposable here, certified by dim End = 1 (End = k*id local):
-    assert "k*id is a field" in tex or "End_A(M) is local" in tex
+    assert "k*id is a field" in html or "End_A(M) is local" in html
 
 
 # --------------------------------------------------------------------------- #
@@ -158,8 +150,8 @@ def test_decompose_certificate_labelled():
 # --------------------------------------------------------------------------- #
 
 def test_render_is_byte_deterministic():
-    a = _square_report_tex()
-    b = _square_report_tex()
+    a = _square_report_html()
+    b = _square_report_html()
     assert a == b, "the homework report render is not byte-deterministic"
 
 
@@ -180,7 +172,7 @@ def test_tor_and_ext_and_translate_builders_deterministic():
         lambda: trace_decompose(M)[0],
     ]
     for build in builders:
-        assert render_latex(build(), title="t") == render_latex(build(), title="t")
+        assert render_html(build(), title="t") == render_html(build(), title="t")
 
 
 # --------------------------------------------------------------------------- #
@@ -206,41 +198,3 @@ def test_tor_report_cites_tensor_product():
     A = _square()
     ev, _ = trace_tor(A, A.simple(1), A.simple(1, side="left"), 3)
     assert "tensor_product" in references_for(ev)            # Cartan-Eilenberg (Tor)
-
-
-# --------------------------------------------------------------------------- #
-# LaTeX compile smoke: the rendered .tex compiles cleanly (skipped without a
-# toolchain, so the fast CI matrix -- which has no TeX -- skips it; quick locally).
-# --------------------------------------------------------------------------- #
-
-def _latex_engine():
-    for engine in ("pdflatex", "tectonic"):
-        if shutil.which(engine):
-            return engine
-    return None
-
-
-@pytest.mark.skipif(_latex_engine() is None, reason="no LaTeX toolchain on PATH")
-def test_report_tex_compiles_cleanly(tmp_path):
-    # Use the small kA_2 report so the smoke stays quick even in the fast bucket.
-    A = _kA2()
-    ev = trace_module_report(A, A.simple(1), N=A.simple(2), top=3)
-    refs = resolve_references(references_for(ev))
-    tex = render_latex(ev, title="S_1 over kA_2", references=refs, algebra=A)
-    src = tmp_path / "report.tex"
-    src.write_text(tex)
-    engine = _latex_engine()
-    if engine == "tectonic":
-        cmd = ["tectonic", "-o", str(tmp_path), str(src)]
-    else:
-        cmd = ["pdflatex", "-interaction=nonstopmode", "-halt-on-error",
-               "-output-directory", str(tmp_path), str(src)]
-    proc = subprocess.run(cmd, cwd=str(tmp_path), stdout=subprocess.PIPE,
-                          stderr=subprocess.PIPE, timeout=120)
-    assert proc.returncode == 0, (
-        "LaTeX did not compile the homework report:\n"
-        + proc.stdout.decode("utf-8", "replace")[-2000:])
-    assert (tmp_path / "report.pdf").exists()
-    # no overfull-box disasters (the report must be typeset cleanly):
-    log = (tmp_path / "report.log").read_text(encoding="utf-8", errors="replace")
-    assert "Overfull" not in log, "the report has overfull boxes (bad line breaking)"

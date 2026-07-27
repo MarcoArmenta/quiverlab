@@ -65,17 +65,18 @@ jobs:
           docker run --rm \
             -v "$PWD/out:/out" \
             "$IMAGE:${{ steps.ver.outputs.version }}" \
-            render /out/result.json -o /out/report.pdf
-          test -s out/report.pdf
-
-      - name: Verify the rendered PDF has extractable text (poppler-utils)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends poppler-utils
-          pdftotext out/report.pdf out/report.txt
-          # A real rendered report yields real tokens (not a blank/scanned page).
+            render /out/result.json -o /out/report.html --format html
+          test -s out/report.html
+          # The rendered HTML report carries real content -- no PDF toolchain needed
+          # (math is KaTeX/MathML, not tectonic).
+          grep -q "quiverlab report" out/report.html
+          # Cross-check the plain-text renderer yields real tokens (not a blank page).
+          docker run --rm \
+            -v "$PWD/out:/out" \
+            "$IMAGE:${{ steps.ver.outputs.version }}" \
+            render /out/result.json -o /out/report.txt --format txt
           test -n "$(tr -d '[:space:]' < out/report.txt)"
-          echo "----- first lines of the rendered report -----"
+          echo "----- first lines of the rendered text report -----"
           head -n 20 out/report.txt || true
 
       - name: Log in to GHCR

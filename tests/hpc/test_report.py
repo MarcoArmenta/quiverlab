@@ -1,8 +1,6 @@
-"""Renderer goldens: token asserts on the .txt/.html/.tex output, PDF only when a
-LaTeX toolchain is on PATH (else cleanly skipped), and the future-``result_schema``
-refusal."""
-import shutil
-
+"""Renderer goldens: token asserts on the .txt/.html output, the removed PDF/TeX
+formats' typed refusal, the ``--format json`` sibling emission, and the
+future-``result_schema`` refusal."""
 import pytest
 
 from quiverlab.hpc import report
@@ -46,47 +44,29 @@ def test_html_tokens_and_escaping(result, tmp_path):
     assert "pmatrix" in html
 
 
-def test_latex_tokens(result):
-    tex = report.render_latex(result)
-    assert r"\documentclass{article}" in tex
-    assert r"\begin{document}" in tex and r"\end{document}" in tex
-    assert "Hochschild cohomology" in tex
-    assert r"\begin{pmatrix}" in tex
-
-
-def test_auto_falls_back_to_html_without_toolchain(result, tmp_path, monkeypatch):
-    monkeypatch.setattr(report, "have_latex", lambda: None)
+def test_auto_renders_html(result, tmp_path):
     out, fmt = report.render(result, tmp_path / "r", fmt="auto")
     assert fmt == "html"
+    assert "<!doctype html>" in out.read_text(encoding="utf-8")
 
 
-def test_pdf_requires_toolchain(result, tmp_path, monkeypatch):
-    monkeypatch.setattr(report, "have_latex", lambda: None)
+def test_pdf_is_refused(result, tmp_path):
+    """PDF report output has been removed: an explicit request is refused with a
+    typed error, never a silent fallback."""
     with pytest.raises(report.ReportError):
         report.render(result, tmp_path / "r.pdf", fmt="pdf")
 
 
-def test_pdf_when_toolchain_present(result, tmp_path):
-    if not (shutil.which("tectonic") or shutil.which("pdflatex")):
-        pytest.skip("no LaTeX toolchain (tectonic/pdflatex) on PATH")
-    out, fmt = report.render(result, tmp_path / "r.pdf", fmt="pdf")
-    assert fmt == "pdf"
-    assert out.read_bytes()[:4] == b"%PDF"
+def test_tex_is_refused(result, tmp_path):
+    """TeX report output has been removed: an explicit request is refused."""
+    with pytest.raises(report.ReportError):
+        report.render(result, tmp_path / "r.tex", fmt="tex")
 
 
-def test_tex_format_writes_latex_source_without_toolchain(result, tmp_path, monkeypatch):
-    # Plan 30 C1: --format tex writes the LaTeX SOURCE; no toolchain required.
-    monkeypatch.setattr(report, "have_latex", lambda: None)
-    out, fmt = report.render(result, tmp_path / "r.tex", fmt="tex")
-    assert fmt == "tex"
-    tex = out.read_text(encoding="utf-8")
-    assert tex.startswith(r"\documentclass{article}")
-    assert r"\begin{document}" in tex and r"\end{document}" in tex
-    assert r"\begin{pmatrix}" in tex                 # the HH differential still rendered
-
-
-def test_default_out_name_tex():
-    assert report.default_out_name("tex") == "report.tex"
+def test_default_out_name_html_and_json():
+    assert report.default_out_name("html") == "report.html"
+    assert report.default_out_name("txt") == "report.txt"
+    assert report.default_out_name("json") == "trace.json"
 
 
 def test_projectives_injectives_section_present(result, tmp_path):
@@ -96,9 +76,7 @@ def test_projectives_injectives_section_present(result, tmp_path):
     assert "The projectives and injectives of A" in text
     assert "P_1:" in text and "Loewy:" in text        # k[x]/(x^3): P_1 = A, uniserial
     assert "simples S_v are omitted" in text
-    # ...in every format:
-    tex = report.render_latex(result)
-    assert "The projectives and injectives of A" in tex
+    # ...in the HTML format too:
     html_out, _ = report.render(result, tmp_path / "r.html", fmt="html")
     assert "The projectives and injectives of A" in html_out.read_text(encoding="utf-8")
 

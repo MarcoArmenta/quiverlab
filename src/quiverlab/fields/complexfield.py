@@ -13,11 +13,17 @@ from quiverlab.fields.domain import Domain, reject_inexact
 _FLOAT_HINT = "quiverlab is exact-only: write '1/2', 'sqrt(2)', 'i', E(3), never 0.5"
 
 
-def E(n: int):
-    """Primitive n-th root of unity exp(2*pi*i/n), exact (GAP's E(n) convention)."""
-    if not (isinstance(n, int) and not isinstance(n, bool) and n >= 1):
+def E(n):
+    """Primitive n-th root of unity exp(2*pi*i/n), exact (GAP's E(n) convention).
+
+    Accepts a Python int OR a ``sympy.Integer`` -- the latter is how it arrives when
+    a user writes ``CC.parse_entry("E(3)")`` (sympy parses ``3`` to ``sympy.Integer``).
+    Floats (``E(3.0)``, ``E(3.5)``) still refuse loudly: sympify makes them
+    ``sympy.Float``, whose ``is_Integer`` is False. Mirrors combinat.relations._E."""
+    m = sympy.sympify(n)
+    if isinstance(n, bool) or not getattr(m, "is_Integer", False) or m < 1:
         raise FieldError(f"E({n!r}): n must be a positive integer", hint="e.g. E(3), E(8)")
-    return sympy.exp(2 * sympy.pi * sympy.I / n)
+    return sympy.exp(2 * sympy.pi * sympy.I / int(m))
 
 
 class SympyExactDomain(Domain):

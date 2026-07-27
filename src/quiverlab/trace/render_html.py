@@ -9,24 +9,22 @@ is print-ready (print CSS: ``@page`` margins, page-break control, a screen-only
 downloaded ``report.html`` prints to PDF from any browser. Float-free: all numbers
 come from event fields (ints/strings).
 
-Shared helpers: `derive_dims` + `_dims_kind` are REUSED from Task 9's render_text,
-and the matrix->pmatrix TeX helper `_pmatrix` is REUSED from render_latex -- so both
-renderers emit identical `pmatrix` source and identical resulting dimensions from a
-single definition, never duplicated here. The LaTeX source those helpers produce is
-carried through into the MathML ``<annotation>`` (and typeset by the converter
-below), so the two renderers stay in lock-step."""
+Shared helpers: `derive_dims` + `_dims_kind` are REUSED from Task 9's render_text.
+The matrix->pmatrix TeX-source helper `_pmatrix` and the small TeX-source math
+builders (`oplus_tex`, `factor_stack_tex`, `_dimvec_tex`, `_tex_escape`) live HERE
+-- this module is the sole owner of the worked-steps math source. The TeX source
+those helpers produce is carried through into the MathML ``<annotation>`` (and
+typeset by the converter below), so the display and the copy/paste-able source stay
+in lock-step."""
 import re
 
 from quiverlab.trace.events import (
     Dispatch, ResolutionTerm, RankStep, ModuleTerm, ModuleDifferential,
-    ExtDegree, StepNote,
+    ExtDegree, StepNote, ResultDims,
 )
 from quiverlab.trace.render_text import (
-    derive_dims, _dims_kind, compute_algebra_objects, ext_result_dims,
+    derive_dims, _dims_kind, compute_algebra_objects, ext_result_runs,
     ELISION_PREAMBLE,
-)
-from quiverlab.trace.render_latex import (
-    _pmatrix, oplus_tex, factor_stack_tex, _dimvec_tex,
 )
 
 # Inline-only styling (no external stylesheet); keeps the file fully self-contained
@@ -230,8 +228,8 @@ def _parse_command(tokens, i, stops):
         return "", i
     if cmd == r"\resizebox":
         # \resizebox{width}{height}{content}: a graphicx sizing wrapper with no MathML
-        # analogue -- discard the two size args and typeset only the content (Plan 34:
-        # if render_latex starts wrapping wide matrices in \resizebox, MathML unwraps it).
+        # analogue -- discard the two size args and typeset only the content (a wide
+        # matrix wrapped in \resizebox in the embedded source is unwrapped here).
         _, i = _read_raw_group(tokens, i)
         _, i = _read_raw_group(tokens, i)
         return _parse_atom(tokens, i, stops)
@@ -346,8 +344,8 @@ def _pi_section_html(objects, note):
 
 
 def _ext_degree_html(e):
-    """One Ext/Tor degree with the full rank arithmetic spelled out, op-aware -- the
-    HTML mirror of ``render_latex._ext_degree_latex`` (Plan 34 MAJOR-2). For Ext:
+    """One Ext/Tor degree with the full rank arithmetic spelled out, op-aware
+    (Plan 34 MAJOR-2). For Ext:
     ``\\delta^n``, ``dim Hom``, ``Ext^n`` (superscript). For Tor: ``d_{n+1}``, tensor
     dimension, ``Tor_n`` (subscript). The dimension count ``space - rank - rank =
     result`` is rendered too, so the no-toolchain HTML surface matches the PDF."""
@@ -408,17 +406,29 @@ def _module_steps_html(events):
                              % (e.symbol, dom, cod, e.symbol, _pmatrix(e))))
         elif isinstance(e, ExtDegree):
             out.extend(_ext_degree_html(e))
-    dims, op = ext_result_dims(events)
-    if dims:
-        sep = "_" if op == "Tor" else "^"
-        out.append("<h2>Result</h2>" + _math(",\\quad ".join(
-            r"\operatorname{%s}%s{%d} = %d" % (op, sep, i, d)
-            for i, d in enumerate(dims))))
+    # ALL Ext/Tor runs (not only the first): an Ext run then a Tor run both appear,
+    # each with the correct subscript/superscript (Plan 34 MINOR).
+    runs = ext_result_runs(events)
+    if runs:
+        out.append("<h2>Result</h2>")
+        for op, dims in runs:
+            sep = "_" if op == "Tor" else "^"
+            out.append(_math(",\\quad ".join(
+                r"\operatorname{%s}%s{%d} = %d" % (op, sep, i, d)
+                for i, d in enumerate(dims))))
     return out
 
 
 def render_html(events, title="", references=(), algebra=None):
     events = list(events)
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.trace.events import ALL_EVENTS
+    for e in events:
+        if not isinstance(e, ALL_EVENTS):
+            raise QuiverlabError(
+                "render_html received a non-event object of type %r -- likely an "
+                "unpacked (events, result) tuple from a trace_* helper; every "
+                "element of the stream must be a trace event" % type(e).__name__)
     body = ["<!doctype html><html><head><meta charset='utf-8'>",
             "<meta name='viewport' content='width=device-width, initial-scale=1'>",
             _STYLE,
@@ -446,11 +456,24 @@ def render_html(events, title="", references=(), algebra=None):
             body.append(_math(r"%s = %s \qquad \operatorname{rank} = %d"
                               % (sym, _pmatrix(rs), rs.rank)))
     body.extend(_module_steps_html(events))
-    dims = derive_dims(events)
-    if dims:
-        kind = _dims_kind(events)
-        cells = ",\\quad ".join(r"%s{%d} = %d" % (kind, i, d) for i, d in enumerate(dims))
+    # The (co)homology Result: prefer the AUTHORITATIVE dims the engine returned (a
+    # ResultDims event, injected by writer.py) so the line carries the engine's numbers
+    # AND the correct HH^/HH_ variance; fall back to derive_dims when absent (direct
+    # renderer calls / module reports) -- byte-identical to before.
+    rd = next((e for e in events if isinstance(e, ResultDims)), None)
+    if rd is not None:
+        cells = ",\\quad ".join(r"%s{%d} = %d" % (rd.kind, i, d)
+                                for i, d in enumerate(rd.dims))
         body.append("<h2>Result</h2>" + _math(cells))
+        if rd.note:
+            body.append("<p><i>%s</i></p>" % _esc(rd.note))
+    else:
+        dims = derive_dims(events)
+        if dims:
+            kind = _dims_kind(events)
+            cells = ",\\quad ".join(r"%s{%d} = %d" % (kind, i, d)
+                                    for i, d in enumerate(dims))
+            body.append("<h2>Result</h2>" + _math(cells))
     if references:
         body.append("<h2>References</h2><ol>")
         for key, entry in references:
@@ -462,3 +485,81 @@ def render_html(events, title="", references=(), algebra=None):
 
 def _esc(s):
     return (s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+# --------------------------------------------------------------------------- #
+# TeX-source math builders (the worked-steps math, embedded in the MathML x-tex
+# ``<annotation>`` and typeset by the converter above). Formerly shared with the
+# deleted LaTeX-document renderer; this module now owns them. Float-free: every
+# number comes from event fields (ints/strings).
+# --------------------------------------------------------------------------- #
+
+
+def _pmatrix(rs):
+    """The matrix as `pmatrix` TeX source, or a `\\text{...}` note when the recorder
+    dropped the body (the 250k memory backstop). Works for any event carrying
+    (elided, matrix, nrows, ncols, note): RankStep, ModuleDifferential, ExtDegree.
+
+    A zero-DIMENSIONAL matrix (no rows or no columns -- e.g. every zero Ext/Tor
+    differential) renders as the symbol ``0``: an empty
+    ``\\begin{pmatrix}\\end{pmatrix}`` typesets as a stray ``()``."""
+    if rs.elided or rs.matrix is None:
+        return r"\text{%s}" % _tex_escape(rs.note)
+    if rs.nrows == 0 or rs.ncols == 0:
+        return "0"
+    rows = r" \\ ".join(" & ".join(rs.matrix[i][j] for j in range(rs.ncols))
+                        for i in range(rs.nrows))
+    return r"\begin{pmatrix} %s \end{pmatrix}" % rows
+
+
+def oplus_tex(summands, sym):
+    """A direct-sum ``P_{1}^{2} \\oplus P_{3}`` from a vertex list with repetition;
+    ``0`` for an empty term."""
+    if not summands:
+        return "0"
+    groups = []
+    for v in summands:
+        for g in groups:
+            if g[0] == v:
+                g[1] += 1
+                break
+        else:
+            groups.append([v, 1])
+    return r" \oplus ".join(
+        "%s_{%s}" % (sym, v) if c == 1 else "%s_{%s}^{%d}" % (sym, v, c)
+        for v, c in groups)
+
+
+def factor_stack_tex(dimvec):
+    """One semisimple Loewy layer as a stacked ``\\begin{matrix} S_1 \\\\ S_2 ...``
+    column of composition factors (with multiplicity)."""
+    factors = []
+    for v, m in dimvec.items():
+        if m <= 0:
+            continue
+        factors.extend(["S_{%s}" % v] * m)
+    if not factors:
+        return "0"
+    return r"\begin{matrix} %s \end{matrix}" % r" \\ ".join(factors)
+
+
+def _dimvec_tex(dv):
+    return "(" + ",\\ ".join("%s{:}%s" % (k, val) for k, val in dv.items()) + ")"
+
+
+def _tex_escape(s):
+    # The worked-steps math source is embedded verbatim in the MathML x-tex
+    # annotation (and shown as source in the plain report), so every special char
+    # must be escaped. Order matters: '\' is escaped FIRST to a placeholder (not
+    # directly to \textbackslash{}, whose own braces would then be re-escaped by the
+    # {}/} steps); the brace steps run BEFORE '^'/'~' (whose replacements introduce
+    # their own {}); the placeholder is expanded LAST so nothing double-escapes.
+    sentinel = "\x00"
+    s = s.replace("\\", sentinel)
+    for a, b in (("{", r"\{"), ("}", r"\}"), ("&", r"\&"), ("_", r"\_"),
+                 ("#", r"\#"), ("%", r"\%"), ("$", r"\$"),
+                 ("^", r"\textasciicircum{}"), ("~", r"\textasciitilde{}"),
+                 ("<", r"\textless{}"), (">", r"\textgreater{}"),
+                 ("|", r"\textbar{}")):
+        s = s.replace(a, b)
+    return s.replace(sentinel, r"\textbackslash{}")

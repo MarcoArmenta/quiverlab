@@ -65,6 +65,16 @@ def test_compute_item_bad_range():
         parse_compute_item("hh_cohomology:6..0")
 
 
+def test_compute_item_nonzero_lo_is_rejected():
+    # The server computes 0..N degreewise and would silently drop a non-zero lower
+    # bound; reject it to agree with the GUI (which forbids lo != 0). A 0-lo range
+    # and a bare scalar stay valid.
+    with pytest.raises(SchemaError):
+        parse_compute_item("ext:2..4")
+    assert parse_compute_item("ext:0..4").lo == 0
+    assert parse_compute_item("cartan").lo is None
+
+
 # --------------------------------------------------------------------------- #
 # Schema v2: the no-code module block (Plan 26)
 # --------------------------------------------------------------------------- #

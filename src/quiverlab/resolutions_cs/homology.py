@@ -17,17 +17,43 @@ def _require_admissible(rs):
                                  hint="Groebner completion did not certify confluence / a finite basis")
 
 
-def _emit_resolution_trace(trace, res, top, side):
-    """Append one ResolutionTerm per degree 0..top to a caller-supplied list (Plan-07
-    renders these; here we only populate them). Inert when trace is None. Each event's
-    collapsed_dim is the computed dim C_n / dim C^n and n_generators is |S_n|, so a
-    consumer can re-derive the (co)chain sizes the dimension formula used."""
-    if trace is None:
-        return
+def _emit_cohomology_trace(trace, res, dom, top, mats, ranks):
+    """Record the CS COHOMOLOGY worked steps: one ResolutionTerm + one RankStep per
+    cochain degree 0..top (Plan 34 fix -- the old ``_emit_resolution_trace`` recorded only
+    the ResolutionTerms, so the renderers' ``derive_dims`` re-derived C_n - 0 - 0 = C_n,
+    the cochain-SPACE dims, and mislabelled HH^ as HH_). Emitting the differential
+    ``delta^n : C^n -> C^{n+1}`` (side="cochain") with its rank makes
+    ``derive_dims``/``_dims_kind`` reconstruct HH^n = C_n - rank(delta^n) - rank(delta^{n-1})
+    and the correct HH^ variance, for EVERY renderer/caller. ``mats[n]`` is
+    ``res.matrix(n,"coh")`` (already built for the rank), ``ranks[n]`` its rank."""
     from quiverlab.resolutions_cs.trace import ResolutionTerm
+    from quiverlab.trace.recorder import rankstep
     for n in range(top + 1):
         trace.append(ResolutionTerm(degree=n, n_generators=len(res.ss.S(n)),
-                                    collapsed_dim=res.dim_C(n, side)))
+                                    collapsed_dim=res.dim_C(n, "coh")))
+        # delta^n : C^n -> C^{n+1}, so dim_C(n+1) rows x dim_C(n) cols (matches mats[n]).
+        trace.append(rankstep(n, "cochain", mats[n],
+                              res.dim_C(n + 1, "coh"), res.dim_C(n, "coh"),
+                              ranks[n], dom))
+
+
+def _emit_homology_trace(trace, res, dom, top, bmats, ranks):
+    """Record the CS HOMOLOGY worked steps: one ResolutionTerm per chain degree 0..top,
+    then one RankStep per boundary ``b_d : C_d -> C_{d-1}`` for d = 1..top+1 (side="chain",
+    RankStep degree=d <-> b_d, mirroring ``hochschild.bar``). ``derive_dims`` then
+    reconstructs HH_n = C_n - rank(b_n) - rank(b_{n+1}) (b_0 = 0) and the HH_ variance.
+    ``bmats[i]`` is ``res.matrix(i+1,"hom") = b_{i+1}`` (already built), ``ranks[i]`` its
+    rank."""
+    from quiverlab.resolutions_cs.trace import ResolutionTerm
+    from quiverlab.trace.recorder import rankstep
+    for n in range(top + 1):
+        trace.append(ResolutionTerm(degree=n, n_generators=len(res.ss.S(n)),
+                                    collapsed_dim=res.dim_C(n, "hom")))
+    for i in range(top + 1):
+        d = i + 1                                # b_d : C_d -> C_{d-1}
+        trace.append(rankstep(d, "chain", bmats[i],
+                              res.dim_C(d - 1, "hom"), res.dim_C(d, "hom"),
+                              ranks[i], dom))
 
 
 def cs_cohomology_dims(A, top, max_cells=4_000_000, trace=None):
@@ -39,9 +65,14 @@ def cs_cohomology_dims(A, top, max_cells=4_000_000, trace=None):
     res = ChouhySolotarResolution(A, rs, max_degree=top + 1, max_cells=max_cells)
     res.assert_dd_zero(upto=top + 1, side="coh"); res.assert_order_condition(upto=top + 1)
     dom = A.domain
-    r = [rank(res.matrix(n, "coh"), dom) for n in range(top + 1)]
+    # Retain the differential matrices only when tracing (so trace=None stays memory-O(1)
+    # -- one live matrix at a time); the dims are computed identically either way.
+    mats = [res.matrix(n, "coh") for n in range(top + 1)] if trace is not None else None
+    r = [rank(mats[n] if mats is not None else res.matrix(n, "coh"), dom)
+         for n in range(top + 1)]
     dims = [res.dim_C(n, "coh") - r[n] - (r[n - 1] if n else 0) for n in range(top + 1)]
-    _emit_resolution_trace(trace, res, top, "coh")
+    if trace is not None:
+        _emit_cohomology_trace(trace, res, dom, top, mats, r)
     return HHTable(dims, "HH^", repr(A).splitlines()[0], engine="Chouhy-Solotar")
 
 
@@ -54,10 +85,14 @@ def cs_homology_dims(A, top, max_cells=4_000_000, trace=None):
     res = ChouhySolotarResolution(A, rs, max_degree=top + 1, max_cells=max_cells)
     res.assert_dd_zero(upto=top + 1, side="hom"); res.assert_order_condition(upto=top + 1)
     dom = A.domain
-    # rk[n] = rank(b_{n+1}) = rank(matrix(n+1, "hom")); b_0 = 0 (no map out of C_0).
-    rk = [rank(res.matrix(n + 1, "hom"), dom) for n in range(top + 1)]
+    # rk[i] = rank(b_{i+1}) = rank(matrix(i+1, "hom")); b_0 = 0 (no map out of C_0).
+    # Retain b_{i+1} only when tracing (trace=None stays memory-O(1)).
+    bmats = [res.matrix(n + 1, "hom") for n in range(top + 1)] if trace is not None else None
+    rk = [rank(bmats[n] if bmats is not None else res.matrix(n + 1, "hom"), dom)
+          for n in range(top + 1)]
     dims = [res.dim_C(n, "hom") - (rk[n - 1] if n else 0) - rk[n] for n in range(top + 1)]
-    _emit_resolution_trace(trace, res, top, "hom")
+    if trace is not None:
+        _emit_homology_trace(trace, res, dom, top, bmats, rk)
     return HHTable(dims, "HH_", repr(A).splitlines()[0], engine="Chouhy-Solotar")
 
 

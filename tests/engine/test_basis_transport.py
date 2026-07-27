@@ -1,14 +1,15 @@
 """Oracle + guard for cartan_from_raw and auto_to_f_basis (PLAN.md hardening).
 
-test_auto_to_f_basis_rejects_non_unimodular is RED until the unimodularity guard is
-added: auto_to_f_basis rounds a floating-point matrix inverse to integers, and for a
-non-unimodular change-of-basis that silently returns a WRONG integer matrix in an
-otherwise exact pipeline. It must fail loudly instead.
+auto_to_f_basis inverts the change-of-basis exactly (Sherman-Morrison integer
+inverse, valid only for unit[t] == 1); a non-unimodular B must be rejected with a
+loud QuiverlabError -- not a bare assert, which python -O would strip, silently
+returning a wrong matrix in an otherwise exact pipeline.
 """
 import numpy as np
 import pytest
 from quiverlab.engine.hh_engine import truncated_polynomial
 from quiverlab.engine.coxeter2 import cartan_from_raw, auto_to_f_basis
+from quiverlab.errors import QuiverlabError
 
 
 @pytest.mark.oracle_selfcert
@@ -28,9 +29,9 @@ def test_auto_to_f_basis_identity_is_exact():
 
 
 def test_auto_to_f_basis_rejects_non_unimodular():
-    # unit[t] = 2 makes the change-of-basis B non-unimodular; the float-rounded
-    # inverse is then wrong and must be rejected, not returned silently.
+    # unit[t] = 2 makes the change-of-basis B non-unimodular; the Sherman-Morrison
+    # inverse only holds for unit[t] == 1, so this must refuse loudly (-O safe).
     A = truncated_polynomial(2)                 # t = 0
     bad_unit = np.array([2, 0], dtype=np.int64)
-    with pytest.raises(AssertionError):
+    with pytest.raises(QuiverlabError, match="not unimodular"):
         auto_to_f_basis(A, bad_unit, np.eye(A.m, dtype=np.int64))

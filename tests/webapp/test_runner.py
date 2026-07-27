@@ -105,21 +105,19 @@ def test_result_size_cap_refuses_before_writing(tmp_path):
     assert not (tmp_path / "result.json").exists()     # nothing written
 
 
-def test_pdf_unavailable_is_recorded(tmp_path, monkeypatch):
-    # Honest worked-steps contract: when pdf is requested with an HH item,
-    # write_trace produces EITHER a real trace.pdf (pdflatex/tectonic on PATH) OR
-    # a self-contained trace_steps.html fallback, and meta["pdf"] names whichever
-    # landed. The old FALSE "trace subsystem absent" label must appear nowhere.
+def test_worked_steps_report_is_recorded(tmp_path, monkeypatch):
+    # Honest worked-steps contract: when the report is requested (artifacts.pdf) with an
+    # HH item, write_trace produces the print-ready trace_steps.html + trace.json, and
+    # meta["pdf"] names the HTML report. PDF/TeX report artifacts have been removed. The
+    # old FALSE "trace subsystem absent" label must appear nowhere.
     monkeypatch.chdir(tmp_path)
     req = _req({"kind": "GF", "p": 2, "n": 1}, ["hh_cohomology:0..3"],
                artifacts={"pdf": True, "tikz": False})
     art = tmp_path / "art"
     result = run_spec(req, art)
-    meta_pdf = result["meta"]["pdf"]
-    pdf_ok = (art / "trace.pdf").exists() and meta_pdf == "trace.pdf"
-    html_ok = ("trace_steps.html" in meta_pdf
-               and (art / "trace_steps.html").exists())
-    assert pdf_ok or html_ok, f"neither trace.pdf nor trace_steps.html: {meta_pdf!r}"
+    assert result["meta"]["pdf"] == "worked steps in trace_steps.html"
+    assert (art / "trace_steps.html").exists() and (art / "trace.json").exists()
+    assert not (art / "trace.pdf").exists() and not (art / "trace.tex").exists()
     # The false label is gone -- from the payload and from result.json on disk.
     assert "trace subsystem absent" not in json.dumps(result)
     assert "trace subsystem absent" not in (art / "result.json").read_text()
@@ -128,15 +126,16 @@ def test_pdf_unavailable_is_recorded(tmp_path, monkeypatch):
 
 
 def test_pdf_requested_without_hh_item(tmp_path, monkeypatch):
-    # pdf requested but no HH item computed -> honest label, no trace file.
+    # report requested but no HH item computed -> honest label, no trace file.
     monkeypatch.chdir(tmp_path)
     req = _req({"kind": "GF", "p": 2, "n": 1}, ["cartan"],
                artifacts={"pdf": True, "tikz": False})
     art = tmp_path / "art"
     result = run_spec(req, art)
-    assert result["meta"]["pdf"] == "no traced computation requested (PDF covers HH worked steps)"
-    assert not (art / "trace.pdf").exists()
+    assert result["meta"]["pdf"] == \
+        "no traced computation requested (the worked-steps report covers HH)"
     assert not (art / "trace_steps.html").exists()
+    assert not (art / "trace.pdf").exists()
     assert not (tmp_path / "quiverlab_traces").exists()
 
 

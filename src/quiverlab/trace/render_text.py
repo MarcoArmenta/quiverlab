@@ -10,7 +10,7 @@ baked in beyond the ASCII bracket layout pinned by the golden."""
 from quiverlab.trace.events import (
     Dispatch, ResolutionTerm, RankStep, DifferentialEvent, LiftStep,
     AmbiguityEvent, ReductionStep, ModuleTerm, ModuleDifferential, ExtDegree,
-    StepNote,
+    StepNote, ResultDims,
 )
 from quiverlab.trace.recorder import TERMS_ELISION, MATRIX_ELISION_CELLS
 
@@ -21,9 +21,9 @@ ELISION_PREAMBLE = (
     "Matrices with more than %d entries are shown as [shape r x c, rank k -- "
     "elided]; every step still appears." % MATRIX_ELISION_CELLS)
 
-# The direct-sum / composition-factor formatting shared by all three renderers.
-# `oplus_text` groups a vertex list with repetition into `P_1^2 (+) P_3`; the
-# LaTeX/HTML renderers reuse `oplus_tex` (defined in render_latex).
+# The direct-sum / composition-factor formatting. `oplus_text` groups a vertex list
+# with repetition into `P_1^2 (+) P_3` (plain text); the HTML renderer's TeX-source
+# twin `oplus_tex` lives in render_html.
 
 
 def oplus_text(summands, sym):
@@ -83,6 +83,12 @@ def _matrix_block(rs):
     renderers as the fallback plain rendering."""
     if rs.elided or rs.matrix is None:
         return ["  (%s)" % rs.note]
+    if rs.nrows == 0:
+        # A differential INTO a 0-dimensional space (e.g. a CS cochain degree where
+        # dim C_{n+1}=0): the zero map. Render the symbol 0 -- and, crucially, never take
+        # max() over the empty row range below, which would raise. (A 0-COLUMN matrix with
+        # rows, dim C_n=0, still renders as an empty "[  ]" -- pinned by the module golden.)
+        return ["    [ 0 ]"]
     widths = [max(len(rs.matrix[i][j]) for i in range(rs.nrows)) for j in range(rs.ncols)]
     out = []
     for i in range(rs.nrows):
@@ -190,9 +196,11 @@ def _module_steps_lines(events):
                          % (e.nrows, e.ncols, e.field))
             lines.extend(_matrix_block(e))
         lines.append("")
-    dims, op = ext_result_dims(events)
-    if dims:
-        lines.append("Result: " + "   ".join("%s^%d = %d" % (op, i, d)
+    # ALL Ext/Tor runs in the stream (not just the first), each with the correct
+    # subscript/superscript -- an Ext run then a Tor run both appear (Plan 34 MINOR).
+    for op, dims in ext_result_runs(events):
+        sep = "_" if op == "Tor" else "^"
+        lines.append("Result: " + "   ".join("%s%s%d = %d" % (op, sep, i, d)
                                               for i, d in enumerate(dims)))
         lines.append("")
     return lines
@@ -200,6 +208,14 @@ def _module_steps_lines(events):
 
 def render_text(events, title="", references=(), algebra=None):
     events = list(events)
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.trace.events import ALL_EVENTS
+    for e in events:
+        if not isinstance(e, ALL_EVENTS):
+            raise QuiverlabError(
+                "render_text received a non-event object of type %r -- likely an "
+                "unpacked (events, result) tuple from a trace_* helper; every "
+                "element of the stream must be a trace event" % type(e).__name__)
     lines = []
     if title:
         lines.append("Worked steps: " + title)
@@ -244,12 +260,25 @@ def render_text(events, title="", references=(), algebra=None):
             lines.append("Ambiguity chain (degree %d): %d word(s)"
                          % (e.degree, len(e.chain_words)))
     lines.extend(_module_steps_lines(events))
-    dims = derive_dims(events)
-    if dims:
-        kind = _dims_kind(events)
-        cells = "   ".join("%s%d = %d" % (kind, i, d) for i, d in enumerate(dims))
+    # The (co)homology Result: prefer the AUTHORITATIVE dims the engine returned
+    # (a ResultDims event, injected by writer.py from HHTable.dims) over the
+    # event-derived ones, so the line carries the engine's numbers AND the correct
+    # HH^/HH_ variance; fall back to derive_dims when no ResultDims is present
+    # (direct renderer calls / module reports) -- byte-identical to before.
+    rd = next((e for e in events if isinstance(e, ResultDims)), None)
+    if rd is not None:
+        cells = "   ".join("%s%d = %d" % (rd.kind, i, d) for i, d in enumerate(rd.dims))
         lines.append("Result: " + cells)
+        if rd.note:
+            lines.append(rd.note)
         lines.append("")
+    else:
+        dims = derive_dims(events)
+        if dims:
+            kind = _dims_kind(events)
+            cells = "   ".join("%s%d = %d" % (kind, i, d) for i, d in enumerate(dims))
+            lines.append("Result: " + cells)
+            lines.append("")
     if references:
         lines.append("References:")
         for key, entry in references:

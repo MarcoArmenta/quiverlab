@@ -3,8 +3,9 @@
 from quiverlab.fields import CC
 from quiverlab.trace.recorder import (
     Trace, rankstep, resolve_verbose, MAX_EVENTS, MATRIX_ELISION_CELLS,
+    BUFFER_FULL_PREFIX,
 )
-from quiverlab.trace.events import RankStep, Dispatch
+from quiverlab.trace.events import RankStep, Dispatch, StepNote
 
 
 def test_trace_is_list_compatible_for_groebner():
@@ -17,8 +18,15 @@ def test_buffer_cap_drops_and_counts_overflow():
     tr = Trace(max_events=3)
     for i in range(10):
         tr.append(Dispatch(route=str(i), reason="", n_relations=0))
-    assert len(tr) == 3
-    assert tr.elided_events == 7
+    # 3 real events + ONE reserved elision StepNote (surfaced in the stream so a renderer,
+    # which only sees list(tr), can show the elision -- the "every step appears" claim
+    # must never be silently violated).
+    assert len(tr) == 4
+    reals = [e for e in tr if isinstance(e, Dispatch)]
+    notes = [e for e in tr if isinstance(e, StepNote)]
+    assert len(reals) == 3 and len(notes) == 1
+    assert notes[0].text.startswith(BUFFER_FULL_PREFIX)
+    assert tr.elided_events == 7                      # the 7 dropped Dispatches, counted
     assert any("elided" in n.lower() for n in tr.elision_notes)
 
 

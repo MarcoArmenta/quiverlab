@@ -132,20 +132,21 @@ def test_tor_dispatch_is_honest_about_the_engine(runner):
 
 
 # --------------------------------------------------------------------------- #
-# Worked-steps bundle for module computes (Marco #5): trace_tex/.html populated
+# Worked-steps bundle for module computes (Marco #5): trace_html/.json populated
 # --------------------------------------------------------------------------- #
 
-def test_module_worked_steps_tex_when_report_requested(runner):
+def test_module_worked_steps_html_when_report_requested(runner):
     # With the report requested (artifacts.pdf), a module compute emits the Part-C
-    # step events, so trace_tex()/trace_html() cover the module -- the .tex the GUI
-    # download button ships (Plan 30 C1).
+    # step events, so trace_html()/trace_json() cover the module -- the HTML report the
+    # GUI download button ships (PDF/TeX report output has been removed).
     req = dict(_LOOP, compute=["projective_resolution:0..3"],
                artifacts={"pdf": True, "tikz": False})
     _ready(runner, req)
     assert _one(runner, "projective_resolution:0..3")["ok"]
-    tex = runner.trace_tex()
-    assert tex and "P_" in tex and "projective" in tex
-    assert runner.trace_html()
+    html = runner.trace_html()
+    assert html and "P_" in html and "projective" in html
+    assert runner.trace_json()
+    assert not hasattr(runner, "trace_tex"), "trace_tex accessor must be removed"
 
 
 def test_module_trace_absent_when_report_not_requested(runner):
@@ -155,4 +156,4 @@ def test_module_trace_absent_when_report_not_requested(runner):
                artifacts={"pdf": False, "tikz": True})
     _ready(runner, req)
     assert _one(runner, "projective_resolution:0..3")["ok"]
-    assert runner.trace_tex() == "" and runner.trace_html() == ""
+    assert runner.trace_html() == "" and runner.trace_json() == ""

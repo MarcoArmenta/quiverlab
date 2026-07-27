@@ -135,10 +135,28 @@ class StepNote:
     heading: bool = False
 
 
+@dataclass
+class ResultDims:
+    """The AUTHORITATIVE final (co)homology dimensions the engine actually returned
+    (``HHTable.dims`` / ``.kind``), recorded into the trace as the Result source (Plan 34
+    fix). The three human renderers show THIS as the "Result" line (with the correct
+    ``HH^`` / ``HH_`` variance) rather than re-deriving from the per-degree events, so a
+    trace can never mislabel or misreport what the engine computed; ``render_text.derive_dims``
+    stays a CROSS-CHECK (writer.py raises on drift). ``note`` carries an honest one-liner
+    when the engine records no per-degree worked steps (e.g. the fast GF(p) engine), so
+    the report still has a Result line without fabricating steps.
+
+    ``kind`` is ``"HH^"`` (cohomology) or ``"HH_"`` (homology); ``dims`` is the list of
+    integer dimensions in degree order; ``note`` defaults to ``""``."""
+    kind: str
+    dims: object
+    note: str = ""
+
+
 __all__ = [
     "Dispatch", "ReductionStep", "AmbiguityEvent", "ResolutionTerm",
     "DifferentialEvent", "LiftStep", "RankStep",
-    "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote",
+    "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote", "ResultDims",
     "ALL_EVENTS",
 ]
 
@@ -148,4 +166,4 @@ __all__ = [
 # silently skipping it would drop worked steps from the report.
 ALL_EVENTS = (Dispatch, ReductionStep, AmbiguityEvent, ResolutionTerm,
               DifferentialEvent, LiftStep, RankStep,
-              ModuleTerm, ModuleDifferential, ExtDegree, StepNote)
+              ModuleTerm, ModuleDifferential, ExtDegree, StepNote, ResultDims)

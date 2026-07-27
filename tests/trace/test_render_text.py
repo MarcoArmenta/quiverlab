@@ -92,14 +92,10 @@ def test_homology_derive_dims_uses_the_homology_pairing():
 
 
 def test_verbose_homology_written_document_result_matches_engine(tmp_path, monkeypatch):
-    """End-to-end: a verbose hochschild_homology run WRITES a worked-steps
-    document whose headline Result dims equal the engine's .dims. Force the no-JS
-    HTML fallback (toolchain-agnostic) so the written Result is readable without a
-    LaTeX toolchain, then assert its dims are the engine's [2, 1, 1] -- NOT the
-    [2, 2, 1] the pre-fix cohomology formula produced (review C1)."""
-    import quiverlab.trace.writer as writer
-
-    monkeypatch.setattr(writer, "have_latex", lambda: None)  # always HTML fallback
+    """End-to-end: a verbose hochschild_homology run WRITES a worked-steps HTML
+    document whose headline Result dims equal the engine's .dims, then assert its
+    dims are the engine's [2, 1, 1] -- NOT the [2, 2, 1] the pre-fix cohomology
+    formula produced (review C1)."""
     monkeypatch.chdir(tmp_path)
     A = truncated_polynomial(2, field=CC)
     expected = A.hochschild_homology(2).dims

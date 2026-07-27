@@ -97,6 +97,28 @@ def test_complex_off_circle_roots_end_to_end_rad2_algebra():
     assert abs(float(rho.evalf(30)) - 3.58474330285921) < 1e-9
 
 
+def test_accepts_coxeter_polynomial_poly_object():
+    # Regression: Algebra.coxeter_polynomial() returns a sympy.Poly, and a Poly has no
+    # .expand -- so spectral_radius/mahler_measure used to raise a raw AttributeError on
+    # the most natural call spectral_radius(A.coxeter_polynomial()). They now accept a
+    # Poly (via .as_expr()) and give the SAME exact value as the expr form.
+    from quiverlab.fields import QQ
+    # 3-Kronecker (wild, hereditary): Coxeter poly t^2 - 7t + 1, spectral radius the
+    # Coxeter number (7 + 3 sqrt 5)/2.
+    A = Quiver([1, 2], {"a": (1, 2), "b": (1, 2), "c": (1, 2)}).algebra(field=QQ)
+    P = A.coxeter_polynomial()
+    assert isinstance(P, sp.Poly)                                  # the input really is a Poly
+    rho_poly = spectral_radius(P)
+    rho_expr = spectral_radius(P.as_expr())
+    assert sp.simplify(rho_poly - rho_expr) == 0                   # Poly == expr, exactly
+    assert sp.simplify(rho_poly - (7 + 3 * sp.sqrt(5)) / 2) == 0   # exact Coxeter number
+    assert sp.simplify(mahler_measure(P) - mahler_measure(P.as_expr())) == 0
+    # kA_3: Coxeter poly is cyclotomic -> radius 1, Poly input short-circuits cleanly.
+    A3 = Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(field=QQ)
+    assert spectral_radius(A3.coxeter_polynomial()) == sp.Integer(1)
+    assert mahler_measure(A3.coxeter_polynomial()) == sp.Integer(1)
+
+
 def test_spectral_of_cartan_of_quiver_first_ever_coverage():
     # first-ever assertion coverage of star_quiver + cartan_of_quiver (ledger)
     from quiverlab.engine.coxeter_spectrum import star_quiver, cartan_of_quiver

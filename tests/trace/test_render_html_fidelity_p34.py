@@ -259,6 +259,25 @@ def test_self_map_differential_shows_M_on_both_sides():
     assert r"\rho_M(a) : M \to M" in html, "dom_is_module not honored in HTML"
 
 
+def test_zero_dimensional_matrix_renders_zero_in_html():
+    """A 0xk / kx0 differential (every zero Ext/Tor connecting map) renders as the
+    symbol ``0`` in the shared ``_pmatrix`` -- never an empty ``\\begin{pmatrix}
+    \\end{pmatrix}`` that would typeset as a stray ``()`` (Plan 34 BLOCKING-2)."""
+    from quiverlab.trace.render_html import _pmatrix
+
+    class _E:                                   # a 0xk / kx0 differential event
+        matrix, nrows, ncols, elided, note = [], 0, 3, False, ""
+    assert _pmatrix(_E()) == "0"
+    _E.matrix, _E.nrows, _E.ncols = [[], [], []], 3, 0
+    assert _pmatrix(_E()) == "0"
+    # ...and in a real Ext report the empty environment never appears:
+    A = _square()
+    ev, _ = trace_ext(A, A.simple(1), A.projective(1), 3)
+    html = render_html(ev, title="t")
+    assert r"\begin{pmatrix} \end{pmatrix}" not in html
+    assert r"\begin{pmatrix}\end{pmatrix}" not in html
+
+
 def test_render_html_module_report_is_byte_deterministic():
     sq = _square()
     M = sq.projective(1).radical()

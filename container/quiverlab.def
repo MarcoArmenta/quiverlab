@@ -1,7 +1,7 @@
 # quiverlab HPC + offline-GUI image -- Apptainer/Singularity definition (Plan 28).
 #
 # KEEP IN SYNC with container/Dockerfile: every %post step below mirrors a RUN in
-# the Dockerfile (same base digest, same tectonic pin + pre-warm, same
+# the Dockerfile (same base digest, same
 # `pip install -e ".[fast,hpc,web]"`, same guarded seed).
 #
 # The PRIMARY distribution path does NOT use this file -- users pull the OCI image
@@ -28,36 +28,12 @@ From: python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033
 %post
     set -eu
     export DEBIAN_FRONTEND=noninteractive
-    export TECTONIC_VERSION=0.15.0
-    export TECTONIC_ARCH=x86_64-unknown-linux-gnu
-    export TECTONIC_CACHE_DIR=/opt/quiverlab/tectonic-cache
     export QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
     export PIP_NO_CACHE_DIR=1 PIP_DISABLE_PIP_VERSION_CHECK=1
-
-    # tectonic (pinned static release), mirrors the Dockerfile RUN.
-    apt-get update
-    apt-get install -y --no-install-recommends curl ca-certificates
-    curl -fsSL "https://github.com/tectonic-typesetting/tectonic/releases/download/tectonic%40${TECTONIC_VERSION}/tectonic-${TECTONIC_VERSION}-${TECTONIC_ARCH}.tar.gz" \
-        | tar xz -C /usr/local/bin tectonic
-    tectonic --version
-    apt-get purge -y curl
-    apt-get autoremove -y
-    rm -rf /var/lib/apt/lists/*
 
     # Editable install: webapp is not in the wheel -> -e keeps `import webapp` live.
     cd /opt/build
     pip install -e ".[fast,hpc,web]"
-
-    # Pre-warm the tectonic bundle so runtime is fully offline.
-    mkdir -p "$TECTONIC_CACHE_DIR"
-    printf '%s\n' \
-        '\documentclass{article}' \
-        '\usepackage{amsmath,amssymb,amsfonts,geometry,hyperref}' \
-        '\begin{document}' \
-        'quiverlab tectonic pre-warm.' \
-        '\end{document}' > /tmp/prewarm.tex
-    tectonic --outdir /tmp /tmp/prewarm.tex
-    rm -f /tmp/prewarm.tex /tmp/prewarm.pdf
 
     # Offline example-cache seed (guarded; wheel/webapp side of Plan 28).
     mkdir -p /opt/quiverlab
@@ -72,7 +48,6 @@ From: python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033
     export LANG=C.UTF-8 LC_ALL=C.UTF-8
     export MPLBACKEND=Agg PYTHONUNBUFFERED=1
     export NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2
-    export TECTONIC_CACHE_DIR=/opt/quiverlab/tectonic-cache
     export QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
 
 # Default entrypoint mirrors the Dockerfile ENTRYPOINT ["quiverlab-hpc"].

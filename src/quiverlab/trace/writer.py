@@ -1,11 +1,9 @@
-"""Renderer selection + output-path contract + the printed one-liner (spec §3.8).
+"""Worked-steps output-path contract + the printed one-liner (spec §3.8).
 
-Selection: pdflatex or tectonic on PATH -> compile LaTeX to PDF; otherwise (or if a
-found toolchain fails to compile) write the self-contained no-JS HTML (TeX source)
-and print a LOUD, HONEST one-liner distinguishing "no toolchain found" from
-"compilation failed". Output:
+Renders the recorded worked steps to a self-contained, no-JavaScript HTML report
+and its JSON machine record. Output:
 ./quiverlab_traces/HHc_<hash>.<ext> (cohomology) / HHh_<hash>.<ext> (homology)
-(Plan 09 collects the newest *.pdf, else *.html, from this directory -- the glob is
+(Plan 09 collects the newest *.html from this directory -- the glob is
 extension-based, so the safe stem does not affect it).
 
 The filename hash is 12 hex chars (48 bits): the plan's original 4-hex (16-bit)
@@ -14,11 +12,7 @@ overwrite; 12 hex pushes the collision horizon out of practical reach while stay
 fully deterministic (no floats)."""
 import hashlib
 import pathlib
-import shutil
-import subprocess
-import tempfile
 
-from quiverlab.trace.render_latex import render_latex
 from quiverlab.trace.render_html import render_html
 from quiverlab.trace.render_json import render_json
 
@@ -26,112 +20,131 @@ from quiverlab.trace.render_json import render_json
 _SAFE_STEM = {"HH^": "HHc", "HH_": "HHh"}
 
 
-def have_latex():
-    for engine in ("tectonic", "pdflatex"):
-        if shutil.which(engine):
-            return engine
-    return None
-
-
 def _hash(algebra, kind, top):
     h = hashlib.sha1(("%s|%s|%s" % (repr(algebra), kind, top)).encode("utf-8"))
     return h.hexdigest()[:12]
 
 
-def _needed_matrix_cols(events):
-    """The widest rendered ``pmatrix`` (a differential) across the events, used to
-    lift amsmath's column ceiling. Elided matrices render as ``\\text{...}`` (no
-    columns), so only non-elided matrix events contribute."""
-    best = 0
-    for e in events:
-        if getattr(e, "matrix", None) is not None and not getattr(e, "elided", False):
-            best = max(best, getattr(e, "ncols", 0) or 0)
-    return best
+def _superseding_dispatch_index(events):
+    """Index of a SUPERSEDING ``Dispatch`` -- the auto->CS depth fallback
+    (``core.algebra._cs_depth_fallback``) records a SECOND ``Dispatch`` (route
+    "chouhy-solotar") AFTER the abandoned bar/fast route already filled the recorder with
+    its partial per-degree worked steps. ``write_trace`` only ever renders a SINGLE HH
+    computation, so a second Dispatch is unambiguously that fallback (the up-front CS route
+    and every normal route emit exactly one). Returns the index of the LAST Dispatch when
+    more than one is present, else ``None`` (every non-fallback stream)."""
+    from quiverlab.trace.events import Dispatch
+    idxs = [i for i, e in enumerate(events) if isinstance(e, Dispatch)]
+    return idxs[-1] if len(idxs) > 1 else None
 
 
-def _widen_matrix_cols(tex, ncols):
-    r"""amsmath's ``pmatrix`` caps columns at ``MaxMatrixCols`` (default 10); a
-    wider differential makes pdflatex/tectonic abort with "Extra alignment tab has
-    been changed to \cr", so the PDF silently degrades to the HTML fallback *even
-    with a toolchain present* (this was the "print report gives no PDF" bug). Raise
-    the ceiling to the widest matrix actually rendered so BOTH the compiled PDF and
-    the persisted, compile-it-yourself ``.tex`` build. Idempotent (skips if the
-    counter is already set upstream) and anchored on ``\begin{document}`` -- present
-    in every LaTeX document, so this survives preamble edits."""
-    if ncols <= 10 or r"\setcounter{MaxMatrixCols}" in tex:
-        return tex
-    return tex.replace(
-        r"\begin{document}",
-        r"\setcounter{MaxMatrixCols}{%d}" % ncols + "\n" + r"\begin{document}", 1)
+def _drop_superseded(events):
+    """Correction 2 (auto->CS fallback report coherence): when the bar/fast route hit its
+    depth wall and ``engine="auto"`` rerouted to Chouhy-Solotar, the recorder holds BOTH the
+    ABANDONED partial bar worked steps AND the full CS worked steps in one stream. Rendering
+    both is confusing in a homework document, and it lets the HH drift gate pass only by
+    last-wins luck (``derive_dims``'s degree-keyed dicts happen to resolve to all-CS).
+
+    Drop the abandoned worked-step events (everything that is NOT a ``Dispatch``) that
+    precede the superseding CS dispatch, keeping the routing STORY -- both ``Dispatch`` lines,
+    the second stating WHY it rerouted ("... exceeded max_cells ... reroutes to the
+    Chouhy-Solotar resolution ...") -- and the CS worked steps as the single authoritative
+    set. A no-op for every non-fallback stream (<=1 Dispatch), so normal reports (and the
+    goldens) are byte-unchanged."""
+    from quiverlab.trace.events import Dispatch
+    cut = _superseding_dispatch_index(events)
+    if cut is None:
+        return list(events)
+    return [e for i, e in enumerate(events) if i >= cut or isinstance(e, Dispatch)]
 
 
-def _compile_pdf(tex, out_pdf, engine):
-    """Compile `tex` to `out_pdf` with `engine`; return the page count (best effort)."""
-    with tempfile.TemporaryDirectory() as d:
-        src = pathlib.Path(d) / "trace.tex"
-        src.write_text(tex)
-        if engine == "tectonic":
-            cmd = ["tectonic", "-o", d, str(src)]
-        else:
-            cmd = ["pdflatex", "-interaction=nonstopmode", "-output-directory", d, str(src)]
-        subprocess.run(cmd, cwd=d, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
-        built = pathlib.Path(d) / "trace.pdf"
-        shutil.copyfile(built, out_pdf)
-        data = built.read_bytes()
-        return max(data.count(b"/Type /Page") - data.count(b"/Type /Pages"), 1)
+def _authoritative_result(events, table):
+    """Cross-check the event-DERIVED HH dims against the engine's AUTHORITATIVE dims (the
+    HH DRIFT GATE -- mirroring the module drift gates in ``trace.modules``) and append a
+    ``ResultDims`` event carrying those authoritative dims + variance as the Result source.
+
+    Why: the CS engine used to record only ResolutionTerms, so ``derive_dims`` re-derived
+    C_n (the cochain SPACE dims) and mislabelled HH^ as HH_; the report shipped wrong
+    numbers with no gate to catch it. Now the renderers show ``ResultDims`` (the engine's
+    ``HHTable.dims``/``.kind``) as the Result, and this gate refuses to ship a report whose
+    event-derived dims/variance disagree with what the engine returned.
+
+    ``table`` is the HHTable an HH computation returned (``None`` for a module report --
+    then nothing is injected and the module Ext/Tor Result stands). When the engine records
+    no per-degree worked steps (the fast GF(p) engine emits only a Dispatch) there is
+    nothing to cross-check; an honest note rides on the ResultDims so the report still has a
+    Result line without fabricating steps.
+
+    Correction 1 (elision vs the gate): when the MAX_EVENTS buffer ELIDED steps the surviving
+    event list is TRUNCATED, so ``derive_dims`` reconstructs a short/partial dim list.
+    Comparing that to the engine's full ``table.dims`` would HARD-RAISE and defeat the buffer
+    cap, whose whole point is to let an over-long report still ship (with an elision note).
+    So the derive-vs-table CROSS-CHECK is SKIPPED under elision (detected via the recorder's
+    reserved BUFFER_FULL StepNote); the authoritative ResultDims is emitted either way."""
+    if table is None:
+        return events
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.trace.events import (
+        ResultDims, ResolutionTerm, RankStep, ModuleTerm, ModuleDifferential, ExtDegree,
+        StepNote,
+    )
+    from quiverlab.trace.recorder import BUFFER_FULL_PREFIX
+    from quiverlab.trace.render_text import derive_dims, _dims_kind
+    elided = any(isinstance(e, StepNote) and BUFFER_FULL_PREFIX in e.text for e in events)
+    derived = derive_dims(events)
+    if derived and not elided:
+        if list(derived) != list(table.dims):
+            raise QuiverlabError(
+                "HH worked-steps drift: the report's event-derived dimensions %s do not "
+                "match the engine's returned dimensions %s -- refusing to ship a report "
+                "that misstates the computation" % (list(derived), list(table.dims)))
+        if _dims_kind(events) != table.kind:
+            raise QuiverlabError(
+                "HH worked-steps drift: the report's event-derived variance %r does not "
+                "match the engine's %r" % (_dims_kind(events), table.kind))
+    has_steps = any(isinstance(e, (ResolutionTerm, RankStep, ModuleTerm,
+                                   ModuleDifferential, ExtDegree)) for e in events)
+    # An honest "fast engine has no worked steps" note only when there truly are none AND
+    # nothing was elided (under elision the reserved BUFFER_FULL StepNote already explains
+    # the missing steps, so claiming the fast engine recorded none would be a lie).
+    note = ("" if (has_steps or elided) else
+            "The fast engine records no per-degree worked steps; the dimensions shown "
+            "are the computed result.")
+    return events + [ResultDims(kind=table.kind, dims=list(table.dims), note=note)]
 
 
-def write_trace(events, table, algebra, kind, top, references=(), out_dir=None,
-                meta_out=None):
-    """Render the worked steps to PDF (a LaTeX toolchain on PATH) or the print-ready
-    HTML fallback, persist the .tex alongside, print the one-liner, and return the
-    produced path (str). ``meta_out`` (optional dict) is the split-deployment fix
-    (Plan 34 MAJOR-3): the WORKER records HERE why a PDF was not produced --
-    ``"no_toolchain"`` or ``"compile"`` -- so ``pages.py`` reports the RECORDED reason
-    instead of re-probing ``have_latex()`` at page-render time on a different tier.
-    Set only when the HTML fallback is taken; untouched (so absent) when a PDF is
-    produced -- keeping the PDF-present result dict byte-identical."""
+def write_trace(events, table, algebra, kind, top, references=(), out_dir=None):
+    """Render the worked steps to the self-contained, print-ready HTML report and the
+    JSON machine record, print the one-liner, and return the produced HTML path (str).
+
+    Both deliverables are pure functions of the (deduplicated) event stream, so they
+    are byte-identical for identical input. The HTML report is print-ready (the GUI /
+    a browser can Print -> Save as PDF); the JSON is the complete, schema-versioned
+    event stream."""
     events = list(events)
+    # Correction 2 (auto->CS depth fallback): if the bar/fast route hit its depth wall and
+    # auto rerouted to Chouhy-Solotar, drop the abandoned partial bar worked steps so the
+    # report shows a single coherent CS worked-steps set (the two Dispatch lines keep the
+    # routing story). Done BEFORE the drift gate so it derives over the authoritative CS
+    # steps by construction, not by last-wins luck. A no-op for every non-fallback stream.
+    events = _drop_superseded(events)
+    # HH drift gate + authoritative Result (Plan 34 fix): cross-check the event-derived
+    # dims against the engine's returned dims and record the authoritative dims/variance
+    # as a ResultDims event so every renderer shows the engine's numbers with the correct
+    # HH^/HH_ label (and the fast GF(p) empty-steps report still gets a Result line).
+    events = _authoritative_result(events, table)
     out = pathlib.Path(out_dir) if out_dir is not None else (pathlib.Path.cwd() / "quiverlab_traces")
     out.mkdir(parents=True, exist_ok=True)
     stem = "%s_%s" % (_SAFE_STEM.get(kind, kind), _hash(algebra, kind, top))
     title = "%s of %s" % (kind, repr(algebra).splitlines()[0])
-    # Build the LaTeX source ONCE and persist it next to the produced pdf/html:
-    # the .tex is the exhaustive, downloadable-everywhere source (Plan 30 C1), so it
-    # is written whether or not a toolchain is present -- persisted, not
-    # temp-discarded by the compile step.
-    tex = render_latex(events, title=title, references=references, algebra=algebra)
-    # Lift amsmath's 10-column pmatrix ceiling to the widest matrix actually
-    # rendered, or a >10-column differential aborts the compile (PDF -> HTML
-    # fallback even with a toolchain present). Applied to the persisted .tex too,
-    # so the "compile it yourself" source builds standalone.
-    tex = _widen_matrix_cols(tex, _needed_matrix_cols(events))
-    (out / (stem + ".tex")).write_text(tex)
     # The JSON machine record (Plan 34): the complete event stream, deterministic and
-    # schema-versioned, written beside the .tex whether or not a toolchain is present
-    # -- the third mandated artifact (PDF/HTML + this). A pure function of the events,
-    # so it is byte-identical for identical input regardless of the PDF/HTML branch.
+    # schema-versioned. A pure function of the events, byte-identical for identical input.
     (out / (stem + ".json")).write_text(
         render_json(events, title=title, references=references, algebra=algebra))
-    engine = have_latex()
-    html_note = "no LaTeX toolchain found -- install pdflatex or tectonic for a PDF"
-    reason = "no_toolchain"                       # why no PDF (recorded for pages.py)
-    if engine is not None:
-        pdf = out / (stem + ".pdf")
-        try:
-            pages = _compile_pdf(tex, str(pdf), engine)
-            print("Worked steps: %s (%d pp)" % (_rel(pdf), pages))
-            return str(pdf)
-        except Exception:
-            # a toolchain WAS found but the compile failed: say so honestly; never
-            # claim "no toolchain found" when one is on PATH.
-            html_note = "LaTeX compilation failed (%s); wrote HTML fallback" % engine
-            reason = "compile"
     html = out / (stem + ".html")
     html.write_text(render_html(events, title=title, references=references, algebra=algebra))
-    if meta_out is not None:
-        meta_out["pdf_fallback_reason"] = reason
-    print("Worked steps: %s (HTML, no JavaScript; %s)" % (_rel(html), html_note))
+    print("Worked steps: %s (HTML, no JavaScript; print to PDF from your browser)"
+          % _rel(html))
     return str(html)
 
 

@@ -256,9 +256,10 @@ A.hochschild_cohomology(2)    # writes quiverlab_traces/HHc_<hash>.pdf (or .html
 Worked-steps documents are on by default (`quiverlab.verbose = True`); every claim
 in them is a golden-file-tested equality with the value the engine computed. Turn
 them off per call (`A.hochschild_cohomology(2, verbose=False)`) or globally
-(`quiverlab.verbose = False`). PDFs need `pdflatex` or `tectonic` on `PATH`;
-otherwise a self-contained, JavaScript-free HTML document (math shown as TeX source)
-is written with a one-line note.
+(`quiverlab.verbose = False`). Reports are delivered as a self-contained,
+JavaScript-free HTML document (math shown as TeX source) plus an exact JSON event
+stream; the browser's Print-to-PDF turns the HTML into a page-ready document when
+one is needed.
 
 ## Web interface
 
@@ -319,7 +320,7 @@ apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest   # 
 apptainer run quiverlab.sif sample-config > my-config.yaml                    # 2. config (or export from the GUI)
 sbatch slurm/quiverlab-drac.sbatch my-config.yaml result.json                 # 3. submit
 scp you@cluster:result.json .                                                 # 4. fetch
-apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.pdf    # 5. render locally
+apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.html   # 5. render locally (HTML/JSON)
 ```
 
 Very large examples become reachable via **atomic per-degree checkpoints**: a job
