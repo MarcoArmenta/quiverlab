@@ -77,10 +77,19 @@ same image, so a config that renders here runs there unchanged.
 
 - **Linux:** Apptainer or Docker, both work.
 - **Windows:** Docker Desktop works (`docker run -p 8000:8000 ... gui`).
-- **macOS:** use **Docker** (`docker run -p 8000:8000 ... gui`) or the plain pip
-  CLI (`pip install "quiverlab[hpc,web]"; quiverlab-hpc gui`). Apptainer has no
-  native macOS build -- it needs a Linux VM -- so on a Mac the Docker or pip paths
-  are the offline app.
+- **macOS:** use **Docker** (`docker run -p 8000:8000 ... gui`) or the pip path
+  below. Apptainer has no native macOS build -- it needs a Linux VM -- so on a
+  Mac the Docker or pip paths are the offline app.
 
-The pip path is fully offline too once installed: `quiverlab-hpc gui` serves the same
-local app with no network calls.
+**The pip path needs a source checkout** (the GUI's `webapp/` tree is deliberately
+not packaged into the wheel) and Python >= 3.10:
+
+```bash
+git clone https://github.com/MarcoArmenta/quiverlab.git && cd quiverlab
+python3.12 -m venv .venv && source .venv/bin/activate   # any Python >= 3.10
+pip install -e ".[hpc,web,fast]"
+quiverlab-hpc gui        # open http://localhost:8000
+```
+
+It is fully offline too once installed: `quiverlab-hpc gui` serves the same
+local app with no network calls, from any working directory.
