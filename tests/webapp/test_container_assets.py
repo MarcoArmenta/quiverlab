@@ -177,11 +177,21 @@ def test_container_workflow_shape():
     # Tag-gated + manual.
     assert 'tags: ["v*"]' in text
     assert "workflow_dispatch" in text
-    # Builds + smokes + pushes to GHCR.
-    assert "docker build" in text
+    # Builds + smokes + pushes to GHCR (buildx: amd64 smoked locally, then a
+    # multi-arch amd64+arm64 push -- Apple-Silicon laptops run natively).
+    assert "docker/build-push-action" in text
     assert "ghcr.io" in text
-    assert "docker push" in text
+    assert "push: true" in text
+    assert "linux/amd64,linux/arm64" in text
     assert "packages: write" in text
+    # Registry paths are lowercase-only; the owner is "MarcoArmenta", so the
+    # image name MUST go through the bash lowercase expansion.
+    assert "${GITHUB_REPOSITORY_OWNER,,}" in text
+    assert "ghcr.io/${{ github.repository_owner }}" not in text
+    # The gui verb is smoked THROUGH a published port (the Plan-28 image shipped
+    # with gui broken: webapp unimportable + loopback-only bind; CI never ran it).
+    assert "gui --no-open" in text
+    assert "curl" in text
     # Renders an HTML report inside docker and checks it has real content -- no PDF
     # toolchain (reports are HTML + JSON now).
     assert "render" in text

@@ -309,14 +309,14 @@ Deploy (DRAC Arbutus, Docker Compose + Caddy TLS): see
 
 ## HPC and offline use (container)
 
-The same library ships as **one container** (`ghcr.io/MarcoArmenta/quiverlab`) with
+The same library ships as **one container** (`ghcr.io/marcoarmenta/quiverlab`) with
 a `quiverlab-hpc` CLI, serving two stories from the one image.
 
 **Run a big example on a SLURM cluster in 5 steps** (only `ssh`/`scp`/`sbatch`
 needed; Apptainer is rootless):
 
 ```bash
-apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest   # 1. pull
+apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest   # 1. pull
 apptainer run quiverlab.sif sample-config > my-config.yaml                    # 2. config (or export from the GUI)
 sbatch slurm/quiverlab-drac.sbatch my-config.yaml result.json                 # 3. submit
 scp you@cluster:result.json .                                                 # 4. fetch

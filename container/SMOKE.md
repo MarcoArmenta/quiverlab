@@ -54,7 +54,7 @@ Rootless, no admin. The PRIMARY path -- no `.def` build needed:
 
 ```bash
 export APPTAINER_CACHEDIR="${SCRATCH:-$PWD}/.apptainer"   # keep the cache off $HOME quota
-apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
 
 apptainer run quiverlab.sif version
 apptainer run quiverlab.sif selftest

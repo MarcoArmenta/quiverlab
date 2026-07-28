@@ -25,6 +25,32 @@ jobs:
           name: dist
           path: dist/
 
+  # Downloadable install artifacts straight on the GitHub release page. quiverlab
+  # is pure Python, so the ONE py3-none-any wheel covers every OS (Linux / macOS /
+  # Windows, x86-64 + arm64); the sdist rides along for source installs. This job
+  # is independent of PyPI publishing (below) so release assets appear even while
+  # the PyPI trusted publisher is still pending.
+  github-release-assets:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write                              # gh release create/upload
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+      - name: Attach wheel + sdist to the GitHub release
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "quiverlab ${GITHUB_REF_NAME}. The wheel is pure Python (py3-none-any): one file installs on every OS via \`pip install <wheel>\` or \`pip install quiverlab\` once on PyPI. Container: \`docker pull ghcr.io/marcoarmenta/quiverlab:${GITHUB_REF_NAME#v}\` (amd64 + arm64); a SIF asset for air-gapped clusters is attached by the Container workflow." \
+            || true
+          gh release upload "${GITHUB_REF_NAME}" dist/* --clobber
+
   publish:
     needs: build
     runs-on: ubuntu-latest

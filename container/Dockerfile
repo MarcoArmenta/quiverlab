@@ -18,10 +18,11 @@
 # `pip install -e ".[fast,hpc,web]"`, same guarded seed).
 #
 # ---------------------------------------------------------------------------
-# Base: python:3.12-slim, PINNED BY DIGEST for linux/amd64 (HPC clusters + CI are
-# x86-64). Refresh the digest with:
-#   docker manifest inspect python:3.12-slim \
-#     | jq -r '.manifests[] | select(.platform.architecture=="amd64" and .platform.os=="linux") | .digest'
+# Base: python:3.12-slim, PINNED BY DIGEST of the MULTI-ARCH INDEX (linux/amd64
+# for HPC clusters + CI, linux/arm64 so Apple-Silicon laptops run natively --
+# pinning a single-arch manifest digest forces qemu emulation on the other arch).
+# Refresh the digest with:
+#   docker buildx imagetools inspect python:3.12-slim   # the top-level Digest
 #
 # CPU-ONLY BY DESIGN -- a plain python:slim base, NOT a CUDA/GPU image. quiverlab
 # computes with EXACT arithmetic (integers mod p, rationals); there is no floating
@@ -29,7 +30,7 @@
 # nvidia/cuda base or request GPUs on the cluster -- ask for cores and RAM instead
 # (see slurm/*.sbatch and docs/hpc.md "What resources to request").
 # ---------------------------------------------------------------------------
-FROM python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033a3a83b97fd0464
+FROM python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
 
 # Build-time version stamp: CI (container.yml) passes
 # --build-arg QUIVERLAB_VERSION=<git tag without the leading v> and asserts the
@@ -45,6 +46,14 @@ LABEL org.opencontainers.image.title="quiverlab" \
 # Fully offline, reproducible, headless runtime.
 #   QUIVERLAB_SEED_CACHE-> build->runtime handoff path for the seeded Plan-25 cache
 #                          DB; the `gui` verb copies it into the data dir on first run.
+#   PYTHONPATH=/app     -> keeps `import webapp` live for ANY python entrypoint
+#                          (the editable install maps only `quiverlab`, and console
+#                          scripts never put the cwd on sys.path; the gui verb also
+#                          locates webapp itself -- this is defense in depth).
+#   QUIVERLAB_GUI_HOST  -> 0.0.0.0 so `docker run -p 8000:8000 ... gui` is
+#                          reachable from the host (loopback inside the container's
+#                          network namespace is not). Only published ports are
+#                          exposed, so this stays local-only.
 ENV LANG=C.UTF-8 \
     LC_ALL=C.UTF-8 \
     MPLBACKEND=Agg \
@@ -54,15 +63,18 @@ ENV LANG=C.UTF-8 \
     NUMBA_NUM_THREADS=2 \
     OMP_NUM_THREADS=2 \
     QUIVERLAB_IMAGE_VERSION=${QUIVERLAB_VERSION} \
-    QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
+    QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db \
+    PYTHONPATH=/app \
+    QUIVERLAB_GUI_HOST=0.0.0.0
 
 WORKDIR /app
 
 # --- sources + install -----------------------------------------------------
 # LICENSE + README back the pyproject metadata (setuptools>=77 aborts without
-# LICENSE). webapp/ is the offline GUI surface and is NOT packaged into the wheel,
-# so the install is EDITABLE (-e) exactly like webapp/deploy/Dockerfile -- that
-# keeps `import webapp` importable for the `gui` verb from the in-image source tree.
+# LICENSE). webapp/ is the offline GUI surface and is NOT packaged into the wheel;
+# the install is EDITABLE (-e) so quiverlab resolves to the in-image source tree,
+# and `import webapp` is reachable via PYTHONPATH=/app above plus the gui verb's
+# own checkout-root locator (an editable install alone does NOT expose webapp).
 # container/ carries the guarded seed hook below. [fast,hpc,web]: numba + the HPC
 # CLI + the offline webapp; NO [qpa] (test-only, huge).
 COPY pyproject.toml README.md LICENSE ./
