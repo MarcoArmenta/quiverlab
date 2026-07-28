@@ -77,6 +77,15 @@ WORKDIR /app
 # own checkout-root locator (an editable install alone does NOT expose webapp).
 # container/ carries the guarded seed hook below. [fast,hpc,web]: numba + the HPC
 # CLI + the offline webapp; NO [qpa] (test-only, huge).
+# CVE hygiene (docker scout, 2026-07-28): the base ships full perl (an unfixed
+# Debian CRITICAL+2H chain) that nothing in this image executes -- purge it
+# (perl-base, which dpkg/debconf need, stays). Upgrade pip: 25.0.1 carries four
+# fixed MEDIUMs (CVE-2025-8869, CVE-2026-6357, CVE-2026-3219, CVE-2026-8643).
+RUN if dpkg -s perl >/dev/null 2>&1; then \
+      apt-get purge -y perl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*; \
+    fi \
+    && pip install --upgrade pip
+
 COPY pyproject.toml README.md LICENSE ./
 COPY src ./src
 COPY webapp ./webapp
