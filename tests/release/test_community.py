@@ -14,7 +14,7 @@ def test_community_files_present():
 
 
 def test_citation_cff_shape():
-    cff = (ROOT / "CITATION.cff").read_text()
+    cff = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     assert "cff-version: 1.2.0" in cff and "Armenta" in cff
     assert 'repository-code: "https://github.com/MarcoArmenta/quiverlab"' in cff
 
@@ -28,19 +28,19 @@ def test_citation_version_matches_pyproject():
     ver = tomllib.loads(
         (ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
     core = re.match(r"\d+\.\d+\.\d+", ver).group(0)        # 0.1.0.dev0 -> 0.1.0
-    cff = (ROOT / "CITATION.cff").read_text()
+    cff = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     assert f"version: {core}" in cff, f"CITATION.cff version must be the release core {core}"
 
 
 def test_docs_url_consistent_across_files():
-    mk = (ROOT / "mkdocs.yml").read_text()
-    rd = (ROOT / "README.md").read_text()
-    cff = (ROOT / "CITATION.cff").read_text()
+    mk = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    rd = (ROOT / "README.md").read_text(encoding="utf-8")
+    cff = (ROOT / "CITATION.cff").read_text(encoding="utf-8")
     assert f"site_url: {URL}" in mk
     assert URL in rd
     assert f'url: "{URL}"' in cff
 
 
 def test_development_page_documents_qpa_math():
-    dev = (ROOT / "docs" / "development" / "release.md").read_text()
+    dev = (ROOT / "docs" / "development" / "release.md").read_text(encoding="utf-8")
     assert "Ext^n_{A^e}(A, A)" in dev and "EnvelopingAlgebra" in dev
