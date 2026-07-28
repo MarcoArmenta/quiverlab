@@ -5,8 +5,9 @@
 # `pip install -e ".[fast,hpc,web]"`, same guarded seed).
 #
 # The PRIMARY distribution path does NOT use this file -- users pull the OCI image
-# straight into a SIF (rootless, no native build needed):
-#     apptainer pull docker://ghcr.io/MarcoArmenta/quiverlab:<version>
+# straight into a SIF (rootless, no native build needed; registry paths are
+# lowercase-only):
+#     apptainer pull docker://ghcr.io/marcoarmenta/quiverlab:<version>
 # This definition exists for sites that prefer a NATIVE SIF build:
 #     apptainer build quiverlab.sif container/quiverlab.def
 #
@@ -14,7 +15,7 @@
 # `apptainer run --nv` and never request GPUs; ask for cores + RAM instead.
 
 Bootstrap: docker
-From: python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033a3a83b97fd0464
+From: python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
 
 # Mirror the Dockerfile COPY set (NOT `.`, to keep .venv/.git out of the image).
 %files
@@ -48,10 +49,11 @@ From: python:3.12-slim@sha256:cab2dbf575e971934a81e4622f5aba17aa7929719bd7e31033
     export LANG=C.UTF-8 LC_ALL=C.UTF-8
     export MPLBACKEND=Agg PYTHONUNBUFFERED=1
     export NUMBA_NUM_THREADS=2 OMP_NUM_THREADS=2
-    # `import webapp` for the gui verb (webapp/ is not in the wheel; console
-    # scripts do not put the source tree on sys.path). Mirrors the Dockerfile ENV.
-    export PYTHONPATH=/app
     export QUIVERLAB_SEED_CACHE=/opt/quiverlab/seed-cache.db
+    # `import webapp` for the gui verb (editable install maps only quiverlab).
+    # No QUIVERLAB_GUI_HOST here: Apptainer shares the host network namespace,
+    # so the loopback default is both reachable and the safe choice.
+    export PYTHONPATH=/opt/build
 
 # Default entrypoint mirrors the Dockerfile ENTRYPOINT ["quiverlab-hpc"].
 %runscript

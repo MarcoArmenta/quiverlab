@@ -17,7 +17,7 @@ On a machine with internet, pull the image into a single `.sif` file and `scp` i
 your cluster's `$SCRATCH` (Apptainer is rootless -- no `sudo`, no daemon):
 
 ```bash
-apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
 scp quiverlab.sif you@cluster:/scratch/you/
 ```
 
@@ -26,7 +26,7 @@ layer cache off your small `$HOME` quota):
 
 ```bash
 export APPTAINER_CACHEDIR=$SCRATCH/.apptainer
-apptainer pull $SCRATCH/quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+apptainer pull $SCRATCH/quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
 ```
 
 ### 2. Write a config
@@ -79,7 +79,7 @@ with the **same** container -- pick whichever runtime you have:
 # Apptainer:
 apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.html
 # Docker:
-docker run --rm -v "$PWD:/w" -w /w ghcr.io/MarcoArmenta/quiverlab:latest render result.json -o report.html
+docker run --rm -v "$PWD:/w" -w /w ghcr.io/marcoarmenta/quiverlab:latest render result.json -o report.html
 # Plain pip install (no container):
 pip install "quiverlab[hpc]" && quiverlab-hpc render result.json -o report.html
 ```
@@ -153,7 +153,7 @@ Each task checkpoints independently under `$SCRATCH/quiverlab-ckpt/<job-id>`.
 
 Older sites ship **Singularity** rather than Apptainer. The commands are identical
 with `singularity` in place of `apptainer`, and the sbatch templates auto-detect it.
-Pull with `singularity pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest`.
+Pull with `singularity pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest`.
 
 ## Air-gapped clusters
 

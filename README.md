@@ -8,6 +8,26 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 <!-- [![DOI](https://joss.theoj.org/papers/<id>/status.svg)](https://doi.org/<doi>) -- added at JOSS acceptance -->
 
+## ⬇️ DOWNLOAD APPLICATION HERE
+
+> ### **[⬇ Download the QuiverLab app](https://github.com/MarcoArmenta/quiverlab/releases/tag/app-latest)** — one file, no install, no code.
+>
+> Double-click it and the GUI opens in your browser: draw a quiver, pick a
+> field, read exact results. Fully offline.
+>
+> | OS | Download |
+> |---|---|
+> | **macOS** (Apple Silicon: M1–M4) | [QuiverLab-macos-arm64.zip](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-macos-arm64.zip) |
+> | **macOS** (Intel) | [QuiverLab-macos-intel.zip](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-macos-intel.zip) |
+> | **Windows** | [QuiverLab-windows.exe](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-windows.exe) |
+> | **Linux** (x86-64) | [QuiverLab-linux-x86_64.tar.gz](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-linux-x86_64.tar.gz) |
+>
+> First-open notes (the app is not code-signed yet): **macOS** — unzip, then
+> right-click → Open; on macOS 15+ approve it once under System Settings →
+> Privacy & Security → *Open Anyway*. **Windows** — if SmartScreen appears,
+> choose *More info* → *Run anyway*. **Linux** — `tar xzf`, then run
+> `./QuiverLab`.
+
 **Exact representation theory of quivers with relations, for algebraists** —
 modules and Auslander–Reiten theory, resolutions, Ext-algebras and Koszulity,
 Hochschild (co)homology with its Gerstenhaber calculus, cyclic homology, and
@@ -316,14 +336,14 @@ Deploy (DRAC Arbutus, Docker Compose + Caddy TLS): see
 
 ## HPC and offline use (container)
 
-The same library ships as **one container** (`ghcr.io/MarcoArmenta/quiverlab`) with
+The same library ships as **one container** (`ghcr.io/marcoarmenta/quiverlab`) with
 a `quiverlab-hpc` CLI, serving two stories from the one image.
 
 **Run a big example on a SLURM cluster in 5 steps** (only `ssh`/`scp`/`sbatch`
 needed; Apptainer is rootless):
 
 ```bash
-apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest   # 1. pull
+apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest   # 1. pull
 apptainer run quiverlab.sif sample-config > my-config.yaml                    # 2. config (or export from the GUI)
 sbatch slurm/quiverlab-drac.sbatch my-config.yaml result.json                 # 3. submit
 scp you@cluster:result.json .                                                 # 4. fetch

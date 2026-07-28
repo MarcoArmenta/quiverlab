@@ -41,11 +41,10 @@ grep -q "quiverlab report" out/report.html && echo "report.html has rendered con
 Offline GUI (the laptop app):
 
 ```bash
-# The GUI binds 127.0.0.1 INSIDE the container by design (loopback-only laptop
-# app), so `-p 8000:8000` cannot reach it -- share the host's network namespace
-# instead (Linux; on Docker Desktop run the GUI from the wheel: `pip install
-# "quiverlab[web,hpc]" && quiverlab-hpc gui`).
-docker run --rm --network host quiverlab:local gui
+# The image sets QUIVERLAB_GUI_HOST=0.0.0.0 so the published port reaches the
+# GUI (loopback inside the container's namespace would not be; only published
+# ports are exposed, so this stays local-only). Works on Docker Desktop too.
+docker run --rm -p 8000:8000 quiverlab:local gui
 # open http://localhost:8000  -- computes locally, shows memory/time estimates,
 # ships the seeded example cache. No internet required after the image is pulled.
 ```
@@ -58,7 +57,7 @@ Rootless, no admin. The PRIMARY path -- no `.def` build needed:
 
 ```bash
 export APPTAINER_CACHEDIR="${SCRATCH:-$PWD}/.apptainer"   # keep the cache off $HOME quota
-apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
 
 apptainer run quiverlab.sif version
 apptainer run quiverlab.sif selftest

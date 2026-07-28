@@ -8,14 +8,26 @@ shown right in the GUI**.
 
 ---
 
+## Easiest: download the one-file app
+
+No Docker, no Python: **[download the QuiverLab app for your OS](https://github.com/MarcoArmenta/quiverlab/releases/tag/app-latest)**,
+double-click it, and the GUI opens in your browser. One file, fully offline,
+exact computation (the app runs the pure-exact kernels -- identical results to
+the accelerated path, which is parity-gated in the test suite). First-open
+notes for the unsigned binaries are on the download page.
+
+Prefer containers or pip? Both below.
+
+---
+
 ## Run it
 
 Pull once (with internet):
 
 ```bash
-apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
 # or, with Docker:
-docker pull ghcr.io/MarcoArmenta/quiverlab:latest
+docker pull ghcr.io/marcoarmenta/quiverlab:latest
 ```
 
 Then, offline, start the GUI and open the printed URL:
@@ -24,7 +36,7 @@ Then, offline, start the GUI and open the printed URL:
 # Apptainer:
 apptainer run quiverlab.sif gui
 # Docker (publish the port):
-docker run --rm -p 8000:8000 ghcr.io/MarcoArmenta/quiverlab:latest gui
+docker run --rm -p 8000:8000 ghcr.io/marcoarmenta/quiverlab:latest gui
 ```
 
 Open **<http://localhost:8000>**. Draw or pick an algebra, choose a field and what
@@ -77,10 +89,19 @@ same image, so a config that renders here runs there unchanged.
 
 - **Linux:** Apptainer or Docker, both work.
 - **Windows:** Docker Desktop works (`docker run -p 8000:8000 ... gui`).
-- **macOS:** use **Docker** (`docker run -p 8000:8000 ... gui`) or the plain pip
-  CLI (`pip install "quiverlab[hpc,web]"; quiverlab-hpc gui`). Apptainer has no
-  native macOS build -- it needs a Linux VM -- so on a Mac the Docker or pip paths
-  are the offline app.
+- **macOS:** use **Docker** (`docker run -p 8000:8000 ... gui`) or the pip path
+  below. Apptainer has no native macOS build -- it needs a Linux VM -- so on a
+  Mac the Docker or pip paths are the offline app.
 
-The pip path is fully offline too once installed: `quiverlab-hpc gui` serves the same
-local app with no network calls.
+**The pip path needs a source checkout** (the GUI's `webapp/` tree is deliberately
+not packaged into the wheel) and Python >= 3.10:
+
+```bash
+git clone https://github.com/MarcoArmenta/quiverlab.git && cd quiverlab
+python3.12 -m venv .venv && source .venv/bin/activate   # any Python >= 3.10
+pip install -e ".[hpc,web,fast]"
+quiverlab-hpc gui        # open http://localhost:8000
+```
+
+It is fully offline too once installed: `quiverlab-hpc gui` serves the same
+local app with no network calls, from any working directory.

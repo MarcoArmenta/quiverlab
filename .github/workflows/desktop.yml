@@ -1,70 +1,105 @@
-# Desktop app: per-OS single-file binaries (PyInstaller) attached to releases.
-# The download-button story: a user downloads one file from the latest release,
-# double-clicks it, and the offline GUI opens in their browser on localhost --
-# no Python, no Docker. See desktop/launcher.py + desktop/quiverlab.spec.
-#
-# Unsigned binaries: macOS Gatekeeper needs right-click -> Open on first launch
-# and Windows SmartScreen needs "More info -> Run anyway" (documented in the
-# README) until we sign/notarize.
-name: desktop
+name: Desktop app
 
+# Build the one-file double-clickable QuiverLab desktop app (PyInstaller,
+# desktop/quiverlab-desktop.spec) for every OS, smoke each binary with a REAL
+# exact computation (desktop/smoke.py), and publish the assets on the rolling
+# `app-latest` prerelease that the README's "DOWNLOAD APPLICATION HERE" banner
+# links to. Packaging per OS:
+#   * Windows: raw .exe (double-click works as downloaded)
+#   * macOS:   .zip -- browsers drop the executable bit on raw binaries; Archive
+#              Utility restores it on extraction. Unsigned: first open needs
+#              right-click->Open (or Privacy & Security -> Open Anyway on
+#              macOS 15+).
+#   * Linux:   .tar.gz (preserves the executable bit)
+# The bundle runs the pure-exact kernels (QUIVERLAB_NO_NUMBA=1; parity with the
+# numba path is test-gated) -- see desktop/launcher.py.
 on:
-  release:
-    types: [published]
-  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop.yml"
+  workflow_dispatch:
 
-permissions:
-  contents: write
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-  build:
+  build-smoke-upload:
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: write          # gh release create/upload (rolling app-latest)
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-latest
-            artifact: quiverlab-desktop-linux-x86_64
-            built: dist/quiverlab
-          - os: macos-latest
-            artifact: quiverlab-desktop-macos-arm64
-            built: dist/quiverlab
+          - os: macos-14
+            label: macos-arm64
+            asset: QuiverLab-macos-arm64.zip
+          - os: macos-13
+            label: macos-intel
+            asset: QuiverLab-macos-intel.zip
           - os: windows-latest
-            artifact: quiverlab-desktop-windows-x86_64.exe
-            built: dist/quiverlab.exe
-    runs-on: ${{ matrix.os }}
+            label: windows
+            asset: QuiverLab-windows.exe
+          - os: ubuntu-22.04    # oldest LTS runner -> widest glibc compat
+            label: linux-x86_64
+            asset: QuiverLab-linux-x86_64.tar.gz
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
-      - name: Install
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e ".[fast,web,hpc]" pyinstaller
-      - name: Build
-        run: pyinstaller desktop/quiverlab.spec
-      - name: Smoke (binary starts and serves)
-        if: runner.os != 'Windows'
+
+      - name: Install (web + hpc extras, PyInstaller)
+        shell: bash
+        run: python -m pip install -e ".[hpc,web]" pyinstaller
+
+      - name: Seed the example cache (guarded, best-effort)
         shell: bash
         run: |
-          "${{ matrix.built }}" > desktop-smoke.log 2>&1 &
-          BPID=$!
-          for i in $(seq 1 90); do
-            grep -q "open  http" desktop-smoke.log && break; sleep 2
-          done
-          PORT=$(grep -o "localhost:[0-9]*" desktop-smoke.log | head -1 | cut -d: -f2)
-          curl -fsS -o /dev/null "http://127.0.0.1:${PORT}/"
-          kill "$BPID"
-      - name: Rename artifact
+          if [ -f container/seed_cache.py ] && [ -f webapp/precomputed/manifest.yaml ]; then
+            python container/seed_cache.py --manifest webapp/precomputed/manifest.yaml \
+                --out desktop/seed-cache.db || true
+          fi
+
+      - name: Build (PyInstaller onefile)
         shell: bash
-        run: mv "${{ matrix.built }}" "${{ matrix.artifact }}"
-      - uses: actions/upload-artifact@v4
+        run: pyinstaller --noconfirm desktop/quiverlab-desktop.spec
+
+      - name: Smoke -- serve + real exact computation
+        shell: bash
+        run: |
+          BIN=dist/QuiverLab
+          [ -f dist/QuiverLab.exe ] && BIN=dist/QuiverLab.exe
+          python desktop/smoke.py "$BIN"
+
+      - name: Package asset
+        shell: bash
+        run: |
+          case "${{ matrix.label }}" in
+            windows)      cp dist/QuiverLab.exe "${{ matrix.asset }}" ;;
+            linux-*)      tar -C dist -czf "${{ matrix.asset }}" QuiverLab ;;
+            macos-*)      (cd dist && zip -X "../${{ matrix.asset }}" QuiverLab) ;;
+          esac
+          ls -lh "${{ matrix.asset }}"
+
+      - uses: actions/upload-artifact@v7
         with:
-          name: ${{ matrix.artifact }}
-          path: ${{ matrix.artifact }}
-      - name: Attach to release
-        if: github.event_name == 'release'
+          name: ${{ matrix.asset }}
+          path: ${{ matrix.asset }}
+
+      - name: Publish on the rolling app-latest prerelease
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release upload "${{ github.event.release.tag_name }}" "${{ matrix.artifact }}" --clobber
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create app-latest \
+            --prerelease \
+            --title "QuiverLab desktop app (rolling)" \
+            --notes "One-file QuiverLab app: download the file for your OS, double-click it, and the local GUI opens in your browser -- fully offline, exact computation, no install. macOS: unzip, then right-click -> Open the first time (unsigned; on macOS 15+ use System Settings -> Privacy & Security -> Open Anyway). Windows: if SmartScreen appears, choose More info -> Run anyway. Rebuilt from main; not a versioned library release." \
+            || true
+          gh release upload app-latest "${{ matrix.asset }}" --clobber

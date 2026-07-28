@@ -12,3 +12,9 @@ build/
 
 # container/SMOKE.md + container/examples runbooks write artifacts here
 out/
+
+# desktop build/seed junk
+desktop/seed-cache.db
+desktop/artifacts/
+desktop/dist/
+desktop/build/
