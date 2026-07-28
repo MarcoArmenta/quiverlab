@@ -38,10 +38,10 @@ def test_build_wheel_and_manifest(tmp_path):
     assert name.startswith("quiverlab-") and name.endswith("-py3-none-any.whl")
     assert (gui / name).exists()
     hook.on_post_build({"site_dir": str(tmp_path / "site")})
-    manifest = json.loads((gui / "manifest.json").read_text())
+    manifest = json.loads((gui / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["schema"] == 1 and manifest["wheel"] == name
     assert manifest["quiverlab_version"]
-    presets = json.loads((gui / "presets.json").read_text())
+    presets = json.loads((gui / "presets.json").read_text(encoding="utf-8"))
     assert isinstance(presets, list) and presets
 
 
@@ -49,6 +49,6 @@ def test_skip_wheel_env(tmp_path, monkeypatch):
     hook = _hook()
     monkeypatch.setenv("QLGUI_SKIP_WHEEL", "1")
     hook.on_post_build({"site_dir": str(tmp_path / "site")})
-    manifest = json.loads((tmp_path / "site" / "gui" / "manifest.json").read_text())
+    manifest = json.loads((tmp_path / "site" / "gui" / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["wheel"] is None
     assert (tmp_path / "site" / "gui" / "presets.json").exists()

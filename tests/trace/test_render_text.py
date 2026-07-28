@@ -48,7 +48,7 @@ def test_golden_text_trace_matches_with_registry_reference():
     text = render_text(list(tr), title=title, references=refs)
     # every line but the registry-sourced citation is golden-fixed; splice the
     # formatted line in from the registry so Plan 06's exact wording is not duplicated.
-    expected = GOLDEN.read_text().replace("__BAR_FORMATTED__", formatted)
+    expected = GOLDEN.read_text(encoding="utf-8").replace("__BAR_FORMATTED__", formatted)
     assert text == expected
     assert "Hochschild" in formatted
 
@@ -103,7 +103,7 @@ def test_verbose_homology_written_document_result_matches_engine(tmp_path, monke
     A.hochschild_homology(2, verbose=True)  # trace is None -> write path fires
     written = list((tmp_path / "quiverlab_traces").glob("HHh_*.html"))
     assert len(written) == 1
-    doc = written[0].read_text()
+    doc = written[0].read_text(encoding="utf-8")
     for i, d in enumerate(expected):
         assert "HH_{%d} = %d" % (i, d) in doc
     assert "HH_{1} = 2" not in doc  # the old-formula value must not appear

@@ -35,7 +35,7 @@ def test_ka2_s1_golden_text_replay():
     A = _ka2()
     ev, res = trace_projective_resolution(A.simple(1), 3)
     txt = render_text(ev, title="proj res of S_1", algebra=A)
-    assert txt == GOLDEN.read_text(), "kA_2 S_1 worked-steps text drifted from golden"
+    assert txt == GOLDEN.read_text(encoding="utf-8"), "kA_2 S_1 worked-steps text drifted from golden"
 
 
 def test_ka2_s1_html_every_differential_verbatim():

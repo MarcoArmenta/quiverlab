@@ -10,7 +10,7 @@ DOCS_URL = "https://marcoarmenta.github.io/quiverlab/"
 
 
 def test_mkdocs_config_is_canonical():
-    y = (ROOT / "mkdocs.yml").read_text()
+    y = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     assert f"site_url: {DOCS_URL}" in y
     assert "gen_ref_pages.py" in y and "mkdocstrings" in y and "mkdocs-jupyter" in y
     assert "exclude_docs" in y and "plans/" in y            # plan/spec md kept out
@@ -23,16 +23,16 @@ def test_gen_ref_script_present():
 
 
 def test_gen_bibliography_reads_packaged_bib():
-    src = (ROOT / "scripts" / "gen_bibliography.py").read_text()
+    src = (ROOT / "scripts" / "gen_bibliography.py").read_text(encoding="utf-8")
     assert "references_bib_path" in src and "bibliography.md" in src
     # the packaged bib is the source of truth, never a docs/-tree copy
-    assert "docs/references.bib" not in (ROOT / "mkdocs.yml").read_text()
+    assert "docs/references.bib" not in (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
 
 
 def test_nav_covers_internals_and_tutorials():
     """Every internals chapter and tutorial notebook must appear in the mkdocs nav,
     so --strict (omitted_files -> error) never trips when Plans 04-07 add chapters."""
-    y = (ROOT / "mkdocs.yml").read_text()
+    y = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
     chapters = sorted((ROOT / "docs" / "internals").glob("[0-9][0-9]-*.md"))
     notebooks = sorted((ROOT / "docs" / "tutorials").glob("*.ipynb"))
     missing = [f"internals/{p.name}" for p in chapters if f"internals/{p.name}" not in y]

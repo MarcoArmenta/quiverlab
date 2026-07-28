@@ -53,7 +53,7 @@ def test_draw_file_export_png_and_svg(tmp_path):
     draw_quiver(Q, relations=["a*b - c*d"], file=str(png))
     draw_quiver(Q, relations=["a*b - c*d"], file=str(svg))
     assert png.exists() and png.stat().st_size > 0
-    assert svg.exists() and svg.read_text().lstrip().startswith("<?xml")
+    assert svg.exists() and svg.read_text(encoding="utf-8").lstrip().startswith("<?xml")
 
 
 def test_algebra_draw_method():

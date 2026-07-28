@@ -11,7 +11,7 @@ DEPLOY = Path("webapp/deploy")
 
 
 def test_compose_has_services_and_data_mount():
-    compose = yaml.safe_load((DEPLOY / "docker-compose.yml").read_text())
+    compose = yaml.safe_load((DEPLOY / "docker-compose.yml").read_text(encoding="utf-8"))
     assert set(compose["services"]) >= {"app", "worker", "caddy"}
     app = compose["services"]["app"]
     assert app["environment"]["NUMBA_NUM_THREADS"] == 2 or app["environment"]["NUMBA_NUM_THREADS"] == "2"
@@ -19,7 +19,7 @@ def test_compose_has_services_and_data_mount():
 
 
 def test_compose_requires_prod_secrets_and_recoverable_shutdown():
-    text = (DEPLOY / "docker-compose.yml").read_text()
+    text = (DEPLOY / "docker-compose.yml").read_text(encoding="utf-8")
     compose = yaml.safe_load(text)
     # Both prod secrets are wired with the required-var syntax on BOTH tiers, so
     # `compose up` refuses to start when they are unset (no dev-default ships).
@@ -28,7 +28,7 @@ def test_compose_requires_prod_secrets_and_recoverable_shutdown():
         assert "${QLWEB_IP_HASH_SALT:?" in env["QLWEB_IP_HASH_SALT"]
         assert "${QLWEB_TOKEN_SECRET:?" in env["QLWEB_TOKEN_SECRET"]
     # A template exists and lists exactly the two required secrets (empty values).
-    example = (DEPLOY / ".env.example").read_text()
+    example = (DEPLOY / ".env.example").read_text(encoding="utf-8")
     assert "QLWEB_IP_HASH_SALT=" in example and "QLWEB_TOKEN_SECRET=" in example
     assert "openssl rand -hex 32" in example
     # Worker gets a stop grace so graceful drain has room before Docker SIGKILLs.
@@ -41,18 +41,18 @@ def test_compose_requires_prod_secrets_and_recoverable_shutdown():
 
 
 def test_caddyfile_has_tls_site():
-    text = (DEPLOY / "Caddyfile").read_text()
+    text = (DEPLOY / "Caddyfile").read_text(encoding="utf-8")
     assert "reverse_proxy" in text
     assert "app:8000" in text
 
 
 def test_provisioning_mentions_arbutus_persistent_instance():
-    text = (DEPLOY / "PROVISIONING.md").read_text().lower()
+    text = (DEPLOY / "PROVISIONING.md").read_text(encoding="utf-8").lower()
     assert "persistent" in text and "floating ip" in text and "volume" in text
 
 
 def test_provisioning_encodes_security_baseline():
-    text = (DEPLOY / "PROVISIONING.md").read_text()
+    text = (DEPLOY / "PROVISIONING.md").read_text(encoding="utf-8")
     low = text.lower()
     assert "never open ssh to `0.0.0.0/0`" in low     # SSH-CIDR warning (§10)
     assert "fail2ban" in low                          # host hardening step

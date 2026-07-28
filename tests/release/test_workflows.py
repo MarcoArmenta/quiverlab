@@ -6,7 +6,7 @@ WF = pathlib.Path(__file__).resolve().parent.parent.parent / ".github" / "workfl
 
 
 def _read(name):
-    return (WF / name).read_text()
+    return (WF / name).read_text(encoding="utf-8")
 
 
 def test_ci_matrix_covers_os_and_python():

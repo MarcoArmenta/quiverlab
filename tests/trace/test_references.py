@@ -67,4 +67,4 @@ def test_verbose_run_writes_html_with_references(tmp_path, monkeypatch):
     files = list(out.glob("HHc_*.html"))
     assert files, "no worked-steps file written"
     # the References section shows the bibtex id resolved from Plan 06's `bar` entry
-    assert "Hochschild1945" in files[0].read_text()
+    assert "Hochschild1945" in files[0].read_text(encoding="utf-8")

@@ -171,7 +171,7 @@ def test_writer_writes_json_beside_html(tmp_path, monkeypatch):
     assert not stem.with_suffix(".pdf").exists()
     j = stem.with_suffix(".json")
     assert j.exists()
-    obj = json.loads(j.read_text())
+    obj = json.loads(j.read_text(encoding="utf-8"))
     assert obj["quiverlab_trace_schema"] == 1 and obj["events"]
 
 
@@ -184,8 +184,8 @@ def test_writer_json_is_pure_function_of_events(tmp_path, monkeypatch):
                                     references=refs, out_dir=str(tmp_path / "a")))
     p2 = pathlib.Path(W.write_trace(ev, table, algebra=A, kind="HH^", top=2,
                                     references=refs, out_dir=str(tmp_path / "b")))
-    assert (p1.with_suffix(".json").read_text()
-            == p2.with_suffix(".json").read_text())
+    assert (p1.with_suffix(".json").read_text(encoding="utf-8")
+            == p2.with_suffix(".json").read_text(encoding="utf-8"))
 
 
 # --------------------------------------------------------------------------- #
@@ -211,7 +211,7 @@ def test_spec_run_promotes_trace_json(tmp_path):
     # ...alongside the HTML report, and never a pdf/tex artifact:
     assert (art / "trace_steps.html").exists()
     assert not (art / "trace.pdf").exists() and not (art / "trace.tex").exists()
-    obj = json.loads(tj.read_text())
+    obj = json.loads(tj.read_text(encoding="utf-8"))
     assert obj["quiverlab_trace_schema"] == 1 and obj["events"]
 
 
@@ -221,10 +221,10 @@ def test_hpc_render_format_json_byte_matches(tmp_path):
     art = tmp_path / "art"
     art.mkdir()
     spec_run(_HPC_SPEC, art)
-    promoted = (art / "trace.json").read_text()
+    promoted = (art / "trace.json").read_text(encoding="utf-8")
     out, fmt = report.render(str(art / "result.json"), art / "emitted.json", fmt="json")
     assert fmt == "json"
-    assert out.read_text() == promoted            # the SAME bytes, verbatim
+    assert out.read_text(encoding="utf-8") == promoted            # the SAME bytes, verbatim
 
 
 def test_hpc_render_json_default_out_name():

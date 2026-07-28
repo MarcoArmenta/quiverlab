@@ -58,7 +58,7 @@ def test_worker_html_report_is_print_ready(tmp_path):
     art = tmp_path / "art"
     art.mkdir()
     spec_run(_SPEC, art)
-    html = (art / "trace_steps.html").read_text()
+    html = (art / "trace_steps.html").read_text(encoding="utf-8")
     assert "@media print" in html and "<math" in html         # typeset + print CSS
     assert "Math is shown as TeX source" not in html          # no apology
 

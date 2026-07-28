@@ -43,7 +43,7 @@ def test_runs_hh_over_gf(tmp_path):
     assert "engine" in block
     assert "latex" not in block
     assert (tmp_path / "result.json").exists()
-    on_disk = json.loads((tmp_path / "result.json").read_text())
+    on_disk = json.loads((tmp_path / "result.json").read_text(encoding="utf-8"))
     assert on_disk["quiverlab_version"]
 
 
@@ -120,7 +120,7 @@ def test_worked_steps_report_is_recorded(tmp_path, monkeypatch):
     assert not (art / "trace.pdf").exists() and not (art / "trace.tex").exists()
     # The false label is gone -- from the payload and from result.json on disk.
     assert "trace subsystem absent" not in json.dumps(result)
-    assert "trace subsystem absent" not in (art / "result.json").read_text()
+    assert "trace subsystem absent" not in (art / "result.json").read_text(encoding="utf-8")
     # write_trace was given an explicit out_dir, so the cwd is never touched.
     assert not (tmp_path / "quiverlab_traces").exists()
 
@@ -185,7 +185,7 @@ def test_tikz_written_when_requested(tmp_path):
     run_spec(req, tmp_path)
     tikz = (tmp_path / "tikz.tex")
     assert tikz.exists()
-    assert r"\begin{tikzpicture}" in tikz.read_text()
+    assert r"\begin{tikzpicture}" in tikz.read_text(encoding="utf-8")
 
 
 def test_references_present_in_result(tmp_path):

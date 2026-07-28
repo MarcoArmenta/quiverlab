@@ -340,7 +340,7 @@ def test_app_js_has_no_html_injection_sinks():
     literals are stripped first (see ``_strip_js_comments_and_strings``) so the
     assertion fires only on the tokens in *executable* code."""
     assert _APP_JS.is_file(), _APP_JS
-    code = _strip_js_comments_and_strings(_APP_JS.read_text())
+    code = _strip_js_comments_and_strings(_APP_JS.read_text(encoding="utf-8"))
     for token in _HTML_INJECTION_SINKS:
         assert token not in code, (
             f"app.js contains HTML-injection sink '{token}' in executable code; "
@@ -357,7 +357,7 @@ def test_is_http_url_rejects_non_http_schemes():
     if node is None:
         pytest.skip("node not available")
 
-    src = _APP_JS.read_text()
+    src = _APP_JS.read_text(encoding="utf-8")
     m = re.search(r"function isHttpUrl\s*\([^)]*\)\s*\{.*?\n\}", src, re.DOTALL)
     assert m, "isHttpUrl function not found in app.js"
     fn_src = m.group(0)

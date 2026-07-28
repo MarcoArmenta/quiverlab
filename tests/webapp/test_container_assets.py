@@ -18,7 +18,7 @@ SBATCH_FILES = [SLURM / "quiverlab.sbatch", SLURM / "quiverlab-drac.sbatch"]
 
 
 def _read(p: pathlib.Path) -> str:
-    return p.read_text()
+    return p.read_text(encoding="utf-8")
 
 
 # --------------------------------------------------------------------------- #

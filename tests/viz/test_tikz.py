@@ -11,7 +11,7 @@ GOLDEN = pathlib.Path(__file__).parent / "golden" / "ka2.tikz"
 
 def test_ka2_matches_golden_exactly():
     Q = Quiver([1, 2], {"a": (1, 2)})
-    assert tikz_quiver(Q, relations=[]) == GOLDEN.read_text()
+    assert tikz_quiver(Q, relations=[]) == GOLDEN.read_text(encoding="utf-8")
 
 
 def test_tikz_uses_the_same_layout_as_draw():
@@ -33,4 +33,4 @@ def test_tikz_emits_relations_node_when_present():
 
 def test_algebra_tikz_method():
     A = Quiver([1, 2], {"a": (1, 2)}).algebra(field=CC)
-    assert A.tikz() == (pathlib.Path(__file__).parent / "golden" / "ka2.tikz").read_text()
+    assert A.tikz() == (pathlib.Path(__file__).parent / "golden" / "ka2.tikz").read_text(encoding="utf-8")

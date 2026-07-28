@@ -35,7 +35,7 @@ def _write_html(events, table, algebra, kind, monkeypatch, tmp_path):
                          out_dir=str(tmp_path))
     p = pathlib.Path(path)
     assert p.suffix == ".html"
-    return p.read_text(), json.loads(p.with_suffix(".json").read_text())
+    return p.read_text(encoding="utf-8"), json.loads(p.with_suffix(".json").read_text(encoding="utf-8"))
 
 
 # --------------------------------------------------------------------------- #

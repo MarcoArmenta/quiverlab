@@ -41,4 +41,4 @@ def test_every_citation_key_resolves_in_packaged_bib():
 
 def test_paper_bib_is_not_committed_separately():
     assert not (ROOT / "paper" / "paper.bib").exists() or \
-        "paper/paper.bib" in (ROOT / ".gitignore").read_text()
+        "paper/paper.bib" in (ROOT / ".gitignore").read_text(encoding="utf-8")
