@@ -1,10 +1,15 @@
-"""Plan 28 -- render a ``result.json`` into a human report (HTML / plain text),
-reusing ``quiverlab.trace``'s TeX-source escaping for the math it shows.
+"""Plan 28 -- render a ``result.json`` into a human report (HTML / plain text).
 
-The report is a self-contained, no-JS HTML page (math shown as TeX source) or plain
-text; ``--format txt`` and ``--format html`` always work with no toolchain, and
-``--format json`` emits the worked-steps event stream (trace.json). PDF/TeX report
-output has been removed -- ``fmt="pdf"``/``"tex"`` is refused loudly.
+The report is a self-contained, no-JS HTML page or plain text; ``--format txt``
+and ``--format html`` always work with no toolchain, and ``--format json`` emits
+the worked-steps event stream (trace.json). PDF/TeX report output has been
+removed -- ``fmt="pdf"``/``"tex"`` is refused loudly.
+
+The HTML shows RENDERED math -- matrices as tables, sub/superscripted summand
+notation ``P_1^2 + P_3`` -- never LaTeX source (Marco, 2026-07-28). Oversized
+matrices keep the Plan-34 contract: past 25 rows/columns they are STATED-elided
+(shown in full in the JSON result), so one huge action matrix cannot dominate
+the page.
 
 The envelope carries ``result_schema`` (an int; absent == legacy 1). ``render``
 refuses a NEWER ``result_schema`` loudly (the CLI maps that to exit 65) and warns
@@ -13,10 +18,10 @@ from __future__ import annotations
 
 import json
 import pathlib
+import re
 
 import quiverlab as ql
 from quiverlab.hpc.spec import RESULT_SCHEMA
-from quiverlab.trace.render_html import _tex_escape
 
 
 class ReportError(Exception):
@@ -67,65 +72,137 @@ def _version_warning(result: dict) -> str | None:
 
 
 # --------------------------------------------------------------------------- #
-# Intermediate: result.json -> a list of neutral sections
+# Small rendering helpers (shared by the txt and html builders)
 # --------------------------------------------------------------------------- #
 
-class _Section:
-    __slots__ = ("title", "rows", "math")
-
-    def __init__(self, title, rows=None, math=None):
-        self.title = title
-        self.rows = rows or []          # plain-text lines
-        self.math = math or []          # TeX-source strings (displayed math)
+def _esc(s: str) -> str:
+    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 def _dimvec_str(dv: dict) -> str:
     return "(" + ", ".join(f"{k}: {v}" for k, v in dv.items()) + ")"
 
 
+# One summand of a resolution term as produced by the spec core:
+# ``P_{1}``, ``P_{1}^{2}``, ``I_{v}^{3}`` (and ``S_{v}`` in Loewy stacks).
+_SUMMAND_RE = re.compile(r"([PIS])_\{([^{}]*)\}(?:\^\{([0-9]+)\})?")
+
+
+def _summand_txt(s: str) -> str:
+    """``"P_{1}^{2} \\oplus P_{3}"`` -> ``"P_1^2 + P_3"`` (Marco's notation);
+    anything unrecognized is passed through verbatim."""
+    if not s or s == "0":
+        return "0"
+    parts = []
+    for p in s.split(r"\oplus"):
+        m = _SUMMAND_RE.fullmatch(p.strip())
+        if m is None:
+            return s
+        letter, v, e = m.groups()
+        parts.append(f"{letter}_{v}" + (f"^{e}" if e else ""))
+    return " + ".join(parts)
+
+
+def _summand_html(s: str) -> str:
+    """Same summand string rendered as real HTML sub/superscripts."""
+    if not s or s == "0":
+        return "0"
+    parts = []
+    for p in s.split(r"\oplus"):
+        m = _SUMMAND_RE.fullmatch(p.strip())
+        if m is None:
+            return _esc(s)
+        letter, v, e = m.groups()
+        h = f"{letter}<sub>{_esc(v)}</sub>"
+        if e:
+            h += f"<sup>{_esc(e)}</sup>"
+        parts.append(h)
+    return " + ".join(parts)
+
+
+def _matrix_html(mat) -> str:
+    """A matrix as a rendered HTML table. Past 25 rows or columns it is
+    STATED-elided (the full matrix lives in the JSON result), keeping the Plan-34
+    wide-matrix contract."""
+    nrows = len(mat)
+    ncols = max((len(row) for row in mat), default=0)
+    if nrows > 25 or ncols > 25:
+        return ("<em>[%d&times;%d matrix -- shown in full in the JSON result]</em>"
+                % (nrows, ncols))
+    if nrows == 0 or ncols == 0:
+        return "<em>(empty matrix)</em>"
+    body = "".join(
+        "<tr>" + "".join(f"<td>{_esc(str(x))}</td>" for x in row) + "</tr>"
+        for row in mat)
+    return f"<table class='matrix'>{body}</table>"
+
+
+def _expr_html(text: str) -> str:
+    """A relation / polynomial string rendered lightly for HTML: products drop the
+    ``*``, powers become superscripts (handles both ``^n`` and sympy's ``**n``)."""
+    t = _esc(text)
+    t = re.sub(r"\*\*(\d+)", r"<sup>\1</sup>", t)
+    t = re.sub(r"\^(\d+)", r"<sup>\1</sup>", t)
+    t = t.replace("*", "&middot;")
+    return t
+
+
+def _hh_txt(kind_label: str, i: int, d) -> str:
+    return f"{kind_label}{i} = {d}"
+
+
+def _hh_html(kind_label: str, i: int, d) -> str:
+    tag = "sup" if kind_label.endswith("^") else "sub"
+    return f"HH<{tag}>{i}</{tag}> = {d}"
+
+
+# --------------------------------------------------------------------------- #
+# Intermediate: result.json -> a list of neutral sections
+# --------------------------------------------------------------------------- #
+
+class _Section:
+    __slots__ = ("title", "rows", "html")
+
+    def __init__(self, title, rows=None, html=None):
+        self.title = title
+        self.rows = rows or []          # plain-text lines (the txt report)
+        self.html = html or []          # raw-HTML blocks; when present, the HTML
+        #                                 report shows these INSTEAD of ``rows``
+
+
 def _hh_section(kind_label, block) -> _Section:
     dims = block.get("dims", [])
     rows = [f"engine: {block.get('engine', '?')}",
-            "dimensions: " + ", ".join(f"{kind_label}{i} = {d}"
+            "dimensions: " + ", ".join(_hh_txt(kind_label, i, d)
                                        for i, d in enumerate(dims))]
-    math = [r",\quad ".join(r"%s{%d} = %d" % (kind_label, i, d)
-                            for i, d in enumerate(dims))] if dims else []
+    html = [f"<p>engine: {_esc(str(block.get('engine', '?')))}</p>",
+            "<p>" + ",&ensp;".join(_hh_html(kind_label, i, d)
+                                   for i, d in enumerate(dims)) + "</p>"]
     return _Section(f"Hochschild {'cohomology' if kind_label == 'HH^' else 'homology'}",
-                    rows, math)
+                    rows, html)
 
 
 def _module_view_row(label, view) -> str:
     return f"{label}: dim {view.get('dim')}  {_dimvec_str(view.get('dimvec', {}))}"
 
 
-def _pmatrix_latex(mat) -> str:
-    """A raw matrix as pmatrix TeX source (shown as source in the HTML/text report):
-    a matrix past 25 rows or columns is STATED-elided (shown in full in the HTML/JSON
-    report -- here the HTML dumps the matrix source and the JSON is result.json
-    itself), so an oversized module action matrix does not dominate the page."""
-    nrows = len(mat)
-    ncols = max((len(row) for row in mat), default=0)
-    if nrows > 25 or ncols > 25:
-        return (r"\text{[%d$\times$%d matrix -- shown in full in the HTML/JSON report]}"
-                % (nrows, ncols))
-    body = r" \\ ".join(" & ".join(str(x) for x in row) for row in mat)
-    return r"\begin{pmatrix} %s \end{pmatrix}" % body
-
-
-def _module_repr_rows(label, view, math) -> list:
-    """Rows (plain text) + appended displayed-math (pmatrix) for a full-representation
-    module block ``{"dims": ..., "maps": ...}`` (Plan 34): the dimension VECTOR and the
-    exact per-arrow action matrices. The total dim is intentionally omitted -- the
-    vector carries it."""
-    rows = [f"{label}: {_dimvec_str(view.get('dims', {}))}"]
+def _repr_rows_html(label, view) -> tuple:
+    """(txt rows, html blocks) for a full-representation module block
+    ``{"dims": ..., "maps": ...}`` (Plan 34): the dimension VECTOR and the exact
+    per-arrow action matrices, each labeled by its arrow (referenceable against
+    the arrow list in the Computation section)."""
+    rows = [f"{label}: dimension vector {_dimvec_str(view.get('dims', {}))}"]
+    html = [f"<p><b>{_esc(label)}</b> &mdash; dimension vector "
+            f"{_esc(_dimvec_str(view.get('dims', {})))}</p>"]
     maps = view.get("maps") or {}
     if not maps:
         rows.append("    (all arrow actions vanish)")
+        html.append("<p><em>(all arrow actions vanish)</em></p>")
     for a in sorted(maps):
-        rows.append(f"    {a}: {maps[a]}")
-        math.append(r"\text{%s: } %s = %s"
-                    % (_tex_escape(label), _tex_escape(a), _pmatrix_latex(maps[a])))
-    return rows
+        rows.append(f"    action of arrow {a}: {maps[a]}")
+        html.append("<div class='arrowmap'><span>action of arrow "
+                    f"<code>{_esc(a)}</code>:</span> {_matrix_html(maps[a])}</div>")
+    return rows, html
 
 
 def _section_for(name: str, block: dict) -> _Section:
@@ -134,13 +211,14 @@ def _section_for(name: str, block: dict) -> _Section:
     if name == "hh_homology":
         return _hh_section("HH_", block)
     if name == "cartan":
+        mat = block.get("matrix", [])
         return _Section("Cartan matrix",
-                        ["rows: " + "; ".join(str(r) for r in block.get("matrix", []))],
-                        [block["latex"]] if block.get("latex") else [])
+                        ["rows: " + "; ".join(str(r) for r in mat)],
+                        [_matrix_html(mat)])
     if name == "coxeter_polynomial":
-        return _Section("Coxeter polynomial",
-                        [block.get("text", "")],
-                        [block["latex"]] if block.get("latex") else [])
+        text = block.get("text", "")
+        return _Section("Coxeter polynomial", [text],
+                        [f"<p>{_expr_html(text)}</p>"])
     if name == "global_dimension":
         return _Section("Global dimension",
                         [block.get("text", ""), f"value: {block.get('value')} "
@@ -158,11 +236,12 @@ def _section_for(name: str, block: dict) -> _Section:
                          _module_view_row("module", block)])
     if name == "rad_top_soc":
         rows = [f"side: {block.get('side')}"]
-        math: list = []
-        rows += _module_repr_rows("rad M", block.get("radical", {}), math)
-        rows += _module_repr_rows("top M", block.get("top", {}), math)
-        rows += _module_repr_rows("soc M", block.get("socle", {}), math)
-        return _Section("Radical / top / socle", rows, math)
+        html = [f"<p>side: {_esc(str(block.get('side')))}</p>"]
+        for label, key in (("rad M", "radical"), ("top M", "top"), ("soc M", "socle")):
+            r, h = _repr_rows_html(label, block.get(key, {}))
+            rows += r
+            html += h
+        return _Section("Radical / top / socle", rows, html)
     if name in ("tau", "tau_minus"):
         sym = "tau M" if name == "tau" else "tau^- M"
         rows = [f"side: {block.get('side')}"]
@@ -173,19 +252,47 @@ def _section_for(name: str, block: dict) -> _Section:
         dims = block.get("dims", [])
         rows = ["target " + _module_view_row("N", block.get("target", {})),
                 "Ext dims: " + ", ".join(f"Ext^{i} = {d}" for i, d in enumerate(dims))]
-        return _Section("Ext^*(M, N)", rows)
+        html = ["<p>target " + _esc(_module_view_row("N", block.get("target", {})))
+                + "</p>",
+                "<p>" + ",&ensp;".join(f"Ext<sup>{i}</sup> = {d}"
+                                       for i, d in enumerate(dims)) + "</p>"]
+        return _Section("Ext^*(M, N)", rows, html)
     if name in ("projective_resolution", "injective_resolution"):
+        letter = "P" if name == "projective_resolution" else "I"
         terms = block.get("terms", [])
-        rows = [f"top: {block.get('top')}"]
+        betti = block.get("betti", [])
+        summands = block.get("summands", [])
+        top = block.get("top")
+        rows = [f"computed window: degrees 0..{top}"]
+        html = [f"<p>computed window: degrees 0..{_esc(str(top))}</p>"]
         for i, dv in enumerate(terms):
-            rows.append(f"  P_{i}: {_dimvec_str(dv)}  (betti {block.get('betti', [None])[i] if i < len(block.get('betti', [])) else '?'})")
+            # Preferred: the summand notation P_j^n + P_i^m per degree; fall back
+            # to Betti counts when an older result carries no summand strings.
+            if i < len(summands):
+                s_txt, s_html = _summand_txt(summands[i]), _summand_html(summands[i])
+            else:
+                b = betti[i] if i < len(betti) else "?"
+                s_txt = s_html = f"{letter}^{b}"
+            rows.append(f"  deg {i}: {s_txt}   (dim vector {_dimvec_str(dv)})")
+            html.append(f"<p class='resterm'>deg {i}:&ensp;{s_html}&ensp;"
+                        f"<span class='dv'>(dim vector "
+                        f"{_esc(_dimvec_str(dv))})</span></p>")
+        def _dim_line(label, v):
+            if v is not None:
+                return f"{label}: {v}"
+            return (f"{label}: not resolved within the computed window "
+                    f"(> {top}; possibly infinite)")
         if "pd" in block:
-            rows.append(f"projective dimension: {block['pd']}")
+            line = _dim_line("projective dimension", block["pd"])
+            rows.append(line)
+            html.append(f"<p>{_esc(line)}</p>")
         if "injective_dimension" in block:
-            rows.append(f"injective dimension: {block['injective_dimension']}")
+            line = _dim_line("injective dimension", block["injective_dimension"])
+            rows.append(line)
+            html.append(f"<p>{_esc(line)}</p>")
         label = ("Projective resolution" if name == "projective_resolution"
                  else "Injective resolution")
-        return _Section(label, rows)
+        return _Section(label, rows, html)
     if name == "projective_dimension":
         v = block.get("value")
         return _Section("Projective dimension",
@@ -200,26 +307,90 @@ def _section_for(name: str, block: dict) -> _Section:
     return _Section(name, [json.dumps(block, default=str, sort_keys=True)])
 
 
+def _rebuild_algebra(result: dict):
+    """Best-effort algebra rebuild from the result's algebra spec (for the
+    descriptive sections). Never raises -- returns None on any failure."""
+    algebra = result.get("algebra")
+    if not isinstance(algebra, dict):
+        return None
+    try:
+        from quiverlab.hpc.spec import build_algebra
+        return build_algebra(algebra)
+    except Exception:
+        return None
+
+
+def _computation_section(result: dict) -> _Section:
+    """The report header: version, the raw algebra spec, and -- whenever the
+    algebra can be rebuilt -- its quiver presentation: the vertex list, the LABELED
+    arrow list (so later sections can reference arrows by name), and the
+    relations, rendered (not LaTeX source)."""
+    algebra = result.get("algebra", {})
+    rows = [f"quiverlab version: {result.get('quiverlab_version', '?')}",
+            "algebra: " + json.dumps(algebra, default=str, sort_keys=True)]
+    html = [f"<p>quiverlab version: {_esc(str(result.get('quiverlab_version', '?')))}</p>",
+            "<p>algebra: <code>" + _esc(json.dumps(algebra, default=str, sort_keys=True))
+            + "</code></p>"]
+    A = _rebuild_algebra(result)
+    Q = getattr(A, "quiver", None) if A is not None else None
+    if Q is not None:
+        verts = ", ".join(str(v) for v in Q.vertices)
+        arrows_txt = "; ".join(f"{n}: {s} -> {t}" for n, (s, t) in Q.arrows.items())
+        rows.append("vertices: " + verts)
+        rows.append("arrows: " + arrows_txt)
+        html.append(f"<p><b>vertices:</b> {_esc(verts)}</p>")
+        html.append("<p><b>arrows:</b> " + ";&ensp;".join(
+            f"<code>{_esc(str(n))}</code>: {_esc(str(s))} &rarr; {_esc(str(t))}"
+            for n, (s, t) in Q.arrows.items()) + "</p>")
+        rels = [repr(r) for r in (getattr(A, "relations", None) or [])]
+        if rels:
+            rows.append("relations: " + "; ".join(rels))
+            html.append("<p><b>relations:</b> " + ",&ensp;".join(
+                _expr_html(r) for r in rels) + "</p>")
+    return _Section("Computation", rows, html)
+
+
+def _module_input_sections(result: dict) -> list:
+    """The computed-on modules as full representations (per-arrow matrices),
+    from the CLI-envelope echo written beside ``result_schema``. Absent on webapp
+    results and pre-change files -- then no section is emitted."""
+    out = []
+    for key, title in (("module", "The module M"),
+                       ("ext_target", "The Ext target N"),
+                       ("tor_target", "The Tor target N (a left module)")):
+        blk = result.get(key)
+        if not (isinstance(blk, dict) and "dims" in blk):
+            continue
+        rows = [f"side: {blk.get('side')}"]
+        html = [f"<p>side: {_esc(str(blk.get('side')))}</p>"]
+        r, h = _repr_rows_html("M" if key == "module" else "N", blk)
+        rows += r
+        html += h
+        out.append(_Section(title, rows, html))
+    return out
+
+
 def _projectives_injectives_section(result: dict):
     """The "projectives and injectives of A" section (Plan 30, Marco #4): rebuild
     the algebra from the result's algebra spec and describe each P_v / I_v by its
     dimension vector and Loewy (radical) layers. Descriptive-only: any failure to
     rebuild (an exotic spec, a version skew) skips the section rather than sinking
     the whole report. The simples S_v are omitted (Marco: obvious)."""
-    algebra = result.get("algebra")
-    if not isinstance(algebra, dict):
+    A = _rebuild_algebra(result)
+    if A is None:
         return None
     try:
-        from quiverlab.hpc.spec import build_algebra
         from quiverlab.trace.modules import algebra_objects
         from quiverlab.trace.render_text import factor_stack_text
-        A = build_algebra(algebra)
         objects = algebra_objects(A)
     except Exception:
         return None
     if not objects:
         return None
-    rows = ["Loewy layers listed top to bottom; the simples S_v are omitted."]
+    legend = ("Loewy layers are the semisimple slices rad^k X / rad^(k+1) X, "
+              "listed top to bottom and separated by '|'; S_v^m means the simple "
+              "S_v repeated m times. The simples S_v are omitted.")
+    rows = [legend]
     for row in objects:
         v = row["vertex"]
         for sym in ("P", "I"):
@@ -232,10 +403,8 @@ def _projectives_injectives_section(result: dict):
 
 
 def build_sections(result: dict) -> list:
-    algebra = result.get("algebra", {})
-    head_rows = [f"quiverlab version: {result.get('quiverlab_version', '?')}",
-                 "algebra: " + json.dumps(algebra, default=str, sort_keys=True)]
-    sections = [_Section("Computation", head_rows)]
+    sections = [_computation_section(result)]
+    sections += _module_input_sections(result)
     pi = _projectives_injectives_section(result)
     if pi is not None:
         sections.append(pi)
@@ -266,33 +435,34 @@ def render_text(result: dict) -> str:
         out.append(sec.title)
         out.append("-" * len(sec.title))
         out.extend(sec.rows)
-        for m in sec.math:
-            out.append("    " + m)
         out.append("")
     return "\n".join(out).rstrip("\n") + "\n"
 
 
-_HTML_STYLE = ("<style>body{font-family:sans-serif;max-width:52rem;margin:2rem auto}"
-               "pre{background:#f4f4f4;padding:6px;overflow-x:auto}"
-               "h2{border-bottom:1px solid #ccc}</style>")
-
-
-def _esc(s: str) -> str:
-    return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+_HTML_STYLE = (
+    "<style>body{font-family:sans-serif;max-width:52rem;margin:2rem auto}"
+    "pre{background:#f4f4f4;padding:6px;overflow-x:auto}"
+    "h2{border-bottom:1px solid #ccc}"
+    "table.matrix{display:inline-table;border-collapse:collapse;margin:2px 6px;"
+    "border-left:1px solid #444;border-right:1px solid #444;border-radius:6px}"
+    "table.matrix td{padding:1px 9px;text-align:right}"
+    ".arrowmap{margin:4px 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}"
+    "p.resterm{margin:2px 0}.dv{color:#666}"
+    "</style>")
 
 
 def render_html(result: dict) -> str:
     body = ["<!doctype html><html><head><meta charset='utf-8'>", _HTML_STYLE,
             "<title>quiverlab report</title></head><body>",
             "<h1>quiverlab report</h1>",
-            "<p><i>This report is print-ready. Math is shown as LaTeX source; use "
-            "your browser's Print &rarr; Save as PDF for a typeset copy.</i></p>"]
+            "<p><i>This report is print-ready and self-contained (no JavaScript); "
+            "use your browser's Print &rarr; Save as PDF for a typeset copy.</i></p>"]
     for sec in build_sections(result):
         body.append("<h2>%s</h2>" % _esc(sec.title))
-        if sec.rows:
+        if sec.html:
+            body.extend(sec.html)
+        elif sec.rows:
             body.append("<pre>" + _esc("\n".join(sec.rows)) + "</pre>")
-        for m in sec.math:
-            body.append("<pre><code>%s</code></pre>" % _esc(m))
     body.append("</body></html>")
     return "\n".join(body) + "\n"
 

@@ -751,6 +751,14 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
         }
         if result_schema is not None:
             result["result_schema"] = result_schema
+            # CLI-envelope-only echo of the computed-on modules as FULL
+            # representations ({dims, maps} via the shared module_blocks
+            # serializer), so the report can show the per-arrow action matrices.
+            # Guarded by result_schema: the webapp passes None and its result
+            # dict stays byte-identical (frozen goldens).
+            for key, mod in (("module", M), ("ext_target", N), ("tor_target", T)):
+                if mod is not None:
+                    result[key] = {"side": mod.side, **_mod_repr(mod)}
     except CheckpointStop:
         raise
     except ComputeError:
