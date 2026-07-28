@@ -256,8 +256,20 @@ def _section_for(name: str, block: dict) -> _Section:
         else:                                   # older result: dim vector only
             rows.append(_module_view_row(sym, block))
             html.append(f"<p>{_esc(_module_view_row(sym, block))}</p>")
-        if "indecomposable" in block:
-            line = f"indecomposable: {block['indecomposable']}"
+        # The Plan-30 certificate is about the INPUT M, not the translate:
+        # True means M is indecomposable (hence so is a nonzero translate);
+        # the additive note means M decomposes and tau distributes over (+).
+        if block.get("note_key") == "mod.tau_additive":
+            n_sum = len(block.get("decomposition") or [])
+            line = (f"note: the input M is decomposable ({n_sum} indecomposable "
+                    f"summands, see the Krull-Schmidt section); the AR translate "
+                    f"is additive, so {sym} is the direct sum of the summands' "
+                    "translates (projective/injective summands are killed)")
+            rows.append(line)
+            html.append(f"<p><em>{_esc(line)}</em></p>")
+        elif block.get("indecomposable") is True:
+            line = (f"indecomposable: True (the input M is indecomposable, hence "
+                    f"so is {sym} when nonzero)")
             rows.append(line)
             html.append(f"<p>{_esc(line)}</p>")
         return _Section("Auslander-Reiten translate", rows, html)
