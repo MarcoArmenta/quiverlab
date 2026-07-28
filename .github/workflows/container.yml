@@ -106,6 +106,9 @@ jobs:
             sleep 1
           done
           curl -fsS http://127.0.0.1:8000/ | grep -qi quiverlab
+          # The draw-a-quiver canvas (docs GUI ported to the webapp) must ship.
+          curl -fsS http://127.0.0.1:8000/draw | grep -q 'id="qlgui"'
+          curl -fsS http://127.0.0.1:8000/gui/worker.js | grep -q postMessage
           echo "----- gui banner -----"
           docker logs gui-smoke
           docker rm -f gui-smoke

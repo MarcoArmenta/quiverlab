@@ -242,6 +242,31 @@ def create_app(cfg: Config | None = None, mailer=None, *,
         jid = store.create_job(req.model_dump(by_alias=True), ip=iph)
         return JSONResponse(status_code=202, content={"tier": "queued", "job_id": jid})
 
+    @app.post("/api/gui/probe")
+    def api_gui_probe(req: ComputeRequest, request: Request):
+        """Build-only probe for the draw page's live hints (dim + label + honest
+        early errors) -- the server-backed twin of the Pyodide runner's
+        ``run_build``. Same cost envelope as ``api_compute``'s own build step
+        (bounded by schema/catalog validation caps), gated by the SAME per-IP
+        instant flood limiter since the canvas fires one probe per edit pause.
+        Protocol payload, always 200: ``{ok: true, dim, n_vertices, n_arrows,
+        algebra}`` or ``{ok: false, error: {type, message}}``."""
+        iph = _ip_hash(request)
+        if not instant_limiter.allow(iph):
+            return {"ok": False, "error": {
+                "type": "RateLimited",
+                "message": "too many probes in a short window -- slow down"}}
+        try:
+            A = _build_or_error(req.algebra)
+        except RunError as exc:
+            return {"ok": False, "error": {"type": exc.error_type,
+                                           "message": exc.message}}
+        alg = req.algebra if isinstance(req.algebra, dict) else req.algebra.model_dump()
+        return {"ok": True, "dim": A.dim,
+                "n_vertices": len(alg.get("vertices") or []) or None,
+                "n_arrows": len(alg.get("arrows") or {}) or None,
+                "algebra": repr(A).splitlines()[0]}
+
     @app.post("/api/jobs")
     def api_create_job(req: ComputeRequest, request: Request):
         # Cache first: a known example is replayed instead of enqueuing a duplicate.

@@ -94,6 +94,39 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
         return _TEMPLATES.TemplateResponse(
             request, "about.html", _ctx(request, cfg, lang, prefix))
 
+    # ----- the draw-a-quiver canvas (docs/gui ported; Plan 10 editor, server
+    # compute). gui.js is vendored BYTE-IDENTICAL under static/gui/ (parity is
+    # test-pinned) and loads its siblings by page-relative URLs ("gui/…"), so
+    # every asset is mounted under BOTH language prefixes alongside the page.
+    @app.get(prefix + "/draw", response_class=HTMLResponse)
+    def draw(request: Request):
+        return _TEMPLATES.TemplateResponse(
+            request, "draw.html", _ctx(request, cfg, lang, prefix))
+
+    @app.get(prefix + "/gui/manifest.json")
+    def gui_manifest():
+        # The Pyodide worker downloads a wheel named here; the server-backed
+        # worker only reads the version. "server" is a truthful non-null wheel
+        # marker (gui.js refuses a null wheel as "engine payload not built").
+        import quiverlab
+        return {"schema": 1, "wheel": "server",
+                "quiverlab_version": getattr(quiverlab, "__version__", "unknown")}
+
+    _GUI_STATIC = Path(__file__).resolve().parent.parent / "static" / "gui"
+    _GUI_FILES = {"gui.js": "text/javascript; charset=utf-8",
+                  "gui.css": "text/css; charset=utf-8",
+                  "worker.js": "text/javascript; charset=utf-8",
+                  "mathjax-katex-shim.js": "text/javascript; charset=utf-8",
+                  "presets.json": "application/json"}
+
+    @app.get(prefix + "/gui/{name}")
+    def gui_asset(name: str):
+        # Fixed whitelist (same posture as /download): unknown names never
+        # touch the filesystem.
+        if name not in _GUI_FILES:
+            return JSONResponse(status_code=404, content={"message": "not found"})
+        return FileResponse(_GUI_STATIC / name, media_type=_GUI_FILES[name])
+
     @app.get(prefix + "/literature", response_class=HTMLResponse)
     def literature(request: Request):
         return _TEMPLATES.TemplateResponse(

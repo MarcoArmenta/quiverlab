@@ -7,6 +7,7 @@
   {# KaTeX is self-hosted (vendored under /static/katex) -- the strict CSP forbids
      any runtime CDN. Fonts resolve relative to this stylesheet, same-origin. #}
   <link rel="stylesheet" href="/static/katex/katex.min.css">
+  {% block head %}{% endblock %}
   <style>
     body { font-family: system-ui, sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
     label { display:block; margin:.5rem 0 .2rem; font-weight:600; }
@@ -20,6 +21,7 @@
 <body>
   <header>
     <a href="{{ prefix }}/">quiverlab</a> ·
+    <a href="{{ prefix }}/draw">{{ t("nav.draw") }}</a> ·
     <a href="{{ prefix }}/about">{{ t("nav.about") }}</a> ·
     <a href="{{ prefix }}/literature">{{ t("nav.literature") }}</a> ·
     <a href="{{ prefix }}/feedback">{{ t("nav.feedback") }}</a>
@@ -49,5 +51,6 @@
   <script src="/static/katex/katex.min.js"></script>
   <script src="/static/katex/auto-render.min.js"></script>
   <script src="/static/app.js"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -85,5 +85,8 @@
   "mod.dim_vector": "dim vector",
   "mod.tor_unavailable": "Tor requires the Tor engine (Plan 29); not available in this build.",
   "mod.display_only": "display only — these entries lie outside the integer/fraction input grammar (e.g. GF(p^n) elements) and cannot be re-entered in the module panel.",
-  "mod.stale_recompute": "this result was computed by an older version and lacks the full representation — recompute to see the arrow actions."
+  "mod.stale_recompute": "this result was computed by an older version and lacks the full representation — recompute to see the arrow actions.",
+  "nav.draw": "Draw a quiver",
+  "draw.title": "Draw a quiver and compute",
+  "draw.blurb": "Click the canvas to add vertices, drag between vertices to add arrows, type relations, pick a field, choose what to compute. Everything is computed exactly by this app's own engine."
 }

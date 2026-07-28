@@ -78,6 +78,13 @@ def main() -> int:
         assert "quiverlab" in page.lower(), page[:200]
         print("smoke: GUI page OK")
 
+        with urllib.request.urlopen(BASE + "/draw", timeout=10) as r:
+            draw = r.read().decode("utf-8", "replace")
+        assert r.status == 200 and 'id="qlgui"' in draw, draw[:200]
+        with urllib.request.urlopen(BASE + "/gui/worker.js", timeout=10) as r:
+            assert r.status == 200 and b"postMessage" in r.read()
+        print("smoke: draw-a-quiver canvas OK")
+
         req = urllib.request.Request(
             BASE + "/api/compute", data=json.dumps(REQUEST).encode(),
             headers={"Content-Type": "application/json"})

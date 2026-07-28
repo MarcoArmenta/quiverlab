@@ -2,6 +2,7 @@
 {% block body %}
 <h1>{{ t("index.h1") }}</h1>
 <p>{{ t("index.intro") }}</p>
+<p><strong><a href="{{ prefix }}/draw">✏️ {{ t("draw.title") }} →</a></strong></p>
 <form id="compute-form" data-refs-label="{{ t('results.references') }}"
       data-lang="{{ lang }}" data-big-cap="{{ big_max_cells }}"
       data-big-warn="{{ t('big.warn') }}" data-big-disabled="{{ t('big.disabled') }}"
