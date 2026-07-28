@@ -332,7 +332,38 @@ def _cmd_selftest(args) -> int:
 # Verb: gui (offline webapp; lazy [web] import)
 # --------------------------------------------------------------------------- #
 
+def _ensure_webapp_on_path() -> None:
+    """Make the sibling ``webapp`` package importable, if it can be found.
+
+    ``webapp`` is deliberately NOT in the wheel: it sits next to ``src/`` in a
+    source checkout and next to the editable install inside the container image
+    (``/app``). A console script never puts the cwd on ``sys.path`` and the
+    PEP-660 editable hook maps only ``quiverlab`` -- so derive the checkout root
+    from ``quiverlab.__file__`` (``src/quiverlab/`` -> two levels up), falling
+    back to the cwd, and prepend it. Silent no-op when nothing is found: the
+    caller's ImportError message stays the single honest failure path.
+    """
+    try:
+        import webapp  # noqa: F401
+        return
+    except ImportError:
+        pass
+    import quiverlab
+    candidates = []
+    qfile = getattr(quiverlab, "__file__", None)
+    if qfile:
+        candidates.append(Path(qfile).resolve().parent.parent.parent)
+    candidates.append(Path.cwd())
+    for root in candidates:
+        if (root / "webapp" / "server" / "offline.py").is_file():
+            p = str(root)
+            if p not in sys.path:
+                sys.path.insert(0, p)
+            return
+
+
 def _cmd_gui(args) -> int:
+    _ensure_webapp_on_path()
     try:
         from webapp.server.offline import serve_offline
     except ImportError as exc:
@@ -342,7 +373,8 @@ def _cmd_gui(args) -> int:
         return EX_SOFTWARE
     data_dir = args.data_dir or os.environ.get("QUIVERLAB_DATA")
     try:
-        serve_offline(port=args.port, data_dir=data_dir, open_hint=not args.no_open)
+        serve_offline(port=args.port, data_dir=data_dir,
+                      open_hint=not args.no_open, host=args.host)
     except KeyboardInterrupt:
         return EX_OK
     return EX_OK
@@ -401,6 +433,11 @@ def _build_parser() -> _Parser:
                     help="data directory (default $QUIVERLAB_DATA or ~/.quiverlab)")
     pg.add_argument("--no-open", action="store_true",
                     help="do not print the browser open hint")
+    pg.add_argument("--host", default=os.environ.get("QUIVERLAB_GUI_HOST",
+                                                     "127.0.0.1"),
+                    help="bind address (default $QUIVERLAB_GUI_HOST or "
+                         "127.0.0.1; the container image sets 0.0.0.0 so "
+                         "`docker run -p 8000:8000 ... gui` is reachable)")
     pg.set_defaults(func=_cmd_gui)
     return p
 

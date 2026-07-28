@@ -8,7 +8,7 @@
 #
 #     # one-time: pull the image onto $SCRATCH (rootless, no admin)
 #     export APPTAINER_CACHEDIR=$SCRATCH/.apptainer
-#     apptainer pull $SCRATCH/quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+#     apptainer pull $SCRATCH/quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
 #     # then:
 #     sbatch slurm/quiverlab-drac.sbatch my-config.yaml result.json
 #

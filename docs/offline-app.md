@@ -13,9 +13,9 @@ shown right in the GUI**.
 Pull once (with internet):
 
 ```bash
-apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
 # or, with Docker:
-docker pull ghcr.io/MarcoArmenta/quiverlab:latest
+docker pull ghcr.io/marcoarmenta/quiverlab:latest
 ```
 
 Then, offline, start the GUI and open the printed URL:
@@ -24,7 +24,7 @@ Then, offline, start the GUI and open the printed URL:
 # Apptainer:
 apptainer run quiverlab.sif gui
 # Docker (publish the port):
-docker run --rm -p 8000:8000 ghcr.io/MarcoArmenta/quiverlab:latest gui
+docker run --rm -p 8000:8000 ghcr.io/marcoarmenta/quiverlab:latest gui
 ```
 
 Open **<http://localhost:8000>**. Draw or pick an algebra, choose a field and what

@@ -223,10 +223,11 @@ def _worker_loop(cfg: Config, stop) -> None:
             stop.wait(1)                     # idle backoff, promptly interruptible
 
 
-def _banner_lines(port: int, cfg: Config, caps: dict, open_hint: bool) -> list[str]:
+def _banner_lines(port: int, cfg: Config, caps: dict, open_hint: bool,
+                  host: str = "127.0.0.1") -> list[str]:
     lines = ["quiverlab -- offline GUI"]
     lines.append(f"  open  http://localhost:{port}" if open_hint
-                 else f"  serving on http://127.0.0.1:{port}")
+                 else f"  serving on http://{host}:{port}")
     lines.append(f"  data dir:     {cfg.data_dir}")
     lines.append(f"  host:         {caps['cores']} core(s), {caps['ram_human']} RAM detected")
     lines.append(f"  worker caps:  memory {caps['worker_mem_human']}, "
@@ -238,11 +239,14 @@ def _banner_lines(port: int, cfg: Config, caps: dict, open_hint: bool) -> list[s
     return lines
 
 
-def serve_offline(port: int = 8000, data_dir=None, open_hint: bool = True) -> None:
-    """Serve the offline GUI on ``127.0.0.1:port`` (loopback only) with an
+def serve_offline(port: int = 8000, data_dir=None, open_hint: bool = True,
+                  host: str = "127.0.0.1") -> None:
+    """Serve the offline GUI on ``host:port`` (loopback by default) with an
     embedded worker thread; block until interrupted. This is the target of the
     ``quiverlab-hpc gui`` verb -- imported lazily there so the ``run``/``render``
-    paths carry no webapp dependency."""
+    paths carry no webapp dependency. Inside a container the loopback default is
+    unreachable through ``docker run -p``, so the image sets
+    ``QUIVERLAB_GUI_HOST=0.0.0.0`` and the verb passes it through here."""
     import threading
 
     import uvicorn
@@ -255,7 +259,8 @@ def serve_offline(port: int = 8000, data_dir=None, open_hint: bool = True) -> No
     os.environ.setdefault("NUMBA_NUM_THREADS", threads)
     os.environ.setdefault("OMP_NUM_THREADS", threads)
 
-    print("\n".join(_banner_lines(port, cfg, caps, open_hint)), flush=True)
+    print("\n".join(_banner_lines(port, cfg, caps, open_hint, host=host)),
+          flush=True)
 
     stop = threading.Event()
     worker = threading.Thread(target=_worker_loop, args=(cfg, stop),
@@ -264,7 +269,7 @@ def serve_offline(port: int = 8000, data_dir=None, open_hint: bool = True) -> No
     try:
         # uvicorn installs its own SIGINT/SIGTERM handlers on the main thread and
         # returns after a graceful shutdown; we then drain the worker.
-        uvicorn.run(app, host="127.0.0.1", port=port, log_level="warning")
+        uvicorn.run(app, host=host, port=port, log_level="warning")
     finally:
         stop.set()
         worker.join(timeout=cfg.job_wall_seconds + 5)
