@@ -1,9 +1,10 @@
 """Plan 34 -- the hpc result.json -> report path shows wide matrices sensibly and the
 HTML report is print-ready:
 
-  * ``_matrix_html``: a matrix up to 25 columns is a rendered HTML table; past 25
+  * ``_matrix_html``: a matrix up to 100 columns is a rendered HTML table; past 100
     rows/cols it is STATED-elided (shown in full in the JSON result) so an oversized
-    module action matrix does not dominate the page.
+    module action matrix does not dominate the page (the cap was the PDF-era 25;
+    the HTML report scrolls, so it now matches Marco's bigger-modules examples).
   * the HTML report shows RENDERED math (tables, sub/superscripts), never LaTeX
     source, and no removed .tex/PDF compile step is advertised.
 
@@ -36,11 +37,11 @@ def _result_with_maps(cols_rad, cols_soc):
 
 
 # --------------------------------------------------------------------------- #
-# _matrix_html: <=25 -> rendered table, >25 -> stated elision.
+# _matrix_html: <=100 -> rendered table, >100 -> stated elision.
 # --------------------------------------------------------------------------- #
-def test_matrix_html_elides_past_25():
-    assert "<table class='matrix'>" in report._matrix_html([[0] * 12 for _ in range(12)])
-    wide = report._matrix_html([[0] * 30 for _ in range(3)])
+def test_matrix_html_elides_past_100():
+    assert "<table class='matrix'>" in report._matrix_html([[0] * 60 for _ in range(40)])
+    wide = report._matrix_html([[0] * 120 for _ in range(3)])
     assert "<table" not in wide
     assert "shown in full in the JSON result" in wide
 

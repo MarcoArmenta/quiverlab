@@ -7,7 +7,7 @@ removed -- ``fmt="pdf"``/``"tex"`` is refused loudly.
 
 The HTML shows RENDERED math -- matrices as tables, sub/superscripted summand
 notation ``P_1^2 + P_3`` -- never LaTeX source (Marco, 2026-07-28). Oversized
-matrices keep the Plan-34 contract: past 25 rows/columns they are STATED-elided
+matrices keep the Plan-34 contract: past 100 rows/columns they are STATED-elided
 (shown in full in the JSON result), so one huge action matrix cannot dominate
 the page.
 
@@ -123,12 +123,13 @@ def _summand_html(s: str) -> str:
 def _matrix_html(mat) -> str:
     """A matrix as a rendered HTML table with 1-based row/column index headers
     (a header row on top, an index column on the left) over a white/grey striped
-    grid, so an entry's position reads off directly. Past 25 rows or columns it
-    is STATED-elided (the full matrix lives in the JSON result), keeping the
-    Plan-34 wide-matrix contract."""
+    grid, so an entry's position reads off directly. Past 100 rows or columns it
+    is STATED-elided (the full matrix lives in the JSON result) -- the Plan-34
+    wide-matrix contract, with the cap raised from the PDF-era 25 now that the
+    report is scrollable HTML."""
     nrows = len(mat)
     ncols = max((len(row) for row in mat), default=0)
-    if nrows > 25 or ncols > 25:
+    if nrows > 100 or ncols > 100:
         return ("<em>[%d&times;%d matrix -- shown in full in the JSON result]</em>"
                 % (nrows, ncols))
     if nrows == 0 or ncols == 0:
