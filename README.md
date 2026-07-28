@@ -39,35 +39,35 @@ finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhabe
 brackets, the first full Chouhy–Solotar resolution, module Ext, and Cartan/Coxeter
 invariants. Floats fail loudly by design.
 
-## Run the GUI
+## Get quiverlab
 
-**Zero install — it runs in your browser:** open
-<https://marcoarmenta.github.io/quiverlab/> and use the canvas at the top of the
-page. Draw vertices and arrows, add relations, pick a field, and compute Hochschild
-(co)homology exactly; the full quiverlab engine runs client-side via Pyodide (the
-first computation loads it — give it a few seconds).
+Most users want one of these three, in this order:
 
-To launch the same GUI locally from a clone (it always runs the exact code you
-checked out):
+**1. Download the containerized application** — one image, the full exact
+engine, no Python setup:
+
+```bash
+docker pull ghcr.io/MarcoArmenta/quiverlab:latest      # or: apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
+docker run --rm --network host ghcr.io/MarcoArmenta/quiverlab:latest gui
+# open http://localhost:8000 — the zero-code GUI, fully offline, using your
+# machine's cores and RAM. The same image runs batch configs; see
+# "Writing and running config files" below.
+```
+
+**2. Clone the repo and build the container yourself:**
 
 ```bash
 git clone https://github.com/MarcoArmenta/quiverlab.git && cd quiverlab
-python -m venv .venv && source .venv/bin/activate
-pip install -e ".[docs]"
-mkdocs serve
+docker build -f container/Dockerfile -t quiverlab:local .
+docker run --rm --network host quiverlab:local gui
 ```
 
-then open <http://127.0.0.1:8000> — the GUI is at the top of the landing page.
-The first start packs the engine wheel and executes the tutorial notebooks; give
-it a minute or two.
+**3. Use the web interface** — the self-hostable server tier (`webapp/`):
+instant answers for small examples, queued jobs with permalinks for deep ones,
+and a shared exact-result cache — see [Web interface](#web-interface).
 
-## Install
-
-```bash
-pip install quiverlab                 # pure-Python core, no external systems
-pip install "quiverlab[fast]"         # + numba GF(p) acceleration (optional)
-pip install "quiverlab[qpa]"          # + GAP/QPA cross-check backend (macOS/Linux)
-```
+Python-library installs and SLURM clusters are covered
+[at the bottom](#install-the-python-library).
 
 ## Three lines to a Hochschild table
 
@@ -83,7 +83,7 @@ print(Q.algebra(relations=["a*b"], field=CC).hochschild_cohomology(3))
 - **Documentation:** <https://marcoarmenta.github.io/quiverlab/>
 - **Tutorials:** [executable notebooks](docs/tutorials/) — start here.
 - **Under the hood:** [internals chapters](docs/internals/) — how each number is produced.
-- **Web GUI:** the [docs landing page](https://marcoarmenta.github.io/quiverlab/) computes in your browser today; a self-hostable server tier (`webapp/`) adds queued and email-verified big jobs — see [Web interface](#web-interface).
+- **No-code interfaces:** the containerized app ships an offline GUI (`quiverlab-hpc gui`), and the self-hostable server tier (`webapp/`) adds queued and email-verified big jobs — see [Web interface](#web-interface).
 - **Cite:** see the JOSS paper (`paper/paper.md`) and [`CITATION.cff`](CITATION.cff).
 
 ## The classic characteristic pathology, in one loop
@@ -223,8 +223,8 @@ ported and wired in:
   discovery and the `zoo` iterator, each stamped with the literature it comes from;
   `A.citations()` and `bibliography(...)` resolve those keys to grouped, annotated
   references, plus a batch scan surface for family sweeps.
-- **In-browser GUI** — the [docs landing page](https://marcoarmenta.github.io/quiverlab/)
-  computes examples with nothing installed (Pyodide running the same exact engine).
+- **Zero-code GUI** — the containerized app serves the full-engine GUI offline
+  on localhost (`quiverlab-hpc gui`), with your machine's real cores and RAM.
 
 Everything is exact — no floating point, ever — and the full test suite runs
 green on both the numba kernel path and the pure-Python path
@@ -491,5 +491,14 @@ commutative grid with interior modules paired by the Auslander-Reiten
 translate — `Ext^1(M, tau M) = 1` ([`grid3x3.yaml`](container/examples/grid3x3.yaml)),
 and a dim-220 deep-degree run ([`nakayama-kz20-deep.yaml`](container/examples/nakayama-kz20-deep.yaml)).
 Every one computes byte-identically in the container and from the wheel.
+
+## Install the Python library
+
+```bash
+pip install quiverlab                 # pure-Python core, no external systems
+pip install "quiverlab[fast]"         # + numba GF(p) acceleration (optional)
+pip install "quiverlab[qpa]"          # + GAP/QPA cross-check backend (macOS/Linux)
+pip install "quiverlab[fast,hpc]"     # + the quiverlab-hpc CLI (configs, reports)
+```
 
 MIT © 2026 Marco Armenta

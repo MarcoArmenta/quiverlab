@@ -2,15 +2,14 @@
 
 **Quivers with relations and Hochschild theory, exactly, for algebraists.**
 
-Draw a quiver below, type relations, pick a field, and compute — right here,
-with nothing to install. Everything runs **exactly** (never floating point) in
-your browser, on the same engine the Python library ships.
+Compute with the **containerized application** — a zero-code GUI plus a batch
+CLI, fully offline, using your machine's real cores and RAM — or with the
+self-hostable **web tier** for shared and queued jobs, or with the Python
+library. Everything runs **exactly** (never floating point).
 
-<div id="qlgui">
-  <noscript><p><strong>The interactive GUI needs JavaScript.</strong>
-  The Python library works without it: <code>pip install quiverlab</code>.</p></noscript>
-  <p>Loading the GUI…</p>
-</div>
+- **[Offline app](offline-app/)** — pull one image, run `gui`, open localhost.
+- **[Run on your HPC cluster](hpc/)** — the same image runs batch configs,
+  with checkpointed resume and rendered HTML reports.
 
 ## Prefer code?
 
@@ -35,7 +34,7 @@ print(A.hochschild_cohomology(3))
 - **[Under the hood](internals/)** — how each object is represented and each
   number produced.
 - **[API Reference](reference/)** — every public function and class.
-- **Web GUI** — the form at the top of this page runs in your browser; a
-  server-backed tier for big jobs is planned (Plan 09).
+- **No-code interfaces** — the [offline app](offline-app/) and the
+  self-hostable web tier (`webapp/` in the repository).
 - **Cite** — see the JOSS paper and
   [`CITATION.cff`](https://github.com/MarcoArmenta/quiverlab/blob/main/CITATION.cff).
