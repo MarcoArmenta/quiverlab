@@ -306,13 +306,20 @@ def _section_for(name: str, block: dict) -> _Section:
             html.append(f"<p class='resterm'>{_esc(line.strip())}</p>")
         return _Section("Krull-Schmidt decomposition", rows, html)
     if name in ("projective_resolution", "injective_resolution"):
-        letter = "P" if name == "projective_resolution" else "I"
+        proj = name == "projective_resolution"
+        letter = "P" if proj else "I"
         terms = block.get("terms", [])
         betti = block.get("betti", [])
         summands = block.get("summands", [])
+        diffs = block.get("differentials", [])
         top = block.get("top")
         rows = [f"computed window: degrees 0..{top}"]
         html = [f"<p>computed window: degrees 0..{_esc(str(top))}</p>"]
+        if diffs:
+            conv = ("differential matrices: rows index the target basis, columns "
+                    "the source basis (vertex-ordered)")
+            rows.append(conv)
+            html.append(f"<p class='dv'>{_esc(conv)}</p>")
         for i, dv in enumerate(terms):
             # Preferred: the summand notation P_j^n + P_i^m per degree; fall back
             # to Betti counts when an older result carries no summand strings.
@@ -325,6 +332,30 @@ def _section_for(name: str, block: dict) -> _Section:
             html.append(f"<p class='resterm'>deg {i}:&ensp;{s_html}&ensp;"
                         f"<span class='dv'>(dim vector "
                         f"{_esc(_dimvec_str(dv))})</span></p>")
+            if i < len(diffs) and isinstance(diffs[i], dict):
+                d = diffs[i]
+                if proj:      # maps OUT of degree i: eps: Q_0 -> M, d_i: Q_i -> Q_{i-1}
+                    label_txt = ("eps: deg 0 -> M" if i == 0
+                                 else f"d_{i}: deg {i} -> deg {i - 1}")
+                    label_html = ("&epsilon;: deg 0 &rarr; M" if i == 0
+                                  else f"d<sub>{i}</sub>: deg {i} &rarr; deg {i - 1}")
+                else:         # maps INTO degree i: iota: M -> E^0, d^i: E^{i-1} -> E^i
+                    label_txt = ("iota: M -> deg 0" if i == 0
+                                 else f"d^{i}: deg {i - 1} -> deg {i}")
+                    label_html = ("&iota;: M &rarr; deg 0" if i == 0
+                                  else f"d<sup>{i}</sup>: deg {i - 1} &rarr; deg {i}")
+                if d.get("elided"):
+                    note = (f"[{d.get('rows')}x{d.get('cols')} matrix -- elided "
+                            "past the size cap; rerun with a worked-steps trace "
+                            "for the full map]")
+                    rows.append(f"    {label_txt}: {note}")
+                    html.append(f"<p class='resterm'>&ensp;{label_html}: "
+                                f"<em>{_esc(note)}</em></p>")
+                else:
+                    mat = d.get("matrix", [])
+                    rows.append(f"    {label_txt}: {mat}")
+                    html.append("<div class='arrowmap'><span>"
+                                f"{label_html}:</span> {_matrix_html(mat)}</div>")
         def _dim_line(label, v):
             if v is not None:
                 return f"{label}: {v}"

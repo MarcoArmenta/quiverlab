@@ -1124,6 +1124,31 @@ def _summands_latex(vertices, letter: str) -> str:
     return r" \oplus ".join(parts)
 
 
+# A single differential past this many cells ships elided (shape only): the
+# matrices are display data for the report, and one enormous syzygy map must not
+# balloon result.json (the Plan-34 recorder backstop, same figure).
+_MAX_DIFF_CELLS = 250_000
+
+
+def _differential_blocks(res, n_terms) -> list:
+    """The resolution's maps as exact matrices (rows: target basis, columns:
+    source basis, vertex-ordered). Projective: entry 0 is the augmentation
+    eps: Q_0 -> M, entry n is d_n: Q_n -> Q_{n-1}. Injective: entry 0 is
+    iota: M -> E^0, entry n is d^n: E^{n-1} -> E^n."""
+    out = []
+    dmats = getattr(res, "dmats", None) or []
+    for n in range(min(n_terms, len(dmats))):
+        D = res.differential(n)
+        nrows = len(D)
+        ncols = len(D[0]) if nrows else 0
+        if nrows * ncols > _MAX_DIFF_CELLS:
+            out.append({"rows": nrows, "cols": ncols, "elided": True})
+        else:
+            out.append({"rows": nrows, "cols": ncols,
+                        "matrix": [[str(x) for x in row] for row in D]})
+    return out
+
+
 def _summand_view(mod, mult) -> dict:
     """One indecomposable summand of a module: its dimension vector + multiplicity."""
     return {"dim_vector": _dv(mod.dimension_vector()), "multiplicity": int(mult),
@@ -1228,7 +1253,8 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         block = {"kind": kind, "top": top, "terms": terms,
                  "betti": [res.betti(i) for i in range(len(terms))],
                  "summands": [_summands_latex(res.term(i), letter)
-                              for i in range(len(terms))]}
+                              for i in range(len(terms))],
+                 "differentials": _differential_blocks(res, len(terms))}
         if kind == "projective_resolution":
             block["pd"] = res.pd()
         else:
