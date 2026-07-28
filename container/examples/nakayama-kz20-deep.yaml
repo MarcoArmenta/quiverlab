@@ -29,8 +29,8 @@ algebra:
     p: 32003
     n: 1
 compute:
-  - "hh_cohomology:0..20"
-  - "hh_homology:0..20"
+  - "hh_cohomology:0..10"
+  - "hh_homology:0..10"
   - cartan
   - coxeter_polynomial
   - global_dimension
