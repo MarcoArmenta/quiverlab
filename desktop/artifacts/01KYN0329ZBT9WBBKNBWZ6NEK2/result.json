@@ -1,0 +1,117 @@
+{
+  "quiverlab_version": "0.1.0.dev0",
+  "algebra": {
+    "kind": "family",
+    "family": "QuantumCI",
+    "params": {
+      "q": 1
+    },
+    "field": {
+      "kind": "GF",
+      "p": 2,
+      "n": 1
+    }
+  },
+  "results": {
+    "hh_cohomology": {
+      "kind": "HH^",
+      "top": 4,
+      "dims": [
+        4,
+        8,
+        12,
+        16,
+        20
+      ],
+      "engine": "hanlab engine (F_p fast rank)",
+      "references": [
+        "quantum_ci",
+        "qci_hh_oracle",
+        "bardzell",
+        "chouhy_solotar",
+        "bar"
+      ],
+      "citations": [
+        [
+          "BGMS2005",
+          "Buchweitz, Ragnar-Olaf; Green, Edward L.; Madsen, Dag; Solberg, Oyvind (2005). Finite Hochschild cohomology without finite global dimension. Mathematical Research Letters 12, 805-816."
+        ],
+        [
+          "BerghErdmann2008",
+          "Bergh, Petter Andreas; Erdmann, Karin (2008). Homology and cohomology of quantum complete intersections. Algebra & Number Theory 2, 501-522."
+        ],
+        [
+          "Bardzell1997",
+          "Bardzell, Michael J. (1997). The alternating syzygy behavior of monomial algebras. Journal of Algebra 188, 69-89."
+        ],
+        [
+          "ChouhySolotar2015",
+          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
+        ],
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    }
+  },
+  "references": [
+    {
+      "key": "quantum_ci",
+      "bibtex_key": "BGMS2005",
+      "formatted": "Buchweitz, Ragnar-Olaf; Green, Edward L.; Madsen, Dag; Solberg, Oyvind (2005). Finite Hochschild cohomology without finite global dimension. Mathematical Research Letters 12, 805-816.",
+      "doi": "10.4310/MRL.2005.v12.n6.a2",
+      "arxiv": "math/0407108",
+      "doi_url": "https://doi.org/10.4310/MRL.2005.v12.n6.a2",
+      "arxiv_url": "https://arxiv.org/abs/math/0407108",
+      "topic": "Families",
+      "annotation": "The algebra k<x,y>/(x^2, y^2, xy + q yx): finite Hochschild cohomology with infinite global dimension (the QuantumCI family)."
+    },
+    {
+      "key": "qci_hh_oracle",
+      "bibtex_key": "BerghErdmann2008",
+      "formatted": "Bergh, Petter Andreas; Erdmann, Karin (2008). Homology and cohomology of quantum complete intersections. Algebra & Number Theory 2, 501-522.",
+      "doi": "10.2140/ant.2008.2.501",
+      "arxiv": "0709.3029",
+      "doi_url": "https://doi.org/10.2140/ant.2008.2.501",
+      "arxiv_url": "https://arxiv.org/abs/0709.3029",
+      "topic": "Families",
+      "annotation": "Explicit HH^* / HH_* of quantum complete intersections -- the literature oracle QuantumCI results are checked against."
+    },
+    {
+      "key": "bardzell",
+      "bibtex_key": "Bardzell1997",
+      "formatted": "Bardzell, Michael J. (1997). The alternating syzygy behavior of monomial algebras. Journal of Algebra 188, 69-89.",
+      "doi": "10.1006/jabr.1996.6813",
+      "arxiv": null,
+      "doi_url": "https://doi.org/10.1006/jabr.1996.6813",
+      "arxiv_url": null,
+      "topic": "Algorithms",
+      "annotation": "The minimal projective bimodule resolution for monomial algebras (quiverlab's Bardzell engine and the truncated/radical-square-zero families)."
+    },
+    {
+      "key": "chouhy_solotar",
+      "bibtex_key": "ChouhySolotar2015",
+      "formatted": "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61.",
+      "doi": "10.1016/j.jalgebra.2015.02.019",
+      "arxiv": "1406.2300",
+      "doi_url": "https://doi.org/10.1016/j.jalgebra.2015.02.019",
+      "arxiv_url": "https://arxiv.org/abs/1406.2300",
+      "topic": "Algorithms",
+      "annotation": "The general kQ/I bimodule resolution from a reduction system -- quiverlab's Chouhy-Solotar engine for non-monomial algebras."
+    },
+    {
+      "key": "bar",
+      "bibtex_key": "Hochschild1945",
+      "formatted": "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.",
+      "doi": "10.2307/1969145",
+      "arxiv": null,
+      "doi_url": "https://doi.org/10.2307/1969145",
+      "arxiv_url": null,
+      "topic": "Foundations",
+      "annotation": "Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic."
+    }
+  ],
+  "reproduce": "import quiverlab as ql\nA = ql.QuantumCI(field=ql.GF(2), q=1)\nA.hochschild_cohomology(4)",
+  "meta": {}
+}

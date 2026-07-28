@@ -8,6 +8,18 @@ shown right in the GUI**.
 
 ---
 
+## Easiest: download the one-file app
+
+No Docker, no Python: **[download the QuiverLab app for your OS](https://github.com/MarcoArmenta/quiverlab/releases/tag/app-latest)**,
+double-click it, and the GUI opens in your browser. One file, fully offline,
+exact computation (the app runs the pure-exact kernels -- identical results to
+the accelerated path, which is parity-gated in the test suite). First-open
+notes for the unsigned binaries are on the download page.
+
+Prefer containers or pip? Both below.
+
+---
+
 ## Run it
 
 Pull once (with internet):

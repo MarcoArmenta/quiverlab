@@ -9,3 +9,4 @@ quiverlab_traces/
 docs/tutorials/quiverlab_traces/
 paper/paper.bib
 build/
+desktop/seed-cache.db
