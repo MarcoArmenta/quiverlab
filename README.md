@@ -41,9 +41,16 @@ invariants. Floats fail loudly by design.
 
 ## Get quiverlab
 
-Most users want one of these three, in this order:
+Most users want one of these, in this order:
 
-**1. Download the containerized application** — one image, the full exact
+**1. Download the desktop app** — one file, double-click it, and the zero-code
+GUI opens in your browser on localhost, fully offline, using your machine's
+real cores and RAM. Grab the binary for your OS from the
+[**latest release**](https://github.com/MarcoArmenta/quiverlab/releases/latest)
+(Linux / macOS / Windows). The binaries are unsigned for now: macOS needs
+right-click → Open on first launch, Windows needs "More info → Run anyway".
+
+**2. Download the containerized application** — one image, the full exact
 engine, no Python setup:
 
 ```bash
@@ -54,7 +61,7 @@ docker run --rm --network host ghcr.io/MarcoArmenta/quiverlab:latest gui
 # "Writing and running config files" below.
 ```
 
-**2. Clone the repo and build the container yourself:**
+**3. Clone the repo and build the container yourself:**
 
 ```bash
 git clone https://github.com/MarcoArmenta/quiverlab.git && cd quiverlab
@@ -62,7 +69,7 @@ docker build -f container/Dockerfile -t quiverlab:local .
 docker run --rm --network host quiverlab:local gui
 ```
 
-**3. Use the web interface** — the self-hostable server tier (`webapp/`):
+**4. Use the web interface** — the self-hostable server tier (`webapp/`):
 instant answers for small examples, queued jobs with permalinks for deep ones,
 and a shared exact-result cache — see [Web interface](#web-interface).
 

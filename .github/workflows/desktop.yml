@@ -1,0 +1,70 @@
+# Desktop app: per-OS single-file binaries (PyInstaller) attached to releases.
+# The download-button story: a user downloads one file from the latest release,
+# double-clicks it, and the offline GUI opens in their browser on localhost --
+# no Python, no Docker. See desktop/launcher.py + desktop/quiverlab.spec.
+#
+# Unsigned binaries: macOS Gatekeeper needs right-click -> Open on first launch
+# and Windows SmartScreen needs "More info -> Run anyway" (documented in the
+# README) until we sign/notarize.
+name: desktop
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: quiverlab-desktop-linux-x86_64
+            built: dist/quiverlab
+          - os: macos-latest
+            artifact: quiverlab-desktop-macos-arm64
+            built: dist/quiverlab
+          - os: windows-latest
+            artifact: quiverlab-desktop-windows-x86_64.exe
+            built: dist/quiverlab.exe
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[fast,web,hpc]" pyinstaller
+      - name: Build
+        run: pyinstaller desktop/quiverlab.spec
+      - name: Smoke (binary starts and serves)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          "${{ matrix.built }}" > desktop-smoke.log 2>&1 &
+          BPID=$!
+          for i in $(seq 1 90); do
+            grep -q "open  http" desktop-smoke.log && break; sleep 2
+          done
+          PORT=$(grep -o "localhost:[0-9]*" desktop-smoke.log | head -1 | cut -d: -f2)
+          curl -fsS -o /dev/null "http://127.0.0.1:${PORT}/"
+          kill "$BPID"
+      - name: Rename artifact
+        shell: bash
+        run: mv "${{ matrix.built }}" "${{ matrix.artifact }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+      - name: Attach to release
+        if: github.event_name == 'release'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ matrix.artifact }}" --clobber
