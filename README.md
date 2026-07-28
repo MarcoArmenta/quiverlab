@@ -70,16 +70,16 @@ Most users want one of these, in this order:
 **1. Download the desktop app** — one file, double-click it, and the zero-code
 GUI opens in your browser on localhost, fully offline, using your machine's
 real cores and RAM. Grab the binary for your OS from the
-[**latest release**](https://github.com/MarcoArmenta/quiverlab/releases/latest)
-(Linux / macOS / Windows). The binaries are unsigned for now: macOS needs
-right-click → Open on first launch, Windows needs "More info → Run anyway".
+[**download box at the top of this page**](#️-download-application-here)
+(macOS / Windows / Linux), which also carries the one-time first-open steps for
+the unsigned binaries.
 
 **2. Download the containerized application** — one image, the full exact
-engine, no Python setup:
+engine, no Python setup (registry paths are lowercase-only):
 
 ```bash
-docker pull ghcr.io/MarcoArmenta/quiverlab:latest      # or: apptainer pull quiverlab.sif docker://ghcr.io/MarcoArmenta/quiverlab:latest
-docker run --rm --network host ghcr.io/MarcoArmenta/quiverlab:latest gui
+docker pull ghcr.io/marcoarmenta/quiverlab:latest      # or: apptainer pull quiverlab.sif docker://ghcr.io/marcoarmenta/quiverlab:latest
+docker run --rm -p 8000:8000 ghcr.io/marcoarmenta/quiverlab:latest gui
 # open http://localhost:8000 — the zero-code GUI, fully offline, using your
 # machine's cores and RAM. The same image runs batch configs; see
 # "Writing and running config files" below.
@@ -90,7 +90,7 @@ docker run --rm --network host ghcr.io/MarcoArmenta/quiverlab:latest gui
 ```bash
 git clone https://github.com/MarcoArmenta/quiverlab.git && cd quiverlab
 docker build -f container/Dockerfile -t quiverlab:local .
-docker run --rm --network host quiverlab:local gui
+docker run --rm -p 8000:8000 quiverlab:local gui
 ```
 
 **4. Use the web interface** — the self-hostable server tier (`webapp/`):
@@ -362,7 +362,7 @@ next submit — just `sbatch` again. **quiverlab is CPU-only** — request cores
 my-config.yaml` suggests the resources.
 
 **Offline laptop app.** Pull the image once with internet, then run
-`apptainer run quiverlab.sif gui` (or `docker run --network host … gui`) and open
+`apptainer run quiverlab.sif gui` (or `docker run -p 8000:8000 … gui`) and open
 `http://localhost:8000` — the zero-code GUI computes locally with no network, showing
 your machine's detected cores/RAM, memory/time estimates, and the limits you are
 computing under, and ships precomputed examples.
