@@ -35,12 +35,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # No macos-intel target: GitHub retired the macos-13 runners (the last
+          # free Intel-mac image), so an x86-64 mac binary cannot be built on
+          # hosted runners -- Intel-Mac users take the Docker or pip path
+          # (README banner note). Revisit only with a paid *-large Intel runner.
           - os: macos-14
             label: macos-arm64
             asset: QuiverLab-macos-arm64.zip
-          - os: macos-13
-            label: macos-intel
-            asset: QuiverLab-macos-intel.zip
           - os: windows-latest
             label: windows
             asset: QuiverLab-windows.exe

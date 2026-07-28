@@ -18,7 +18,6 @@
 > | OS | Download |
 > |---|---|
 > | **macOS** (Apple Silicon: M1–M4) | [QuiverLab-macos-arm64.zip](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-macos-arm64.zip) |
-> | **macOS** (Intel) | [QuiverLab-macos-intel.zip](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-macos-intel.zip) |
 > | **Windows** | [QuiverLab-windows.exe](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-windows.exe) |
 > | **Linux** (x86-64) | [QuiverLab-linux-x86_64.tar.gz](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-linux-x86_64.tar.gz) |
 >
@@ -26,7 +25,9 @@
 > right-click → Open; on macOS 15+ approve it once under System Settings →
 > Privacy & Security → *Open Anyway*. **Windows** — if SmartScreen appears,
 > choose *More info* → *Run anyway*. **Linux** — `tar xzf`, then run
-> `./QuiverLab`.
+> `./QuiverLab`. **Intel Mac** — no one-file build (GitHub retired its Intel-mac
+> builders); use `docker run -p 8000:8000 ghcr.io/marcoarmenta/quiverlab:latest gui`
+> or the [pip path](https://marcoarmenta.github.io/quiverlab/offline-app/).
 
 **Exact representation theory of quivers with relations, for algebraists** —
 modules and Auslander–Reiten theory, resolutions, Ext-algebras and Koszulity,
