@@ -21,12 +21,15 @@
 > | **Windows** | [QuiverLab-windows.exe](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-windows.exe) |
 > | **Linux** (x86-64) | [QuiverLab-linux-x86_64.tar.gz](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-linux-x86_64.tar.gz) |
 >
-> First-open notes (the app is not code-signed yet): **macOS** — unzip, then
-> right-click → Open; on macOS 15+ approve it once under System Settings →
-> Privacy & Security → *Open Anyway*. **Windows** — if SmartScreen appears,
-> choose *More info* → *Run anyway*. **Linux** — `tar xzf`, then run
-> `./QuiverLab`. **Intel Mac** — no one-file build (GitHub retired its Intel-mac
-> builders); use `docker run -p 8000:8000 ghcr.io/marcoarmenta/quiverlab:latest gui`
+> First-open notes (the app is not code-signed yet, so each OS warns **once**):
+> **macOS** — unzip and double-click; when the *"Apple could not verify…"*
+> dialog appears click **Done** (not "Move to Trash"), then System Settings →
+> Privacy & Security → scroll to Security → **Open Anyway** → Open. (Terminal
+> alternative: `xattr -d com.apple.quarantine ./QuiverLab`.) **Windows** — if
+> SmartScreen appears, choose *More info* → *Run anyway*. **Linux** — `tar xzf`,
+> then run `./QuiverLab`. **Intel Mac** — no one-file build (GitHub retired its
+> Intel-mac builders); use
+> `docker run -p 8000:8000 ghcr.io/marcoarmenta/quiverlab:latest gui`
 > or the [pip path](https://marcoarmenta.github.io/quiverlab/offline-app/).
 
 **Exact representation theory of quivers with relations, for algebraists** —

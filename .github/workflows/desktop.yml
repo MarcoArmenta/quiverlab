@@ -7,9 +7,11 @@ name: Desktop app
 # links to. Packaging per OS:
 #   * Windows: raw .exe (double-click works as downloaded)
 #   * macOS:   .zip -- browsers drop the executable bit on raw binaries; Archive
-#              Utility restores it on extraction. Unsigned: first open needs
-#              right-click->Open (or Privacy & Security -> Open Anyway on
-#              macOS 15+).
+#              Utility restores it on extraction. Unsigned: Gatekeeper blocks the
+#              first open ("Apple could not verify..."); the user clicks Done,
+#              then Privacy & Security -> Open Anyway (right-click->Open no
+#              longer bypasses on macOS 15+). Real fix = Developer ID signing +
+#              notarization, which needs Marco's Apple Developer credentials.
 #   * Linux:   .tar.gz (preserves the executable bit)
 # The bundle runs the pure-exact kernels (QUIVERLAB_NO_NUMBA=1; parity with the
 # numba path is test-gated) -- see desktop/launcher.py.
@@ -101,6 +103,6 @@ jobs:
           gh release create app-latest \
             --prerelease \
             --title "QuiverLab desktop app (rolling)" \
-            --notes "One-file QuiverLab app: download the file for your OS, double-click it, and the local GUI opens in your browser -- fully offline, exact computation, no install. macOS: unzip, then right-click -> Open the first time (unsigned; on macOS 15+ use System Settings -> Privacy & Security -> Open Anyway). Windows: if SmartScreen appears, choose More info -> Run anyway. Rebuilt from main; not a versioned library release." \
+            --notes "One-file QuiverLab app: download the file for your OS, double-click it, and the local GUI opens in your browser -- fully offline, exact computation, no install. The app is not code-signed yet, so each OS warns once. macOS: unzip, double-click; at the 'Apple could not verify...' dialog click Done (NOT Move to Trash), then System Settings -> Privacy & Security -> Open Anyway -> Open (or in Terminal: xattr -d com.apple.quarantine ./QuiverLab). Windows: if SmartScreen appears, choose More info -> Run anyway. Linux: tar xzf, then ./QuiverLab. Rebuilt from main; not a versioned library release." \
             || true
           gh release upload app-latest "${{ matrix.asset }}" --clobber
