@@ -41,6 +41,9 @@ grep -q "quiverlab report" out/report.html && echo "report.html has rendered con
 Offline GUI (the laptop app):
 
 ```bash
+# The image sets QUIVERLAB_GUI_HOST=0.0.0.0 so the published port reaches the
+# GUI (loopback inside the container's namespace would not be; only published
+# ports are exposed, so this stays local-only). Works on Docker Desktop too.
 docker run --rm -p 8000:8000 quiverlab:local gui
 # open http://localhost:8000  -- computes locally, shows memory/time estimates,
 # ships the seeded example cache. No internet required after the image is pulled.

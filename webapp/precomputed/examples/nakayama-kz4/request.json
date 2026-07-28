@@ -1,0 +1,80 @@
+{
+  "algebra": {
+    "family": "NakayamaAlgebra",
+    "field": {
+      "kind": "GF",
+      "n": 1,
+      "p": 7
+    },
+    "kind": "family",
+    "params": {
+      "cyclic": true,
+      "l": 3,
+      "n": 4
+    }
+  },
+  "artifacts": {
+    "pdf": false,
+    "tikz": true
+  },
+  "compute": [
+    "hh_cohomology:0..6",
+    "hh_homology:0..6",
+    "cartan",
+    "coxeter_polynomial",
+    "global_dimension",
+    "center",
+    "dimension",
+    "dimension_vector",
+    "rad_top_soc",
+    "decompose",
+    "tau",
+    "tau_minus",
+    "projective_resolution:0..6",
+    "injective_resolution:0..6",
+    "projective_dimension",
+    "injective_dimension",
+    "ext:0..6",
+    "tor:0..6"
+  ],
+  "ext_target": {
+    "builtin": {
+      "kind": "simple",
+      "side": "right",
+      "vertex": 1
+    }
+  },
+  "module": {
+    "dims": {
+      "1": 1,
+      "2": 2,
+      "3": 1,
+      "4": 0
+    },
+    "maps": {
+      "a1": [
+        [
+          1
+        ],
+        [
+          0
+        ]
+      ],
+      "a2": [
+        [
+          1,
+          0
+        ]
+      ]
+    },
+    "side": "right"
+  },
+  "schema": 2,
+  "tor_target": {
+    "builtin": {
+      "kind": "simple",
+      "side": "left",
+      "vertex": 1
+    }
+  }
+}

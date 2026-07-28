@@ -50,18 +50,43 @@ def _key(spec):
 # --------------------------------------------------------------------------- #
 
 def test_shipped_manifest_is_schema_valid():
+    """The curated manifest: every entry resolves to a valid ComputeRequest --
+    inline entries directly, stored bundles via their request.json -- and the
+    set spans quiver and family algebra kinds."""
+    import json
     seed = _load()
     manifest = seed.load_manifest(_MANIFEST)
-    assert 3 <= len(manifest) <= 5, "plan asks for 3-5 placeholder examples"
-    for i, spec in enumerate(manifest):
+    assert 3 <= len(manifest) <= 10
+    kinds = set()
+    for entry in manifest:
+        if set(entry) == {"stored"}:
+            bundle = pathlib.Path(entry["stored"])
+            assert bundle.is_dir(), f"stored bundle missing: {bundle}"
+            spec = json.loads((bundle / "request.json").read_text(encoding="utf-8"))
+            assert (bundle / "result.json").exists(), f"{bundle} has no result.json"
+        else:
+            spec = entry
         ComputeRequest.model_validate(spec)      # raises on any invalid example
-    kinds = {spec.get("kind") or spec["algebra"]["kind"] for spec in manifest}
-    assert "quiver" in kinds                     # spans quiver + family + module
+        kinds.add(spec["algebra"]["kind"])
+    assert "quiver" in kinds and "family" in kinds
 
 
-def test_manifest_marked_placeholder():
-    text = _MANIFEST.read_text(encoding="utf-8")
-    assert "placeholder -- Marco to curate" in text
+def test_stored_bundle_results_match_their_requests():
+    """Each stored result.json was produced for exactly the request beside it
+    (same algebra spec) and carries a non-empty results block for every
+    requested compute kind."""
+    import json
+    seed = _load()
+    for entry in seed.load_manifest(_MANIFEST):
+        if set(entry) != {"stored"}:
+            continue
+        bundle = pathlib.Path(entry["stored"])
+        spec = json.loads((bundle / "request.json").read_text(encoding="utf-8"))
+        result = json.loads((bundle / "result.json").read_text(encoding="utf-8"))
+        assert result["algebra"] == spec["algebra"], bundle
+        from quiverlab.hpc.spec import parse_compute_item
+        want = {parse_compute_item(c).kind for c in spec["compute"]}
+        assert set(result["results"]) == want, bundle
 
 
 # --------------------------------------------------------------------------- #
@@ -114,6 +139,33 @@ def test_seed_cache_rows_are_math_only(tmp_path):
     assert cols == {"key", "job_id", "quiverlab_version", "created_at",
                     "last_hit_at", "hits"}
     assert cols & {"email", "email_hash", "ip", "token", "contact", "lang"} == set()
+
+
+def test_seed_from_stored_bundle_copies_without_recompute(tmp_path):
+    """A {stored: dir} entry seeds by COPYING the bundle: the cache row appears
+    under the request's canonical key and the artifacts are the bundle's files
+    verbatim -- no compute dispatch runs (the result carries a sentinel no
+    runner would produce, and it survives)."""
+    import json
+    seed = _load()
+    bundle = tmp_path / "bundle"
+    bundle.mkdir()
+    (bundle / "request.json").write_text(json.dumps(LOOP_CARTAN))
+    sentinel = {"algebra": LOOP_CARTAN["algebra"],
+                "results": {"cartan": {"matrix": [[3]], "sentinel": "stored"}}}
+    (bundle / "result.json").write_text(json.dumps(sentinel))
+    (bundle / "report.html").write_text("<html>stored report</html>")
+    out = tmp_path / "seed" / "seed-cache.db"
+    ok, skipped, total = seed.seed([{"stored": str(bundle)}], out)
+    assert (ok, skipped, total) == (1, 0, 1)
+    store = JobStore(out)
+    row = store.cache_row(_key(LOOP_CARTAN))
+    assert row is not None
+    art = out.parent / "artifacts" / row["job_id"]
+    assert json.loads((art / "result.json").read_text())["results"]["cartan"][
+        "sentinel"] == "stored"
+    assert (art / "report.html").read_text() == "<html>stored report</html>"
+    assert not (art / "request.json").exists()   # the request is not an artifact
 
 
 def test_seed_skips_failures_and_reports(tmp_path):

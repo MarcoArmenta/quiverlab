@@ -40,8 +40,11 @@ def test_html_tokens_and_escaping(result, tmp_path):
     assert "<h1>quiverlab report</h1>" in html
     assert "Hochschild cohomology" in html
     assert "<script" not in html                  # no JavaScript, ever
-    # The pmatrix TeX source is shown escaped, not raw-injected.
-    assert "pmatrix" in html
+    # Math is RENDERED (matrix tables, sub/superscripts), never LaTeX source.
+    assert "<table class='matrix'>" in html       # the Cartan matrix, as a table
+    assert "pmatrix" not in html
+    # The Computation header lists the presentation with labeled arrows.
+    assert "vertices:" in html and "arrows:" in html and "relations:" in html
 
 
 def test_auto_renders_html(result, tmp_path):

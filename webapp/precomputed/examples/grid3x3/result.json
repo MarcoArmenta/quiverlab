@@ -1,0 +1,1111 @@
+{
+  "quiverlab_version": "0.1.0.dev0",
+  "algebra": {
+    "kind": "quiver",
+    "vertices": [
+      11,
+      12,
+      13,
+      21,
+      22,
+      23,
+      31,
+      32,
+      33
+    ],
+    "arrows": {
+      "h11": [
+        11,
+        12
+      ],
+      "h12": [
+        12,
+        13
+      ],
+      "h21": [
+        21,
+        22
+      ],
+      "h22": [
+        22,
+        23
+      ],
+      "h31": [
+        31,
+        32
+      ],
+      "h32": [
+        32,
+        33
+      ],
+      "v11": [
+        11,
+        21
+      ],
+      "v12": [
+        12,
+        22
+      ],
+      "v13": [
+        13,
+        23
+      ],
+      "v21": [
+        21,
+        31
+      ],
+      "v22": [
+        22,
+        32
+      ],
+      "v23": [
+        23,
+        33
+      ]
+    },
+    "relations": [
+      "h11*v12 - v11*h21",
+      "h12*v13 - v12*h22",
+      "h21*v22 - v21*h31",
+      "h22*v23 - v22*h32"
+    ],
+    "field": {
+      "kind": "GF",
+      "p": 101,
+      "n": 1
+    }
+  },
+  "results": {
+    "hh_cohomology": {
+      "kind": "HH^",
+      "top": 4,
+      "dims": [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "engine": "Chouhy-Solotar",
+      "references": [
+        "bar"
+      ],
+      "citations": [
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    },
+    "hh_homology": {
+      "kind": "HH_",
+      "top": 4,
+      "dims": [
+        9,
+        0,
+        0,
+        0,
+        0
+      ],
+      "engine": "Chouhy-Solotar",
+      "references": [
+        "bar"
+      ],
+      "citations": [
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    },
+    "cartan": {
+      "matrix": [
+        [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          1,
+          1,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          1
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1
+        ]
+      ],
+      "latex": "\\begin{pmatrix} 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 & 1 \\\\ 0 & 1 & 1 & 0 & 1 & 1 & 0 & 1 & 1 \\\\ 0 & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 1 \\\\ 0 & 0 & 0 & 1 & 1 & 1 & 1 & 1 & 1 \\\\ 0 & 0 & 0 & 0 & 1 & 1 & 0 & 1 & 1 \\\\ 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 1 \\\\ 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 & 1 \\\\ 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 1 \\\\ 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 1 \\end{pmatrix}",
+      "references": [
+        "bar"
+      ],
+      "citations": [
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    },
+    "coxeter_polynomial": {
+      "latex": "t^{9} + t^{8} - 2 t^{5} - 2 t^{4} + t + 1",
+      "text": "t**9 + t**8 - 2*t**5 - 2*t**4 + t + 1",
+      "references": [
+        "bar"
+      ],
+      "citations": [
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    },
+    "global_dimension": {
+      "text": "gl.dim = 2 (exact)",
+      "exact": true,
+      "value": 2,
+      "references": [
+        "bar"
+      ],
+      "citations": [
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    },
+    "center": {
+      "dim": 1,
+      "basis": [
+        [
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "1",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0",
+          "0"
+        ]
+      ],
+      "references": [
+        "bar"
+      ],
+      "citations": [
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    },
+    "dimension": {
+      "value": 36,
+      "references": [
+        "bar"
+      ],
+      "citations": [
+        [
+          "Hochschild1945",
+          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ]
+      ]
+    },
+    "dimension_vector": {
+      "kind": "dimension_vector",
+      "side": "right",
+      "dimvec": {
+        "11": 0,
+        "12": 1,
+        "13": 1,
+        "21": 1,
+        "22": 1,
+        "23": 1,
+        "31": 0,
+        "32": 0,
+        "33": 0
+      },
+      "dim": 5,
+      "references": [
+        "assem_book"
+      ],
+      "citations": [
+        [
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+        ]
+      ]
+    },
+    "rad_top_soc": {
+      "kind": "rad_top_soc",
+      "side": "right",
+      "radical": {
+        "dims": {
+          "11": 0,
+          "12": 0,
+          "13": 1,
+          "21": 0,
+          "22": 1,
+          "23": 1,
+          "31": 0,
+          "32": 0,
+          "33": 0
+        },
+        "maps": {
+          "h22": [
+            [
+              1
+            ]
+          ],
+          "v13": [
+            [
+              1
+            ]
+          ]
+        }
+      },
+      "top": {
+        "dims": {
+          "11": 0,
+          "12": 1,
+          "13": 0,
+          "21": 1,
+          "22": 0,
+          "23": 0,
+          "31": 0,
+          "32": 0,
+          "33": 0
+        },
+        "maps": {}
+      },
+      "socle": {
+        "dims": {
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "21": 0,
+          "22": 0,
+          "23": 1,
+          "31": 0,
+          "32": 0,
+          "33": 0
+        },
+        "maps": {}
+      },
+      "references": [
+        "assem_book"
+      ],
+      "citations": [
+        [
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+        ]
+      ]
+    },
+    "decompose": {
+      "kind": "decompose",
+      "side": "right",
+      "summands": [
+        {
+          "dim_vector": {
+            "11": 0,
+            "12": 1,
+            "13": 1,
+            "21": 1,
+            "22": 1,
+            "23": 1,
+            "31": 0,
+            "32": 0,
+            "33": 0
+          },
+          "multiplicity": 1,
+          "indecomposable": true
+        }
+      ],
+      "iso_classes": 1,
+      "references": [
+        "assem_book"
+      ],
+      "citations": [
+        [
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+        ]
+      ]
+    },
+    "tau": {
+      "kind": "tau",
+      "side": "right",
+      "is_zero": false,
+      "dimvec": {
+        "11": 0,
+        "12": 0,
+        "13": 0,
+        "21": 1,
+        "22": 1,
+        "23": 0,
+        "31": 1,
+        "32": 0,
+        "33": 0
+      },
+      "dim": 3,
+      "repr": {
+        "dims": {
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "21": 1,
+          "22": 1,
+          "23": 0,
+          "31": 1,
+          "32": 0,
+          "33": 0
+        },
+        "maps": {
+          "h21": [
+            [
+              1
+            ]
+          ],
+          "v21": [
+            [
+              100
+            ]
+          ]
+        }
+      },
+      "indecomposable": true,
+      "references": [
+        "assem_book"
+      ],
+      "citations": [
+        [
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+        ]
+      ]
+    },
+    "tau_minus": {
+      "kind": "tau_minus",
+      "side": "right",
+      "is_zero": false,
+      "dimvec": {
+        "11": 1,
+        "12": 1,
+        "13": 1,
+        "21": 1,
+        "22": 1,
+        "23": 0,
+        "31": 1,
+        "32": 1,
+        "33": 0
+      },
+      "dim": 7,
+      "repr": {
+        "dims": {
+          "11": 1,
+          "12": 1,
+          "13": 1,
+          "21": 1,
+          "22": 1,
+          "23": 0,
+          "31": 1,
+          "32": 1,
+          "33": 0
+        },
+        "maps": {
+          "h11": [
+            [
+              1
+            ]
+          ],
+          "h12": [
+            [
+              1
+            ]
+          ],
+          "h21": [
+            [
+              1
+            ]
+          ],
+          "h31": [
+            [
+              1
+            ]
+          ],
+          "v11": [
+            [
+              1
+            ]
+          ],
+          "v12": [
+            [
+              1
+            ]
+          ],
+          "v21": [
+            [
+              1
+            ]
+          ],
+          "v22": [
+            [
+              1
+            ]
+          ]
+        }
+      },
+      "indecomposable": true,
+      "references": [
+        "assem_book"
+      ],
+      "citations": [
+        [
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+        ]
+      ]
+    },
+    "projective_resolution": {
+      "kind": "projective_resolution",
+      "top": 4,
+      "terms": [
+        {
+          "11": 0,
+          "12": 1,
+          "13": 1,
+          "21": 1,
+          "22": 2,
+          "23": 2,
+          "31": 1,
+          "32": 2,
+          "33": 2
+        },
+        {
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "21": 0,
+          "22": 1,
+          "23": 1,
+          "31": 1,
+          "32": 2,
+          "33": 2
+        },
+        {}
+      ],
+      "betti": [
+        2,
+        2,
+        0
+      ],
+      "summands": [
+        "P_{12} \\oplus P_{21}",
+        "P_{22} \\oplus P_{31}",
+        "0"
+      ],
+      "differentials": [
+        {
+          "rows": 5,
+          "cols": 12,
+          "matrix": [
+            [
+              "1",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "1",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "1",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "1",
+              "0",
+              "0",
+              "0",
+              "0",
+              "1",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "1",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "1",
+              "0",
+              "0"
+            ]
+          ]
+        },
+        {
+          "rows": 12,
+          "cols": 7,
+          "matrix": [
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "100",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "100",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "100",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "100",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "1",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "1",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "1",
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "1",
+              "0",
+              "0",
+              "1",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "1",
+              "0",
+              "0",
+              "1"
+            ]
+          ]
+        },
+        {
+          "rows": 7,
+          "cols": 0,
+          "matrix": [
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            []
+          ]
+        }
+      ],
+      "pd": 1,
+      "references": [
+        "minimal_resolution"
+      ],
+      "citations": [
+        [
+          "GSZ2001",
+          "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939."
+        ]
+      ]
+    },
+    "injective_resolution": {
+      "kind": "injective_resolution",
+      "top": 4,
+      "terms": [
+        {
+          "11": 1,
+          "12": 1,
+          "13": 1,
+          "21": 1,
+          "22": 1,
+          "23": 1,
+          "31": 0,
+          "32": 0,
+          "33": 0
+        },
+        {
+          "11": 1,
+          "12": 0,
+          "13": 0,
+          "21": 0,
+          "22": 0,
+          "23": 0,
+          "31": 0,
+          "32": 0,
+          "33": 0
+        },
+        {}
+      ],
+      "betti": [
+        1,
+        1,
+        0
+      ],
+      "summands": [
+        "I_{23}",
+        "I_{11}",
+        "0"
+      ],
+      "differentials": [
+        {
+          "rows": 6,
+          "cols": 5,
+          "matrix": [
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "1"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "1",
+              "0"
+            ],
+            [
+              "0",
+              "1",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "1",
+              "0",
+              "0",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "1",
+              "0",
+              "0"
+            ],
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "0"
+            ]
+          ]
+        },
+        {
+          "rows": 1,
+          "cols": 6,
+          "matrix": [
+            [
+              "0",
+              "0",
+              "0",
+              "0",
+              "0",
+              "1"
+            ]
+          ]
+        },
+        {
+          "rows": 0,
+          "cols": 0,
+          "matrix": []
+        }
+      ],
+      "injective_dimension": 1,
+      "references": [
+        "minimal_resolution",
+        "assem_book"
+      ],
+      "citations": [
+        [
+          "GSZ2001",
+          "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939."
+        ],
+        [
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+        ]
+      ]
+    },
+    "projective_dimension": {
+      "kind": "projective_dimension",
+      "value": 1,
+      "finite": true,
+      "bound": 32,
+      "references": [
+        "minimal_resolution"
+      ],
+      "citations": [
+        [
+          "GSZ2001",
+          "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939."
+        ]
+      ]
+    },
+    "injective_dimension": {
+      "kind": "injective_dimension",
+      "value": 1,
+      "finite": true,
+      "bound": 32,
+      "references": [
+        "minimal_resolution",
+        "assem_book"
+      ],
+      "citations": [
+        [
+          "GSZ2001",
+          "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939."
+        ],
+        [
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+        ]
+      ]
+    },
+    "ext": {
+      "kind": "ext",
+      "top": 4,
+      "dims": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "target": {
+        "dimvec": {
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "21": 1,
+          "22": 1,
+          "23": 0,
+          "31": 1,
+          "32": 0,
+          "33": 0
+        },
+        "dim": 3
+      },
+      "references": [
+        "module_ext"
+      ],
+      "citations": [
+        [
+          "GSZ2001",
+          "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939."
+        ]
+      ]
+    },
+    "tor": {
+      "kind": "tor",
+      "top": 4,
+      "dims": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ],
+      "target": {
+        "dimvec": {
+          "11": 0,
+          "12": 0,
+          "13": 0,
+          "21": 1,
+          "22": 1,
+          "23": 0,
+          "31": 1,
+          "32": 0,
+          "33": 0
+        },
+        "dim": 3
+      },
+      "references": [
+        "minimal_resolution",
+        "module_ext"
+      ],
+      "citations": [
+        [
+          "GSZ2001",
+          "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939."
+        ]
+      ]
+    }
+  },
+  "references": [
+    {
+      "key": "bar",
+      "bibtex_key": "Hochschild1945",
+      "formatted": "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.",
+      "doi": "10.2307/1969145",
+      "arxiv": null,
+      "doi_url": "https://doi.org/10.2307/1969145",
+      "arxiv_url": null,
+      "topic": "Foundations",
+      "annotation": "Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic."
+    },
+    {
+      "key": "assem_book",
+      "bibtex_key": "ASS2006",
+      "formatted": "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.",
+      "doi": "10.1017/CBO9780511614309",
+      "arxiv": null,
+      "doi_url": "https://doi.org/10.1017/CBO9780511614309",
+      "arxiv_url": null,
+      "topic": "Foundations",
+      "annotation": "The standard reference for bound quivers and the representation theory quiverlab implements."
+    },
+    {
+      "key": "minimal_resolution",
+      "bibtex_key": "GSZ2001",
+      "formatted": "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939.",
+      "doi": "10.1090/S0002-9947-01-02687-3",
+      "arxiv": null,
+      "doi_url": "https://doi.org/10.1090/S0002-9947-01-02687-3",
+      "arxiv_url": null,
+      "topic": "Algorithms",
+      "annotation": "The Green-Solberg-Zacharia minimal module resolution algorithm (quiverlab's minimal engine and module Ext)."
+    },
+    {
+      "key": "module_ext",
+      "bibtex_key": "GSZ2001",
+      "formatted": "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939.",
+      "doi": "10.1090/S0002-9947-01-02687-3",
+      "arxiv": null,
+      "doi_url": "https://doi.org/10.1090/S0002-9947-01-02687-3",
+      "arxiv_url": null,
+      "topic": "Algorithms",
+      "annotation": "Module-level Ext^n over minimal resolutions (Plan 05 module engine)."
+    }
+  ],
+  "reproduce": "from quiverlab import Quiver, GF\n\nQ = Quiver(vertices=[11, 12, 13, 21, 22, 23, 31, 32, 33], arrows={\"h11\": (11, 12), \"h12\": (12, 13), \"h21\": (21, 22), \"h22\": (22, 23), \"h31\": (31, 32), \"h32\": (32, 33), \"v11\": (11, 21), \"v12\": (12, 22), \"v13\": (13, 23), \"v21\": (21, 31), \"v22\": (22, 32), \"v23\": (23, 33)})\nA = Q.algebra(relations=['h11*v12 - v11*h21', 'h12*v13 - v12*h22', 'h21*v22 - v21*h31', 'h22*v23 - v22*h32'], field=GF(101))\nM = A.module({11: 0, 12: 1, 13: 1, 21: 1, 22: 1, 23: 1, 31: 0, 32: 0, 33: 0}, {\"h11\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"h12\": [[0, 0, 0, 0, 0], [1, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"h21\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 1, 0, 0], [0, 0, 0, 0, 0]], \"h22\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 1, 0]], \"h31\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"h32\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"v11\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"v12\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [1, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"v13\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 1, 0, 0, 0]], \"v21\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"v22\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]], \"v23\": [[0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0], [0, 0, 0, 0, 0]]}, side=\"right\", name=\"M\")\nN = A.module({11: 0, 12: 0, 13: 0, 21: 1, 22: 1, 23: 0, 31: 1, 32: 0, 33: 0}, {\"h11\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h12\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h21\": [[0, 0, 0], [1, 0, 0], [0, 0, 0]], \"h22\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h31\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h32\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v11\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v12\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v13\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v21\": [[0, 0, 0], [0, 0, 0], [1, 0, 0]], \"v22\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v23\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]]}, side=\"right\", name=\"N\")\nN = A.module({11: 0, 12: 0, 13: 0, 21: 1, 22: 1, 23: 0, 31: 1, 32: 0, 33: 0}, {\"h11\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h12\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h21\": [[0, 1, 0], [0, 0, 0], [0, 0, 0]], \"h22\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h31\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"h32\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v11\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v12\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v13\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v21\": [[0, 0, 1], [0, 0, 0], [0, 0, 0]], \"v22\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]], \"v23\": [[0, 0, 0], [0, 0, 0], [0, 0, 0]]}, side=\"left\", name=\"N\")\nA.hochschild_cohomology(4)\nA.hochschild_homology(4)\nA.cartan_matrix()\nA.coxeter_polynomial()\nA.global_dimension()\nA.center()\nA.dim\nM.dimension_vector()\nM.radical(), M.top(), M.socle()\nfrom quiverlab.modules.decompose import decompose\ndecompose(M)\nM.tau()\nM.tau_minus()\nM.projective_resolution(4).dimension_vectors()\nM.injective_resolution(4).dimension_vectors()\nM.projective_resolution(32).pd()\nM.injective_dimension()\n[A.ext(M, N, i) for i in range(4 + 1)]\nfrom quiverlab.modules.tor import tor_dims\ntor_dims(A, M, N, 4)",
+  "meta": {}
+}

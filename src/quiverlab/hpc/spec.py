@@ -23,6 +23,8 @@ import inspect
 import json
 import logging
 import re
+import sys
+import time
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import lru_cache
@@ -675,6 +677,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     webapp passes None so the returned dict is byte-identical to the pre-Plan-28
     runner. ``write_result=False`` (CLI) writes only the sidecar artifacts and
     leaves the authoritative ``result.json`` write to the caller."""
+    t0_ns = time.monotonic_ns()
     req = parse_request(req)
     artifact_dir = Path(artifact_dir)
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -706,11 +709,14 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
             T = (_build_module(A, req.tor_target, "N")
                  if any(it.kind == "tor" for it in items) else None)
             results: dict = {}
+            per_kind: dict = {}
             for i, item in enumerate(items):
                 if progress_cb:
                     progress_cb({"step": i, "of": len(items), "kind": item.kind})
+                t_item = time.monotonic_ns()
                 if item.kind in MODULE_KINDS:
                     results[item.kind] = _dispatch_module(A, item, M, N, T)
+                    per_kind[item.kind] = _item_resources(t_item)
                     if (req.artifacts.pdf and module_trace is None
                             and item.kind in _MODULE_TRACE_KINDS):
                         # the first traceable module kind backs the worked-steps
@@ -719,9 +725,11 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                     continue
                 if _deepen_applies(req.hpc, item, req.algebra):
                     results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
+                    per_kind[item.kind] = _item_resources(t_item)
                     continue
                 block, hh = _dispatch(A, item, events, hh_kwargs)
                 results[item.kind] = block
+                per_kind[item.kind] = _item_resources(t_item)
                 if hh is not None:
                     hh_trace = hh
         finally:
@@ -751,6 +759,16 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
         }
         if result_schema is not None:
             result["result_schema"] = result_schema
+            # CLI-envelope-only echo of the computed-on modules as FULL
+            # representations ({dims, maps} via the shared module_blocks
+            # serializer), so the report can show the per-arrow action matrices.
+            # Guarded by result_schema: the webapp passes None and its result
+            # dict stays byte-identical (frozen goldens).
+            for key, mod in (("module", M), ("ext_target", N), ("tor_target", T)):
+                if mod is not None:
+                    result[key] = {"side": mod.side, **_mod_repr(mod)}
+            result["resources"] = _resources_used(t0_ns)
+            result["resources"]["per_kind"] = per_kind
     except CheckpointStop:
         raise
     except ComputeError:
@@ -782,6 +800,46 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     if tikz_src is not None:
         (artifact_dir / "tikz.tex").write_text(tikz_src)
     return result
+
+
+def _item_resources(t0_ns: int) -> dict:
+    """Per-computation footprint, exact ints: wall-clock ms for this item and
+    the PROCESS peak RSS by the end of it (ru_maxrss is a high-water mark, so
+    this is 'peak so far', not this item's own allocation)."""
+    out = {"wall_ms": (time.monotonic_ns() - t0_ns) // 1_000_000}
+    try:
+        import resource as _res
+        rss = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss
+        if sys.platform == "darwin":
+            rss //= 1024
+        out["peak_rss_mib"] = rss // 1024
+    except Exception:
+        pass
+    return out
+
+
+def _resources_used(t0_ns: int) -> dict:
+    """Resources the run actually used / had available, as exact ints (the src/
+    no-floats gate holds here): wall-clock ms, peak RSS MiB, detected usable
+    cores and RAM. CLI-envelope-only (written beside ``result_schema``)."""
+    out = {"wall_ms": (time.monotonic_ns() - t0_ns) // 1_000_000}
+    try:
+        import resource as _res
+        rss = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss   # KiB (Linux), B (macOS)
+        if sys.platform == "darwin":
+            rss //= 1024
+        out["peak_rss_mib"] = rss // 1024
+    except Exception:                                      # e.g. no resource module
+        pass
+    try:
+        from quiverlab.hpc.resources import detect_resources
+        det = detect_resources()
+        out["cores_detected"] = det["cores"]
+        if det.get("mem_bytes"):
+            out["ram_mib_detected"] = det["mem_bytes"] // (1024 * 1024)
+    except Exception:
+        pass
+    return out
 
 
 def _hh_kwargs(hpc: HpcConfig | None) -> dict:
@@ -1088,6 +1146,31 @@ def _summands_latex(vertices, letter: str) -> str:
     return r" \oplus ".join(parts)
 
 
+# A single differential past this many cells ships elided (shape only): the
+# matrices are display data for the report, and one enormous syzygy map must not
+# balloon result.json (the Plan-34 recorder backstop, same figure).
+_MAX_DIFF_CELLS = 250_000
+
+
+def _differential_blocks(res, n_terms) -> list:
+    """The resolution's maps as exact matrices (rows: target basis, columns:
+    source basis, vertex-ordered). Projective: entry 0 is the augmentation
+    eps: Q_0 -> M, entry n is d_n: Q_n -> Q_{n-1}. Injective: entry 0 is
+    iota: M -> E^0, entry n is d^n: E^{n-1} -> E^n."""
+    out = []
+    dmats = getattr(res, "dmats", None) or []
+    for n in range(min(n_terms, len(dmats))):
+        D = res.differential(n)
+        nrows = len(D)
+        ncols = len(D[0]) if nrows else 0
+        if nrows * ncols > _MAX_DIFF_CELLS:
+            out.append({"rows": nrows, "cols": ncols, "elided": True})
+        else:
+            out.append({"rows": nrows, "cols": ncols,
+                        "matrix": [[str(x) for x in row] for row in D]})
+    return out
+
+
 def _summand_view(mod, mult) -> dict:
     """One indecomposable summand of a module: its dimension vector + multiplicity."""
     return {"dim_vector": _dv(mod.dimension_vector()), "multiplicity": int(mult),
@@ -1142,6 +1225,11 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
     if kind in ("tau", "tau_minus"):
         t = M.tau() if kind == "tau" else M.tau_minus()
         block = {"kind": kind, "side": t.side, "is_zero": t.dim == 0, **_mod_view(t)}
+        if t.dim > 0:
+            # the AR translate IS a module: ship it as a full representation
+            # ({dims, maps}, like rad/top/soc) so reports/GUIs can show the
+            # per-arrow action matrices (Marco, 2026-07-28).
+            block["repr"] = _mod_repr(t)
         block.update(_input_certificate(M))
         return _with_refs(block, kind)
     if kind == "decompose":
@@ -1187,7 +1275,8 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         block = {"kind": kind, "top": top, "terms": terms,
                  "betti": [res.betti(i) for i in range(len(terms))],
                  "summands": [_summands_latex(res.term(i), letter)
-                              for i in range(len(terms))]}
+                              for i in range(len(terms))],
+                 "differentials": _differential_blocks(res, len(terms))}
         if kind == "projective_resolution":
             block["pd"] = res.pd()
         else:

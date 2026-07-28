@@ -1,0 +1,62 @@
+{
+  "algebra": {
+    "family": "QuantumCI",
+    "field": {
+      "kind": "GF",
+      "n": 1,
+      "p": 32003
+    },
+    "kind": "family",
+    "params": {
+      "a": 2,
+      "b": 2,
+      "q": 2
+    }
+  },
+  "artifacts": {
+    "pdf": false,
+    "tikz": true
+  },
+  "compute": [
+    "hh_cohomology:0..8",
+    "hh_homology:0..8",
+    "cartan",
+    "coxeter_polynomial",
+    "global_dimension",
+    "center",
+    "dimension",
+    "dimension_vector",
+    "rad_top_soc",
+    "tau",
+    "tau_minus",
+    "projective_resolution:0..6",
+    "injective_resolution:0..6",
+    "projective_dimension",
+    "injective_dimension",
+    "decompose",
+    "ext:0..8",
+    "tor:0..8"
+  ],
+  "ext_target": {
+    "builtin": {
+      "kind": "simple",
+      "side": "right",
+      "vertex": 1
+    }
+  },
+  "module": {
+    "builtin": {
+      "kind": "simple",
+      "side": "right",
+      "vertex": 1
+    }
+  },
+  "schema": 2,
+  "tor_target": {
+    "builtin": {
+      "kind": "simple",
+      "side": "left",
+      "vertex": 1
+    }
+  }
+}

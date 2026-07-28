@@ -1,0 +1,179 @@
+{
+  "algebra": {
+    "arrows": {
+      "h11": [
+        11,
+        12
+      ],
+      "h12": [
+        12,
+        13
+      ],
+      "h21": [
+        21,
+        22
+      ],
+      "h22": [
+        22,
+        23
+      ],
+      "h31": [
+        31,
+        32
+      ],
+      "h32": [
+        32,
+        33
+      ],
+      "v11": [
+        11,
+        21
+      ],
+      "v12": [
+        12,
+        22
+      ],
+      "v13": [
+        13,
+        23
+      ],
+      "v21": [
+        21,
+        31
+      ],
+      "v22": [
+        22,
+        32
+      ],
+      "v23": [
+        23,
+        33
+      ]
+    },
+    "field": {
+      "kind": "GF",
+      "n": 1,
+      "p": 101
+    },
+    "kind": "quiver",
+    "relations": [
+      "h11*v12 - v11*h21",
+      "h12*v13 - v12*h22",
+      "h21*v22 - v21*h31",
+      "h22*v23 - v22*h32"
+    ],
+    "vertices": [
+      11,
+      12,
+      13,
+      21,
+      22,
+      23,
+      31,
+      32,
+      33
+    ]
+  },
+  "artifacts": {
+    "pdf": false,
+    "tikz": true
+  },
+  "compute": [
+    "hh_cohomology:0..4",
+    "hh_homology:0..4",
+    "cartan",
+    "coxeter_polynomial",
+    "global_dimension",
+    "center",
+    "dimension",
+    "dimension_vector",
+    "rad_top_soc",
+    "decompose",
+    "tau",
+    "tau_minus",
+    "projective_resolution:0..4",
+    "injective_resolution:0..4",
+    "projective_dimension",
+    "injective_dimension",
+    "ext:0..4",
+    "tor:0..4"
+  ],
+  "ext_target": {
+    "dims": {
+      "21": 1,
+      "22": 1,
+      "31": 1
+    },
+    "maps": {
+      "h21": [
+        [
+          1
+        ]
+      ],
+      "v21": [
+        [
+          1
+        ]
+      ]
+    },
+    "side": "right"
+  },
+  "module": {
+    "dims": {
+      "12": 1,
+      "13": 1,
+      "21": 1,
+      "22": 1,
+      "23": 1
+    },
+    "maps": {
+      "h12": [
+        [
+          1
+        ]
+      ],
+      "h21": [
+        [
+          1
+        ]
+      ],
+      "h22": [
+        [
+          1
+        ]
+      ],
+      "v12": [
+        [
+          1
+        ]
+      ],
+      "v13": [
+        [
+          1
+        ]
+      ]
+    },
+    "side": "right"
+  },
+  "schema": 2,
+  "tor_target": {
+    "dims": {
+      "21": 1,
+      "22": 1,
+      "31": 1
+    },
+    "maps": {
+      "h21": [
+        [
+          1
+        ]
+      ],
+      "v21": [
+        [
+          1
+        ]
+      ]
+    },
+    "side": "left"
+  }
+}

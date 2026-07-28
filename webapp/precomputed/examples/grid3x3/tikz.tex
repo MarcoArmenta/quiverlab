@@ -1,0 +1,24 @@
+\begin{tikzpicture}[>=stealth]
+  \node[draw, circle] (v11) at (0, 0) {$11$};
+  \node[draw, circle] (v12) at (1, {1/2}) {$12$};
+  \node[draw, circle] (v13) at (2, 1) {$13$};
+  \node[draw, circle] (v21) at (1, {-1/2}) {$21$};
+  \node[draw, circle] (v22) at (2, 0) {$22$};
+  \node[draw, circle] (v23) at (3, {1/2}) {$23$};
+  \node[draw, circle] (v31) at (2, -1) {$31$};
+  \node[draw, circle] (v32) at (3, {-1/2}) {$32$};
+  \node[draw, circle] (v33) at (4, 0) {$33$};
+  \draw[->] (v11) -- (v12) node[midway, above] {$h11$};
+  \draw[->] (v12) -- (v13) node[midway, above] {$h12$};
+  \draw[->] (v21) -- (v22) node[midway, above] {$h21$};
+  \draw[->] (v22) -- (v23) node[midway, above] {$h22$};
+  \draw[->] (v31) -- (v32) node[midway, above] {$h31$};
+  \draw[->] (v32) -- (v33) node[midway, above] {$h32$};
+  \draw[->] (v11) -- (v21) node[midway, above] {$v11$};
+  \draw[->] (v12) -- (v22) node[midway, above] {$v12$};
+  \draw[->] (v13) -- (v23) node[midway, above] {$v13$};
+  \draw[->] (v21) -- (v31) node[midway, above] {$v21$};
+  \draw[->] (v22) -- (v32) node[midway, above] {$v22$};
+  \draw[->] (v23) -- (v33) node[midway, above] {$v23$};
+  \node[align=left, below] at (current bounding box.south) {relations: $h11*v12 - v11*h21$;  $h12*v13 - v12*h22$;  $h21*v22 - v21*h31$;  $h22*v23 - v22*h32$};
+\end{tikzpicture}

@@ -16,14 +16,23 @@ from quiverlab.modules.duality import dualize
 class InjectiveResolution:
     """0 -> M -> E^0 -> E^1 -> ... with E^n = D(P_n) injective A-modules."""
 
-    def __init__(self, M, terms, vertices):
+    def __init__(self, M, terms, vertices, dmats=None):
         self.module = M
         self.terms = terms              # list of injective A-modules (E^0, E^1, ...); None = 0
         self.vertices = vertices        # summand vertices per term (E^n = (+)_u I_u)
         self.length = len(terms)
+        # coresolution maps in the dual bases: dmats[0] = iota: M -> E^0 and
+        # dmats[n] = d^n: E^{n-1} -> E^n (the transposes of the minimal projective
+        # resolution of DM over A^op -- D(f) has the transposed matrix).
+        self.dmats = dmats or []
 
     def term(self, n):
         return self.vertices[n] if n < len(self.vertices) else []
+
+    def differential(self, n):
+        """The coresolution map INTO E^n: ``n=0`` is iota: M -> E^0, ``n>=1`` is
+        d^n: E^{n-1} -> E^n. Rows index the target basis, columns the source."""
+        return self.dmats[n]
 
     def betti(self, n):
         return len(self.term(n))
@@ -51,7 +60,7 @@ def injective_resolution(M, length, max_term_dim=200000):
     minimal projective resolution of DM over A^op term by term."""
     from quiverlab.modules.resolution import minimal_resolution
     DM = dualize(M)
-    terms, _ = minimal_resolution(DM, length, max_term_dim=max_term_dim)
+    terms, dmats = minimal_resolution(DM, length, max_term_dim=max_term_dim)
     inj_terms, verts = [], []
     for t in terms:
         if t.module is None or t.module.dim == 0:
@@ -60,7 +69,11 @@ def injective_resolution(M, length, max_term_dim=200000):
         else:
             inj_terms.append(dualize(t.module))     # E^n = D(P_n), a right A-module
             verts.append(list(t.vertices))
-    return InjectiveResolution(M, inj_terms, verts)
+    # D(f) has the transposed matrix in the dual bases: eps: Q_0 -> DM dualizes to
+    # iota: M -> E^0, and d_n: Q_n -> Q_{n-1} to d^n: E^{n-1} -> E^n.
+    co_dmats = [[[row[i] for row in D] for i in range(len(D[0]))] if (D and D[0])
+                else [] for D in dmats]
+    return InjectiveResolution(M, inj_terms, verts, co_dmats)
 
 
 def injective_dimension(M, bound=32, max_term_dim=200000):

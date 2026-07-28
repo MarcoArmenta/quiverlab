@@ -1,0 +1,82 @@
+# Fifth worked example -- BIGGER STILL: the cyclic Nakayama algebra kZ_24/J^13
+# over GF(32003). 20 vertices in a cycle, paths of length 11 vanish: dim 312,
+# self-injective, monomial -- the combinatorial (Bardzell-type) resolution lets
+# the engines go DEEP in homological degree on a dim-220 algebra (the Plan-33
+# scale battery pins this family to degree 300).
+#
+# M is the uniserial interval module on vertices 3..8 (dim 5, thin, identity
+# internal maps): length 5 sits strictly between simple (1) and the uniserial
+# projectives = injectives (length 11), so M is neither simple nor projective
+# nor injective. N is the interval on 4..9, which is exactly tau M (the AR
+# shift), so Ext^1(M, N) = 1 exhibits the Auslander-Reiten class; the same
+# interval as a LEFT module gives Tor_1 = 1. Ext/Tor and the resolutions are
+# Omega-periodic -- visible across the deep degree range.
+#
+# Run it the two ways:
+#   docker run --rm -v "$PWD/container/examples:/cfg:ro" -v "$PWD/out/container:/out" \
+#       quiverlab:local run /cfg/nakayama-kz20-deep.yaml -o /out/result.json
+#   quiverlab-hpc run container/examples/nakayama-kz20-deep.yaml -o out/local/result.json
+schema: 2
+algebra:
+  kind: family
+  family: NakayamaAlgebra
+  params:
+    n: 24
+    l: 13
+    cyclic: true
+  field:
+    kind: GF
+    p: 32003
+    n: 1
+compute:
+  - "hh_cohomology:0..10"
+  - "hh_homology:0..10"
+  - cartan
+  - coxeter_polynomial
+  - global_dimension
+  - center
+  - dimension
+  - dimension_vector
+  - rad_top_soc
+  - decompose
+  - tau
+  - tau_minus
+  - "projective_resolution:0..16"
+  - "injective_resolution:0..16"
+  - projective_dimension
+  - injective_dimension
+  - "ext:0..16"
+  - "tor:0..16"
+module:
+  side: right
+  dims: {"3": 1, "4": 1, "5": 1, "6": 1, "7": 1, "8": 1}
+  maps:
+    a3: [[1]]
+    a4: [[1]]
+    a5: [[1]]
+    a6: [[1]]
+    a7: [[1]]
+ext_target:
+  side: right
+  dims: {"4": 1, "5": 1, "6": 1, "7": 1, "8": 1, "9": 1}
+  maps:
+    a4: [[1]]
+    a5: [[1]]
+    a6: [[1]]
+    a7: [[1]]
+    a8: [[1]]
+tor_target:
+  side: left
+  dims: {"4": 1, "5": 1, "6": 1, "7": 1, "8": 1, "9": 1}
+  maps:
+    a4: [[1]]
+    a5: [[1]]
+    a6: [[1]]
+    a7: [[1]]
+    a8: [[1]]
+artifacts:
+  pdf: false
+  tikz: true
+hpc:
+  time_limit_s: 7200
+  max_mem_bytes: 12884901888
