@@ -27,6 +27,10 @@ examples:
   # Ext^1 = the AR class, finite global dimension.
   - stored: examples/grid3x3
 
+  # Deep-degree kZ_20/J^11 (dim 220): the period-4 HH pattern to degree 10,
+  # Omega-periodic Ext/Tor on interval modules.
+  - stored: examples/nakayama-kz20-deep
+
   # Scale run kZ_24/J^13 (dim 312): same HH pattern (family invariant),
   # 13x13 resolution differentials.
   - stored: examples/nakayama-kz24-deep
