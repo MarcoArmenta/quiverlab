@@ -40,6 +40,10 @@ apptainer run quiverlab.sif sample-config > my-config.yaml   # annotated templat
 ```
 
 Edit `my-config.yaml` to name your algebra, field, and what to compute.
+The full config reference -- anatomy, every compute kind, module blocks, and
+worked examples from characteristic 0 to explicit quivers with matrices -- is in
+the README section [Writing and running config files](https://github.com/MarcoArmenta/quiverlab#writing-and-running-config-files-the-containerized-app)
+and in [`container/examples/`](https://github.com/MarcoArmenta/quiverlab/tree/main/container/examples).
 
 ### 3. Submit
 

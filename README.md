@@ -331,12 +331,165 @@ next submit — just `sbatch` again. **quiverlab is CPU-only** — request cores
 my-config.yaml` suggests the resources.
 
 **Offline laptop app.** Pull the image once with internet, then run
-`apptainer run quiverlab.sif gui` (or `docker run -p 8000:8000 … gui`) and open
+`apptainer run quiverlab.sif gui` (or `docker run --network host … gui`) and open
 `http://localhost:8000` — the zero-code GUI computes locally with no network, showing
 your machine's detected cores/RAM, memory/time estimates, and the limits you are
 computing under, and ships precomputed examples.
 
 Full instructions: [Run on your HPC cluster](docs/hpc.md) and
 [Offline laptop app](docs/offline-app.md).
+
+
+## Writing and running config files (the containerized app)
+
+Everything the container computes is driven by **one YAML document** — the same
+schema the webapp and the browser GUI speak, so a config exported from the GUI
+runs unchanged on a cluster. Run it with any of the three installs:
+
+```bash
+# Docker (make the output dir writable for the in-image uid first)
+mkdir -p out && chmod 777 out
+docker run --rm -v "$PWD:/cfg:ro" -v "$PWD/out:/out" quiverlab:local \
+    run /cfg/my-config.yaml -o /out/result.json
+docker run --rm -v "$PWD/out:/out" quiverlab:local \
+    render /out/result.json -o /out/report.html --format html
+
+# Apptainer (clusters; rootless)
+apptainer run --bind "$PWD" quiverlab.sif run my-config.yaml -o result.json
+apptainer run --bind "$PWD" quiverlab.sif render result.json -o report.html
+
+# Plain pip install (no container)
+pip install "quiverlab[fast,hpc]"
+quiverlab-hpc run my-config.yaml -o result.json
+quiverlab-hpc render result.json -o report.html
+```
+
+`quiverlab-hpc sample-config` prints an annotated template and
+`quiverlab-hpc estimate my-config.yaml` suggests `--time/--cpus-per-task/--mem`
+before you submit. The rendered report shows the quiver presentation (labeled
+arrows), every requested invariant with rendered matrices, and a resources
+footer (wall time, peak RSS, cores).
+
+### Anatomy of a config
+
+```yaml
+schema: 2                  # 1 = algebra-only; 2 required for module blocks
+algebra:                   # EITHER a named family ...
+  kind: family
+  family: QuantumCI        # discover names: python -c "import quiverlab; print(quiverlab.families())"
+  params: {q: 2, a: 2, b: 2}
+  field: {kind: GF, p: 32003, n: 1}    # GF(p^n), or {kind: CC} for exact char 0
+compute:                   # any subset; ranged kinds take "kind:lo..hi"
+  - "hh_cohomology:0..8"
+  - cartan
+artifacts: {tikz: true}    # optional; tikz.tex written beside result.json
+hpc:                       # optional; CLI-only budgets
+  time_limit_s: 3600
+  max_mem_bytes: 4294967296
+```
+
+**Compute kinds.** Algebra-level: `hh_cohomology:lo..hi`, `hh_homology:lo..hi`,
+`cartan`, `coxeter_polynomial`, `global_dimension`, `center`, `dimension`.
+Module-level (need a `module` block, schema 2): `dimension_vector`,
+`rad_top_soc`, `decompose`, `tau`, `tau_minus`, `projective_resolution:0..n`,
+`injective_resolution:0..n`, `projective_dimension`, `injective_dimension`,
+`ext:0..n` (needs `ext_target`), `tor:0..n` (needs `tor_target`, a **left**
+module).
+
+**Module blocks.** A module is either a builtin pick
+(`module: {builtin: {kind: simple|projective|injective, vertex: 3, side: right}}`)
+or an explicit representation: `dims` maps **string** vertex labels to
+dimensions (missing vertices are 0), `maps` gives one `dim_target x dim_source`
+matrix per arrow (arrows touching a 0-dimensional vertex may be omitted).
+Entries are exact data — integers or fraction strings like `"1/2"`; floats are
+refused loudly. `side: left` means a representation of the opposite quiver.
+
+### Worked configs
+
+A hereditary path algebra over **exact characteristic 0** — no proxy prime:
+
+```yaml
+schema: 1
+algebra:
+  kind: family
+  family: PathAlgebra
+  params: {type_or_quiver: "A5"}
+  field: {kind: CC}
+compute: [cartan, coxeter_polynomial, global_dimension, dimension]
+# dim 15, gl.dim = 1 (exact), the A5 Coxeter polynomial
+```
+
+The exterior algebra in char 0 — Hochschild cohomology grows linearly:
+
+```yaml
+schema: 1
+algebra:
+  kind: family
+  family: ExteriorAlgebra
+  params: {n: 2}
+  field: {kind: CC}
+compute: ["hh_cohomology:0..4", center, dimension]
+# HH^0..4 = [2, 4, 6, 8, 10]
+```
+
+A truncated path algebra over the **non-prime field GF(9)**:
+
+```yaml
+schema: 1
+algebra:
+  kind: family
+  family: TruncatedPathAlgebra
+  params: {type_or_quiver: "A6", r: 3}
+  field: {kind: GF, p: 3, n: 2}
+compute: [cartan, global_dimension, "hh_cohomology:0..4"]
+# gl.dim = 3 (exact)
+```
+
+An **explicit quiver** (the Kronecker quiver, no relations) with a no-code
+module given by matrices — the regular representation `R_2` (`a` acts by 1,
+`b` by 2):
+
+```yaml
+schema: 2
+algebra:
+  kind: quiver
+  vertices: [1, 2]
+  arrows: {a: [1, 2], b: [1, 2]}
+  relations: []
+  field: {kind: GF, p: 5, n: 1}
+compute: [dimension, cartan, global_dimension, dimension_vector,
+          rad_top_soc, decompose, tau, "projective_resolution:0..3"]
+module:
+  side: right
+  dims: {"1": 1, "2": 1}
+  maps:
+    a: [[1]]
+    b: [[2]]
+```
+
+An explicit quiver with a **non-monomial relation** — the commutative square,
+over CC:
+
+```yaml
+schema: 1
+algebra:
+  kind: quiver
+  vertices: [1, 2, 3, 4]
+  arrows: {a: [1, 2], b: [1, 3], c: [2, 4], d: [3, 4]}
+  relations: ["a*c - b*d"]
+  field: {kind: CC}
+compute: [dimension, global_dimension, center, "hh_cohomology:0..3"]
+# dim 9, gl.dim = 2 (exact)
+```
+
+Larger ready-to-run configs live in
+[`container/examples/`](container/examples/): the quantum complete intersection
+with the full invariant surface ([`qci-q2.yaml`](container/examples/qci-q2.yaml)),
+a cyclic Nakayama algebra with a decomposable module
+([`nakayama-kz4.yaml`](container/examples/nakayama-kz4.yaml)), the 3x3
+commutative grid with interior modules paired by the Auslander-Reiten
+translate — `Ext^1(M, tau M) = 1` ([`grid3x3.yaml`](container/examples/grid3x3.yaml)),
+and a dim-220 deep-degree run ([`nakayama-kz20-deep.yaml`](container/examples/nakayama-kz20-deep.yaml)).
+Every one computes byte-identically in the container and from the wheel.
 
 MIT © 2026 Marco Armenta
