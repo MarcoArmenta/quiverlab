@@ -121,9 +121,11 @@ def _summand_html(s: str) -> str:
 
 
 def _matrix_html(mat) -> str:
-    """A matrix as a rendered HTML table. Past 25 rows or columns it is
-    STATED-elided (the full matrix lives in the JSON result), keeping the Plan-34
-    wide-matrix contract."""
+    """A matrix as a rendered HTML table with 1-based row/column index headers
+    (a header row on top, an index column on the left) over a white/grey striped
+    grid, so an entry's position reads off directly. Past 25 rows or columns it
+    is STATED-elided (the full matrix lives in the JSON result), keeping the
+    Plan-34 wide-matrix contract."""
     nrows = len(mat)
     ncols = max((len(row) for row in mat), default=0)
     if nrows > 25 or ncols > 25:
@@ -131,10 +133,13 @@ def _matrix_html(mat) -> str:
                 % (nrows, ncols))
     if nrows == 0 or ncols == 0:
         return "<em>(empty matrix)</em>"
+    head = ("<tr><th></th>"
+            + "".join(f"<th>{j + 1}</th>" for j in range(ncols)) + "</tr>")
     body = "".join(
-        "<tr>" + "".join(f"<td>{_esc(str(x))}</td>" for x in row) + "</tr>"
-        for row in mat)
-    return f"<table class='matrix'>{body}</table>"
+        f"<tr><th>{i + 1}</th>"
+        + "".join(f"<td>{_esc(str(x))}</td>" for x in row) + "</tr>"
+        for i, row in enumerate(mat))
+    return f"<table class='matrix'>{head}{body}</table>"
 
 
 def _expr_html(text: str) -> str:
@@ -496,9 +501,20 @@ def build_sections(result: dict) -> list:
     pi = _projectives_injectives_section(result)
     if pi is not None:
         sections.append(pi)
+    per_kind = (result.get("resources") or {}).get("per_kind") or {}
     for name, block in result.get("results", {}).items():
         if isinstance(block, dict):
-            sections.append(_section_for(name, block))
+            sec = _section_for(name, block)
+            pk = per_kind.get(name)
+            if isinstance(pk, dict) and pk.get("wall_ms") is not None:
+                line = "resources: wall " + _fmt_ms(pk["wall_ms"])
+                if pk.get("peak_rss_mib") is not None:
+                    line += (f"; process peak RSS {pk['peak_rss_mib']} MiB "
+                             "by the end of this step")
+                sec.rows.append(line)
+                if sec.html:
+                    sec.html.append(f"<p class='dv'>{_esc(line)}</p>")
+            sections.append(sec)
     refs = result.get("references", [])
     if refs:
         rows = []
@@ -516,13 +532,18 @@ def build_sections(result: dict) -> list:
     return sections
 
 
+def _fmt_ms(ms: int) -> str:
+    return f"{ms // 1000}.{(ms % 1000) // 100} s  ({ms} ms)"
+
+
 def _resources_section(res: dict) -> _Section:
     """The resources footer (CLI-envelope ``resources``): wall time, peak memory,
-    detected cores/RAM -- exact ints from the run, formatted without floats."""
+    detected cores/RAM -- exact ints from the run, formatted without floats. The
+    ``per_kind`` breakdown is rendered inside each section, not here."""
     rows = []
     ms = res.get("wall_ms")
     if ms is not None:
-        rows.append(f"wall time: {ms // 1000}.{(ms % 1000) // 100} s  ({ms} ms)")
+        rows.append("wall time: " + _fmt_ms(ms))
     if res.get("peak_rss_mib") is not None:
         rows.append(f"peak memory (RSS): {res['peak_rss_mib']} MiB")
     if res.get("cores_detected") is not None:
@@ -530,7 +551,8 @@ def _resources_section(res: dict) -> _Section:
     if res.get("ram_mib_detected") is not None:
         rows.append(f"ram detected: {res['ram_mib_detected']} MiB")
     for k in sorted(res):
-        if k not in ("wall_ms", "peak_rss_mib", "cores_detected", "ram_mib_detected"):
+        if k not in ("wall_ms", "peak_rss_mib", "cores_detected",
+                     "ram_mib_detected", "per_kind"):
             rows.append(f"{k}: {res[k]}")
     return _Section("Resources used", rows)
 
@@ -556,6 +578,13 @@ _HTML_STYLE = (
     "table.matrix{display:inline-table;border-collapse:collapse;margin:2px 6px;"
     "border-left:1px solid #444;border-right:1px solid #444;border-radius:6px}"
     "table.matrix td{padding:1px 9px;text-align:right}"
+    # index headers + a white/grey grid: odd rows white, even rows grey, with a
+    # faint column stripe on even columns so both indices trace easily.
+    "table.matrix th{padding:1px 7px;text-align:right;font-weight:normal;"
+    "font-size:85%;color:#888;background:#fafafa;border-bottom:1px solid #ddd}"
+    "table.matrix tr>th:first-child{border-right:1px solid #ddd;border-bottom:0}"
+    "table.matrix tr:nth-child(even) td{background:#f0f0f0}"
+    "table.matrix td:nth-child(odd){box-shadow:inset 0 0 0 99px rgba(0,0,0,0.025)}"
     ".arrowmap{margin:4px 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}"
     "p.resterm{margin:2px 0}.dv{color:#666}"
     "</style>")

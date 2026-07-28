@@ -709,11 +709,14 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
             T = (_build_module(A, req.tor_target, "N")
                  if any(it.kind == "tor" for it in items) else None)
             results: dict = {}
+            per_kind: dict = {}
             for i, item in enumerate(items):
                 if progress_cb:
                     progress_cb({"step": i, "of": len(items), "kind": item.kind})
+                t_item = time.monotonic_ns()
                 if item.kind in MODULE_KINDS:
                     results[item.kind] = _dispatch_module(A, item, M, N, T)
+                    per_kind[item.kind] = _item_resources(t_item)
                     if (req.artifacts.pdf and module_trace is None
                             and item.kind in _MODULE_TRACE_KINDS):
                         # the first traceable module kind backs the worked-steps
@@ -722,9 +725,11 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                     continue
                 if _deepen_applies(req.hpc, item, req.algebra):
                     results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
+                    per_kind[item.kind] = _item_resources(t_item)
                     continue
                 block, hh = _dispatch(A, item, events, hh_kwargs)
                 results[item.kind] = block
+                per_kind[item.kind] = _item_resources(t_item)
                 if hh is not None:
                     hh_trace = hh
         finally:
@@ -763,6 +768,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                 if mod is not None:
                     result[key] = {"side": mod.side, **_mod_repr(mod)}
             result["resources"] = _resources_used(t0_ns)
+            result["resources"]["per_kind"] = per_kind
     except CheckpointStop:
         raise
     except ComputeError:
@@ -794,6 +800,22 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     if tikz_src is not None:
         (artifact_dir / "tikz.tex").write_text(tikz_src)
     return result
+
+
+def _item_resources(t0_ns: int) -> dict:
+    """Per-computation footprint, exact ints: wall-clock ms for this item and
+    the PROCESS peak RSS by the end of it (ru_maxrss is a high-water mark, so
+    this is 'peak so far', not this item's own allocation)."""
+    out = {"wall_ms": (time.monotonic_ns() - t0_ns) // 1_000_000}
+    try:
+        import resource as _res
+        rss = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss
+        if sys.platform == "darwin":
+            rss //= 1024
+        out["peak_rss_mib"] = rss // 1024
+    except Exception:
+        pass
+    return out
 
 
 def _resources_used(t0_ns: int) -> dict:
