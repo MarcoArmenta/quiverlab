@@ -1,76 +1,36 @@
-# quiverlab offline GUI -- precomputed example manifest (Plan 28).
+# quiverlab offline GUI -- precomputed example manifest (Plan 28 + the
+# 2026-07-28 curation).
 #
-# Each entry is a full compute request (schema 1/2, exactly the ComputeRequest
-# shape). `container/seed_cache.py` runs every request at image-build time and
-# records the result in the shipped seed cache, so the offline GUI replays these
-# instantly (Plan-25 result cache) with zero recompute.
+# Two entry kinds:
+#   * a full compute request (exactly the ComputeRequest shape) -- computed by
+#     container/seed_cache.py at image-build time; keep such entries SMALL.
+#   * {stored: <dir>} -- a precomputed bundle (relative to this file) carrying
+#     request.json + result.json (+ tikz.tex, report.html), recorded with ZERO
+#     recompute. This is how the big worked examples ship: the results were
+#     computed by the session's container/wheel runs (byte-identical, exact) and
+#     are committed in their final form -- never recompute a known example.
 #
-# placeholder -- Marco to curate: the entries below are small, fast, schema-valid
-# showcases spanning families / quiver / no-code module kinds. Swap them for the
-# curated list before release; nothing in the mechanism depends on WHICH examples
-# ship. Keep them small (they run on every build) and inside the anonymous caps.
+# The six entries below are the curated worked examples of container/examples/
+# (same requests minus the CLI-only hpc block); the offline GUI replays each one
+# instantly from the Plan-25 result cache.
 examples:
-  # placeholder -- Marco to curate: a monomial loop k[x]/(x^3), the canonical
-  # smallest HH example (quiver input, GF(2)).
-  - schema: 1
-    algebra:
-      kind: quiver
-      vertices: [1]
-      arrows: {x: [1, 1]}
-      relations: ["x*x*x"]
-      field: {kind: GF, p: 2, n: 1}
-    compute: ["hh_cohomology:0..4", "cartan", "center"]
-    artifacts: {pdf: false, tikz: false}
+  # QuantumCI q=2 over GF(32003): the full invariant surface on the dim-4
+  # quantum complete intersection (HH to degree 8, module surface on S(1)).
+  - stored: examples/qci-q2
 
-  # placeholder -- Marco to curate: a Nakayama algebra (family input) -- Cartan +
-  # low-degree HH, well inside the instant tier.
-  - schema: 1
-    algebra:
-      kind: family
-      family: NakayamaAlgebra
-      params: {n: 3, l: 2}
-      field: {kind: GF, p: 2, n: 1}
-    compute: ["hh_cohomology:0..2", "cartan"]
-    artifacts: {pdf: false, tikz: false}
+  # Cyclic Nakayama kZ_4/J^3 over GF(7): decomposable no-code module
+  # M = P(1) (+) S(2), additive tau, rotating resolutions.
+  - stored: examples/nakayama-kz4
 
-  # placeholder -- Marco to curate: a quantum complete intersection (family input),
-  # the non-monomial admissible showcase.
-  - schema: 1
-    algebra:
-      kind: family
-      family: QuantumCI
-      params: {q: 1}
-      field: {kind: GF, p: 2, n: 1}
-    compute: ["hh_cohomology:0..4"]
-    artifacts: {pdf: false, tikz: false}
+  # The 3x3 commutative grid kA_3 (x) kA_3 (dim 36, explicit quiver,
+  # non-monomial relations): interior staircase modules, N = tau M,
+  # Ext^1 = the AR class, finite global dimension.
+  - stored: examples/grid3x3
 
-  # placeholder -- Marco to curate: a no-code BUILTIN module -- the simple S(1)
-  # over k[x]/(x^3) with its classical module invariants (schema 2).
-  - schema: 2
-    algebra:
-      kind: quiver
-      vertices: [1]
-      arrows: {x: [1, 1]}
-      relations: ["x*x*x"]
-      field: {kind: GF, p: 2, n: 1}
-    module:
-      builtin: {kind: simple, vertex: 1}
-      side: right
-    compute: ["dimension_vector", "rad_top_soc", "tau"]
-    artifacts: {pdf: false, tikz: false}
+  # Scale run kZ_24/J^13 (dim 312): same HH pattern (family invariant),
+  # 13x13 resolution differentials.
+  - stored: examples/nakayama-kz24-deep
 
-  # placeholder -- Marco to curate: a no-code EXPLICIT module -- dims + one exact
-  # matrix per arrow -- with its projective resolution (schema 2).
-  - schema: 2
-    algebra:
-      kind: quiver
-      vertices: [1]
-      arrows: {x: [1, 1]}
-      relations: ["x*x*x"]
-      field: {kind: GF, p: 2, n: 1}
-    module:
-      dims: {"1": 2}
-      maps: {x: [["0", "0"], ["1", "0"]]}
-      side: right
-    compute: ["dimension_vector", "projective_resolution:0..3"]
-    artifacts: {pdf: false, tikz: false}
+  # The Kronecker homogeneous tube: M = R_2(20) (dim 40, Jordan-block action),
+  # tau M = M, Ext^1 = min(n, m), full 40x60 / 60x20 differentials.
+  - stored: examples/kronecker-regular

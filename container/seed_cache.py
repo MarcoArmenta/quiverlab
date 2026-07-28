@@ -40,16 +40,27 @@ _log = logging.getLogger("quiverlab_seed_cache")
 
 
 def load_manifest(path) -> list[dict]:
-    """Parse the YAML manifest into a list of request specs. Accepts either a
-    top-level ``{examples: [...]}`` mapping or a bare list of requests."""
+    """Parse the YAML manifest into a list of entries. Accepts either a
+    top-level ``{examples: [...]}`` mapping or a bare list. An entry is EITHER a
+    full compute request (computed at seed time) OR a stored-bundle reference
+    ``{stored: <dir>}`` (relative to the manifest file) whose directory carries a
+    precomputed ``request.json`` + ``result.json`` (+ extra artifacts) -- the
+    zero-recompute path for the big curated examples."""
     import yaml
 
-    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    path = Path(path)
+    data = yaml.safe_load(path.read_text(encoding="utf-8"))
     if isinstance(data, dict):
         data = data.get("examples", [])
     if not isinstance(data, list):
         raise ValueError(f"manifest {path!r} must be a list (or an 'examples:' list)")
-    return data
+    out = []
+    for entry in data:
+        if isinstance(entry, dict) and set(entry) == {"stored"}:
+            # resolve now, against the manifest's own directory
+            entry = {"stored": str((path.parent / entry["stored"]).resolve())}
+        out.append(entry)
+    return out
 
 
 def _now_iso() -> str:
@@ -85,6 +96,13 @@ def seed(manifest: list[dict], out_db) -> tuple[int, int, int]:
     for i, spec in enumerate(manifest):
         label = f"example[{i}]"
         try:
+            bundle = None
+            if isinstance(spec, dict) and set(spec) == {"stored"}:
+                # stored bundle: the request travels beside its precomputed result
+                import json as _json
+                bundle = Path(spec["stored"])
+                label = f"example[{i}] ({bundle.name})"
+                spec = _json.loads((bundle / "request.json").read_text(encoding="utf-8"))
             req = ComputeRequest.model_validate(spec)
             spec_dump = req.model_dump(by_alias=True)
             key = canonical_key(spec_dump, version)
@@ -96,7 +114,22 @@ def seed(manifest: list[dict], out_db) -> tuple[int, int, int]:
             store.mark_running(jid)
             art = artifacts_dir / jid
             art.mkdir(parents=True, exist_ok=True)
-            run_spec(req, art)                        # writes result.json + artifacts
+            if bundle is not None:
+                # copy the precomputed artifacts (everything but the request);
+                # then a loud sanity parse: the stored result must be a result.
+                import json as _json
+                import shutil as _shutil
+                for f in sorted(bundle.iterdir()):
+                    if f.name == "request.json" or f.is_dir():
+                        continue
+                    _shutil.copy2(f, art / f.name)
+                stored_result = _json.loads(
+                    (art / "result.json").read_text(encoding="utf-8"))
+                if "results" not in stored_result:
+                    raise ValueError(f"stored bundle {bundle} result.json carries "
+                                     "no 'results' block")
+            else:
+                run_spec(req, art)                    # writes result.json + artifacts
             store.mark_done(jid, str(art))
             store.cache_put(key, jid, version, _now_iso())
             ok += 1
