@@ -168,7 +168,9 @@ def test_tau_omits_certificate_when_uncertifiable_byte_stable():
     # itself is still computed. This is what keeps the module_basic golden green.
     b = _run(_LOOP, ["tau"], _M2)["results"]["tau"]
     assert "indecomposable" not in b and "decomposition" not in b
-    assert set(b) == {"kind", "side", "is_zero", "dimvec", "dim",
+    # ("repr" is the full-representation echo of tau M -- Marco 2026-07-28 --
+    # not a certificate; it is present whenever tau M != 0.)
+    assert set(b) == {"kind", "side", "is_zero", "dimvec", "dim", "repr",
                       "references", "citations"}
 
 

@@ -48,8 +48,12 @@ def test_cli_equals_spec_core_run(tmp_path):
     cli_result = json.loads(out.read_text(encoding="utf-8"))
 
     core = spec_run(_LOOP_CFG, tmp_path / "core")
-    # The CLI adds result_schema; strip it for the comparison.
-    cli_result.pop("result_schema", None)
+    # The CLI adds the envelope-only fields (result_schema, the module echoes,
+    # and the -- inherently nondeterministic -- resources footer); strip them
+    # for the comparison.
+    for cli_only in ("result_schema", "resources", "module", "ext_target",
+                     "tor_target"):
+        cli_result.pop(cli_only, None)
     assert json.dumps(cli_result, sort_keys=True, default=str) == \
         json.dumps(core, sort_keys=True, default=str)
 

@@ -26,10 +26,23 @@ docker run --rm -v "$PWD/container/examples:/cfg:ro" -v "$PWD/out/container:/out
 quiverlab-hpc run container/examples/qci-q2.yaml -o out/local/result.json
 ```
 
-The two `result.json` (and `tikz.tex`) files are **byte-identical** — same
-sha256 — across the container's Python 3.12 and a host Python 3.11 venv: the
-Plan-28 spec core is byte-stable by construction (exact arithmetic, canonical
-CS differentials, sorted-key JSON).
+The two `result.json` (and `tikz.tex`) files are **byte-identical** across the
+container's Python 3.12 and a host Python 3.11 venv — modulo the per-run
+`resources` telemetry footer (wall time / peak RSS), which is timing and thus
+never reproducible. Check it like this:
+
+```bash
+python -c "
+import json
+strip = lambda p: json.dumps({k: v for k, v in json.load(open(p)).items()
+                              if k != 'resources'}, sort_keys=True)
+a, b = strip('out/local/result.json'), strip('out/container/result.json')
+assert a == b, 'mathematical payload drifted'
+print('payload byte-identical')"
+```
+
+Everything mathematical is byte-stable by construction (exact arithmetic,
+canonical CS differentials, sorted-key JSON).
 
 `compute_everything.py` is the direct-library companion: it recomputes
 everything the YAML computes through `import quiverlab` and adds the surface

@@ -23,6 +23,8 @@ import inspect
 import json
 import logging
 import re
+import sys
+import time
 from dataclasses import dataclass
 from fractions import Fraction
 from functools import lru_cache
@@ -675,6 +677,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     webapp passes None so the returned dict is byte-identical to the pre-Plan-28
     runner. ``write_result=False`` (CLI) writes only the sidecar artifacts and
     leaves the authoritative ``result.json`` write to the caller."""
+    t0_ns = time.monotonic_ns()
     req = parse_request(req)
     artifact_dir = Path(artifact_dir)
     artifact_dir.mkdir(parents=True, exist_ok=True)
@@ -759,6 +762,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
             for key, mod in (("module", M), ("ext_target", N), ("tor_target", T)):
                 if mod is not None:
                     result[key] = {"side": mod.side, **_mod_repr(mod)}
+            result["resources"] = _resources_used(t0_ns)
     except CheckpointStop:
         raise
     except ComputeError:
@@ -790,6 +794,30 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     if tikz_src is not None:
         (artifact_dir / "tikz.tex").write_text(tikz_src)
     return result
+
+
+def _resources_used(t0_ns: int) -> dict:
+    """Resources the run actually used / had available, as exact ints (the src/
+    no-floats gate holds here): wall-clock ms, peak RSS MiB, detected usable
+    cores and RAM. CLI-envelope-only (written beside ``result_schema``)."""
+    out = {"wall_ms": (time.monotonic_ns() - t0_ns) // 1_000_000}
+    try:
+        import resource as _res
+        rss = _res.getrusage(_res.RUSAGE_SELF).ru_maxrss   # KiB (Linux), B (macOS)
+        if sys.platform == "darwin":
+            rss //= 1024
+        out["peak_rss_mib"] = rss // 1024
+    except Exception:                                      # e.g. no resource module
+        pass
+    try:
+        from quiverlab.hpc.resources import detect_resources
+        det = detect_resources()
+        out["cores_detected"] = det["cores"]
+        if det.get("mem_bytes"):
+            out["ram_mib_detected"] = det["mem_bytes"] // (1024 * 1024)
+    except Exception:
+        pass
+    return out
 
 
 def _hh_kwargs(hpc: HpcConfig | None) -> dict:
@@ -1150,6 +1178,11 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
     if kind in ("tau", "tau_minus"):
         t = M.tau() if kind == "tau" else M.tau_minus()
         block = {"kind": kind, "side": t.side, "is_zero": t.dim == 0, **_mod_view(t)}
+        if t.dim > 0:
+            # the AR translate IS a module: ship it as a full representation
+            # ({dims, maps}, like rad/top/soc) so reports/GUIs can show the
+            # per-arrow action matrices (Marco, 2026-07-28).
+            block["repr"] = _mod_repr(t)
         block.update(_input_certificate(M))
         return _with_refs(block, kind)
     if kind == "decompose":

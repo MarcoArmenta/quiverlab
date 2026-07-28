@@ -213,8 +213,8 @@ def _section_for(name: str, block: dict) -> _Section:
     if name == "cartan":
         mat = block.get("matrix", [])
         return _Section("Cartan matrix",
-                        ["rows: " + "; ".join(str(r) for r in mat)],
-                        [_matrix_html(mat)])
+                        ["C = " + "; ".join(str(r) for r in mat)],
+                        [f"<div class='arrowmap'><span>C =</span> {_matrix_html(mat)}</div>"])
     if name == "coxeter_polynomial":
         text = block.get("text", "")
         return _Section("Coxeter polynomial", [text],
@@ -245,9 +245,22 @@ def _section_for(name: str, block: dict) -> _Section:
     if name in ("tau", "tau_minus"):
         sym = "tau M" if name == "tau" else "tau^- M"
         rows = [f"side: {block.get('side')}"]
-        rows.append(f"{sym} = 0" if block.get("is_zero")
-                    else _module_view_row(sym, block))
-        return _Section("Auslander-Reiten translate", rows)
+        html = [f"<p>side: {_esc(str(block.get('side')))}</p>"]
+        if block.get("is_zero"):
+            rows.append(f"{sym} = 0")
+            html.append(f"<p>{_esc(sym)} = 0</p>")
+        elif isinstance(block.get("repr"), dict):
+            r, h = _repr_rows_html(sym, block["repr"])
+            rows += r
+            html += h
+        else:                                   # older result: dim vector only
+            rows.append(_module_view_row(sym, block))
+            html.append(f"<p>{_esc(_module_view_row(sym, block))}</p>")
+        if "indecomposable" in block:
+            line = f"indecomposable: {block['indecomposable']}"
+            rows.append(line)
+            html.append(f"<p>{_esc(line)}</p>")
+        return _Section("Auslander-Reiten translate", rows, html)
     if name == "ext":
         dims = block.get("dims", [])
         rows = ["target " + _module_view_row("N", block.get("target", {})),
@@ -257,6 +270,29 @@ def _section_for(name: str, block: dict) -> _Section:
                 "<p>" + ",&ensp;".join(f"Ext<sup>{i}</sup> = {d}"
                                        for i, d in enumerate(dims)) + "</p>"]
         return _Section("Ext^*(M, N)", rows, html)
+    if name == "tor":
+        dims = block.get("dims", [])
+        rows = ["target " + _module_view_row("N", block.get("target", {})),
+                "Tor dims: " + ", ".join(f"Tor_{i} = {d}" for i, d in enumerate(dims))]
+        html = ["<p>target " + _esc(_module_view_row("N", block.get("target", {})))
+                + "</p>",
+                "<p>" + ",&ensp;".join(f"Tor<sub>{i}</sub> = {d}"
+                                       for i, d in enumerate(dims)) + "</p>"]
+        return _Section("Tor_*(M, N)", rows, html)
+    if name == "decompose":
+        summands = block.get("summands", [])
+        rows = [f"side: {block.get('side')}",
+                f"indecomposable summands: {block.get('iso_classes')} iso-class(es)"]
+        html = [f"<p>side: {_esc(str(block.get('side')))}</p>",
+                f"<p>indecomposable summands: "
+                f"{_esc(str(block.get('iso_classes')))} iso-class(es)</p>"]
+        for s in summands:
+            line = (f"  dim vector {_dimvec_str(s.get('dim_vector', {}))}"
+                    f" x {s.get('multiplicity')}"
+                    f"  (indecomposable: {s.get('indecomposable')})")
+            rows.append(line)
+            html.append(f"<p class='resterm'>{_esc(line.strip())}</p>")
+        return _Section("Krull-Schmidt decomposition", rows, html)
     if name in ("projective_resolution", "injective_resolution"):
         letter = "P" if name == "projective_resolution" else "I"
         terms = block.get("terms", [])
@@ -303,8 +339,17 @@ def _section_for(name: str, block: dict) -> _Section:
         return _Section("Injective dimension",
                         [f"id M = {v if v is not None else 'infinite'} "
                          f"(finite: {block.get('finite')})"])
-    # Unknown block: dump its keys honestly rather than dropping it.
-    return _Section(name, [json.dumps(block, default=str, sort_keys=True)])
+    # Unknown block: dump its keys honestly rather than dropping it -- but never
+    # the inline citation texts (the full references live at the bottom of the
+    # report); only the reference keys are mentioned.
+    slim = {k: v for k, v in block.items()
+            if k not in ("citations", "references", "latex")}
+    rows = [json.dumps(slim, default=str, sort_keys=True)]
+    keys = block.get("references") or []
+    if keys:
+        rows.append("references: " + ", ".join(str(k) for k in keys)
+                    + "  (full citations at the bottom)")
+    return _Section(name, rows)
 
 
 def _rebuild_algebra(result: dict):
@@ -422,7 +467,29 @@ def build_sections(result: dict) -> list:
     repro = result.get("reproduce")
     if repro:
         sections.append(_Section("Reproduce locally", repro.splitlines()))
+    res = result.get("resources")
+    if isinstance(res, dict) and res:
+        sections.append(_resources_section(res))
     return sections
+
+
+def _resources_section(res: dict) -> _Section:
+    """The resources footer (CLI-envelope ``resources``): wall time, peak memory,
+    detected cores/RAM -- exact ints from the run, formatted without floats."""
+    rows = []
+    ms = res.get("wall_ms")
+    if ms is not None:
+        rows.append(f"wall time: {ms // 1000}.{(ms % 1000) // 100} s  ({ms} ms)")
+    if res.get("peak_rss_mib") is not None:
+        rows.append(f"peak memory (RSS): {res['peak_rss_mib']} MiB")
+    if res.get("cores_detected") is not None:
+        rows.append(f"cpu cores available: {res['cores_detected']}")
+    if res.get("ram_mib_detected") is not None:
+        rows.append(f"ram detected: {res['ram_mib_detected']} MiB")
+    for k in sorted(res):
+        if k not in ("wall_ms", "peak_rss_mib", "cores_detected", "ram_mib_detected"):
+            rows.append(f"{k}: {res[k]}")
+    return _Section("Resources used", rows)
 
 
 # --------------------------------------------------------------------------- #

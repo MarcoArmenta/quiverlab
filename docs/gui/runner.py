@@ -345,6 +345,10 @@ def _module_block(name, top):
                                                    + " = " + _dv_latex(t.dimension_vector()))
         block = {"kind": name, "side": t.side, "is_zero": t.dim == 0,
                  "citations": cites, "latex": latex, **_mod_view(t)}
+        if t.dim > 0:
+            # full representation ({dims, maps}) -- mirrors the hpc spec core so
+            # both dispatches ship the AR translate's per-arrow matrices.
+            block["repr"] = _mod_repr(t)
         block.update(_input_certificate(M))       # Marco #1: certify the input M
         return block
     if name == "decompose":
