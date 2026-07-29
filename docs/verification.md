@@ -5,9 +5,9 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2301 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
-2026-07-26 post-merge of Plans 21–31; Plan 32 added the oracle-class markers + the
-audit gate). It
+The suite is **2423 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+2026-07-29, after Plans 21–33, the Plan-32 oracle-class markers + audit gate, and
+Marco's report-completeness pass). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one. Every test is
 **classifiable** into exactly this scheme — one of four oracle classes (literature,
@@ -353,12 +353,12 @@ and the oracle class that guards it. Counts are `pytest --collect-only` with the
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
-| `trace/` (worked-steps incl. the Plan-30 module events + kA₂ replay golden) | 139 | fast | golden-file equality (dims derived from ranks) |
+| `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, and the 2026-07-29 report-completeness battery) | 173 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
 | `qpa/` (GAP/QPA crosscheck) | 129 | 122 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
-| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 348 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
+| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 398 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
 | `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 58 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
-| `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 63 | fast | runner artifacts / invariants; build hook; freshness |
+| `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 66 | fast | runner artifacts / invariants; build hook; freshness |
 | release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`; the Plan-32 `test_oracle_classes` audit gate) | 44 | fast (audit gates: deep) | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage; **oracle-class count audit** (page == live collection) |
 
 Non-algebraic glue (`webapp/`, `docs/gui/`) carries no oracle *because it holds no
@@ -430,9 +430,9 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 722 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 410 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 619 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 646 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 122 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1308 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1335 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-07-26 (Plan 32). The oracle markers live only on the pure-library
 `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` / `families` /
@@ -553,6 +553,53 @@ verified precision and listed below as such.
   kA₂ golden asserts every differential of the S₁ resolution appears verbatim
   in the `.html`; larger objects render as stated shape+rank elisions, never
   silent omissions; the `trace_steps.html` source itself is a served artifact.
+- **The report is the session's complete record, and its presentation never
+  hides or fabricates** (2026-07-29, Marco's desktop-app pass —
+  `tests/trace/test_report_completeness_m0729.py`,
+  `tests/webapp/test_module_blocks_m0729.py`). Self-certifying gates: the page
+  contains no `overflow` rule at all (nothing is clipped behind a scrollbar —
+  an over-wide matrix is typeset a size down by a shrink-only, integer-valued
+  rule); an arrow acting as the exact zero map is *named* rather than printed,
+  but never silently dropped; a differential identical to one already shown is
+  *referenced*, and an **elided** differential is never matched as a repeat
+  (its body was not recorded, so claiming equality would be a fabrication);
+  every result block the two runners produce reaches the report, a failed
+  computation included. Honesty pins: a homological dimension whose resolution
+  did not terminate by the probed depth renders as the certified lower bound
+  `pd M > 32`, never a bare `∞`; the Chouhy–Solotar resolution's terms are
+  named as projective bimodules `C_n = ⊕_{s∈S_n} A e_{o(s)} ⊗ e_{t(s)} A` from
+  the recorded generator corners, and a term whose corners were not recorded
+  (the bar resolution over a structure-constants algebra, which is not
+  vertex-graded) claims no decomposition at all. Cross-runner: the block shapes
+  are asserted identical for `quiverlab.hpc.spec` and its Pyodide twin
+  `docs/gui/runner.py`, so the served page and the desktop app cannot disagree
+  about the same computation.
+- **The report describes the modules, not just their dimension vectors**
+  (2026-07-29 second pass). "The modules" section gives each module the
+  computation was about — `M`, and `N` when a second module was named — as its
+  Loewy series with top and socle plus the exact matrix of every arrow, through
+  the same `module_blocks` serializer the no-code panel consumes (so a printed
+  module can be typed straight back in). A Krull–Schmidt summand isomorphic to a
+  standard indecomposable is NAMED `S_v` / `P_v` / `I_v` and its matrices omitted
+  (`modules/hom.py::identify_standard`: dimension-vector prefilter, then the
+  exact `is_isomorphic` certificate; an undecidable case leaves the summand
+  unnamed and shown in full, never guessed); every other summand carries its full
+  action. Section headings name what they hold — Hochschild homology /
+  cohomology, Ext, Tor — and the (co)homology table is printed once, not both in
+  the computed results and again under a heading that says "Result".
+- **Matrices are indexed grids, and artifacts are written as UTF-8** (2026-07-29
+  third pass). Every displayed matrix carries an extra header row of column
+  indices and header column of row indices over a light-grey rule, so an entry
+  is readable by position; entries are copied verbatim and HTML-escaped, and a
+  zero-dimensional matrix renders as the symbol `0` rather than an empty box
+  (`tests/trace/_matrix_grid.py` reads matrices back out of the rendered page, so
+  the renderer tests assert ENTRIES, not a presentation). Separately, a real
+  **Windows** defect is now gated: `Path.write_text` defaults to the *locale*
+  codec, so the report's em dashes were written as cp1252 bytes and every utf-8
+  reader raised — the entire Windows CI matrix failed on it while macOS/Linux
+  (whose locale codec is utf-8) stayed green. `tests/trace/test_artifact_encoding.py`
+  is a source-level AST scan (no text I/O in `src/quiverlab`, `webapp`, `docs/gui`
+  may omit `encoding=`) plus a live round-trip under a forced cp1252 locale.
 - The Plan-28 container tier: what pytest verifies is the **wheel-side story**
   (CLI ≡ public-API parity, renderer goldens, checkpoint-resume, byte-stable
   runner delegation, asset-file gates) plus the CI image smoke (build → run a

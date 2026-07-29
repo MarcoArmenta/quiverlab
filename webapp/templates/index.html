@@ -14,7 +14,17 @@
       data-mod-indecomposable="{{ t('mod.indecomposable') }}"
       data-mod-tau-additive="{{ t('mod.tau_additive') }}"
       data-mod-display-only="{{ t('mod.display_only') }}"
-      data-mod-stale="{{ t('mod.stale_recompute') }}">
+      data-mod-stale="{{ t('mod.stale_recompute') }}"
+      data-mod-rad-top-soc="{{ t('mod.rad_top_soc') }}"
+      data-mod-arrows-zero="{{ t('mod.arrows_zero') }}"
+      data-mod-arrows-acting-zero="{{ t('mod.arrows_acting_zero') }}"
+      data-mod-differentials-proj="{{ t('mod.differentials_proj') }}"
+      data-mod-differentials-inj="{{ t('mod.differentials_inj') }}"
+      data-mod-same-matrix="{{ t('mod.same_matrix') }}"
+      data-mod-matrix-too-large="{{ t('mod.matrix_too_large') }}"
+      data-mod-tau-target-ext="{{ t('mod.tau_target_ext') }}"
+      data-mod-tau-target-tor="{{ t('mod.tau_target_tor') }}"
+      data-mod-tau-unavailable="{{ t('mod.tau_unavailable') }}">
   <label for="family">{{ t("form.family") }}</label>
   <select id="family" name="family">
     {% for f in catalog.families %}<option value="{{ f.name }}">{{ f.name }}</option>{% endfor %}

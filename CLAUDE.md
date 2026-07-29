@@ -433,3 +433,91 @@ preprojective and exterior HH values are cross-engine-only (no published table);
 past ~degree 10, and the Π(E₆)/Π(D₆) builds are deferred to the SUBMISSION
 step-4 cluster list. Oracle-class markers per Plan 32. Branch
 `plan-33-nontrivial-examples`.)
+
+**Marco's report-completeness pass (2026-07-29, branch
+`marco-report-completeness`)** — feedback on the containerized macOS desktop app
+(his `exmple-a.html` = the draw page after Compute, `example-b.html` = the
+downloaded worked-steps report). Twelve items, all delivered:
+
+*Presentation, both GUI renderers (`docs/gui/gui.js`, vendored byte-identical to
+`webapp/static/gui/gui.js`, and `webapp/static/app.js`)* — the Plan-34 scroll box
+is GONE (`mathScroll` → `mathFit` + a post-typeset `fitMath` shrink-to-fit pass;
+matrices show COMPLETE, an over-wide one scales down, the page body still never
+scrolls sideways); an arrow acting as the EXACT zero map is named in one line
+instead of printing a zero block (`matIsZero`); τ/τ⁻ render the translate's FULL
+per-arrow matrices (`block.repr`) and, when the request names a second module N,
+N's translate too (`block.targets`); projective/injective resolutions render
+their differentials, and a differential equal to an earlier one prints
+`d_3 = d_2` instead of repeating the matrix.
+
+*Block data (`quiverlab.hpc.spec` + its Pyodide twin `docs/gui/runner.py`, kept
+shape-identical)* — `projective_dimension`/`injective_dimension` gained `latex`
+(their absence is what typeset the two literal "undefined"s), and an UNRESOLVED
+probe now states the certified lower bound `\operatorname{pd} M > 32` + a `note`,
+never a bare `\infty` the engine did not prove; `tau`/`tau_minus` gained
+`targets` (the Ext/Tor argument's translate, honest error entry on a loud
+refusal; omitted entirely when no target is named, so single-module blocks stay
+byte-identical). One frozen golden re-frozen (`module_left_a2`), documented in
+`tests/webapp/test_runner_delegation.py`.
+
+*The report (`quiverlab.trace`)* — new `results_html.py` renders EVERY computed
+result block into a "Computed results" section (`render_html(..., results=)`,
+threaded through `writer.write_trace` and `spec.run`), so the saved HTML is the
+whole session, not just one traced computation; a request with NO traceable
+computation now still writes the bundle (`_write_results_only`); `.ql-eq`'s
+`overflow-x:auto` is gone (wide equations shrink via the integer `_fit_pct`
+rule); the Result is a degree TABLE (`_dims_table`) like the GUI's Ext/Tor
+tables; repeated differentials are referenced via `_MatrixEcho` (an ELIDED
+matrix is never matched — its body was not recorded); and `ResolutionTerm` gained
+an optional `corners` field (the CS generators' `(o, t)` pairs) so the worked
+resolution steps NAME the term, `C_n = ⊕ P(v,w)`, `P(v,w) = A e_v ⊗ e_w A` — a
+term without recorded corners (bar over structure constants) claims nothing.
+
+New EN/ES i18n keys for every string this added to the webapp module blocks.
+Tests: `tests/trace/test_report_completeness_m0729.py` (14, `oracle_selfcert`),
+`tests/webapp/test_module_blocks_m0729.py` (13, cross-runner contract, unmarked
+per the Plan-32 extras-gated ruling), plus additions to
+`tests/webapp/test_display_only_p34.py`; `tests/trace/_result_table.py` reads the
+Result table back out of rendered HTML for the renderer tests. Verification page
+updated (new self-cert oracles + audited counts 633 / 1322, suite 2406).
+
+SECOND PASS (same day, Marco on the regenerated report): a new **"The modules"**
+report section describes every module the computation was about -- `M`, and `N`
+when a second module was named -- with its Loewy series, top/socle and the exact
+matrix of every arrow (`trace/modules.py::module_description`, threaded as
+`render_html(..., modules=[(label, Module)])` from both runners; each module is
+guarded individually so an undescribable one is skipped, never fatal). Krull-Schmidt
+summands go through the new shared serializer
+`modules/qpa_module.py::summand_blocks`: a summand isomorphic to a STANDARD
+indecomposable is NAMED `S_v`/`P_v`/`I_v` with its matrices omitted (via the new
+`modules/hom.py::identify_standard` -- dimension-vector prefilter, then the exact
+`is_isomorphic` certificate; undecidable leaves it unnamed and shown in full,
+never guessed), every other summand carries its full action; both GUI renderers
+mirror the naming. Headings now say WHAT they hold: the bottom "Result" section is
+`Hochschild homology`/`Hochschild cohomology` (`_hh_heading`) and is SKIPPED
+entirely when the Computed results already carry that table (`_results_carry_hh`),
+so the same numbers are never printed twice; the module-steps Ext/Tor footer is
+headed `Ext`/`Tor`.
+
+THIRD PASS + CI FIX (same day): every displayed matrix is now an INDEXED GRID --
+`render_html.matrix_grid` / `_event_grid` (report) and `matrixGrid` (both GUI
+renderers): an HTML table with a header row of column indices, a header column of
+row indices and a light-grey rule, 1-based, entries verbatim + escaped; a
+zero-dimensional matrix stays the symbol `0`. `pmatrix` remains only as the TeX
+SOURCE form. Tests read matrices back out of the page via the new
+`tests/trace/_matrix_grid.py` helper, so they assert ENTRIES, not a presentation.
+CI FIX (a REAL pre-existing bug, not caused by this work): the whole **Windows**
+fast matrix had been failing on `UnicodeDecodeError` because `Path.write_text`
+defaults to the LOCALE codec -- cp1252 on Windows -- so the report's em dashes were
+written as single cp1252 bytes and every utf-8 reader blew up (invisible on
+macOS/Linux, whose locale codec IS utf-8). Every artifact write in
+`trace/writer.py`, `hpc/spec.py`, `webapp/worker/worker.py`, plus the
+locale-dependent `open()`s in `engine/deepen.py` and `engine/scan2.py`, now pass
+`encoding="utf-8"` explicitly, gated by `tests/trace/test_artifact_encoding.py`
+(an AST scan of the shipping tree + a live round-trip under a forced cp1252
+locale).
+
+KNOWN GAP (not in Marco's list, flagged not fixed): the INSTANT tier deletes its
+artifact dir by design (`webapp/server/instant.py`), so a computation served
+instantly produces no report at all. Only queued/cached jobs expose
+`trace_steps.html`.

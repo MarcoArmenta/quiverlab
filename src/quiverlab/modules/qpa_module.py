@@ -156,3 +156,31 @@ def module_blocks(M):
     if display_only:
         result["display_only"] = True
     return result
+
+
+def summand_blocks(M, multiplicity=1):
+    """One indecomposable summand of a Krull-Schmidt decomposition, as the report
+    and the GUI show it (Marco 2026-07-29).
+
+    A summand isomorphic to a STANDARD indecomposable is NAMED (``standard``:
+    ``{"kind": "simple"|"projective"|"injective", "vertex": v}``) and its matrices
+    are omitted -- ``S_2`` says everything the reader needs, and printing the action
+    of a simple is noise. Every other summand carries its full ``maps`` (the exact
+    per-arrow action, in the no-code INPUT schema), because there its dimension
+    vector alone does not determine the module.
+
+    Naming is best-effort and never guesses: when ``identify_standard`` cannot
+    decide, the summand is simply shown in full."""
+    from quiverlab.modules.hom import identify_standard
+    out = {"dim_vector": {str(v): int(n) for v, n
+                          in sorted(M.dimension_vector().items(), key=lambda kv: str(kv[0]))},
+           "multiplicity": int(multiplicity), "indecomposable": True}
+    std = identify_standard(M)
+    if std is not None:
+        out["standard"] = {"kind": std[0], "vertex": str(std[1])}
+        return out
+    blocks = module_blocks(M)
+    out["maps"] = blocks.get("maps", {})
+    if blocks.get("display_only"):
+        out["display_only"] = True
+    return out

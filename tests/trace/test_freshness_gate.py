@@ -27,7 +27,12 @@ def test_cs_trace_events_shape():
         AmbiguityEvent, ResolutionTerm, DifferentialEvent, LiftStep,
     )
     assert _field_names(AmbiguityEvent) == {"degree", "chain_words"}
-    assert _field_names(ResolutionTerm) == {"degree", "n_generators", "collapsed_dim"}
+    # `corners` (Marco 2026-07-29) is an OPTIONAL display field: the generators'
+    # (source, target) vertex pairs, so the report can name the term's projective
+    # bimodule summands. Defaulted to None -- no existing construction changes.
+    assert _field_names(ResolutionTerm) == {"degree", "n_generators",
+                                            "collapsed_dim", "corners"}
+    assert ResolutionTerm(degree=0, n_generators=1, collapsed_dim=1).corners is None
     assert _field_names(DifferentialEvent) == {"degree", "chain", "terms"}
     assert _field_names(LiftStep) == {"degree", "kind", "detail"}
 

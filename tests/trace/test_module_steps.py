@@ -9,6 +9,7 @@ import pytest
 
 from quiverlab import Quiver, GF, CC
 from quiverlab.trace.events import ModuleDifferential, ModuleTerm, StepNote
+from tests.trace._matrix_grid import grids, has_grid, grid_indices
 from quiverlab.trace.recorder import module_differential, ext_degree, MATRIX_ELISION_CELLS
 from quiverlab.trace.modules import (
     trace_projective_resolution, trace_injective_resolution, trace_ext, trace_tau,
@@ -45,9 +46,8 @@ def test_ka2_s1_html_every_differential_verbatim():
     assert "<script" not in html.lower()                           # no JS, ever
     # every differential appears verbatim (TeX source in the x-tex <annotation>; the
     # `&` of a matrix column separator is HTML-escaped to `&amp;`):
-    assert r"\begin{pmatrix} 1 &amp; 0 \end{pmatrix}" in html or \
-        r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in html             # epsilon: Q_0 -> M
-    assert r"\begin{pmatrix} 0 \\ 1 \end{pmatrix}" in html          # d_1: Q_1 -> Q_0
+    assert has_grid(html, [["1", "0"]])                            # epsilon: Q_0 -> M
+    assert has_grid(html, [["0"], ["1"]])                          # d_1: Q_1 -> Q_0
     # ...labelled with the direct-sum notation and the arrows:
     assert r"\varepsilon : P_{1} \to M" in html
     assert r"d_{1} : P_{2} \to P_{1}" in html
@@ -144,13 +144,13 @@ def test_matrix_rendering_follows_the_artifact_contract():
     txt = render_text(events, title="t")
     html = render_html(events, title="t")
     js = render_json(events, title="t")
-    # small matrix: a real matrix in text and (as x-tex source) in HTML
-    assert r"\begin{pmatrix} 1 & 0 \end{pmatrix}" in html or \
-        r"\begin{pmatrix} 1 &amp; 0 \end{pmatrix}" in html
+    # small matrix: a real matrix in text and an indexed grid in HTML
+    assert has_grid(html, [["1", "0"]])
     # wide (3x30): shown IN FULL everywhere -- nothing page-elides it away now
     assert "shown in full in the HTML/JSON report" not in txt      # text is complete
     assert "shown in full in the HTML/JSON report" not in html     # HTML is complete
     assert "  ".join(["1"] + ["0"] * 29) in txt                    # the full 30-col row
+    assert has_grid(html, [["1"] + ["0"] * 29] * 3)                # ...and in HTML
     # >250k memory backstop: a shape+rank note in text and HTML (never a 260k-cell body)
     for s in (txt, html):
         assert "2x130000" in s and "elided" in s

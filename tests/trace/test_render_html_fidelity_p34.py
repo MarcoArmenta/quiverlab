@@ -22,6 +22,7 @@ import pytest
 from quiverlab import Quiver, GF, CC, truncated_polynomial
 from quiverlab.trace.recorder import Trace, module_differential, ext_degree
 from quiverlab.trace.events import ModuleTerm, StepNote
+from tests.trace._result_table import result_dims
 from quiverlab.trace.render_html import (
     render_html, _math, _tex_to_mathml_body, _UnknownTeX,
 )
@@ -220,9 +221,9 @@ def test_ext_html_uses_hom_delta_and_ext_superscript():
     assert r"\dim\operatorname{Hom}(Q_{1},N)" in html
     assert r"\ker\delta^{1}/\operatorname{im}\delta^{0}" in html
     assert r"\dim = 3 - 1 - 1 = 1" in html            # the rank arithmetic, spelled out
-    # the Result footer uses the Ext SUPERSCRIPT (degrees re-indexed from 0, as in the
-    # LaTeX renderer's shared ext_result_dims):
-    assert r"\operatorname{Ext}^{0} = 1" in html
+    # the Result footer is a degree table (Marco 2026-07-29) labelled with the Ext
+    # SUPERSCRIPT (degrees re-indexed from 0, as in the shared ext_result_dims):
+    assert result_dims(html, "dim Ext^n") == [1]
     # NOT Tor wording:
     assert r"\operatorname{Tor}" not in html and r"\otimes_A" not in html
 
@@ -234,9 +235,9 @@ def test_tor_html_uses_tensor_d_n_and_tor_subscript():
     assert r"d_{2}" in html                            # d_{n+1} is the shown map
     assert r"\ker d_{1}/\operatorname{im}d_{2}" in html
     assert r"\dim = 3 - 1 - 1 = 1" in html
-    # the Result footer uses the Tor SUBSCRIPT, not a superscript (degrees re-indexed
-    # from 0, as in the LaTeX renderer's shared ext_result_dims):
-    assert r"\operatorname{Tor}_{0} = 1" in html
+    # the Result footer is a degree table labelled with the Tor SUBSCRIPT, not a
+    # superscript (degrees re-indexed from 0, as in the shared ext_result_dims):
+    assert result_dims(html, "dim Tor_n") == [1]
     # NOT Ext/Hom wording:
     assert r"\operatorname{Ext}" not in html
     assert "dim Hom" not in html and r"\delta" not in html

@@ -398,7 +398,7 @@ def summarize_and_save(results, outfile):
         "n_candidates": len(cands),
         "candidates": [c["name"] for c in cands],
     }
-    with open(outfile, "w") as f:
+    with open(outfile, "w", encoding="utf-8") as f:
         json.dump({"summary": summary, "results": results}, f, indent=2)
     print(f"  results written to {outfile}")
 
@@ -422,7 +422,7 @@ def main():
         allr = []
         for t in ["_T", "_X", "_R", "_L"]:
             try:
-                allr += json.load(open(f"scan2_results{t}.json"))["results"]
+                allr += json.load(open(f"scan2_results{t}.json", encoding="utf-8"))["results"]
             except FileNotFoundError:
                 pass
         summarize_and_save(allr, "scan2_results.json")

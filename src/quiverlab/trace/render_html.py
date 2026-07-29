@@ -9,6 +9,11 @@ is print-ready (print CSS: ``@page`` margins, page-break control, a screen-only
 downloaded ``report.html`` prints to PDF from any browser. Float-free: all numbers
 come from event fields (ints/strings).
 
+Matrices are displayed as INDEXED GRIDS (`matrix_grid`): an HTML table with a
+header row of column indices, a header column of row indices and a light-grey rule,
+so an entry can be read off by position (Marco 2026-07-29). `_pmatrix` remains for
+the TeX source form.
+
 Shared helpers: `derive_dims` + `_dims_kind` are REUSED from Task 9's render_text.
 The matrix->pmatrix TeX-source helper `_pmatrix` and the small TeX-source math
 builders (`oplus_tex`, `factor_stack_tex`, `_dimvec_tex`, `_tex_escape`) live HERE
@@ -40,17 +45,55 @@ _STYLE = (
     "padding-bottom:.12em}"
     "p{margin:.5em 0}"
     "math{font-size:1.05em}"
-    ".ql-eq{margin:.7em 0;overflow-x:auto}"
+    # Equations are shown COMPLETE -- no clip, no scrollbar (Marco 2026-07-29).
+    # A wide matrix is instead typeset a size down (see _fit_pct), which is
+    # deterministic and hides nothing.
+    ".ql-eq{margin:.7em 0}"
     ".ql-hint{background:#eef3ff;border:1px solid #9db8e8;border-radius:6px;"
     "padding:.6em .85em;margin:0 0 1.4em;font-family:sans-serif;font-size:.92em;"
     "color:#123}"
+    ".ql-note{color:#444;font-size:.95em}"
+    # .ql-dims is the DEGREE table (n | value_n); .ql-table is every other
+    # structural table (rad/top/soc, summands, resolution terms).
+    "table.ql-dims,table.ql-table{border-collapse:collapse;margin:.7em 0;"
+    "font-size:.95em}"
+    "table.ql-dims td,table.ql-dims th,table.ql-table td,table.ql-table th"
+    "{border:1px solid #bbb;padding:2px 10px;text-align:center}"
+    "table.ql-dims th,table.ql-table th{background:#f2f2f2}"
+    # An indexed matrix grid: white cells on a light-grey rule, with the row and
+    # column indices in grey headers so an entry can be read off by position
+    # (Marco 2026-07-29).
+    "table.ql-matrix{border-collapse:collapse;margin:.5em 0 .9em;"
+    "font-variant-numeric:tabular-nums}"
+    "table.ql-matrix td,table.ql-matrix th{border:1px solid #d0d0d0;"
+    "padding:2px 9px;text-align:right;background:#fff}"
+    "table.ql-matrix th{background:#f0f0f0;color:#555;font-weight:normal;"
+    "font-size:.85em;text-align:center}"
+    "table.ql-matrix th.ql-corner{background:#e4e4e4;border-color:#c4c4c4}"
+    ".ql-mlabel{margin:.6em 0 .1em}"
     "ol,ul{padding-left:1.4em}"
     "@media print{.ql-hint{display:none}"
     "body{max-width:none;margin:0;font-size:11pt}"
-    "h2,.ql-eq,math{break-inside:avoid;page-break-inside:avoid}"
+    "h2,.ql-eq,math,table.ql-dims,table.ql-table,table.ql-matrix"
+    "{break-inside:avoid;page-break-inside:avoid}"
     "h1,h2{break-after:avoid}}"
     "@page{margin:2cm}"
     "</style>")
+
+# A matrix wider than this many columns is typeset one size down so it still fits
+# the text column WITHOUT a scrollbar; the shrink is proportional and floored, so a
+# very wide matrix is small but never clipped and never hidden. Integer arithmetic
+# only (the src/ no-floats gate).
+_EQ_FIT_COLS = 16
+_EQ_MIN_PCT = 50
+
+
+def _fit_pct(ncols):
+    """Font-size percentage for an equation whose widest matrix has ``ncols``
+    columns, or None when it fits at full size (shrink-only, never magnifies)."""
+    if not ncols or ncols <= _EQ_FIT_COLS:
+        return None
+    return max(_EQ_MIN_PCT, _EQ_FIT_COLS * 100 // ncols)
 
 # --------------------------------------------------------------------------- #
 # LaTeX -> presentation MathML converter (self-contained, no JS).
@@ -309,18 +352,157 @@ def _tex_to_mathml_body(expr):
     return body
 
 
-def _math(expr):
+def _math(expr, ncols=None):
     """A display equation: typeset presentation MathML with the LaTeX source kept
     verbatim in an x-tex ``<annotation>`` (self-contained, no JavaScript). On any
     conversion surprise, fall back to ``<mtext>`` of the escaped source so the
-    document stays well-formed and the source is still readable."""
+    document stays well-formed and the source is still readable.
+
+    ``ncols`` is the widest embedded matrix's column count, when the caller knows
+    it: a wide matrix is typeset a size down so the equation fits the text column
+    complete, with no scrollbar and nothing clipped (Marco 2026-07-29)."""
     try:
         pres = _tex_to_mathml_body(expr) or ("<mtext>%s</mtext>" % _esc(expr))
     except Exception:
         pres = "<mtext>%s</mtext>" % _esc(expr)
-    return ('<div class="ql-eq"><math display="block"><semantics><mrow>%s</mrow>'
+    pct = _fit_pct(ncols)
+    style = ' style="font-size:%d%%"' % pct if pct is not None else ""
+    return ('<div class="ql-eq"><math display="block"%s><semantics><mrow>%s</mrow>'
             '<annotation encoding="application/x-tex">%s</annotation>'
-            '</semantics></math></div>' % (pres, _esc(expr)))
+            '</semantics></math></div>' % (style, pres, _esc(expr)))
+
+
+def _math_inline(expr):
+    """The same MathML conversion as :func:`_math`, inline and WITHOUT the
+    ``div.ql-eq`` wrapper -- for math inside a table cell."""
+    try:
+        pres = _tex_to_mathml_body(expr) or ("<mtext>%s</mtext>" % _esc(expr))
+    except Exception:
+        pres = "<mtext>%s</mtext>" % _esc(expr)
+    return ('<math display="inline"><semantics><mrow>%s</mrow>'
+            '<annotation encoding="application/x-tex">%s</annotation>'
+            '</semantics></math>' % (pres, _esc(expr)))
+
+
+def matrix_grid(matrix, label=None):
+    """A matrix as an INDEXED GRID (Marco 2026-07-29): a header row of column
+    indices, a header column of row indices, and a light rule between every cell,
+    so an entry can be read off by its position. 1-based, the mathematician's
+    convention. ``label`` is optional TeX shown as ``label =`` above the grid.
+
+    Returns the HTML for the whole block (caption + grid). A zero-DIMENSIONAL
+    matrix (no rows or no columns) renders as the symbol ``0`` -- an empty grid
+    would be a stray box. Entries are copied verbatim (exact ints / fraction
+    strings), never reformatted."""
+    rows = matrix or []
+    ncols = len(rows[0]) if rows and rows[0] is not None else 0
+    if not rows or not ncols:
+        return _math("%s = 0" % label) if label else _math("0")
+    out = []
+    if label:
+        out.append('<p class="ql-mlabel">%s =</p>' % _math_inline(label))
+    head = ['<th class="ql-corner"></th>']
+    head += ["<th>%d</th>" % (j + 1) for j in range(ncols)]
+    body = []
+    for i, row in enumerate(rows):
+        cells = "".join("<td>%s</td>" % _esc(str(x)) for x in row)
+        body.append("<tr><th>%d</th>%s</tr>" % (i + 1, cells))
+    out.append('<table class="ql-matrix"><tr>%s</tr>%s</table>'
+               % ("".join(head), "".join(body)))
+    return "".join(out)
+
+
+def _event_grid(ev, label=None):
+    """:func:`matrix_grid` for any event carrying ``(elided, matrix, nrows, ncols,
+    note)`` -- RankStep, ModuleDifferential, ExtDegree. An elided body is stated as
+    its shape note instead of a fabricated grid."""
+    if ev.elided or ev.matrix is None:
+        note = "%s: %s" % (label, ev.note) if label else ev.note
+        return "<p class='ql-note'>%s</p>" % _esc(note)
+    if ev.nrows == 0 or ev.ncols == 0:
+        return _math("%s = 0" % label) if label else _math("0")
+    return matrix_grid([[ev.matrix[i][j] for j in range(ev.ncols)]
+                        for i in range(ev.nrows)], label=label)
+
+
+def _dims_table(row_label, dims, col_label="n"):
+    """A degree table ``n | value_n`` -- the shape the GUI uses for HH / Ext / Tor
+    (Marco 2026-07-29: the Result used to be one long equation in a scroll box)."""
+    head = ["<th>%s</th>" % _esc(col_label)]
+    body = ["<th>%s</th>" % _esc(row_label)]
+    for i, d in enumerate(dims):
+        head.append("<td>%d</td>" % i)
+        body.append("<td>%s</td>" % _esc(str(d)))
+    return ('<table class="ql-dims"><tr>%s</tr><tr>%s</tr></table>'
+            % ("".join(head), "".join(body)))
+
+
+class _MatrixEcho:
+    """Remembers matrices already printed so an IDENTICAL later differential is
+    referenced instead of repeated (Marco 2026-07-29). Decisive for a periodic
+    resolution, where every second differential is the same matrix.
+
+    ``label_for(event, symbol)`` returns the earlier symbol when this exact matrix
+    has been shown, else None (and records it). An elided matrix is never matched:
+    its body was dropped, so equality is unknowable."""
+
+    def __init__(self):
+        self._seen = {}
+
+    def label_for(self, ev, symbol):
+        if getattr(ev, "elided", False) or getattr(ev, "matrix", None) is None:
+            return None
+        key = (ev.nrows, ev.ncols,
+               tuple(tuple(row) for row in ev.matrix))
+        if key in self._seen:
+            return self._seen[key]
+        self._seen[key] = symbol
+        return None
+
+
+def _hh_row_label(kind):
+    """Row label for the (co)homology table: ``HH^`` -> ``dim HH^n``, ``HH_`` -> ``dim HH_n``."""
+    return "dim %sn" % kind
+
+
+def _hh_heading(kind):
+    """Section heading naming WHAT the table is. "Result" said nothing -- every
+    section of the page is a result (Marco 2026-07-29)."""
+    return "Hochschild cohomology" if kind == "HH^" else "Hochschild homology"
+
+
+def _results_carry_hh(results, kind):
+    """True when the Computed results section already shows this exact HH table, so
+    printing it again under its own heading would just repeat the same numbers."""
+    if not results or not kind:
+        return False
+    from quiverlab.trace.results_html import normalize
+    want = "hh_cohomology" if kind == "HH^" else "hh_homology"
+    return any(k == want for k, _ in normalize(results))
+
+
+def _term_summands_html(term, degree):
+    """The resolution term NAMED as a direct sum of projective bimodules, when the
+    engine recorded the generators' corners (Marco 2026-07-29 -- the report used to
+    give only a generator count). ``P(v,w)`` is ``A e_v (x) e_w A``; the standard
+    Chouhy-Solotar term is ``C_n = (+)_{s in S_n} A e_{o(s)} (x) e_{t(s)} A``.
+    Returns '' when the corners were not recorded (e.g. the bar resolution over a
+    structure-constants algebra, which is not vertex-decomposed)."""
+    corners = getattr(term, "corners", None)
+    if not corners:
+        return ""
+    counts = {}
+    for pair in corners:
+        key = (str(pair[0]), str(pair[1]))
+        counts[key] = counts.get(key, 0) + 1
+    parts = []
+    for (v, w) in sorted(counts):
+        base = "P(%s,%s)" % (v, w)
+        c = counts[(v, w)]
+        parts.append(base if c == 1 else "%s^{%d}" % (base, c))
+    tex = r" \oplus ".join(parts)
+    return _math(r"C_{%d} = %s \qquad P(v,w) = A e_{v} \otimes e_{w} A"
+                 % (degree, tex))
 
 
 def _pi_section_html(objects, note):
@@ -340,6 +522,69 @@ def _pi_section_html(objects, note):
                 or "0"
             out.append(_math(r"%s_{%s} = %s \qquad \dim = %d,\ \underline{\dim} = %s"
                              % (sym, v, layers, d["dim"], _dimvec_tex(d["dimvec"]))))
+    return out
+
+
+def _describe_modules(modules):
+    """``[(name, Module), ...]`` -> description dicts, each guarded independently:
+    a module that cannot be described is skipped, never fatal (the report is a
+    record of a computation that already succeeded)."""
+    out = []
+    for name, mod in (modules or ()):
+        if mod is None:
+            continue
+        try:
+            from quiverlab.trace.modules import module_description
+            out.append(module_description(mod, name))
+        except Exception:                    # descriptive only -- never sink a report
+            continue
+    return out
+
+
+def _modules_section_html(descriptions):
+    """"The modules" section: for each module the computation was about, its
+    dimension vector, its Loewy series, and the exact per-arrow action matrices
+    (Marco 2026-07-29 -- a dimension vector alone does not say what the module IS).
+    An arrow acting as the exact zero map is named, not printed."""
+    if not descriptions:
+        return []
+    out = ["<p><i>Each module as it was given to the engine: its Loewy layers "
+           "(stacked top to bottom) and the exact matrix of every arrow.</i></p>"]
+    for d in descriptions:
+        name = d["name"]
+        layers = r" \;\big|\; ".join(factor_stack_tex(L) for L in d["layers"]) or "0"
+        out.append("<h3>%s</h3>" % _esc(name))
+        out.append(_math(r"%s = %s \qquad \dim = %d,\ \underline{\dim} = %s"
+                         % (name, layers, d["dim"], _dimvec_tex(d["dimvec"]))))
+        out.append(_math(r"\operatorname{top} %s = %s,\qquad \operatorname{soc} %s = %s"
+                         % (name, factor_stack_tex(d["top"]),
+                            name, factor_stack_tex(d["socle"]))))
+        if d.get("side") == "left":
+            out.append("<p class='ql-note'>a LEFT module (a right module over "
+                       "A<sup>op</sup>).</p>")
+        if d.get("display_only"):
+            out.append("<p class='ql-note'>display only — entries lie outside the "
+                       "integer/fraction input grammar (e.g. GF(p^n) elements).</p>")
+        out.extend(_arrow_maps_html(name, d.get("maps") or {}))
+    return out
+
+
+def _arrow_maps_html(label, maps):
+    """One matrix per arrow acting NON-trivially; the zero arrows named in one line
+    (Marco 2026-07-29). Shared by the modules section and the summand tables."""
+    from quiverlab.trace.results_html import _is_zero
+    live = sorted(a for a in maps if not _is_zero(maps[a]))
+    zero = sorted(a for a in maps if _is_zero(maps[a]))
+    if not live:
+        return ["<p class='ql-note'>%s: every arrow acts as zero.</p>" % _esc(label)]
+    out = []
+    for a in live:
+        out.append("<p>%s, arrow %s:</p>" % (_esc(label), _esc(str(a))))
+        out.append(matrix_grid(maps[a]))
+    if zero:
+        out.append("<p class='ql-note'>%s: arrow%s %s act%s as zero.</p>"
+                   % (_esc(label), "s" if len(zero) > 1 else "",
+                      _esc(", ".join(zero)), "" if len(zero) > 1 else "s"))
     return out
 
 
@@ -367,7 +612,7 @@ def _ext_degree_html(e):
         _math(r"%s: %s = %d,\quad \operatorname{rank}%s = %d,\quad "
               r"\operatorname{rank}%s = %d"
               % (label, space_word, e.space_dim, shown, e.rank_here, other, e.rank_prev)),
-        _math(r"%s = %s" % (shown, _pmatrix(e))),
+        _event_grid(e, label=shown),
         _math(r"%s = %s,\qquad \dim = %s = %d"
               % (label, quotient, arith, e.result_dim)),
     ]
@@ -380,6 +625,7 @@ def _module_steps_html(events):
         return []
     out = ["<h2>Worked module steps</h2>", "<p><i>%s</i></p>" % _esc(ELISION_PREAMBLE)]
     step_no = 0
+    echo = _MatrixEcho()
     for e in mods:
         if isinstance(e, StepNote):
             if getattr(e, "heading", False):
@@ -402,20 +648,24 @@ def _module_steps_html(events):
             dom = name if getattr(e, "dom_is_module", False) \
                 else oplus_tex(e.dom_summands, e.sym)
             cod = name if e.cod_is_module else oplus_tex(e.cod_summands, e.sym)
-            out.append(_math(r"%s : %s \to %s \qquad %s = %s"
-                             % (e.symbol, dom, cod, e.symbol, _pmatrix(e))))
+            prior = echo.label_for(e, e.symbol)
+            out.append(_math(r"%s : %s \to %s" % (e.symbol, dom, cod)))
+            if prior is not None:                     # identical to an earlier map
+                out.append(_math(r"%s = %s" % (e.symbol, prior)))
+                out.append("<p class='ql-note'>(the same matrix as above; not "
+                           "repeated)</p>")
+            else:
+                out.append(_event_grid(e, label=e.symbol))
         elif isinstance(e, ExtDegree):
             out.extend(_ext_degree_html(e))
     # ALL Ext/Tor runs (not only the first): an Ext run then a Tor run both appear,
     # each with the correct subscript/superscript (Plan 34 MINOR).
+    # Named for WHAT it is (Ext / Tor), not "Result" -- the whole page is results.
     runs = ext_result_runs(events)
-    if runs:
-        out.append("<h2>Result</h2>")
-        for op, dims in runs:
-            sep = "_" if op == "Tor" else "^"
-            out.append(_math(",\\quad ".join(
-                r"\operatorname{%s}%s{%d} = %d" % (op, sep, i, d)
-                for i, d in enumerate(dims))))
+    for op, dims in runs:
+        sep = "_" if op == "Tor" else "^"
+        out.append("<h3>%s</h3>" % _esc(op))
+        out.append(_dims_table("dim %s%sn" % (op, sep), dims))
     return out
 
 
@@ -558,7 +808,21 @@ def _used_dispatches(events):
     return used
 
 
-def render_html(events, title="", references=(), algebra=None):
+def render_html(events, title="", references=(), algebra=None, results=None,
+                modules=()):
+    """The worked-steps report.
+
+    ``results`` (optional) are the COMPUTED RESULT BLOCKS of the session -- every
+    answer the page displayed, in either runner's shape. Passing them makes the
+    saved report a complete record of what was computed, not only the worked steps
+    of the one traced computation (Marco 2026-07-29). Omitted -> the page is
+    byte-identical to before.
+
+    ``modules`` (optional) is a sequence of ``(name, Module)`` the computation was
+    about (``M``, and ``N`` when a second module was given): each is described in
+    full -- Loewy series, top/socle, and every arrow's matrix. Descriptive only and
+    individually guarded, so a module that cannot be described is skipped rather
+    than sinking the report."""
     events = list(events)
     from quiverlab.errors import QuiverlabError
     from quiverlab.trace.events import ALL_EVENTS
@@ -576,6 +840,19 @@ def render_html(events, title="", references=(), algebra=None):
     example = _example_section(algebra)
     if example:
         sections.append(("example", "The example", example))
+
+    # The modules belong with the example: they are the PROBLEM statement, not an
+    # answer. Then everything the session computed, then the worked steps that
+    # justify it (Marco 2026-07-29).
+    described = _describe_modules(modules)
+    mod_sec = _modules_section_html(described)
+    if mod_sec:
+        sections.append(("modules", "The modules", mod_sec))
+
+    from quiverlab.trace.results_html import results_section
+    computed = results_section(results)
+    if computed:
+        sections.append(("computed", "Computed results", computed))
 
     used = _used_dispatches(events)
     if used:
@@ -603,11 +880,15 @@ def render_html(events, title="", references=(), algebra=None):
         chunks = ["<p><i>C<sub>n</sub> is the degree-n term of the resolution "
                   "named above; the matrices below are its differentials "
                   "(rows: target basis, columns: source basis).</i></p>"]
+        echo = _MatrixEcho()
         for n in sorted(terms):
             t = terms[n]
             chunks.append("<h3>Degree %d</h3><p>Term with %d generators "
                           "(dim C<sub>%d</sub> = %d).</p>"
                           % (n, t.n_generators, n, t.collapsed_dim))
+            summ = _term_summands_html(t, n)
+            if summ:
+                chunks.append(summ)
             if n in ranks:
                 rs = ranks[n]
                 if rs.side == "cochain":
@@ -616,9 +897,17 @@ def render_html(events, title="", references=(), algebra=None):
                 else:
                     sym = "b_{%d}" % n
                     arrow = r"b_{%d} : C_{%d} \to C_{%d}" % (n, n, max(n - 1, 0))
-                chunks.append(_math(r"%s,\qquad %s = %s \qquad "
-                                    r"\operatorname{rank} = %d"
-                                    % (arrow, sym, _pmatrix(rs), rs.rank)))
+                prior = echo.label_for(rs, sym)
+                # The arrow declaration already names the map, so the rank clause
+                # stays the bare "rank = k" both renderers share.
+                chunks.append(_math(r"%s,\qquad \operatorname{rank} = %d"
+                                    % (arrow, rs.rank)))
+                if prior is not None:
+                    chunks.append(_math(r"%s = %s" % (sym, prior)))
+                    chunks.append("<p class='ql-note'>(the same matrix as above; "
+                                  "not repeated)</p>")
+                else:
+                    chunks.append(_event_grid(rs, label=sym))
         sections.append(("resolution-steps", "Worked resolution steps", chunks))
 
     mod = _module_steps_html(events)
@@ -628,21 +917,18 @@ def render_html(events, title="", references=(), algebra=None):
     # The (co)homology Result: prefer the AUTHORITATIVE dims the engine returned (a
     # ResultDims event, injected by writer.py) so the line carries the engine's numbers
     # AND the correct HH^/HH_ variance; fall back to derive_dims when absent.
+    # ...unless the Computed results section already carries that very table: it
+    # would then be the SAME numbers printed twice, under a heading ("Result") that
+    # says nothing, when everything on the page is a result (Marco 2026-07-29). The
+    # section is named for what it holds -- Hochschild homology / cohomology.
     rd = next((e for e in events if isinstance(e, ResultDims)), None)
-    if rd is not None:
-        cells = ",\\quad ".join(r"%s{%d} = %d" % (rd.kind, i, d)
-                                for i, d in enumerate(rd.dims))
-        chunks = [_math(cells)]
-        if rd.note:
+    kind = rd.kind if rd is not None else _dims_kind(events)
+    dims = list(rd.dims) if rd is not None else derive_dims(events)
+    if dims and not _results_carry_hh(results, kind):
+        chunks = [_dims_table(_hh_row_label(kind), dims)]
+        if rd is not None and rd.note:
             chunks.append("<p><i>%s</i></p>" % _esc(rd.note))
-        sections.append(("result", "Result", chunks))
-    else:
-        dims = derive_dims(events)
-        if dims:
-            kind = _dims_kind(events)
-            cells = ",\\quad ".join(r"%s{%d} = %d" % (kind, i, d)
-                                    for i, d in enumerate(dims))
-            sections.append(("result", "Result", [_math(cells)]))
+        sections.append(("result", _hh_heading(kind), chunks))
 
     sections.append(("json-record", "The JSON record", [_JSON_NOTE]))
 

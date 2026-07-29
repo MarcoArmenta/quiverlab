@@ -8,6 +8,7 @@ from quiverlab.trace.recorder import Trace
 from quiverlab.trace.events import RankStep
 from quiverlab.trace.render_text import render_text, derive_dims
 from quiverlab.trace.render_html import render_html
+from tests.trace._result_table import result_dims
 
 # A generic (bibtex_key, formatted) fixture: parity is about the renderers agreeing,
 # not about any specific citation, so this stays decoupled from Plan 06's registry.
@@ -29,6 +30,10 @@ def _homology_events():
 
 
 def _dims_in(s):
+    """The Result dims of a rendered document. render_text still writes them
+    inline; render_html shows a degree TABLE (Marco 2026-07-29)."""
+    if "ql-dims" in s:
+        return result_dims(s)
     return [int(m) for m in re.findall(r"HH[\^_]?\{?\d+\}?\s*=\s*(\d+)", s)]
 
 

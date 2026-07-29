@@ -162,9 +162,9 @@ def test_seed_from_stored_bundle_copies_without_recompute(tmp_path):
     row = store.cache_row(_key(LOOP_CARTAN))
     assert row is not None
     art = out.parent / "artifacts" / row["job_id"]
-    assert json.loads((art / "result.json").read_text())["results"]["cartan"][
+    assert json.loads((art / "result.json").read_text(encoding="utf-8"))["results"]["cartan"][
         "sentinel"] == "stored"
-    assert (art / "report.html").read_text() == "<html>stored report</html>"
+    assert (art / "report.html").read_text(encoding="utf-8") == "<html>stored report</html>"
     assert not (art / "request.json").exists()   # the request is not an artifact
 
 

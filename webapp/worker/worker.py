@@ -101,7 +101,7 @@ def _child(spec_dict: dict, artifact_dir: str, result_max_bytes: int,
 
     def _cb(d: dict) -> None:
         tmp = progress_path.with_suffix(".tmp")
-        tmp.write_text(json.dumps(d))
+        tmp.write_text(json.dumps(d), encoding="utf-8")
         tmp.replace(progress_path)          # atomic swap: parent never sees a partial
 
     try:

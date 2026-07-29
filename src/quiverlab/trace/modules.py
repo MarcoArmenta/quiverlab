@@ -325,6 +325,33 @@ def _radical_layers(M):
     return layers
 
 
+def module_description(M, name="M"):
+    """A full description of the module the computation was ABOUT: its dimension
+    vector, the exact per-arrow action matrices, and its Loewy (radical) layers with
+    top and socle (Marco 2026-07-29 -- the report used to give only a dimension
+    vector). Same shape as one half of an :func:`algebra_objects` row, so the report
+    renders modules and the standard P_v / I_v through one code path.
+
+    ``maps`` comes from the shared ``module_blocks`` serializer, i.e. the no-code
+    INPUT schema -- so a module printed in a report can be typed straight back into
+    the module panel."""
+    from quiverlab.modules.qpa_module import module_blocks
+    blocks = module_blocks(M)
+    out = {
+        "name": name,
+        "side": getattr(M, "side", "right"),
+        "dim": M.dim,
+        "dimvec": _dv(M.dimension_vector()),
+        "maps": blocks.get("maps", {}),
+        "layers": _radical_layers(M),
+        "top": _dv(M.top().dimension_vector()),
+        "socle": _dv(M.socle().dimension_vector()),
+    }
+    if blocks.get("display_only"):
+        out["display_only"] = True
+    return out
+
+
 def algebra_objects(A):
     """For each vertex v: the indecomposable projective P_v and injective I_v with
     dimension vector, Loewy (radical) layers, top and socle. Uses only the public

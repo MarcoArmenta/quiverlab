@@ -15,6 +15,7 @@ from quiverlab.trace.modules import (
     trace_projective_resolution, trace_ext, trace_tor, trace_tau, trace_decompose,
 )
 from quiverlab.trace.render_html import render_html
+from tests.trace._matrix_grid import grids, has_grid, grid_indices
 from quiverlab.trace.provenance import references_for, resolve_references
 
 
@@ -92,7 +93,7 @@ def test_per_arrow_matrices_shown():
     """rad shows each arrow's action matrix rho_M(a): M -> M as a pmatrix."""
     html = _square_report_html()
     assert r"\rho_M(a)" in html and r"\rho_M(b)" in html
-    assert r"\begin{pmatrix}" in html                        # matrices are rendered
+    assert grids(html)                                       # matrices are rendered
     assert r"\rho_M(a) : M \to M" in html                    # self-map declaration
 
 

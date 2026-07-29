@@ -126,16 +126,19 @@ def test_worked_steps_report_is_recorded(tmp_path, monkeypatch):
 
 
 def test_pdf_requested_without_hh_item(tmp_path, monkeypatch):
-    # report requested but no HH item computed -> honest label, no trace file.
+    """Marco 2026-07-29: a report was requested, so one is written -- carrying the
+    example and every computed result -- even though no computation recorded worked
+    steps. The session's answers must have somewhere to be saved."""
     monkeypatch.chdir(tmp_path)
     req = _req({"kind": "GF", "p": 2, "n": 1}, ["cartan"],
                artifacts={"pdf": True, "tikz": False})
     art = tmp_path / "art"
     result = run_spec(req, art)
-    assert result["meta"]["pdf"] == \
-        "no traced computation requested (the worked-steps report covers HH)"
-    assert not (art / "trace_steps.html").exists()
-    assert not (art / "trace.pdf").exists()
+    assert result["meta"]["pdf"] == "worked steps in trace_steps.html"
+    html = (art / "trace_steps.html").read_text(encoding="utf-8")
+    assert "Computed results" in html and "Cartan matrix" in html
+    assert (art / "trace.json").exists()          # the machine record rides along
+    assert not (art / "trace.pdf").exists()       # PDF is not a deliverable
     assert not (tmp_path / "quiverlab_traces").exists()
 
 

@@ -16,6 +16,16 @@ class ResolutionTerm:
     degree: int
     n_generators: int          # |S_n|
     collapsed_dim: int         # dim C_n / dim C^n
+    corners: Any = None
+    """The generators' (source, target) vertex pairs, one per generator WITH
+    repetition -- so the report can NAME the term as a direct sum of projective
+    bimodules ``C_n = (+)_{s in S_n} A e_{o(s)} (x) e_{t(s)} A`` instead of quoting
+    a bare generator count (Marco 2026-07-29).
+
+    ``None`` when the engine's term is not vertex-decomposed (the bar resolution
+    over a structure-constants algebra) -- the renderers then omit the line rather
+    than invent a decomposition. Defaulted, so every existing construction and
+    every recorded stream is unchanged."""
 
 
 @dataclass

@@ -1,7 +1,13 @@
 """Plan 34 (post-critique) -- MAJOR-4 (GF(p^n) entries render readably + a
-``display_only`` flag, never the internal tuple ``(0, 0)``), MINOR-5 (the GUI JS
-elides oversized matrices), MINOR-6 (an old-shape cached rad/top/soc says "recompute"
-instead of a fabricated zero action) and MINOR-7 wiring.
+``display_only`` flag, never the internal tuple ``(0, 0)``), MINOR-5 (matrix
+display), MINOR-6 (an old-shape cached rad/top/soc says "recompute" instead of a
+fabricated zero action) and MINOR-7 wiring.
+
+MINOR-5 has since been REVERSED twice by Marco: first from "elide oversized
+matrices" to "show them in full inside a scroll box" (Plan 34, mid-flight), then
+on 2026-07-29 to "show them in full with NO scrollbar" -- an over-wide matrix is
+shrunk to the column width instead. The tests at the bottom of this file pin the
+current contract plus the rest of that 2026-07-29 pass.
 
 The Python serializer (``module_blocks``) is tested directly over GF(4). The JS
 helpers (pure) are extracted textually and evaluated under node (skipped when node is
@@ -167,14 +173,40 @@ def test_js_matlatex_renders_full_matrices_with_only_a_backstop(path):
 
 
 @pytest.mark.parametrize("path", [_APP_JS, _GUI_JS])
-def test_js_wraps_matrices_in_a_horizontal_scroll_box(path):
-    """MINOR-5 (revised): matrices are wrapped in an overflow-x:auto box so a wide
-    differential scrolls INSIDE its box and the page body never scrolls sideways."""
+def test_js_shows_matrices_complete_without_a_scrollbar(path):
+    """Marco 2026-07-29 (supersedes the MINOR-5 scroll box): a matrix must be visible
+    COMPLETE, never behind a scrollbar. `mathFit` clips nothing; an over-wide matrix
+    is SHRUNK to the column width by the post-typeset `fitMath` pass instead."""
     src = path.read_text(encoding="utf-8")
-    fn = _grab_fn(src, "mathScroll")
-    assert "overflowX" in fn and "auto" in fn
-    assert "maxWidth" in fn                         # box is capped to the container width
-    assert "mathScroll(matLatex(" in src           # used by the rad/top/soc renderer
+    assert "mathScroll" not in src                  # the scroll box is gone
+    assert "overflowX" not in src                   # ...and with it every clip
+    fit = _grab_fn(src, "fitMath")
+    assert "scale(" in fit and "scrollWidth" in fit  # shrink-to-fit, measured
+    # Matrices themselves are INDEXED GRIDS (Marco 2026-07-29), not typeset
+    # pmatrices, so nothing about them can clip either.
+    assert "matrixGrid(maps[a])" in src            # used by the rad/top/soc renderer
+
+
+@pytest.mark.parametrize("path", [_APP_JS, _GUI_JS])
+def test_js_hides_arrows_acting_as_zero(path):
+    """Marco 2026-07-29: an arrow acting as the exact zero map carries no
+    information, so its matrix is not printed (the socle of his example showed a
+    2x2 zero block for arrow d). The predicate is exact-string, never numeric."""
+    src = path.read_text(encoding="utf-8")
+    harness = "\n".join([
+        _grab_fn(src, "matIsZero"),
+        "const z = [['0','0'],['0','0']];",
+        "const nz = [['0','0'],['0','1']];",
+        "const frac = [['0','1/2']];",
+        "process.stdout.write(JSON.stringify({"
+        "  zero: matIsZero(z), nonzero: matIsZero(nz), frac: matIsZero(frac),"
+        "  empty: matIsZero([])"
+        "}));",
+    ])
+    got = _node(harness)
+    assert got["zero"] is True and got["nonzero"] is False
+    assert got["frac"] is False                     # a rational entry is not zero
+    assert got["empty"] is True                     # no arrows -> "acts as zero"
 
 
 @pytest.mark.parametrize("path", [_APP_JS, _GUI_JS])
@@ -198,3 +230,106 @@ def test_js_stale_and_display_only_guards(path):
     assert got["staleFresh"] is False
     assert got["doDisp"] is True                   # MAJOR-4: display-only detected
     assert got["doFresh"] is False
+
+
+# --------------------------------------------------------------------------- #
+# Marco 2026-07-29: the two renderers show the AR translates as full modules, the
+# resolutions' differentials, and never repeat an identical differential.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("path", [_APP_JS, _GUI_JS])
+def test_js_renders_the_ar_translate_as_a_full_module(path):
+    """The translate IS a module: its per-arrow action matrices are shown, and the
+    SECOND module N's translate is shown too when the request named one."""
+    src = path.read_text(encoding="utf-8")
+    assert "t.repr" in src                       # the translate's {dims, maps}
+    assert "b.targets" in src or "block.targets" in src
+    assert "ext_target" in src and "tor_target" in src
+
+
+@pytest.mark.parametrize("path", [_APP_JS, _GUI_JS])
+def test_js_renders_resolution_differentials_without_repeats(path):
+    src = path.read_text(encoding="utf-8")
+    assert "differentials" in src                # the block field is rendered...
+    assert "not repeated" in src                 # ...and repeats are referenced
+    assert "rows: target basis, columns: source basis" in src
+
+
+def test_gui_js_never_typesets_a_missing_pd_id_latex():
+    """An older cached pd/id block has no `latex`; composing it from `value` is what
+    stops the literal "undefined" Marco saw twice in example-a."""
+    src = _GUI_JS.read_text(encoding="utf-8")
+    assert "homdimLatex" in src
+    harness = "\n".join([
+        _grab_fn(src, "homdimLatex"),
+        "process.stdout.write(JSON.stringify({"
+        "  finite: homdimLatex('projective_dimension', {value: 3}),"
+        "  unresolved: homdimLatex('injective_dimension', {value: null, bound: 32}),"
+        "  legacy: homdimLatex('projective_dimension', {})"
+        "}));",
+    ])
+    got = _node(harness)
+    assert got["finite"] == "\\operatorname{pd} M = 3"
+    assert got["unresolved"] == "\\operatorname{id} M > 32"
+    assert got["legacy"] == "\\operatorname{pd} M > 32"     # never "undefined"
+
+
+def test_the_2026_07_29_strings_are_bilingual_and_wired():
+    """The webapp pages are EN/ES; every string the 2026-07-29 pass added to the
+    module blocks has both translations and a template data-attribute, so the
+    Spanish page does not silently degrade to English."""
+    en = json.loads(_EN.read_text(encoding="utf-8"))
+    es = json.loads(_ES.read_text(encoding="utf-8"))
+    html = _INDEX.read_text(encoding="utf-8")
+    src = _APP_JS.read_text(encoding="utf-8")
+    for key, attr, prop in (
+            ("mod.arrows_acting_zero", "data-mod-arrows-acting-zero", "modArrowsActingZero"),
+            ("mod.differentials_proj", "data-mod-differentials-proj", "modDifferentialsProj"),
+            ("mod.differentials_inj", "data-mod-differentials-inj", "modDifferentialsInj"),
+            ("mod.same_matrix", "data-mod-same-matrix", "modSameMatrix"),
+            ("mod.matrix_too_large", "data-mod-matrix-too-large", "modMatrixTooLarge"),
+            ("mod.tau_target_ext", "data-mod-tau-target-ext", "modTauTargetExt"),
+            ("mod.tau_target_tor", "data-mod-tau-target-tor", "modTauTargetTor"),
+            ("mod.tau_unavailable", "data-mod-tau-unavailable", "modTauUnavailable"),
+            ("mod.arrows_zero", "data-mod-arrows-zero", "modArrowsZero"),
+            ("mod.rad_top_soc", "data-mod-rad-top-soc", "modRadTopSoc")):
+        assert en.get(key), "missing EN %s" % key
+        assert es.get(key), "missing ES %s" % key
+        assert en[key] != es[key], "EN/ES not translated for %s" % key
+        assert attr in html and key in html, "template does not wire %s" % key
+        assert prop in src, "app.js does not read %s" % prop
+
+
+def test_js_names_standard_summands_and_shows_the_rest(tmp_path):
+    """Marco 2026-07-29: a Krull-Schmidt summand isomorphic to S_v / P_v / I_v is
+    NAMED (its matrices would be noise); every other summand is shown in full."""
+    for path in (_APP_JS, _GUI_JS):
+        src = path.read_text(encoding="utf-8")
+        harness = "\n".join([
+            _grab_const(src, "STD_SYM"),
+            _grab_fn(src, "summandName"),
+            "process.stdout.write(JSON.stringify({"
+            "  simple: summandName({standard:{kind:'simple',vertex:'2'}}, 1),"
+            "  proj:   summandName({standard:{kind:'projective',vertex:'1'}}, 2),"
+            "  inj:    summandName({standard:{kind:'injective',vertex:'3'}}, 3),"
+            "  plain:  summandName({maps:{}}, 4),"
+            "  unknown: summandName({standard:{kind:'weird',vertex:'9'}}, 5)"
+            "}));",
+        ])
+        got = _node(harness)
+        assert got["simple"] == "S_2" and got["proj"] == "P_1" and got["inj"] == "I_3"
+        assert got["plain"] == "M_4"
+        assert got["unknown"] == "M_5", "an unrecognised kind must not be named"
+        # the non-standard summands' matrices are rendered
+        assert "appendSummandMaps" in src or "summandName(s, i + 1), s, d" in src
+
+
+@pytest.mark.parametrize("path", [_APP_JS, _GUI_JS])
+def test_js_matrices_are_indexed_grids(path):
+    """Marco 2026-07-29: every matrix gets an extra row and column of indices and a
+    light grid, so an entry can be read off by position. 1-based."""
+    src = path.read_text(encoding="utf-8")
+    assert "ql-matrix" in src or "qlgui-matrix" in src        # the grid class
+    assert "ql-corner" in src or "qlgui-corner" in src        # the header corner
+    fn = _grab_fn(src, "matrixGrid")
+    assert "j + 1" in fn and "i + 1" in fn                    # 1-based indices
+    assert "matTooBig" in fn                                  # the sanity backstop holds

@@ -18,6 +18,15 @@
     .param-row label { display:inline-block; min-width:9em; margin:0 .5rem 0 0; }
     .param-help { font-size:.82em; color:#666; margin:.15rem 0 0 .2rem; }
     pre { overflow-x:auto; padding:.6rem; }
+    /* An indexed matrix grid: white cells on a light-grey rule, row/column indices
+       in grey headers, so an entry can be read off by position (Marco 2026-07-29). */
+    table.ql-matrix { border-collapse:collapse; margin:.3rem 0 .8rem;
+      font-variant-numeric:tabular-nums; font-size:.9em; }
+    table.ql-matrix td, table.ql-matrix th { border:1px solid #d0d0d0;
+      padding:2px 9px; text-align:right; background:#fff; }
+    table.ql-matrix th { background:#f0f0f0; color:#555; font-weight:normal;
+      font-size:.85em; text-align:center; }
+    table.ql-matrix th.ql-corner { background:#e4e4e4; border-color:#c4c4c4; }
     header, footer { color:#555; }
     header a, footer a { color:#555; }
   </style>

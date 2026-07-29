@@ -113,14 +113,22 @@ def _authoritative_result(events, table):
     return events + [ResultDims(kind=table.kind, dims=list(table.dims), note=note)]
 
 
-def write_trace(events, table, algebra, kind, top, references=(), out_dir=None):
+def write_trace(events, table, algebra, kind, top, references=(), out_dir=None,
+                results=None, modules=()):
     """Render the worked steps to the self-contained, print-ready HTML report and the
     JSON machine record, print the one-liner, and return the produced HTML path (str).
 
     Both deliverables are pure functions of the (deduplicated) event stream, so they
     are byte-identical for identical input. The HTML report is print-ready (the GUI /
     a browser can Print -> Save as PDF); the JSON is the complete, schema-versioned
-    event stream."""
+    event stream.
+
+    ``results`` (optional) are the session's computed result blocks; passed through
+    to the HTML report so it saves EVERYTHING that was computed, not only the worked
+    steps of the one traced computation (Marco 2026-07-29). ``modules`` (optional) is
+    a sequence of ``(name, Module)`` the computation was about, described in full in
+    the report. The JSON record stays the pure event stream -- the results have their
+    own machine deliverable, ``result.json``."""
     events = list(events)
     # Correction 2 (auto->CS depth fallback): if the bar/fast route hit its depth wall and
     # auto rerouted to Chouhy-Solotar, drop the abandoned partial bar worked steps so the
@@ -139,10 +147,17 @@ def write_trace(events, table, algebra, kind, top, references=(), out_dir=None):
     title = "%s of %s" % (kind, repr(algebra).splitlines()[0])
     # The JSON machine record (Plan 34): the complete event stream, deterministic and
     # schema-versioned. A pure function of the events, byte-identical for identical input.
+    # encoding="utf-8" EXPLICITLY on every artifact write: Path.write_text defaults
+    # to the LOCALE codec, so on Windows (cp1252) the report's em dashes were written
+    # as cp1252 bytes and could not be read back as UTF-8 -- the whole Windows CI
+    # matrix failed on it. The readers all specify utf-8; the writers must too.
     (out / (stem + ".json")).write_text(
-        render_json(events, title=title, references=references, algebra=algebra))
+        render_json(events, title=title, references=references, algebra=algebra),
+        encoding="utf-8")
     html = out / (stem + ".html")
-    html.write_text(render_html(events, title=title, references=references, algebra=algebra))
+    html.write_text(render_html(events, title=title, references=references,
+                                algebra=algebra, results=results, modules=modules),
+                    encoding="utf-8")
     print("Worked steps: %s (self-contained HTML, no JavaScript; pairs with the "
           "JSON record)" % _rel(html))
     return str(html)

@@ -242,6 +242,20 @@ def _dv_latex(dimvec):
     return "(" + ",\\, ".join(str(d[k]) for k in d) + ")" if d else "()"
 
 
+def _homdim_latex(op, value):
+    """Display latex for a homological-dimension block (``pd``/``id``), mirroring
+    ``quiverlab.hpc.spec._homdim_latex``. An UNRESOLVED probe is not a proof of
+    infinity -- the resolution merely did not terminate by ``_PD_BOUND`` -- so it
+    states the certified lower bound, exactly as ``global_dimension`` does."""
+    if value is None:
+        return r"\operatorname{%s} M > %d" % (op, _PD_BOUND)
+    return r"\operatorname{%s} M = %d" % (op, value)
+
+
+_HOMDIM_UNRESOLVED = ("certified lower bound; the resolution did not terminate "
+                      "within the probed depth %d" % _PD_BOUND)
+
+
 def _mod_view(m):
     return {"dimvec": _dv(m.dimension_vector()), "dim": m.dim}
 
@@ -315,8 +329,11 @@ def _differential_blocks(res, n_terms):
 
 
 def _summand_view(mod, mult):
-    return {"dim_vector": _dv(mod.dimension_vector()), "multiplicity": int(mult),
-            "indecomposable": True}
+    """One indecomposable summand: dimension vector, multiplicity, and either a
+    STANDARD name (S_v / P_v / I_v) or its full per-arrow matrices (Marco
+    2026-07-29). Same library serializer as the server tier -- no drift."""
+    from quiverlab.modules.qpa_module import summand_blocks
+    return summand_blocks(mod, mult)
 
 
 def _decompose_engine():
@@ -349,6 +366,43 @@ def _input_certificate(M):
         return {}
 
 
+def _ar_translate(mod, kind, name):
+    """One AR translate as a self-contained display payload: the symbol, its
+    dimension-vector latex, the FULL representation ({dims, maps}) and the input's
+    indecomposability certificate. Mirrors ``quiverlab.hpc.spec._ar_translate`` so
+    the two runners ship the same shape."""
+    t = mod.tau() if kind == "tau" else mod.tau_minus()
+    sym = (r"\tau %s" if kind == "tau" else r"\tau^{-} %s") % name
+    latex = ((sym + " = 0") if t.dim == 0
+             else (r"\underline{\dim}\, " + sym + " = "
+                   + _dv_latex(t.dimension_vector())))
+    out = {"name": name, "side": t.side, "is_zero": t.dim == 0,
+           "latex": latex, **_mod_view(t)}
+    if t.dim > 0:
+        out["repr"] = _mod_repr(t)
+    out.update(_input_certificate(mod))
+    return out
+
+
+def _target_translates(A, kind):
+    """The AR translates of the SECOND module(s) N the request names (the Ext/Tor
+    argument), so a tau block covers every module in play, with full matrices
+    (Marco, 2026-07-29). A loud refusal on one target becomes an honest error entry
+    -- tau M is already computed and stays valid."""
+    out = []
+    for role, spec in (("ext_target", _state.get("ext_target")),
+                       ("tor_target", _tor_target_spec())):
+        if not isinstance(spec, dict):
+            continue
+        try:
+            entry = _ar_translate(_build_module(A, spec, "N"), kind, "N")
+        except (quiverlab.QuiverlabError, RequestError) as exc:
+            entry = {"name": "N", "error": str(exc)}
+        entry["role"] = role
+        out.append(entry)
+    return out
+
+
 def _module_block(name, top):
     """Dispatch one module compute kind against the built module(s). Blocks carry
     a `latex` display and `citations`, like the algebra invariants."""
@@ -364,17 +418,17 @@ def _module_block(name, top):
                 "radical": _mod_repr(M.radical()), "top": _mod_repr(M.top()),
                 "socle": _mod_repr(M.socle())}
     if name in ("tau", "tau_minus"):
-        t = M.tau() if name == "tau" else M.tau_minus()
-        sym = r"\tau M" if name == "tau" else r"\tau^{-} M"
-        latex = (sym + " = 0") if t.dim == 0 else (r"\underline{\dim}\, " + sym
-                                                   + " = " + _dv_latex(t.dimension_vector()))
-        block = {"kind": name, "side": t.side, "is_zero": t.dim == 0,
-                 "citations": cites, "latex": latex, **_mod_view(t)}
-        if t.dim > 0:
-            # full representation ({dims, maps}) -- mirrors the hpc spec core so
-            # both dispatches ship the AR translate's per-arrow matrices.
-            block["repr"] = _mod_repr(t)
-        block.update(_input_certificate(M))       # Marco #1: certify the input M
+        # The translate ships as a full representation ({dims, maps}) -- mirrors the
+        # hpc spec core, so both dispatches carry the AR translate's per-arrow
+        # matrices -- together with the input certificate (Marco #1).
+        entry = _ar_translate(M, name, "M")
+        entry.pop("name", None)
+        block = {"kind": name, "citations": cites, **entry}
+        # ... and the same for the SECOND module N when the request names one
+        # (Marco, 2026-07-29): a tau block covers every module in the request.
+        targets = _target_translates(A, name)
+        if targets:
+            block["targets"] = targets
         return block
     if name == "decompose":
         eng = _decompose_engine()
@@ -426,11 +480,13 @@ def _module_block(name, top):
     if name == "projective_dimension":
         pd = M.projective_resolution(_PD_BOUND).pd()
         return {"kind": name, "value": pd, "finite": pd is not None, "citations": cites,
-                "latex": r"\operatorname{pd} M = " + (str(pd) if pd is not None else r"\infty")}
+                "bound": _PD_BOUND, "latex": _homdim_latex("pd", pd),
+                **({} if pd is not None else {"note": _HOMDIM_UNRESOLVED})}
     if name == "injective_dimension":
         idim = M.injective_dimension(bound=_PD_BOUND)
         return {"kind": name, "value": idim, "finite": idim is not None, "citations": cites,
-                "latex": r"\operatorname{id} M = " + (str(idim) if idim is not None else r"\infty")}
+                "bound": _PD_BOUND, "latex": _homdim_latex("id", idim),
+                **({} if idim is not None else {"note": _HOMDIM_UNRESOLVED})}
     raise RequestError("unknown module invariant %r" % (name,))
 
 
@@ -531,16 +587,50 @@ def compute_one(spec):
     return json.dumps(out)
 
 
+def _named_modules():
+    """The modules the request named, as ``(label, Module)`` for the report's "The
+    modules" section (mirrors ``quiverlab.hpc.spec._named``). Best-effort: a module
+    that no longer builds is skipped -- the report describes, it does not verify."""
+    A = _state.get("algebra")
+    if A is None:
+        return []
+    specs = [("M", _state.get("module")), ("N", _state.get("ext_target")),
+             ("N", _tor_target_spec())]
+    named, seen_n = [], 0
+    for label, mspec in specs:
+        if not isinstance(mspec, dict):
+            continue
+        if label == "N":
+            seen_n += 1
+        try:
+            named.append((label, _build_module(A, mspec, label)))
+        except Exception:
+            continue
+    if seen_n > 1:                        # both an Ext and a Tor target: tell them apart
+        roles = iter(("N (Ext target)", "N (Tor target)"))
+        named = [(next(roles) if lbl == "N" else lbl, m) for lbl, m in named]
+    return named
+
+
 def trace_html():
-    """The worked-steps report as an HTML string ('' when nothing was traced)."""
+    """The worked-steps report as an HTML string.
+
+    Carries the session's COMPUTED RESULT BLOCKS as well as the worked steps, so the
+    saved report is everything the page showed (Marco 2026-07-29) -- and is therefore
+    produced even when nothing recorded worked steps (Cartan + centre, say).
+
+    '' when the request did not ask for a report (``artifacts.pdf``), or when there
+    is nothing at all to report."""
     events = _state["events"] or []
-    if not events:
+    results = _state["results"] or []
+    if not events and not (results and _wants_trace()):
         return ""
     from quiverlab.trace.provenance import references_for, resolve_references
     from quiverlab.trace.render_html import render_html
     title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
     return render_html(list(events), title=title, algebra=_state["algebra"],
-                       references=resolve_references(references_for(events)))
+                       references=resolve_references(references_for(events)),
+                       results=results, modules=_named_modules())
 
 
 def trace_json():

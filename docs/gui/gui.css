@@ -47,6 +47,21 @@
   var(--md-default-fg-color--lightest); padding: 2px 10px; text-align: center; }
 #qlgui-results .qlgui-cites { font-size: .62rem;
   color: var(--md-default-fg-color--light); margin-top: 4px; }
+/* Matrices show COMPLETE, never behind a scrollbar (Marco 2026-07-29): the box
+   clips nothing -- gui.js's fitMath() shrinks an over-wide matrix to the column
+   width instead, so the page body never scrolls sideways either. */
+#qlgui-results .qlgui-fit { display: block; overflow: visible; max-width: 100%; }
+#qlgui-results .qlgui-fit > * { display: inline-block; transform-origin: left top; }
+/* An indexed matrix grid: white cells on a light-grey rule, row/column indices in
+   grey headers, so an entry can be read off by position (Marco 2026-07-29). */
+#qlgui-results table.qlgui-matrix { border-collapse: collapse; margin: 4px 0 10px;
+  font-size: .72rem; font-variant-numeric: tabular-nums; }
+#qlgui-results table.qlgui-matrix td,
+#qlgui-results table.qlgui-matrix th { border: 1px solid
+  var(--md-default-fg-color--lightest, #d0d0d0); padding: 2px 9px; text-align: right; }
+#qlgui-results table.qlgui-matrix th { background: var(--md-code-bg-color, #f0f0f0);
+  color: var(--md-default-fg-color--light); font-weight: normal; text-align: center; }
+#qlgui-results table.qlgui-matrix th.qlgui-corner { background: transparent; }
 [data-md-color-scheme="slate"] #qlgui-canvas .sel circle,
 [data-md-color-scheme="slate"] #qlgui-canvas .sel path { stroke: #ef5350; }
 [data-md-color-scheme="slate"] #qlgui-status.ok  { color: #81c784; }

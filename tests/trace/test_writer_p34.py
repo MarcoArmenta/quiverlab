@@ -7,6 +7,7 @@ report's print-readiness (print CSS, typeset MathML, self-containment)."""
 from quiverlab import truncated_polynomial, CC
 from quiverlab.trace.recorder import Trace
 from quiverlab.trace.render_html import render_html
+from tests.trace._matrix_grid import grids, has_grid, grid_indices
 
 
 def _small_events():
@@ -34,7 +35,7 @@ def test_html_report_is_print_ready_and_typeset():
     assert "@media print" in html and "@page" in html
     assert "break-inside" in html
     # math is typeset as MathML (not raw source dumped as text)
-    assert "<math" in html and "<mtable>" in html
+    assert "<math" in html and grids(html)
     assert 'encoding="application/x-tex"' in html          # source kept for copy/paste
     # the old apology is gone; and so is the print-to-PDF suggestion -- the
     # deliverables are HTML + JSON ONLY (Marco 2026-07-28), stated up front.
@@ -54,8 +55,8 @@ def test_wide_differential_renders_full_matrix_in_html():
     no page bound, so nothing is elided or scaled away)."""
     _A, ev = _wide_events()
     html = render_html(ev, title="HH")
-    assert r"\begin{pmatrix}" in html
-    assert "<mtable>" in html
+    got = grids(html)
+    assert got and max(len(r) for g in got for r in g) >= 11   # every column present
 
 
 def test_render_html_is_byte_deterministic():

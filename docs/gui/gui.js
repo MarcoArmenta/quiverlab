@@ -886,12 +886,11 @@
   // VECTOR per object (the redundant total-dim column is gone) PLUS each arrow's
   // exact action matrix, typeset like the other matrix blocks.
 
-  // Matrices are the COMPLETE human record (Plan 34, Marco): shown IN FULL, wrapped in
-  // a horizontally-scrollable container (mathScroll) so the page body never scrolls
-  // sideways -- NOT elided at a small size. MAT_BACKSTOP_CELLS is only a SANITY cap
-  // mirroring the trace recorder's record-time memory backstop: a pathological/corrupt
-  // payload past it is stated by shape instead of hanging the browser. One constant per
-  // file (app.js has the same one, same comment).
+  // Matrices are the COMPLETE human record (Plan 34, Marco): shown IN FULL and never
+  // elided at a small size. MAT_BACKSTOP_CELLS is only a SANITY cap mirroring the
+  // trace recorder's record-time memory backstop: a pathological/corrupt payload past
+  // it is stated by shape instead of hanging the browser. One constant per file
+  // (app.js has the same one, same comment).
   var MAT_BACKSTOP_CELLS = 250000;
   function matTooBig(mat) {
     var rows = (mat || []).length, cols = rows ? (mat[0] || []).length : 0;
@@ -908,17 +907,67 @@
     }).join(" \\\\ ");
     return "\\begin{pmatrix} " + body + " \\end{pmatrix}";
   }
-  // A matrix wrapped in a horizontally-scrollable inline box (Plan 34, Marco): the
-  // full matrix scrolls INSIDE this box, so a wide differential never makes the page
-  // body scroll sideways.
-  function mathScroll(latex) {
-    var box = h("span");
-    box.style.display = "inline-block";
-    box.style.maxWidth = "100%";
-    box.style.overflowX = "auto";
-    box.style.verticalAlign = "middle";
+  // A matrix shown COMPLETE, with NO scrollbar (Marco, 2026-07-29): the box carries
+  // the class the post-typeset `fitMath` pass measures, and a matrix wider than the
+  // column is SHRUNK to fit (transform: scale) rather than clipped behind a scroll
+  // bar. Nothing is ever hidden -- worst case the glyphs get smaller.
+  function mathFit(latex) {
+    var box = h("span", { "class": "qlgui-fit" });
     box.appendChild(h("span", { "class": "arithmatex", text: "\\(" + latex + "\\)" }));
     return box;
+  }
+  // A matrix as an INDEXED GRID (Marco 2026-07-29): a header row of column indices,
+  // a header column of row indices, and a light rule between cells, so an entry can
+  // be read off by position. 1-based, the mathematician's convention. Entries are
+  // shown verbatim (exact ints / fraction strings), never reformatted.
+  function matrixGrid(mat) {
+    mat = mat || [];
+    var ncols = mat.length ? (mat[0] || []).length : 0;
+    if (!mat.length || !ncols) {
+      return h("p", { "class": "arithmatex", text: "\\( 0 \\)" });
+    }
+    if (matTooBig(mat)) {                   // sanity backstop only (never normal use)
+      return h("p", { "class": "qlgui-cites",
+        text: mat.length + "\u00d7" + ncols + " matrix beyond the display backstop" });
+    }
+    var head = h("tr");
+    head.appendChild(h("th", { "class": "qlgui-corner", text: "" }));
+    for (var j = 0; j < ncols; j++) head.appendChild(h("th", { text: String(j + 1) }));
+    var tbl = h("table", { "class": "qlgui-matrix" }, head);
+    mat.forEach(function (row, i) {
+      var r = h("tr");
+      r.appendChild(h("th", { text: String(i + 1) }));
+      (row || []).forEach(function (x) { r.appendChild(h("td", { text: String(x) })); });
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
+  // Shrink-to-fit every .qlgui-fit box whose typeset content overflows its column.
+  // Called after MathJax/KaTeX finishes; scale is shrink-ONLY (never magnifies), and
+  // the wrapper's height is corrected so the scaled box does not overlap its
+  // neighbours. Idempotent: the measurement reads the UNSCALED width each time.
+  function fitMath() {
+    var boxes = el.results.querySelectorAll(".qlgui-fit");
+    for (var i = 0; i < boxes.length; i++) {
+      var box = boxes[i], inner = box.firstChild;
+      if (!inner) continue;
+      inner.style.transform = "";
+      inner.style.display = "inline-block";
+      inner.style.transformOrigin = "left top";
+      var avail = box.parentNode ? box.parentNode.clientWidth : 0;
+      var want = inner.scrollWidth;
+      if (!avail || !want || want <= avail) { box.style.height = ""; continue; }
+      var k = avail / want;
+      inner.style.transform = "scale(" + k + ")";
+      box.style.height = Math.ceil(inner.offsetHeight * k) + "px";
+    }
+  }
+  // A matrix is EXACTLY zero -- its arrow carries no information, so the display
+  // omits it and names it in one line instead (Marco, 2026-07-29).
+  function matIsZero(mat) {
+    return (mat || []).every(function (row) {
+      return (row || []).every(function (x) { return String(x) === "0"; });
+    });
   }
   // A pre-Plan-34 cached rad/top/soc lacked the per-view {dims, maps} (MINOR-6); an
   // extension-field module carries non-re-enterable entries (MAJOR-4). Pure predicates.
@@ -944,18 +993,40 @@
     });
     return tbl;
   }
-  function appendRepMaps(div, label, view) {   // one arrow-matrix line per arrow
+  // One arrow-matrix line per arrow that acts NON-trivially. An arrow acting as the
+  // zero map carries no information, so its matrix is not printed (Marco,
+  // 2026-07-29) -- the arrows are named in a single trailing line so the reader can
+  // still tell "acts as zero" apart from "not an arrow of the quiver".
+  function appendRepMaps(div, label, view) {
     var maps = (view && view.maps) || {}, arrows = Object.keys(maps);
-    if (!arrows.length) {
+    var zero = arrows.filter(function (a) { return matIsZero(maps[a]); });
+    var live = arrows.filter(function (a) { return !matIsZero(maps[a]); });
+    if (!arrows.length || !live.length) {
       div.appendChild(h("p", { "class": "qlgui-cites",
         text: label + ": every arrow acts as zero" }));
       return;
     }
-    arrows.forEach(function (a) {
-      div.appendChild(h("p", {}, document.createTextNode(label + ", arrow " + a + ": "),
-        mathScroll(matLatex(maps[a]))));   // full matrix, horizontally-scrollable box
+    live.forEach(function (a) {
+      div.appendChild(h("p", { text: label + ", arrow " + a + ":" }));
+      div.appendChild(matrixGrid(maps[a]));       // indexed grid, shown complete
     });
+    if (zero.length) {
+      div.appendChild(h("p", { "class": "qlgui-cites",
+        text: label + ": arrow" + (zero.length > 1 ? "s " : " ") + zero.join(", ")
+              + " act" + (zero.length > 1 ? "" : "s") + " as zero" }));
+    }
   }
+  // pd/id display for a block that predates the runners' `latex` key (an older
+  // cached result). Mirrors quiverlab.hpc.spec._homdim_latex: an unresolved probe
+  // states the certified lower bound, never a bare ∞ it did not prove.
+  function homdimLatex(name, b) {
+    var op = name === "projective_dimension" ? "pd" : "id";
+    if (b.value == null) {
+      return "\\operatorname{" + op + "} M > " + (b.bound != null ? b.bound : 32);
+    }
+    return "\\operatorname{" + op + "} M = " + b.value;
+  }
+
   // Plan 30 (Marco #3): term | ⊕-decomposition. The "# summands" and dim-vector
   // columns are gone from the RENDERING; the raw `betti`/`terms` fields stay in the
   // block JSON for backward-compat. `b.summands[n]` is the LaTeX P_1^2 ⊕ P_3.
@@ -979,6 +1050,15 @@
   }
 
   // Krull–Schmidt summand table: summand | multiplicity | dim vector (Plan 30).
+  // A summand recognised as a STANDARD indecomposable is NAMED S_v / P_v / I_v and
+  // needs no matrices; any other one is shown in full below the table, since its
+  // dimension vector does not determine it (Marco 2026-07-29).
+  var STD_SYM = { simple: "S", projective: "P", injective: "I" };
+  function summandName(s, i) {
+    var std = s && s.standard;
+    if (std && STD_SYM[std.kind]) return STD_SYM[std.kind] + "_" + std.vertex;
+    return "M_" + i;
+  }
   function decompTable(summands) {
     var head = h("tr");
     ["summand", "multiplicity", "dim vector"].forEach(function (t) {
@@ -987,28 +1067,88 @@
     var tbl = h("table", {}, head);
     (summands || []).forEach(function (s, i) {
       var r = h("tr");
-      r.appendChild(h("td", { text: "M_" + (i + 1) }));
+      r.appendChild(h("td", { text: summandName(s, i + 1) }));
       r.appendChild(h("td", { text: String(s.multiplicity) }));
       r.appendChild(h("td", { text: dvText(s.dim_vector) }));
       tbl.appendChild(r);
     });
     return tbl;
   }
+  function appendSummandMaps(div, summands) {
+    (summands || []).forEach(function (s, i) {
+      if (s.standard || !s.maps) return;
+      appendRepMaps(div, summandName(s, i + 1), s);
+    });
+  }
 
-  // The AR-translate input certificate (Marco #1): indecomposable, or M's
+  // The differentials of a projective/injective resolution, as full matrices
+  // (Marco, 2026-07-29). A differential EQUAL to one already shown is not repeated:
+  // the line references the earlier degree instead, which is the whole point in a
+  // periodic resolution where every second map is the same. `d.elided` (the
+  // recorder's memory backstop) states the shape honestly.
+  function appendDifferentials(div, b, proj) {
+    var diffs = b.differentials;
+    if (!diffs || !diffs.length) return;
+    div.appendChild(h("p", { text: proj
+      ? "differentials (rows: target basis, columns: source basis; d_0 = ε: Q_0 → M)"
+      : "differentials (rows: target basis, columns: source basis; d^0 = ι: M → E^0)" }));
+    var seen = [];                     // [{key, label}] in first-seen order
+    diffs.forEach(function (d, n) {
+      var sym = proj ? ("d_{" + n + "}") : ("d^{" + n + "}");
+      var label = (proj ? "d_" : "d^") + n;
+      if (d.elided || !d.matrix) {
+        div.appendChild(h("p", { text: label + ": " + d.rows + "×" + d.cols
+          + " matrix (too large to display; it is complete in the report data)" }));
+        return;
+      }
+      var key = JSON.stringify(d.matrix);
+      var prior = null;
+      for (var i = 0; i < seen.length; i++) {
+        if (seen[i].key === key) { prior = seen[i].label; break; }
+      }
+      if (prior !== null) {
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: label + " = " + prior + " (same matrix; not repeated)" }));
+        return;
+      }
+      seen.push({ key: key, label: label });
+      div.appendChild(h("p", { "class": "arithmatex", text: "\\(" + sym + " =\\)" }));
+      div.appendChild(matrixGrid(d.matrix));
+    });
+  }
+
+  // The AR-translate input certificate (Marco #1): indecomposable, or the input's
   // Krull–Schmidt decomposition + the additivity note. No-op when the block
   // carries no certificate (the decompose engine was unavailable).
   var TAU_NOTES = { "mod.tau_additive": "τ computed summand-wise (τ is additive)" };
-  function appendInputCert(div, b) {
+  function appendInputCert(div, b, name) {
+    name = name || "M";
     if (b.indecomposable === true) {
-      div.appendChild(h("p", { "class": "qlgui-hint", text: "input M is indecomposable" }));
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "input " + name + " is indecomposable" }));
     } else if (b.decomposition) {
       var parts = b.decomposition.map(function (s) {
         return dvText(s.dim_vector) + (s.multiplicity > 1 ? "^" + s.multiplicity : "");
       }).join("  ⊕  ");
       div.appendChild(h("p", { "class": "qlgui-hint",
-        text: "input M ≅ " + parts + " — " + (TAU_NOTES[b.note_key] || "") }));
+        text: "input " + name + " ≅ " + parts + " — " + (TAU_NOTES[b.note_key] || "") }));
     }
+  }
+
+  // One AR translate: its dimension-vector line, the FULL per-arrow action matrices
+  // of the translate itself, and the input's indecomposability certificate. Used for
+  // M and, when the request names a second module, for N too (Marco, 2026-07-29).
+  var TARGET_ROLE = { ext_target: "the Ext target", tor_target: "the Tor target" };
+  function appendTranslate(div, t, kind, name) {
+    var sym = (kind === "tau" ? "τ" : "τ⁻") + name;
+    if (t.error) {
+      div.appendChild(h("p", { "class": "qlgui-error",
+        text: sym + " is unavailable: " + t.error }));
+      return;
+    }
+    div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + t.latex + " \\]" }));
+    if (t.repr) appendRepMaps(div, sym, t.repr);
+    appendInputCert(div, t, name);
   }
 
   function renderBlock(res) {
@@ -1028,20 +1168,29 @@
       div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
     } else if (name === "cartan") {
       div.appendChild(h("p", { text: "Cartan matrix:" }));
-      // className EXACTLY "arithmatex": the site's MathJax config matches
-      // class patterns against the full className string, so a combined
-      // "qlgui-block arithmatex" is silently skipped (found live).
-      div.appendChild(h("p", { "class": "arithmatex", text: "\\[ C = " + b.latex + " \\]" }));
+      div.appendChild(matrixGrid(b.matrix));
     } else if (name === "coxeter_polynomial") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\[ \\chi(t) = " + b.latex + " \\]" }));
     } else if (name === "global_dimension") {
       div.appendChild(h("p", { text: b.text }));
     } else if (name === "center") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
-    } else if (name === "dimension_vector" || name === "tau" || name === "tau_minus" ||
-               name === "projective_dimension" || name === "injective_dimension") {
-      div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
-      if (name === "tau" || name === "tau_minus") appendInputCert(div, b);
+    } else if (name === "tau" || name === "tau_minus") {
+      // M's translate WITH its full per-arrow matrices, then the same for the
+      // second module N when the request named one (Marco, 2026-07-29).
+      appendTranslate(div, b, name, "M");
+      (b.targets || []).forEach(function (t) {
+        var role = TARGET_ROLE[t.role];
+        div.appendChild(h("p", { text: role ? "and for N, " + role + ":" : "and for N:" }));
+        appendTranslate(div, t, name, "N");
+      });
+    } else if (name === "dimension_vector" || name === "projective_dimension" ||
+               name === "injective_dimension") {
+      // A pre-2026-07-29 cached pd/id block carries no `latex` (that missing key is
+      // exactly what typeset as a literal "undefined"); compose it from the value.
+      div.appendChild(h("p", { "class": "arithmatex",
+        text: "\\[ " + (b.latex || homdimLatex(name, b)) + " \\]" }));
+      if (b.note) div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
     } else if (name === "rad_top_soc") {
       div.appendChild(h("p", { text: "radical / top / socle:" }));
       if (radTopSocStale(b)) {              // MINOR-6: honest "recompute", never a fake zero
@@ -1062,6 +1211,7 @@
       div.appendChild(h("p", { text: "Krull–Schmidt decomposition — " + b.iso_classes +
         " indecomposable summand(s):" }));
       div.appendChild(decompTable(b.summands));
+      appendSummandMaps(div, b.summands);
     } else if (name === "ext") {
       div.appendChild(h("p", { text: "Ext to the target module — dim vector " + dvText(b.target.dimvec) + ":" }));
       div.appendChild(degreeTable("dim Ext^n", b.dims));
@@ -1075,6 +1225,7 @@
       var d = proj ? b.pd : b.injective_dimension;
       div.appendChild(h("p", { text: (proj ? "pd = " : "id = ") +
         (d == null ? "∞ (beyond the probed length)" : String(d)) }));
+      appendDifferentials(div, b, proj);
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -1082,7 +1233,11 @@
       // Full-page sweep, NOT typesetPromise([div]): with explicit roots the
       // walker never consults the root's own class, so the site's
       // ignoreHtmlClass ".*|" config silently skips the block (found live).
-      window.MathJax.typesetPromise();
+      // fitMath runs AFTER typesetting -- it measures the rendered width.
+      var done = window.MathJax.typesetPromise();
+      if (done && done.then) done.then(fitMath); else fitMath();
+    } else {
+      fitMath();
     }
   }
 
@@ -1107,6 +1262,13 @@
     startWorker();                             // sets its own transient status…
     setStatus("cancelled — engine reloading…"); // …so the acknowledgment must land last
     render();                                   // engineReady just went false — disable Compute
+  });
+  // The shrink-to-fit factor depends on the column width, so re-measure on resize
+  // (debounced) -- a widened window must give the matrices their full size back.
+  var fitTimer = null;
+  window.addEventListener("resize", function () {
+    if (fitTimer) clearTimeout(fitTimer);
+    fitTimer = setTimeout(fitMath, 150);
   });
   el.relations.addEventListener("input", scheduleProbe);
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"], el.cartan,

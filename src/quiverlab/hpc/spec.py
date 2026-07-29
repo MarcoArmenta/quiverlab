@@ -726,10 +726,21 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
             A = build_algebra(req.algebra)
             M = (_build_module(A, req.module, "M")
                  if any(it.kind in MODULE_KINDS for it in items) else None)
-            N = (_build_module(A, req.ext_target, "N")
-                 if any(it.kind == "ext" for it in items) else None)
-            T = (_build_module(A, req.tor_target, "N")
-                 if any(it.kind == "tor" for it in items) else None)
+            # ext/tor CONSUME their target, so those items build it unconditionally
+            # (a missing block must still raise loudly there). A tau/tau^- request
+            # additionally DISPLAYS the second module's translate (Marco,
+            # 2026-07-29), which is opportunistic: built only when the request
+            # actually supplies the target.
+            def _target(spec, consumed_by):
+                if any(it.kind == consumed_by for it in items):
+                    return _build_module(A, spec, "N")
+                if spec is not None and any(it.kind in ("tau", "tau_minus")
+                                            for it in items):
+                    return _build_module(A, spec, "N")
+                return None
+
+            N = _target(req.ext_target, "ext")
+            T = _target(req.tor_target, "tor")
             results: dict = {}
             per_kind: dict = {}
             for i, item in enumerate(items):
@@ -810,17 +821,30 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     if req.artifacts.pdf and hh_trace is not None:
         table, kind, top = hh_trace
         meta["pdf"] = _write_worked_steps(events, table, A, kind, top,
-                                          used_keys, artifact_dir, meta)
+                                          used_keys, artifact_dir, meta,
+                                          results=results, modules=_named(M, N, T))
         payload = json.dumps(result, indent=2, default=str)
     elif req.artifacts.pdf and module_trace is not None:
         m_kind, m_top, m_M, m_N = module_trace
         meta["pdf"] = _write_module_worked_steps(A, m_kind, m_top, m_M, m_N,
-                                                 used_keys, artifact_dir, meta)
+                                                 used_keys, artifact_dir, meta,
+                                                 results=results,
+                                                 modules=_named(M, N, T))
+        payload = json.dumps(result, indent=2, default=str)
+    elif req.artifacts.pdf:
+        # No traceable computation was requested (say: Cartan + centre only) -- the
+        # report is still written, carrying the example and every computed result.
+        # Without this the session's answers had nowhere to be saved (Marco
+        # 2026-07-29).
+        meta["pdf"] = _write_results_only(A, used_keys, artifact_dir, results,
+                                          modules=_named(M, N, T))
         payload = json.dumps(result, indent=2, default=str)
     if write_result:
-        (artifact_dir / "result.json").write_text(payload)
+        # utf-8 explicitly: the default is the LOCALE codec (cp1252 on
+        # Windows), which mangles any non-ASCII entry or citation.
+        (artifact_dir / "result.json").write_text(payload, encoding="utf-8")
     if tikz_src is not None:
-        (artifact_dir / "tikz.tex").write_text(tikz_src)
+        (artifact_dir / "tikz.tex").write_text(tikz_src, encoding="utf-8")
     return result
 
 
@@ -894,17 +918,49 @@ def _promote_trace_artifacts(produced, artifact_dir) -> str:
     return _WORKED_STEPS_OK
 
 
+def _named(M, N, T) -> list:
+    """The modules the request named, as ``(label, Module)`` for the report's "The
+    modules" section. ``N`` is the Ext target, ``T`` the Tor target; when both are
+    present they are labelled apart so the reader knows which is which."""
+    out = [("M", M)] if M is not None else []
+    if N is not None and T is not None:
+        out += [("N (Ext target)", N), ("N (Tor target)", T)]
+    elif N is not None:
+        out.append(("N", N))
+    elif T is not None:
+        out.append(("N", T))
+    return out
+
+
 def _write_worked_steps(events, table, A, kind, top, used_keys, artifact_dir,
-                        meta=None) -> str:
+                        meta=None, results=None, modules=()) -> str:
     from quiverlab.trace.writer import write_trace
     produced = Path(write_trace(list(events), table, algebra=A, kind=kind, top=top,
                                 references=_trace_references(used_keys, events),
-                                out_dir=str(artifact_dir)))
+                                out_dir=str(artifact_dir), results=results,
+                                modules=modules))
     return _promote_trace_artifacts(produced, artifact_dir)
 
 
+def _write_results_only(A, used_keys, artifact_dir, results, modules=()) -> str:
+    """The worked-steps bundle for a request with NO traceable computation: the
+    example + every computed result block (Marco 2026-07-29 -- the report must save
+    what the session computed, whatever was asked for). Best-effort, exactly like the
+    module bundle: a rendering failure never loses the already-computed JSON."""
+    from quiverlab.trace.writer import write_trace
+    try:
+        produced = Path(write_trace([], None, algebra=A, kind="results", top=0,
+                                    references=_trace_references(used_keys, []),
+                                    out_dir=str(artifact_dir), results=results,
+                                    modules=modules))
+        return _promote_trace_artifacts(produced, artifact_dir)
+    except Exception:
+        _log.exception("results-only worked-steps bundle failed")
+        return _WORKED_STEPS_NO_HH
+
+
 def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir,
-                               meta=None) -> str:
+                               meta=None, results=None, modules=()) -> str:
     """Render the worked-steps bundle (HTML + JSON) for a MODULE computation via
     the Plan-30 Part-C trace hooks (``quiverlab.trace.modules``), mirroring the HH
     bundle. Best-effort: a trace failure never loses the already-computed JSON
@@ -923,7 +979,8 @@ def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir,
         produced = Path(write_trace(list(events), None, algebra=A, kind=kind,
                                     top=(top if top is not None else 0),
                                     references=_trace_references(used_keys, events),
-                                    out_dir=str(artifact_dir)))
+                                    out_dir=str(artifact_dir), results=results,
+                                    modules=modules))
         return _promote_trace_artifacts(produced, artifact_dir)
     except Exception:
         _log.exception("module worked-steps bundle failed for kind=%s", kind)
@@ -1142,6 +1199,24 @@ def _dv_latex(dimvec) -> str:
     return "(" + ",\\, ".join(str(d[k]) for k in d) + ")" if d else "()"
 
 
+def _homdim_latex(op: str, value) -> str:
+    """Display latex for a homological dimension block (``pd``/``id``).
+
+    A finite value states the equality. An UNRESOLVED probe is not a proof of
+    infinity -- the resolution merely did not terminate by ``_PD_BOUND`` -- so it
+    states the certified lower bound ``> N``, the same honesty ``global_dimension``
+    already uses ("certified lower bound; not resolved within depth 32"). Without
+    this key the draw-page renderer typeset a literal "undefined" (Marco,
+    2026-07-29)."""
+    if value is None:
+        return r"\operatorname{%s} M > %d" % (op, _PD_BOUND)
+    return r"\operatorname{%s} M = %d" % (op, value)
+
+
+_HOMDIM_UNRESOLVED = ("certified lower bound; the resolution did not terminate "
+                      "within the probed depth %d" % _PD_BOUND)
+
+
 def _mod_view(m) -> dict:
     return {"dimvec": _dv(m.dimension_vector()), "dim": m.dim}
 
@@ -1212,9 +1287,13 @@ def _differential_blocks(res, n_terms) -> list:
 
 
 def _summand_view(mod, mult) -> dict:
-    """One indecomposable summand of a module: its dimension vector + multiplicity."""
-    return {"dim_vector": _dv(mod.dimension_vector()), "multiplicity": int(mult),
-            "indecomposable": True}
+    """One indecomposable summand: its dimension vector, multiplicity, and either a
+    STANDARD name (S_v / P_v / I_v) or its full per-arrow matrices -- a dimension
+    vector alone does not say which module a non-standard summand is (Marco
+    2026-07-29). Routed through the SAME library serializer as the Pyodide runner
+    (``quiverlab.modules.qpa_module.summand_blocks``) so the tiers cannot drift."""
+    from quiverlab.modules.qpa_module import summand_blocks
+    return summand_blocks(mod, mult)
 
 
 def _decompose(M):
@@ -1252,6 +1331,43 @@ def _input_certificate(M) -> dict:
         return {}
 
 
+def _ar_translate(mod, kind: str, name: str) -> dict:
+    """One AR translate as a self-contained display payload: the symbol, its
+    dimension-vector latex, the FULL representation ({dims, maps}) and the input's
+    indecomposability certificate. Shared by the ``M`` block and by the second
+    module's entries below, so both carry the same fields."""
+    t = mod.tau() if kind == "tau" else mod.tau_minus()
+    sym = (r"\tau %s" if kind == "tau" else r"\tau^{-} %s") % name
+    latex = ((sym + " = 0") if t.dim == 0
+             else (r"\underline{\dim}\, " + sym + " = "
+                   + _dv_latex(t.dimension_vector())))
+    out = {"name": name, "side": t.side, "is_zero": t.dim == 0,
+           "latex": latex, **_mod_view(t)}
+    if t.dim > 0:
+        out["repr"] = _mod_repr(t)
+    out.update(_input_certificate(mod))
+    return out
+
+
+def _target_translates(kind: str, targets) -> list:
+    """The AR translates of the SECOND module(s) N -- the Ext/Tor argument -- so a
+    tau block covers every module the request names, with full matrices (Marco,
+    2026-07-29). ``targets`` is a list of ``(role, module)``; an entry whose
+    translate refuses LOUDLY is reported as an honest error entry rather than
+    failing the whole block (tau M is already computed and valid)."""
+    out = []
+    for role, mod in targets:
+        if mod is None:
+            continue
+        try:
+            entry = _ar_translate(mod, kind, "N")
+        except qerr.QuiverlabError as exc:
+            entry = {"name": "N", "error": str(exc)}
+        entry["role"] = role
+        out.append(entry)
+    return out
+
+
 def _dispatch_module(A, item, M, N, T=None) -> dict:
     kind = item.kind
     if kind == "dimension_vector":
@@ -1268,21 +1384,20 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            "top": _mod_repr(M.top()),
                            "socle": _mod_repr(M.socle())}, kind)
     if kind in ("tau", "tau_minus"):
-        t = M.tau() if kind == "tau" else M.tau_minus()
-        # tau of a projective (dually tau^- of an injective) IS zero -- say so
-        # explicitly; renderers typeset block.latex (mirrors the Pyodide runner).
-        sym = r"\tau M" if kind == "tau" else r"\tau^{-} M"
-        latex = ((sym + " = 0") if t.dim == 0
-                 else (r"\underline{\dim}\, " + sym + " = "
-                       + _dv_latex(t.dimension_vector())))
-        block = {"kind": kind, "side": t.side, "is_zero": t.dim == 0,
-                 "latex": latex, **_mod_view(t)}
-        if t.dim > 0:
-            # the AR translate IS a module: ship it as a full representation
-            # ({dims, maps}, like rad/top/soc) so reports/GUIs can show the
-            # per-arrow action matrices (Marco, 2026-07-28).
-            block["repr"] = _mod_repr(t)
-        block.update(_input_certificate(M))
+        # tau of a projective (dually tau^- of an injective) IS zero -- the shared
+        # helper says so explicitly; renderers typeset block.latex (mirrors the
+        # Pyodide runner). The AR translate IS a module, so it ships as a full
+        # representation ({dims, maps}, like rad/top/soc) and reports/GUIs can show
+        # the per-arrow action matrices (Marco, 2026-07-28).
+        entry = _ar_translate(M, kind, "M")
+        entry.pop("name", None)
+        block = {"kind": kind, **entry}
+        # ... and the same for the SECOND module N when the request names one
+        # (Marco, 2026-07-29). Omitted entirely when there is no target, so a
+        # single-module request's block is byte-identical.
+        targets = _target_translates(kind, [("ext_target", N), ("tor_target", T)])
+        if targets:
+            block["targets"] = targets
         return _with_refs(block, kind)
     if kind == "decompose":
         eng = _decompose(M)
@@ -1337,11 +1452,17 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
     if kind == "projective_dimension":
         pd = M.projective_resolution(_PD_BOUND).pd()
         return _with_refs({"kind": "projective_dimension", "value": pd,
-                           "finite": pd is not None, "bound": _PD_BOUND}, kind)
+                           "finite": pd is not None, "bound": _PD_BOUND,
+                           "latex": _homdim_latex("pd", pd),
+                           **({} if pd is not None
+                              else {"note": _HOMDIM_UNRESOLVED})}, kind)
     if kind == "injective_dimension":
         idim = M.injective_dimension(bound=_PD_BOUND)
         return _with_refs({"kind": "injective_dimension", "value": idim,
-                           "finite": idim is not None, "bound": _PD_BOUND}, kind)
+                           "finite": idim is not None, "bound": _PD_BOUND,
+                           "latex": _homdim_latex("id", idim),
+                           **({} if idim is not None
+                              else {"note": _HOMDIM_UNRESOLVED})}, kind)
     raise ComputeError("SchemaError", f"unsupported module computation {kind!r}")
 
 

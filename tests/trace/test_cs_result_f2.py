@@ -26,6 +26,7 @@ from quiverlab.trace.render_text import render_text, derive_dims, _dims_kind
 from quiverlab.trace.render_html import render_html
 from quiverlab.trace.render_json import render_json
 from quiverlab.trace.events import RankStep, ResolutionTerm, Dispatch, ResultDims
+from tests.trace._result_table import has_result, result_dims
 
 
 def _write_html(events, table, algebra, kind, monkeypatch, tmp_path):
@@ -64,9 +65,9 @@ def test_rendered_result_equals_engine_dims_with_correct_variance(
 
     # And the shipped artifact (HTML + JSON) shows the engine's dims with that variance.
     html, obj = _write_html(ev, table, A, want_kind, monkeypatch, tmp_path)
-    for i, d in enumerate(table.dims):
-        assert r"%s{%d} = %d" % (want_kind, i, d) in html
-    assert wrong_kind + "{" not in html                       # never the swapped label
+    # The Result is a degree TABLE (Marco 2026-07-29), not one long equation.
+    assert has_result(html, want_kind, table.dims)
+    assert "dim %sn" % wrong_kind not in html                 # never the swapped label
     (rd,) = [e for e in obj["events"] if e["type"] == "ResultDims"]
     assert rd["dims"] == table.dims and rd["kind"] == want_kind
 
@@ -79,11 +80,10 @@ def test_quantumci_gf5_cohomology_headline_value(tmp_path, monkeypatch):
     table = A.hochschild_cohomology(3, engine="cs", trace=tr)
     assert table.dims == [4, 4, 5, 6] and table.kind == "HH^"
     html, obj = _write_html(list(tr), table, A, "HH^", monkeypatch, tmp_path)
-    for i, d in zip(range(4), [4, 4, 5, 6]):
-        assert r"HH^{%d} = %d" % (i, d) in html
+    assert has_result(html, "HH^", [4, 4, 5, 6])
     # the pre-fix wrong render must be gone, numbers AND label
-    for bad in ("HH_{1} = 8", "HH_{2} = 12", "HH_{3} = 16"):
-        assert bad not in html
+    assert "dim HH_n" not in html
+    assert result_dims(html) != [4, 8, 12, 16]
     txt = render_text(list(tr) + [ResultDims("HH^", [4, 4, 5, 6])], title="t")
     assert "Result: HH^0 = 4   HH^1 = 4   HH^2 = 5   HH^3 = 6" in txt
 
@@ -123,9 +123,10 @@ def test_fast_gfp_report_has_authoritative_result_and_honest_note(tmp_path, monk
     assert [type(e).__name__ for e in tr] == ["Dispatch"]
     html, obj = _write_html(list(tr), table, A, "HH^", monkeypatch, tmp_path)
     # ...yet the report has a Result line with the engine's dims + an HONEST note.
-    assert "<h2 id='result'>Result</h2>" in html
-    for i, d in enumerate(table.dims):
-        assert r"HH^{%d} = %d" % (i, d) in html
+    # The section is named for WHAT it holds -- "Result" said nothing, since every
+    # section of the page is a result (Marco 2026-07-29).
+    assert "<h2 id='result'>Hochschild cohomology</h2>" in html
+    assert has_result(html, "HH^", table.dims)
     assert "records no per-degree worked steps" in html
     (rd,) = [e for e in obj["events"] if e["type"] == "ResultDims"]
     assert rd["dims"] == table.dims and rd["note"]
@@ -173,8 +174,9 @@ def test_ext_then_tor_footer_shows_both_runs():
     assert "Result: Ext^0 = 1   Ext^1 = 0" in txt          # the Ext run (superscript)
     assert "Result: Tor_0 = 2   Tor_1 = 1" in txt          # the Tor run (subscript)
     html = render_html(ev, title="both")
-    assert r"\operatorname{Ext}^{0} = 1" in html
-    assert r"\operatorname{Tor}_{0} = 2" in html and r"\operatorname{Tor}_{1} = 1" in html
+    # Both runs, each as its own degree table (Marco 2026-07-29).
+    assert result_dims(html, "dim Ext^n") == [1, 0]
+    assert result_dims(html, "dim Tor_n") == [2, 1]
 
 
 # --------------------------------------------------------------------------- #

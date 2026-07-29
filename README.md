@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-2301_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-2423_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)

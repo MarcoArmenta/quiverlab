@@ -38,7 +38,7 @@ _TIME_PRED_FACTOR = 2
 def _vmhwm_bytes():
     """Peak resident set size in bytes (Linux /proc), or 0 if unavailable."""
     try:
-        with open("/proc/self/status") as f:
+        with open("/proc/self/status", encoding="utf-8") as f:
             for line in f:
                 if line.startswith("VmHWM:"):
                     return int(line.split()[1]) * 1024     # kB -> bytes
@@ -67,11 +67,11 @@ def _save_ckpt(ckpt_dir, payload):
     cur_latest = -1
     if os.path.exists(latest_path):
         try:
-            cur_latest = int(open(latest_path).read().strip())
+            cur_latest = int(open(latest_path, encoding="utf-8").read().strip())
         except (ValueError, OSError):
             cur_latest = -1
     if n >= cur_latest:                                      # monotonic: never regress
-        with open(latest_path, "w") as f:
+        with open(latest_path, "w", encoding="utf-8") as f:
             f.write(str(n))
     for old in sorted(int(fn[5:-4]) for fn in os.listdir(ckpt_dir)
                       if fn.startswith("ckpt_") and fn.endswith(".pkl")):
@@ -87,7 +87,7 @@ def _load_ckpt(ckpt_dir):
     latest = os.path.join(ckpt_dir, "latest.txt")
     if not os.path.exists(latest):
         return None
-    with open(latest) as f:
+    with open(latest, encoding="utf-8") as f:
         n = int(f.read().strip())
     for cand in (n, n - 1):                                  # tolerate a torn newest
         path = os.path.join(ckpt_dir, "ckpt_%d.pkl" % cand)

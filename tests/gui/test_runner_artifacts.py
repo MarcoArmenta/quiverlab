@@ -25,9 +25,17 @@ def test_trace_html_after_hh(runner):
     assert "<html" in html.lower() and "References" in html
 
 
-def test_trace_html_empty_without_hh(runner):
+def test_trace_html_carries_the_results_without_hh(runner):
+    """Marco 2026-07-29: the report saves everything the session computed, so a
+    request WITHOUT a traced computation still gets one -- the answers are the
+    point. It stays empty only when no report was asked for."""
     req = dict(KRONECKER_CC, compute=["cartan"])
     _run_all(runner, req)
+    html = runner.trace_html()
+    assert "Computed results" in html and "Cartan matrix" in html
+    req_no_report = dict(KRONECKER_CC, compute=["cartan"],
+                         artifacts={"pdf": False, "tikz": True})
+    _run_all(runner, req_no_report)
     assert runner.trace_html() == ""
 
 

@@ -17,6 +17,16 @@ def _require_admissible(rs):
                                  hint="Groebner completion did not certify confluence / a finite basis")
 
 
+def _corners(res, n):
+    """The degree-n generators' (source, target) vertices, one pair per generator.
+
+    The CS term is ``P_n = (+)_{s in S_n} A e_{o(s)} (x)_k e_{t(s)} A``, so this is
+    exactly the projective-bimodule decomposition of that term -- recorded so the
+    report can NAME the summands instead of quoting a generator count (Marco
+    2026-07-29). Display data only: no engine value depends on it."""
+    return [(ch.o, ch.t) for ch in res.ss.S(n)]
+
+
 def _emit_cohomology_trace(trace, res, dom, top, mats, ranks):
     """Record the CS COHOMOLOGY worked steps: one ResolutionTerm + one RankStep per
     cochain degree 0..top (Plan 34 fix -- the old ``_emit_resolution_trace`` recorded only
@@ -30,7 +40,8 @@ def _emit_cohomology_trace(trace, res, dom, top, mats, ranks):
     from quiverlab.trace.recorder import rankstep
     for n in range(top + 1):
         trace.append(ResolutionTerm(degree=n, n_generators=len(res.ss.S(n)),
-                                    collapsed_dim=res.dim_C(n, "coh")))
+                                    collapsed_dim=res.dim_C(n, "coh"),
+                                    corners=_corners(res, n)))
         # delta^n : C^n -> C^{n+1}, so dim_C(n+1) rows x dim_C(n) cols (matches mats[n]).
         trace.append(rankstep(n, "cochain", mats[n],
                               res.dim_C(n + 1, "coh"), res.dim_C(n, "coh"),
@@ -48,7 +59,8 @@ def _emit_homology_trace(trace, res, dom, top, bmats, ranks):
     from quiverlab.trace.recorder import rankstep
     for n in range(top + 1):
         trace.append(ResolutionTerm(degree=n, n_generators=len(res.ss.S(n)),
-                                    collapsed_dim=res.dim_C(n, "hom")))
+                                    collapsed_dim=res.dim_C(n, "hom"),
+                                    corners=_corners(res, n)))
     for i in range(top + 1):
         d = i + 1                                # b_d : C_d -> C_{d-1}
         trace.append(rankstep(d, "chain", bmats[i],

@@ -6,6 +6,7 @@ import pathlib
 from quiverlab import truncated_polynomial, CC
 from quiverlab.trace.recorder import Trace
 from quiverlab.trace import writer as W
+from tests.trace._matrix_grid import grids, has_grid, grid_indices
 from quiverlab.trace.render_html import render_html
 
 
@@ -39,9 +40,12 @@ def test_html_is_self_contained_no_js_tex_source():
     # math is TYPESET as MathML, with the LaTeX source preserved verbatim in an
     # x-tex <annotation> (self-contained, no JS) -- the display renders/prints
     # typeset AND the source stays available for copy/paste (Plan 34).
-    assert "<math" in html and "<mtable>" in html          # typeset display
+    assert "<math" in html                                  # typeset display
     assert 'encoding="application/x-tex"' in html           # embedded source
-    assert r"\begin{pmatrix}" in html and r"\operatorname{rank}" in html
+    # ...and every matrix is an INDEXED GRID, with its index row and column
+    assert grids(html) and r"\operatorname{rank}" in html
+    cols, _rows = grid_indices(html)
+    assert cols and cols == [str(i + 1) for i in range(len(cols))]
     assert "HH" in html and "Refkey2020" in html
 
 

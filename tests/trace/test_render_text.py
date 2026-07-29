@@ -7,6 +7,7 @@ import quiverlab
 from quiverlab import truncated_polynomial, CC
 from quiverlab.trace.recorder import Trace
 from quiverlab.trace.render_text import render_text, derive_dims
+from tests.trace._result_table import has_result
 from quiverlab.trace.events import RankStep
 
 GOLDEN = pathlib.Path(__file__).parent / "golden" / "hh_kx2.txt"
@@ -104,6 +105,6 @@ def test_verbose_homology_written_document_result_matches_engine(tmp_path, monke
     written = list((tmp_path / "quiverlab_traces").glob("HHh_*.html"))
     assert len(written) == 1
     doc = written[0].read_text(encoding="utf-8")
-    for i, d in enumerate(expected):
-        assert "HH_{%d} = %d" % (i, d) in doc
-    assert "HH_{1} = 2" not in doc  # the old-formula value must not appear
+    # the Result is a degree table (Marco 2026-07-29); the old-formula [2, 2, 1]
+    # must not appear either.
+    assert has_result(doc, "HH_", expected)

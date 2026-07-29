@@ -29,6 +29,7 @@ from quiverlab.errors import QuiverlabError
 from quiverlab.hochschild.table import HHTable
 from quiverlab.trace.recorder import Trace, BUFFER_FULL_PREFIX
 from quiverlab.trace import writer as W
+from tests.trace._result_table import has_result
 from quiverlab.trace.writer import (
     _drop_superseded, _authoritative_result, _superseding_dispatch_index,
 )
@@ -102,8 +103,7 @@ def test_fallback_report_ships_single_coherent_set(tmp_path, monkeypatch):
     assert rank_rows and all(e["nrows"] == 3 and e["ncols"] == 3 for e in rank_rows), \
         "abandoned bar differentials must not leak into the artifact"
     # the authoritative Result is correct AND the superseding routing story is present
-    for i, d in enumerate(table.dims):
-        assert r"HH^{%d} = %d" % (i, d) in html
+    assert has_result(html, "HH^", table.dims)
     assert "chouhy-solotar" in html.lower() or "Chouhy-Solotar" in html
     (rd,) = [e for e in obj["events"] if e["type"] == "ResultDims"]
     assert rd["dims"] == table.dims and rd["kind"] == "HH^"
@@ -164,8 +164,7 @@ def test_elided_report_ships_with_note_and_authoritative_result(tmp_path, monkey
     html, obj = _write_html(ev, table, A, "HH^", table.top, monkeypatch, tmp_path)
     # the over-long report SHIPS: the elision note is shown AND the Result is the engine's
     assert "later steps were elided" in html
-    for i, d in enumerate(table.dims):
-        assert r"HH^{%d} = %d" % (i, d) in html
+    assert has_result(html, "HH^", table.dims)
     (rd,) = [e for e in obj["events"] if e["type"] == "ResultDims"]
     assert rd["dims"] == table.dims
     # under elision the ResultDims must NOT carry the misleading "fast engine" note

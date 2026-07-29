@@ -10,7 +10,15 @@ family / quiver / module / ext computes:
 
 The goldens in ``_runner_goldens.json`` were frozen from the CURRENT runner
 BEFORE the refactor (a regression fence: if the delegation ever perturbs a result
-byte or a cache key, this fails)."""
+byte or a cache key, this fails).
+
+Re-freezes are DELIBERATE feature changes, listed here so an accidental drift can
+never hide behind one:
+
+  * 2026-07-29 (``module_left_a2``): the ``projective_dimension`` /
+    ``injective_dimension`` blocks gained the ``latex`` key. Without it the
+    draw-page renderer typeset a literal "undefined" for both (Marco's
+    example-a). The canonical keys are request-derived and are unchanged."""
 import json
 import pathlib
 

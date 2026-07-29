@@ -177,3 +177,36 @@ def is_isomorphic(M, N):
         "is_isomorphic: could not certify over this field within the search budget",
         hint="the modules share dim and dimension vector but no base-field "
              "isomorphism was found; crosscheck via QPA or enlarge the search")
+
+
+def identify_standard(M):
+    """Name ``M`` when it is one of the algebra's STANDARD indecomposables, else None.
+
+    Returns ``("simple", v)`` / ``("projective", v)`` / ``("injective", v)`` for the
+    first vertex whose `S_v` / `P_v` / `I_v` is isomorphic to ``M`` (checked in that
+    order: a simple projective is reported as the simple, the sharper statement).
+
+    Reporting-oriented and DELIBERATELY silent when it cannot decide: candidates are
+    pre-filtered by dimension vector (cheap and exact), and an ``is_isomorphic``
+    refusal on a survivor is swallowed -- an unnamed summand is still shown in full,
+    whereas a wrong name would be a false claim. Left modules are compared against
+    left standards, so the sides always match."""
+    A = getattr(M, "algebra", None)
+    if A is None or M.dim == 0:
+        return None
+    side = getattr(M, "side", "right")
+    dv = M.dimension_vector()
+    for kind in ("simple", "projective", "injective"):
+        builder = getattr(A, kind, None)
+        if builder is None:
+            continue
+        for v in A.quiver.vertices:
+            try:
+                cand = builder(v, side=side)
+                if cand.dim != M.dim or cand.dimension_vector() != dv:
+                    continue          # cheap exact filter before any Hom computation
+                if is_isomorphic(M, cand):
+                    return (kind, v)
+            except QuiverlabError:
+                continue              # undecidable here -> leave it unnamed, honestly
+    return None
