@@ -243,25 +243,39 @@ def create_app(cfg: Config | None = None, mailer=None, *,
         return JSONResponse(status_code=202, content={"tier": "queued", "job_id": jid})
 
     @app.post("/api/gui/probe")
-    def api_gui_probe(req: ComputeRequest, request: Request):
+    async def api_gui_probe(request: Request):
         """Build-only probe for the draw page's live hints (dim + label + honest
         early errors) -- the server-backed twin of the Pyodide runner's
-        ``run_build``. Same cost envelope as ``api_compute``'s own build step
-        (bounded by schema/catalog validation caps), gated by the SAME per-IP
-        instant flood limiter since the canvas fires one probe per edit pause.
-        Protocol payload, always 200: ``{ok: true, dim, n_vertices, n_arrows,
-        algebra}`` or ``{ok: false, error: {type, message}}``."""
+        ``run_build``, which validates ONLY schema + algebra. The body is read
+        RAW (never through ComputeRequest): a probe fires on every edit pause,
+        including half-finished states a full-request validator would 422 on,
+        and the protocol demands a 200 ``{ok: false, error: {type, message}}``
+        instead. Same build-cost envelope as ``api_compute``'s own build step,
+        gated by the SAME per-IP instant flood limiter."""
         iph = _ip_hash(request)
         if not instant_limiter.allow(iph):
             return {"ok": False, "error": {
                 "type": "RateLimited",
                 "message": "too many probes in a short window -- slow down"}}
         try:
-            A = _build_or_error(req.algebra)
+            body = await request.json()
+        except Exception:
+            return {"ok": False, "error": {"type": "SchemaError",
+                                           "message": "body is not JSON"}}
+        if not isinstance(body, dict) or body.get("schema") not in (1, 2):
+            return {"ok": False, "error": {
+                "type": "SchemaError",
+                "message": "unsupported schema %r (this server speaks v1/v2)"
+                           % (body.get("schema") if isinstance(body, dict) else None)}}
+        alg = body.get("algebra")
+        if not isinstance(alg, dict):
+            return {"ok": False, "error": {"type": "SchemaError",
+                                           "message": "missing algebra block"}}
+        try:
+            A = _build_or_error(alg)
         except RunError as exc:
             return {"ok": False, "error": {"type": exc.error_type,
                                            "message": exc.message}}
-        alg = req.algebra if isinstance(req.algebra, dict) else req.algebra.model_dump()
         return {"ok": True, "dim": A.dim,
                 "n_vertices": len(alg.get("vertices") or []) or None,
                 "n_arrows": len(alg.get("arrows") or {}) or None,

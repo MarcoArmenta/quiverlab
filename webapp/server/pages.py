@@ -115,6 +115,7 @@ def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:
     _GUI_STATIC = Path(__file__).resolve().parent.parent / "static" / "gui"
     _GUI_FILES = {"gui.js": "text/javascript; charset=utf-8",
                   "gui.css": "text/css; charset=utf-8",
+                  "draw-theme.css": "text/css; charset=utf-8",
                   "worker.js": "text/javascript; charset=utf-8",
                   "mathjax-katex-shim.js": "text/javascript; charset=utf-8",
                   "presets.json": "application/json"}

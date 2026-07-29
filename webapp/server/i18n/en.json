@@ -5,7 +5,7 @@
   "index.h1": "Compute with quivers, exactly",
   "index.intro": "Pick a family, a field, and invariants. No install needed. For heavier work, run pip install quiverlab.",
   "form.family": "Family",
-  "form.params": "Parameters (JSON, e.g. {\"n\": 3})",
+  "form.params": "Parameters",
   "form.field": "Field",
   "form.invariants": "Invariants",
   "form.pdf": "worked-steps report",

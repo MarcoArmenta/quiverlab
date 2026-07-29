@@ -132,3 +132,32 @@ def test_probe_reports_honest_error_not_500(tmp_path):
     assert body["ok"] is False
     assert body["error"]["type"]
     assert body["error"]["message"]
+
+
+def test_probe_accepts_schema2_module_requests(tmp_path):
+    """The live 422 regression: the canvas tags module-carrying requests as
+    schema 2; the probe endpoint reads the RAW body (never ComputeRequest), so
+    a module block -- or any half-finished editor state -- can never 422."""
+    c = _client(tmp_path)
+    r = c.post("/api/gui/probe", json={
+        "schema": 2,
+        "algebra": {"kind": "quiver", "vertices": [1, 2],
+                     "arrows": {"a": [1, 2]}, "relations": [],
+                     "field": {"kind": "GF", "p": 2, "n": 1}},
+        "compute": ["dimension_vector"],
+        "module": {"builtin": {"kind": "simple", "vertex": 1, "side": "right"}}})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["ok"] is True and body["dim"] == 3
+
+
+def test_probe_never_422s_on_malformed_bodies(tmp_path):
+    c = _client(tmp_path)
+    for payload in ({"schema": 3, "algebra": {}},
+                    {"algebra": {"kind": "family"}},
+                    {"schema": 1},
+                    ["not", "a", "dict"]):
+        r = c.post("/api/gui/probe", json=payload)
+        assert r.status_code == 200, payload
+        body = r.json()
+        assert body["ok"] is False and body["error"]["type"], payload

@@ -318,6 +318,11 @@ def _param_names(builder) -> set:
     return {p for p in sig.parameters if p != "field"}
 
 
+# Families whose builders wrap OTHER algebras (no field= kwarg; parameters are
+# base algebras given as PathAlgebra type strings) -- see build_algebra.
+_WRAPPER_FAMILIES = frozenset({"TensorProduct", "TrivialExtension"})
+
+
 def validate_family(name: str, params: dict) -> None:
     fam = _family_map()
     if name not in fam:
@@ -659,6 +664,23 @@ def build_algebra(spec):
     builder = _family_map().get(spec.family)
     if builder is None:
         raise ComputeError("CatalogError", f"no builder for family {spec.family!r}")
+    if spec.family in _WRAPPER_FAMILIES:
+        # These builders take ALGEBRAS, not scalars, and no field= kwarg (the
+        # result inherits the operands' field) -- the generic call below raised
+        # a raw TypeError, so the catalog listed families nobody could build
+        # (found live: TrivialExtension picked in the webapp form). A parameter
+        # is a Dynkin/type STRING naming the base path algebra, built over the
+        # request's field.
+        f = _field(spec.field)
+        args = {}
+        for k, v in spec.params.items():
+            if not isinstance(v, str) or not v.strip():
+                raise ComputeError(
+                    "CatalogError",
+                    f"family {spec.family!r} parameter {k!r} names its base path "
+                    f"algebra as a type string (e.g. \"A3\"); got {v!r}")
+            args[k] = ql.PathAlgebra(v.strip(), field=f)
+        return builder(**args)
     return builder(field=_field(spec.field), **spec.params)
 
 

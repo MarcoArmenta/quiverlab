@@ -53,6 +53,16 @@ function protocolError(status, data, fallback) {
   if (data && data.error_type) {
     return { ok: false, error: { type: data.error_type, message: data.message || fallback } };
   }
+  // FastAPI validation failure (422): surface the actual field errors instead
+  // of a bare status code -- the user typed something the schema refuses.
+  if (data && data.detail) {
+    var d = data.detail;
+    var msg = typeof d === "string" ? d
+      : (Array.isArray(d) ? d.map(function (e) {
+          return ((e.loc || []).join(".") + ": " + (e.msg || "")).trim();
+        }).join("; ") : JSON.stringify(d));
+    return { ok: false, error: { type: "ValidationError", message: msg } };
+  }
   return { ok: false, error: { type: "HTTP " + status, message: fallback } };
 }
 

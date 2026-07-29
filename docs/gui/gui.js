@@ -652,7 +652,11 @@
         torTarget = torTargetSpec();
       }
     }
-    var req = { schema: 1,
+    // Schema tag is HONEST: module / Ext / Tor blocks are the schema-2 surface
+    // (the webapp validator refuses them under schema 1 -- found live when the
+    // ported canvas 422'd on every module request); plain algebra requests keep
+    // the schema-1 tag so their cache keys stay byte-stable.
+    var req = { schema: (module || extTarget || torTarget) ? 2 : 1,
                 algebra: { kind: "quiver",
                            vertices: S.vertices.map(function (v) { return v.id; }),
                            arrows: arrows, relations: relations, field: field },

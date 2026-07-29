@@ -311,6 +311,87 @@ function renderResult(out, res) {
 // Index page: POST the form to /api/compute, render results or redirect to a job.
 const form = document.getElementById("compute-form");
 
+// ---- per-parameter inputs (Marco 2026-07-28: explain every parameter, prefill
+// defaults, never demand JSON from scratch). Data source: GET /api/catalog --
+// per-family params carry kind/default plus curated example + bilingual help.
+let CATALOG = null;
+
+function paramPrefill(p) {
+  const v = p.default !== null && p.default !== undefined ? p.default
+          : (p.example !== null && p.example !== undefined ? p.example : "");
+  if (v === "") return "";
+  return typeof v === "string" ? v : JSON.stringify(v);
+}
+
+function renderParamFields() {
+  const box = document.getElementById("param-fields");
+  const summary = document.getElementById("family-summary");
+  if (!box || !CATALOG) return;
+  const lang = (form.dataset.lang === "es") ? "es" : "en";
+  const fam = CATALOG.families.find((f) => f.name === form.elements.family.value);
+  box.textContent = "";
+  if (summary) summary.textContent = (fam && fam.summary) ? (fam.summary[lang] || "") : "";
+  if (!fam) return;
+  for (const p of fam.params) {
+    const row = document.createElement("div");
+    row.className = "param-row";
+    const label = document.createElement("label");
+    label.textContent = p.name;
+    label.setAttribute("for", "param-" + p.name);
+    row.appendChild(label);
+    const input = document.createElement("input");
+    input.id = "param-" + p.name;
+    input.dataset.param = p.name;
+    if (p.kind === "bool") {
+      input.type = "checkbox";
+      input.checked = p.default === true;
+    } else {
+      input.type = "text";
+      input.value = paramPrefill(p);
+    }
+    row.appendChild(input);
+    if (p.help && p.help[lang]) {
+      const help = document.createElement("div");
+      help.className = "param-help";
+      help.textContent = p.help[lang];
+      row.appendChild(help);
+    }
+    box.appendChild(row);
+  }
+}
+
+function collectParams() {
+  const out = {};
+  for (const input of document.querySelectorAll("#param-fields [data-param]")) {
+    const name = input.dataset.param;
+    if (input.type === "checkbox") {
+      if (input.checked) out[name] = true;
+      continue;
+    }
+    const raw = input.value.trim();
+    if (!raw) continue;                    // empty -> omit (builder default wins)
+    try {
+      out[name] = JSON.parse(raw);         // numbers, lists, true/false
+    } catch (err) {
+      out[name] = raw;                     // exact strings: "A3", "1/2", ...
+    }
+  }
+  return out;
+}
+
+async function initParamForm() {
+  if (!form || !document.getElementById("param-fields")) return;
+  try {
+    const r = await fetch("/api/catalog");
+    CATALOG = await r.json();
+  } catch (err) {
+    return;                                // form still submits with {} params
+  }
+  renderParamFields();
+  form.elements.family.addEventListener("change", renderParamFields);
+}
+initParamForm();
+
 function readComputeBody() {
   const fd = new FormData(form);
   const fieldRaw = fd.get("field").trim();
@@ -320,7 +401,7 @@ function readComputeBody() {
   return {
     schema: 1,
     algebra: {kind: "family", family: fd.get("family"),
-              params: JSON.parse(fd.get("params") || "{}"), field},
+              params: collectParams(), field},
     compute: fd.getAll("compute"),
     artifacts: {pdf: fd.get("pdf") === "1", tikz: false},
   };

@@ -2,6 +2,8 @@
 {% block title %}quiverlab — {{ t("draw.title") }}{% endblock %}
 {% block head %}
   <link rel="stylesheet" href="{{ prefix }}/gui/gui.css">
+  {# AFTER gui.css: defines the --md-* variables it consumes (draw-theme.css). #}
+  <link rel="stylesheet" href="{{ prefix }}/gui/draw-theme.css">
 {% endblock %}
 {% block body %}
   <h1>{{ t("draw.title") }}</h1>

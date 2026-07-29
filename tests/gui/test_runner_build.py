@@ -38,8 +38,13 @@ def test_family_kind_points_at_plan_09(runner):
 
 
 def test_bad_schema_version_rejected(runner):
+    # Schema 2 is ACCEPTED since the canvas tags module-carrying requests with
+    # it (the webapp validator's rule); anything else still refuses loudly.
     req = json.loads(json.dumps(LOOP_GF2))
     req["schema"] = 2
+    out = _build(runner, req)
+    assert out["ok"] is True
+    req["schema"] = 3
     out = _build(runner, req)
     assert out["ok"] is False and out["error"]["type"] == "RequestError"
 

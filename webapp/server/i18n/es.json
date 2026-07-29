@@ -5,7 +5,7 @@
   "index.h1": "Calcula con carcajes y relaciones, de forma exacta",
   "index.intro": "Elige una familia, un cuerpo e invariantes. No requiere instalación. Para cálculos más pesados, usa pip install quiverlab.",
   "form.family": "Familia",
-  "form.params": "Parámetros (JSON, p. ej. {\"n\": 3})",
+  "form.params": "Parámetros",
   "form.field": "Cuerpo",
   "form.invariants": "Invariantes",
   "form.pdf": "reporte de pasos detallados",

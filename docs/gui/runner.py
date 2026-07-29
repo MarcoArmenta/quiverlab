@@ -17,6 +17,9 @@ os.environ.setdefault("MPLBACKEND", "Agg")   # never let matplotlib probe for a 
 import quiverlab
 
 SCHEMA_VERSION = 1
+# The GUI tags requests carrying module / Ext / Tor blocks as schema 2 (the
+# webapp validator's rule); this runner's dispatch handles both identically.
+ACCEPTED_SCHEMAS = (1, 2)
 MAX_DEGREE = 10
 # Depth to which projective dimension is probed before reporting "infinite"
 # (matches the library's injective_dimension(bound=32) default).
@@ -68,8 +71,8 @@ def run_build(request_json):
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
-        if req.get("schema") != SCHEMA_VERSION:
-            raise RequestError("unsupported schema %r (this GUI speaks schema 1)"
+        if req.get("schema") not in ACCEPTED_SCHEMAS:
+            raise RequestError("unsupported schema %r (this GUI speaks schema 1/2)"
                                % (req.get("schema"),))
         alg = req.get("algebra") or {}
         kind = alg.get("kind")
