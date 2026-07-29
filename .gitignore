@@ -18,3 +18,4 @@ desktop/seed-cache.db
 desktop/artifacts/
 desktop/dist/
 desktop/build/
+.DS_Store
