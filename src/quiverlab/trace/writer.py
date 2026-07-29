@@ -143,8 +143,8 @@ def write_trace(events, table, algebra, kind, top, references=(), out_dir=None):
         render_json(events, title=title, references=references, algebra=algebra))
     html = out / (stem + ".html")
     html.write_text(render_html(events, title=title, references=references, algebra=algebra))
-    print("Worked steps: %s (HTML, no JavaScript; print to PDF from your browser)"
-          % _rel(html))
+    print("Worked steps: %s (self-contained HTML, no JavaScript; pairs with the "
+          "JSON record)" % _rel(html))
     return str(html)
 
 

@@ -984,33 +984,44 @@ def _dispatch(A, item, events, hh_kwargs) -> tuple:
                   else A.hochschild_homology)
         table = method(top, verbose=False, trace=events, **hh_kwargs)
         keys = list(table.references)
+        # Credit the resolution that actually computed the table: the engine
+        # string names it, the references must too (Marco 2026-07-28: "if we
+        # use Chouhy-Solotar we need to cite it").
+        eng = str(table.engine).lower()
+        for marker, ckey in (("chouhy", "chouhy_solotar"), ("bardzell", "bardzell")):
+            if marker in eng and ckey not in keys:
+                keys.append(ckey)
         block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                  "engine": table.engine, "references": keys,
                  "citations": _citation_pairs(keys)}
         return block, (table, table.kind, top)
+    # Per-invariant citation keys. NEVER A.citations() here: that set
+    # ACCUMULATES across the run, so every block after (or beside) an HH
+    # computation echoed the bar-resolution key -- the Cartan matrix was
+    # citing Hochschild 1945 (Marco's report-example.pdf, 2026-07-28).
     if kind == "cartan":
         m = _rows(A.cartan_matrix())
-        keys = list(A.citations())
+        keys = ["assem_book"]
         return {"matrix": m, "latex": _latex_matrix(m),
                 "references": keys, "citations": _citation_pairs(keys)}, None
     if kind == "coxeter_polynomial":
         import sympy
         p = A.coxeter_polynomial()
-        keys = list(A.citations())
+        keys = ["lenzing_delapena_spectral", "assem_book"]
         return {"latex": sympy.latex(p.as_expr()), "text": str(p.as_expr()),
                 "references": keys, "citations": _citation_pairs(keys)}, None
     if kind == "global_dimension":
         g = A.global_dimension()
-        keys = list(A.citations())
+        keys = ["assem_book"]
         return {"text": str(g), "exact": bool(g.exact), "value": g.value,
                 "references": keys, "citations": _citation_pairs(keys)}, None
     if kind == "center":
         dim_z, basis = A.center()
-        keys = list(A.citations())
+        keys = ["bar"]                     # Z(A) = HH^0(A) -- Hochschild's paper
         return {"dim": dim_z, "basis": [[str(x) for x in row] for row in basis],
                 "references": keys, "citations": _citation_pairs(keys)}, None
     if kind == "dimension":
-        keys = list(A.citations())
+        keys = ["assem_book"]
         return {"value": A.dim, "references": keys,
                 "citations": _citation_pairs(keys)}, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
@@ -1122,6 +1133,13 @@ def _build_module(algebra, mspec, name):
 
 def _dv(dimvec) -> dict:
     return {str(v): int(n) for v, n in sorted(dimvec.items(), key=lambda kv: str(kv[0]))}
+
+
+def _dv_latex(dimvec) -> str:
+    """Dimension vector as display latex, byte-identical to the Pyodide
+    runner's composition (both feed the same block renderers)."""
+    d = _dv(dimvec)
+    return "(" + ",\\, ".join(str(d[k]) for k in d) + ")" if d else "()"
 
 
 def _mod_view(m) -> dict:
@@ -1237,8 +1255,13 @@ def _input_certificate(M) -> dict:
 def _dispatch_module(A, item, M, N, T=None) -> dict:
     kind = item.kind
     if kind == "dimension_vector":
+        # "latex" mirrors the Pyodide runner byte-for-byte: the draw page's
+        # renderer typesets block.latex, and a missing key rendered a literal
+        # "undefined" (Marco's report-example.pdf, 2026-07-28).
         return _with_refs({"kind": "dimension_vector", "side": M.side,
-                           **_mod_view(M)}, kind)
+                           **_mod_view(M),
+                           "latex": r"\underline{\dim}\, M = "
+                                    + _dv_latex(M.dimension_vector())}, kind)
     if kind == "rad_top_soc":
         return _with_refs({"kind": "rad_top_soc", "side": M.side,
                            "radical": _mod_repr(M.radical()),
@@ -1246,7 +1269,14 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            "socle": _mod_repr(M.socle())}, kind)
     if kind in ("tau", "tau_minus"):
         t = M.tau() if kind == "tau" else M.tau_minus()
-        block = {"kind": kind, "side": t.side, "is_zero": t.dim == 0, **_mod_view(t)}
+        # tau of a projective (dually tau^- of an injective) IS zero -- say so
+        # explicitly; renderers typeset block.latex (mirrors the Pyodide runner).
+        sym = r"\tau M" if kind == "tau" else r"\tau^{-} M"
+        latex = ((sym + " = 0") if t.dim == 0
+                 else (r"\underline{\dim}\, " + sym + " = "
+                       + _dv_latex(t.dimension_vector())))
+        block = {"kind": kind, "side": t.side, "is_zero": t.dim == 0,
+                 "latex": latex, **_mod_view(t)}
         if t.dim > 0:
             # the AR translate IS a module: ship it as a full representation
             # ({dims, maps}, like rad/top/soc) so reports/GUIs can show the

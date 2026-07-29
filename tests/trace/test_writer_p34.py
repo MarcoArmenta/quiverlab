@@ -36,9 +36,13 @@ def test_html_report_is_print_ready_and_typeset():
     # math is typeset as MathML (not raw source dumped as text)
     assert "<math" in html and "<mtable>" in html
     assert 'encoding="application/x-tex"' in html          # source kept for copy/paste
-    # the old apology is gone; an honest print-to-PDF hint replaces it
+    # the old apology is gone; and so is the print-to-PDF suggestion -- the
+    # deliverables are HTML + JSON ONLY (Marco 2026-07-28), stated up front.
     assert "Math is shown as TeX source" not in html
-    assert "Print" in html and "PDF" in html
+    assert "Save as PDF" not in html
+    assert "HTML page and the JSON records" in html
+    # the JSON-record note documents the machine deliverable's structure
+    assert "quiverlab_trace_schema" in html
     # still fully self-contained (no JS, no external resource, no network)
     assert "<script" not in html.lower()
     assert "http://" not in html and "https://" not in html

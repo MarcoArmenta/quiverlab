@@ -170,8 +170,10 @@ def test_tau_omits_certificate_when_uncertifiable_byte_stable():
     assert "indecomposable" not in b and "decomposition" not in b
     # ("repr" is the full-representation echo of tau M -- Marco 2026-07-28 --
     # not a certificate; it is present whenever tau M != 0.)
+    # ("latex" is the display line every renderer typesets -- tau M = 0 for a
+    # projective input, the dim-vector line otherwise; Marco 2026-07-28.)
     assert set(b) == {"kind", "side", "is_zero", "dimvec", "dim", "repr",
-                      "references", "citations"}
+                      "latex", "references", "citations"}
 
 
 # --------------------------------------------------------------------------- #

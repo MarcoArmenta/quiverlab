@@ -123,7 +123,7 @@ def test_fast_gfp_report_has_authoritative_result_and_honest_note(tmp_path, monk
     assert [type(e).__name__ for e in tr] == ["Dispatch"]
     html, obj = _write_html(list(tr), table, A, "HH^", monkeypatch, tmp_path)
     # ...yet the report has a Result line with the engine's dims + an HONEST note.
-    assert "<h2>Result</h2>" in html
+    assert "<h2 id='result'>Result</h2>" in html
     for i, d in enumerate(table.dims):
         assert r"HH^{%d} = %d" % (i, d) in html
     assert "records no per-degree worked steps" in html

@@ -419,6 +419,145 @@ def _module_steps_html(events):
     return out
 
 
+# Integer 24-point unit circle, scaled by 100 (index k = k * 15 degrees).
+# Display-only layout data: the no-floats gate holds -- every coordinate below
+# and every derived position is an int.
+_CIRCLE24 = [(100, 0), (97, 26), (87, 50), (71, 71), (50, 87), (26, 97),
+             (0, 100), (-26, 97), (-50, 87), (-71, 71), (-87, 50), (-97, 26),
+             (-100, 0), (-97, -26), (-87, -50), (-71, -71), (-50, -87),
+             (-26, -97), (0, -100), (26, -97), (50, -87), (71, -71),
+             (87, -50), (97, -26)]
+
+
+def _quiver_svg(algebra):
+    """Inline SVG sketch of the presentation quiver (vertices on a circle,
+    labeled arrows, loops), so the reader sees WHAT the example is before any
+    mathematics. Integer arithmetic only. Returns '' without a presentation."""
+    import math as _math_mod
+
+    q = getattr(algebra, "quiver", None)
+    if q is None or not getattr(q, "vertices", None):
+        return ""
+    verts = list(q.vertices)
+    arrows = dict(getattr(q, "arrows", {}) or {})
+    n = len(verts)
+    cx, cy, R = 320, 165, 120
+    pos = {}
+    for i, v in enumerate(verts):
+        ux, uy = _CIRCLE24[(i * 24 // max(n, 1)) % 24]
+        pos[v] = (cx + ux * R // 100, cy - uy * R // 100)
+    out = ["<svg viewBox='0 0 640 330' role='img' "
+           "style='max-width:640px;width:100%;display:block;border:1px solid #ddd;"
+           "border-radius:6px;background:#fafafa'>",
+           "<defs><marker id='qlarr' viewBox='0 0 10 10' refX='9' refY='5' "
+           "markerWidth='7' markerHeight='7' orient='auto-start-reverse'>"
+           "<path d='M 0 0 L 10 5 L 0 10 z' fill='#444'/></marker></defs>"]
+    pair_seen = {}
+    for name in sorted(arrows):
+        s, t = arrows[name]
+        if s == t:                                   # loop: a small arc above
+            x, y = pos[s]
+            out.append("<path d='M %d %d C %d %d, %d %d, %d %d' fill='none' "
+                       "stroke='#444' stroke-width='2' marker-end='url(#qlarr)'/>"
+                       % (x - 10, y - 14, x - 26, y - 52, x + 26, y - 52,
+                          x + 10, y - 14))
+            out.append("<text x='%d' y='%d' font-size='15' font-style='italic' "
+                       "text-anchor='middle' fill='#1c1c1c'>%s</text>"
+                       % (x, y - 48, _esc(name)))
+            continue
+        (x1, y1), (x2, y2) = pos[s], pos[t]
+        dx, dy = x2 - x1, y2 - y1
+        L = max(_math_mod.isqrt(dx * dx + dy * dy), 1)
+        # parallel arrows between the same unordered pair: fan them out with
+        # alternating perpendicular offsets (0, -14, +14, -28, ...).
+        pair = (min(s, t, key=str), max(s, t, key=str))
+        k = pair_seen.get(pair, 0)
+        pair_seen[pair] = k + 1
+        shift = (k + 1) // 2 * 14 * (1 if k % 2 else -1) if k else 0
+        px, py = -dy * shift // L, dx * shift // L        # perpendicular offset
+        sx, sy = x1 + dx * 18 // L + px, y1 + dy * 18 // L + py
+        ex, ey = x2 - dx * 18 // L + px, y2 - dy * 18 // L + py
+        mx, my = (sx + ex) // 2 + px, (sy + ey) // 2 + py
+        out.append("<path d='M %d %d Q %d %d %d %d' fill='none' stroke='#444' "
+                   "stroke-width='2' marker-end='url(#qlarr)'/>"
+                   % (sx, sy, mx, my, ex, ey))
+        lx = (sx + ex) // 2 + px - (dy * 12 // L)
+        ly = (sy + ey) // 2 + py + (dx * 12 // L) - 4
+        out.append("<text x='%d' y='%d' font-size='15' font-style='italic' "
+                   "text-anchor='middle' fill='#1c1c1c'>%s</text>"
+                   % (lx, ly, _esc(name)))
+    for v, (x, y) in pos.items():
+        out.append("<circle cx='%d' cy='%d' r='15' fill='#fff' stroke='#3f51b5' "
+                   "stroke-width='2'/>" % (x, y))
+        out.append("<text x='%d' y='%d' font-size='14' text-anchor='middle' "
+                   "fill='#1c1c1c'>%s</text>" % (x, y + 5, _esc(str(v))))
+    out.append("</svg>")
+    return "\n".join(out)
+
+
+def _example_section(algebra):
+    """'The example' header block: the quiver drawing + the defining relations +
+    the algebra's one-line summary -- the reader knows INSTANTLY what is being
+    computed (Marco 2026-07-28)."""
+    if algebra is None:
+        return []
+    chunks = []
+    svg = _quiver_svg(algebra)
+    if svg:
+        chunks.append(svg)
+    rels = [str(r) for r in (getattr(algebra, "relations", None) or [])]
+    if rels:
+        chunks.append("<p><b>Relations:</b> <code>%s</code></p>"
+                      % _esc(", ".join(rels)))
+    else:
+        arrows = getattr(getattr(algebra, "quiver", None), "arrows", None)
+        if arrows is not None:
+            chunks.append("<p><b>Relations:</b> none (hereditary).</p>")
+    label = repr(algebra).splitlines()[0]
+    chunks.append("<p>%s</p>" % _esc(label))
+    return chunks
+
+
+_JSON_NOTE = (
+    "<p>This page pairs with a machine-readable record, <code>trace.json</code> "
+    "(the “Report data (JSON)” download). Its structure:</p>"
+    "<ul>"
+    "<li><code>quiverlab_trace_schema</code> — integer version of this format;</li>"
+    "<li><code>title</code> — the computation this record traces;</li>"
+    "<li><code>references</code> — the same bibliography as the References "
+    "section, as <code>[key, formatted]</code> pairs;</li>"
+    "<li><code>events</code> — the complete ordered stream of worked steps. "
+    "Each event is an object with a <code>type</code> field (e.g. "
+    "<code>dispatch</code>, <code>resolution_term</code>, <code>rank_step</code>, "
+    "<code>module_term</code>, <code>module_differential</code>, "
+    "<code>ext_degree</code>, <code>step_note</code>, <code>result_dims</code>) "
+    "plus that step's exact data — every matrix entry is exact "
+    "(integers / rationals as strings), never floating point.</li>"
+    "</ul>"
+    "<p>The computation's summary results (one block per requested invariant, "
+    "with dimensions, matrices, and citation keys) live in the separate "
+    "<code>result.json</code> deliverable. HTML and JSON are the only report "
+    "formats — this page is the complete human-readable record.</p>")
+
+
+def _used_dispatches(events):
+    """Collapse each CONSECUTIVE run of Dispatch events to its LAST entry --
+    the resolution actually used. The engine may first record the bar attempt
+    and then the reroute (auto -> Chouhy-Solotar); showing both read as a
+    contradiction (Marco 2026-07-28: 'just print the one we use')."""
+    used, run = [], None
+    for e in events:
+        if isinstance(e, Dispatch):
+            run = e
+        else:
+            if run is not None:
+                used.append(run)
+                run = None
+    if run is not None:
+        used.append(run)
+    return used
+
+
 def render_html(events, title="", references=(), algebra=None):
     events = list(events)
     from quiverlab.errors import QuiverlabError
@@ -429,56 +568,108 @@ def render_html(events, title="", references=(), algebra=None):
                 "render_html received a non-event object of type %r -- likely an "
                 "unpacked (events, result) tuple from a trace_* helper; every "
                 "element of the stream must be a trace event" % type(e).__name__)
-    body = ["<!doctype html><html><head><meta charset='utf-8'>",
-            "<meta name='viewport' content='width=device-width, initial-scale=1'>",
-            _STYLE,
-            "<title>Worked steps: %s</title></head><body>" % _esc(title),
-            "<h1>Worked steps: %s</h1>" % _esc(title),
-            "<p class='ql-hint'>This report is print-ready. Use your browser's "
-            "<b>Print &rarr; Save as PDF</b> (or the app's Print button) to export "
-            "a PDF. Math is typeset (MathML); the LaTeX source is embedded for "
-            "copy/paste.</p>"]
-    for e in events:
-        if isinstance(e, Dispatch):
-            body.append("<p><b>Chosen resolution:</b> %s<br><i>%s</i><br>"
-                        "defining relations: %d</p>" % (_esc(e.route), _esc(e.reason), e.n_relations))
+
+    # ---- build the document as (anchor, heading, chunks) sections so a table
+    # of contents can list, in order, everything the reader will scroll past.
+    sections = []
+
+    example = _example_section(algebra)
+    if example:
+        sections.append(("example", "The example", example))
+
+    used = _used_dispatches(events)
+    if used:
+        chunks = []
+        for e in used:
+            chunks.append("<p><b>Resolution used:</b> %s<br><i>%s</i><br>"
+                          "defining relations: %d</p>"
+                          % (_esc(e.route), _esc(e.reason), e.n_relations))
+        sections.append(("resolution", "Resolution", chunks))
+
     objects, note = compute_algebra_objects(algebra)
-    body.extend(_pi_section_html(objects, note))
+    pi = _pi_section_html(objects, note)
+    if pi:
+        # _pi_section_html emits its own h2; keep its body, retitle via TOC.
+        chunks = pi[1:]
+        chunks.append("<p class='ql-cite'>Loewy series and the projectives/"
+                      "injectives P<sub>v</sub>, I<sub>v</sub> follow [ASS2006] "
+                      "(see References).</p>")
+        sections.append(("projectives-injectives",
+                         "The projectives and injectives of A", chunks))
+
     terms = {e.degree: e for e in events if isinstance(e, ResolutionTerm)}
     ranks = {e.degree: e for e in events if isinstance(e, RankStep)}
-    for n in sorted(terms):
-        t = terms[n]
-        body.append("<h2>Degree %d</h2><p>Term with %d generators (dim C = %d).</p>"
-                    % (n, t.n_generators, t.collapsed_dim))
-        if n in ranks:
-            rs = ranks[n]
-            sym = "d^{%d}" % n if rs.side == "cochain" else "b_{%d}" % n
-            body.append(_math(r"%s = %s \qquad \operatorname{rank} = %d"
-                              % (sym, _pmatrix(rs), rs.rank)))
-    body.extend(_module_steps_html(events))
+    if terms:
+        chunks = ["<p><i>C<sub>n</sub> is the degree-n term of the resolution "
+                  "named above; the matrices below are its differentials "
+                  "(rows: target basis, columns: source basis).</i></p>"]
+        for n in sorted(terms):
+            t = terms[n]
+            chunks.append("<h3>Degree %d</h3><p>Term with %d generators "
+                          "(dim C<sub>%d</sub> = %d).</p>"
+                          % (n, t.n_generators, n, t.collapsed_dim))
+            if n in ranks:
+                rs = ranks[n]
+                if rs.side == "cochain":
+                    sym = "d^{%d}" % n
+                    arrow = r"d^{%d} : C^{%d} \to C^{%d}" % (n, n, n + 1)
+                else:
+                    sym = "b_{%d}" % n
+                    arrow = r"b_{%d} : C_{%d} \to C_{%d}" % (n, n, max(n - 1, 0))
+                chunks.append(_math(r"%s,\qquad %s = %s \qquad "
+                                    r"\operatorname{rank} = %d"
+                                    % (arrow, sym, _pmatrix(rs), rs.rank)))
+        sections.append(("resolution-steps", "Worked resolution steps", chunks))
+
+    mod = _module_steps_html(events)
+    if mod:
+        sections.append(("module-steps", "Worked module steps", mod[1:]))
+
     # The (co)homology Result: prefer the AUTHORITATIVE dims the engine returned (a
     # ResultDims event, injected by writer.py) so the line carries the engine's numbers
-    # AND the correct HH^/HH_ variance; fall back to derive_dims when absent (direct
-    # renderer calls / module reports) -- byte-identical to before.
+    # AND the correct HH^/HH_ variance; fall back to derive_dims when absent.
     rd = next((e for e in events if isinstance(e, ResultDims)), None)
     if rd is not None:
         cells = ",\\quad ".join(r"%s{%d} = %d" % (rd.kind, i, d)
                                 for i, d in enumerate(rd.dims))
-        body.append("<h2>Result</h2>" + _math(cells))
+        chunks = [_math(cells)]
         if rd.note:
-            body.append("<p><i>%s</i></p>" % _esc(rd.note))
+            chunks.append("<p><i>%s</i></p>" % _esc(rd.note))
+        sections.append(("result", "Result", chunks))
     else:
         dims = derive_dims(events)
         if dims:
             kind = _dims_kind(events)
             cells = ",\\quad ".join(r"%s{%d} = %d" % (kind, i, d)
                                     for i, d in enumerate(dims))
-            body.append("<h2>Result</h2>" + _math(cells))
+            sections.append(("result", "Result", [_math(cells)]))
+
+    sections.append(("json-record", "The JSON record", [_JSON_NOTE]))
+
     if references:
-        body.append("<h2>References</h2><ol>")
+        chunks = ["<ol>"]
         for key, entry in references:
-            body.append("<li>[%s] %s</li>" % (_esc(key), _esc(entry)))
+            chunks.append("<li>[%s] %s</li>" % (_esc(key), _esc(entry)))
+        chunks.append("</ol>")
+        sections.append(("references", "References", chunks))
+
+    # ---- assemble: header, contents, sections.
+    body = ["<!doctype html><html><head><meta charset='utf-8'>",
+            "<meta name='viewport' content='width=device-width, initial-scale=1'>",
+            _STYLE,
+            "<title>Worked steps: %s</title></head><body>" % _esc(title),
+            "<h1>Worked steps: %s</h1>" % _esc(title),
+            "<p class='ql-hint'>The complete worked-steps record, exactly as "
+            "computed. Deliverables are this HTML page and the JSON records "
+            "described at the end — mathematics is typeset as MathML.</p>"]
+    if len(sections) > 1:
+        body.append("<h2>Contents</h2><ol class='ql-toc'>")
+        for anchor, heading, _ in sections:
+            body.append("<li><a href='#%s'>%s</a></li>" % (anchor, _esc(heading)))
         body.append("</ol>")
+    for anchor, heading, chunks in sections:
+        body.append("<h2 id='%s'>%s</h2>" % (anchor, _esc(heading)))
+        body.extend(chunks)
     body.append("</body></html>")
     return "\n".join(body) + "\n"
 
