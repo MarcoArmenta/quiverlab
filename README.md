@@ -1,4 +1,4 @@
-# quiverlab
+# QuiverLab
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
@@ -6,7 +6,12 @@
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-<!-- [![DOI](https://joss.theoj.org/papers/<id>/status.svg)](https://doi.org/<doi>) -- added at JOSS acceptance -->
+<!-- [![DOI](https://joss.theoj.org/papers/<id>/status.svg)](https://doi.org/<doi>) -->
+
+# **Exact representation theory of quivers with relations, for algebraists** 
+Modules and Auslander–Reiten theory, resolutions, Ext-algebras and Koszulity,
+Hochschild (co)homology with its calculus (cup, Gerstenhaber, cap, Connes), cyclic homology, and
+Cartan/Coxeter/spectral invariants, all exactly.
 
 ## ⬇️ DOWNLOAD APPLICATION HERE
 
@@ -22,24 +27,27 @@
 > | **Linux** (x86-64) | [QuiverLab-linux-x86_64.tar.gz](https://github.com/MarcoArmenta/quiverlab/releases/download/app-latest/QuiverLab-linux-x86_64.tar.gz) |
 >
 > First-open notes (the app is not code-signed yet, so each OS warns **once**):
+> 
 > **macOS** — unzip and double-click; when the *"Apple could not verify…"*
 > dialog appears click **Done** (not "Move to Trash"), then System Settings →
 > Privacy & Security → scroll to Security → **Open Anyway** → Open. (Terminal
-> alternative: `xattr -d com.apple.quarantine ./QuiverLab`.) **Windows** — if
-> SmartScreen appears, choose *More info* → *Run anyway*. **Linux** — `tar xzf`,
-> then run `./QuiverLab`. **Intel Mac** — no one-file build (GitHub retired its
+> alternative: `xattr -d com.apple.quarantine ./QuiverLab`.)
+>
+> **Windows** — if
+> SmartScreen appears, choose *More info* → *Run anyway*.
+>
+> **Linux** — `tar xzf`,
+> then run `./QuiverLab`.
+>
+> **Intel Mac** — no one-file build (GitHub retired its
 > Intel-mac builders); use
 > `docker run -p 8000:8000 ghcr.io/marcoarmenta/quiverlab:latest gui`
 > or the [pip path](https://marcoarmenta.github.io/quiverlab/offline-app/).
 
-**Exact representation theory of quivers with relations, for algebraists** —
-modules and Auslander–Reiten theory, resolutions, Ext-algebras and Koszulity,
-Hochschild (co)homology with its Gerstenhaber calculus, cyclic homology, and
-Cartan/Coxeter/spectral invariants, all exactly.
 
 ## The two metagoals
 
-quiverlab is built toward two long-term goals, and every release is measured
+QuiverLab is built toward two long-term goals, and every release is measured
 against them:
 
 1. **No code required.** Every computation the library can do should be
@@ -57,13 +65,13 @@ against them:
    in [`docs/plans/ROADMAP.md`](docs/plans/ROADMAP.md); if your computation is
    missing, it belongs on that list.
 
-quiverlab computes with finite-dimensional algebras `kQ/I` over the complex numbers
+QuiverLab computes with finite-dimensional algebras `kQ/I` over the complex numbers
 (exactly — no floating point, ever) and over all finite fields: certified
 finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhaber
 brackets, the first full Chouhy–Solotar resolution, module Ext, and Cartan/Coxeter
 invariants. Floats fail loudly by design.
 
-## Get quiverlab
+## Get QuiverLab
 
 Most users want one of these, in this order:
 
@@ -97,7 +105,7 @@ docker run --rm -p 8000:8000 quiverlab:local gui
 instant answers for small examples, queued jobs with permalinks for deep ones,
 and a shared exact-result cache — see [Web interface](#web-interface).
 
-Python-library installs and SLURM clusters are covered
+**5. Prefer code?** - Python-library installs and SLURM clusters are covered
 [at the bottom](#install-the-python-library).
 
 ## Three lines to a Hochschild table
