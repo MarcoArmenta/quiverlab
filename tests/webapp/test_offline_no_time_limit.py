@@ -27,6 +27,7 @@ from webapp.server.estimator import classify
 from webapp.server.offline import build_offline_config, runtime_caps, _banner_lines
 from webapp.server.schema import ComputeRequest
 
+_ROOT = pathlib.Path(__file__).resolve().parents[2]
 _RESOURCES = {"cores": 8, "mem_bytes": 16 * 1024 ** 3}
 
 
@@ -85,22 +86,42 @@ def test_an_explicit_env_override_still_wins(tmp_path):
 # --------------------------------------------------------------------------- #
 # The worker honours wall <= 0
 # --------------------------------------------------------------------------- #
+# POSIX rlimits do not exist on Windows: `_apply_caps` logs and returns early
+# there, so a test that asserts a cap WAS applied can only run where one can be.
+_HAS_RLIMITS = True
+try:
+    import resource as _resource                       # noqa: F401
+except ImportError:                                    # pragma: no cover - Windows
+    _HAS_RLIMITS = False
+
+
 def test_no_cpu_rlimit_is_applied_when_the_wall_is_disabled(monkeypatch):
+    """wall <= 0 must not set RLIMIT_CPU -- that cap is the in-child half of what
+    produced Marco's message. Asserted on every platform: nothing may be applied."""
     from webapp.worker import worker as W
     applied = []
     monkeypatch.setattr(W, "_try_setrlimit",
                         lambda which, cap, name: applied.append((name, cap)))
     W._apply_caps(0, 123)
     assert not any(name == "RLIMIT_CPU" for name, _ in applied)
-    applied.clear()
-    W._apply_caps(900, 123)                             # ...but a real cap is applied
+
+
+@pytest.mark.skipif(not _HAS_RLIMITS, reason="no POSIX rlimits on this platform")
+def test_a_positive_wall_still_applies_the_cpu_rlimit(monkeypatch):
+    """The other side of the branch: disabling the cap offline must not disable it
+    for a caller that asks for one."""
+    from webapp.worker import worker as W
+    applied = []
+    monkeypatch.setattr(W, "_try_setrlimit",
+                        lambda which, cap, name: applied.append((name, cap)))
+    W._apply_caps(900, 123)
     assert ("RLIMIT_CPU", 900) in applied
 
 
 def test_the_parent_kill_is_disarmed_when_the_wall_is_disabled():
     """The wall-time kill is what produced Marco's message; with wall <= 0 the
     parent must have NO deadline at all."""
-    src = pathlib.Path("webapp/worker/worker.py").read_text(encoding="utf-8")
+    src = (_ROOT / "webapp" / "worker" / "worker.py").read_text(encoding="utf-8")
     assert "deadline = (time.monotonic() + wall + 5) if wall > 0 else None" in src
     assert "deadline is None or time.monotonic() < deadline" in src
 
@@ -220,7 +241,7 @@ def test_the_banner_says_no_time_limit(tmp_path):
 def test_the_client_polls_until_the_job_actually_ends():
     """The page used to stop polling after 30 minutes -- on the offline app that
     was a lie about a job that was still running."""
-    src = pathlib.Path("webapp/static/gui/worker.js").read_text(encoding="utf-8")
+    src = (_ROOT / "webapp" / "static" / "gui" / "worker.js").read_text(encoding="utf-8")
     assert "30 * 60 * 1000" not in src
     assert "timed out waiting for the queued job" not in src
     assert "for (;;)" in src                            # until terminal, not a clock
