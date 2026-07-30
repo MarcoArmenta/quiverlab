@@ -129,18 +129,41 @@ def seed_first_run(cfg: Config, seed_db: Path | None) -> bool:
 # Offline config + caps
 # --------------------------------------------------------------------------- #
 
+# Stand-in for "no ceiling" in the offline tier's queued thresholds. A plain int
+# (the config fields are ints), far above anything the GUI can express, so
+# `classify` never reaches the big/reject branches on a local machine.
+_OFFLINE_UNBOUNDED = 1 << 62
+
 def build_offline_config(data_dir, resources: dict, *, env=None) -> Config:
     """A ``Config`` tuned for a laptop: data dir under the user home, one worker
     loop, and a worker memory cap derived from the DETECTED RAM (four fifths of
     it, leaving headroom for the OS + browser). Big-job/SMTP tiers stay off (no
     relay is configured -> ``big_jobs_enabled`` is False). Every default is a
-    ``setdefault``, so an explicit ``QLWEB_*`` env var always wins."""
+    ``setdefault``, so an explicit ``QLWEB_*`` env var always wins.
+
+    NO TIME LIMIT and NO SIZE REFUSAL (Marco 2026-07-30). The deployed server caps
+    a job at 15 minutes and refuses anything past the queued thresholds, because
+    it is a SHARED public service: the cap is DoS protection and the big-job tier
+    gates cost behind email. None of that applies here. This is the user's own
+    machine, computing for the user alone -- they may reasonably start a real
+    computation and leave it running overnight, and "job exceeded the wall-time
+    cap" after 15 minutes is simply the wrong answer. So the offline app disables
+    the wall cap (0 = unlimited) and lifts the queued-tier thresholds so every
+    request the GUI can express is QUEUED and actually run.
+
+    The MEMORY ceiling stays: exhausting the machine's RAM would take the whole
+    desktop down with it, which is never what the user wanted."""
     base = dict(os.environ if env is None else env)
     base.setdefault("QLWEB_DATA_DIR", str(data_dir))
     mem = int(resources.get("mem_bytes") or 0)
     if mem > 0:
         base.setdefault("QLWEB_JOB_MEM_BYTES", str(mem * 4 // 5))
     base.setdefault("QLWEB_WORKER_PROCESSES", "1")   # a laptop, not a fleet
+    base.setdefault("QLWEB_JOB_WALL_SECONDS", "0")   # 0 = run until it finishes
+    # Nothing the GUI can express should be refused as "too big" on the user's own
+    # hardware; past the instant threshold it simply queues and runs.
+    base.setdefault("QLWEB_QUEUED_OPS_THRESHOLD", str(_OFFLINE_UNBOUNDED))
+    base.setdefault("QLWEB_QUEUED_MAX_DEGREE", str(_OFFLINE_UNBOUNDED))
     return Config.from_env(base)
 
 
@@ -183,6 +206,9 @@ def create_offline_app(data_dir=None, *, env=None, mailer=None):
     return app, cfg, resources
 
 
+_SHUTDOWN_GRACE_SECONDS = 5
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -197,13 +223,18 @@ def _worker_loop(cfg: Config, stop) -> None:
     store = JobStore(cfg.db_path)
     store.init_schema()
     # Adopt any jobs a previous session stranded in 'running' before we start
-    # claiming (single-writer moment): this is the only loop.
+    # claiming (single-writer moment): this is the only loop. Offline they are
+    # marked FAILED, not requeued: with no wall cap (see build_offline_config) a
+    # job the user ended by quitting the app would otherwise restart on every
+    # launch and run forever. On the server, requeueing is right -- a deploy must
+    # not lose queued work -- but here quitting IS the cancel button.
     try:
-        requeued = store.requeue_stale_running()
-        if requeued:
-            _log.info("offline: requeued %d stranded job(s)", len(requeued))
+        for job_id in store.requeue_stale_running():
+            store.mark_failed(job_id, "Cancelled: the app was closed while this "
+                                      "job was running. Submit it again to retry.")
+            _log.info("offline: job %s was interrupted by a previous exit", job_id)
     except Exception:                        # never let a startup hiccup kill the loop
-        _log.warning("offline: startup requeue failed", exc_info=True)
+        _log.warning("offline: startup adoption failed", exc_info=True)
     last_sweep = 0.0
     while not stop.is_set():
         try:
@@ -230,8 +261,10 @@ def _banner_lines(port: int, cfg: Config, caps: dict, open_hint: bool,
                  else f"  serving on http://{host}:{port}")
     lines.append(f"  data dir:     {cfg.data_dir}")
     lines.append(f"  host:         {caps['cores']} core(s), {caps['ram_human']} RAM detected")
+    wall = caps["worker_wall_seconds"]
+    wall_txt = f"wall {wall}s" if wall > 0 else "no time limit"
     lines.append(f"  worker caps:  memory {caps['worker_mem_human']}, "
-                 f"wall {caps['worker_wall_seconds']}s, {caps['workers']} worker(s)")
+                 f"{wall_txt}, {caps['workers']} worker(s)")
     if caps.get("gpus"):
         lines.append(f"  {caps['gpus']} GPU(s) detected -- not used: quiverlab's "
                      "engines are exact CPU computation")
@@ -272,4 +305,7 @@ def serve_offline(port: int = 8000, data_dir=None, open_hint: bool = True,
         uvicorn.run(app, host=host, port=port, log_level="warning")
     finally:
         stop.set()
-        worker.join(timeout=cfg.job_wall_seconds + 5)
+        # A fixed grace, NOT the wall (which is unlimited offline): the loop is a
+        # daemon thread and its in-flight child is killed with the process, so
+        # waiting out a whole computation on Ctrl-C would be worse than leaving.
+        worker.join(timeout=_SHUTDOWN_GRACE_SECONDS)

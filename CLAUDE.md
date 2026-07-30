@@ -521,3 +521,21 @@ KNOWN GAP (not in Marco's list, flagged not fixed): the INSTANT tier deletes its
 artifact dir by design (`webapp/server/instant.py`), so a computation served
 instantly produces no report at all. Only queued/cached jobs expose
 `trace_steps.html`.
+
+**Offline app: NO TIME LIMIT (2026-07-30, Marco -- "they can leave their computer
+overnight").** `build_offline_config` now sets `QLWEB_JOB_WALL_SECONDS=0` and
+lifts `QLWEB_QUEUED_OPS_THRESHOLD`/`QLWEB_QUEUED_MAX_DEGREE` to `_OFFLINE_UNBOUNDED`,
+so nothing the GUI can express is refused as "too big" and nothing is killed on
+the clock; `wall <= 0` disarms BOTH the parent deadline kill in
+`worker.run_one_job` and the child's `RLIMIT_CPU` in `_apply_caps`. Memory stays
+capped (4/5 of detected RAM). DEPLOYED defaults are untouched -- the 900s cap and
+the big/reject tiers are DoS protection + cost-gating for a shared service, and
+every offline default is a `setdefault` so an explicit env var still wins.
+Knock-ons that had to move with it: the offline startup no longer REQUEUES a
+stranded `running` row (with no cap it would restart forever on every launch) but
+marks it failed -- quitting the app IS the cancel button; the draw page's
+`worker.js` polls until the job reaches a TERMINAL state instead of giving up at
+30 minutes (it was lying about a live job); the shutdown join uses a fixed 5s
+grace, not the wall. Also fixed: `job.wall_seconds or cfg.job_wall_seconds` (and
+the mem twin) swapped an explicit 0 for the config cap because 0 is falsy -- now
+`is None`. Battery: `tests/webapp/test_offline_no_time_limit.py`.

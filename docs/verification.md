@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2423 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2434 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-07-29, after Plans 21–33, the Plan-32 oracle-class markers + audit gate, and
 Marco's report-completeness pass). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
@@ -356,7 +356,7 @@ and the oracle class that guards it. Counts are `pytest --collect-only` with the
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, and the 2026-07-29 report-completeness battery) | 173 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
 | `qpa/` (GAP/QPA crosscheck) | 129 | 122 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
-| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 398 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
+| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 411 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
 | `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 58 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 66 | fast | runner artifacts / invariants; build hook; freshness |
 | release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`; the Plan-32 `test_oracle_classes` audit gate) | 44 | fast (audit gates: deep) | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage; **oracle-class count audit** (page == live collection) |
@@ -600,6 +600,20 @@ verified precision and listed below as such.
   (whose locale codec is utf-8) stayed green. `tests/trace/test_artifact_encoding.py`
   is a source-level AST scan (no text I/O in `src/quiverlab`, `webapp`, `docs/gui`
   may omit `encoding=`) plus a live round-trip under a forced cp1252 locale.
+- **The offline desktop app has no time limit** (2026-07-30, Marco: a user may
+  start a real computation and leave the machine overnight). The deployed
+  server's 15-minute wall cap and its "too big, use the email tier" refusal are
+  DoS protection and cost-gating for a SHARED public service; on the user's own
+  laptop neither applies, so the offline config sets `job_wall_seconds = 0` (both
+  the parent deadline kill and the child's `RLIMIT_CPU` are disarmed) and lifts
+  the queued-tier thresholds so every request the GUI can express is queued and
+  run. The MEMORY ceiling stays. `tests/webapp/test_offline_no_time_limit.py`
+  pins all of it, including that the DEPLOYED defaults are unchanged, that an
+  explicit `QLWEB_*` override still wins, and that quitting the app now FAILS the
+  interrupted job rather than requeueing it (with no wall cap, requeue-on-launch
+  would restart it forever). It also pins the `or`-vs-`is None` fix: a job row
+  carrying an explicit `wall_seconds = 0` used to have that swapped for the config
+  cap, because 0 is falsy.
 - The Plan-28 container tier: what pytest verifies is the **wheel-side story**
   (CLI ≡ public-API parity, renderer goldens, checkpoint-resume, byte-stable
   runner delegation, asset-file gates) plus the CI image smoke (build → run a

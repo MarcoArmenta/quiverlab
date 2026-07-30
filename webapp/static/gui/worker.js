@@ -85,22 +85,39 @@ async function fetchArtifact(jobId, name) {
 }
 
 async function pollJob(jobId) {
-  // Bounded poll: the offline worker thread picks jobs up within a second; the
-  // deployed tier can queue longer. 30 min hard stop with a slowing cadence.
-  var waited = 0;
-  while (waited < 30 * 60 * 1000) {
-    var delay = waited < 20000 ? 1000 : 5000;
+  // Poll until the job reaches a TERMINAL state. There is deliberately no client
+  // deadline: the offline app has no wall cap, so a real computation may run for
+  // hours -- the page giving up at 30 minutes on a job that is still going was
+  // just a lie about a live job (Marco 2026-07-30). The deployed server does cap
+  // its jobs, so there the poll still ends promptly, via the failed status.
+  //
+  // The loop only ever exits on: done, failed/error, or the job vanishing (a
+  // purge or a server restart) -- the last after a few consecutive misses, so a
+  // transient blip does not abandon a running job.
+  var waited = 0, misses = 0;
+  for (;;) {
+    var delay = waited < 20000 ? 1000 : (waited < 600000 ? 5000 : 15000);
     await new Promise(function (res) { setTimeout(res, delay); });
     waited += delay;
-    var r = await fetch("/api/jobs/" + jobId);
-    if (!r.ok) throw new Error("job " + jobId + ": HTTP " + r.status);
+    var r;
+    try {
+      r = await fetch("/api/jobs/" + jobId);
+    } catch (err) {                       // network blip: keep waiting
+      if (++misses >= 20) return "lost contact with the local server while the " +
+        "job was running (its permalink keeps working: /job/" + jobId + ")";
+      continue;
+    }
+    if (!r.ok) {
+      if (++misses >= 20) return "job " + jobId + ": HTTP " + r.status;
+      continue;
+    }
+    misses = 0;
     var job = await r.json();
     if (job.status === "done") return null;
     if (job.status === "failed" || job.status === "error") {
       return job.error || "job failed";
     }
   }
-  return "timed out waiting for the queued job (its permalink keeps working: /job/" + jobId + ")";
 }
 
 async function run(request) {

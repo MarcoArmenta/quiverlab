@@ -60,6 +60,11 @@ def _try_setrlimit(which: int, cap: int, name: str) -> None:
 def _apply_caps(wall_seconds: int, mem_bytes: int) -> None:
     """Cap the child's CPU-seconds and address space.
 
+    ``wall_seconds <= 0`` means NO CPU-time limit (the offline desktop app: it is
+    the user's own machine, and a real computation may legitimately run overnight
+    -- Marco 2026-07-30). The memory ceiling still applies either way: exhausting
+    the machine's RAM is never what the user wanted.
+
     - RLIMIT_CPU (SIGXCPU -> SIGKILL) is enforced on both Linux and macOS.
     - RLIMIT_AS is a hard address-space ceiling only on Linux. On macOS a hard
       RLIMIT_AS is either ignored or actively breaks the child (LLVM/numba
@@ -77,7 +82,10 @@ def _apply_caps(wall_seconds: int, mem_bytes: int) -> None:
                      "Linux where both caps are hard)", sys.platform)
         return
 
-    _try_setrlimit(resource.RLIMIT_CPU, wall_seconds, "RLIMIT_CPU")
+    if wall_seconds > 0:
+        _try_setrlimit(resource.RLIMIT_CPU, wall_seconds, "RLIMIT_CPU")
+    else:
+        _log.info("no CPU-time cap for this job (wall limit disabled)")
     if sys.platform == "linux":
         _try_setrlimit(resource.RLIMIT_AS, mem_bytes, "RLIMIT_AS")
     else:
@@ -186,8 +194,12 @@ def run_one_job(store: JobStore, cfg: Config, job: Job, mailer=None) -> None:
         artifact_dir.mkdir(parents=True, exist_ok=True)
         progress_path = artifact_dir / "progress.json"
         store.mark_running(job.id)
-        wall = job.wall_seconds or cfg.job_wall_seconds
-        mem = job.mem_bytes or cfg.job_mem_bytes
+        # `is None`, NOT `or`: 0 is a MEANINGFUL wall value (no limit), and `or`
+        # would silently swap an explicit "run to completion" for the config cap.
+        # The column is NULL for rows written before caps existed -- that, and only
+        # that, falls back to the config.
+        wall = cfg.job_wall_seconds if job.wall_seconds is None else job.wall_seconds
+        mem = cfg.job_mem_bytes if job.mem_bytes is None else job.mem_bytes
         ctx = mp.get_context("spawn")
         q: "mp.Queue" = ctx.Queue()
         p = ctx.Process(target=_child,
@@ -196,8 +208,11 @@ def run_one_job(store: JobStore, cfg: Config, job: Job, mailer=None) -> None:
         p.start()
         # Parent-side wall-time backstop: RLIMIT_CPU caps CPU-seconds inside the
         # child, this caps wall-clock (with slack) so a wedged/sleeping child dies.
-        deadline = time.monotonic() + wall + 5
-        while p.is_alive() and time.monotonic() < deadline:
+        # wall <= 0 disables BOTH: the offline desktop app runs on the user's own
+        # machine, where a real computation may legitimately take all night and
+        # being killed at 15 minutes is the wrong answer (Marco 2026-07-30).
+        deadline = (time.monotonic() + wall + 5) if wall > 0 else None
+        while p.is_alive() and (deadline is None or time.monotonic() < deadline):
             p.join(1)
             _drain_progress(store, job.id, progress_path)
         if p.is_alive():
