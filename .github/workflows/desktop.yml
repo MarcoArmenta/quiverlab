@@ -1,8 +1,9 @@
 name: Desktop app
 
 # Build the one-file double-clickable QuiverLab desktop app (PyInstaller,
-# desktop/quiverlab-desktop.spec) for every OS, smoke each binary with a REAL
-# exact computation (desktop/smoke.py), and publish the assets on the rolling
+# desktop/quiverlab-desktop.spec) for every OS, package it, then unpack the
+# package and smoke THAT copy -- the one a user downloads -- with a REAL exact
+# computation (desktop/smoke.py), and publish the assets on the rolling
 # `app-latest` prerelease that the README's "DOWNLOAD APPLICATION HERE" banner
 # links to. Packaging per OS:
 #   * Windows: raw .exe (double-click works as downloaded)
@@ -75,13 +76,6 @@ jobs:
         shell: bash
         run: pyinstaller --noconfirm desktop/quiverlab-desktop.spec
 
-      - name: Smoke -- serve + real exact computation
-        shell: bash
-        run: |
-          BIN=dist/QuiverLab
-          [ -f dist/QuiverLab.exe ] && BIN=dist/QuiverLab.exe
-          python desktop/smoke.py "$BIN"
-
       - name: Package asset
         shell: bash
         run: |
@@ -91,6 +85,36 @@ jobs:
             macos-*)      (cd dist && zip -X "../${{ matrix.asset }}" QuiverLab) ;;
           esac
           ls -lh "${{ matrix.asset }}"
+
+      # Unpack the asset into a clean directory and smoke THAT copy -- never
+      # dist/. The archive is what ships, so the archive is what gets tested:
+      # smoking dist/ cannot see a packaging bug (a lost executable bit, a
+      # member that never made it in). The extracted binary is deliberately NOT
+      # chmod'ed -- if the mode did not survive the round trip, `test -x` fails
+      # here rather than in a user's download.
+      - name: Unpack the shipped asset
+        shell: bash
+        run: |
+          rm -rf shipped && mkdir shipped
+          case "${{ matrix.label }}" in
+            windows)   cp "${{ matrix.asset }}" shipped/QuiverLab.exe ;;
+            linux-*)   tar -tvzf "${{ matrix.asset }}"
+                       tar -C shipped -xzf "${{ matrix.asset }}" ;;
+            macos-*)   unzip -Z "${{ matrix.asset }}"
+                       unzip -q "${{ matrix.asset }}" -d shipped ;;
+          esac
+          ls -l shipped
+          if [ "${{ matrix.label }}" != "windows" ]; then
+            test -x shipped/QuiverLab \
+              || { echo "::error::executable bit lost in ${{ matrix.asset }}"; exit 1; }
+          fi
+
+      - name: Smoke the shipped asset -- serve + real exact computation
+        shell: bash
+        run: |
+          BIN=shipped/QuiverLab
+          [ -f shipped/QuiverLab.exe ] && BIN=shipped/QuiverLab.exe
+          python desktop/smoke.py "$BIN"
 
       - uses: actions/upload-artifact@v7
         with:
