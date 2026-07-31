@@ -142,7 +142,11 @@ jobs:
         with:
           subject-path: ${{ matrix.asset }}
 
+      # main only: `app-latest` is what the README's download banner points at,
+      # so a branch dispatch builds and smokes but must never overwrite the
+      # public binaries. Ship from a branch by merging it first.
       - name: Publish on the rolling app-latest prerelease
+        if: github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
