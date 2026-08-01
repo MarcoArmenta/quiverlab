@@ -57,6 +57,51 @@ _RIGHT = {"cup": r"\beta", "bracket": r"\beta", "cap": r"z"}
 _OUT = {"cup": r"\gamma", "bracket": r"\gamma", "cap": r"w"}
 
 
+def notation_legend(kind, degrees_note, basis):
+    """One-sentence legend DEFINING the symbols the product-table equations use
+    (Marco: "I need the definitions of alphas, betas, zetas..."). Shown immediately
+    before each product family's tables in every render surface.
+
+    ``basis`` is the concrete recorded class-basis string (e.g. ``"bar/GF(7)"`` /
+    ``"cs/..."``) taken from the result block -- the structure constants are
+    basis-dependent, so the reader is told which basis; ``None`` (connes_b, which has
+    no single basis string) omits it. ``degrees_note`` is an optional trailing clause
+    (the degree indices p/q/n are otherwise per-table); appended when non-empty.
+
+    Plain prose with Unicode math glyphs (alpha/beta/gamma/z/w), rendered as escaped
+    text by every surface -- it never needs typesetting. This is the SINGLE source of
+    the legend text, consumed by ``render_html`` (via ``products_chapter``) and
+    ``results_html._product_tables_html``; the GUI hardcodes the same wording."""
+    on_basis = ("relative to the recorded basis %s" % basis if basis
+                else "relative to the recorded class basis")
+    if kind == "cup":
+        s = ("α₁,…,α_{d_p} are the recorded basis classes of "
+             "HH^p and β₁,…,β_{d_q} those of HH^q; "
+             "γ₁,…,γ_{d_{p+q}} the basis of HH^{p+q}. Every table "
+             "line states α_i ∪ β_j = Σ_k c·γ_k, %s; "
+             "the constants c are basis-dependent." % on_basis)
+    elif kind == "bracket":
+        s = ("α₁,…,α_{d_p} are the recorded basis classes of "
+             "HH^p and β₁,…,β_{d_q} those of HH^q; "
+             "γ₁,…,γ_{d_{p+q-1}} the basis of HH^{p+q-1}. Every "
+             "table line states [α_i, β_j] = Σ_k c·γ_k in "
+             "degree p+q−1, %s; the constants c are basis-dependent." % on_basis)
+    elif kind == "cap":
+        s = ("z₁,…,z_{d_n} are the recorded basis classes of HH_n "
+             "(homology) and w₁,…,w_{d_{n-p}} those of HH_{n-p}; "
+             "α₁,…,α_{d_p} the basis of HH^p. Every table line "
+             "states α_i ∩ z_j = Σ_k c·w_k, %s; the constants c "
+             "are basis-dependent." % on_basis)
+    elif kind == "connes_b":
+        s = ("each induced Connes differential B_n: HH_n → HH_{n+1} is written "
+             "on the recorded homology bases -- rows index HH_{n+1}, columns index "
+             "HH_n; the entries are basis-dependent.")
+    else:
+        raise QuiverlabError(
+            "unknown product kind %r for the notation legend" % (kind,))
+    return "%s (%s)" % (s, degrees_note) if degrees_note else s
+
+
 def products_chapter(A, kind, obj):
     """The worked-steps event stream for the product ``kind`` computed as ``obj``.
 
@@ -95,7 +140,10 @@ def _table_chapter(A, kind, obj):
     title, prose = _PROSE[kind]
     result_kind = "HH_" if kind == "cap" else "HH^"
     result_dims = hom if kind == "cap" else coh
+    # The notation legend defining the table symbols, named the recorded basis
+    # (Marco, Plan-35 follow-up) -- one shared builder for every render surface.
     return [StepNote(title, prose, heading=True),
+            StepNote("Notation.", notation_legend(kind, "", obj.basis)),
             ResultDims(kind=result_kind, dims=list(result_dims))] + steps
 
 
@@ -187,6 +235,7 @@ def _connes_chapter(A, obj):
             "chapter that misstates the computation" % (list(obj.hh_dims), hom))
     title, prose = _PROSE["connes_b"]
     events = [StepNote(title, prose, heading=True),
+              StepNote("Notation.", notation_legend("connes_b", "", None)),
               ResultDims(kind="HH_", dims=list(obj.hh_dims))]
     for n in sorted(obj.matrices):
         mat = obj.matrices[n]

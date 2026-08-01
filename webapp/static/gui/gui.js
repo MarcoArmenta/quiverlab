@@ -1187,36 +1187,63 @@
       return "\\( HH^{" + p + "} \\cap HH_{" + q + "} \\to HH_{" + out + "} \\)";
     return "\\( [HH^{" + p + "}, HH^{" + q + "}] \\to HH^{" + out + "} \\)";
   }
-  function coeffTerm(c, sym) {              // exact-string coeff -> "c f_k" LaTeX
-    if (c === "1") return sym;
-    if (c === "-1") return "-" + sym;
-    return c + " \\cdot " + sym;
+  function coeffTerm(c, sym) {              // exact-string coeff -> "c \, sym" LaTeX
+    return c === "1" ? sym : c + " \\, " + sym;   // matches trace.products._term
   }
-  // The nonzero structure-constant equations of ONE table: for each (i, j),
-  // e_i * e_j = sum_k constants[k][i][j] f_k, zero terms skipped and a fully-zero
-  // equation omitted (the whole-table-zero case is the caller's "vanish" line).
+  // The nonzero structure-constant equations of ONE table, in the report's SHARED
+  // notation (quiverlab.trace.products.equation_lines): alpha^p_i / beta^q_j (z^n_j
+  // for cap) on the left, gamma^{p+q}_k (w^{n-p}_k for cap) on the right; zero terms
+  // skipped and a fully-zero equation omitted (the whole-table-zero case is the
+  // caller's "vanish" line). One notation everywhere -- report, results, GUI.
   function productEquations(name, t) {
     var K = t.constants || [], dims = t.dims || [0, 0, 0];
+    var degs = t.degrees || [0, 0], out = t.out_degree;
     var dl = dims[0], dr = dims[1], dout = dims[2], lines = [];
+    var p = degs[0], q = degs[1];
+    var rightSym = name === "cap" ? "z" : "\\beta";
+    var outSym = name === "cap" ? "w" : "\\gamma";
     for (var i = 0; i < dl; i++) {
       for (var j = 0; j < dr; j++) {
         var terms = [];
         for (var k = 0; k < dout; k++) {
           var c = String(((K[k] || [])[i] || [])[j]);
           if (c === "0" || c === "undefined") continue;
-          terms.push(coeffTerm(c, "f_{" + (k + 1) + "}"));
+          terms.push(coeffTerm(c, outSym + "^{" + out + "}_{" + (k + 1) + "}"));
         }
         if (!terms.length) continue;
-        var lhs = (name === "bracket")
-          ? "[e_{" + (i + 1) + "}, e_{" + (j + 1) + "}]"
-          : "e_{" + (i + 1) + "} " + PRODUCT_OP[name] + " e_{" + (j + 1) + "}";
+        var L = "\\alpha^{" + p + "}_{" + (i + 1) + "}";
+        var R = rightSym + "^{" + q + "}_{" + (j + 1) + "}";
+        var lhs = (name === "bracket") ? "[" + L + ", " + R + "]"
+          : L + " " + PRODUCT_OP[name] + " " + R;
         lines.push("\\( " + lhs + " = " + terms.join(" + ") + " \\)");
       }
     }
     return lines;
   }
+  // Plan-35 follow-up (Marco): the notation legend defining the product-table
+  // symbols (alpha/beta/gamma/z/w), shown above each family's tables. Hardcoded
+  // English like PRODUCT_TITLE; the report surfaces build the same wording in
+  // quiverlab.trace.products.notation_legend. The concrete recorded basis (b.basis,
+  // e.g. "bar/GF(2)") is named so the reader knows what the constants refer to.
+  function productLegend(name, b) {
+    var onBasis = b.basis ? "relative to the recorded basis " + b.basis
+                          : "relative to the recorded class basis";
+    if (name === "cup")
+      return "α₁,…,α_{d_p} are the recorded basis classes of HH^p and β₁,…,β_{d_q} "
+        + "those of HH^q; γ₁,…,γ_{d_{p+q}} the basis of HH^{p+q}. Every line states "
+        + "α_i ∪ β_j = Σ_k c·γ_k, " + onBasis + "; the constants c are "
+        + "basis-dependent.";
+    if (name === "bracket")
+      return "α₁,…,α_{d_p} are the recorded basis classes of HH^p and β₁,…,β_{d_q} "
+        + "those of HH^q; γ₁,…,γ_{d_{p+q-1}} the basis of HH^{p+q-1}. Every line "
+        + "states [α_i, β_j] = Σ_k c·γ_k in degree p+q−1, " + onBasis + ".";
+    return "z₁,…,z_{d_n} are the recorded basis classes of HH_n (homology) and "
+      + "w₁,…,w_{d_{n-p}} those of HH_{n-p}; α₁,…,α_{d_p} the basis of HH^p. Every "
+      + "line states α_i ∩ z_j = Σ_k c·w_k, " + onBasis + ".";
+  }
   function renderProductTables(div, name, b) {
     div.appendChild(h("p", { text: PRODUCT_TITLE[name] }));
+    div.appendChild(h("p", { "class": "qlgui-hint", text: productLegend(name, b) }));
     (b.tables || []).forEach(function (t) {
       div.appendChild(h("p", { "class": "arithmatex",
         text: productHeading(name, t.degrees, t.out_degree) }));
@@ -1239,6 +1266,9 @@
   }
   function renderConnesB(div, b) {
     div.appendChild(h("p", { text: PRODUCT_TITLE.connes_b }));
+    div.appendChild(h("p", { "class": "qlgui-hint",
+      text: "each induced Connes differential B_n: HH_n → HH_{n+1} is written on "
+          + "the recorded homology bases — rows index HH_{n+1}, columns index HH_n." }));
     var keys = Object.keys(b.matrices || {})
       .map(Number).sort(function (a, c) { return a - c; });
     keys.forEach(function (n) {

@@ -35,6 +35,20 @@ def test_chapter_events_render_and_carry_tables(tmp_path):
                         assert c in html
 
 
+def test_chapter_carries_notation_legend_before_the_tables():
+    # Plan-35 follow-up (Marco): a legend defining alpha/beta/gamma/z/w and naming
+    # the concrete recorded basis appears BEFORE the structure-constant tables.
+    from quiverlab.trace.products import products_chapter
+    from quiverlab.trace.render_html import render_html
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
+    hp = A.cup_products(2)
+    html = render_html(products_chapter(A, "cup", hp), title="cup", algebra=A)
+    assert "recorded basis" in html
+    assert hp.basis in html                       # the concrete basis, e.g. bar/GF(7)
+    # the legend precedes the first table's map label (\otimes) and equations.
+    assert html.index("recorded basis") < html.index("otimes")
+
+
 def test_drift_gate_fires_on_dim_mismatch():
     from quiverlab.trace.products import products_chapter
     A = ql.truncated_polynomial(2, field=ql.GF(7))

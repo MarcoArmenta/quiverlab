@@ -394,6 +394,20 @@ def test_product_blocks_render_in_the_computed_results_section():
     assert "induced rank B_0" in html
 
 
+def test_product_tables_carry_a_notation_legend_with_the_basis():
+    """Plan-35 follow-up (Marco): the Computed-results product tables are preceded by
+    a legend defining the symbols (alpha/beta/gamma/z/w) and naming the concrete
+    recorded basis, so the reader knows what the structure constants refer to."""
+    import quiverlab as ql
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
+    block = A.cup_products(2).blocks()
+    html = "".join(results_section({"cup": block}))
+    assert "recorded basis" in html
+    assert block["basis"] in html                  # e.g. "bar/GF(7)"
+    # the legend appears BEFORE the first cup map label / equation.
+    assert html.index("recorded basis") < html.index(r"\cup")
+
+
 def test_a_fully_vanishing_product_bidegree_states_so_not_a_stub():
     block = {"kind": "cup", "engine": "bar/GF(7)",
              "tables": [{"degrees": [1, 1], "out_degree": 2, "dims": [1, 1, 1],

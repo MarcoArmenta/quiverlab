@@ -328,8 +328,9 @@ def _product_tables_html(kind, b):
     per bidegree (an all-vanishing table states so), the bracket's served-window
     note, then the engine provenance. The equation lines come from the SAME builder
     the worked-steps chapter uses (``quiverlab.trace.products.equation_lines``)."""
-    from quiverlab.trace.products import equation_lines
-    out = []
+    from quiverlab.trace.products import equation_lines, notation_legend
+    out = ["<p class='ql-note'>%s</p>"
+           % _esc(notation_legend(kind, "", b.get("basis")))]
     for t in (b.get("tables") or []):
         degrees = list(t.get("degrees") or [])
         out_degree = t.get("out_degree")
@@ -355,7 +356,9 @@ def _product_tables_html(kind, b):
 def _connes_b_html(b):
     """connes_b: one induced Connes differential grid ``B_n : HH_n → HH_{n+1}`` per
     degree with its induced rank, then the engine provenance."""
-    out = []
+    from quiverlab.trace.products import notation_legend
+    out = ["<p class='ql-note'>%s</p>"
+           % _esc(notation_legend("connes_b", "", None))]
     matrices = b.get("matrices") or {}
     ranks = b.get("ranks") or {}
     for key in sorted(matrices, key=lambda s: int(s)):

@@ -53,6 +53,16 @@ def test_compute_push_order_after_hh_homology():
     assert len(set(positions)) == len(positions)
 
 
+def test_gui_carries_the_product_notation_legend():
+    # Plan-35 follow-up (Marco): the legend-building code (productLegend) and its
+    # text exist in BOTH byte-identical gui.js copies, above the product tables.
+    for path in (GUI_DOCS, GUI_WEBAPP):
+        src = path.read_text(encoding="utf-8")
+        assert "productLegend" in src, path
+        assert "recorded basis" in src, path
+        assert "recorded homology bases" in src, path       # the connes_b legend
+
+
 def test_cyclic_homology_checkbox_and_push_order():
     # Plan-35 follow-up: HC checkbox + degree picker exist, are registered in `el`,
     # and buildRequest() pushes cyclic_homology immediately AFTER the connes_b push.
