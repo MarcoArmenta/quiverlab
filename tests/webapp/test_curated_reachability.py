@@ -67,7 +67,8 @@ _EX = pathlib.Path(__file__).resolve().parents[2] / "webapp" / "precomputed" / "
 # and by carrying a bare ``dimension`` kind the GUI never pushes. Do not "align" it
 # to gui.js by reordering the requests -- that re-keys all six bundles.
 _GUI_ORDER = ["hh_cohomology", "hh_homology", "cup", "cap", "bracket",
-              "connes_b", "cartan", "coxeter_polynomial", "global_dimension",
+              "connes_b", "cyclic_homology", "cartan", "coxeter_polynomial",
+              "global_dimension",
               "center", "dimension", "dimension_vector", "rad_top_soc", "tau",
               "tau_minus", "projective_resolution", "injective_resolution",
               "projective_dimension", "injective_dimension", "decompose",

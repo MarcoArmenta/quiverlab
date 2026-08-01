@@ -53,6 +53,26 @@ def test_compute_push_order_after_hh_homology():
     assert len(set(positions)) == len(positions)
 
 
+def test_cyclic_homology_checkbox_and_push_order():
+    # Plan-35 follow-up: HC checkbox + degree picker exist, are registered in `el`,
+    # and buildRequest() pushes cyclic_homology immediately AFTER the connes_b push.
+    src = GUI_DOCS.read_text(encoding="utf-8")
+    assert 'id="qlgui-cyclic_homology"' in src
+    assert 'id="qlgui-cyclic_homology-top"' in src
+    assert '"cyclic_homology"' in src                    # registered in `el`
+    connes = 'compute.push("connes_b:0.." + el["connes_b-top"].value)'
+    hc = ('compute.push("cyclic_homology:0.." + '
+          'el["cyclic_homology-top"].value)')
+    assert connes in src and hc in src
+    assert src.index(connes) < src.index(hc)             # HC follows connes_b
+
+
+def test_cyclic_homology_i18n_present_in_both_locales():
+    for path in (EN, ES):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        assert "inv.cyclic_homology" in data, path.name
+
+
 def test_i18n_keys_present_in_both_locales():
     keys = (["inv.%s" % k for k in PRODUCT_KINDS]
             + ["block.cup.title", "block.cap.title", "block.bracket.title",

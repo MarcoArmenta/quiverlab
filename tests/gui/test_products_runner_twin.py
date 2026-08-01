@@ -75,6 +75,17 @@ def test_product_block_carries_references_and_citations(tmp_path):
         assert block["citations"] and len(block["citations"][0]) == 2, kind
 
 
+def test_cyclic_homology_block_matches_spec_runner(tmp_path):
+    # Plan-35 follow-up: the cyclic-homology block the twin emits is key-for-key
+    # equal to the server tier's (same kind/top/dims/engine/references/citations).
+    body = dict(_BODY, compute=["cyclic_homology:0..4"])
+    gui = _gui_blocks(body)
+    ref = _server_blocks(body, tmp_path)
+    # the GUI keys blocks by table.kind ("HC_"); the server keys by compute kind.
+    assert gui["HC_"] == ref["cyclic_homology"]
+    assert gui["HC_"]["references"] == ["cyclic"] and gui["HC_"]["citations"]
+
+
 def test_python_snippet_covers_product_kinds():
     # A product compute must have a snippet entry, or python_snippet() KeyErrors
     # (the same failure mode the `dimension` correction fixed).

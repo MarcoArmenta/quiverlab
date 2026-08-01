@@ -66,6 +66,8 @@
     '  <label><input type="checkbox" id="qlgui-cap"> cap 0..<input type="number" id="qlgui-cap-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-bracket"> bracket 0..<input type="number" id="qlgui-bracket-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-connes_b"> Connes B 0..<input type="number" id="qlgui-connes_b-top" value="2" min="0"></label>' +
+    // Plan-35 follow-up: cyclic homology HC_0..HC_n (default 6), right after Connes B.
+    '  <label><input type="checkbox" id="qlgui-cyclic_homology"> cyclic homology 0..<input type="number" id="qlgui-cyclic_homology-top" value="6" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
@@ -137,7 +139,7 @@
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top",
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
-   "connes_b", "connes_b-top", "cartan",
+   "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -638,11 +640,14 @@
     if (el.hhc.checked) compute.push("hh_cohomology:0.." + el["hhc-top"].value);
     if (el.hhh.checked) compute.push("hh_homology:0.." + el["hhh-top"].value);
     // Plan 35 HH product surface, in the Task-12 curated-request order (cup, cap,
-    // bracket, connes_b) immediately after hh_homology -- do not reorder.
+    // bracket, connes_b) immediately after hh_homology -- do not reorder. Cyclic
+    // homology (HC) follows connes_b (Plan-35 follow-up).
     if (el.cup.checked) compute.push("cup:0.." + el["cup-top"].value);
     if (el.cap.checked) compute.push("cap:0.." + el["cap-top"].value);
     if (el.bracket.checked) compute.push("bracket:0.." + el["bracket-top"].value);
     if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
+    if (el.cyclic_homology.checked)
+      compute.push("cyclic_homology:0.." + el["cyclic_homology-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
@@ -1264,6 +1269,19 @@
       renderProductTables(div, name, b);
     } else if (name === "connes_b") {
       renderConnesB(div, b);
+    } else if (name === "cyclic_homology") {
+      // Plan-35 follow-up: HC is a homology-style subscript table HC_n, rendered
+      // exactly like the HH dims tables above.
+      var chead = h("tr"), crow = h("tr");
+      chead.appendChild(h("th", { text: "n" }));
+      crow.appendChild(h("th", { text: "dim HC_n" }));
+      b.dims.forEach(function (d, n) {
+        chead.appendChild(h("td", { text: String(n) }));
+        crow.appendChild(h("td", { text: String(d) }));
+      });
+      div.appendChild(h("p", { text: "Cyclic homology" }));
+      div.appendChild(h("table", {}, chead, crow));
+      div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
     } else if (name === "cartan") {
       div.appendChild(h("p", { text: "Cartan matrix:" }));
       div.appendChild(matrixGrid(b.matrix));
@@ -1371,7 +1389,8 @@
   el.relations.addEventListener("input", scheduleProbe);
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
-   el.connes_b, el["connes_b-top"], el.cartan,
+   el.connes_b, el["connes_b-top"],
+   el.cyclic_homology, el["cyclic_homology-top"], el.cartan,
    el.coxeter_polynomial, el.global_dimension, el.center]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls

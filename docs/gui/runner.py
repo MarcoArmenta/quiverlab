@@ -548,6 +548,18 @@ def compute_one(spec):
             block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                      "engine": table.engine,
                      "citations": _citation_pairs(table.references)}
+        elif name == "cyclic_homology":
+            # Plan-35 follow-up: cyclic homology HC_0..HC_n (Connes (b, B) mixed
+            # complex). Range kind; the block is key-for-key identical to the server
+            # twin (quiverlab.hpc.spec._dispatch) -- kind/top/dims/engine/references/
+            # citations -- so the cross-runner contract holds.
+            if top is None:
+                raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+            table = A.cyclic_homology(top)
+            keys = ["cyclic"]
+            block = {"kind": table.kind, "top": top, "dims": list(table.dims),
+                     "engine": table.engine, "references": keys,
+                     "citations": _citation_pairs(keys)}
         elif name == "cartan":
             m = A.cartan_matrix()
             block = {"matrix": m, "latex": _latex_matrix(m),
@@ -699,6 +711,7 @@ def python_snippet():
         lines += _module_snippet_lines(_tor_target_spec(), "N")
     calls = {"hh_cohomology": "A.hochschild_cohomology(%d)",
              "hh_homology": "A.hochschild_homology(%d)",
+             "cyclic_homology": "A.cyclic_homology(%d)",
              "cartan": "A.cartan_matrix()", "coxeter_polynomial": "A.coxeter_polynomial()",
              "global_dimension": "A.global_dimension()", "center": "A.center()",
              # `dimension` is a scalar invariant compute_one serves (A.dim) -- it MUST

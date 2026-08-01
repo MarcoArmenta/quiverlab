@@ -44,3 +44,23 @@ def test_range_required(tmp_path):
     from quiverlab.hpc.spec import ComputeError
     with pytest.raises(Exception):
         spec_run(_req(["cup"]), tmp_path)     # ComputeError -> typed 4xx upstream
+
+
+# --------------------------------------------------------------------------- #
+# Plan-35 follow-up: cyclic homology HC_0..HC_n as a range compute kind.
+# --------------------------------------------------------------------------- #
+
+def test_cyclic_homology_block(tmp_path):
+    res = spec_run(_req(["cyclic_homology:0..4"]), tmp_path)
+    b = res["results"]["cyclic_homology"]
+    # A.cyclic_homology returns an HHTable with kind "HC_"; the block mirrors the
+    # hh_homology shape (kind/top/dims/engine/references/citations).
+    assert b["kind"] == "HC_" and b["top"] == 4
+    assert b["dims"] == [3, 1, 4, 2, 5]        # HC_0..HC_4 of k<x>/(x^3) over GF(2)
+    assert b["references"] == ["cyclic"] and b["citations"]
+    assert b["engine"]
+
+
+def test_cyclic_homology_range_required(tmp_path):
+    with pytest.raises(Exception):
+        spec_run(_req(["cyclic_homology"]), tmp_path)   # SchemaError -> typed 4xx

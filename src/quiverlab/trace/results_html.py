@@ -29,6 +29,7 @@ from quiverlab.trace.render_html import (
 _HEADINGS = {
     "hh_cohomology": "Hochschild cohomology",
     "hh_homology": "Hochschild homology",
+    "cyclic_homology": "Cyclic homology",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
     "cap": "Cap product tables",
@@ -106,6 +107,13 @@ def _block_html(kind, b):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
         chunks = [_dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or [])]
+        if b.get("engine"):
+            chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+        return chunks
+    if kind == "cyclic_homology":
+        # HC is a homology-style subscript table HC_n (Plan-35 follow-up), rendered
+        # exactly like the HH dims tables above.
+        chunks = [_dims_table("dim HC_n", b.get("dims") or [])]
         if b.get("engine"):
             chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
         return chunks

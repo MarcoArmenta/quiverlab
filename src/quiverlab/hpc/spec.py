@@ -1103,6 +1103,20 @@ def _dispatch(A, item, events, hh_kwargs) -> tuple:
                  "engine": table.engine, "references": keys,
                  "citations": _citation_pairs(keys)}
         return block, (table, table.kind, top)
+    # Cyclic homology HC_0..HC_top (Connes (b, B) mixed complex). A range kind that
+    # mirrors the hh_homology block (HHTable-based), but with NO worked-steps chapter
+    # for now -- it is a dims table, so no hh_trace is returned (the None below).
+    if kind == "cyclic_homology":
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..4'")
+        table = A.cyclic_homology(top)
+        keys = ["cyclic"]
+        block = {"kind": table.kind, "top": top, "dims": list(table.dims),
+                 "engine": table.engine, "references": keys,
+                 "citations": _citation_pairs(keys)}
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -1589,6 +1603,7 @@ def _snippet(req: ComputeRequest, A) -> str:
         lines += _module_construction(req.tor_target, "N", A)
     _snip = {"hh_cohomology": lambda it: f"A.hochschild_cohomology({it.hi})",
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
+             "cyclic_homology": lambda it: f"A.cyclic_homology({it.hi})",
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",
