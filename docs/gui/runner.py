@@ -573,6 +573,20 @@ def compute_one(spec):
             # which serves `dimension` = A.dim; same `value` semantics, GUI block
             # shape (value + citations, like global_dimension).
             block = {"value": A.dim, "citations": _citation_pairs(A.citations())}
+        elif name in ("cup", "cap", "bracket", "connes_b"):
+            # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
+            # library method returns a frozen result whose .blocks() IS the block
+            # dict (kind/top/engine + tables|matrices + references); we only add the
+            # resolved citation pairs, exactly as the server twin does
+            # (quiverlab.hpc.spec._dispatch). The block keeps `references` -- the
+            # cross-runner contract asserts key-for-key equality with the server.
+            if top is None:
+                raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+            method = {"cup": A.cup_products, "cap": A.cap_products,
+                      "bracket": A.gerstenhaber_brackets,
+                      "connes_b": A.connes_differentials}[name]
+            block = method(top).blocks()
+            block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
         _state["results"].append(dict(block, invariant=spec))
@@ -690,6 +704,11 @@ def python_snippet():
              # `dimension` is a scalar invariant compute_one serves (A.dim) -- it MUST
              # have a snippet entry or python_snippet() KeyErrors when it is requested.
              "dimension": "A.dim",
+             # HH product surface (Plan 35): same four calls as the server snippet
+             # map (quiverlab.hpc.spec._snippet); each needs a range (%d = top).
+             "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
+             "bracket": "A.gerstenhaber_brackets(%d)",
+             "connes_b": "A.connes_differentials(%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
