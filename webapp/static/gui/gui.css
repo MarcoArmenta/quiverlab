@@ -62,6 +62,19 @@
 #qlgui-results table.qlgui-matrix th { background: var(--md-code-bg-color, #f0f0f0);
   color: var(--md-default-fg-color--light); font-weight: normal; text-align: center; }
 #qlgui-results table.qlgui-matrix th.qlgui-corner { background: transparent; }
+/* Double zebra striping (Marco 2026-08-01): alternate DATA rows (even rows a light
+   overlay) AND DATA columns (even cols a translucent overlay), so intersections give
+   four subtly distinct levels and an entry is easy to locate by (row, column). Pure
+   nth-child on the existing <td> -- no structure change. The header is tr:nth-child(1),
+   so tr:nth-child(even) is the 1st, 3rd, ... data row; td:nth-child(even) the 1st, 3rd,
+   ... data column (the row-index <th> is the first cell). Header <th> never striped. */
+#qlgui-results table.qlgui-matrix tr:nth-child(even) td { background-color: rgba(0, 0, 0, .05); }
+#qlgui-results table.qlgui-matrix td:nth-child(even) {
+  background-image: linear-gradient(rgba(0, 0, 0, .045), rgba(0, 0, 0, .045)); }
+[data-md-color-scheme="slate"] #qlgui-results table.qlgui-matrix tr:nth-child(even) td {
+  background-color: rgba(255, 255, 255, .06); }
+[data-md-color-scheme="slate"] #qlgui-results table.qlgui-matrix td:nth-child(even) {
+  background-image: linear-gradient(rgba(255, 255, 255, .05), rgba(255, 255, 255, .05)); }
 [data-md-color-scheme="slate"] #qlgui-canvas .sel circle,
 [data-md-color-scheme="slate"] #qlgui-canvas .sel path { stroke: #ef5350; }
 [data-md-color-scheme="slate"] #qlgui-status.ok  { color: #81c784; }

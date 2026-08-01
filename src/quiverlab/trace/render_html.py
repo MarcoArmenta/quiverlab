@@ -62,11 +62,26 @@ _STYLE = (
     "table.ql-dims th,table.ql-table th{background:#f2f2f2}"
     # An indexed matrix grid: white cells on a light-grey rule, with the row and
     # column indices in grey headers so an entry can be read off by position
-    # (Marco 2026-07-29).
+    # (Marco 2026-07-29). DOUBLE ZEBRA STRIPING (Marco 2026-08-01): alternate the
+    # DATA rows (even rows light grey) AND the DATA columns (even columns a
+    # translucent overlay), so intersections give four subtly distinct levels and
+    # an entry is easy to locate by its (row, column) index. Striping is pure CSS
+    # nth-child on the existing <td> cells -- no attribute or structure change, so
+    # the tests that read entries out of the grid are unaffected. Header row/column
+    # (<th>) keep their distinct grey and are never striped. print-color-adjust:exact
+    # keeps the shading when the report is printed (else browsers drop backgrounds).
     "table.ql-matrix{border-collapse:collapse;margin:.5em 0 .9em;"
     "font-variant-numeric:tabular-nums}"
     "table.ql-matrix td,table.ql-matrix th{border:1px solid #d0d0d0;"
-    "padding:2px 9px;text-align:right;background:#fff}"
+    "padding:2px 9px;text-align:right;background:#fff;"
+    "-webkit-print-color-adjust:exact;print-color-adjust:exact}"
+    # data rows: even (data) rows light grey -- the header is tr:nth-child(1), so
+    # tr:nth-child(even) selects the 1st, 3rd, ... data row.
+    "table.ql-matrix tr:nth-child(even) td{background-color:#f2f2f2}"
+    # data columns: even (data) columns a translucent overlay; background-image
+    # layers OVER the row background-color, so the two stripings stack.
+    "table.ql-matrix td:nth-child(even)"
+    "{background-image:linear-gradient(rgba(0,0,0,.045),rgba(0,0,0,.045))}"
     "table.ql-matrix th{background:#f0f0f0;color:#555;font-weight:normal;"
     "font-size:.85em;text-align:center}"
     "table.ql-matrix th.ql-corner{background:#e4e4e4;border-color:#c4c4c4}"
