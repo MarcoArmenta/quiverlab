@@ -362,6 +362,47 @@ def test_a_zero_dimensional_matrix_is_the_symbol_zero_not_an_empty_grid():
     assert "d_{1} = 0" in matrix_grid([], label="d_{1}")
 
 
+# --------------------------------------------------------------------------- #
+# 11. Plan 35: the HH product blocks (cup/cap/bracket/connes_b) render as tables
+#     in the Computed-results section, not the generic "see the JSON" stub.
+# --------------------------------------------------------------------------- #
+def test_product_blocks_render_in_the_computed_results_section():
+    """The DEFAULT report case: an HH computation claims the worked-steps bundle and
+    the products ride along as result blocks. The block renderer used to have no
+    cup/cap/bracket/connes_b branch, so the section printed a bare stub; now it
+    renders the map labels + structure-constant equations (cup/cap/bracket) and the
+    induced-B grids (connes_b)."""
+    import quiverlab as ql
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
+    tr = Trace()
+    table = A.hochschild_cohomology(2, engine="bar", trace=tr)
+    results = {"hh_cohomology": {"kind": "HH^", "dims": list(table.dims),
+                                 "engine": "bar"},
+               "cup": A.cup_products(2).blocks(),
+               "connes_b": A.connes_differentials(2).blocks()}
+    html = render_html(list(tr), title="t", algebra=A, results=results)
+    # the sections carry the gui.js i18n titles (was the bare "cup"/"connes_b").
+    assert "<h3>Cup product tables</h3>" in html
+    assert "<h3>Connes differentials</h3>" in html
+    assert "<h3>cup</h3>" not in html and "<h3>connes_b</h3>" not in html
+    # ...the cup equations really render (the ∪ operator appears in the map label
+    # AND the structure-constant equations), NOT the missing-branch stub...
+    assert r"\cup" in html
+    assert "computed; see the JSON record for its data" not in html
+    # ...and the Connes differential is a matrix GRID with its induced-rank line.
+    assert has_grid(html, A.connes_differentials(2).blocks()["matrices"]["0"])
+    assert "induced rank B_0" in html
+
+
+def test_a_fully_vanishing_product_bidegree_states_so_not_a_stub():
+    block = {"kind": "cup", "engine": "bar/GF(7)",
+             "tables": [{"degrees": [1, 1], "out_degree": 2, "dims": [1, 1, 1],
+                         "constants": [[["0"]]]}]}
+    html = "".join(results_section({"cup": block}))
+    assert "every product in this bidegree vanishes" in html
+    assert "computed; see the JSON record for its data" not in html
+
+
 def test_grid_entries_are_copied_verbatim_and_escaped():
     from quiverlab.trace.render_html import matrix_grid
     got = matrix_grid([["1/2", "-3", "x^1"]])

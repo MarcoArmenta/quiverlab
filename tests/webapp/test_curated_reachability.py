@@ -90,8 +90,9 @@ def test_compute_list_is_in_gui_order(bundle):
         assert not (_PRODUCTS & set(kinds)), \
             f"{bundle}: deep bar-blow-up example carries no products (see manifest.yaml)"
     else:
-        assert {"cup", "cap", "connes_b"} <= set(kinds), \
-            f"{bundle}: Plan 35 -- tractable curated examples carry the products"
+        assert {"cup", "cap", "bracket", "connes_b"} <= set(kinds), \
+            f"{bundle}: Plan 35 -- tractable curated examples carry the products " \
+            "(all four: cup/cap/bracket/connes_b -- these bundles are GF(p))"
 
 
 @pytest.mark.parametrize("bundle", sorted(p.name for p in _EX.iterdir() if p.is_dir()))

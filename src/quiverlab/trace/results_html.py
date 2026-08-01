@@ -29,6 +29,11 @@ from quiverlab.trace.render_html import (
 _HEADINGS = {
     "hh_cohomology": "Hochschild cohomology",
     "hh_homology": "Hochschild homology",
+    # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
+    "cup": "Cup product tables",
+    "cap": "Cap product tables",
+    "bracket": "Gerstenhaber bracket tables",
+    "connes_b": "Connes differentials",
     "cartan": "Cartan matrix",
     "coxeter_polynomial": "Coxeter polynomial",
     "global_dimension": "Global dimension",
@@ -132,6 +137,10 @@ def _block_html(kind, b):
             chunks.append("<p>against N, dimension vector %s.</p>" % _esc(_dv(target)))
         chunks.append(_dims_table("dim %sn" % op, b.get("dims") or []))
         return chunks
+    if kind in ("cup", "cap", "bracket"):
+        return _product_tables_html(kind, b)
+    if kind == "connes_b":
+        return _connes_b_html(b)
     if kind in ("projective_resolution", "injective_resolution"):
         return _resolution_html(kind, b)
     if kind in ("projective_dimension", "injective_dimension"):
@@ -281,6 +290,75 @@ def _differentials_html(b, proj):
             continue
         seen[key] = sym
         out.append(matrix_grid(matrix, label=sym))
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Plan 35 HH product surface: cup / cap / bracket tables + the Connes differential.
+# The block shapes are the frozen result objects' ``.blocks()`` (see
+# quiverlab.hochschild.products): cup/cap/bracket carry ``tables`` (each with
+# ``degrees`` / ``out_degree`` / ``dims=[dl,dr,dout]`` / ``constants[k][i][j]``
+# exact strings); connes_b carries per-n ``matrices`` + ``ranks``. Rendered the way
+# the GUI shows them (webapp/static/gui/gui.js), sharing the equation builder with
+# the worked-steps chapter so the report and the chapter never drift.
+# --------------------------------------------------------------------------- #
+
+def _product_heading(kind, degrees, out_degree):
+    """The map label above one table: ``HH^p ∪ HH^q → HH^{p+q}`` (cup),
+    ``HH^p ∩ HH_n → HH_{n-p}`` (cap), ``[HH^p, HH^q] → HH^{p+q-1}`` (bracket)."""
+    p = degrees[0] if degrees else 0
+    q = degrees[1] if len(degrees) > 1 else 0
+    if kind == "cap":
+        return r"HH^{%s} \cap HH_{%s} \to HH_{%s}" % (p, q, out_degree)
+    if kind == "bracket":
+        return r"[HH^{%s}, HH^{%s}] \to HH^{%s}" % (p, q, out_degree)
+    return r"HH^{%s} \cup HH^{%s} \to HH^{%s}" % (p, q, out_degree)
+
+
+def _product_tables_html(kind, b):
+    """cup / cap / bracket: one map heading plus its nonzero-product equation lines
+    per bidegree (an all-vanishing table states so), the bracket's served-window
+    note, then the engine provenance. The equation lines come from the SAME builder
+    the worked-steps chapter uses (``quiverlab.trace.products.equation_lines``)."""
+    from quiverlab.trace.products import equation_lines
+    out = []
+    for t in (b.get("tables") or []):
+        degrees = list(t.get("degrees") or [])
+        out_degree = t.get("out_degree")
+        dims = list(t.get("dims") or [0, 0, 0])
+        constants = t.get("constants") or []
+        out.append('<p class="ql-mlabel">%s</p>'
+                   % _math_inline(_product_heading(kind, degrees, out_degree)))
+        lines = equation_lines(kind, degrees, out_degree, dims, constants)
+        if lines:
+            out.extend(_math(line) for line in lines)
+        else:
+            out.append("<p class='ql-note'>every product in this bidegree "
+                       "vanishes.</p>")
+    if kind == "bracket" and b.get("window") is not None:
+        out.append("<p class='ql-note'>bracket structure constants served to the "
+                   "degree window %s (bar-transport bound).</p>"
+                   % _num(b.get("window")))
+    if b.get("engine"):
+        out.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+    return out
+
+
+def _connes_b_html(b):
+    """connes_b: one induced Connes differential grid ``B_n : HH_n → HH_{n+1}`` per
+    degree with its induced rank, then the engine provenance."""
+    out = []
+    matrices = b.get("matrices") or {}
+    ranks = b.get("ranks") or {}
+    for key in sorted(matrices, key=lambda s: int(s)):
+        n = int(key)
+        out.append('<p class="ql-mlabel">%s</p>'
+                   % _math_inline(r"B_{%d} : HH_{%d} \to HH_{%d}" % (n, n, n + 1)))
+        out.append(matrix_grid(matrices[key], label="B_{%d}" % n))
+        out.append("<p class='ql-note'>induced rank B_%d = %s</p>"
+                   % (n, _num(ranks.get(key))))
+    if b.get("engine"):
+        out.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
     return out
 
 

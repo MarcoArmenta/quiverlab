@@ -44,7 +44,9 @@ A.connes_differentials(top, max_cells=4_000_000)
     # (no engine= — the two paths are a field property, not a user choice)
 ```
 
-Return objects: frozen `HHProducts` / `HHBrackets` / `ConnesB` holding
+Return objects: frozen `HHProducts` (cup / cap / bracket — each a family of
+`ProductTable`s; the bracket is `HHProducts(kind="bracket")`, there is no separate
+`HHBrackets` class) / `ConnesB` holding
 
 * per-degree dims,
 * the exact structure-constant tensors (`dict[(p, q)] -> nested Domain-exact

@@ -54,3 +54,26 @@ def test_connes_serves_both_fields():
         A = ql.truncated_polynomial(2, field=F)
         cb = A.connes_differentials(2)
         assert set(cb.matrices) == {0, 1}
+
+
+def test_auto_gfp_falls_back_to_cs_past_the_bar_precheck():
+    """engine='auto' over GF(p): when the bar cochain-basis pairing exceeds
+    max_cells (the gfp route's DepthLimitError pre-check), a quiver-presented
+    algebra silently falls back to the CS native route -- the Marco-2026-07-26
+    dispatch amendment, extended to the product surface. The smallest cup table on
+    the x^3 loop pairs the two degree-0 bases (3*3 = 9 cells), so max_cells=4 trips
+    it; the result must still arrive, served by CS."""
+    Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
+    A = Q.algebra(relations=["x*x*x"], field=ql.GF(7))
+    hp = A.cup_products(2, max_cells=4)          # engine='auto' by default
+    assert hp.basis.startswith("cs/")            # the fallback fired
+
+
+def test_explicit_bar_does_not_fall_back_and_raises_at_the_precheck():
+    """No silent fallback for an EXPLICIT engine='bar': it honours the wall and
+    raises rather than quietly switching engines (only 'auto' falls back)."""
+    from quiverlab.errors import DepthLimitError
+    Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
+    A = Q.algebra(relations=["x*x*x"], field=ql.GF(7))
+    with pytest.raises(DepthLimitError):
+        A.cup_products(2, engine="bar", max_cells=4)

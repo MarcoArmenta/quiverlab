@@ -127,26 +127,35 @@ def _map_heading(kind, degrees, out_degree):
     return r"HH^{%d} \otimes HH^{%d} \to HH^{%d}" % (p, second, out_degree)
 
 
-def _equation_lines(kind, t):
+def equation_lines(kind, degrees, out_degree, dims, constants):
     """A TeX equation per nonzero product ``left_i * right_j``: the RHS lists the
     output generators with their exact structure-constant coefficients (the unit
     coefficient ``1`` is left implicit; every non-unit coefficient is shown, so
-    every nonzero constant appears verbatim)."""
-    dl, dr, dout = t.dims
-    out_deg = t.out_degree
-    left_deg, right_deg = t.degrees
+    every nonzero constant appears verbatim).
+
+    Operates on the RAW table data (``degrees``/``out_degree``/``dims``/
+    ``constants``) rather than a ``ProductTable``, so the SAME builder serves both
+    the worked-steps chapter (from the frozen object, via ``_equation_lines``) and
+    the report's Computed-results block (from the serialized ``blocks()`` dict, via
+    ``trace.results_html``) -- one implementation, no divergent copy. Zero terms are
+    skipped; a fully vanishing table yields ``[]`` (the caller emits the vanish
+    note)."""
+    dl, dr, dout = dims
+    left_deg, right_deg = degrees
     lines = []
     for i in range(dl):
         for j in range(dr):
-            terms = []
-            for k in range(dout):
-                c = t.constants[k][i][j]
-                if c != "0":
-                    terms.append(_term(kind, c, out_deg, k))
+            terms = [_term(kind, constants[k][i][j], out_degree, k)
+                     for k in range(dout) if str(constants[k][i][j]) != "0"]
             if terms:
                 lines.append("%s = %s" % (
                     _lhs(kind, left_deg, i, right_deg, j), " + ".join(terms)))
     return lines
+
+
+def _equation_lines(kind, t):
+    """The equation lines of a ``ProductTable`` (the worked-steps chapter path)."""
+    return equation_lines(kind, t.degrees, t.out_degree, t.dims, t.constants)
 
 
 def _lhs(kind, left_deg, i, right_deg, j):

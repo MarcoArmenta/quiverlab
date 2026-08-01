@@ -99,6 +99,34 @@ def test_bar_vs_cs_cup_tables_in_window(prime):
         assert flat_rank(tb) == flat_rank(tc), f"table rank differs at {key}"
 
 
+@pytest.mark.oracle_crossengine
+@pytest.mark.parametrize("prime", (7, 3))
+def test_bar_vs_cs_cap_tables_in_window(prime):
+    """The cross-engine gate for the CAP action: same DIMS and RANK-equivalent
+    tables (bar vs CS) in-window. Same basis-independent comparison as the cup
+    gate -- dims and the flattened-constants rank per bidegree -- but on the cap
+    tables, whose bidegree is (p, n): HH^p (x) HH_n -> HH_{n-p}."""
+    import numpy as np
+    from quiverlab.engine.coxeter import rref_mod_p
+    Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
+    A = Q.algebra(relations=["x*x*x"], field=ql.GF(prime))
+    bar = A.cap_products(2, engine="bar")
+    cs = A.cap_products(2, engine="cs")
+    assert sorted(bar.tables) == sorted(cs.tables)
+    for key in bar.tables:
+        tb, tc = bar.tables[key], cs.tables[key]
+        assert tb.dims == tc.dims
+        def flat_rank(t):
+            dl, dr, dout = t.dims
+            if 0 in t.dims:
+                return 0
+            M = np.array([[int(t.constants[k][i][j]) for k in range(dout)]
+                          for i in range(dl) for j in range(dr)], dtype=np.int64)
+            _, piv = rref_mod_p(M % prime, prime)
+            return len(piv)
+        assert flat_rank(tb) == flat_rank(tc), f"cap table rank differs at {key}"
+
+
 # ---------------------------------------------------------------------------
 # Cap module identity: (z ∩ f) ∩ g = z ∩ (f ∪ g).
 #
