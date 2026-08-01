@@ -162,6 +162,27 @@ class ResultDims:
 # --------------------------------------------------------------------------- #
 
 @dataclass
+class ProductBasis:
+    """Plan 35 UNIT 2: the EXPLICIT (co)cycle representatives of an HH-product chapter
+    -- per (side, degree) the basis classes (each a labeled term-sum + a sparse
+    coordinate vector), the ordered (co)chain enumeration the vectors index into, and
+    the annihilating differential -- as the JSON-safe ``{side: {str(degree): ...}}``
+    shape of ``quiverlab.hochschild.products.blocks()`` (captured at table-build time by
+    ``quiverlab.hochschild.basis_reps``). Emitted ONCE per chapter, before the
+    ``ProductStep`` tables; the renderer turns it into per-degree sub-sections (ordered
+    basis -> explicit classes -> differential + a one-line verification sentence) that
+    the structure-constant tables then reference.
+
+    All three payload fields default ``None`` -- a legacy product object without the
+    explicit-reps fields emits no ``ProductBasis`` (or one whose fields are ``None``),
+    and the renderers fall back to the naming-only legend (tolerance)."""
+    kind: str
+    basis_classes: object = None
+    chain_basis: object = None
+    differentials: object = None
+
+
+@dataclass
 class ProductStep:
     """One block of an HH-product worked-steps chapter (cup / cap / bracket /
     connes_b). ``kind`` is the product kind. ``degrees`` is the bidegree tuple --
@@ -184,7 +205,7 @@ __all__ = [
     "Dispatch", "ReductionStep", "AmbiguityEvent", "ResolutionTerm",
     "DifferentialEvent", "LiftStep", "RankStep",
     "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote", "ResultDims",
-    "ProductStep", "ALL_EVENTS",
+    "ProductStep", "ProductBasis", "ALL_EVENTS",
 ]
 
 # The complete tuple of trace event types.  Renderers validate their input
@@ -194,4 +215,4 @@ __all__ = [
 ALL_EVENTS = (Dispatch, ReductionStep, AmbiguityEvent, ResolutionTerm,
               DifferentialEvent, LiftStep, RankStep,
               ModuleTerm, ModuleDifferential, ExtDegree, StepNote, ResultDims,
-              ProductStep)
+              ProductStep, ProductBasis)

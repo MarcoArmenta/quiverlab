@@ -25,7 +25,7 @@ import re
 
 from quiverlab.trace.events import (
     Dispatch, ResolutionTerm, RankStep, ModuleTerm, ModuleDifferential,
-    ExtDegree, StepNote, ResultDims, ProductStep,
+    ExtDegree, StepNote, ResultDims, ProductStep, ProductBasis,
 )
 from quiverlab.trace.render_text import (
     derive_dims, _dims_kind, compute_algebra_objects, ext_result_runs,
@@ -72,6 +72,11 @@ _STYLE = (
     "table.ql-matrix th.ql-corner{background:#e4e4e4;border-color:#c4c4c4}"
     ".ql-mlabel{margin:.6em 0 .1em}"
     "ol,ul{padding-left:1.4em}"
+    # Plan 35 UNIT 2: the ordered (co)chain enumeration and the explicit basis
+    # classes -- compact lists so the per-degree reps read as one block.
+    ".ql-enum,.ql-classes{margin:.2em 0 .6em}"
+    ".ql-enum li,.ql-classes li{margin:.05em 0}"
+    "h4{font-size:1.02em;margin:1em 0 .2em;color:#222}"
     "@media print{.ql-hint{display:none}"
     "body{max-width:none;margin:0;font-size:11pt}"
     "h2,.ql-eq,math,table.ql-dims,table.ql-table,table.ql-matrix"
@@ -688,6 +693,207 @@ def _module_steps_html(events):
 # source (readable), so the definitions never garble.
 # --------------------------------------------------------------------------- #
 
+# --------------------------------------------------------------------------- #
+# Plan 35 UNIT 2: the per-degree EXPLICIT-REPRESENTATIVES layout, shared by the
+# products worked-steps chapter (render_html, driven by a ProductBasis event) and by
+# the Computed-results product block (results_html, driven by the block dict). Both
+# call `product_degree_sections` with a surface-distinct anchor prefix, so a report
+# carrying both surfaces gets unique, referenceable anchors. Rendering-only: the data
+# is UNIT 1's, captured at table-build time; nothing is recomputed here.
+#
+# Each (side, degree) becomes one sub-section: (a) the ordered basis enumeration of
+# the ambient (co)chain space (HTML-visible, capped with a machine-record pointer),
+# (b) the explicit classes as term-sum + inline coordinate vector over that
+# enumeration, (c) the annihilating differential (indexed grid, or a stated note when
+# UNIT 1 elided the body) + a one-line self-cert verification sentence.
+# --------------------------------------------------------------------------- #
+
+# ordered-enumeration entries shown inline before a machine-record pointer (display
+# only; the full ordered enumeration always lives in result.json / trace.json).
+_REPS_ENUM_DISPLAY = 64
+
+# per side: (long name, HH symbol, differential TeX symbol, chain kind, class-symbol
+# letter, cocycle/cycle word).
+_REPS_SIDE = {
+    "coh": ("cohomology", "HH^", r"\delta", "cochain", r"\alpha", "cocycle"),
+    "hom": ("homology", "HH_", "b", "chain", "z", "cycle"),
+}
+
+
+def _signed_join(pieces):
+    """``[(is_negative, magnitude_str), ...]`` -> a linear-combination string with the
+    correct leading sign and interior ``+``/``-`` separators (``0`` when empty)."""
+    out = []
+    for i, (neg, mag) in enumerate(pieces):
+        if i == 0:
+            out.append(("-" + mag) if neg else mag)
+        else:
+            out.append((" - " if neg else " + ") + mag)
+    return "".join(out) if out else "0"
+
+
+def _coeff_split(coeff):
+    """(is_negative, magnitude) of an exact coefficient string. GF(p) coeffs are
+    always the non-negative residue, so only QQ/int coeffs are ever negative."""
+    c = str(coeff)
+    neg = c.startswith("-")
+    return neg, (c[1:] if neg else c)
+
+
+def _coord_vector_text(vector):
+    """A class's sparse coordinate vector ``[[idx, coeff], ...]`` as a plain-text linear
+    combination of the 1-based enumeration symbols ``e_k`` -- e.g. ``e_3 - 2 e_7`` (the
+    vector REFERENCES the ordered enumeration listed for the degree)."""
+    pieces = []
+    for idx, coeff in vector:
+        neg, mag = _coeff_split(coeff)
+        sym = "e_%d" % (int(idx) + 1)
+        pieces.append((neg, sym if mag == "1" else "%s %s" % (mag, sym)))
+    return _signed_join(pieces)
+
+
+def _term_sum_text(terms, kind):
+    """The class's labeled term-sum as readable text, e.g. ``[x → x]`` (cochain) /
+    ``e_1 ⊗ x`` (chain); a non-unit coefficient is shown. Reuses UNIT 1's
+    ``element_label`` (the single owner of the term-sum labelling) -- never re-derived."""
+    from quiverlab.hochschild.basis_reps import element_label
+    pieces = []
+    for coeff, word, value in terms:
+        neg, mag = _coeff_split(coeff)
+        lab = element_label(tuple(word), value, kind).replace("->", "→").replace("(x)", "⊗")
+        pieces.append((neg, lab if mag == "1" else "%s %s" % (mag, lab)))
+    return _signed_join(pieces)
+
+
+def _enumeration_html(enum, long_name, hh, n):
+    """The ordered basis enumeration of the ambient (co)chain space as a numbered list
+    (1-based: entry k is the symbol ``e_k`` the coordinate vectors use). Capped for
+    display -- an over-long OR record-elided enumeration states its size and points at
+    the machine record."""
+    ambient = "C^{%d}" % n if hh == "HH^" else "C_{%d}" % n
+    intro = ("<p>Ordered basis of the degree-%d %s space %s "
+             "(entry <i>k</i> is the symbol e<sub><i>k</i></sub> the coordinate "
+             "vectors below refer to):</p>"
+             % (n, long_name, _math_inline(ambient)))
+    if isinstance(enum, dict):                    # UNIT-1 record-elided enumeration
+        return [intro, "<p class='ql-note'>%s elements; the full ordered enumeration "
+                "is in the machine record.</p>" % _esc(str(enum.get("length", "?")))]
+    enum = list(enum or [])
+    if not enum:
+        return [intro, "<p class='ql-note'>the space is zero-dimensional.</p>"]
+    items = "".join(
+        "<li>%s</li>" % _esc(str(lbl).replace("->", "→").replace("(x)", "⊗"))
+        for lbl in enum[:_REPS_ENUM_DISPLAY])
+    out = [intro, "<ol class='ql-enum'>%s</ol>" % items]
+    if len(enum) > _REPS_ENUM_DISPLAY:
+        out.append("<p class='ql-note'>… %d more (the full ordered enumeration is in "
+                   "the machine record).</p>" % (len(enum) - _REPS_ENUM_DISPLAY))
+    return out
+
+
+def _classes_html(classes, letter, n, chain_kind):
+    """The explicit basis classes of one degree, each as its labeled term-sum AND its
+    coordinate vector over the enumeration (UNIT 1's two coherent views)."""
+    if not classes:
+        return ["<p class='ql-note'>no classes (the space is zero in this degree).</p>"]
+    lis = []
+    for i, cl in enumerate(classes, start=1):
+        name = "%s^{%d}_{%d}" % (letter, n, i)
+        term = _term_sum_text(cl.get("terms") or [], cl.get("kind") or chain_kind)
+        coord = _coord_vector_text(cl.get("vector") or [])
+        lis.append("<li>%s = %s = %s</li>"
+                   % (_math_inline(name), _esc(term), _esc(coord)))
+    return ["<p>Basis classes (term-sum = coordinate vector over the enumeration "
+            "above):</p>", "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+
+
+def _reps_differential_html(diff, dsym, n, letter, cyc, hh, has_classes):
+    """The degree's annihilating differential as an indexed grid (or a stated note when
+    UNIT 1 elided the body), plus the one-line verification sentence -- the self-cert
+    the reader can carry out from the shipped vector + this matrix."""
+    if diff is None:
+        return []
+    if hh == "HH^":
+        symbol, arrow = ("%s^{%d}" % (dsym, n),
+                         r"%s^{%d} : C^{%d} \to C^{%d}" % (dsym, n, n, n + 1))
+    else:
+        symbol, arrow = ("%s_{%d}" % (dsym, n),
+                         r"%s_{%d} : C_{%d} \to C_{%d}" % (dsym, n, n, max(n - 1, 0)))
+    out = [_math(arrow)]
+    if diff.get("elided"):
+        r, c = (diff.get("shape") or [0, 0])[:2]
+        out.append("<p class='ql-note'>%s×%s matrix (body in the machine record; "
+                   "rebuild: %s).</p>" % (_esc(str(r)), _esc(str(c)),
+                                          _esc(str(diff.get("note", "")))))
+    else:
+        out.append(matrix_grid(diff.get("rows") or [], label=symbol))
+    if not has_classes:
+        return out
+    if hh == "HH_" and n == 0:
+        sentence = ("every 0-chain is a %s (%s vanishes), so each %s is a %s"
+                    % (cyc, symbol, "z^{%d}_i" % n, cyc))
+    else:
+        sentence = ("each %s^{%d}_i is a %s: applying %s to its coordinate vector "
+                    "gives 0" % (letter, n, cyc, symbol))
+    out.append("<p class='ql-note'>Verification: %s.</p>" % _esc(sentence))
+    return out
+
+
+def _bar_term_basis_chunks(m, labels, n, collapsed_dim, kind):
+    """The ordered basis of a bar HH (co)chain term at degree ``n``, reconstructed with
+    UNIT 1's enumeration builders (Plan 35 UNIT 2, deliverable 2 -- HH worked-steps
+    resolution narration). Rendering-only: the labels are NOT recomputed ad hoc -- they
+    come from ``basis_reps.bar_chain_elements`` (the same builder the reps capture uses),
+    and are shown ONLY when the reconstructed enumeration length equals the recorded
+    term dimension, so the order provably matches the differential the step shows.
+
+    Returns ``[]`` when the term is NOT the reconstructable bar (co)chain basis (e.g. a
+    Chouhy-Solotar term, which carries ``corners`` instead and is named as a bimodule
+    direct sum), so the section never mislabels."""
+    from quiverlab.hochschild import basis_reps as BR
+    expected = m * (m - 1) ** n
+    if collapsed_dim != expected:               # not the bar (co)chain basis -- omit
+        return []
+    if expected <= _REPS_ENUM_DISPLAY:
+        enum = BR.enumeration_labels(BR.bar_chain_elements(m, n, labels), kind)
+    else:                                        # display-elided: point at the record
+        enum = {"length": expected}
+    long_name = "cochain" if kind == "cochain" else "chain"
+    hh = "HH^" if kind == "cochain" else "HH_"
+    return _enumeration_html(enum, long_name, hh, n)
+
+
+def product_degree_sections(basis_classes, chain_basis, differentials, anchor_prefix):
+    """Per-degree explicit-representatives sub-sections for a product/Connes block
+    (Plan 35 UNIT 2). ``basis_classes`` / ``chain_basis`` / ``differentials`` are the
+    UNIT-1 ``{side: {str(degree): ...}}`` payloads; ``anchor_prefix`` namespaces the
+    ``<prefix>-hh-<side>-deg-<n>`` anchors the product tables reference.
+
+    Returns ``[]`` when the block carries no explicit-reps fields (a legacy/old-cache
+    block) -- the caller then falls back to the naming-only legend (tolerance)."""
+    if not basis_classes:
+        return []
+    out = []
+    for side in ("coh", "hom"):
+        by_deg = basis_classes.get(side)
+        if not by_deg:
+            continue
+        long_name, hh, dsym, chain_kind, letter, cyc = _REPS_SIDE[side]
+        for dkey in sorted(by_deg, key=lambda s: int(s)):
+            n = int(dkey)
+            anchor = "%s-hh-%s-deg-%d" % (anchor_prefix, side, n)
+            classes = by_deg[dkey] or []
+            enum = (chain_basis or {}).get(side, {}).get(dkey)
+            diff = (differentials or {}).get(side, {}).get(dkey)
+            out.append("<h4 id='%s'>Hochschild %s in degree %d</h4>"
+                       % (anchor, long_name, n))
+            out.extend(_enumeration_html(enum, long_name, hh, n))
+            out.extend(_classes_html(classes, letter, n, chain_kind))
+            out.extend(_reps_differential_html(diff, dsym, n, letter, cyc, hh,
+                                               bool(classes)))
+    return out
+
+
 _PRODUCT_TITLE = {
     "cup": "The cup product on Hochschild cohomology",
     "cap": "The cap product",
@@ -710,10 +916,12 @@ _PRODUCT_DEF = {
 
 
 def _products_html(events):
-    """The HH-product chapter body: the prose definition (the chapter's StepNote),
-    the typeset definitional formula for the kind, then one block per bidegree -- the
-    structure-constant equation lines (cup/cap/bracket) or the induced Connes
-    differential grid (connes_b), each headed by its typeset map label."""
+    """The HH-product chapter body: the prose definition (the chapter's StepNote), the
+    typeset definitional formula for the kind, the per-degree EXPLICIT-REPRESENTATIVES
+    sub-sections (ordered basis -> classes -> differential + verification, Plan 35
+    UNIT 2), then one block per bidegree -- the structure-constant equation lines
+    (cup/cap/bracket) or the induced Connes differential grid (connes_b), each headed
+    by its typeset map label and referencing the degree classes above."""
     steps = [e for e in events if isinstance(e, ProductStep)]
     if not steps:
         return []
@@ -727,6 +935,20 @@ def _products_html(events):
     formula = _PRODUCT_DEF.get(kind)
     if formula:
         out.append(_math(formula))
+    # Plan 35 UNIT 2: the explicit representatives, per degree, BEFORE the tables --
+    # the tables then reference these classes ("gamma_k are the degree-(p+q) classes
+    # above"). Driven by the ProductBasis event the chapter emits; absent on a legacy
+    # object -> the section falls back to tables only (tolerance).
+    pb = next((e for e in events if isinstance(e, ProductBasis)), None)
+    if pb is not None:
+        secs = product_degree_sections(pb.basis_classes, pb.chain_basis,
+                                       pb.differentials, anchor_prefix="ws-" + kind)
+        if secs:
+            out.append("<h3>Explicit representatives by degree</h3>")
+            out.extend(secs)
+            out.append("<h3>Structure-constant tables</h3>")
+            out.append("<p class='ql-note'>The tables below are written in the "
+                       "explicit classes listed by degree above.</p>")
     for s in steps:
         if s.heading:
             out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
@@ -951,6 +1173,19 @@ def render_html(events, title="", references=(), algebra=None, results=None,
                   "named above; the matrices below are its differentials "
                   "(rows: target basis, columns: source basis).</i></p>"]
         echo = _MatrixEcho()
+        # Plan 35 UNIT 2 (deliverable 2): the ordered basis of each bar (co)chain term,
+        # reconstructed with UNIT 1's builders. report_side (all RankSteps of one HH run
+        # share it) picks cochain vs chain; the bar algebra data is built once. A CS
+        # term (corners set) is skipped -- its bimodule direct sum is named instead.
+        report_side = next((r.side for r in ranks.values()), None)
+        m_bar = labels_bar = None
+        if algebra is not None:
+            try:
+                from quiverlab.hochschild import basis_reps as BR
+                _AU = algebra.unit_adapted()
+                m_bar, labels_bar = _AU.dim, BR.labels_of(_AU)
+            except Exception:
+                m_bar = labels_bar = None
         for n in sorted(terms):
             t = terms[n]
             chunks.append("<h3>Degree %d</h3><p>Term with %d generators "
@@ -959,6 +1194,10 @@ def render_html(events, title="", references=(), algebra=None, results=None,
             summ = _term_summands_html(t, n)
             if summ:
                 chunks.append(summ)
+            if m_bar is not None and getattr(t, "corners", None) is None and report_side:
+                kind = "cochain" if report_side == "cochain" else "chain"
+                chunks.extend(_bar_term_basis_chunks(m_bar, labels_bar, n,
+                                                     t.collapsed_dim, kind))
             if n in ranks:
                 rs = ranks[n]
                 if rs.side == "cochain":

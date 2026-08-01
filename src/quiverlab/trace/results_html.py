@@ -269,7 +269,39 @@ def _resolution_html(kind, b):
     out.append("<p>%s = %s</p>" % ("pd M" if proj else "id M",
                                    _num(d) if d is not None
                                    else "&#8734; (beyond the probed length)"))
+    out.extend(_term_basis_html(b, proj))
     out.extend(_differentials_html(b, proj))
+    return out
+
+
+# ordered term-basis entries shown inline before a machine-record pointer.
+_TERM_BASIS_DISPLAY = 64
+
+
+def _term_basis_html(b, proj):
+    """The ordered k-basis of each resolution term (Plan 35 UNIT 2), as a numbered
+    (1-based) list per term -- the SAME index order the differential grids use for
+    their columns (projective) / rows (injective), so a matrix entry can be traced to
+    the basis vector it acts on. Omitted when the block carries no ``term_basis`` (a
+    structure-constants algebra, or an older cached result) -- tolerance."""
+    tb = b.get("term_basis")
+    if not tb:
+        return []
+    out = ["<p><i>Ordered basis of each resolution term — the 1-based index order the "
+           "differential grids below use for their %s.</i></p>"
+           % ("columns" if proj else "rows")]
+    for n, labels in enumerate(tb):
+        name = ("Q_{%d}" % n) if proj else ("E^{%d}" % n)
+        if not labels:
+            out.append("<p>%s = 0.</p>" % _math_inline(name))
+            continue
+        items = "".join("<li>%s</li>" % _esc(str(x))
+                        for x in labels[:_TERM_BASIS_DISPLAY])
+        out.append("<p>%s basis:</p><ol class='ql-enum'>%s</ol>"
+                   % (_math_inline(name), items))
+        if len(labels) > _TERM_BASIS_DISPLAY:
+            out.append("<p class='ql-note'>… %d more (full list in the machine "
+                       "record).</p>" % (len(labels) - _TERM_BASIS_DISPLAY))
     return out
 
 
@@ -324,13 +356,28 @@ def _product_heading(kind, degrees, out_degree):
 
 
 def _product_tables_html(kind, b):
-    """cup / cap / bracket: one map heading plus its nonzero-product equation lines
-    per bidegree (an all-vanishing table states so), the bracket's served-window
-    note, then the engine provenance. The equation lines come from the SAME builder
-    the worked-steps chapter uses (``quiverlab.trace.products.equation_lines``)."""
+    """cup / cap / bracket: the notation legend, the per-degree EXPLICIT
+    REPRESENTATIVES (ordered basis -> classes -> differential + verification, Plan 35
+    UNIT 2), then one map heading plus its nonzero-product equation lines per bidegree
+    (an all-vanishing table states so), the bracket's served-window note, and the
+    engine provenance. The equation lines come from the SAME builder the worked-steps
+    chapter uses (``quiverlab.trace.products.equation_lines``); the degree sections
+    come from the SAME renderer the chapter uses
+    (``quiverlab.trace.render_html.product_degree_sections``) -- one implementation,
+    no drift. ``b["differentials"]`` here is the product ``{side:{degree:...}}`` shape,
+    read ONLY inside this kind-scoped function (the module-resolution block ships a
+    LIST under the same key -- never read it shape-blind)."""
     from quiverlab.trace.products import equation_lines, notation_legend
+    from quiverlab.trace.render_html import product_degree_sections
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend(kind, "", b.get("basis")))]
+    secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
+                                   b.get("differentials"), anchor_prefix="cr-" + kind)
+    if secs:
+        out.append("<p><b>Explicit representatives by degree</b></p>")
+        out.extend(secs)
+        out.append("<p><b>Structure-constant tables</b> (in the explicit classes "
+                   "above):</p>")
     for t in (b.get("tables") or []):
         degrees = list(t.get("degrees") or [])
         out_degree = t.get("out_degree")
@@ -354,11 +401,22 @@ def _product_tables_html(kind, b):
 
 
 def _connes_b_html(b):
-    """connes_b: one induced Connes differential grid ``B_n : HH_n → HH_{n+1}`` per
-    degree with its induced rank, then the engine provenance."""
+    """connes_b: the legend, the per-degree explicit homology-cycle representatives
+    (Plan 35 UNIT 2), then one induced Connes differential grid
+    ``B_n : HH_n → HH_{n+1}`` per degree with its induced rank, and the engine
+    provenance. ``b["differentials"]`` is the product ``{side:{degree:...}}`` shape,
+    read ONLY here (kind-scoped)."""
     from quiverlab.trace.products import notation_legend
+    from quiverlab.trace.render_html import product_degree_sections
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend("connes_b", "", None))]
+    secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
+                                   b.get("differentials"), anchor_prefix="cr-connes_b")
+    if secs:
+        out.append("<p><b>Explicit representatives by degree</b></p>")
+        out.extend(secs)
+        out.append("<p><b>Induced Connes differentials</b> (in the explicit cycle "
+                   "classes above):</p>")
     matrices = b.get("matrices") or {}
     ranks = b.get("ranks") or {}
     for key in sorted(matrices, key=lambda s: int(s)):

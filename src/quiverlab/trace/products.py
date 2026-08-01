@@ -22,7 +22,7 @@ per-kind definitional formula lives in ``render_html`` (the sole owner of the
 worked-steps math source); this module owns only the DATA-derived equations.
 """
 from quiverlab.errors import QuiverlabError
-from quiverlab.trace.events import ProductStep, ResultDims, StepNote
+from quiverlab.trace.events import ProductBasis, ProductStep, ResultDims, StepNote
 
 # (heading text, prose) per kind. Plain ASCII -- a StepNote renders as escaped text,
 # not typeset math (the typeset definition formula is the renderer's job). "cup
@@ -74,32 +74,55 @@ def notation_legend(kind, degrees_note, basis):
     ``results_html._product_tables_html``; the GUI hardcodes the same wording."""
     on_basis = ("relative to the recorded basis %s" % basis if basis
                 else "relative to the recorded class basis")
+    # Plan-35 UNIT 2 (Marco): the legend no longer only NAMES the symbols -- it points
+    # at the explicit per-degree listings, where every α/β/γ/z/w is printed as its
+    # (co)cycle term-sum + coordinate vector with the annihilating differential. β_j /
+    # γ_k / w_k are the SAME degree classes as the α_i / z_j listed there, viewed as
+    # the operand / output of this product.
+    _EXPLICIT = (" Each class is listed explicitly by degree above -- its term-sum, "
+                 "its coordinate vector, and the differential that annihilates it.")
     if kind == "cup":
         s = ("α₁,…,α_{d_p} are the recorded basis classes of "
              "HH^p and β₁,…,β_{d_q} those of HH^q; "
              "γ₁,…,γ_{d_{p+q}} the basis of HH^{p+q}. Every table "
              "line states α_i ∪ β_j = Σ_k c·γ_k, %s; "
-             "the constants c are basis-dependent." % on_basis)
+             "the constants c are basis-dependent.%s" % (on_basis, _EXPLICIT))
     elif kind == "bracket":
         s = ("α₁,…,α_{d_p} are the recorded basis classes of "
              "HH^p and β₁,…,β_{d_q} those of HH^q; "
              "γ₁,…,γ_{d_{p+q-1}} the basis of HH^{p+q-1}. Every "
              "table line states [α_i, β_j] = Σ_k c·γ_k in "
-             "degree p+q−1, %s; the constants c are basis-dependent." % on_basis)
+             "degree p+q−1, %s; the constants c are basis-dependent.%s"
+             % (on_basis, _EXPLICIT))
     elif kind == "cap":
         s = ("z₁,…,z_{d_n} are the recorded basis classes of HH_n "
              "(homology) and w₁,…,w_{d_{n-p}} those of HH_{n-p}; "
              "α₁,…,α_{d_p} the basis of HH^p. Every table line "
              "states α_i ∩ z_j = Σ_k c·w_k, %s; the constants c "
-             "are basis-dependent." % on_basis)
+             "are basis-dependent.%s" % (on_basis, _EXPLICIT))
     elif kind == "connes_b":
         s = ("each induced Connes differential B_n: HH_n → HH_{n+1} is written "
              "on the recorded homology bases -- rows index HH_{n+1}, columns index "
-             "HH_n; the entries are basis-dependent.")
+             "HH_n; the entries are basis-dependent. The homology cycle classes z^n_j "
+             "are listed explicitly by degree above, each with its coordinate vector "
+             "and the boundary b_n that annihilates it.")
     else:
         raise QuiverlabError(
             "unknown product kind %r for the notation legend" % (kind,))
     return "%s (%s)" % (s, degrees_note) if degrees_note else s
+
+
+def _basis_events(kind, obj):
+    """The Plan-35 UNIT-2 ``ProductBasis`` event carrying the explicit
+    representatives (per (side, degree) classes + ordered enumeration + annihilating
+    differential), extracted from the product object's ``blocks()``. Returns ``[]``
+    for a legacy object that recorded no reps -- the chapter then shows tables only."""
+    b = obj.blocks()
+    if b.get("basis_classes") is None:
+        return []
+    return [ProductBasis(kind=kind, basis_classes=b.get("basis_classes"),
+                         chain_basis=b.get("chain_basis"),
+                         differentials=b.get("differentials"))]
 
 
 def products_chapter(A, kind, obj):
@@ -142,9 +165,10 @@ def _table_chapter(A, kind, obj):
     result_dims = hom if kind == "cap" else coh
     # The notation legend defining the table symbols, named the recorded basis
     # (Marco, Plan-35 follow-up) -- one shared builder for every render surface.
-    return [StepNote(title, prose, heading=True),
-            StepNote("Notation.", notation_legend(kind, "", obj.basis)),
-            ResultDims(kind=result_kind, dims=list(result_dims))] + steps
+    return ([StepNote(title, prose, heading=True),
+             StepNote("Notation.", notation_legend(kind, "", obj.basis)),
+             ResultDims(kind=result_kind, dims=list(result_dims))]
+            + _basis_events(kind, obj) + steps)
 
 
 def _expected_dims(kind, degrees, coh, hom):
@@ -237,6 +261,7 @@ def _connes_chapter(A, obj):
     events = [StepNote(title, prose, heading=True),
               StepNote("Notation.", notation_legend("connes_b", "", None)),
               ResultDims(kind="HH_", dims=list(obj.hh_dims))]
+    events += _basis_events("connes_b", obj)
     for n in sorted(obj.matrices):
         mat = obj.matrices[n]
         rows = len(mat)
