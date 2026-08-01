@@ -1534,10 +1534,14 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         if top is None:
             raise ComputeError("SchemaError", "ext needs a degree range, e.g. 'ext:0..4'")
         from quiverlab.modules.ext import ext_dims
-        dims = ext_dims(A, M, N, top)
-        return _with_refs({"kind": "ext", "top": top,
-                           "dims": [int(d) for d in dims],
-                           "target": _mod_view(N)}, kind)
+        # Plan 35 wave 3a: capture the explicit Ext cocycle representatives alongside
+        # the dims (basis_classes / chain_basis / differentials per degree), from the
+        # SAME Hom complex. Additive keys; renderers dispatch by kind.
+        dims, reps = ext_dims(A, M, N, top, with_reps=True)
+        block = {"kind": "ext", "top": top, "dims": [int(d) for d in dims],
+                 "target": _mod_view(N)}
+        block.update(reps)
+        return _with_refs(block, kind)
     if kind == "tor":
         top = item.hi
         if top is None:
@@ -1547,10 +1551,13 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         except ImportError:
             raise SpecError("Tor requires the Tor engine (Plan 29); not available in "
                             "this build")
-        dims = tor_dims(A, M, T, top)
-        return _with_refs({"kind": "tor", "top": top,
-                           "dims": [int(d) for d in dims],
-                           "target": _mod_view(T)}, kind)
+        # Plan 35 wave 3a: capture the explicit Tor cycle representatives alongside
+        # the dims (Tor_0 = M (x)_A N as the cokernel), from the SAME tensor complex.
+        dims, reps = tor_dims(A, M, T, top, with_reps=True)
+        block = {"kind": "tor", "top": top, "dims": [int(d) for d in dims],
+                 "target": _mod_view(T)}
+        block.update(reps)
+        return _with_refs(block, kind)
     if kind in ("projective_resolution", "injective_resolution"):
         top = item.hi
         if top is None:

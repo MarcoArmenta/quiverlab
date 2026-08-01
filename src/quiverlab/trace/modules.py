@@ -35,8 +35,17 @@ are ints and domain-element strings.
 from quiverlab.errors import QuiverlabError
 from quiverlab.fields import linalg
 from quiverlab.modules import linalg_mod as lm
-from quiverlab.trace.events import ModuleTerm, StepNote
+from quiverlab.trace.events import ExtReps, ModuleTerm, StepNote
 from quiverlab.trace.recorder import module_differential, ext_degree
+
+
+def _ext_reps_event(op, reps):
+    """One ``ExtReps`` carrying the capture layer's already-serialized explicit-reps
+    payload (JSON-safe ``{str(degree): ...}`` per field). ``reps`` is the payload dict
+    from ``ext_dims`` / ``tor_dims`` with ``with_reps=True``."""
+    return ExtReps(op=op, basis_classes=reps.get("basis_classes"),
+                   chain_basis=reps.get("chain_basis"),
+                   differentials=reps.get("differentials"))
 
 
 # --------------------------------------------------------------------------- #
@@ -522,12 +531,15 @@ def trace_ext(A, M, N, top):
             rank_prev=r_nm1, result_dim=res_dim, D=D, nrows=nrows, ncols=ncols,
             dom=dom))
     from quiverlab.modules.ext import ext_dims
-    engine_dims = ext_dims(A, M, N, top)
+    engine_dims, reps = ext_dims(A, M, N, top, with_reps=True)
     if dims != engine_dims:
         raise QuiverlabError(
             "trace_ext: the shown Ext dimensions %s disagree with the engine's ext_dims "
             "%s for Ext(%s, %s) -- the worked steps drifted from the computation"
             % (dims, engine_dims, M.name, N.name))
+    # Plan 35 wave 3a: the explicit Ext cocycle representatives, one event before the
+    # per-degree rank bookkeeping, so the worked-steps chapter can render them.
+    events.insert(1, _ext_reps_event("ext", reps))
     return events, dims
 
 
@@ -572,12 +584,15 @@ def trace_tor(A, M, N, top):
             degree=n, op="Tor", space_dim=tn, rank_here=r_out, rank_prev=r_in,
             result_dim=res_dim, D=D, nrows=nrows, ncols=ncols, dom=dom))
     from quiverlab.modules.tor import tor_dims
-    engine_dims = tor_dims(A, M, N, top)
+    engine_dims, reps = tor_dims(A, M, N, top, with_reps=True)
     if dims != engine_dims:
         raise QuiverlabError(
             "trace_tor: the shown Tor dimensions %s disagree with the engine's tor_dims "
             "%s for Tor(%s, %s) -- the worked steps drifted from the computation"
             % (dims, engine_dims, M.name, N.name))
+    # Plan 35 wave 3a: the explicit Tor cycle representatives (Tor_0 = M (x)_A N as the
+    # cokernel), one event before the per-degree rank bookkeeping.
+    events.insert(1, _ext_reps_event("tor", reps))
     return events, dims
 
 

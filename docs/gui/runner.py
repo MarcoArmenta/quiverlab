@@ -480,9 +480,13 @@ def _module_block(name, top):
             raise RequestError("ext needs a range, e.g. 'ext:0..4'")
         from quiverlab.modules.ext import ext_dims
         N = _build_module(A, _state.get("ext_target"), "N")
-        dims = [int(d) for d in ext_dims(A, M, N, top)]
-        return {"kind": name, "top": top, "dims": dims, "target": _mod_view(N),
-                "citations": cites}
+        # Plan 35 wave 3a: explicit Ext cocycle representatives + self-cert data,
+        # additive keys shared byte-for-byte with the hpc spec runner.
+        raw, reps = ext_dims(A, M, N, top, with_reps=True)
+        block = {"kind": name, "top": top, "dims": [int(d) for d in raw],
+                 "target": _mod_view(N), "citations": cites}
+        block.update(reps)
+        return block
     if name == "tor":
         if top is None:
             raise RequestError("tor needs a range, e.g. 'tor:0..4'")
@@ -492,9 +496,11 @@ def _module_block(name, top):
             raise RequestError("Tor requires the Tor engine (Plan 29); not available "
                                "in this build")
         N = _build_module(A, _tor_target_spec(), "N")
-        dims = [int(d) for d in tor_dims(A, M, N, top)]
-        return {"kind": name, "top": top, "dims": dims, "target": _mod_view(N),
-                "citations": cites}
+        raw, reps = tor_dims(A, M, N, top, with_reps=True)
+        block = {"kind": name, "top": top, "dims": [int(d) for d in raw],
+                 "target": _mod_view(N), "citations": cites}
+        block.update(reps)
+        return block
     if name in ("projective_resolution", "injective_resolution"):
         if top is None:
             raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))

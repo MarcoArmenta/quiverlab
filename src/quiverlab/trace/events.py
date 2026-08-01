@@ -120,6 +120,26 @@ class ExtDegree:
 
 
 @dataclass
+class ExtReps:
+    """Plan 35 wave 3a: the EXPLICIT (co)cycle representatives of a module Ext / Tor
+    computation -- per degree the basis classes (each a labelled term-sum + a sparse
+    coordinate vector), the ordered Hom / tensor enumeration the vectors index into,
+    and the annihilating differential -- as the single-side ``{str(degree): ...}``
+    payload of ``quiverlab.modules.complex_reps`` (captured from the SAME Hom / tensor
+    complex that produced the dims). Emitted ONCE per Ext / Tor run, so the worked-steps
+    module chapter can render the per-degree classes symmetric with the HH-product
+    ``ProductBasis``. ``op`` is ``"ext"`` / ``"tor"``.
+
+    The three payload fields default ``None`` -- a legacy run without the explicit-reps
+    fields emits no ``ExtReps`` (or one whose fields are ``None``), and the renderer
+    falls back to the rank bookkeeping only (tolerance)."""
+    op: str
+    basis_classes: object = None
+    chain_basis: object = None
+    differentials: object = None
+
+
+@dataclass
 class StepNote:
     """A free-form narrative worked-step line (a projective-cover generator choice,
     the D/Tr steps of an AR translate, ...). `text` is the headline; `detail` is an
@@ -204,8 +224,8 @@ class ProductStep:
 __all__ = [
     "Dispatch", "ReductionStep", "AmbiguityEvent", "ResolutionTerm",
     "DifferentialEvent", "LiftStep", "RankStep",
-    "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote", "ResultDims",
-    "ProductStep", "ProductBasis", "ALL_EVENTS",
+    "ModuleTerm", "ModuleDifferential", "ExtDegree", "ExtReps", "StepNote",
+    "ResultDims", "ProductStep", "ProductBasis", "ALL_EVENTS",
 ]
 
 # The complete tuple of trace event types.  Renderers validate their input
@@ -214,5 +234,5 @@ __all__ = [
 # silently skipping it would drop worked steps from the report.
 ALL_EVENTS = (Dispatch, ReductionStep, AmbiguityEvent, ResolutionTerm,
               DifferentialEvent, LiftStep, RankStep,
-              ModuleTerm, ModuleDifferential, ExtDegree, StepNote, ResultDims,
-              ProductStep, ProductBasis)
+              ModuleTerm, ModuleDifferential, ExtDegree, ExtReps, StepNote,
+              ResultDims, ProductStep, ProductBasis)

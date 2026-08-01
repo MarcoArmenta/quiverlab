@@ -25,7 +25,7 @@ import re
 
 from quiverlab.trace.events import (
     Dispatch, ResolutionTerm, RankStep, ModuleTerm, ModuleDifferential,
-    ExtDegree, StepNote, ResultDims, ProductStep, ProductBasis,
+    ExtDegree, ExtReps, StepNote, ResultDims, ProductStep, ProductBasis,
 )
 from quiverlab.trace.render_text import (
     derive_dims, _dims_kind, compute_algebra_objects, ext_result_runs,
@@ -635,7 +635,8 @@ def _module_steps_html(events):
     if any(isinstance(e, ProductStep) for e in events):
         return []
     mods = [e for e in events
-            if isinstance(e, (ModuleTerm, ModuleDifferential, ExtDegree, StepNote))]
+            if isinstance(e, (ModuleTerm, ModuleDifferential, ExtDegree, ExtReps,
+                              StepNote))]
     if not mods:
         return []
     out = ["<h2>Worked module steps</h2>", "<p><i>%s</i></p>" % _esc(ELISION_PREAMBLE)]
@@ -671,6 +672,15 @@ def _module_steps_html(events):
                            "repeated)</p>")
             else:
                 out.append(_event_grid(e, label=e.symbol))
+        elif isinstance(e, ExtReps):
+            secs = module_reps_sections(e.basis_classes, e.chain_basis,
+                                        e.differentials, e.op, anchor_prefix="ws")
+            if secs:
+                out.append("<h3>Explicit representatives by degree</h3>")
+                out.append("<p class='ql-note'>Each class is shown as a term-sum and a "
+                           "coordinate vector over the ordered basis, with the "
+                           "differential that annihilates it.</p>")
+                out.extend(secs)
         elif isinstance(e, ExtDegree):
             out.extend(_ext_degree_html(e))
     # ALL Ext/Tor runs (not only the first): an Ext run then a Tor run both appear,
@@ -953,6 +963,138 @@ def product_degree_sections(basis_classes, chain_basis, differentials, anchor_pr
             out.extend(_classes_html(classes, letter, n, chain_kind))
             out.extend(_reps_differential_html(diff, dsym, n, letter, cyc, hh,
                                                bool(classes)))
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Plan 35 wave 3a: the per-degree EXPLICIT-REPRESENTATIVES layout for module Ext /
+# Tor, the sibling of `product_degree_sections`. Ext / Tor blocks carry a SINGLE-side
+# `{str(degree): ...}` payload (Ext is cohomological, Tor homological), so this reader
+# is kind-scoped and never confused with the products `{side: {degree}}` shape or the
+# module-resolution LIST-shaped `differentials`. Shared by the Computed-results block
+# (results_html) and the module worked-steps chapter (an ExtReps event). Data is the
+# capture layer's (modules.complex_reps); nothing is recomputed here.
+# --------------------------------------------------------------------------- #
+
+# per kind: (ambient long-name template, class-symbol letter, (co)cycle word,
+# differential TeX symbol template, differential arrow template, verification tail).
+_MODULE_REPS = {
+    "ext": ("\\mathrm{Hom}_A(P_{%d}, N)", r"\alpha", "cocycle",
+            r"\delta^{%d}", r"\delta^{%d} : \mathrm{Hom}(P_{%d},N) \to "
+            r"\mathrm{Hom}(P_{%d},N)",
+            "applying %s to its coordinate vector gives 0"),
+    "tor": ("P_{%d} \\otimes_A N", "z", "cycle",
+            r"d_{%d}", r"d_{%d} : P_{%d}\otimes_A N \to P_{%d}\otimes_A N",
+            "applying %s to its coordinate vector gives 0"),
+}
+
+
+def _module_term_sum_text(terms, kind):
+    """The class's labelled term-sum: Ext ``[g -> v]`` (the explicit hom sending the
+    P_n generator ``g`` to the N-basis vector ``v``), Tor ``g (x) v`` (a tensor). A
+    non-unit coefficient is shown. Owner of the module element label (single source)."""
+    from quiverlab.modules.complex_reps import element_label
+    pieces = []
+    for coeff, gen, val in terms:
+        neg, mag = _coeff_split(coeff)
+        lab = element_label(gen, val, kind).replace("->", "→").replace("(x)", "⊗")
+        pieces.append((neg, lab if mag == "1" else "%s %s" % (mag, lab)))
+    return _signed_join(pieces)
+
+
+def _module_enumeration_html(enum, ambient_tex, n):
+    """The ordered basis enumeration of the ambient Hom / tensor space as a numbered
+    (1-based) list; entry k is the symbol e_k the coordinate vectors refer to. Capped,
+    with a machine-record pointer for an over-long or record-elided enumeration."""
+    intro = ("<p>Ordered basis of %s (entry <i>k</i> is the symbol "
+             "e<sub><i>k</i></sub> the coordinate vectors below refer to):</p>"
+             % _math_inline(ambient_tex))
+    if isinstance(enum, dict):                    # capture-layer record-elided enumeration
+        return [intro, "<p class='ql-note'>%s elements; the full ordered enumeration "
+                "is in the machine record.</p>" % _esc(str(enum.get("length", "?")))]
+    enum = list(enum or [])
+    if not enum:
+        return [intro, "<p class='ql-note'>the space is zero-dimensional.</p>"]
+    items = "".join(
+        "<li>%s</li>" % _esc(str(lbl).replace("->", "→").replace("(x)", "⊗"))
+        for lbl in enum[:_REPS_ENUM_DISPLAY])
+    out = [intro, "<ol class='ql-enum'>%s</ol>" % items]
+    if len(enum) > _REPS_ENUM_DISPLAY:
+        out.append("<p class='ql-note'>… %d more (the full ordered enumeration is in "
+                   "the machine record).</p>" % (len(enum) - _REPS_ENUM_DISPLAY))
+    return out
+
+
+def _module_classes_html(classes, letter, n, kind):
+    """The explicit basis classes of one degree, each as its labelled term-sum AND its
+    coordinate vector over the enumeration (the two coherent views)."""
+    if not classes:
+        return ["<p class='ql-note'>no classes (the group is zero in this degree).</p>"]
+    lis = []
+    for i, cl in enumerate(classes, start=1):
+        name = "%s^{%d}_{%d}" % (letter, n, i)
+        term = _module_term_sum_text(cl.get("terms") or [], kind)
+        coord = _coord_vector_text(cl.get("vector") or [])
+        lis.append("<li>%s = %s = %s</li>"
+                   % (_math_inline(name), _esc(term), _esc(coord)))
+    return ["<p>Basis classes (term-sum = coordinate vector over the enumeration "
+            "above):</p>", "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+
+
+def _module_reps_differential_html(diff, kind, n, letter, cyc):
+    """The degree's annihilating differential as an indexed grid (or a stated note when
+    the capture layer elided the body), plus the one-line verification sentence."""
+    if diff is None:
+        return []
+    _amb, _l, _cyc, dsym_t, arrow_t, verify_t = _MODULE_REPS[kind]
+    if kind == "ext":
+        symbol, arrow = dsym_t % n, arrow_t % (n, n, n + 1)
+    else:
+        symbol, arrow = dsym_t % n, arrow_t % (n, n, max(n - 1, 0))
+    out = [_math(arrow)]
+    if diff.get("elided"):
+        r, c = (diff.get("shape") or [0, 0])[:2]
+        out.append("<p class='ql-note'>%s×%s matrix (body in the machine record; "
+                   "rebuild: %s).</p>" % (_esc(str(r)), _esc(str(c)),
+                                          _esc(str(diff.get("note", "")))))
+    elif diff.get("shape") and diff["shape"][0] == 0:
+        # a zero-row map (Tor d_0): every 0-chain is a cycle; state the note verbatim.
+        note = diff.get("note")
+        if note:
+            out.append("<p class='ql-note'>%s.</p>" % _esc(str(note)))
+        return out
+    else:
+        out.append(matrix_grid(diff.get("rows") or [], label=symbol))
+    out.append("<p class='ql-note'>Verification: each %s^{%d}_i is a %s: %s.</p>"
+               % (letter, n, cyc, verify_t % symbol))
+    return out
+
+
+def module_reps_sections(basis_classes, chain_basis, differentials, kind, anchor_prefix):
+    """Per-degree explicit-representatives sub-sections for a module Ext / Tor block
+    (Plan 35 wave 3a). ``basis_classes`` / ``chain_basis`` / ``differentials`` are the
+    single-side ``{str(degree): ...}`` payloads; ``kind`` is ``"ext"`` / ``"tor"``;
+    ``anchor_prefix`` namespaces the ``<prefix>-<kind>-deg-<n>`` anchors.
+
+    Returns ``[]`` when the block carries no explicit-reps fields (a legacy/old-cache
+    block) -- the caller then falls back to the dims table only (tolerance)."""
+    if not basis_classes:
+        return []
+    ambient_t, letter, cyc, _dsym, _arrow, _v = _MODULE_REPS[kind]
+    long_name = "Ext^{%d}" if kind == "ext" else "Tor_{%d}"
+    out = []
+    for dkey in sorted(basis_classes, key=lambda s: int(s)):
+        n = int(dkey)
+        anchor = "%s-%s-deg-%d" % (anchor_prefix, kind, n)
+        classes = basis_classes.get(dkey) or []
+        enum = (chain_basis or {}).get(dkey)
+        diff = (differentials or {}).get(dkey)
+        out.append("<h4 id='%s'>%s in degree %d</h4>"
+                   % (anchor, _math_inline(long_name % n), n))
+        out.extend(_module_enumeration_html(enum, ambient_t % n, n))
+        out.extend(_module_classes_html(classes, letter, n, kind))
+        if classes:
+            out.extend(_module_reps_differential_html(diff, kind, n, letter, cyc))
     return out
 
 

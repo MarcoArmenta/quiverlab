@@ -144,6 +144,17 @@ def _block_html(kind, b):
         if target:
             chunks.append("<p>against N, dimension vector %s.</p>" % _esc(_dv(target)))
         chunks.append(_dims_table("dim %sn" % op, b.get("dims") or []))
+        # Plan 35 wave 3a: the per-degree EXPLICIT REPRESENTATIVES (ordered basis ->
+        # classes -> differential + verification), when the block carries them.
+        from quiverlab.trace.render_html import module_reps_sections
+        secs = module_reps_sections(b.get("basis_classes"), b.get("chain_basis"),
+                                    b.get("differentials"), kind,
+                                    anchor_prefix="cr")
+        if secs:
+            chunks.append("<p><i>Explicit representatives by degree — each class as a "
+                          "term-sum and a coordinate vector over the ordered basis, with "
+                          "the differential that annihilates it.</i></p>")
+            chunks.extend(secs)
         return chunks
     if kind in ("cup", "cap", "bracket"):
         return _product_tables_html(kind, b)

@@ -1430,6 +1430,103 @@
     return rendered;
   }
 
+  // Plan 35 wave 3a: module Ext / Tor explicit representatives. The block carries a
+  // SINGLE-side {str(degree): ...} payload (Ext cohomological, Tor homological) --
+  // distinct from the products {side:{degree}} shape and the module-resolution LIST
+  // `differentials`, so this reader is kind-scoped. Mirrors
+  // quiverlab.trace.render_html.module_reps_sections; reuses the UNIT-1 term-sum /
+  // coordinate-vector / matrix-grid helpers. Tolerant of a block WITHOUT these fields.
+  var MODULE_REPS = {
+    ext: { letter: "\\alpha", cyc: "cocycle", head: "Ext^",
+           ambient: function (n) { return "\\mathrm{Hom}_A(P_{" + n + "}, N)"; },
+           arrow: function (n) { return "\\delta^{" + n + "} : \\mathrm{Hom}(P_{" + n
+             + "},N) \\to \\mathrm{Hom}(P_{" + (n + 1) + "},N)"; },
+           dsym: function (n) { return "\\delta^{" + n + "}"; } },
+    tor: { letter: "z", cyc: "cycle", head: "Tor_",
+           ambient: function (n) { return "P_{" + n + "} \\otimes_A N"; },
+           arrow: function (n) { return "d_{" + n + "} : P_{" + n
+             + "}\\otimes_A N \\to P_{" + Math.max(n - 1, 0) + "}\\otimes_A N"; },
+           dsym: function (n) { return "d_{" + n + "}"; } }
+  };
+  function appendModuleRepsEnum(div, enumLabels, cfg, n) {
+    div.appendChild(h("p", {}, [
+      document.createTextNode("Ordered basis of "),
+      h("span", { "class": "arithmatex", text: "\\(" + cfg.ambient(n) + "\\)" }),
+      document.createTextNode(" (entry k is the symbol e_k the coordinate vectors use):")
+    ]));
+    if (enumLabels && enumLabels.elided) {
+      div.appendChild(h("p", { "class": "qlgui-cites", text: enumLabels.length
+        + " elements; the full enumeration is in the report data" }));
+      return;
+    }
+    if (!enumLabels || !enumLabels.length) {
+      div.appendChild(h("p", { "class": "qlgui-cites", text: "the space is zero-dimensional" }));
+      return;
+    }
+    var ol = h("ol");
+    enumLabels.slice(0, REPS_ENUM_DISPLAY).forEach(function (lbl) {
+      ol.appendChild(h("li", { text: prettyLabel(lbl) }));
+    });
+    div.appendChild(ol);
+    if (enumLabels.length > REPS_ENUM_DISPLAY) {
+      div.appendChild(h("p", { "class": "qlgui-cites", text: "… "
+        + (enumLabels.length - REPS_ENUM_DISPLAY) + " more (full enumeration in the report data)" }));
+    }
+  }
+  function appendModuleRepsDiff(div, diff, cfg, n, nClasses) {
+    if (!diff) return;
+    div.appendChild(h("p", { "class": "arithmatex", text: "\\(" + cfg.arrow(n) + "\\)" }));
+    if (diff.elided) {
+      var sh = diff.shape || [0, 0];
+      div.appendChild(h("p", { "class": "qlgui-cites", text: sh[0] + "×" + sh[1]
+        + " matrix (body in the report data; rebuild: " + (diff.note || "") + ")" }));
+    } else if (diff.shape && diff.shape[0] === 0) {
+      if (diff.note) div.appendChild(h("p", { "class": "qlgui-cites", text: diff.note }));
+      return;
+    } else {
+      div.appendChild(matrixGrid(diff.rows || []));
+    }
+    if (!nClasses) return;
+    div.appendChild(h("p", { "class": "qlgui-hint", text: "Verification: each "
+      + cfg.letter + "^{" + n + "}_i is a " + cfg.cyc + ": applying " + prettyLabel(cfg.dsym(n))
+      + " to its coordinate vector gives 0" }));
+  }
+  function appendModuleReps(div, b, kind) {
+    var bc = b.basis_classes;
+    if (!bc) return false;
+    var cb = b.chain_basis || {}, diffs = b.differentials || {}, cfg = MODULE_REPS[kind];
+    var rendered = false;
+    Object.keys(bc).map(Number).sort(function (a, c) { return a - c; }).forEach(function (n) {
+      rendered = true;
+      var key = String(n);
+      div.appendChild(h("p", { id: "gui-" + kind + "-deg-" + n }, h("b", {}, [
+        h("span", { "class": "arithmatex", text: "\\(" + cfg.head + "{" + n + "}\\)" }),
+        document.createTextNode(" in degree " + n)
+      ])));
+      appendModuleRepsEnum(div, cb[key], cfg, n);
+      // classes: term-sum (from the enumeration labels) = coordinate vector
+      var classes = bc[key] || [], enumLabels = cb[key];
+      if (!classes.length) {
+        div.appendChild(h("p", { "class": "qlgui-cites",
+          text: "no classes (the group is zero in this degree)" }));
+      } else {
+        div.appendChild(h("p", { text: "Basis classes (term-sum = coordinate vector "
+          + "over the enumeration above):" }));
+        classes.forEach(function (cl, i) {
+          var nm = cfg.letter + "^{" + n + "}_{" + (i + 1) + "}";
+          var term = termSumText(cl.vector, enumLabels), coord = coordVectorText(cl.vector);
+          var p = h("p");
+          p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + nm + "\\)" }));
+          p.appendChild(document.createTextNode(
+            " = " + (term != null ? term + " = " : "") + coord));
+          div.appendChild(p);
+        });
+      }
+      appendModuleRepsDiff(div, diffs[key], cfg, n, classes.length);
+    });
+    return rendered;
+  }
+
   function renderProductTables(div, name, b) {
     div.appendChild(h("p", { text: PRODUCT_TITLE[name] }));
     div.appendChild(h("p", { "class": "qlgui-hint", text: productLegend(name, b) }));
@@ -1567,12 +1664,14 @@
         " indecomposable summand(s):" }));
       div.appendChild(decompTable(b.summands));
       appendSummandMaps(div, b.summands);
-    } else if (name === "ext") {
-      div.appendChild(h("p", { text: "Ext to the target module — dim vector " + dvText(b.target.dimvec) + ":" }));
-      div.appendChild(degreeTable("dim Ext^n", b.dims));
-    } else if (name === "tor") {
-      div.appendChild(h("p", { text: "Tor with the target left module — dim vector " + dvText(b.target.dimvec) + ":" }));
-      div.appendChild(degreeTable("dim Tor_n", b.dims));
+    } else if (name === "ext" || name === "tor") {
+      var isExt = name === "ext";
+      div.appendChild(h("p", { text: (isExt ? "Ext to the target module — dim vector "
+        : "Tor with the target left module — dim vector ") + dvText(b.target.dimvec) + ":" }));
+      div.appendChild(degreeTable(isExt ? "dim Ext^n" : "dim Tor_n", b.dims));
+      if (b.basis_classes)
+        div.appendChild(h("p", {}, h("b", { text: "Explicit representatives by degree:" })));
+      appendModuleReps(div, b, name);
     } else if (name === "projective_resolution" || name === "injective_resolution") {
       var proj = name === "projective_resolution";
       div.appendChild(h("p", { text: proj ? "projective resolution" : "injective resolution" }));
