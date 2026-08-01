@@ -1081,6 +1081,23 @@ def _dispatch(A, item, events, hh_kwargs) -> tuple:
         keys = ["assem_book"]
         return {"value": A.dim, "references": keys,
                 "citations": _citation_pairs(keys)}, None
+    # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each library
+    # method returns a frozen result object whose .blocks() IS the block dict
+    # (kind/top/engine/basis/tables/window or hh_dims/matrices/ranks + references);
+    # the only addition here is the resolved citation pairs, exactly as the other
+    # kinds do above. No hh_trace (products are their own tables, not an HH run).
+    if kind in ("cup", "cap", "bracket", "connes_b"):
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..4'")
+        method = {"cup": A.cup_products, "cap": A.cap_products,
+                  "bracket": A.gerstenhaber_brackets,
+                  "connes_b": A.connes_differentials}[kind]
+        block = method(top).blocks()
+        keys = list(block["references"])
+        block["citations"] = _citation_pairs(keys)
+        return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
 
 
@@ -1526,6 +1543,10 @@ def _snippet(req: ComputeRequest, A) -> str:
              "global_dimension": lambda it: "A.global_dimension()",
              "center": lambda it: "A.center()",
              "dimension": lambda it: "A.dim",
+             "cup": lambda it: f"A.cup_products({it.hi})",
+             "cap": lambda it: f"A.cap_products({it.hi})",
+             "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
+             "connes_b": lambda it: f"A.connes_differentials({it.hi})",
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
              "tau": lambda it: "M.tau()",

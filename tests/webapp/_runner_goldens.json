@@ -251,5 +251,40 @@
   },
   "canonical_key": "f6cad1adfec28b38c4e225d504e9e4469bf95d90d230e0238159cfd3c9f0cf1d",
   "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 2}, \"kind\": \"quiver\", \"relations\": [\"x*x*x\"], \"vertices\": [1]}, \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Hochschild1945\", \"doi\": \"10.2307/1969145\", \"doi_url\": \"https://doi.org/10.2307/1969145\", \"formatted\": \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\", \"key\": \"bar\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x*x'], field=GF(2))\\nA.hochschild_homology(3)\\nA.cartan_matrix()\\nA.dim\", \"results\": {\"cartan\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"latex\": \"\\\\begin{pmatrix} 3 \\\\end{pmatrix}\", \"matrix\": [[3]], \"references\": [\"assem_book\"]}, \"dimension\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"references\": [\"assem_book\"], \"value\": 3}, \"hh_homology\": {\"citations\": [[\"Hochschild1945\", \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\"]], \"dims\": [3, 2, 2, 2], \"engine\": \"hanlab engine (F_p fast rank)\", \"kind\": \"HH_\", \"references\": [\"bar\"], \"top\": 3}}}"
+ },
+ "products_loop_gf2": {
+  "body": {
+   "schema": 2,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "relations": [
+     "x*x*x"
+    ],
+    "field": {
+     "kind": "GF",
+     "p": 2,
+     "n": 1
+    }
+   },
+   "compute": [
+    "cup:0..2",
+    "connes_b:0..2"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "0482ed0b652fbc6595cfbfe376ac0acef6d5f6bb1c5588406216476955f2bbc7",
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 2}, \"kind\": \"quiver\", \"relations\": [\"x*x*x\"], \"vertices\": [1]}, \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The associative cup product on HH^* (Gerstenhaber-algebra structure).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"cup\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The definitional source of the cup product and Gerstenhaber bracket.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"gerstenhaber\", \"topic\": \"Foundations\"}, {\"annotation\": \"Connes' B-operator and the SBI sequence -- quiverlab's cyclic homology.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Connes1985\", \"doi\": \"10.1007/BF02698807\", \"doi_url\": \"https://doi.org/10.1007/BF02698807\", \"formatted\": \"Connes, Alain (1985). Non-commutative differential geometry. Publications Math'ematiques de l'IH'ES 62, 41-144.\", \"key\": \"cyclic\", \"topic\": \"Algorithms\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x*x'], field=GF(2))\\nA.cup_products(2)\\nA.connes_differentials(2)\", \"results\": {\"connes_b\": {\"citations\": [[\"Connes1985\", \"Connes, Alain (1985). Non-commutative differential geometry. Publications Math'ematiques de l'IH'ES 62, 41-144.\"]], \"engine\": \"engine (b,B) GF(2)\", \"hh_dims\": [3, 2, 2], \"kind\": \"connes_b\", \"matrices\": {\"0\": [[\"0\", \"1\", \"0\"], [\"0\", \"0\", \"0\"]], \"1\": [[\"0\", \"0\"], [\"0\", \"0\"]]}, \"ranks\": {\"0\": 1, \"1\": 0}, \"references\": [\"cyclic\"], \"top\": 2}, \"cup\": {\"basis\": \"bar/GF(2)\", \"citations\": [[\"Gerstenhaber1963\", \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\"]], \"engine\": \"hanlab engine (F_p fast rank)\", \"kind\": \"cup\", \"references\": [\"cup\", \"gerstenhaber\"], \"tables\": [{\"constants\": [[[\"1\", \"0\", \"0\"], [\"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\"]], [[\"0\", \"1\", \"0\"], [\"1\", \"0\", \"0\"], [\"0\", \"0\", \"0\"]], [[\"0\", \"0\", \"1\"], [\"0\", \"1\", \"0\"], [\"1\", \"0\", \"0\"]]], \"degrees\": [0, 0], \"dims\": [3, 3, 3], \"out_degree\": 0}, {\"constants\": [[[\"1\", \"0\"], [\"0\", \"0\"], [\"0\", \"0\"]], [[\"0\", \"1\"], [\"1\", \"0\"], [\"0\", \"0\"]]], \"degrees\": [0, 1], \"dims\": [3, 2, 2], \"out_degree\": 1}, {\"constants\": [[[\"1\", \"0\"], [\"0\", \"0\"], [\"0\", \"0\"]], [[\"0\", \"1\"], [\"1\", \"0\"], [\"0\", \"0\"]]], \"degrees\": [0, 2], \"dims\": [3, 2, 2], \"out_degree\": 2}, {\"constants\": [[[\"1\", \"0\", \"0\"], [\"0\", \"0\", \"0\"]], [[\"0\", \"1\", \"0\"], [\"1\", \"0\", \"0\"]]], \"degrees\": [1, 0], \"dims\": [2, 3, 2], \"out_degree\": 1}, {\"constants\": [[[\"0\", \"0\"], [\"0\", \"0\"]], [[\"0\", \"0\"], [\"0\", \"0\"]]], \"degrees\": [1, 1], \"dims\": [2, 2, 2], \"out_degree\": 2}, {\"constants\": [[[\"1\", \"0\", \"0\"], [\"0\", \"0\", \"0\"]], [[\"0\", \"1\", \"0\"], [\"1\", \"0\", \"0\"]]], \"degrees\": [2, 0], \"dims\": [2, 3, 2], \"out_degree\": 2}], \"top\": 2}}}"
  }
 }

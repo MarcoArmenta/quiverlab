@@ -25,7 +25,11 @@ never hide behind one:
     one under the version substitution alone, so no math moved. ``_V`` below
     and the frozen ``canonical_key`` entries deliberately KEEP ``0.1.0.dev0``
     -- the key pin is version-explicit and anchors the canonicalizer
-    independently of the running library."""
+    independently of the running library.
+  * 2026-08-01 (``products_loop_gf2``): ADDED for Plan 35 -- the new
+    cup/cap/bracket/connes_b compute kinds. One entry (``cup:0..2`` +
+    ``connes_b:0..2`` over the ``x^3`` loop / GF(2)); the existing six entries
+    are untouched."""
 import json
 import pathlib
 
