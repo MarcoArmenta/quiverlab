@@ -71,3 +71,55 @@ class ConnesB:
 
     def __repr__(self):
         return f"<ConnesB top={self.top} ranks={self.ranks}>"
+
+
+def _pairs(kind, top):
+    """The degree pairs a `kind` table family covers up to `top`."""
+    if kind == "cup":
+        return [(p, q) for p in range(top + 1) for q in range(top + 1 - p)]
+    if kind == "cap":
+        return [(p, n) for n in range(top + 1) for p in range(n + 1)]
+    if kind == "bracket":
+        return [(p, q) for p in range(1, top + 2) for q in range(1, top + 2 - p + 1)
+                if p + q - 1 <= top]
+    raise ValueError(f"unknown product kind {kind!r}")
+
+
+def gfp_product_tables(A, kind, top, max_cells):
+    """The GF(p) bar-route table family: tt_calculus structure constants on the
+    bar HH basis. A must be over a prime field (the caller routes)."""
+    from quiverlab.engine.adapter import to_engine
+    from quiverlab.engine import tt_calculus as TT
+    from quiverlab.engine.scan3 import cochain_basis
+    from quiverlab.errors import DepthLimitError
+    prime = A.domain.p
+    E = to_engine(A.unit_adapted())
+    fn = {"cup": TT.cup_product_matrix, "cap": TT.cap_product_matrix,
+          "bracket": TT.gerstenhaber_bracket_matrix}[kind]
+    out_deg = {"cup": lambda p, q: p + q, "cap": lambda p, n: n - p,
+               "bracket": lambda p, q: p + q - 1}[kind]
+    tables = {}
+    for (p, q) in _pairs(kind, top):
+        cells = len(cochain_basis(E, p)) * len(cochain_basis(E, q))
+        if cells > max_cells:
+            raise DepthLimitError(
+                f"{kind} product table ({p}, {q}): the two cochain bases pair "
+                f"{cells} cells (> max_cells = {max_cells})",
+                hint="raise max_cells or lower top")
+        C, dl, dr, dout = fn(E, p, q, prime)
+        tables[(p, q)] = ProductTable(
+            kind=kind, degrees=(p, q), out_degree=out_deg(p, q),
+            dims=(dl, dr, dout),
+            constants=tuple(tuple(tuple(str(int(C[k, i, j])) for j in range(dr))
+                                  for i in range(dl)) for k in range(dout)))
+    window = top if kind == "bracket" else None
+    return HHProducts(kind=kind, top=top, tables=tables,
+                      engine="hanlab engine (F_p fast rank)",
+                      basis=f"bar/GF({prime})", window=window,
+                      references=_REFERENCES[kind])
+
+
+_REFERENCES = {"cup": ["cup", "gerstenhaber"],
+               "cap": ["cup", "gerstenhaber"],
+               "bracket": ["bracket", "gerstenhaber"],
+               "connes_b": ["cyclic"]}
