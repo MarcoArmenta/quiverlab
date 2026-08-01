@@ -29,6 +29,7 @@ def cs_product_tables(A, kind, top, max_cells):
     from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
     from quiverlab.resolutions_cs.cup import native_cup
     from quiverlab.resolutions_cs.cap import native_cap
+    from quiverlab.hochschild import basis_reps as BR
 
     rs = reduction_system_of(A)
     _require_admissible(rs)
@@ -73,7 +74,40 @@ def cs_product_tables(A, kind, top, max_cells):
         tables[(p, q)] = ProductTable(
             kind=kind, degrees=(p, q), out_degree=out_n, dims=(dl, dr, dout),
             constants=tuple(tuple(tuple(row) for row in mat) for mat in consts))
+
+    bc, cb, diffs = _capture_cs(A, res, coh, hom, kind, top)
     return HHProducts(kind=kind, top=top, tables=tables,
                       engine="Chouhy-Solotar native diagonal",
                       basis=f"cs/{A.domain.name}", window=None,
-                      references=_REFERENCES[kind] + ["chouhy_solotar"])
+                      references=_REFERENCES[kind] + ["chouhy_solotar"],
+                      basis_classes=bc, chain_basis=cb, differentials=diffs)
+
+
+def _capture_cs(A, res, coh, hom, kind, top):
+    """Serialize the CS explicit representatives (Plan 35): per degree the class
+    list (coordinate vectors over res._basis(n, side)), the ordered CS chain
+    enumeration, and the annihilating differential res.matrix(n, side). Cohomology
+    side always; homology side too for cap."""
+    from quiverlab.hochschild import basis_reps as BR
+    dom = A.domain
+    labels = BR.labels_of(res.ar.A)
+    bc, cb, diffs = {}, {}, {}
+    for n in range(top + 1):
+        coh_elems = BR.cs_elements(res, n, "coh", labels)
+        bc[("coh", n)] = BR.classes_from_columns(coh[n], coh_elems, n, "cochain", dom)
+        cb[("coh", n)] = BR.enumeration_labels(coh_elems, "cochain")
+        shape = (res.dim_C(n + 1, "coh"), res.dim_C(n, "coh"))
+        note = ("ChouhySolotarResolution(A, reduction_system_of(A), "
+                "max_degree>=%d).matrix(%d, 'coh')" % (n + 1, n))
+        diffs[("coh", n)] = BR.serialize_differential(
+            shape, (lambda nn=n: res.matrix(nn, "coh")), note, dom)
+        if kind == "cap":
+            hom_elems = BR.cs_elements(res, n, "hom", labels)
+            bc[("hom", n)] = BR.classes_from_columns(hom[n], hom_elems, n, "chain", dom)
+            cb[("hom", n)] = BR.enumeration_labels(hom_elems, "chain")
+            hshape = (res.dim_C(n - 1, "hom") if n else 0, res.dim_C(n, "hom"))
+            hnote = ("ChouhySolotarResolution(A, reduction_system_of(A), "
+                     "max_degree>=%d).matrix(%d, 'hom')" % (n + 1, n))
+            diffs[("hom", n)] = BR.serialize_differential(
+                hshape, (lambda nn=n: res.matrix(nn, "hom") if nn else []), hnote, dom)
+    return bc, cb, diffs

@@ -24,10 +24,20 @@ class ProductTable:
                               for mat in self.constants]}
 
 
+def _by_side(mapping):
+    """Serialize a ``{(side, n): value}`` dict to the JSON-safe nested
+    ``{side: {str(n): value}}`` shape (Plan 35 explicit-reps block fields)."""
+    out = {}
+    for (side, n), value in sorted(mapping.items()):
+        out.setdefault(side, {})[str(n)] = value
+    return out
+
+
 class HHProducts:
     """A family of product tables up to `top`. kind in {"cup","cap","bracket"}."""
 
-    def __init__(self, kind, top, tables, engine, basis, window, references):
+    def __init__(self, kind, top, tables, engine, basis, window, references,
+                 basis_classes=None, chain_basis=None, differentials=None):
         self.kind = kind
         self.top = top
         self.tables = dict(tables)     # {(p, q): ProductTable}
@@ -35,6 +45,13 @@ class HHProducts:
         self.basis = basis
         self.window = window           # int for bracket (served window), else None
         self.references = list(references)
+        # Plan 35 explicit representatives: {(side, n): [class dict, ...]} the ACTUAL
+        # (co)cycles that produced the constants; the ordered enumeration they index
+        # into; and the annihilating differential (self-certification). None when a
+        # legacy caller omits them (blocks() then omits the fields; renderers fall back).
+        self.basis_classes = dict(basis_classes) if basis_classes else None
+        self.chain_basis = dict(chain_basis) if chain_basis else None
+        self.differentials = dict(differentials) if differentials else None
 
     def blocks(self):
         out = {"kind": self.kind, "top": self.top, "engine": self.engine,
@@ -44,6 +61,12 @@ class HHProducts:
                "references": list(self.references)}
         if self.window is not None:
             out["window"] = self.window
+        if self.basis_classes is not None:
+            out["basis_classes"] = _by_side(self.basis_classes)
+        if self.chain_basis is not None:
+            out["chain_basis"] = _by_side(self.chain_basis)
+        if self.differentials is not None:
+            out["differentials"] = _by_side(self.differentials)
         return out
 
     def __repr__(self):
@@ -54,20 +77,33 @@ class HHProducts:
 class ConnesB:
     """Induced Connes differentials B: HH_n -> HH_{n+1} for 0 <= n < top."""
 
-    def __init__(self, top, hh_dims, matrices, ranks, engine, references):
+    def __init__(self, top, hh_dims, matrices, ranks, engine, references,
+                 basis_classes=None, chain_basis=None, differentials=None):
         self.top = top
         self.hh_dims = list(hh_dims)   # dim HH_0..HH_top
         self.matrices = dict(matrices) # {n: rows of str, shape hh_dims[n+1] x hh_dims[n]}
         self.ranks = dict(ranks)       # {n: int}
         self.engine = engine
         self.references = list(references)
+        # Plan 35 explicit representatives: the homology cycle bases z^n_j (0..top),
+        # their ordered chain enumeration, and the boundary b_n that annihilates them.
+        self.basis_classes = dict(basis_classes) if basis_classes else None
+        self.chain_basis = dict(chain_basis) if chain_basis else None
+        self.differentials = dict(differentials) if differentials else None
 
     def blocks(self):
-        return {"kind": "connes_b", "top": self.top,
-                "hh_dims": list(self.hh_dims),
-                "matrices": {str(n): self.matrices[n] for n in sorted(self.matrices)},
-                "ranks": {str(n): self.ranks[n] for n in sorted(self.ranks)},
-                "engine": self.engine, "references": list(self.references)}
+        out = {"kind": "connes_b", "top": self.top,
+               "hh_dims": list(self.hh_dims),
+               "matrices": {str(n): self.matrices[n] for n in sorted(self.matrices)},
+               "ranks": {str(n): self.ranks[n] for n in sorted(self.ranks)},
+               "engine": self.engine, "references": list(self.references)}
+        if self.basis_classes is not None:
+            out["basis_classes"] = _by_side(self.basis_classes)
+        if self.chain_basis is not None:
+            out["chain_basis"] = _by_side(self.chain_basis)
+        if self.differentials is not None:
+            out["differentials"] = _by_side(self.differentials)
+        return out
 
     def __repr__(self):
         return f"<ConnesB top={self.top} ranks={self.ranks}>"
@@ -92,12 +128,29 @@ def gfp_product_tables(A, kind, top, max_cells):
     from quiverlab.engine import tt_calculus as TT
     from quiverlab.engine.scan3 import cochain_basis
     from quiverlab.errors import DepthLimitError
+    from quiverlab.hochschild import basis_reps as BR
     prime = A.domain.p
-    E = to_engine(A.unit_adapted())
-    fn = {"cup": TT.cup_product_matrix, "cap": TT.cap_product_matrix,
-          "bracket": TT.gerstenhaber_bracket_matrix}[kind]
+    AU = A.unit_adapted()
+    E = to_engine(AU)
+    labels = BR.labels_of(AU)
     out_deg = {"cup": lambda p, q: p + q, "cap": lambda p, n: n - p,
                "bracket": lambda p, q: p + q - 1}[kind]
+
+    # Class caches: cohomology/homology reps computed ONCE and shared -- the SAME
+    # objects both produce the constants (passed into the tt matrix builders) and
+    # are captured as the explicit representatives (Plan 35).
+    _coh, _hom = {}, {}
+
+    def coh(n):
+        if n not in _coh:
+            _coh[n] = TT.cohomology_classes(E, n, prime)
+        return _coh[n]
+
+    def hom(n):
+        if n not in _hom:
+            _hom[n] = TT.homology_classes(E, n, prime)
+        return _hom[n]
+
     tables = {}
     for (p, q) in _pairs(kind, top):
         cells = len(cochain_basis(E, p)) * len(cochain_basis(E, q))
@@ -106,17 +159,87 @@ def gfp_product_tables(A, kind, top, max_cells):
                 f"{kind} product table ({p}, {q}): the two cochain bases pair "
                 f"{cells} cells (> max_cells = {max_cells})",
                 hint="raise max_cells or lower top")
-        C, dl, dr, dout = fn(E, p, q, prime)
+        if kind == "cup":
+            C, dl, dr, dout = TT.cup_product_matrix(E, p, q, prime,
+                                                    coh(p), coh(q), coh(p + q))
+        elif kind == "bracket":
+            C, dl, dr, dout = TT.gerstenhaber_bracket_matrix(
+                E, p, q, prime, coh(p), coh(q), coh(p + q - 1))
+        else:  # cap: (p, n) -> HH^p (x) HH_n -> HH_{n-p}
+            C, dl, dr, dout = TT.cap_product_matrix(E, p, q, prime,
+                                                    coh(p), hom(q), hom(q - p))
         tables[(p, q)] = ProductTable(
             kind=kind, degrees=(p, q), out_degree=out_deg(p, q),
             dims=(dl, dr, dout),
             constants=tuple(tuple(tuple(str(int(C[k, i, j])) for j in range(dr))
                                   for i in range(dl)) for k in range(dout)))
+
+    bc, cb, diffs = _capture_gfp(E, labels, kind, top, coh, hom)
     window = top if kind == "bracket" else None
     return HHProducts(kind=kind, top=top, tables=tables,
                       engine="hanlab engine (F_p fast rank)",
                       basis=f"bar/GF({prime})", window=window,
-                      references=_REFERENCES[kind])
+                      references=_REFERENCES[kind],
+                      basis_classes=bc, chain_basis=cb, differentials=diffs)
+
+
+def _gfp_coh_diff(E, n):
+    """(shape, build, note) for the coboundary delta^n: C^n -> C^{n+1} (engine),
+    the differential annihilating a degree-n cohomology class."""
+    m = E.m
+    shape = (m * (m - 1) ** (n + 1), m * (m - 1) ** n)
+
+    def build():
+        from quiverlab.engine.scan3 import cochain_basis, coboundary_matrix
+        idx = {g: i for i, g in enumerate(cochain_basis(E, n + 1))}
+        return coboundary_matrix(E, n, cochain_basis(E, n), idx)
+
+    note = ("quiverlab.engine.scan3.coboundary_matrix(E, %d, cochain_basis(E, %d), "
+            "{g: i for i, g in enumerate(cochain_basis(E, %d))}), "
+            "E = to_engine(A.unit_adapted())" % (n, n, n + 1))
+    return shape, build, note
+
+
+def _gfp_hom_diff(E, n):
+    """(shape, build, note) for the boundary b_n: C_n -> C_{n-1} (engine), which
+    annihilates a degree-n homology class. b_0 = 0 (no map out of C_0)."""
+    m = E.m
+    if n == 0:
+        return (0, m), (lambda: []), "b_0 = 0 (every 0-chain is a cycle)"
+    shape = (m * (m - 1) ** (n - 1), m * (m - 1) ** n)
+
+    def build():
+        from quiverlab.engine.hh_engine import cn_basis, differential_matrix
+        idx = {g: i for i, g in enumerate(cn_basis(E, n - 1))}
+        return differential_matrix(E, n, cn_basis(E, n), idx)
+
+    note = ("quiverlab.engine.hh_engine.differential_matrix(E, %d, cn_basis(E, %d), "
+            "{g: i for i, g in enumerate(cn_basis(E, %d))}), "
+            "E = to_engine(A.unit_adapted())" % (n, n, n - 1))
+    return shape, build, note
+
+
+def _capture_gfp(E, labels, kind, top, coh, hom):
+    """Serialize the GF(p) explicit representatives: per degree the class list, the
+    ordered enumeration labels, and the annihilating differential. Cohomology side
+    for every kind; homology side too for cap."""
+    from quiverlab.hochschild import basis_reps as BR
+    bc, cb, diffs = {}, {}, {}
+    for n in range(top + 1):
+        coh_elems = BR.engine_coh_elements(E, n, labels)
+        cols = [coh(n).reps[:, i] for i in range(coh(n).reps.shape[1])]
+        bc[("coh", n)] = BR.classes_from_columns(cols, coh_elems, n, "cochain", None)
+        cb[("coh", n)] = BR.enumeration_labels(coh_elems, "cochain")
+        shape, build, note = _gfp_coh_diff(E, n)
+        diffs[("coh", n)] = BR.serialize_differential(shape, build, note, None)
+        if kind == "cap":
+            hom_elems = BR.engine_hom_elements(E, n, labels)
+            hcols = [hom(n).reps[:, i] for i in range(hom(n).reps.shape[1])]
+            bc[("hom", n)] = BR.classes_from_columns(hcols, hom_elems, n, "chain", None)
+            cb[("hom", n)] = BR.enumeration_labels(hom_elems, "chain")
+            shape, build, note = _gfp_hom_diff(E, n)
+            diffs[("hom", n)] = BR.serialize_differential(shape, build, note, None)
+    return bc, cb, diffs
 
 
 _REFERENCES = {"cup": ["cup", "gerstenhaber"],
@@ -226,7 +349,10 @@ def connes_b_tables(A, top, max_cells=4_000_000):
     vanishes on chains. GF(p): the fast (b,B) engine; any other exact Domain:
     the generic bar (b,B) mixed complex (max_cells guards the blow-up)."""
     from quiverlab.fields.primefield import PrimeField
+    from quiverlab.hochschild import basis_reps as BR
     dom = A.domain
+    AU = A.unit_adapted()
+    labels = BR.labels_of(AU)
     if isinstance(dom, PrimeField):
         import numpy as np
         from quiverlab.engine.adapter import to_engine
@@ -234,7 +360,7 @@ def connes_b_tables(A, top, max_cells=4_000_000):
         from quiverlab.engine.hh_engine import cn_basis
         from quiverlab.engine.tt_calculus import homology_classes
         p = dom.p
-        E = to_engine(A.unit_adapted())
+        E = to_engine(AU)
         H = {n: homology_classes(E, n, p) for n in range(top + 1)}
         matrices, ranks = {}, {}
         for n in range(top):
@@ -250,10 +376,17 @@ def connes_b_tables(A, top, max_cells=4_000_000):
             ranks[n] = _int_rank_mod_p(rows, H[n + 1].dim, p)
         hh = [H[n].dim for n in range(top + 1)]
         engine = f"engine (b,B) GF({p})"
+        bc, cb, diffs = {}, {}, {}
+        for n in range(top + 1):
+            elems = BR.engine_hom_elements(E, n, labels)
+            cols = [H[n].reps[:, i] for i in range(H[n].reps.shape[1])]
+            bc[("hom", n)] = BR.classes_from_columns(cols, elems, n, "chain", None)
+            cb[("hom", n)] = BR.enumeration_labels(elems, "chain")
+            shape, build, note = _gfp_hom_diff(E, n)
+            diffs[("hom", n)] = BR.serialize_differential(shape, build, note, None)
     else:
         from quiverlab.fields.linalg import rank as _rank
         from quiverlab.hochschild.cyclic import connes_B_matrix
-        AU = A.unit_adapted()
         quots = {n: _generic_homology_quotient(AU, n, max_cells)
                  for n in range(top + 1)}
         matrices, ranks = {}, {}
@@ -276,5 +409,26 @@ def connes_b_tables(A, top, max_cells=4_000_000):
                               for k in range(len(reps_n1))], dom) if reps_n else 0
         hh = [len(quots[n][0]) for n in range(top + 1)]
         engine = f"generic (b,B) mixed complex / {dom.name}"
+        bc, cb, diffs = {}, {}, {}
+        m = AU.dim
+        for n in range(top + 1):
+            elems = BR.bar_chain_elements(m, n, labels)
+            bc[("hom", n)] = BR.classes_from_columns(quots[n][0], elems, n, "chain", dom)
+            cb[("hom", n)] = BR.enumeration_labels(elems, "chain")
+            shape = ((m * (m - 1) ** (n - 1)) if n else 0, m * (m - 1) ** n)
+            note = ("quiverlab.hochschild.bar.boundary_matrix(A.unit_adapted(), %d, "
+                    "max_cells)[0]" % n)
+            build = (lambda nn=n: _generic_boundary_rows(AU, nn, max_cells))
+            diffs[("hom", n)] = BR.serialize_differential(shape, build, note, dom)
     return ConnesB(top=top, hh_dims=hh, matrices=matrices, ranks=ranks,
-                   engine=engine, references=_REFERENCES["connes_b"])
+                   engine=engine, references=_REFERENCES["connes_b"],
+                   basis_classes=bc, chain_basis=cb, differentials=diffs)
+
+
+def _generic_boundary_rows(AU, n, max_cells):
+    """Row-major boundary matrix b_n over the Domain (empty for n=0: b_0 = 0)."""
+    if n == 0:
+        return []
+    from quiverlab.hochschild.bar import boundary_matrix
+    M, _, _ = boundary_matrix(AU, n, max_cells)
+    return M

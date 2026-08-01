@@ -216,15 +216,17 @@ def homology_classes(alg, n, p):
 # ---------------------------------------------------------------------------
 # Induced products on (co)homology, as structure-constant tensors over F_p
 # ---------------------------------------------------------------------------
-def cup_product_matrix(alg, p, q, prime):
+def cup_product_matrix(alg, p, q, prime, Hp=None, Hq=None, Hpq=None):
     """Structure constants of the cup product HH^p (x) HH^q -> HH^{p+q} over F_p.
 
     Returns (C, dp, dq, dpq) where C has shape (dpq, dp, dq): the class of
     rep_i ⌣ rep_j in HH^{p+q} is sum_k C[k,i,j]·basis_k.  Asserts each cup of
-    cocycles is again a cocycle (the descent check)."""
-    Hp = cohomology_classes(alg, p, prime)
-    Hq = cohomology_classes(alg, q, prime)
-    Hpq = cohomology_classes(alg, p + q, prime)
+    cocycles is again a cocycle (the descent check).  Optional pre-built class
+    objects (Hp/Hq/Hpq) let a caller compute the constants from the SAME
+    representatives it captures for the explicit-reps surface (Plan 35)."""
+    Hp = cohomology_classes(alg, p, prime) if Hp is None else Hp
+    Hq = cohomology_classes(alg, q, prime) if Hq is None else Hq
+    Hpq = cohomology_classes(alg, p + q, prime) if Hpq is None else Hpq
     C = np.zeros((Hpq.dim, Hp.dim, Hq.dim), dtype=np.int64)
     for i in range(Hp.dim):
         for j in range(Hq.dim):
@@ -233,15 +235,16 @@ def cup_product_matrix(alg, p, q, prime):
     return C, Hp.dim, Hq.dim, Hpq.dim
 
 
-def cap_product_matrix(alg, p, n, prime):
+def cap_product_matrix(alg, p, n, prime, Hp=None, Hn=None, Hnp=None):
     """Structure constants of the cap action HH^p (x) HH_n -> HH_{n-p} over F_p.
 
     Returns (C, dp, dn, dnp) where C has shape (dnp, dp, dn): the class of
     rep_i ∩ rep_j in HH_{n-p} is sum_k C[k,i,j]·basis_k.  Asserts each cap of a
-    cocycle with a cycle is again a cycle (the descent check)."""
-    Hp = cohomology_classes(alg, p, prime)
-    Hn = homology_classes(alg, n, prime)
-    Hnp = homology_classes(alg, n - p, prime)
+    cocycle with a cycle is again a cycle (the descent check).  Optional
+    pre-built class objects (Plan 35): see cup_product_matrix."""
+    Hp = cohomology_classes(alg, p, prime) if Hp is None else Hp
+    Hn = homology_classes(alg, n, prime) if Hn is None else Hn
+    Hnp = homology_classes(alg, n - p, prime) if Hnp is None else Hnp
     C = np.zeros((Hnp.dim, Hp.dim, Hn.dim), dtype=np.int64)
     for i in range(Hp.dim):
         for j in range(Hn.dim):
@@ -318,15 +321,16 @@ def multiplication_cochain(alg):
     return dict_to_cochain(alg, 2, out)
 
 
-def gerstenhaber_bracket_matrix(alg, p, q, prime):
+def gerstenhaber_bracket_matrix(alg, p, q, prime, Hp=None, Hq=None, Hpq=None):
     """Structure constants of the induced bracket HH^p (x) HH^q -> HH^{p+q-1} over F_p.
 
     Returns (C, dp, dq, dpq) where C has shape (dpq, dp, dq): the class of
     [rep_i, rep_j] in HH^{p+q-1} is sum_k C[k,i,j]·basis_k.  Asserts each bracket of
-    cocycles is again a cocycle (the descent check, via `cohomology_classes.coords`)."""
-    Hp = cohomology_classes(alg, p, prime)
-    Hq = cohomology_classes(alg, q, prime)
-    Hpq = cohomology_classes(alg, p + q - 1, prime)
+    cocycles is again a cocycle (the descent check, via `cohomology_classes.coords`).
+    Optional pre-built class objects (Plan 35): see cup_product_matrix."""
+    Hp = cohomology_classes(alg, p, prime) if Hp is None else Hp
+    Hq = cohomology_classes(alg, q, prime) if Hq is None else Hq
+    Hpq = cohomology_classes(alg, p + q - 1, prime) if Hpq is None else Hpq
     C = np.zeros((Hpq.dim, Hp.dim, Hq.dim), dtype=np.int64)
     for i in range(Hp.dim):
         for j in range(Hq.dim):
