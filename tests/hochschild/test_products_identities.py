@@ -1,6 +1,8 @@
 """Plan 35 identity batteries. Table-level: the identities of a Gerstenhaber
-algebra + the cap module structure + B^2=0, on small algebras over several
-primes, plus bar<->CS table equality in-window (the cross-engine gate)."""
+algebra (graded-commutative associative cup, antisymmetric bracket, cup-Leibniz)
++ the cap module structure, on small algebras over several primes, plus
+bar<->CS table equality in-window (the cross-engine gate). The induced B^2=0
+identity is covered separately in tests/hochschild/test_connes_b.py."""
 import itertools
 import pytest
 
@@ -159,16 +161,27 @@ def test_cap_module_identity():
 #   g ∪ [f, h]   = cup(g, [f,h]),     Cup(q, p+r-1)   [k][c][m]  -> HH^{p+q+r-1}
 #     T2[a][c][e][k]  = Σ_m Br(p,r)[m][a][e] · Cup(q,p+r-1)[k][c][m]    (m ∈ HH^{p+r-1})
 #
-# The identity is LHS == T1 + (-1)^{(p-1)q} · T2 (mod prime). At (p,q,r)=(1,1,1)
-# the sign exponent (p-1)q = 0, so the sign is +1.
+# The identity is LHS == T1 + (-1)^{(p-1)q} · T2 (mod prime).
+#
+# Fixture note (non-vacuity): on k[x]/(x^a) the cup(1,1) table is zero in odd
+# characteristic, so on GF(7) EVERY term of the (1,1,1) identity would carry a
+# vanishing cup(1,1) factor and the check would collapse to 0 == 0 — passing a
+# wrong composite equally. GF(2) is the content-bearing case there
+# (cup(1,1)/br(1,1) nonzero); its sign exponent (p-1)q = 0 (sign +1), but ±1
+# also coincide mod 2, so GF(2) cannot distinguish the sign. The (2,1,1) case
+# on k[x]/(x^3) over GF(3) carries a genuine sign: (p-1)q = 1 (sign -1 ≠ +1
+# mod 3) and, although its LHS is zero there (cup(1,1)=0 and br(2,2)=0 in odd
+# char), T1 and T2 are both nonzero, so the identity reduces to the non-trivial
+# 0 == T1 - T2 — a wrong sign fails it. The two rows together cover both a
+# content-bearing full identity (GF(2)) and a content-bearing sign (GF(3)).
 # ---------------------------------------------------------------------------
 @pytest.mark.oracle_selfcert
-def test_bracket_cup_leibniz():
-    prime = 7
-    A = ql.truncated_polynomial(2, field=ql.GF(prime))
-    cup = A.cup_products(2)
-    br = A.gerstenhaber_brackets(2)
-    p, q, r = 1, 1, 1
+@pytest.mark.parametrize("a, prime, p, q, r", [(2, 2, 1, 1, 1), (3, 3, 2, 1, 1)])
+def test_bracket_cup_leibniz(a, prime, p, q, r):
+    A = ql.truncated_polynomial(a, field=ql.GF(prime))
+    top = p + q + r - 1
+    cup = A.cup_products(top)
+    br = A.gerstenhaber_brackets(top)
     Uqr = cup.tables[(q, r)]              # g ∪ h
     Bpqr = br.tables[(p, q + r)]          # [f, g∪h]
     Bpq = br.tables[(p, q)]               # [f, g]
@@ -181,13 +194,13 @@ def test_bracket_cup_leibniz():
     sign = 1 if ((p - 1) * q) % 2 == 0 else prime - 1
     da, dc, de = Bpq.dims[0], Bpq.dims[1], Bpr.dims[1]
     dk = Bpqr.dims[2]
-    for a, c, e, k in itertools.product(range(da), range(dc), range(de), range(dk)):
-        lhs = sum(M_Uqr[m][c][e] * M_Bpqr[k][a][m]
+    for a_, c, e, k in itertools.product(range(da), range(dc), range(de), range(dk)):
+        lhs = sum(M_Uqr[m][c][e] * M_Bpqr[k][a_][m]
                   for m in range(Uqr.dims[2])) % prime
-        t1 = sum(M_Bpq[m][a][c] * M_Upqr[k][m][e]
+        t1 = sum(M_Bpq[m][a_][c] * M_Upqr[k][m][e]
                  for m in range(Bpq.dims[2])) % prime
-        t2 = sum(M_Bpr[m][a][e] * M_Uqpr[k][c][m]
+        t2 = sum(M_Bpr[m][a_][e] * M_Uqpr[k][c][m]
                  for m in range(Bpr.dims[2])) % prime
         rhs = (t1 + sign * t2) % prime
         assert lhs == rhs, \
-            f"bracket cup-Leibniz fails at (p,q,r)={(p, q, r)} idx {(a, c, e, k)}"
+            f"bracket cup-Leibniz fails at (p,q,r)={(p, q, r)} idx {(a_, c, e, k)}"
