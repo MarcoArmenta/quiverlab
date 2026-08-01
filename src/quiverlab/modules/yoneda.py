@@ -319,7 +319,10 @@ def yoneda_sequence(M, N, cocycle, n, terms=None, dmats=None):
         for k in range(n - 2, 0, -1):
             modules.append(terms[k - 1].module)
             maps.append(dmats[k])
-            roles.append("resolution_term" if k - 1 > 0 else "resolution_term")
+            # every P_{k-1} in the resolution tail (down to and including P_0) is a
+            # resolution term; the only non-term in the tail is the end object M, which
+            # is appended below with role "quotient".
+            roles.append("resolution_term")
             term_index.append(k - 1)
         modules.append(M)
         maps.append(dmats[0])

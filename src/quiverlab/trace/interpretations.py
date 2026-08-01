@@ -121,21 +121,101 @@ def sentence(theory, n):
 
 
 # --------------------------------------------------------------------------- #
-# HH^1 read-off: a degree-1 cochain rep -> the derivation's value list D(arrow)=value.
-# The captured term-sum of a degree-1 HH cocycle is exactly the list of pairs
-# ``(word, value)`` with word a single arrow, so the derivation is READ OFF, not
-# recomputed.
+# Element-wise read-offs (Plan 35 wave 3d): a captured class's labelled term-sum
+# ``[[coeff, word, value], ...]`` (``word`` the ordered list of arrow labels of the
+# (co)chain slot, ``value`` a basis label of A) is RELABELLED into the classical
+# dictionary object -- the central element (HH^0), the derivation (HH^1), the
+# deformation 2-cocycle (HH^2), the commutator residue (HH_0). Presentation only: these
+# invent nothing; they read the shipped reps. The words are the SAME labels the
+# ``chain_basis`` enumeration lists, so a reader can trace every read-off back to a
+# coordinate vector.
 # --------------------------------------------------------------------------- #
+def _magnitude(coeff, value):
+    """One term ``coeff * value`` with a unit coefficient suppressed."""
+    return value if str(coeff) == "1" else "%s %s" % (coeff, value)
+
+
+def _arrow_word(word):
+    """A (co)chain slot's word (a list/tuple of arrow labels, or a bare string) rendered
+    as one composition label ``a·b·c`` (empty word -> '' at degree 0)."""
+    if isinstance(word, (list, tuple)):
+        return "·".join(str(w) for w in word)
+    return str(word)
+
+
+def _element_from_terms(terms):
+    """A degree-0 (co)chain's element of A as a linear combination of its basis values
+    (the words are empty at degree 0)."""
+    parts = [_magnitude(coeff, value) for coeff, _word, value in terms]
+    return " + ".join(parts) if parts else "0"
+
+
 def derivation_values(terms):
     """From a degree-1 HH^1 cochain's labelled term-sum ``[[coeff, word, value], ...]``
-    (each ``word`` a single arrow generator), the derivation's action list
-    ``D(word) = coeff * value``, grouped by arrow. Presentation only: it relabels the
-    already-shipped terms as D(.) values, inventing nothing."""
+    (each ``word`` a single arrow generator, as a bare label or a 1-element list), the
+    derivation's action list ``D(arrow) = coeff * value``, grouped by arrow. Presentation
+    only: it relabels the already-shipped terms as D(.) values, inventing nothing."""
     by_arrow = {}
     for coeff, word, value in terms:
-        piece = value if str(coeff) == "1" else "%s %s" % (coeff, value)
-        by_arrow.setdefault(str(word), []).append(piece)
-    out = []
-    for arrow in sorted(by_arrow):
-        out.append("D(%s) = %s" % (arrow, " + ".join(by_arrow[arrow])))
-    return out
+        by_arrow.setdefault(_arrow_word(word), []).append(_magnitude(coeff, value))
+    return ["D(%s) = %s" % (a, " + ".join(by_arrow[a])) for a in sorted(by_arrow)]
+
+
+def central_element(terms):
+    """From a degree-0 HH^0 cochain's term-sum, the central element ``z`` of ``Z(A)``."""
+    return _element_from_terms(terms)
+
+
+def commutator_residue(terms):
+    """From a degree-0 HH_0 chain's term-sum, the residue in ``A / [A, A]``."""
+    return _element_from_terms(terms)
+
+
+def deformation_cochain(terms):
+    """From a degree-2 HH^2 cochain's term-sum ``[[coeff, [a, b], value], ...]``, the
+    infinitesimal-deformation 2-cocycle values ``μ(a, b) = coeff * value``, grouped by
+    the argument pair (in first appearance order)."""
+    by_pair, order = {}, []
+    for coeff, word, value in terms:
+        pair = _arrow_word(word)
+        if pair not in by_pair:
+            by_pair[pair] = []
+            order.append(pair)
+        by_pair[pair].append(_magnitude(coeff, value))
+    return ["μ(%s) = %s" % (pair, " + ".join(by_pair[pair])) for pair in order]
+
+
+# per (theory, degree): the interpretation heading + the read-off builder for one class.
+_ELEMENT_READOFF = {
+    ("hh_cohomology", 0): (
+        "HH⁰ = Z(A): each class is a central element z (za = az for all a in A).",
+        lambda t: [central_element(t)]),
+    ("hh_cohomology", 1): (
+        "HH¹ = Der(A) / Inn(A): each class is an outer derivation, read off as "
+        "D(arrow) = value.", derivation_values),
+    ("hh_cohomology", 2): (
+        "HH² = infinitesimal deformations: each class is the 2-cocycle μ(a, b) of a "
+        "first-order deformation a * b = ab + t·μ(a, b).", deformation_cochain),
+    ("hh_homology", 0): (
+        "HH₀ = A / [A, A]: each class is the residue of an element modulo the "
+        "commutators ab − ba.", lambda t: [commutator_residue(t)]),
+}
+_ELEMENT_READOFF[("HH^", 0)] = _ELEMENT_READOFF[("hh_cohomology", 0)]
+_ELEMENT_READOFF[("HH^", 1)] = _ELEMENT_READOFF[("hh_cohomology", 1)]
+_ELEMENT_READOFF[("HH^", 2)] = _ELEMENT_READOFF[("hh_cohomology", 2)]
+_ELEMENT_READOFF[("HH_", 0)] = _ELEMENT_READOFF[("hh_homology", 0)]
+
+
+def element_heading(theory, n):
+    """The interpretation heading for ``(theory, degree n)``'s element-wise read-off, or
+    ``None`` when that space has no element-wise dictionary entry."""
+    entry = _ELEMENT_READOFF.get((theory, int(n)))
+    return entry[0] if entry is not None else None
+
+
+def element_readoff(theory, n, terms):
+    """The element-wise dictionary read-off of ONE class's labelled term-sum -- a list of
+    display strings -- or ``None`` when ``(theory, degree n)`` has no element-wise entry
+    (the framing sentence applies instead)."""
+    entry = _ELEMENT_READOFF.get((theory, int(n)))
+    return entry[1](terms) if entry is not None else None

@@ -110,6 +110,20 @@ def _block_html(kind, b):
         if b.get("engine"):
             chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
         chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
+        # Plan 35 wave 3d: the element-wise dictionary read-offs (central elements /
+        # derivations / deformation cochain / commutator residues) and the per-degree
+        # EXPLICIT REPRESENTATIVES, when the block carries them (hochschild.hh_reps).
+        from quiverlab.trace.render_html import (
+            hh_element_interpretation, hh_reps_sections)
+        chunks.extend(hh_element_interpretation(kind, b.get("basis_classes"),
+                                                b.get("inner_dims")))
+        secs = hh_reps_sections(kind, b.get("basis_classes"), b.get("chain_basis"),
+                                b.get("differentials"), anchor_prefix="cr-" + kind)
+        if secs:
+            chunks.append("<p><i>Explicit representatives by degree — each class as a "
+                          "term-sum and a coordinate vector over the ordered (co)chain "
+                          "basis, with the differential that annihilates it.</i></p>")
+            chunks.extend(secs)
         return chunks
     if kind == "cyclic_homology":
         # HC is a homology-style subscript table HC_n (Plan-35 follow-up), rendered

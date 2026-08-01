@@ -1430,6 +1430,88 @@
     return rendered;
   }
 
+  // Plan 35 wave 3d: the PLAIN hh_cohomology / hh_homology blocks. The reps payload is
+  // SINGLE-side {str(degree): ...} (like Ext / Tor / HC); we reuse appendProductReps by
+  // wrapping the single side, and read off the element-wise classical dictionary
+  // (central elements / derivations / deformation cochain / commutator residues) from
+  // the captured term-sums -- mirrors quiverlab.trace.interpretations +
+  // render_html.hh_element_interpretation. Element-wise ONLY where reps are present.
+  function magnitude(coeff, value) {
+    return String(coeff) === "1" ? value : coeff + " " + value;
+  }
+  function arrowWord(word) {
+    return Array.isArray(word) ? word.join("·") : String(word);
+  }
+  function elementFromTerms(terms) {              // degree-0 (co)chain -> element of A
+    var parts = (terms || []).map(function (t) { return magnitude(t[0], t[2]); });
+    return parts.length ? parts.join(" + ") : "0";
+  }
+  function groupedReadoff(terms, keyOf, label, sortKeys) {
+    var by = {}, order = [];
+    (terms || []).forEach(function (t) {
+      var k = keyOf(t);
+      if (!by[k]) { by[k] = []; order.push(k); }
+      by[k].push(magnitude(t[0], t[2]));
+    });
+    if (sortKeys) order.sort();
+    return order.map(function (k) { return label + "(" + k + ") = " + by[k].join(" + "); });
+  }
+  function derivationValues(terms) {
+    return groupedReadoff(terms, function (t) { return arrowWord(t[1]); }, "D", true);
+  }
+  function deformationCochain(terms) {
+    return groupedReadoff(terms, function (t) { return arrowWord(t[1]); }, "μ", false);
+  }
+  var HH_INTERP = {
+    hh_cohomology: {
+      0: { head: "HH⁰ = Z(A): each class is a central element z (za = az for all a in A).",
+           readoff: function (t) { return [elementFromTerms(t)]; } },
+      1: { head: "HH¹ = Der(A) / Inn(A): each class is an outer derivation, read off as "
+             + "D(arrow) = value.", readoff: derivationValues },
+      2: { head: "HH² = infinitesimal deformations: each class is the 2-cocycle μ(a, b) "
+             + "of a first-order deformation a * b = ab + t·μ(a, b).", readoff: deformationCochain }
+    },
+    hh_homology: {
+      0: { head: "HH₀ = A / [A, A]: each class is the residue of an element modulo the "
+             + "commutators ab − ba.", readoff: function (t) { return [elementFromTerms(t)]; } }
+    }
+  };
+  function appendHHInterpretation(div, name, b) {
+    var bc = b.basis_classes;
+    if (!bc) return;
+    var letter = name === "hh_cohomology" ? "\\alpha" : "z", byN = HH_INTERP[name] || {};
+    Object.keys(bc).map(Number).sort(function (a, c) { return a - c; }).forEach(function (n) {
+      var cfg = byN[n], classes = bc[String(n)] || [];
+      if (!cfg || !classes.length) return;
+      div.appendChild(h("p", {}, h("i", { text: cfg.head })));
+      var ul = h("ul", { "class": "qlgui-interp" });
+      classes.forEach(function (cl, i) {
+        var nm = letter + "^{" + n + "}_{" + (i + 1) + "}";
+        var lines = cfg.readoff(cl.terms || []);
+        var body = lines.map(function (s) { return String(s).replace("->", "→"); }).join("; ") || "0";
+        var li = h("li");
+        li.appendChild(h("span", { "class": "arithmatex", text: "\\(" + nm + "\\)" }));
+        li.appendChild(document.createTextNode(": " + body));
+        ul.appendChild(li);
+      });
+      div.appendChild(ul);
+      if (name === "hh_cohomology" && n === 1 && b.inner_dims) {
+        div.appendChild(h("p", { "class": "qlgui-cites",
+          text: "inner derivations (the coboundaries a ↦ ax − xa): dimension "
+            + (b.inner_dims["1"] != null ? b.inner_dims["1"] : "?") + " = rank δ⁰." }));
+      }
+    });
+  }
+  function appendHHReps(div, name, b) {
+    if (!b.basis_classes) return;
+    var side = name === "hh_cohomology" ? "coh" : "hom", w = {
+      basis_classes: {}, chain_basis: {}, differentials: {} };
+    w.basis_classes[side] = b.basis_classes;
+    w.chain_basis[side] = b.chain_basis || {};
+    w.differentials[side] = b.differentials || {};
+    appendProductReps(div, w, name);
+  }
+
   // Plan 35 wave 3a: module Ext / Tor explicit representatives. The block carries a
   // SINGLE-side {str(degree): ...} payload (Ext cohomological, Tor homological) --
   // distinct from the products {side:{degree}} shape and the module-resolution LIST
@@ -1851,6 +1933,12 @@
       div.appendChild(h("table", {}, head, row));
       div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
       appendDictionaryFraming(div, name, b.dims);
+      // Plan 35 wave 3d: the element-wise dictionary read-offs + per-degree explicit
+      // representatives (when the block carries them; tolerant of an old-cache block).
+      appendHHInterpretation(div, name, b);
+      if (b.basis_classes)
+        div.appendChild(h("p", {}, h("b", { text: "Explicit representatives by degree:" })));
+      appendHHReps(div, name, b);
     } else if (name === "cup" || name === "cap" || name === "bracket") {
       renderProductTables(div, name, b);
     } else if (name === "connes_b") {

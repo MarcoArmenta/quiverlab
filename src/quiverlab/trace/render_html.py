@@ -982,6 +982,61 @@ def product_degree_sections(basis_classes, chain_basis, differentials, anchor_pr
 
 
 # --------------------------------------------------------------------------- #
+# Plan 35 wave 3d: the PLAIN hh_cohomology / hh_homology blocks. The block carries a
+# SINGLE-side `{str(degree): ...}` reps payload (like Ext / Tor / HC); the per-degree
+# sections reuse `product_degree_sections` (the SAME HH cochain/chain renderer) by
+# wrapping the single side, and the element-wise dictionary read-offs (central elements
+# / derivations / deformation cochain / commutator residues) are read straight off the
+# captured term-sums via `quiverlab.trace.interpretations`. Element-wise ONLY where reps
+# are present; the framing sentence (results_html._dictionary_framing_html) covers the
+# rest. Data is the capture layer's (hochschild.hh_reps); nothing is recomputed here.
+# --------------------------------------------------------------------------- #
+def hh_element_interpretation(kind, basis_classes, inner_dims):
+    """The element-wise dictionary read-offs of the plain HH block, per degree: HH^0's
+    central elements, HH^1's derivations ``D(arrow) = value`` (+ the inner-derivation
+    subspace dimension ``rank δ^0``, shipped as ``inner_dims["1"]``), HH^2's deformation
+    2-cocycle, HH_0's commutator residues. ``[]`` when the block carries no reps."""
+    from quiverlab.trace.interpretations import element_heading, element_readoff
+    if not basis_classes:
+        return []
+    letter = r"\alpha" if kind == "hh_cohomology" else "z"
+    out = []
+    for dkey in sorted(basis_classes, key=lambda s: int(s)):
+        n = int(dkey)
+        heading = element_heading(kind, n)
+        classes = basis_classes.get(dkey) or []
+        if heading is None or not classes:
+            continue
+        lis = []
+        for i, cl in enumerate(classes, start=1):
+            name = "%s^{%d}_{%d}" % (letter, n, i)
+            lines = element_readoff(kind, n, cl.get("terms") or []) or []
+            body = "; ".join(str(s).replace("->", "→") for s in lines) or "0"
+            lis.append("<li>%s: %s</li>" % (_math_inline(name), _esc(body)))
+        out.append("<p><i>%s</i></p>" % _esc(heading))
+        out.append("<ul class='ql-interp'>%s</ul>" % "".join(lis))
+        if kind == "hh_cohomology" and n == 1 and inner_dims is not None:
+            out.append("<p class='ql-note'>inner derivations (the coboundaries "
+                       "a ↦ ax − xa): dimension %s = rank δ⁰.</p>"
+                       % _esc(str(inner_dims.get("1", "?"))))
+    return out
+
+
+def hh_reps_sections(kind, basis_classes, chain_basis, differentials, anchor_prefix):
+    """Per-degree explicit-representatives sub-sections for a plain HH block, reusing the
+    products renderer `product_degree_sections` by wrapping the single side (coh for
+    hh_cohomology, hom for hh_homology). ``[]`` when the block carries no reps
+    (legacy/old-cache tolerance)."""
+    if not basis_classes:
+        return []
+    side = "coh" if kind == "hh_cohomology" else "hom"
+    return product_degree_sections({side: basis_classes},
+                                   {side: chain_basis} if chain_basis else None,
+                                   {side: differentials} if differentials else None,
+                                   anchor_prefix)
+
+
+# --------------------------------------------------------------------------- #
 # Plan 35 wave 3a: the per-degree EXPLICIT-REPRESENTATIVES layout for module Ext /
 # Tor, the sibling of `product_degree_sections`. Ext / Tor blocks carry a SINGLE-side
 # `{str(degree): ...}` payload (Ext is cohomological, Tor homological), so this reader
@@ -1121,16 +1176,10 @@ def module_reps_sections(basis_classes, chain_basis, differentials, kind, anchor
 # --------------------------------------------------------------------------- #
 def _yoneda_sequence_math(mods):
     """The exact sequence as one typeset line ``0 \\to N \\to E \\to M \\to 0`` using each
-    module's display label."""
-    inner = " \\to ".join(_yoneda_label(m) for m in mods)
+    module's display label. The labels are already display-ready (single symbols like
+    ``N`` / ``E`` / ``M`` or TeX terms like ``P_{1} \\oplus P_{2}``)."""
+    inner = " \\to ".join(m.get("label", "?") for m in mods)
     return "0 \\to %s \\to 0" % inner
-
-
-def _yoneda_label(m):
-    lab = m.get("label", "?")
-    # the middle/sub/quotient labels are single symbols; resolution terms are already
-    # TeX ("P_{1} \\oplus P_{2}"). Leave TeX-ish labels untouched, wrap plain ones.
-    return lab
 
 
 def _dv_inline(dv):
