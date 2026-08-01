@@ -482,7 +482,8 @@ def _module_block(name, top):
         N = _build_module(A, _state.get("ext_target"), "N")
         # Plan 35 wave 3a: explicit Ext cocycle representatives + self-cert data,
         # additive keys shared byte-for-byte with the hpc spec runner.
-        raw, reps = ext_dims(A, M, N, top, with_reps=True)
+        # Plan 35 wave 3c: interpret=True captures the Yoneda exact sequence of each class.
+        raw, reps = ext_dims(A, M, N, top, with_reps=True, interpret=True)
         block = {"kind": name, "top": top, "dims": [int(d) for d in raw],
                  "target": _mod_view(N), "citations": cites}
         block.update(reps)

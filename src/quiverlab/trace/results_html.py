@@ -109,6 +109,7 @@ def _block_html(kind, b):
         chunks = [_dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or [])]
         if b.get("engine"):
             chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+        chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
         return chunks
     if kind == "cyclic_homology":
         # HC is a homology-style subscript table HC_n (Plan-35 follow-up), rendered
@@ -117,6 +118,7 @@ def _block_html(kind, b):
         chunks = [_dims_table("dim HC_n", b.get("dims") or [])]
         if b.get("engine"):
             chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+        chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
         from quiverlab.trace.render_html import cyclic_degree_sections
         secs = cyclic_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
                                       b.get("differentials"), b.get("column_structure"),
@@ -155,6 +157,9 @@ def _block_html(kind, b):
         if target:
             chunks.append("<p>against N, dimension vector %s.</p>" % _esc(_dv(target)))
         chunks.append(_dims_table("dim %sn" % op, b.get("dims") or []))
+        # Plan 35 wave 3c: the classical dictionary framing per degree (what each class
+        # MEANS), keyed only off the theory + the number of degrees computed.
+        chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
         # Plan 35 wave 3a: the per-degree EXPLICIT REPRESENTATIVES (ordered basis ->
         # classes -> differential + verification), when the block carries them.
         from quiverlab.trace.render_html import module_reps_sections
@@ -166,6 +171,12 @@ def _block_html(kind, b):
                           "term-sum and a coordinate vector over the ordered basis, with "
                           "the differential that annihilates it.</i></p>")
             chunks.extend(secs)
+        # Plan 35 wave 3c: the Yoneda exact-sequence interpretation (Ext only) -- each
+        # class as the constructed + certified exact sequence 0 -> N -> Q -> ... -> M -> 0.
+        if kind == "ext":
+            from quiverlab.trace.render_html import ext_interpretation_sections
+            chunks.extend(ext_interpretation_sections(b.get("interpretation"),
+                                                      anchor_prefix="cr"))
         return chunks
     if kind in ("cup", "cap", "bracket"):
         return _product_tables_html(kind, b)
@@ -182,6 +193,25 @@ def _block_html(kind, b):
         return chunks
     # An unknown kind still leaves a trace of what was asked for.
     return ["<p class='ql-note'>computed; see the JSON record for its data.</p>"]
+
+
+def _dictionary_framing_html(theory, dims):
+    """Plan 35 wave 3c -- the classical dictionary framing per degree: what each class
+    of this space MEANS. Keyed only off the theory + the number of degrees computed
+    (a shared prose builder both surfaces use). The higher-degree framing sentence,
+    identical across degrees, is shown once."""
+    from quiverlab.trace.interpretations import sentence
+    lis, seen = [], set()
+    for n in range(len(dims)):
+        s = sentence(theory, n)
+        if s is None or s in seen:
+            continue
+        seen.add(s)
+        lis.append("<li>%s</li>" % _esc(s))
+    if not lis:
+        return []
+    return ["<p><i>Interpretation of the spaces (the classical dictionary):</i></p>",
+            "<ul class='ql-interp'>%s</ul>" % "".join(lis)]
 
 
 def _rad_top_soc_html(b):

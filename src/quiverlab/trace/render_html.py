@@ -1099,6 +1099,126 @@ def module_reps_sections(basis_classes, chain_basis, differentials, kind, anchor
 
 
 # --------------------------------------------------------------------------- #
+# Plan 35 wave 3c: the Yoneda exact-sequence INTERPRETATION of Ext classes. Each class
+# of Ext^n(M, N) is shown as the constructed exact sequence 0 -> N -> Q -> ... -> M -> 0
+# with the middle module Q as a full representation and its exactness self-certified.
+# Data is the capture layer's (modules.complex_reps `interpretation`); nothing recomputes.
+# --------------------------------------------------------------------------- #
+def _yoneda_sequence_math(mods):
+    """The exact sequence as one typeset line ``0 \\to N \\to E \\to M \\to 0`` using each
+    module's display label."""
+    inner = " \\to ".join(_yoneda_label(m) for m in mods)
+    return "0 \\to %s \\to 0" % inner
+
+
+def _yoneda_label(m):
+    lab = m.get("label", "?")
+    # the middle/sub/quotient labels are single symbols; resolution terms are already
+    # TeX ("P_{1} \\oplus P_{2}"). Leave TeX-ish labels untouched, wrap plain ones.
+    return lab
+
+
+def _dv_inline(dv):
+    """A dimension vector dict {v: n} as ``(n_1, n_2, ...)`` in sorted vertex order."""
+    if not dv:
+        return "()"
+    return "(" + ", ".join(str(dv[k]) for k in sorted(dv)) + ")"
+
+
+def _yoneda_facts_sentence(facts):
+    parts = []
+    for f in facts or []:
+        if f.get("fact") == "injective":
+            parts.append("injective at %s (rank %s = dim %s)"
+                         % (f["node"], f["rank"], f["dim"]))
+        elif f.get("fact") == "surjective":
+            parts.append("surjective at %s (rank %s = dim %s)"
+                         % (f["node"], f["rank"], f["dim"]))
+        elif f.get("fact") == "im=ker":
+            parts.append("image = kernel at %s (%s + %s = %s)"
+                         % (f["node"], f["rank_in"], f["rank_out"], f["dim"]))
+    return "; ".join(parts)
+
+
+def _yoneda_middle_html(mid):
+    """The extension / middle module: named when it is a standard indecomposable, else
+    its full per-arrow action (the no-code representation)."""
+    label = mid.get("label", "Q")
+    std = mid.get("standard")
+    dv = _dv_inline(mid.get("dimvec") or {})
+    if std is not None:
+        sym = {"simple": "S", "projective": "P", "injective": "I"}.get(std["kind"], "?")
+        return ["<p>%s is the standard indecomposable %s (dimension vector %s).</p>"
+                % (_math_inline(label), _math_inline("%s_{%s}" % (sym, std["vertex"])),
+                   _esc(dv))]
+    out = ["<p>%s, the extension module, dimension vector %s -- its action:</p>"
+           % (_math_inline(label), _esc(dv))]
+    maps = (mid.get("module") or {}).get("maps") or {}
+    out.extend(_arrow_maps_html(label, maps))
+    if (mid.get("module") or {}).get("display_only"):
+        out.append("<p class='ql-note'>display only — entries lie outside the "
+                   "integer/fraction grammar (e.g. GF(p^n) elements).</p>")
+    return out
+
+
+def _yoneda_one_class_html(seq):
+    name = seq.get("class_name", "?")
+    if not seq.get("certified", False):
+        return ["<h5>%s</h5>" % _math_inline(name),
+                "<p class='ql-note'>this class's exact sequence could not be certified "
+                "(%s); it is omitted rather than shown wrongly.</p>"
+                % _esc(str(seq.get("error", "unknown")))]
+    mods = seq.get("modules") or []
+    out = ["<h5>%s</h5>" % _math_inline(name),
+           _math(_yoneda_sequence_math(mods)),
+           "<p class='ql-note'>dimension vectors: %s.</p>"
+           % _esc(", ".join("%s %s" % (m.get("label", "?"), _dv_inline(m.get("dimvec") or {}))
+                            for m in mods))]
+    mid = next((m for m in mods if m.get("role") == "middle"), None)
+    if mid is not None:
+        out.extend(_yoneda_middle_html(mid))
+    # connecting maps
+    for mp in seq.get("maps") or []:
+        arrow = "%s \\to %s" % (mp.get("from", "?"), mp.get("to", "?"))
+        out.append(_math(arrow))
+        if mp.get("elided"):
+            r, c = (mp.get("shape") or [0, 0])[:2]
+            out.append("<p class='ql-note'>%s×%s matrix (body in the machine record).</p>"
+                       % (_esc(str(r)), _esc(str(c))))
+        else:
+            out.append(matrix_grid(mp.get("rows") or []))
+    facts = _yoneda_facts_sentence(seq.get("facts"))
+    if facts:
+        out.append("<p class='ql-note'>Exactness verified: %s.</p>" % _esc(facts))
+    return out
+
+
+def ext_interpretation_sections(interpretation, anchor_prefix):
+    """The Yoneda exact-sequence interpretation of every Ext class, per degree, with the
+    dictionary framing sentence and the constructed + certified sequences.
+
+    Returns ``[]`` for a legacy/old-cache block with no ``interpretation`` field
+    (tolerance)."""
+    from quiverlab.trace.interpretations import ext_degree
+    if not interpretation:
+        return []
+    sequences = interpretation.get("sequences") or {}
+    out = []
+    for dkey in sorted(sequences, key=lambda s: int(s)):
+        n = int(dkey)
+        seqs = sequences.get(dkey) or []
+        if not seqs:
+            continue
+        anchor = "%s-ext-yoneda-deg-%d" % (anchor_prefix, n)
+        out.append("<h4 id='%s'>Interpretation: %s as exact sequences</h4>"
+                   % (anchor, _math_inline("\\mathrm{Ext}^{%d}(M, N)" % n)))
+        out.append("<p><i>%s</i></p>" % _esc(ext_degree(n)))
+        for seq in seqs:
+            out.extend(_yoneda_one_class_html(seq))
+    return out
+
+
+# --------------------------------------------------------------------------- #
 # Plan 35 wave 3b: the per-degree EXPLICIT-REPRESENTATIVES layout for cyclic homology
 # HC, the sibling of `module_reps_sections`. The HC block carries a SINGLE-side
 # `{str(degree): ...}` payload (HC is homological) PLUS a `column_structure` giving the

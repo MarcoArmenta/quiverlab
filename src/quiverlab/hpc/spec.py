@@ -1541,7 +1541,9 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         # Plan 35 wave 3a: capture the explicit Ext cocycle representatives alongside
         # the dims (basis_classes / chain_basis / differentials per degree), from the
         # SAME Hom complex. Additive keys; renderers dispatch by kind.
-        dims, reps = ext_dims(A, M, N, top, with_reps=True)
+        # Plan 35 wave 3c: interpret=True also captures the Yoneda exact sequence
+        # 0 -> N -> Q -> ... -> M -> 0 realizing each class (an `interpretation` key).
+        dims, reps = ext_dims(A, M, N, top, with_reps=True, interpret=True)
         block = {"kind": "ext", "top": top, "dims": [int(d) for d in dims],
                  "target": _mod_view(N)}
         block.update(reps)

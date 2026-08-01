@@ -1527,6 +1527,156 @@
     return rendered;
   }
 
+  // Plan 35 wave 3c: the classical DICTIONARY of what each (co)homology space MEANS.
+  // Mirrors quiverlab.trace.interpretations (the SAME prose, one shared source of truth).
+  var DICTIONARY = {
+    ext: function (n) {
+      if (n === 0) return "Ext⁰(M, N) = Homₐ(M, N): its basis classes are the "
+        + "A-module homomorphisms M → N.";
+      if (n === 1) return "Each basis class of Ext¹(M, N) is a short exact sequence "
+        + "0 → N → E → M → 0 (a Baer extension of M by N), up to "
+        + "equivalence. Below, each extension module E is constructed explicitly as a "
+        + "pushout and its exactness is verified.";
+      return "Each basis class of Extⁿ(M, N) is an n-fold exact sequence "
+        + "0 → N → Q → P_{n-2} → ⋯ → P_0 → M → 0 "
+        + "(Yoneda), up to equivalence. Below, each is spliced explicitly from the pushout "
+        + "module Q and the minimal resolution of M, and its exactness is verified at "
+        + "every joint.";
+    },
+    tor: function (n) {
+      if (n === 0) return "Tor₀(M, N) = M ⊗ₐ N, the tensor product itself: "
+        + "the coequalizer of the two actions M ⊗ A ⊗ N ⇉ M ⊗ N. Its "
+        + "classes are the cosets m ⊗ n.";
+      if (n === 1) return "Tor₁(M, N) measures the failure of M (equivalently N) to "
+        + "be flat: a nonzero class is a syzygy relation among the generators that "
+        + "− ⊗ N does not see, i.e. an obstruction to flatness.";
+      return "Torₙ(M, N) is the n-th derived functor of − ⊗ₐ N at M: a "
+        + "higher syzygy / flatness obstruction (homological framing).";
+    },
+    hh_cohomology: function (n) {
+      if (n === 0) return "HH⁰(A) = Z(A), the CENTRE of A: the classes are the "
+        + "central elements z (those with za = az for all a in A).";
+      if (n === 1) return "HH¹(A) = Der(A) / Inn(A), the OUTER DERIVATIONS: each "
+        + "class is a derivation D : A → A (a k-linear map with the Leibniz rule "
+        + "D(ab) = D(a) b + a D(b)), determined by its values on the arrow generators, "
+        + "taken modulo the inner derivations a ↦ ax − xa.";
+      if (n === 2) return "HH²(A) classifies the INFINITESIMAL DEFORMATIONS of A: "
+        + "each class is a 2-cocycle μ(a, b) giving a first-order (square-zero) "
+        + "deformation of the multiplication a * b = ab + t·μ(a, b); the "
+        + "coboundaries are the trivial (gauge) deformations.";
+      return "HHⁿ(A) controls the higher obstructions to deforming A (its Yoneda "
+        + "product with HH² carries the obstruction cocycles); homological framing.";
+    },
+    hh_homology: function (n) {
+      if (n === 0) return "HH₀(A) = A / [A, A], the COMMUTATOR QUOTIENT: the classes "
+        + "are the residues of A modulo the subspace spanned by the commutators ab − ba.";
+      return "HHₙ(A) is the n-th Hochschild homology, Tor^{A^e}_n(A, A) -- a "
+        + "derived-functor / cyclic-theory invariant (homological framing).";
+    },
+    cyclic_homology: function (n) {
+      if (n === 0) return "HC₀(A) = A / [A, A]: the same space as HH₀, read as "
+        + "the TRACE FUNCTIONALS on A (a trace τ with τ(ab) = τ(ba) is "
+        + "exactly a linear form on A / [A, A]).";
+      return "HCₙ(A) is cyclic homology in degree n, the homology of Connes' (b, B) "
+        + "total complex -- it packages the S, B, I periodicity of the Hochschild theory "
+        + "(homological framing).";
+    }
+  };
+  var DICTIONARY_ALIAS = { "HH^": "hh_cohomology", "HH_": "hh_homology", "HC_": "cyclic_homology" };
+
+  function appendDictionaryFraming(div, theory, dims) {
+    var fn = DICTIONARY[DICTIONARY_ALIAS[theory] || theory];
+    if (!fn || !dims) return;
+    var lis = [], seen = {};
+    for (var n = 0; n < dims.length; n++) {
+      var s = fn(n);
+      if (!s || seen[s]) continue;
+      seen[s] = true;
+      lis.push(h("li", { text: s }));
+    }
+    if (!lis.length) return;
+    div.appendChild(h("p", {}, h("i", { text: "Interpretation of the spaces (the classical dictionary):" })));
+    div.appendChild(h("ul", { "class": "qlgui-interp" }, lis));
+  }
+
+  // Plan 35 wave 3c: the Yoneda exact-sequence interpretation of every Ext class -- the
+  // constructed + self-certified exact sequence 0 -> N -> Q -> ... -> M -> 0. Mirrors
+  // quiverlab.trace.render_html.ext_interpretation_sections. Tolerant of an old-cache
+  // block with no `interpretation` field.
+  function dvInline(dv) {
+    if (!dv) return "()";
+    return "(" + Object.keys(dv).sort().map(function (k) { return dv[k]; }).join(", ") + ")";
+  }
+  function yonedaMiddle(div, mid) {
+    var label = mid.label || "Q", dv = dvInline(mid.dimvec);
+    if (mid.standard) {
+      var sym = { simple: "S", projective: "P", injective: "I" }[mid.standard.kind] || "?";
+      var p = h("p");
+      p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + label + "\\)" }));
+      p.appendChild(document.createTextNode(" is the standard indecomposable "));
+      p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + sym + "_{" + mid.standard.vertex + "}\\)" }));
+      p.appendChild(document.createTextNode(" (dimension vector " + dv + ")."));
+      div.appendChild(p);
+      return;
+    }
+    div.appendChild(h("p", { text: label + ", the extension module, dimension vector " + dv + " — its action:" }));
+    appendRepMaps(div, label, mid.module || {});
+    if (mid.module && mid.module.display_only)
+      div.appendChild(h("p", { "class": "qlgui-cites",
+        text: "display only — entries lie outside the integer/fraction grammar" }));
+  }
+  function yonedaFacts(facts) {
+    return (facts || []).map(function (f) {
+      if (f.fact === "injective") return "injective at " + f.node + " (rank " + f.rank + " = dim " + f.dim + ")";
+      if (f.fact === "surjective") return "surjective at " + f.node + " (rank " + f.rank + " = dim " + f.dim + ")";
+      if (f.fact === "im=ker") return "image = kernel at " + f.node + " (" + f.rank_in + " + " + f.rank_out + " = " + f.dim + ")";
+      return "";
+    }).filter(Boolean).join("; ");
+  }
+  function appendExtInterpretation(div, interp) {
+    if (!interp || !interp.sequences) return;
+    var seqs = interp.sequences;
+    Object.keys(seqs).map(Number).sort(function (a, c) { return a - c; }).forEach(function (n) {
+      var list = seqs[String(n)] || [];
+      if (!list.length) return;
+      var head = h("h4", { id: "gui-ext-yoneda-deg-" + n });
+      head.appendChild(document.createTextNode("Interpretation: "));
+      head.appendChild(h("span", { "class": "arithmatex", text: "\\(\\mathrm{Ext}^{" + n + "}(M, N)\\)" }));
+      head.appendChild(document.createTextNode(" as exact sequences"));
+      div.appendChild(head);
+      div.appendChild(h("p", {}, h("i", { text: DICTIONARY.ext(n) })));
+      list.forEach(function (seq) {
+        div.appendChild(h("h5", {}, h("span", { "class": "arithmatex", text: "\\(" + seq.class_name + "\\)" })));
+        if (!seq.certified) {
+          div.appendChild(h("p", { "class": "qlgui-cites",
+            text: "this class's exact sequence could not be certified (" + (seq.error || "unknown")
+              + "); it is omitted rather than shown wrongly." }));
+          return;
+        }
+        var mods = seq.modules || [];
+        var line = "0 \\to " + mods.map(function (m) { return m.label || "?"; }).join(" \\to ") + " \\to 0";
+        div.appendChild(h("p", {}, h("span", { "class": "arithmatex", text: "\\(" + line + "\\)" })));
+        div.appendChild(h("p", { "class": "qlgui-cites",
+          text: "dimension vectors: " + mods.map(function (m) { return (m.label || "?") + " " + dvInline(m.dimvec); }).join(", ") + "." }));
+        var mid = mods.filter(function (m) { return m.role === "middle"; })[0];
+        if (mid) yonedaMiddle(div, mid);
+        (seq.maps || []).forEach(function (mp) {
+          div.appendChild(h("p", {}, h("span", { "class": "arithmatex",
+            text: "\\(" + (mp.from || "?") + " \\to " + (mp.to || "?") + "\\)" })));
+          if (mp.elided) {
+            var sh = mp.shape || [0, 0];
+            div.appendChild(h("p", { "class": "qlgui-cites",
+              text: sh[0] + "×" + sh[1] + " matrix (body in the machine record)" }));
+          } else {
+            div.appendChild(matrixGrid(mp.rows || []));
+          }
+        });
+        var fs = yonedaFacts(seq.facts);
+        if (fs) div.appendChild(h("p", { "class": "qlgui-cites", text: "Exactness verified: " + fs + "." }));
+      });
+    });
+  }
+
   // Plan 35 wave 3b: cyclic homology HC explicit representatives. The block carries a
   // SINGLE-side {str(degree): ...} payload (HC is homological) PLUS a column_structure
   // giving the total complex Tot_n = C_n (+) C_{n-2} (+) ... layout, stated as a heading
@@ -1700,6 +1850,7 @@
       div.appendChild(h("p", { text: sup ? "Hochschild cohomology" : "Hochschild homology" }));
       div.appendChild(h("table", {}, head, row));
       div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+      appendDictionaryFraming(div, name, b.dims);
     } else if (name === "cup" || name === "cap" || name === "bracket") {
       renderProductTables(div, name, b);
     } else if (name === "connes_b") {
@@ -1717,6 +1868,7 @@
       div.appendChild(h("p", { text: "Cyclic homology" }));
       div.appendChild(h("table", {}, chead, crow));
       div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+      appendDictionaryFraming(div, name, b.dims);
       // Plan 35 wave 3b: the per-degree explicit representatives over the total complex.
       if (b.basis_classes)
         div.appendChild(h("p", {}, h("b", { text: "Explicit representatives by degree:" })));
@@ -1772,9 +1924,11 @@
       div.appendChild(h("p", { text: (isExt ? "Ext to the target module — dim vector "
         : "Tor with the target left module — dim vector ") + dvText(b.target.dimvec) + ":" }));
       div.appendChild(degreeTable(isExt ? "dim Ext^n" : "dim Tor_n", b.dims));
+      appendDictionaryFraming(div, name, b.dims);
       if (b.basis_classes)
         div.appendChild(h("p", {}, h("b", { text: "Explicit representatives by degree:" })));
       appendModuleReps(div, b, name);
+      if (isExt) appendExtInterpretation(div, b.interpretation);
     } else if (name === "projective_resolution" || name === "injective_resolution") {
       var proj = name === "projective_resolution";
       div.appendChild(h("p", { text: proj ? "projective resolution" : "injective resolution" }));
