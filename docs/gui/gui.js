@@ -1383,7 +1383,30 @@
          + " to its coordinate vector gives 0");
     div.appendChild(h("p", { "class": "qlgui-hint", text: "Verification: " + sentence }));
   }
-  function appendProductReps(div, b) {
+  // MINOR 1: a hyperlink to a degree section's anchor (id below). The prefix names
+  // the block (gui-<kind>) so the anchors are unique within the results panel.
+  function degreeLink(name, side, n, label) {
+    return h("a", { href: "#gui-" + name + "-hh-" + side + "-deg-" + n, text: label });
+  }
+  function productTableLinks(div, name, degrees, out) {
+    var p = degrees[0], q = degrees[1], links;
+    if (name === "cap")
+      links = [degreeLink(name, "coh", p, "HH^" + p),
+               degreeLink(name, "hom", q, "HH_" + q),
+               degreeLink(name, "hom", out, "HH_" + out)];
+    else
+      links = [degreeLink(name, "coh", p, "HH^" + p),
+               degreeLink(name, "coh", q, "HH^" + q),
+               degreeLink(name, "coh", out, "HH^" + out)];
+    var pr = h("p", { "class": "qlgui-cites" });
+    pr.appendChild(document.createTextNode("classes: "));
+    links.forEach(function (a, i) {
+      if (i) pr.appendChild(document.createTextNode(" · "));
+      pr.appendChild(a);
+    });
+    div.appendChild(pr);
+  }
+  function appendProductReps(div, b, name) {
     var bc = b.basis_classes;
     if (!bc) return false;
     var cb = b.chain_basis || {}, diffs = b.differentials || {};
@@ -1396,8 +1419,8 @@
         .forEach(function (n) {
           rendered = true;
           var key = String(n);
-          div.appendChild(h("p", {}, h("b", { text: "Hochschild " + S.longName
-            + " in degree " + n })));
+          div.appendChild(h("p", { id: "gui-" + name + "-hh-" + side + "-deg-" + n },
+            h("b", { text: "Hochschild " + S.longName + " in degree " + n })));
           appendRepsEnumeration(div, (cb[side] || {})[key], S, n);
           appendRepsClasses(div, byDeg[key], (cb[side] || {})[key], S, n);
           appendRepsDifferential(div, (diffs[side] || {})[key], S, n,
@@ -1410,13 +1433,15 @@
   function renderProductTables(div, name, b) {
     div.appendChild(h("p", { text: PRODUCT_TITLE[name] }));
     div.appendChild(h("p", { "class": "qlgui-hint", text: productLegend(name, b) }));
-    if (appendProductReps(div, b)) {
+    var reps = appendProductReps(div, b, name);
+    if (reps) {
       div.appendChild(h("p", {}, h("b", { text: "Structure-constant tables "
-        + "(in the explicit classes above):" })));
+        + "(in the explicit classes above; each links to its degree sections):" })));
     }
     (b.tables || []).forEach(function (t) {
       div.appendChild(h("p", { "class": "arithmatex",
         text: productHeading(name, t.degrees, t.out_degree) }));
+      if (reps) productTableLinks(div, name, t.degrees, t.out_degree);
       var d = t.dims || [0, 0, 0];
       var zero = !d[0] || !d[1] || (t.constants || []).every(matIsZero);
       if (zero) {
@@ -1440,15 +1465,24 @@
       text: "each induced Connes differential B_n: HH_n → HH_{n+1} is written on "
           + "the recorded homology bases — rows index HH_{n+1}, columns index HH_n. "
           + "The cycle classes z^n_j are listed explicitly by degree below." }));
-    if (appendProductReps(div, b)) {
+    var reps = appendProductReps(div, b, "connes_b");
+    if (reps) {
       div.appendChild(h("p", {}, h("b", { text: "Induced Connes differentials "
-        + "(in the explicit cycle classes above):" })));
+        + "(in the explicit cycle classes above; each links to its degree sections):" })));
     }
     var keys = Object.keys(b.matrices || {})
       .map(Number).sort(function (a, c) { return a - c; });
     keys.forEach(function (n) {
       div.appendChild(h("p", { "class": "arithmatex",
         text: "\\( B_{" + n + "} : HH_{" + n + "} \\to HH_{" + (n + 1) + "} \\)" }));
+      if (reps) {
+        var pr = h("p", { "class": "qlgui-cites" });
+        pr.appendChild(document.createTextNode("classes: "));
+        pr.appendChild(degreeLink("connes_b", "hom", n, "HH_" + n));
+        pr.appendChild(document.createTextNode(" · "));
+        pr.appendChild(degreeLink("connes_b", "hom", n + 1, "HH_" + (n + 1)));
+        div.appendChild(pr);
+      }
       div.appendChild(matrixGrid(b.matrices[String(n)]));
       div.appendChild(h("p", { text: "rank B_" + n + " = " + b.ranks[String(n)] }));
     });
