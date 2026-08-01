@@ -127,12 +127,20 @@ def _total_differential(alg, n, bmats, Bmats, dims):
     return D
 
 
-def cyclic_homology_dims(alg, N, primes=(32003, 2, 3, 5)):
+def cyclic_homology_dims(alg, N, primes=(32003, 2, 3, 5), with_reps=False):
     """Return dict p -> [dim HC_0, ..., dim HC_N] via the (b, B) bicomplex.
 
     Builds the bar complex up to C_{N+1} (the usual dim C_n = m*(m-1)^n blow-up
     caps N); HC_n = dim Tot_n - rank D_n - rank D_{n+1}.
-    """
+
+    Plan 35 wave 3b -- ``with_reps=True`` additionally returns ``(out, raw)`` for a
+    SINGLE prime, exposing the explicit HC representatives from the SAME total
+    differentials that produce the ranks: ``raw['reps'][n]`` is a list of coordinate
+    columns (ints) over the ordered ``Tot_n = C_n (+) C_{n-2} (+) ...`` basis (the
+    ``_Quotient`` of ker D_n modulo im D_{n+1}), ``raw['totmats'][n]`` is the reduced
+    ``D_n mod p`` (row-major ints), ``raw['col_dims'][k] = dim C_k``. Labelling +
+    serialization lives one layer up in ``hochschild.cyclic_reps`` (this engine file
+    stays label-free)."""
     maxdeg = N + 1
     bases = {k: cn_basis(alg, k) for k in range(0, maxdeg + 1)}
     indices = {k: {g: i for i, g in enumerate(bases[k])} for k in range(0, maxdeg + 1)}
@@ -154,7 +162,27 @@ def cyclic_homology_dims(alg, N, primes=(32003, 2, 3, 5)):
         ranks = {n: rank_mod_p(Dmats[n], p) for n in range(0, N + 2)}
         dimsTot = {n: sum(dims[d] for d in _tot_degrees(n)) for n in range(0, N + 1)}
         out[p] = [dimsTot[n] - ranks[n] - ranks[n + 1] for n in range(0, N + 1)]
-    return out
+    if not with_reps:
+        return out
+    if len(primes) != 1:
+        raise ValueError("cyclic_homology_dims(with_reps=True) needs a single prime")
+    from quiverlab.engine.coxeter import colspace_basis_mod_p, nullspace_mod_p
+    from quiverlab.engine.tt_calculus import _Quotient
+    p = primes[0]
+    reps, totmats = {}, {}
+    for n in range(0, N + 1):
+        Dn = Dmats[n]
+        # ker D_n: a zero-row D_n (n = 0, target Tot_{-1} = 0) has the WHOLE space as
+        # its kernel -- nullspace_mod_p of a 0-row matrix returns empty, so identity it.
+        ker = (np.eye(Dn.shape[1], dtype=np.int64) if Dn.shape[0] == 0
+               else nullspace_mod_p(Dn, p))
+        im = colspace_basis_mod_p(Dmats[n + 1], p)   # boundaries im D_{n+1} in Tot_n
+        R = _Quotient(im, ker, p).reps               # cols = ker mod im, over Tot_n
+        reps[n] = [[int(R[r][j]) for r in range(R.shape[0])]
+                   for j in range(R.shape[1])]
+        totmats[n] = [[int(x) for x in row] for row in (Dn % p)]
+    raw = {"reps": reps, "totmats": totmats, "col_dims": {k: int(v) for k, v in dims.items()}}
+    return out, raw
 
 
 # ---------------------------------------------------------------------------

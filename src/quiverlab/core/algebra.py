@@ -500,24 +500,41 @@ class Algebra:
         from quiverlab.viz.tikz import tikz_quiver
         return tikz_quiver(self.quiver, self.relations or [])
 
-    def cyclic_homology(self, top, max_cells=4_000_000):
+    def cyclic_homology(self, top, max_cells=4_000_000, with_reps=False):
         """Dimensions of HC_0..HC_top (Connes (b, B) mixed complex).
 
         GF(p): the fast engine (int64 rank). Any other exact Domain: the
         generic mixed complex on the normalized bar basis (exponential —
-        max_cells guards the blow-up). Works for any unital algebra."""
+        max_cells guards the blow-up). Works for any unital algebra.
+
+        Plan 35 wave 3b — ``with_reps=True`` returns ``(table, payload)`` where
+        ``payload`` carries the explicit HC representatives (``basis_classes`` /
+        ``chain_basis`` / ``differentials`` / ``column_structure`` keyed by
+        ``str(degree)``) captured from the SAME total complex; the default path is
+        byte-unchanged."""
         from quiverlab.fields.primefield import PrimeField
         if isinstance(self.domain, PrimeField):
             from quiverlab.engine.adapter import to_engine
             from quiverlab.engine.cyclic import cyclic_homology_dims
             from quiverlab.hochschild.table import HHTable
             p = self.domain.p
-            out = cyclic_homology_dims(to_engine(self.unit_adapted()), top, primes=(p,))
+            AU = self.unit_adapted()
+            E = to_engine(AU)
+            res = cyclic_homology_dims(E, top, primes=(p,), with_reps=with_reps)
+            out, raw = res if with_reps else (res, None)
             dims = [int(d) for d in out[p]]
-            return HHTable(dims, "HC_", repr(self).splitlines()[0],
-                           engine="hanlab engine (F_p fast rank)")
+            table = HHTable(dims, "HC_", repr(self).splitlines()[0],
+                            engine="hanlab engine (F_p fast rank)")
+            if not with_reps:
+                return table
+            from quiverlab.hochschild.cyclic_reps import gfp_payload
+            return table, gfp_payload(E, AU, top, raw, dims)
         from quiverlab.hochschild.cyclic import cyclic_homology_dims
-        return cyclic_homology_dims(self, top, max_cells=max_cells)
+        if not with_reps:
+            return cyclic_homology_dims(self, top, max_cells=max_cells)
+        table, raw = cyclic_homology_dims(self, top, max_cells=max_cells, with_reps=True)
+        from quiverlab.hochschild.cyclic_reps import generic_payload
+        return table, generic_payload(self, top, raw, list(table.dims))
 
     def _product_dispatch(self, kind, top, engine, max_cells):
         """Shared Plan-35 routing: GF(p) -> bar/tt tables; quiver-presented ->

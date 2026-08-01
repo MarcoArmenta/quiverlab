@@ -56,12 +56,20 @@ def _tot_degrees(n):
     return list(range(n, -1, -2))
 
 
-def cyclic_homology_dims(A, top, max_cells=4_000_000):
+def cyclic_homology_dims(A, top, max_cells=4_000_000, with_reps=False):
     """HHTable of dim HC_0..HC_top over A.domain via the (b, B) bicomplex.
 
     Works for ANY unital algebra (no quiver needed): only the unit-adapted
     basis is required. Exponential in top like the bar oracle; max_cells
-    guards every assembled matrix."""
+    guards every assembled matrix.
+
+    Plan 35 wave 3b -- ``with_reps=True`` returns ``(table, raw)`` where ``raw``
+    exposes the explicit HC representatives from the SAME assembled total
+    differentials that produce the ranks: ``raw['reps'][n]`` is a list of coordinate
+    columns (Domain) over the ordered ``Tot_n = C_n (+) C_{n-2} (+) ...`` basis (a
+    basis of ker D_n modulo im D_{n+1}), ``raw['totmats'][n]`` is ``D_n`` row-major
+    (``[]`` for the 0-row D_0), ``raw['col_dims'][k] = dim C_k``. Labelling +
+    serialization lives in ``hochschild.cyclic_reps``."""
     B0 = A.unit_adapted()
     dom = B0.domain
     m = B0.dim
@@ -70,10 +78,12 @@ def cyclic_homology_dims(A, top, max_cells=4_000_000):
     bmats = {k: boundary_matrix(B0, k, max_cells)[0] for k in range(1, maxdeg + 1)}
     Bmats = {k: connes_B_matrix(B0, k, max_cells)[0] for k in range(0, maxdeg)}
     ranks = {}
+    Dstore = {}
     for n in range(top + 2):
         src, tgt = _tot_degrees(n), _tot_degrees(n - 1)
         if not tgt:
             ranks[n] = 0
+            Dstore[n] = []                       # 0-row total differential (n = 0)
             continue
         row_off, off = {}, 0
         for d in tgt:
@@ -100,9 +110,54 @@ def cyclic_homology_dims(A, top, max_cells=4_000_000):
                             Dr[c0 + c] = dom.add(Dr[c0 + c], val)
             c0 += dims[d]
         ranks[n] = rank(D, dom) if nrows and ncols else 0
+        Dstore[n] = D
     out = []
     for n in range(top + 1):
         tot = sum(dims[d] for d in _tot_degrees(n))
         out.append(tot - ranks[n] - ranks[n + 1])
-    return HHTable(out, "HC_", repr(A).splitlines()[0],
-                   engine=f"bar (b,B) mixed complex over {dom.name}")
+    table = HHTable(out, "HC_", repr(A).splitlines()[0],
+                    engine=f"bar (b,B) mixed complex over {dom.name}")
+    if not with_reps:
+        return table
+    return table, _capture_generic_reps(dims, Dstore, top, dom)
+
+
+def _capture_generic_reps(dims, Dstore, top, dom):
+    """(``raw`` payload) -- the explicit HC representatives over ``dom`` from the
+    stored total differentials ``Dstore``. Each degree's classes are a basis of
+    ker D_n modulo im D_{n+1}, picked by the greedy independent-modulo filter over
+    ``fields.linalg`` (im D_{n+1} lies in ker D_n by D.D = 0, so the pick returns
+    exactly dim Tot_n - rank D_n - rank D_{n+1} = HC_n columns)."""
+    from quiverlab.fields.linalg import nullspace
+    from quiverlab.fields.linalg import rank as _rank
+
+    def cols_to_matrix(cols):
+        if not cols:
+            return []
+        L = len(cols[0])
+        return [[cols[c][r] for c in range(len(cols))] for r in range(L)]
+
+    reps, totmats = {}, {}
+    for n in range(top + 1):
+        Dn = Dstore.get(n) or []
+        tot_n = sum(dims[d] for d in _tot_degrees(n))
+        if not Dn:                               # 0-row D_n: the whole space is cycles
+            cycles = [[dom.one() if i == j else dom.zero() for i in range(tot_n)]
+                      for j in range(tot_n)]
+        else:
+            cycles = nullspace(Dn, dom)
+        Dn1 = Dstore.get(n + 1) or []
+        image = ([[Dn1[r][c] for r in range(len(Dn1))] for c in range(len(Dn1[0]))]
+                 if Dn1 and Dn1[0] else [])
+        chosen, base = [], list(image)
+        r0 = _rank(cols_to_matrix(base), dom) if base else 0
+        for v in cycles:
+            rr = _rank(cols_to_matrix(base + [v]), dom)
+            if rr > r0:
+                chosen.append(v)
+                base.append(v)
+                r0 = rr
+        reps[n] = chosen
+        totmats[n] = Dn
+    return {"reps": reps, "totmats": totmats,
+            "col_dims": {k: v for k, v in dims.items()}}
