@@ -130,14 +130,27 @@ def _induced(A, N, term_src, term_tgt, dmat, pcache, vbcache, dom):
     return lm.cols_to_matrix(cols)
 
 
-def tor_dims(A, M, N, top, resolve="first", max_term_dim=200000):
+def tor_dims(A, M, N, top, resolve="first", max_term_dim=200000, with_reps=False):
     """[dim Tor_0^A(M, N), ..., dim Tor_top^A(M, N)] for a RIGHT A-module M and a LEFT
     A-module N, over any exact Domain (Plan 29 Part 4).
 
     ``resolve="first"`` (default) resolves M and tensors with N. ``resolve="second"``
     computes the SAME groups by resolving N over A^op (the balance of Tor):
     Tor_n^A(M, N) = Tor_n^{A^op}(N_as_right_over_Aop, M_as_left_over_Aop). ``max_term_dim``
-    guards the syzygy blow-up, passed straight to the minimal resolution."""
+    guards the syzygy blow-up, passed straight to the minimal resolution.
+
+    With ``with_reps=True`` returns ``(dims, payload)`` where ``payload`` carries the
+    explicit cycle representatives (``basis_classes`` / ``chain_basis`` /
+    ``differentials`` per degree, Plan 35 wave 3a; Tor_0 = M (x)_A N as the cokernel)
+    captured from the SAME tensor complex -- see ``modules.complex_reps.tor_reps``.
+    Only the default ``resolve="first"`` supports rep capture."""
+    if with_reps:
+        if resolve != "first":
+            raise QuiverlabError(
+                'tor_dims: explicit representatives are captured only for '
+                'resolve="first" (resolving the right module M)')
+        from quiverlab.modules.complex_reps import tor_reps
+        return tor_reps(A, M, N, top)
     _assert_tor_compatible(A, M, N)
     if resolve == "second":
         return tor_dims(A.opposite(), N.with_side("right"), M.with_side("left"),
