@@ -36,7 +36,17 @@ never hide behind one:
     (co)cycle + coordinate vector + annihilating differential). Gated re-freeze:
     the regenerated blob was asserted byte-identical to the old one after DELETING
     those three keys everywhere, so no pre-existing content moved. The
-    ``canonical_key`` is request-derived and UNCHANGED (no new request fields)."""
+    ``canonical_key`` is request-derived and UNCHANGED (no new request fields).
+  * 2026-08-01 (``module_ext`` re-freeze, Plan 35 UNIT 2 -- resolution term bases):
+    the ``projective_resolution`` block gained the additive ``term_basis`` field (the
+    ordered concatenated path bases of each term's summands, so a reader can map each
+    differential column to the basis vector it acts on). Gated re-freeze, scoped BY
+    KEY: the regenerated blob was asserted byte-identical to the old one after
+    deleting the ``term_basis`` key everywhere -- and ``term_basis`` is a NEW key on
+    resolution blocks ONLY (the pre-existing overloaded ``differentials`` key was not
+    touched), so no pre-existing content moved. The ``canonical_key`` is
+    request-derived and UNCHANGED. (``products_loop_gf2`` and the other five entries
+    are untouched -- only ``module_ext`` carries an actual resolution block.)"""
 import json
 import pathlib
 

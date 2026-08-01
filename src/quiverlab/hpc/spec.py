@@ -1368,6 +1368,45 @@ def _differential_blocks(res, n_terms) -> list:
     return out
 
 
+def _term_basis_blocks(res, kind, M):
+    """The ordered k-basis of each resolution term, as the concatenated path bases of
+    its projective / injective summands (Plan 35 UNIT 2). ``term_basis[n]`` lists one
+    label per basis vector of term n, in the SAME order the differentials use, so
+    ``len(term_basis[n])`` equals the term's k-dimension (= the differential's column
+    count for a projective resolution, row count for an injective one). A label is
+    ``"P_v: <path>"`` (projective) / ``"I_v: <path>"`` (injective -- a dual basis over
+    A^op). Returns ``None`` (caller omits the field) when the algebra carries no path
+    basis (a structure-constants algebra) or the total basis is implausibly large; the
+    renderers tolerate the field's absence. Shared shape with the Pyodide twin in
+    ``docs/gui/runner.py`` so the tiers cannot drift."""
+    try:
+        from quiverlab.modules.builders import projective
+        if kind == "projective_resolution":
+            base, sym = M.algebra, "P"
+        else:
+            from quiverlab.modules.opposite import opposite_algebra
+            base, sym = opposite_algebra(M.algebra), "I"
+        cache: dict = {}
+
+        def paths(v):
+            if v not in cache:
+                cache[v] = list(projective(base, v)._pv_basis_labels)
+            return cache[v]
+
+        out, total = [], 0
+        for n in range(len(res.terms)):
+            labels = []
+            for v in res.term(n):
+                labels.extend(f"{sym}_{v}: {p}" for p in paths(v))
+            total += len(labels)
+            if total > _MAX_DIFF_CELLS:               # implausible; omit (bloat guard)
+                return None
+            out.append(labels)
+        return out
+    except Exception:
+        return None
+
+
 def _summand_view(mod, mult) -> dict:
     """One indecomposable summand: its dimension vector, multiplicity, and either a
     STANDARD name (S_v / P_v / I_v) or its full per-arrow matrices -- a dimension
@@ -1526,6 +1565,9 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                  "summands": [_summands_latex(res.term(i), letter)
                               for i in range(len(terms))],
                  "differentials": _differential_blocks(res, len(terms))}
+        term_basis = _term_basis_blocks(res, kind, M)
+        if term_basis is not None:
+            block["term_basis"] = term_basis
         if kind == "projective_resolution":
             block["pd"] = res.pd()
         else:

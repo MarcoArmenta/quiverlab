@@ -328,6 +328,42 @@ def _differential_blocks(res, n_terms):
     return out
 
 
+def _term_basis_blocks(res, kind, M):
+    """The ordered k-basis of each resolution term, as the concatenated path bases of
+    its projective / injective summands (Plan 35 UNIT 2). Shape-identical to the server
+    tier (``quiverlab.hpc.spec._term_basis_blocks``): ``term_basis[n]`` lists one label
+    per basis vector of term n, so ``len(term_basis[n])`` = the term dimension (the
+    differential's column count for a projective resolution, row count for an injective
+    one). ``None`` (field omitted) when the algebra carries no path basis or the total
+    is implausibly large -- renderers tolerate the absence."""
+    try:
+        from quiverlab.modules.builders import projective
+        if kind == "projective_resolution":
+            base, sym = M.algebra, "P"
+        else:
+            from quiverlab.modules.opposite import opposite_algebra
+            base, sym = opposite_algebra(M.algebra), "I"
+        cache = {}
+
+        def paths(v):
+            if v not in cache:
+                cache[v] = list(projective(base, v)._pv_basis_labels)
+            return cache[v]
+
+        out, total = [], 0
+        for n in range(len(res.terms)):
+            labels = []
+            for v in res.term(n):
+                labels.extend("%s_%s: %s" % (sym, v, p) for p in paths(v))
+            total += len(labels)
+            if total > _MAX_DIFF_CELLS:               # implausible; omit (bloat guard)
+                return None
+            out.append(labels)
+        return out
+    except Exception:
+        return None
+
+
 def _summand_view(mod, mult):
     """One indecomposable summand: dimension vector, multiplicity, and either a
     STANDARD name (S_v / P_v / I_v) or its full per-arrow matrices (Marco
@@ -472,6 +508,9 @@ def _module_block(name, top):
                               for i in range(len(terms))],
                  "differentials": _differential_blocks(res, len(terms)),
                  "citations": cites}
+        term_basis = _term_basis_blocks(res, name, M)
+        if term_basis is not None:
+            block["term_basis"] = term_basis
         if name == "projective_resolution":
             block["pd"] = res.pd()
         else:
