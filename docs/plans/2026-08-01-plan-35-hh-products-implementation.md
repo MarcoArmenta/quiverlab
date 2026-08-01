@@ -32,6 +32,7 @@ GUI/report layers render the blocks.
   `docs/gui/gui.js` ≡ `webapp/static/gui/gui.js` (gated by an existing test).
 - Every user-facing webapp string gets EN + ES i18n keys.
 - Conventional commits; suite green at every commit.
+- `QQ` is NOT a top-level `quiverlab` export: test code using `QQ` needs `from quiverlab.fields import QQ`. (`GF`, `CC` ARE top-level.)
 - **Spec deviation to encode (discovered during plan research, amend the spec in
   Task 1):** the Gerstenhaber bracket is **GF(p)-only** — the transport route
   (`Comparison`) itself requires `PrimeField` (`comparison.py:66`), so over QQ/CC
@@ -396,7 +397,7 @@ pytestmark = [pytest.mark.oracle_selfcert]
 @pytest.fixture(scope="module")
 def A_qq():
     Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1), "y": (1, 1)})
-    return Q.algebra(relations=["x*x", "y*y", "x*y + y*x"], field=ql.QQ)
+    return Q.algebra(relations=["x*x", "y*y", "x*y + y*x"], field=QQ)
 
 
 def test_cs_cup_over_qq_unit_law(A_qq):
@@ -424,7 +425,7 @@ def test_cs_cap_over_qq_shapes(A_qq):
 def test_cs_bracket_refuses():
     from quiverlab.resolutions_cs.products import cs_product_tables
     Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
-    A = Q.algebra(relations=["x*x*x"], field=ql.QQ)
+    A = Q.algebra(relations=["x*x*x"], field=QQ)
     with pytest.raises(ql.QuiverlabError):
         cs_product_tables(A, "bracket", 2, max_cells=4_000_000)
 ```
@@ -571,7 +572,7 @@ import quiverlab as ql
 pytestmark = [pytest.mark.oracle_selfcert]
 
 
-@pytest.fixture(scope="module", params=[ql.GF(7), ql.QQ], ids=["GF7", "QQ"])
+@pytest.fixture(scope="module", params=[ql.GF(7), QQ], ids=["GF7", "QQ"])
 def A(request):
     return ql.truncated_polynomial(2, field=request.param)
 
@@ -607,7 +608,7 @@ def test_ranks_and_dims_recorded(A):
 def test_gfp_and_generic_ranks_agree():
     from quiverlab.hochschild.products import connes_b_tables
     A7 = ql.truncated_polynomial(3, field=ql.GF(32003))
-    Aq = ql.truncated_polynomial(3, field=ql.QQ)
+    Aq = ql.truncated_polynomial(3, field=QQ)
     r7 = connes_b_tables(A7, 3, max_cells=4_000_000).ranks
     rq = connes_b_tables(Aq, 3, max_cells=4_000_000).ranks
     assert r7 == rq          # char-0-shaped p: ranks agree (32003 is the big prime)
@@ -767,7 +768,7 @@ def test_gfp_routes_to_bar():
 
 def test_quiver_presented_qq_routes_to_cs():
     Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
-    A = Q.algebra(relations=["x*x*x"], field=ql.QQ)
+    A = Q.algebra(relations=["x*x*x"], field=QQ)
     hp = A.cup_products(2)
     assert hp.basis.startswith("cs/")
 
@@ -775,14 +776,14 @@ def test_quiver_presented_qq_routes_to_cs():
 def test_structure_constants_off_gfp_refuse():
     # a genuinely presentation-less algebra: k[x]/(x^2) from structure constants
     B = ql.Algebra.from_structure_constants(
-        [[[1, 0], [0, 1]], [[0, 1], [0, 0]]], unit=[1, 0], field=ql.QQ)
+        [[[1, 0], [0, 1]], [[0, 1], [0, 0]]], unit=[1, 0], field=QQ)
     with pytest.raises(QuiverlabError):
         B.cup_products(2)
 
 
 def test_bracket_refuses_off_gfp():
     Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
-    A = Q.algebra(relations=["x*x*x"], field=ql.QQ)
+    A = Q.algebra(relations=["x*x*x"], field=QQ)
     with pytest.raises(QuiverlabError):
         A.gerstenhaber_brackets(2)
 
@@ -801,7 +802,7 @@ def test_explicit_cs_on_gfp_serves_cs_basis():
 
 
 def test_connes_serves_both_fields():
-    for F in (ql.GF(7), ql.QQ):
+    for F in (ql.GF(7), QQ):
         A = ql.truncated_polynomial(2, field=F)
         cb = A.connes_differentials(2)
         assert set(cb.matrices) == {0, 1}
