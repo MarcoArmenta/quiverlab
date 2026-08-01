@@ -97,8 +97,8 @@ def test_tolerates_block_without_reps():
 @pytest.mark.oracle_selfcert
 def test_gui_js_wires_hh_reps():
     root = pathlib.Path(__file__).resolve().parents[2]
-    a = (root / "docs/gui/gui.js").read_text()
-    b = (root / "webapp/static/gui/gui.js").read_text()
+    a = (root / "docs/gui/gui.js").read_text(encoding="utf-8")
+    b = (root / "webapp/static/gui/gui.js").read_text(encoding="utf-8")
     assert a == b, "gui.js copies must be byte-identical"
     for needle in ("appendHHInterpretation", "appendHHReps", "derivationValues",
                    "deformationCochain", "HH_INTERP", "rank δ⁰"):

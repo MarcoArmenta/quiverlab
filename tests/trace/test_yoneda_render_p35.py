@@ -137,8 +137,8 @@ def test_tolerates_missing_interpretation():
 def test_gui_js_wires_yoneda_and_dictionary():
     import pathlib
     root = pathlib.Path(__file__).resolve().parents[2]
-    a = (root / "docs/gui/gui.js").read_text()
-    b = (root / "webapp/static/gui/gui.js").read_text()
+    a = (root / "docs/gui/gui.js").read_text(encoding="utf-8")
+    b = (root / "webapp/static/gui/gui.js").read_text(encoding="utf-8")
     assert a == b, "gui.js copies must be byte-identical"
     for needle in ("appendExtInterpretation", "appendDictionaryFraming", "DICTIONARY",
                    "as exact sequences", "OUTER DERIVATIONS", "Exactness verified"):
