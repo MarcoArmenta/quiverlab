@@ -504,8 +504,11 @@ class Algebra:
         """Dimensions of HC_0..HC_top (Connes (b, B) mixed complex).
 
         GF(p): the fast engine (int64 rank). Any other exact Domain: the
-        generic mixed complex on the normalized bar basis (exponential —
-        max_cells guards the blow-up). Works for any unital algebra.
+        generic mixed complex on the normalized bar basis. Both are exponential
+        in ``top`` (dim C_n = m*(m-1)^n); ``max_cells`` guards the blow-up on
+        BOTH paths, refusing loudly (DepthLimitError) before any matrix is
+        allocated — raise it to compute a bigger case. Works for any unital
+        algebra.
 
         Plan 35 wave 3b — ``with_reps=True`` returns ``(table, payload)`` where
         ``payload`` carries the explicit HC representatives (``basis_classes`` /
@@ -520,7 +523,8 @@ class Algebra:
             p = self.domain.p
             AU = self.unit_adapted()
             E = to_engine(AU)
-            res = cyclic_homology_dims(E, top, primes=(p,), with_reps=with_reps)
+            res = cyclic_homology_dims(E, top, primes=(p,), with_reps=with_reps,
+                                       max_cells=max_cells)
             out, raw = res if with_reps else (res, None)
             dims = [int(d) for d in out[p]]
             table = HHTable(dims, "HC_", repr(self).splitlines()[0],

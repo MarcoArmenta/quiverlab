@@ -112,7 +112,10 @@ def test_taillefer_taft_cyclic_homology_n2_charzero():
     A_cc = NakayamaAlgebra(n=2, l=2, cyclic=True, field=CC)
     assert A_cc.cyclic_homology(5).dims == [2, 1, 2, 1, 2, 1]
     A_proxy = NakayamaAlgebra(n=2, l=2, cyclic=True, field=GF(32003))
-    assert A_proxy.cyclic_homology(6).dims == [2, 1, 2, 1, 2, 1, 2]
+    # degree 6 on this dim-4 algebra assembles a 32M-cell total differential, past
+    # the 4M default max_cells the GF(p) engine now enforces (hotfix-cyclic-cell-guard);
+    # this proxy pin intentionally computes it, so it opts past the cap (dims unchanged).
+    assert A_proxy.cyclic_homology(6, max_cells=40_000_000).dims == [2, 1, 2, 1, 2, 1, 2]
 
 
 def test_taillefer_taft_cyclic_homology_n3_charzero_proxy():
@@ -243,4 +246,7 @@ def test_taillefer_taft_scale_cyclic_start(n):
     even/odd alternation is pinned deeper at dim <= 9 by Plan 29) (``taillefer_taft``,
     Cor 2.8)."""
     A = NakayamaAlgebra(n=n, l=n, cyclic=True, field=GF(32003))
-    assert A.cyclic_homology(1).dims == [n, n - 1]
+    # even degree 1 assembles b_2 (dim n^2: 8.6M cells at n=5, 56M at n=6), past the 4M
+    # default max_cells the GF(p) engine now enforces (hotfix-cyclic-cell-guard); this
+    # scale pin intentionally computes it, so it opts past the cap (dims unchanged).
+    assert A.cyclic_homology(1, max_cells=80_000_000).dims == [n, n - 1]

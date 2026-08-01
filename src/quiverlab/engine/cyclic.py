@@ -127,11 +127,65 @@ def _total_differential(alg, n, bmats, Bmats, dims):
     return D
 
 
-def cyclic_homology_dims(alg, N, primes=(32003, 2, 3, 5), with_reps=False):
+_GUARD_HINT = ("the (b, B) bar complex is exponential (dim C_n = m*(m-1)^n); "
+               "raise max_cells or lower top only if you know what you are doing")
+
+
+def _guard_cyclic_cells(alg, N, max_cells):
+    """Refuse LOUDLY before the (b, B) engine materializes ANY basis or matrix.
+
+    ``cyclic_homology_dims`` builds, in this order, the bar chain bases C_0..C_{N+1},
+    the boundaries b_k (dim C_{k-1} x dim C_k), the Connes B_k (dim C_{k+1} x dim C_k)
+    and the assembled total differentials D_n (Tot_n -> Tot_{n-1}). The bar chain basis
+    dim C_k = m*(m-1)^k blows up exponentially, so on a large multi-vertex algebra even
+    MATERIALIZING the degree-(N+1) basis exhausts memory and the worker SIGKILLs (exit
+    137) -- e.g. the dim-36 grid3x3 algebra has b_2 = 1260 x 44100 = 56M cells, far past
+    the 4M contract. This mirrors the generic-Domain branch (hochschild/cyclic.py) and
+    the connes_b guard (hochschild/products.py): over GF(p) cyclic homology has NO
+    Chouhy-Solotar route, so -- like an explicit bar engine -- it raises DepthLimitError
+    rather than silently OOMing. ``max_cells`` was already honoured on the generic branch;
+    the GF(p) branch simply dropped it (the OOM bug).
+
+    Sizes are computed by LENGTH ARITHMETIC (m*(m-1)^k), NEVER by enumerating a basis to
+    count it: at degree 3 the basis list itself is ~1.5M tuples, at degree 4 ~54M, so the
+    check runs in O(N) integer multiplies and allocates nothing. A raised max_cells lifts
+    the bound and still computes.
+    """
+    from quiverlab.errors import DepthLimitError
+    m, mr = alg.m, alg.mr
+
+    def cdim(k):
+        return m * mr ** k
+
+    maxdeg = N + 1
+
+    def _check(label, cells):
+        if cells > max_cells:
+            raise DepthLimitError(
+                f"cyclic homology: {label} pairs {cells} cells "
+                f"(> max_cells = {max_cells})", hint=_GUARD_HINT)
+
+    for k in range(1, maxdeg + 1):                 # b_k : C_k -> C_{k-1}
+        _check(f"bar boundary b_{k}", cdim(k - 1) * cdim(k))
+    for k in range(0, maxdeg):                      # Connes B_k : C_k -> C_{k+1}
+        _check(f"Connes B_{k}", cdim(k + 1) * cdim(k))
+    for n in range(0, N + 2):                       # total differential D_n
+        nrows = sum(cdim(d) for d in range(n - 1, -1, -2))
+        ncols = sum(cdim(d) for d in range(n, -1, -2))
+        _check(f"total differential D_{n}", nrows * ncols)
+
+
+def cyclic_homology_dims(alg, N, primes=(32003, 2, 3, 5), with_reps=False,
+                         max_cells=4_000_000):
     """Return dict p -> [dim HC_0, ..., dim HC_N] via the (b, B) bicomplex.
 
     Builds the bar complex up to C_{N+1} (the usual dim C_n = m*(m-1)^n blow-up
     caps N); HC_n = dim Tot_n - rank D_n - rank D_{n+1}.
+
+    ``max_cells`` bounds every dense array the engine allocates (b_n, B_n and the
+    assembled D_n); an over-cap request raises ``DepthLimitError`` BEFORE any basis or
+    matrix is materialized (``_guard_cyclic_cells``). Pass ``max_cells=None`` to disable
+    the guard entirely (raw engine primitive). A raised max_cells still computes.
 
     Plan 35 wave 3b -- ``with_reps=True`` additionally returns ``(out, raw)`` for a
     SINGLE prime, exposing the explicit HC representatives from the SAME total
@@ -141,6 +195,8 @@ def cyclic_homology_dims(alg, N, primes=(32003, 2, 3, 5), with_reps=False):
     ``D_n mod p`` (row-major ints), ``raw['col_dims'][k] = dim C_k``. Labelling +
     serialization lives one layer up in ``hochschild.cyclic_reps`` (this engine file
     stays label-free)."""
+    if max_cells is not None:
+        _guard_cyclic_cells(alg, N, max_cells)
     maxdeg = N + 1
     bases = {k: cn_basis(alg, k) for k in range(0, maxdeg + 1)}
     indices = {k: {g: i for i, g in enumerate(bases[k])} for k in range(0, maxdeg + 1)}

@@ -119,7 +119,11 @@ def test_HC1_truncated_is_zero_char0():
 def test_HC_truncated_polynomial_char0():
     """HC_*(k[x]/x^a) = [a, 0, a, 0, ...] over the char-0 proxy (regression pin)."""
     for a in (2, 3, 4):
-        hc = cyclic_homology_dims(truncated_polynomial(a), 6, primes=(P,))[P]
+        # a=4 at top 6 assembles a 32M-cell total differential (> the 4M default
+        # cap the engine now enforces, Plan hotfix-cyclic-cell-guard); this oracle
+        # intentionally computes it, so it opts past the cap. dims are unchanged.
+        hc = cyclic_homology_dims(truncated_polynomial(a), 6, primes=(P,),
+                                  max_cells=40_000_000)[P]
         assert hc == [a, 0, a, 0, a, 0, a]
 
 
