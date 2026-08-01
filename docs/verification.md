@@ -310,7 +310,7 @@ recompute independently and refuses to silently disagree
   (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
   square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (122 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (123 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -386,7 +386,7 @@ Plan-35 product surface).
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, and the 2026-07-29 report-completeness battery) | 173 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
-| `qpa/` (GAP/QPA crosscheck) | 129 | 122 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
+| `qpa/` (GAP/QPA crosscheck) | 130 | 123 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
 | `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 411 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
 | `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 58 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 66 | fast | runner artifacts / invariants; build hook; freshness |
