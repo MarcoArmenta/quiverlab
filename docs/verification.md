@@ -5,9 +5,9 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2434 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
-2026-07-29, after Plans 21–33, the Plan-32 oracle-class markers + audit gate, and
-Marco's report-completeness pass). It
+The suite is **2506 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+2026-08-01, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
+Marco's report-completeness pass, and the Plan-35 Hochschild product surface). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one. Every test is
 **classifiable** into exactly this scheme — one of four oracle classes (literature,
@@ -155,6 +155,24 @@ carries a citations-registry key its bibliographic entry is the packaged
   summand (`cmrs_split`) is the Plan-29 companion. The presentation itself cites
   no closed-form theorem — it is per-instance dimension-certified and QPA-oracled
   (see [Honest scope](#honest-scope)). `tests/families/test_trivial_extension_presented.py`.
+- **The Plan-35 product surface** (2026-08-01). The public cup / cap / Gerstenhaber
+  bracket tables and the induced Connes `B` are pinned on the dual numbers
+  `k[x]/(x²)` and the commutative complete intersection. Over a char-0-shaped prime
+  (`GF(32003)`, where `2` is a unit) the cup ring of `k[x]/(x²)` is the classical
+  `HH^• = [2, 1, 1, 1, …]` — `HH^0 = Z(A) = A` of dimension `2`, then `k` in every
+  positive degree — with the even generator composing to a nonzero even class and
+  the **odd square vanishing** by graded commutativity; over `GF(2)` that odd square
+  **survives**, the classical characteristic-2 phenomenon. *Correction pinned
+  (the engine wins, per the CRS-2004 precedent):* the degree-0 dimension is `2`, not
+  `1` — the implementation-plan brief stated `1`, but for a commutative algebra
+  `HH^0 = Z(A) = A` and `HH_0 = A/[A,A] = A` both have dimension `dim A = 2`; the
+  frozen value is the verified `2`, and the "`dim HH^n = 1`" statement holds only for
+  `n ≥ 1`. The `QuantumCI(q=1)` cup-table dimensions reproduce the
+  Buchweitz–Green–Madsen–Solberg commutative-CI vector `[4, 8, 12, …]` (`quantum_ci`;
+  the Künneth square of `k[x]/(x²)`). Connes `B` on the dual numbers alternates
+  iso/zero along the SBI pattern (`rank B_0 = 1`). Sources: `bar`, `cup`,
+  `gerstenhaber`, `bracket`, `cyclic`, `quantum_ci`, `tensor_product`
+  (`tests/hochschild/test_products_literature.py`, `test_connes_b.py`).
 
 ### The read-only bank as a byte-level oracle
 
@@ -185,6 +203,16 @@ Some facts need no external oracle because the defining axioms are the gate:
   the transported cap all hold simultaneously, and the non-commutative quantum CI
   distinguishes the correct `b·w·a` collapse from its `a·w·b` mirror
   (`tests/resolutions_cs/test_native_cap.py`).
+- The **Plan-35 product tables** (public cup/cap/bracket + Connes `B`) are gated by
+  the axioms of the structure they realize, with no external oracle: the cup table
+  is **graded-commutative and associative**, the bracket is **antisymmetric** and
+  satisfies **cup-Leibniz**, the cap table obeys the **module law**
+  `(z∩f)∩g = z∩(f∪g)`, and the induced Connes `B` satisfies **`B²=0`** at the
+  induced level with rank consistent with the `(b,B)` cyclic dims (SBI). Each
+  identity is checked entry-by-entry over the prime set `{32003, 2, 3, 5}`, with the
+  fixtures chosen so the check is content-bearing rather than a vacuous `0 = 0` (the
+  cup-Leibniz sign, for instance, is pinned on `GF(3)` where `±1` differ)
+  (`tests/hochschild/test_products_identities.py`, `test_connes_b.py`).
 - The module layer's functors self-certify: `(A^op)^op ≅ A`, `D∘D ≅ id`,
   `D(P_v` over `A^op) ≅ I_v`, and `τ⁻τM ≅ M` for non-projective indecomposables
   via an exact invertible-hom certificate (`tests/modules/test_opposite.py`,
@@ -236,6 +264,7 @@ independently re-derived as Bardzell chain counts (`6, 5, 2, 1, 0` on
 | CS ≡ Bardzell | Chouhy–Solotar vs Bardzell | GF(32003) | `test_battery_bardzell.py` |
 | minimal ≡ bar | minimal `A^e` vs bar | `{32003, 2, 3, 5}` | `tests/engine/` |
 | minimal-coh ≡ CS-coh | Hom-collapse vs CS cohomology | to depth 8 | `test_minimal_cohomology.py` |
+| bar-cup ≡ CS-cup | GF(p) bar/tt cup table vs the Domain-generic CS cup table (basis-independent: dims + flattened rank mod p) | GF(3/7), in-window | `test_products_identities.py` |
 
 Both differentials in each pair are built by disjoint code, so equal ranks and HH
 dimensions are a real cross-check, not a tautology. The engines are the bar complex
@@ -301,7 +330,7 @@ out of QPA scope, and raise loudly). Everything below is therefore covered by a
 
 | Feature QPA does not cover | Theory oracle that covers it |
 |---|---|
-| Cup / cap / Gerstenhaber bracket | Leibniz sign arbiter + transported-anchor + associativity/commutativity gates |
+| Cup / cap / Gerstenhaber bracket + the induced Connes `B` (Plan 35 — QPA 1.37 has **no** Hochschild product surface: no `CupProduct`/`HochschildCohomologyRing*`, confirmed by a live `NamesGVars()` sweep with zero `Hochschild`/`Cup` name; its `ExtAlgebraGenerators`/`YonedaProduct` is *module* Ext, not `HH^*(A)`) | the Gerstenhaber identity batteries (graded commutativity, associativity, Jacobi/antisymmetry, cup-Leibniz, cap module law `(z∩f)∩g = z∩(f∪g)`, `B²=0`, SBI rank consistency) + the `k[x]/(x²)` and QuantumCI-BGMS literature pins + the bar↔CS in-window cross-engine gate |
 | Cyclic homology | Connes λ-complex second model + mixed-complex identities |
 | The Chouhy–Solotar resolution | CS ≡ bar, CS ≡ Bardzell, and the bank byte-level closed forms |
 | Deep degrees past the bar window | bank closed forms + cross-engine + closed-form/chain-count pins |
@@ -338,16 +367,18 @@ out of QPA scope, and raise loudly). Everything below is therefore covered by a
 
 Every `src/quiverlab/` subpackage, its test directory, the collected test count,
 and the oracle class that guards it. Counts are `pytest --collect-only` with the
-`[dev,fast,docs,web,qpa]` extras (2026-07-25, post-merge of Plans 21–26).
+`[dev,fast,docs,web,qpa]` extras (2026-07-25 baseline, post-merge of Plans 21–26;
+the `hochschild/` and `resolutions_cs/` rows are refreshed 2026-08-01 for the
+Plan-35 product surface).
 
 | Subsystem (`src/quiverlab/`) | Tests | Bucket | Primary oracle class |
 |---|---:|---|---|
 | `fields/` (QQ, GF(p), GF(p^n), exact CC = QQ_I) | 37 | fast | exact-arithmetic axioms; base-change invariance |
 | `core/` + `combinat/` (Quiver, Algebra, relations, dispatch) | 43 | fast | structure-constant identities; left-to-right path law |
 | `groebner/` (overlap completion, admissibility) | 50 | fast | admissibility certificate; finiteness; lowering |
-| `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery) | 16 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins |
+| `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery; the Plan-35 product surface — `products.py`: cup/cap/bracket tables + the induced Connes `B`) | 53 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins; **the Gerstenhaber identity batteries** (graded-commutative + associative cup, antisymmetric bracket, cup-Leibniz, cap module law, `B²=0`, SBI rank) + the `k[x]/(x²)`/QuantumCI-BGMS product literature pins + the bar↔CS in-window cross-engine gate |
 | `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama; Plan-29 literature/identity batteries) | 572 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
-| `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries) | 224 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization |
+| `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries; the Plan-35 Domain-generic CS product tables `products.py` — cup/cap on the CS basis over any exact Domain) | 227 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization; the CS product unit-law + Domain-genericity self-cert |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact) | 250 | deep | AR/duality literature pins (ASS2006); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks |
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 112 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
@@ -374,9 +405,9 @@ plus the **orthogonal** oracle-class markers below (which never change a bucket)
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 930 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1249 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
-| `qpa` | 122 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `fast` | 1105 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 1278 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `qpa` | 123 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The
@@ -399,18 +430,21 @@ edge-case ruling.
   literature or classical theory, frozen as a constant the engine must reproduce:
   paper-pinned dims and closed forms, theorem identities (Coxeter/spectral tables,
   Happel trace, Theorem B/C, Cartan identities, symmetric ⇒ `HH^n = HH_n`,
-  `dim Tor_n = dim Ext^n`, the `kZ_n/J^L` symmetry classification, Künneth), and the
+  `dim Tor_n = dim Ext^n`, the `kZ_n/J^L` symmetry classification, Künneth, the
+  `k[x]/(x²)` cup ring and the QuantumCI-BGMS cup dims), and the
   read-only bank's closed-form differentials. The marker face of **Class 1**.
 - **`oracle_crossengine`** — two *independent* implementations are run and required
   to agree live: CS ≡ bar ≡ Bardzell ≡ minimal degreewise, numba ≡ pure and
   sparse ≡ dense parity, presented ≡ ⋉ iso-invariance, native ≡ transported
-  cup/cap, generic-Domain ≡ GF(p) engine, and the Connes λ-complex second model.
-  The library-internal face of **Class 2**.
+  cup/cap, generic-Domain ≡ GF(p) engine, the bar ≡ CS product tables (Plan 35), and
+  the Connes λ-complex second model. The library-internal face of **Class 2**.
 - **`oracle_selfcert`** — an internal mathematical certificate *is* the assertion:
   `d∘d = 0`, the CS order condition, canonicalization / adversarial-solver
   byte-reproducibility, dimension and iso certificates, the self-certifying
   Nakayama `λ`/`ν` identities, and the unit/Leibniz/module identities that arbitrate
-  a sign convention. (These are the "self-certifying internal identities" of Class 1,
+  a sign convention (including the Plan-35 Gerstenhaber-algebra product batteries —
+  graded commutativity, associativity, antisymmetry, cup-Leibniz, the cap module law,
+  and `B²=0`). (These are the "self-certifying internal identities" of Class 1,
   surfaced as their own runnable class.)
 - **`qpa`** — the existing bucket marker *is* the fourth oracle class: our value ≡
   live GAP/QPA. It needs no new marker; the live-QPA face of **Class 2**.
@@ -428,13 +462,13 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 722 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 410 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 646 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 122 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1335 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Literature / theory pins | `-m oracle_literature` | 726 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 416 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 678 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 123 | an independent external system (QPA) recomputes and agrees |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1378 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
-Collected 2026-07-26 (Plan 32). The oracle markers live only on the pure-library
+Collected 2026-08-01 (through Plan 35). The oracle markers live only on the pure-library
 `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` / `families` /
 `batch` suites, so these counts do **not** depend on the `[web]`/`[hpc]` extras.
 
@@ -483,6 +517,38 @@ verified precision and listed below as such.
   `Ext^n(M, DN)` inside QPA by dimension-shifting through `NthSyzygy` and uses
   the duality identity as the bridge — plus quiverlab's own self-certifying
   duality/balance anchors.
+- **The Plan-35 Hochschild product surface has no external oracle** (2026-08-01;
+  `A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
+  `A.connes_differentials`). QPA 1.37 exposes **no** Hochschild product surface at
+  all — no `CupProduct`, no `HochschildCohomologyRing*` (a live `NamesGVars()`
+  sweep finds zero `Hochschild`/`Cup` name; its `ExtAlgebraGenerators`/`YonedaProduct`
+  is the *module* Ext algebra `Ext^*_A(M,M)`, a different object from
+  `HH^*(A) = Ext^*_{A^e}(A,A)`), so `tests/qpa/test_products_qpa.py` is an honest
+  **skip** that FAILS loudly should a future QPA ever grow the surface. The covering
+  oracles are therefore internal: the **identity batteries** (graded commutativity,
+  associativity, Jacobi/antisymmetry, cup-Leibniz, the cap module law `(z∩f)∩g =
+  z∩(f∪g)`, `B²=0`, and SBI rank consistency) and the **literature pins** on
+  `k[x]/(x²)` (with the corrected dimension-2 degree-0) and the QuantumCI-BGMS cup
+  dims. Two scope facts are binding: (i) the **Gerstenhaber bracket is GF(p)-only and
+  window-bounded** — it is served on the bar/tt route (the result object records the
+  window), there is no CS route for it, and the degree-0 insertion action is out of
+  scope; the CS-native cup and cap tables compute over **any exact Domain** (the
+  bracket refuses on the CS route, `tests/resolutions_cs/test_products_cs.py`).
+  (ii) The **structure constants are basis-dependent** — they are read on the
+  recorded HH basis (bar/GF(p) or the CS class basis), and each product object
+  records which basis (`HHProducts.basis`); the cross-engine gate therefore compares
+  only basis-independent data (dims and flattened rank), never the raw constants.
+- **The two deep curated examples carry no products** (Plan 35 §5, Task-12
+  feasibility probe). The seeded webapp examples `nakayama-kz20-deep` and
+  `nakayama-kz24-deep` (dim ≥ 220) omit the entire product surface: the products
+  route through the bar/tt calculus (`to_engine` + cochain bases), whose setup alone
+  is ~290 s on kZ₂₀ and whose degree-2 cochain basis is 10.5M cells (over
+  `max_cells`, forcing the CS route or OOM), so no product finishes the ~120 s
+  probe box at any degree — confirmed directly by a **1500 s (25-minute)** in-process
+  `cup:0..2` probe on kZ₂₀ that timed out; and bracket/Connes `B` have no CS route at
+  all. Every trim and omission is recorded per-example in
+  `webapp/precomputed/manifest.yaml`; the four tractable examples carry the full
+  surface (`tests/webapp/test_curated_reachability.py`).
 - **`TrivialExtension(A)` is now a certified quiver presentation** (Plan 31; was
   a silent wrong `False`, then a loud refusal). For a presented `A` over QQ or
   GF(p), `T(A)` is returned as a genuine `kQ_T/I_T` — the quiver of `A` plus one
@@ -666,6 +732,10 @@ theorem number is asserted unless it is actually recorded.
 - `chouhy_solotar` — Chouhy, S.; Solotar, A. (2015). Projective resolutions of
   associative algebras and ambiguities. *Journal of Algebra* 432, 22–61.
   arXiv:1406.2300.
+- `cup`, `bracket`, `gerstenhaber` — Gerstenhaber, M. (1963). The cohomology
+  structure of an associative ring. *Annals of Mathematics* (2) 78, 267–288. (The
+  associative cup product and the graded Lie bracket that together make `HH^•` a
+  Gerstenhaber algebra — the definitional source for the Plan-35 product surface.)
 - `happel_question` — Happel, D. (1989). Hochschild cohomology of
   finite-dimensional algebras. *Lecture Notes in Mathematics* 1404, 108–126.
 - `happel_trivial_extension` — Happel, D. (1988). *Triangulated Categories in

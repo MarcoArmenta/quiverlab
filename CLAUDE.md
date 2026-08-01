@@ -539,3 +539,41 @@ marks it failed -- quitting the app IS the cancel button; the draw page's
 grace, not the wall. Also fixed: `job.wall_seconds or cfg.job_wall_seconds` (and
 the mem twin) swapped an explicit 0 for the config cap because 0 is falsy -- now
 `is None`. Battery: `tests/webapp/test_offline_no_time_limit.py`.
+
+**Plan 35 (HH product surface, 2026-08-01, branch `plan-35-hh-products`, v0.1.0
+gate).** The Tamarkin-Tsygan calculus is now a PUBLIC product surface, four methods
+on `Algebra` returning frozen structure-constant objects: `cup_products(top,
+engine=...)` (`HH^p (x) HH^q -> HH^{p+q}`), `cap_products(top, engine=...)`
+(`HH^p (x) HH_n -> HH_{n-p}`), `gerstenhaber_brackets(top, engine=...)`
+(`HH^p (x) HH^q -> HH^{p+q-1}`), and `connes_differentials(top)` (induced
+`B: HH_n -> HH_{n+1}`). Result containers in `hochschild/products.py`: `HHProducts`
+(`.tables[(p,q)] -> ProductTable` with `dims`+`constants[k][i][j]` as EXACT strings,
+`.basis` provenance) and `ConnesB` (`.matrices[n]` rows `HH_{n+1}` x cols `HH_n`,
+`.ranks`, `.hh_dims`). Key decisions: (1) **constants are basis-dependent** and the
+object records WHICH basis (`bar/GF(p)` or `cs/...`); the cross-engine gate compares
+only basis-independent data (dims + flattened rank mod p), never raw constants.
+(2) **Bracket is GF(p)-only and window-bounded** (served on the bar/tt route, no CS
+route, degree-0 insertion out of scope; the result records the window); cup/cap go
+**CS-native over any exact Domain** (`resolutions_cs/products.py`, the Plan-20/21
+diagonal), with an auto GF(p)->CS depth fallback (not for the bracket). (3) **Connes
+`B`** needs no engine choice: GF(p) via the fast `(b,B)` engine, else the generic bar
+`(b,B)` mixed complex; `B^2=0` holds at the induced level. Served by all three tiers
+(`hpc/spec.py` + the Pyodide twin `docs/gui/runner.py`, GUI pick-list after
+`hh_homology`, worked-steps products chapter with drift gates in `trace/products.py`).
+**Oracles are all internal** -- QPA 1.37 has NO Hochschild product surface (live
+`NamesGVars()` sweep; `tests/qpa/test_products_qpa.py` is an honest skip that FAILS if
+that ever changes), so the covering oracles are the identity batteries (graded
+commutativity, associativity, Jacobi/antisymmetry, cup-Leibniz, cap module law
+`(z(cap)f)(cap)g = z(cap)(f(cup)g)`, `B^2=0`, SBI rank) + the `k[x]/(x^2)` and
+QuantumCI-BGMS literature pins. **Correction pinned** (engine wins, CRS-2004
+precedent): the dual-numbers degree-0 dim is `2` not `1` (`HH^0=Z(A)=A`,
+`HH_0=A/[A,A]=A`, both `dim A=2` for a commutative algebra); the brief's `dim HH^n=1`
+holds only for `n>=1`. **Curated deep-pair omission:** the two dim>=220 webapp
+examples (`nakayama-kz20-deep`, `nakayama-kz24-deep`) carry NO products -- the bar/tt
+route's `to_engine` is ~290s and the degree-2 cochain basis is 10.5M cells (over
+`max_cells`), so nothing finishes the ~120s probe box; confirmed by a direct 1500s
+(25-min) `cup:0..2` timeout on kZ20, evidence in `webapp/precomputed/manifest.yaml`.
+Suite recount 2506 (fast 1105 / deep 1278 / qpa 123); oracle classes lit 726 /
+xeng 416 / selfcert 678 / qpa 123 / union 1378. Verification page + internals ch. 04
++ README updated. Design docs: `docs/plans/2026-08-01-plan-35-hh-products-surface.md`
+(spec), `...-implementation.md` (13 TDD tasks).

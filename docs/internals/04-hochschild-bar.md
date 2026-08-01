@@ -96,11 +96,61 @@ of x in 2x. (This matrix was printed by running the code. Restricted to the outp
 (x,x), the column has this single nonzero 2; the full column for `(0,(1,))` also carries
 `D[(2,(1,2))] = 1` and `D[(2,(2,1))] = 1` from the other output tensors.)
 
+## The product surface (Plan 35) — cup, cap, bracket, Connes B
+
+On top of the (co)homology *dimensions*, the Tamarkin–Tsygan calculus is exposed as
+**structure-constant tables**: for each pair of degrees, the product of a basis class
+on the left with a basis class on the right, written back in the basis of the target
+degree. Four public methods on `Algebra` return frozen result objects:
+
+| method | operation | returns |
+|---|---|---|
+| `cup_products(top, engine="auto", max_cells=4_000_000)` | `HH^p ⊗ HH^q → HH^{p+q}`, all `p+q ≤ top` | `HHProducts` |
+| `cap_products(top, engine="auto", max_cells=4_000_000)` | `HH^p ⊗ HH_n → HH_{n−p}`, `p ≤ n ≤ top` | `HHProducts` |
+| `gerstenhaber_brackets(top, engine="auto", max_cells=4_000_000)` | `HH^p ⊗ HH^q → HH^{p+q−1}`, `p,q ≥ 1` | `HHProducts` |
+| `connes_differentials(top, max_cells=4_000_000)` | induced `B : HH_n → HH_{n+1}`, `0 ≤ n < top` | `ConnesB` |
+
+`HHProducts.tables` is a `dict` keyed by the degree pair `(p, q)` (for cap, `(p, n)`)
+whose values are `ProductTable`s; a `ProductTable` carries `dims = (dim_left,
+dim_right, dim_out)` and `constants[k][i][j]` — the coefficient of the `k`-th output
+class in `left_i · right_j`, as an **exact string** (int mod p on the GF(p) route,
+a Domain repr on the CS route; the float ban forbids anything else). `ConnesB` carries
+`hh_dims`, the per-degree matrices (rows indexed by `HH_{n+1}`, columns by `HH_n`),
+and their `ranks`.
+
+**Engine routing** (`core/algebra.py::_product_dispatch`). `engine="auto"` uses the
+GF(p) bar/tt-calculus route over a prime field (`hochschild/products.py::
+gfp_product_tables` → `engine/tt_calculus.py`), and for a *presented* algebra over any
+other exact Domain the **Chouhy–Solotar native diagonal** route
+(`resolutions_cs/products.py`); over GF(p) it also falls back to CS when the bar route
+hits `DepthLimitError` (except for the bracket, which has no CS route). `engine="cs"`
+forces the CS route; `engine="bar"` forces the GF(p) tt facade (loud off GF(p)). The
+**Gerstenhaber bracket is GF(p)-only and window-bounded** — the result records the
+served `window`, and the degree-0 insertion action is out of scope. Connes `B` needs
+no engine choice: GF(p) via the fast `(b,B)` engine, any other exact Domain via the
+generic bar `(b,B)` mixed complex.
+
+**Basis-provenance caveat.** The structure constants are **basis-dependent** — they
+are read on whatever HH basis the route produced, and that basis is *not* canonical
+across routes. Every product object therefore **records which basis it used**:
+`HHProducts.basis` is a provenance string (`"bar/GF(p)"` or `"cs/…"`) and `ConnesB`
+carries its `engine` string. Do not compare raw `constants` across engines; the
+cross-engine gate compares only basis-independent data (dims and the flattened rank of
+the constants tensor mod p). Within one object the constants are exact and the
+Gerstenhaber-algebra identities (graded-commutative associative cup, antisymmetric
+cup-Leibniz bracket, cap module law, `B²=0`) hold on the nose — see the identity
+batteries in `tests/hochschild/test_products_identities.py`.
+
 ## Where to look in the code
 
 | concept | file | function / class |
 |---|---|---|
 | cochain / chain basis element `(s, J)` | `hochschild/bar.py` | `_cochain_basis`, `_abar_tuples` |
+| public product methods | `core/algebra.py` | `cup_products`, `cap_products`, `gerstenhaber_brackets`, `connes_differentials` |
+| product result objects | `hochschild/products.py` | `HHProducts`, `ProductTable`, `ConnesB` |
+| GF(p) bar/tt product tables | `hochschild/products.py` | `gfp_product_tables` |
+| CS-native (any Domain) product tables | `resolutions_cs/products.py` | `cs_product_tables` |
+| induced Connes `B` | `hochschild/products.py` | `connes_b_tables` |
 | coboundary matrix, entry by entry | `hochschild/bar.py` | `coboundary_matrix` (the `bump` helper) |
 | boundary matrix (homology) | `hochschild/bar.py` | `boundary_matrix` |
 | dims from ranks | `hochschild/bar.py` | `hochschild_cohomology_dims`, `hochschild_homology_dims` |

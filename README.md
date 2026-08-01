@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-2434_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-2506_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -190,7 +190,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 2301 tests over the
+Every shipped feature is unit tested (the suite is 2506 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as four orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa`), audited
@@ -243,8 +243,11 @@ ported and wired in:
   bar oracle cannot, with CS↔bar comparison maps; it specializes to Bardzell's
   minimal resolution on monomial algebras (operation transport is certified
   inside the bar-buildable window).
-- **Tamarkin–Tsygan calculus** at the engine level: cup product, cap product,
-  and the Gerstenhaber bracket; plus **cyclic homology** (Connes' mixed complex).
+- **Tamarkin–Tsygan calculus**, as a public product surface: **cup/cap products,
+  the Gerstenhaber bracket, and the induced Connes differentials** on `HH^•`/`HH_•`
+  (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
+  `A.connes_differentials`) — exact structure-constant tables on the recorded HH
+  basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
 - **Invariants:** the integer **Cartan** matrix, the **Coxeter** matrix and its
   characteristic polynomial (all fields, exact via sympy); and, over GF(p), the
   **Nakayama** automorphism with the **Frobenius** and **symmetric** tests
@@ -269,9 +272,11 @@ Everything is exact — no floating point, ever — and the full test suite runs
 green on both the numba kernel path and the pure-Python path
 (`QUIVERLAB_NO_NUMBA=1`).
 
-Honest scope note: the calculus lives at the *engine* level today. A classy
-`A.cup(u, v)` on named cohomology classes awaits the cohomology-classes
-machinery of a later phase (see `docs/plans/ROADMAP.md`).
+Honest scope note: the calculus is now public as **structure-constant tables** over
+the whole HH basis (`A.cup_products(top)` and friends). A classy `A.cup(u, v)` on
+two *named* cohomology-class representatives still awaits the cohomology-classes
+machinery of a later phase (see `docs/plans/ROADMAP.md`); and the Gerstenhaber
+bracket is GF(p)-only and window-bounded.
 
 Coming next (see `docs/plans/ROADMAP.md`): full operation transport, drawing and
 TikZ export, worked-steps PDFs, and an optional QPA backend.
