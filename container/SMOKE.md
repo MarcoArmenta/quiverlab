@@ -16,7 +16,7 @@ From the repo root:
 
 ```bash
 # Build (context = repo root; the .dockerignore keeps .venv/.git/docs/tests out).
-docker build -f container/Dockerfile --build-arg QUIVERLAB_VERSION=0.1.0.dev0 \
+docker build -f container/Dockerfile --build-arg QUIVERLAB_VERSION=0.1.0 \
     -t quiverlab:local .
 
 # Sanity: version + selftest.

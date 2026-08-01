@@ -79,4 +79,4 @@ From: python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4d
     org.opencontainers.image.title quiverlab
     org.opencontainers.image.source https://github.com/MarcoArmenta/quiverlab
     org.opencontainers.image.licenses MIT
-    Version 0.1.0.dev0
+    Version 0.1.0

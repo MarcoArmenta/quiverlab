@@ -1,6 +1,6 @@
 """quiverlab: quivers with relations and Hochschild theory, exactly."""
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
 
 # Worked-steps traces are ON by default (spec D9). Flip per-call via
 # A.hochschild_cohomology(..., verbose=False) or globally via quiverlab.verbose.

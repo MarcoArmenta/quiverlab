@@ -5,7 +5,7 @@
 #   * a full compute request (exactly the ComputeRequest shape) -- computed by
 #     container/seed_cache.py at image-build time; keep such entries SMALL.
 #   * {stored: <dir>} -- a precomputed bundle (relative to this file) carrying
-#     request.json + result.json (+ tikz.tex, report.html), recorded with ZERO
+#     request.json + result.json (+ tikz.tex), recorded with ZERO
 #     recompute. This is how the big worked examples ship: the results were
 #     computed by the session's container/wheel runs (byte-identical, exact) and
 #     are committed in their final form -- never recompute a known example.

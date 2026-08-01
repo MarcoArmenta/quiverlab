@@ -1,12 +1,12 @@
 {
-  "quiverlab_version": "0.1.0.dev0",
+  "quiverlab_version": "0.1.0",
   "algebra": {
     "kind": "family",
     "family": "QuantumCI",
     "params": {
-      "q": 2,
       "a": 2,
-      "b": 2
+      "b": 2,
+      "q": 2
     },
     "field": {
       "kind": "GF",
@@ -113,32 +113,12 @@
       ],
       "latex": "\\begin{pmatrix} 4 \\end{pmatrix}",
       "references": [
-        "quantum_ci",
-        "qci_hh_oracle",
-        "bardzell",
-        "chouhy_solotar",
-        "bar"
+        "assem_book"
       ],
       "citations": [
         [
-          "BGMS2005",
-          "Buchweitz, Ragnar-Olaf; Green, Edward L.; Madsen, Dag; Solberg, Oyvind (2005). Finite Hochschild cohomology without finite global dimension. Mathematical Research Letters 12, 805-816."
-        ],
-        [
-          "BerghErdmann2008",
-          "Bergh, Petter Andreas; Erdmann, Karin (2008). Homology and cohomology of quantum complete intersections. Algebra & Number Theory 2, 501-522."
-        ],
-        [
-          "Bardzell1997",
-          "Bardzell, Michael J. (1997). The alternating syzygy behavior of monomial algebras. Journal of Algebra 188, 69-89."
-        ],
-        [
-          "ChouhySolotar2015",
-          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
-        ],
-        [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
         ]
       ]
     },
@@ -146,32 +126,17 @@
       "latex": "t + 1",
       "text": "t + 1",
       "references": [
-        "quantum_ci",
-        "qci_hh_oracle",
-        "bardzell",
-        "chouhy_solotar",
-        "bar"
+        "lenzing_delapena_spectral",
+        "assem_book"
       ],
       "citations": [
         [
-          "BGMS2005",
-          "Buchweitz, Ragnar-Olaf; Green, Edward L.; Madsen, Dag; Solberg, Oyvind (2005). Finite Hochschild cohomology without finite global dimension. Mathematical Research Letters 12, 805-816."
+          "LenzingdlPena2008spectral",
+          "Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588."
         ],
         [
-          "BerghErdmann2008",
-          "Bergh, Petter Andreas; Erdmann, Karin (2008). Homology and cohomology of quantum complete intersections. Algebra & Number Theory 2, 501-522."
-        ],
-        [
-          "Bardzell1997",
-          "Bardzell, Michael J. (1997). The alternating syzygy behavior of monomial algebras. Journal of Algebra 188, 69-89."
-        ],
-        [
-          "ChouhySolotar2015",
-          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
-        ],
-        [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
         ]
       ]
     },
@@ -180,32 +145,12 @@
       "exact": false,
       "value": 32,
       "references": [
-        "quantum_ci",
-        "qci_hh_oracle",
-        "bardzell",
-        "chouhy_solotar",
-        "bar"
+        "assem_book"
       ],
       "citations": [
         [
-          "BGMS2005",
-          "Buchweitz, Ragnar-Olaf; Green, Edward L.; Madsen, Dag; Solberg, Oyvind (2005). Finite Hochschild cohomology without finite global dimension. Mathematical Research Letters 12, 805-816."
-        ],
-        [
-          "BerghErdmann2008",
-          "Bergh, Petter Andreas; Erdmann, Karin (2008). Homology and cohomology of quantum complete intersections. Algebra & Number Theory 2, 501-522."
-        ],
-        [
-          "Bardzell1997",
-          "Bardzell, Michael J. (1997). The alternating syzygy behavior of monomial algebras. Journal of Algebra 188, 69-89."
-        ],
-        [
-          "ChouhySolotar2015",
-          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
-        ],
-        [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
         ]
       ]
     },
@@ -226,29 +171,9 @@
         ]
       ],
       "references": [
-        "quantum_ci",
-        "qci_hh_oracle",
-        "bardzell",
-        "chouhy_solotar",
         "bar"
       ],
       "citations": [
-        [
-          "BGMS2005",
-          "Buchweitz, Ragnar-Olaf; Green, Edward L.; Madsen, Dag; Solberg, Oyvind (2005). Finite Hochschild cohomology without finite global dimension. Mathematical Research Letters 12, 805-816."
-        ],
-        [
-          "BerghErdmann2008",
-          "Bergh, Petter Andreas; Erdmann, Karin (2008). Homology and cohomology of quantum complete intersections. Algebra & Number Theory 2, 501-522."
-        ],
-        [
-          "Bardzell1997",
-          "Bardzell, Michael J. (1997). The alternating syzygy behavior of monomial algebras. Journal of Algebra 188, 69-89."
-        ],
-        [
-          "ChouhySolotar2015",
-          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
-        ],
         [
           "Hochschild1945",
           "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
@@ -258,32 +183,12 @@
     "dimension": {
       "value": 4,
       "references": [
-        "quantum_ci",
-        "qci_hh_oracle",
-        "bardzell",
-        "chouhy_solotar",
-        "bar"
+        "assem_book"
       ],
       "citations": [
         [
-          "BGMS2005",
-          "Buchweitz, Ragnar-Olaf; Green, Edward L.; Madsen, Dag; Solberg, Oyvind (2005). Finite Hochschild cohomology without finite global dimension. Mathematical Research Letters 12, 805-816."
-        ],
-        [
-          "BerghErdmann2008",
-          "Bergh, Petter Andreas; Erdmann, Karin (2008). Homology and cohomology of quantum complete intersections. Algebra & Number Theory 2, 501-522."
-        ],
-        [
-          "Bardzell1997",
-          "Bardzell, Michael J. (1997). The alternating syzygy behavior of monomial algebras. Journal of Algebra 188, 69-89."
-        ],
-        [
-          "ChouhySolotar2015",
-          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
-        ],
-        [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
         ]
       ]
     },
@@ -294,6 +199,7 @@
         "1": 1
       },
       "dim": 1,
+      "latex": "\\underline{\\dim}\\, M = (1)",
       "references": [
         "assem_book"
       ],
@@ -361,6 +267,7 @@
       "kind": "tau",
       "side": "right",
       "is_zero": false,
+      "latex": "\\underline{\\dim}\\, \\tau M = (5)",
       "dimvec": {
         "1": 5
       },
@@ -447,6 +354,194 @@
         }
       },
       "indecomposable": true,
+      "targets": [
+        {
+          "name": "N",
+          "side": "right",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau N = (5)",
+          "dimvec": {
+            "1": 5
+          },
+          "dim": 5,
+          "repr": {
+            "dims": {
+              "1": 5
+            },
+            "maps": {
+              "x": [
+                [
+                  0,
+                  1,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "y": [
+                [
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  32002,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ]
+            }
+          },
+          "indecomposable": true,
+          "role": "ext_target"
+        },
+        {
+          "name": "N",
+          "side": "left",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau N = (5)",
+          "dimvec": {
+            "1": 5
+          },
+          "dim": 5,
+          "repr": {
+            "dims": {
+              "1": 5
+            },
+            "maps": {
+              "x": [
+                [
+                  0,
+                  1,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ],
+              "y": [
+                [
+                  0,
+                  0,
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  32002,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ]
+            }
+          },
+          "indecomposable": true,
+          "role": "tor_target"
+        }
+      ],
       "references": [
         "assem_book"
       ],
@@ -461,6 +556,7 @@
       "kind": "tau_minus",
       "side": "right",
       "is_zero": false,
+      "latex": "\\underline{\\dim}\\, \\tau^{-} M = (5)",
       "dimvec": {
         "1": 5
       },
@@ -547,6 +643,194 @@
         }
       },
       "indecomposable": true,
+      "targets": [
+        {
+          "name": "N",
+          "side": "right",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau^{-} N = (5)",
+          "dimvec": {
+            "1": 5
+          },
+          "dim": 5,
+          "repr": {
+            "dims": {
+              "1": 5
+            },
+            "maps": {
+              "x": [
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "y": [
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  32002,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ]
+            }
+          },
+          "indecomposable": true,
+          "role": "ext_target"
+        },
+        {
+          "name": "N",
+          "side": "left",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau^{-} N = (5)",
+          "dimvec": {
+            "1": 5
+          },
+          "dim": 5,
+          "repr": {
+            "dims": {
+              "1": 5
+            },
+            "maps": {
+              "x": [
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "y": [
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  32002,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  0,
+                  0,
+                  0
+                ]
+              ]
+            }
+          },
+          "indecomposable": true,
+          "role": "tor_target"
+        }
+      ],
       "references": [
         "assem_book"
       ],
@@ -4751,6 +5035,8 @@
       "value": null,
       "finite": false,
       "bound": 32,
+      "latex": "\\operatorname{pd} M > 32",
+      "note": "certified lower bound; the resolution did not terminate within the probed depth 32",
       "references": [
         "minimal_resolution"
       ],
@@ -4766,6 +5052,8 @@
       "value": null,
       "finite": false,
       "bound": 32,
+      "latex": "\\operatorname{id} M > 32",
+      "note": "certified lower bound; the resolution did not terminate within the probed depth 32",
       "references": [
         "minimal_resolution",
         "assem_book"
@@ -4790,7 +5078,11 @@
             "1": 1
           },
           "multiplicity": 1,
-          "indecomposable": true
+          "indecomposable": true,
+          "standard": {
+            "kind": "simple",
+            "vertex": "1"
+          }
         }
       ],
       "iso_classes": 1,
@@ -4934,6 +5226,17 @@
       "annotation": "The standard reference for bound quivers and the representation theory quiverlab implements."
     },
     {
+      "key": "lenzing_delapena_spectral",
+      "bibtex_key": "LenzingdlPena2008spectral",
+      "formatted": "Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.",
+      "doi": null,
+      "arxiv": "0805.1018",
+      "doi_url": null,
+      "arxiv_url": "https://arxiv.org/abs/0805.1018",
+      "topic": "Foundations",
+      "annotation": "The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and Happel's trace identity -- the spectral-invariant oracle."
+    },
+    {
       "key": "minimal_resolution",
       "bibtex_key": "GSZ2001",
       "formatted": "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939.",
@@ -4956,6 +5259,6 @@
       "annotation": "Module-level Ext^n over minimal resolutions (Plan 05 module engine)."
     }
   ],
-  "reproduce": "import quiverlab as ql\nA = ql.QuantumCI(field=ql.GF(32003), q=2, a=2, b=2)\nM = A.simple(1, side=\"right\")\nN = A.simple(1, side=\"right\")\nN = A.simple(1, side=\"left\")\nA.hochschild_cohomology(8)\nA.hochschild_homology(8)\nA.cartan_matrix()\nA.coxeter_polynomial()\nA.global_dimension()\nA.center()\nA.dim\nM.dimension_vector()\nM.radical(), M.top(), M.socle()\nM.tau()\nM.tau_minus()\nM.projective_resolution(6).dimension_vectors()\nM.injective_resolution(6).dimension_vectors()\nM.projective_resolution(32).pd()\nM.injective_dimension()\nfrom quiverlab.modules.decompose import decompose\ndecompose(M)\n[A.ext(M, N, i) for i in range(8 + 1)]\nfrom quiverlab.modules.tor import tor_dims\ntor_dims(A, M, N, 8)",
+  "reproduce": "import quiverlab as ql\nA = ql.QuantumCI(field=ql.GF(32003), a=2, b=2, q=2)\nM = A.simple(1, side=\"right\")\nN = A.simple(1, side=\"right\")\nN = A.simple(1, side=\"left\")\nA.hochschild_cohomology(8)\nA.hochschild_homology(8)\nA.cartan_matrix()\nA.coxeter_polynomial()\nA.global_dimension()\nA.center()\nA.dim\nM.dimension_vector()\nM.radical(), M.top(), M.socle()\nM.tau()\nM.tau_minus()\nM.projective_resolution(6).dimension_vectors()\nM.injective_resolution(6).dimension_vectors()\nM.projective_resolution(32).pd()\nM.injective_dimension()\nfrom quiverlab.modules.decompose import decompose\ndecompose(M)\n[A.ext(M, N, i) for i in range(8 + 1)]\nfrom quiverlab.modules.tor import tor_dims\ntor_dims(A, M, N, 8)",
   "meta": {}
 }

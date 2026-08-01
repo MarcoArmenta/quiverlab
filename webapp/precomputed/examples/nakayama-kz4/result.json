@@ -1,12 +1,12 @@
 {
-  "quiverlab_version": "0.1.0.dev0",
+  "quiverlab_version": "0.1.0",
   "algebra": {
     "kind": "family",
     "family": "NakayamaAlgebra",
     "params": {
-      "n": 4,
+      "cyclic": true,
       "l": 3,
-      "cyclic": true
+      "n": 4
     },
     "field": {
       "kind": "GF",
@@ -31,7 +31,8 @@
       "references": [
         "nakayama",
         "assem_book",
-        "bar"
+        "bar",
+        "chouhy_solotar"
       ],
       "citations": [
         [
@@ -41,6 +42,10 @@
         [
           "Hochschild1945",
           "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ],
+        [
+          "ChouhySolotar2015",
+          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
         ]
       ]
     },
@@ -60,7 +65,8 @@
       "references": [
         "nakayama",
         "assem_book",
-        "bar"
+        "bar",
+        "chouhy_solotar"
       ],
       "citations": [
         [
@@ -70,6 +76,10 @@
         [
           "Hochschild1945",
           "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+        ],
+        [
+          "ChouhySolotar2015",
+          "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61."
         ]
       ]
     },
@@ -102,18 +112,12 @@
       ],
       "latex": "\\begin{pmatrix} 1 & 1 & 1 & 0 \\\\ 0 & 1 & 1 & 1 \\\\ 1 & 0 & 1 & 1 \\\\ 1 & 1 & 0 & 1 \\end{pmatrix}",
       "references": [
-        "nakayama",
-        "assem_book",
-        "bar"
+        "assem_book"
       ],
       "citations": [
         [
           "ASS2006",
           "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
-        ],
-        [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
         ]
       ]
     },
@@ -121,18 +125,17 @@
       "latex": "t^{4} - 2 t^{2} + 1",
       "text": "t**4 - 2*t**2 + 1",
       "references": [
-        "nakayama",
-        "assem_book",
-        "bar"
+        "lenzing_delapena_spectral",
+        "assem_book"
       ],
       "citations": [
         [
-          "ASS2006",
-          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
+          "LenzingdlPena2008spectral",
+          "Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588."
         ],
         [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
+          "ASS2006",
+          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
         ]
       ]
     },
@@ -141,18 +144,12 @@
       "exact": false,
       "value": 32,
       "references": [
-        "nakayama",
-        "assem_book",
-        "bar"
+        "assem_book"
       ],
       "citations": [
         [
           "ASS2006",
           "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
-        ],
-        [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
         ]
       ]
     },
@@ -175,15 +172,9 @@
         ]
       ],
       "references": [
-        "nakayama",
-        "assem_book",
         "bar"
       ],
       "citations": [
-        [
-          "ASS2006",
-          "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
-        ],
         [
           "Hochschild1945",
           "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
@@ -193,18 +184,12 @@
     "dimension": {
       "value": 12,
       "references": [
-        "nakayama",
-        "assem_book",
-        "bar"
+        "assem_book"
       ],
       "citations": [
         [
           "ASS2006",
           "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65."
-        ],
-        [
-          "Hochschild1945",
-          "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67."
         ]
       ]
     },
@@ -218,6 +203,7 @@
         "4": 0
       },
       "dim": 4,
+      "latex": "\\underline{\\dim}\\, M = (1,\\, 2,\\, 1,\\, 0)",
       "references": [
         "assem_book"
       ],
@@ -298,7 +284,11 @@
             "4": 0
           },
           "multiplicity": 1,
-          "indecomposable": true
+          "indecomposable": true,
+          "standard": {
+            "kind": "projective",
+            "vertex": "1"
+          }
         },
         {
           "dim_vector": {
@@ -308,7 +298,11 @@
             "4": 0
           },
           "multiplicity": 1,
-          "indecomposable": true
+          "indecomposable": true,
+          "standard": {
+            "kind": "simple",
+            "vertex": "2"
+          }
         }
       ],
       "iso_classes": 2,
@@ -326,6 +320,7 @@
       "kind": "tau",
       "side": "right",
       "is_zero": false,
+      "latex": "\\underline{\\dim}\\, \\tau M = (0,\\, 0,\\, 1,\\, 0)",
       "dimvec": {
         "1": 0,
         "2": 0,
@@ -352,7 +347,11 @@
             "4": 0
           },
           "multiplicity": 1,
-          "indecomposable": true
+          "indecomposable": true,
+          "standard": {
+            "kind": "projective",
+            "vertex": "1"
+          }
         },
         {
           "dim_vector": {
@@ -362,10 +361,64 @@
             "4": 0
           },
           "multiplicity": 1,
-          "indecomposable": true
+          "indecomposable": true,
+          "standard": {
+            "kind": "simple",
+            "vertex": "2"
+          }
         }
       ],
       "note_key": "mod.tau_additive",
+      "targets": [
+        {
+          "name": "N",
+          "side": "right",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau N = (0,\\, 1,\\, 0,\\, 0)",
+          "dimvec": {
+            "1": 0,
+            "2": 1,
+            "3": 0,
+            "4": 0
+          },
+          "dim": 1,
+          "repr": {
+            "dims": {
+              "1": 0,
+              "2": 1,
+              "3": 0,
+              "4": 0
+            },
+            "maps": {}
+          },
+          "indecomposable": true,
+          "role": "ext_target"
+        },
+        {
+          "name": "N",
+          "side": "left",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau N = (0,\\, 0,\\, 0,\\, 1)",
+          "dimvec": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 1
+          },
+          "dim": 1,
+          "repr": {
+            "dims": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            "maps": {}
+          },
+          "indecomposable": true,
+          "role": "tor_target"
+        }
+      ],
       "references": [
         "assem_book"
       ],
@@ -380,6 +433,7 @@
       "kind": "tau_minus",
       "side": "right",
       "is_zero": false,
+      "latex": "\\underline{\\dim}\\, \\tau^{-} M = (1,\\, 0,\\, 0,\\, 0)",
       "dimvec": {
         "1": 1,
         "2": 0,
@@ -406,7 +460,11 @@
             "4": 0
           },
           "multiplicity": 1,
-          "indecomposable": true
+          "indecomposable": true,
+          "standard": {
+            "kind": "projective",
+            "vertex": "1"
+          }
         },
         {
           "dim_vector": {
@@ -416,10 +474,64 @@
             "4": 0
           },
           "multiplicity": 1,
-          "indecomposable": true
+          "indecomposable": true,
+          "standard": {
+            "kind": "simple",
+            "vertex": "2"
+          }
         }
       ],
       "note_key": "mod.tau_additive",
+      "targets": [
+        {
+          "name": "N",
+          "side": "right",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau^{-} N = (0,\\, 0,\\, 0,\\, 1)",
+          "dimvec": {
+            "1": 0,
+            "2": 0,
+            "3": 0,
+            "4": 1
+          },
+          "dim": 1,
+          "repr": {
+            "dims": {
+              "1": 0,
+              "2": 0,
+              "3": 0,
+              "4": 1
+            },
+            "maps": {}
+          },
+          "indecomposable": true,
+          "role": "ext_target"
+        },
+        {
+          "name": "N",
+          "side": "left",
+          "is_zero": false,
+          "latex": "\\underline{\\dim}\\, \\tau^{-} N = (0,\\, 1,\\, 0,\\, 0)",
+          "dimvec": {
+            "1": 0,
+            "2": 1,
+            "3": 0,
+            "4": 0
+          },
+          "dim": 1,
+          "repr": {
+            "dims": {
+              "1": 0,
+              "2": 1,
+              "3": 0,
+              "4": 0
+            },
+            "maps": {}
+          },
+          "indecomposable": true,
+          "role": "tor_target"
+        }
+      ],
       "references": [
         "assem_book"
       ],
@@ -952,6 +1064,8 @@
       "value": null,
       "finite": false,
       "bound": 32,
+      "latex": "\\operatorname{pd} M > 32",
+      "note": "certified lower bound; the resolution did not terminate within the probed depth 32",
       "references": [
         "minimal_resolution"
       ],
@@ -967,6 +1081,8 @@
       "value": null,
       "finite": false,
       "bound": 32,
+      "latex": "\\operatorname{id} M > 32",
+      "note": "certified lower bound; the resolution did not terminate within the probed depth 32",
       "references": [
         "minimal_resolution",
         "assem_book"
@@ -1081,6 +1197,28 @@
       "annotation": "Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic."
     },
     {
+      "key": "chouhy_solotar",
+      "bibtex_key": "ChouhySolotar2015",
+      "formatted": "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61.",
+      "doi": "10.1016/j.jalgebra.2015.02.019",
+      "arxiv": "1406.2300",
+      "doi_url": "https://doi.org/10.1016/j.jalgebra.2015.02.019",
+      "arxiv_url": "https://arxiv.org/abs/1406.2300",
+      "topic": "Algorithms",
+      "annotation": "The general kQ/I bimodule resolution from a reduction system -- quiverlab's Chouhy-Solotar engine for non-monomial algebras."
+    },
+    {
+      "key": "lenzing_delapena_spectral",
+      "bibtex_key": "LenzingdlPena2008spectral",
+      "formatted": "Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.",
+      "doi": null,
+      "arxiv": "0805.1018",
+      "doi_url": null,
+      "arxiv_url": "https://arxiv.org/abs/0805.1018",
+      "topic": "Foundations",
+      "annotation": "The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and Happel's trace identity -- the spectral-invariant oracle."
+    },
+    {
       "key": "minimal_resolution",
       "bibtex_key": "GSZ2001",
       "formatted": "Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). Minimal projective resolutions. Transactions of the American Mathematical Society 353, 2915-2939.",
@@ -1103,6 +1241,6 @@
       "annotation": "Module-level Ext^n over minimal resolutions (Plan 05 module engine)."
     }
   ],
-  "reproduce": "import quiverlab as ql\nA = ql.NakayamaAlgebra(field=ql.GF(7), n=4, l=3, cyclic=True)\nM = A.module({1: 1, 2: 2, 3: 1, 4: 0}, {\"a1\": [[0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], \"a2\": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]], \"a3\": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], \"a4\": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]}, side=\"right\", name=\"M\")\nN = A.simple(1, side=\"right\")\nN = A.simple(1, side=\"left\")\nA.hochschild_cohomology(6)\nA.hochschild_homology(6)\nA.cartan_matrix()\nA.coxeter_polynomial()\nA.global_dimension()\nA.center()\nA.dim\nM.dimension_vector()\nM.radical(), M.top(), M.socle()\nfrom quiverlab.modules.decompose import decompose\ndecompose(M)\nM.tau()\nM.tau_minus()\nM.projective_resolution(6).dimension_vectors()\nM.injective_resolution(6).dimension_vectors()\nM.projective_resolution(32).pd()\nM.injective_dimension()\n[A.ext(M, N, i) for i in range(6 + 1)]\nfrom quiverlab.modules.tor import tor_dims\ntor_dims(A, M, N, 6)",
+  "reproduce": "import quiverlab as ql\nA = ql.NakayamaAlgebra(field=ql.GF(7), cyclic=True, l=3, n=4)\nM = A.module({1: 1, 2: 2, 3: 1, 4: 0}, {\"a1\": [[0, 0, 0, 0], [1, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], \"a2\": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 1, 0, 0]], \"a3\": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], \"a4\": [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]]}, side=\"right\", name=\"M\")\nN = A.simple(1, side=\"right\")\nN = A.simple(1, side=\"left\")\nA.hochschild_cohomology(6)\nA.hochschild_homology(6)\nA.cartan_matrix()\nA.coxeter_polynomial()\nA.global_dimension()\nA.center()\nA.dim\nM.dimension_vector()\nM.radical(), M.top(), M.socle()\nfrom quiverlab.modules.decompose import decompose\ndecompose(M)\nM.tau()\nM.tau_minus()\nM.projective_resolution(6).dimension_vectors()\nM.injective_resolution(6).dimension_vectors()\nM.projective_resolution(32).pd()\nM.injective_dimension()\n[A.ext(M, N, i) for i in range(6 + 1)]\nfrom quiverlab.modules.tor import tor_dims\ntor_dims(A, M, N, 6)",
   "meta": {}
 }

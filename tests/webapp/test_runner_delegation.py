@@ -18,7 +18,14 @@ never hide behind one:
   * 2026-07-29 (``module_left_a2``): the ``projective_dimension`` /
     ``injective_dimension`` blocks gained the ``latex`` key. Without it the
     draw-page renderer typeset a literal "undefined" for both (Marco's
-    example-a). The canonical keys are request-derived and are unchanged."""
+    example-a). The canonical keys are request-derived and are unchanged.
+  * 2026-07-31 (all six, v0.1.0 release): the embedded ``quiverlab_version``
+    stamp moved ``0.1.0.dev0`` -> ``0.1.0`` with the library bump. Gated
+    re-freeze: each regenerated blob was asserted byte-identical to the old
+    one under the version substitution alone, so no math moved. ``_V`` below
+    and the frozen ``canonical_key`` entries deliberately KEEP ``0.1.0.dev0``
+    -- the key pin is version-explicit and anchors the canonicalizer
+    independently of the running library."""
 import json
 import pathlib
 
