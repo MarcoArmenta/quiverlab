@@ -600,11 +600,16 @@ def compute_one(spec):
             # citations -- so the cross-runner contract holds.
             if top is None:
                 raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
-            table = A.cyclic_homology(top)
+            # Plan 35 wave 3b: capture the explicit HC representatives alongside the
+            # dims (basis_classes / chain_basis / differentials / column_structure) from
+            # the SAME (b, B) total complex -- key-for-key identical to the server twin
+            # (quiverlab.hpc.spec._dispatch), so the cross-runner contract holds.
+            table, reps = A.cyclic_homology(top, with_reps=True)
             keys = ["cyclic"]
             block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                      "engine": table.engine, "references": keys,
                      "citations": _citation_pairs(keys)}
+            block.update(reps)
         elif name == "cartan":
             m = A.cartan_matrix()
             block = {"matrix": m, "latex": _latex_matrix(m),

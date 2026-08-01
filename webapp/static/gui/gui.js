@@ -1527,6 +1527,105 @@
     return rendered;
   }
 
+  // Plan 35 wave 3b: cyclic homology HC explicit representatives. The block carries a
+  // SINGLE-side {str(degree): ...} payload (HC is homological) PLUS a column_structure
+  // giving the total complex Tot_n = C_n (+) C_{n-2} (+) ... layout, stated as a heading
+  // before each degree's enumeration. Mirrors
+  // quiverlab.trace.render_html.cyclic_degree_sections; reuses the UNIT-1 term-sum /
+  // coordinate-vector / matrix-grid helpers. Tolerant of a block WITHOUT these fields.
+  function appendCyclicColumnHeading(div, cs, n) {
+    if (!cs || !cs.columns || !cs.columns.length) return;
+    var tex = "\\mathrm{Tot}_{" + n + "} = "
+      + cs.columns.map(function (c) { return "C_{" + c.degree + "}"; }).join(" \\oplus ");
+    div.appendChild(h("p", { "class": "arithmatex", text: "\\(" + tex + "\\)" }));
+    var slices = cs.columns.map(function (c) {
+      return "C_" + c.degree + " [" + c.offset + ":" + (c.offset + c.dim) + "]";
+    }).join(", ");
+    div.appendChild(h("p", { "class": "qlgui-cites",
+      text: "coordinate slices (which vector entries live in which column): " + slices }));
+  }
+  function appendCyclicEnum(div, enumLabels, n) {
+    div.appendChild(h("p", {}, [
+      document.createTextNode("Ordered basis of "),
+      h("span", { "class": "arithmatex", text: "\\(\\mathrm{Tot}_{" + n + "}\\)" }),
+      document.createTextNode(" (entry k is the symbol e_k the coordinate vectors use):")
+    ]));
+    if (enumLabels && enumLabels.elided) {
+      div.appendChild(h("p", { "class": "qlgui-cites", text: enumLabels.length
+        + " elements; the full enumeration is in the report data" }));
+      return;
+    }
+    if (!enumLabels || !enumLabels.length) {
+      div.appendChild(h("p", { "class": "qlgui-cites", text: "the space is zero-dimensional" }));
+      return;
+    }
+    var ol = h("ol");
+    enumLabels.slice(0, REPS_ENUM_DISPLAY).forEach(function (lbl) {
+      ol.appendChild(h("li", { text: prettyLabel(lbl) }));
+    });
+    div.appendChild(ol);
+    if (enumLabels.length > REPS_ENUM_DISPLAY) {
+      div.appendChild(h("p", { "class": "qlgui-cites", text: "… "
+        + (enumLabels.length - REPS_ENUM_DISPLAY) + " more (full enumeration in the report data)" }));
+    }
+  }
+  function appendCyclicClasses(div, classes, enumLabels, n) {
+    if (!classes.length) {
+      div.appendChild(h("p", { "class": "qlgui-cites", text: "no classes (HC_" + n + " is zero)" }));
+      return;
+    }
+    div.appendChild(h("p", { text: "Basis classes (term-sum = coordinate vector over "
+      + "the enumeration above):" }));
+    classes.forEach(function (cl, i) {
+      var nm = "z^{" + n + "}_{" + (i + 1) + "}";
+      var coord = coordVectorText(cl.vector), term = termSumText(cl.vector, enumLabels);
+      var p = h("p");
+      p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + nm + "\\)" }));
+      p.appendChild(document.createTextNode(
+        " = " + (term != null ? term + " = " : "") + coord));
+      div.appendChild(p);
+    });
+  }
+  function appendCyclicDiff(div, diff, n, nClasses) {
+    if (!diff) return;
+    var arrow = "D_{" + n + "} : \\mathrm{Tot}_{" + n + "} \\to \\mathrm{Tot}_{"
+      + Math.max(n - 1, 0) + "}";
+    div.appendChild(h("p", { "class": "arithmatex", text: "\\(" + arrow + "\\)" }));
+    if (diff.elided) {
+      var sh = diff.shape || [0, 0];
+      div.appendChild(h("p", { "class": "qlgui-cites", text: sh[0] + "×" + sh[1]
+        + " matrix (body in the report data; rebuild: " + (diff.note || "") + ")" }));
+    } else if (diff.shape && diff.shape[0] === 0) {
+      if (diff.note) div.appendChild(h("p", { "class": "qlgui-cites", text: diff.note }));
+      return;
+    } else {
+      div.appendChild(matrixGrid(diff.rows || []));
+    }
+    if (!nClasses) return;
+    div.appendChild(h("p", { "class": "qlgui-hint", text: "Verification: each z^{" + n
+      + "}_i is a cycle of the total complex: applying D_{" + n + "} = b + B to its "
+      + "coordinate vector gives 0" }));
+  }
+  function appendCyclicReps(div, b) {
+    var bc = b.basis_classes;
+    if (!bc) return false;
+    var cb = b.chain_basis || {}, diffs = b.differentials || {}, cs = b.column_structure || {};
+    var rendered = false;
+    Object.keys(bc).map(Number).sort(function (a, c) { return a - c; }).forEach(function (n) {
+      rendered = true;
+      var key = String(n);
+      div.appendChild(h("p", { id: "gui-cyclic-hc-deg-" + n }, h("b", {}, [
+        h("span", { "class": "arithmatex", text: "\\(HC_{" + n + "}\\)" }),
+        document.createTextNode(" in degree " + n)
+      ])));
+      appendCyclicColumnHeading(div, cs[key], n);
+      appendCyclicEnum(div, cb[key], n);
+      appendCyclicClasses(div, bc[key] || [], cb[key], n);
+      appendCyclicDiff(div, diffs[key], n, (bc[key] || []).length);
+    });
+    return rendered;
+  }
+
   function renderProductTables(div, name, b) {
     div.appendChild(h("p", { text: PRODUCT_TITLE[name] }));
     div.appendChild(h("p", { "class": "qlgui-hint", text: productLegend(name, b) }));
@@ -1618,6 +1717,10 @@
       div.appendChild(h("p", { text: "Cyclic homology" }));
       div.appendChild(h("table", {}, chead, crow));
       div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+      // Plan 35 wave 3b: the per-degree explicit representatives over the total complex.
+      if (b.basis_classes)
+        div.appendChild(h("p", {}, h("b", { text: "Explicit representatives by degree:" })));
+      appendCyclicReps(div, b);
     } else if (name === "cartan") {
       div.appendChild(h("p", { text: "Cartan matrix:" }));
       div.appendChild(matrixGrid(b.matrix));

@@ -1111,11 +1111,15 @@ def _dispatch(A, item, events, hh_kwargs) -> tuple:
         if top is None:
             raise ComputeError("SchemaError",
                                f"{kind} needs a degree range, e.g. '{kind}:0..4'")
-        table = A.cyclic_homology(top)
+        # Plan 35 wave 3b: capture the explicit HC representatives alongside the dims
+        # (basis_classes / chain_basis / differentials / column_structure), from the
+        # SAME (b, B) total complex -- additive block fields, byte-identical Pyodide twin.
+        table, reps = A.cyclic_homology(top, with_reps=True)
         keys = ["cyclic"]
         block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                  "engine": table.engine, "references": keys,
                  "citations": _citation_pairs(keys)}
+        block.update(reps)
         return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH

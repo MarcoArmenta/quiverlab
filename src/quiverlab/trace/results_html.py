@@ -112,10 +112,21 @@ def _block_html(kind, b):
         return chunks
     if kind == "cyclic_homology":
         # HC is a homology-style subscript table HC_n (Plan-35 follow-up), rendered
-        # exactly like the HH dims tables above.
+        # like the HH dims tables above, THEN the Plan 35 wave-3b per-degree EXPLICIT
+        # REPRESENTATIVES over the total complex Tot_n = C_n (+) C_{n-2} (+) ...
         chunks = [_dims_table("dim HC_n", b.get("dims") or [])]
         if b.get("engine"):
             chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+        from quiverlab.trace.render_html import cyclic_degree_sections
+        secs = cyclic_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
+                                      b.get("differentials"), b.get("column_structure"),
+                                      anchor_prefix="cr")
+        if secs:
+            chunks.append("<p><i>Explicit representatives by degree — the total complex "
+                          "Tot_n = C_n ⊕ C_{n-2} ⊕ …, each class as a term-sum and a "
+                          "coordinate vector over the ordered basis, with the total "
+                          "differential b+B that annihilates it.</i></p>")
+            chunks.extend(secs)
         return chunks
     if kind == "cartan":
         if b.get("matrix"):

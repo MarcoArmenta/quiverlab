@@ -1098,6 +1098,108 @@ def module_reps_sections(basis_classes, chain_basis, differentials, kind, anchor
     return out
 
 
+# --------------------------------------------------------------------------- #
+# Plan 35 wave 3b: the per-degree EXPLICIT-REPRESENTATIVES layout for cyclic homology
+# HC, the sibling of `module_reps_sections`. The HC block carries a SINGLE-side
+# `{str(degree): ...}` payload (HC is homological) PLUS a `column_structure` giving the
+# total complex Tot_n = C_n (+) C_{n-2} (+) ... layout, stated as a heading before each
+# degree's enumeration. Data is the capture layer's (hochschild.cyclic_reps); nothing is
+# recomputed here.
+# --------------------------------------------------------------------------- #
+def _cyclic_column_heading(cs, n):
+    """The total-complex column structure of Tot_n as a typeset heading line
+    'Tot_n = C_n (+) C_{n-2} (+) ...' plus the coordinate-slice note."""
+    if not cs or not cs.get("columns"):
+        return []
+    tex = r"\mathrm{Tot}_{%d} = %s" % (
+        n, r" \oplus ".join("C_{%d}" % c["degree"] for c in cs["columns"]))
+    slices = ", ".join("C_%d [%d:%d]" % (c["degree"], c["offset"],
+                                         c["offset"] + c["dim"]) for c in cs["columns"])
+    return [_math(tex),
+            "<p class='ql-note'>coordinate slices (which vector entries live in which "
+            "column): %s.</p>" % _esc(slices)]
+
+
+def _cyclic_term_sum_from_vector(vector, enum):
+    """The HC class's term-sum built from its sparse vector + the column-annotated
+    enumeration labels ('col C_d: v (x) w...'), so each term names its column. Returns
+    None when the enumeration is display-elided (coordinate vector shown alone)."""
+    if not isinstance(enum, list) or not enum:
+        return None
+    pieces = []
+    for idx, coeff in vector:
+        neg, mag = _coeff_split(coeff)
+        lab = str(enum[idx]).replace("->", "→").replace("(x)", "⊗")
+        pieces.append((neg, lab if mag == "1" else "%s %s" % (mag, lab)))
+    return _signed_join(pieces)
+
+
+def _cyclic_classes_html(classes, n, enum):
+    if not classes:
+        return ["<p class='ql-note'>no classes (HC_%d is zero).</p>" % n]
+    lis = []
+    for i, cl in enumerate(classes, start=1):
+        name = "z^{%d}_{%d}" % (n, i)
+        coord = _coord_vector_text(cl.get("vector") or [])
+        term = _cyclic_term_sum_from_vector(cl.get("vector") or [], enum)
+        rhs = ("%s = %s" % (_esc(term), _esc(coord))) if term is not None else _esc(coord)
+        lis.append("<li>%s = %s</li>" % (_math_inline(name), rhs))
+    return ["<p>Basis classes (term-sum = coordinate vector over the enumeration "
+            "above):</p>", "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+
+
+def _cyclic_reps_differential_html(diff, n, has_classes):
+    if diff is None:
+        return []
+    arrow = r"D_{%d} : \mathrm{Tot}_{%d} \to \mathrm{Tot}_{%d}" % (n, n, max(n - 1, 0))
+    out = [_math(arrow)]
+    if diff.get("elided"):
+        r, c = (diff.get("shape") or [0, 0])[:2]
+        out.append("<p class='ql-note'>%s×%s matrix (body in the machine record; "
+                   "rebuild: %s).</p>" % (_esc(str(r)), _esc(str(c)),
+                                          _esc(str(diff.get("note", "")))))
+    elif diff.get("shape") and diff["shape"][0] == 0:
+        note = diff.get("note")                   # D_0: every 0-chain is a cycle
+        if note:
+            out.append("<p class='ql-note'>%s.</p>" % _esc(str(note)))
+        return out
+    else:
+        out.append(matrix_grid(diff.get("rows") or [], label="D_{%d}" % n))
+    if not has_classes:
+        return out
+    out.append("<p class='ql-note'>Verification: each z^{%d}_i is a cycle of the total "
+               "complex: applying D_{%d} = b + B to its coordinate vector gives 0.</p>"
+               % (n, n))
+    return out
+
+
+def cyclic_degree_sections(basis_classes, chain_basis, differentials, column_structure,
+                           anchor_prefix):
+    """Per-degree explicit-representatives sub-sections for a cyclic-homology block
+    (Plan 35 wave 3b). Single-side ``{str(degree): ...}`` payloads (HC is homological)
+    plus ``column_structure``; each degree opens with the total-complex column heading
+    ``Tot_n = C_n (+) C_{n-2} (+) ...`` before the ordered Tot_n basis -> classes ->
+    total differential ``D_n = b + B`` + verification, under a stable anchor
+    ``<prefix>-hc-deg-<n>``. Returns ``[]`` on a legacy/old-cache block (tolerance)."""
+    if not basis_classes:
+        return []
+    out = []
+    for dkey in sorted(basis_classes, key=lambda s: int(s)):
+        n = int(dkey)
+        anchor = "%s-hc-deg-%d" % (anchor_prefix, n)
+        classes = basis_classes.get(dkey) or []
+        enum = (chain_basis or {}).get(dkey)
+        diff = (differentials or {}).get(dkey)
+        cs = (column_structure or {}).get(dkey)
+        out.append("<h4 id='%s'>%s in degree %d</h4>"
+                   % (anchor, _math_inline("HC_{%d}" % n), n))
+        out.extend(_cyclic_column_heading(cs, n))
+        out.extend(_module_enumeration_html(enum, r"\mathrm{Tot}_{%d}" % n, n))
+        out.extend(_cyclic_classes_html(classes, n, enum))
+        out.extend(_cyclic_reps_differential_html(diff, n, bool(classes)))
+    return out
+
+
 _PRODUCT_TITLE = {
     "cup": "The cup product on Hochschild cohomology",
     "cap": "The cap product",
