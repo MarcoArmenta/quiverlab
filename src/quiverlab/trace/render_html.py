@@ -863,6 +863,68 @@ def _bar_term_basis_chunks(m, labels, n, collapsed_dim, kind):
     return _enumeration_html(enum, long_name, hh, n)
 
 
+def _cs_term_basis_chunks(cs_res, cs_labels, n, collapsed_dim, side_key, kind):
+    """The ordered basis of a Chouhy-Solotar HH (co)chain term at degree ``n``, from the
+    rebuilt CS resolution's ``res._basis(n, side)`` labels (Plan 35 UNIT 2 review fix --
+    the CS resolution worked steps used to show the raw differential grid with no way to
+    read its columns). Reuses UNIT 1's ``basis_reps.cs_elements`` (the SAME builder the CS
+    product capture uses -- not ad hoc). The CS resolution is deterministic/canonical
+    (Plan 17), so the rebuilt basis order matches the recorded run; shown ONLY when the
+    reconstructed length equals the recorded term dimension, so the columns/rows the shown
+    differential uses are the ones enumerated. Returns ``[]`` on any rebuild surprise."""
+    from quiverlab.hochschild import basis_reps as BR
+    try:
+        elems = BR.cs_elements(cs_res, n, side_key, cs_labels)
+    except Exception:
+        return []
+    if len(elems) != collapsed_dim:              # rebuilt basis != recorded term -- omit
+        return []
+    enum = BR.enumeration_labels(elems, kind)
+    long_name = "cochain" if kind == "cochain" else "chain"
+    hh = "HH^" if kind == "cochain" else "HH_"
+    return _enumeration_html(enum, long_name, hh, n)
+
+
+def _degree_link(prefix, side, n, label):
+    """A hyperlink to a degree section's stable anchor (Plan 35 UNIT 2 review MINOR 1 --
+    the anchors are now linked, not merely present)."""
+    return "<a href='#%s-hh-%s-deg-%d'>%s</a>" % (prefix, side, int(n), _esc(label))
+
+
+def product_table_reference(kind, degrees, out_degree, prefix):
+    """A one-line 'classes: ...' cross-reference from a product table to the degree
+    sections its operands / output live in (Plan 35 UNIT 2 review MINOR 1). Shared by the
+    worked-steps chapter (prefix ``ws-<kind>``) and the Computed-results block
+    (``cr-<kind>``), so both surfaces link to their own degree sections."""
+    p = degrees[0]
+    if kind == "connes_b":                       # degrees=(n,): B_n : HH_n -> HH_{n+1}
+        links = [_degree_link(prefix, "hom", p, "HH_%d" % p),
+                 _degree_link(prefix, "hom", p + 1, "HH_%d" % (p + 1))]
+    elif kind == "cap":                          # HH^p (x) HH_n -> HH_{n-p}
+        q = degrees[1]
+        links = [_degree_link(prefix, "coh", p, "HH^%d" % p),
+                 _degree_link(prefix, "hom", q, "HH_%d" % q),
+                 _degree_link(prefix, "hom", out_degree, "HH_%d" % out_degree)]
+    else:                                        # cup / bracket: HH^p (x) HH^q -> HH^out
+        q = degrees[1]
+        links = [_degree_link(prefix, "coh", p, "HH^%d" % p),
+                 _degree_link(prefix, "coh", q, "HH^%d" % q),
+                 _degree_link(prefix, "coh", out_degree, "HH^%d" % out_degree)]
+    return "<p class='ql-note'>classes: %s</p>" % " · ".join(links)
+
+
+def _product_out_degree(kind, degrees):
+    """The output degree of a product table from its kind + bidegree (the ProductStep
+    stream does not carry it separately)."""
+    if kind == "cup":
+        return degrees[0] + degrees[1]
+    if kind == "bracket":
+        return degrees[0] + degrees[1] - 1
+    if kind == "cap":
+        return degrees[1] - degrees[0]
+    return degrees[0]                            # connes: handled by the reference builder
+
+
 def product_degree_sections(basis_classes, chain_basis, differentials, anchor_prefix):
     """Per-degree explicit-representatives sub-sections for a product/Connes block
     (Plan 35 UNIT 2). ``basis_classes`` / ``chain_basis`` / ``differentials`` are the
@@ -940,18 +1002,27 @@ def _products_html(events):
     # above"). Driven by the ProductBasis event the chapter emits; absent on a legacy
     # object -> the section falls back to tables only (tolerance).
     pb = next((e for e in events if isinstance(e, ProductBasis)), None)
+    have_reps = False
     if pb is not None:
         secs = product_degree_sections(pb.basis_classes, pb.chain_basis,
                                        pb.differentials, anchor_prefix="ws-" + kind)
         if secs:
-            out.append("<h3>Explicit representatives by degree</h3>")
+            have_reps = True
+            out.append("<h3 id='ws-%s-reps'>Explicit representatives by degree</h3>"
+                       % kind)
             out.extend(secs)
             out.append("<h3>Structure-constant tables</h3>")
             out.append("<p class='ql-note'>The tables below are written in the "
-                       "explicit classes listed by degree above.</p>")
+                       "explicit classes listed by degree above; each table links to "
+                       "the degree sections of its operands and output.</p>")
     for s in steps:
         if s.heading:
             out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
+        # MINOR 1: link this table to the degree sections its classes live in.
+        if have_reps:
+            out.append(product_table_reference(
+                s.kind, s.degrees, _product_out_degree(s.kind, s.degrees),
+                "ws-" + kind))
         for line in (s.lines or ()):
             out.append(_math(line))
         if s.matrix is not None:
@@ -1173,19 +1244,37 @@ def render_html(events, title="", references=(), algebra=None, results=None,
                   "named above; the matrices below are its differentials "
                   "(rows: target basis, columns: source basis).</i></p>"]
         echo = _MatrixEcho()
-        # Plan 35 UNIT 2 (deliverable 2): the ordered basis of each bar (co)chain term,
-        # reconstructed with UNIT 1's builders. report_side (all RankSteps of one HH run
-        # share it) picks cochain vs chain; the bar algebra data is built once. A CS
-        # term (corners set) is skipped -- its bimodule direct sum is named instead.
+        # Plan 35 UNIT 2 (deliverable 2 + review fix): the ordered basis of each HH
+        # (co)chain term, reconstructed with UNIT 1's builders. report_side (all RankSteps
+        # of one HH run share it) picks cochain vs chain. A term with NO corners is a bar
+        # (co)chain space (rebuilt from the unit-adapted algebra); a term WITH corners is a
+        # Chouhy-Solotar term (rebuilt from the deterministic CS resolution, only when the
+        # run actually used CS). Both are shown only when the reconstructed length equals
+        # the recorded term dim, so the differential's columns/rows are the ones enumerated.
         report_side = next((r.side for r in ranks.values()), None)
-        m_bar = labels_bar = None
-        if algebra is not None:
+        kind_side = (("cochain" if report_side == "cochain" else "chain")
+                     if report_side else None)
+        m_bar = labels_bar = cs_res = cs_labels = None
+        if algebra is not None and kind_side is not None:
             try:
                 from quiverlab.hochschild import basis_reps as BR
                 _AU = algebra.unit_adapted()
                 m_bar, labels_bar = _AU.dim, BR.labels_of(_AU)
             except Exception:
                 m_bar = labels_bar = None
+            # Build the CS resolution ONCE, only when a term carries corners (the run used
+            # Chouhy-Solotar). The report re-derives it (the `_product_object` pattern); a
+            # non-admissible / structure-constants algebra fails the build -> omit.
+            if any(getattr(terms[k], "corners", None) is not None for k in terms):
+                try:
+                    from quiverlab.hochschild import basis_reps as BR
+                    from quiverlab.resolutions_cs.build import reduction_system_of
+                    from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+                    cs_res = ChouhySolotarResolution(algebra, reduction_system_of(algebra),
+                                                     max_degree=max(terms) + 2)
+                    cs_labels = BR.labels_of(cs_res.ar.A)
+                except Exception:
+                    cs_res = cs_labels = None
         for n in sorted(terms):
             t = terms[n]
             chunks.append("<h3>Degree %d</h3><p>Term with %d generators "
@@ -1194,10 +1283,14 @@ def render_html(events, title="", references=(), algebra=None, results=None,
             summ = _term_summands_html(t, n)
             if summ:
                 chunks.append(summ)
-            if m_bar is not None and getattr(t, "corners", None) is None and report_side:
-                kind = "cochain" if report_side == "cochain" else "chain"
+            corners = getattr(t, "corners", None)
+            if kind_side and corners is None and m_bar is not None:
                 chunks.extend(_bar_term_basis_chunks(m_bar, labels_bar, n,
-                                                     t.collapsed_dim, kind))
+                                                     t.collapsed_dim, kind_side))
+            elif kind_side and corners is not None and cs_res is not None:
+                side_key = "coh" if kind_side == "cochain" else "hom"
+                chunks.extend(_cs_term_basis_chunks(cs_res, cs_labels, n,
+                                                    t.collapsed_dim, side_key, kind_side))
             if n in ranks:
                 rs = ranks[n]
                 if rs.side == "cochain":

@@ -368,16 +368,19 @@ def _product_tables_html(kind, b):
     read ONLY inside this kind-scoped function (the module-resolution block ships a
     LIST under the same key -- never read it shape-blind)."""
     from quiverlab.trace.products import equation_lines, notation_legend
-    from quiverlab.trace.render_html import product_degree_sections
+    from quiverlab.trace.render_html import (
+        product_degree_sections, product_table_reference)
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend(kind, "", b.get("basis")))]
     secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
                                    b.get("differentials"), anchor_prefix="cr-" + kind)
-    if secs:
+    have_reps = bool(secs)
+    if have_reps:
         out.append("<p><b>Explicit representatives by degree</b></p>")
         out.extend(secs)
         out.append("<p><b>Structure-constant tables</b> (in the explicit classes "
-                   "above):</p>")
+                   "above; each table links to its operands' and output's degree "
+                   "sections):</p>")
     for t in (b.get("tables") or []):
         degrees = list(t.get("degrees") or [])
         out_degree = t.get("out_degree")
@@ -385,6 +388,8 @@ def _product_tables_html(kind, b):
         constants = t.get("constants") or []
         out.append('<p class="ql-mlabel">%s</p>'
                    % _math_inline(_product_heading(kind, degrees, out_degree)))
+        if have_reps and degrees:               # MINOR 1: link to the degree sections
+            out.append(product_table_reference(kind, degrees, out_degree, "cr-" + kind))
         lines = equation_lines(kind, degrees, out_degree, dims, constants)
         if lines:
             out.extend(_math(line) for line in lines)
@@ -407,22 +412,27 @@ def _connes_b_html(b):
     provenance. ``b["differentials"]`` is the product ``{side:{degree:...}}`` shape,
     read ONLY here (kind-scoped)."""
     from quiverlab.trace.products import notation_legend
-    from quiverlab.trace.render_html import product_degree_sections
+    from quiverlab.trace.render_html import (
+        product_degree_sections, product_table_reference)
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend("connes_b", "", None))]
     secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
                                    b.get("differentials"), anchor_prefix="cr-connes_b")
-    if secs:
+    have_reps = bool(secs)
+    if have_reps:
         out.append("<p><b>Explicit representatives by degree</b></p>")
         out.extend(secs)
         out.append("<p><b>Induced Connes differentials</b> (in the explicit cycle "
-                   "classes above):</p>")
+                   "classes above; each links to its source/target degree "
+                   "sections):</p>")
     matrices = b.get("matrices") or {}
     ranks = b.get("ranks") or {}
     for key in sorted(matrices, key=lambda s: int(s)):
         n = int(key)
         out.append('<p class="ql-mlabel">%s</p>'
                    % _math_inline(r"B_{%d} : HH_{%d} \to HH_{%d}" % (n, n, n + 1)))
+        if have_reps:                           # MINOR 1: link to the degree sections
+            out.append(product_table_reference("connes_b", (n,), n, "cr-connes_b"))
         out.append(matrix_grid(matrices[key], label="B_{%d}" % n))
         out.append("<p class='ql-note'>induced rank B_%d = %s</p>"
                    % (n, _num(ranks.get(key))))
