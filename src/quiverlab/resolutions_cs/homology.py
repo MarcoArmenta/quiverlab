@@ -127,26 +127,46 @@ def _reps_mod_image(cycles, image, dom):
     return reps
 
 
+def _identity_vectors(width, dom):
+    return [[dom.one() if i == j else dom.zero() for j in range(width)]
+            for i in range(width)]
+
+
+def _cycle_space(res, n, side, codim, dom):
+    """The (co)cycle space Z at degree n = ker of the outgoing differential. When that
+    differential maps to a 0-DIMENSIONAL codomain (``codim == 0``) the WHOLE C_n is the
+    kernel -- and ``fields.linalg.nullspace`` cannot recover the width from a 0-row
+    matrix (it returns the empty list, silently undercounting), so we hand back the full
+    identity basis. This is the same 0-row edge the cyclic engine handles for D_0 (Plan
+    35 wave 3b); before this fix ``cs_hh_basis`` under-reported representatives whenever
+    the top (co)chain differential landed in a 0-dimensional space -- e.g. every
+    finite-global-dimension multi-vertex algebra at its top HH^n / HH_n degree, so the
+    cs_hh_basis rep count drifted below the cs_(co)homology_dims dimension there."""
+    from quiverlab.fields.linalg import nullspace
+    if codim == 0:
+        return _identity_vectors(res.dim_C(n, side), dom)
+    return nullspace(res.matrix(n, side), dom)
+
+
 def cs_hh_basis(A, n, side, max_cells=4_000_000):
     """Representative (co)cycles of HH^n (side="coh") / HH_n (side="hom"): a basis
     of Z modulo the relevant image, each returned as a coordinate vector in C^n / C_n
     (the CS basis order of dim_C). Admissibility-gated; the (co)cycle space comes from
-    fields.linalg.nullspace of the relevant differential."""
-    from quiverlab.fields.linalg import nullspace
+    fields.linalg.nullspace of the relevant differential (with the 0-dimensional-codomain
+    edge handled -- the whole C_n is then the kernel)."""
     from quiverlab.resolutions_cs.build import reduction_system_of
     from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
     rs = reduction_system_of(A); _require_admissible(rs)
     res = ChouhySolotarResolution(A, rs, max_degree=n + 1, max_cells=max_cells)
     dom = A.domain
     if side == "coh":
-        cycles = nullspace(res.matrix(n, "coh"), dom)          # Z^n = ker delta^n
+        # delta^n : C^n -> C^{n+1}; kernel is all of C^n when C^{n+1} = 0.
+        cycles = _cycle_space(res, n, "coh", res.dim_C(n + 1, "coh"), dom)
         image = _columns(res.matrix(n - 1, "coh")) if n else []  # B^n = im delta^{n-1}
     elif side == "hom":
-        if n == 0:
-            d0 = res.dim_C(0, "hom")                            # Z_0 = C_0 (b_0 = 0)
-            cycles = [[dom.one() if i == j else dom.zero() for j in range(d0)] for i in range(d0)]
-        else:
-            cycles = nullspace(res.matrix(n, "hom"), dom)      # Z_n = ker b_n
+        # b_n : C_n -> C_{n-1}; kernel is all of C_n when C_{n-1} = 0 (and b_0 = 0).
+        codim = 0 if n == 0 else res.dim_C(n - 1, "hom")
+        cycles = _cycle_space(res, n, "hom", codim, dom)
         image = _columns(res.matrix(n + 1, "hom"))             # B_n = im b_{n+1}
     else:
         raise ValueError(f"side must be 'coh' or 'hom', got {side!r}")

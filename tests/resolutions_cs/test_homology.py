@@ -1,9 +1,49 @@
 import pytest
 from quiverlab import Quiver, CC, GF
-from quiverlab.resolutions_cs.homology import cs_cohomology_dims, cs_homology_dims
+from quiverlab.resolutions_cs.homology import (
+    cs_cohomology_dims, cs_homology_dims, cs_hh_basis)
 pytest.importorskip("quiverlab.groebner")
 
 pytestmark = [pytest.mark.oracle_literature]
+
+
+@pytest.mark.oracle_crossengine
+@pytest.mark.oracle_selfcert
+def test_cs_hh_basis_matches_dims_multivertex_zero_codomain():
+    """Regression (Plan 35 wave 3d): ``cs_hh_basis`` must return EXACTLY
+    ``cs_(co)homology_dims`` many representatives at every degree -- INCLUDING a degree
+    whose outgoing differential lands in a 0-dimensional codomain (the whole C_n is then
+    the kernel). Before the fix ``nullspace`` was handed a 0-row matrix and could not
+    recover its width, silently returning [] -- so ``cs_hh_basis`` under-reported
+    representatives whenever the top (co)chain differential vanished into a 0-dim space,
+    e.g. every finite-global-dimension multi-vertex algebra at its top HH degree.
+
+    ``kZ_3 / J^2`` (the 3-cycle with radical square zero) is the minimal witness: HH^1
+    has dimension 1 while C^2 = 0, so the old code returned 0 cocycles there."""
+    A = Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3), "c": (3, 1)}).algebra(
+        relations=["a*b", "b*c", "c*a"], field=GF(5))
+    top = 5
+    cdims = cs_cohomology_dims(A, top).dims
+    hdims = cs_homology_dims(A, top).dims
+    assert cdims[1] == 1                          # the witness: HH^1 = 1 with C^2 = 0
+    for side, dims in (("coh", cdims), ("hom", hdims)):
+        for n in range(top + 1):
+            reps = cs_hh_basis(A, n, side)
+            assert len(reps) == dims[n], (side, n, len(reps), dims[n])
+            # self-cert: each rep annihilates its outgoing differential (b_0 excepted)
+            if n == 0 and side == "hom":
+                continue
+            from quiverlab.resolutions_cs.build import reduction_system_of
+            from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+            res = ChouhySolotarResolution(A, reduction_system_of(A), max_degree=n + 1)
+            D = res.matrix(n, side)                # delta^n / b_n
+            dom = A.domain
+            for v in reps:
+                for row in D:
+                    s = 0
+                    for j in range(len(v)):
+                        s = dom.add(s, dom.mul(dom.coerce(row[j]), dom.coerce(v[j])))
+                    assert dom.is_zero(s), (side, n)
 
 
 def _A(field=CC, rels=("x*x",), arrows=None, verts=(1,)):
