@@ -761,30 +761,47 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                 if progress_cb:
                     progress_cb({"step": i, "of": len(items), "kind": item.kind})
                 t_item = time.monotonic_ns()
-                if item.kind in MODULE_KINDS:
-                    results[item.kind] = _dispatch_module(A, item, M, N, T)
+                try:
+                    if item.kind in MODULE_KINDS:
+                        results[item.kind] = _dispatch_module(A, item, M, N, T)
+                        per_kind[item.kind] = _item_resources(t_item)
+                        if (req.artifacts.pdf and module_trace is None
+                                and item.kind in _MODULE_TRACE_KINDS):
+                            # the first traceable module kind backs the worked-steps
+                            # bundle (trace_steps.html); HH still takes precedence.
+                            module_trace = (item.kind, item.hi, M, N)
+                        continue
+                    if _deepen_applies(req.hpc, item, req.algebra):
+                        results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
+                        per_kind[item.kind] = _item_resources(t_item)
+                        continue
+                    block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps)
+                    results[item.kind] = block
                     per_kind[item.kind] = _item_resources(t_item)
-                    if (req.artifacts.pdf and module_trace is None
-                            and item.kind in _MODULE_TRACE_KINDS):
-                        # the first traceable module kind backs the worked-steps
-                        # bundle (trace_steps.html); HH still takes precedence.
-                        module_trace = (item.kind, item.hi, M, N)
-                    continue
-                if _deepen_applies(req.hpc, item, req.algebra):
-                    results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
+                    if hh is not None:
+                        hh_trace = hh
+                    elif (req.artifacts.pdf and product_trace is None
+                          and item.kind in PRODUCT_KINDS):
+                        # products are their own tables (no HH run): the first product
+                        # kind backs the worked-steps bundle when nothing else claimed
+                        # it. HH and module traces still take precedence at write time.
+                        product_trace = (item.kind, item.hi)
+                except qerr.DepthLimitError as exc:
+                    # A single over-cap computation (a high-degree bar product/HH whose
+                    # dense (co)chain matrices would exceed max_cells) must not sink the
+                    # WHOLE request. Record an honest per-item error block and keep every
+                    # other result + the worked-steps bundle -- parity with the Pyodide
+                    # runner (docs/gui/runner.py), which already degrades per-computation.
+                    # The report renders it "not computed -- DepthLimitError: ...", dims of
+                    # the other invariants stand. Scoped to DepthLimitError ONLY (the
+                    # cell-bound signal); schema/exactness/admissibility errors still
+                    # propagate and fail the request, unchanged.
+                    _log.info("compute item %s hit the cell bound; recording an honest "
+                              "error block and continuing: %s", item.kind, exc)
+                    results[item.kind] = {"error": {"type": type(exc).__name__,
+                                                    "message": str(exc)},
+                                          "references": []}
                     per_kind[item.kind] = _item_resources(t_item)
-                    continue
-                block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps)
-                results[item.kind] = block
-                per_kind[item.kind] = _item_resources(t_item)
-                if hh is not None:
-                    hh_trace = hh
-                elif (req.artifacts.pdf and product_trace is None
-                      and item.kind in PRODUCT_KINDS):
-                    # products are their own tables (no HH run): the first product
-                    # kind backs the worked-steps bundle when nothing else claimed
-                    # it. HH and module traces still take precedence at write time.
-                    product_trace = (item.kind, item.hi)
         finally:
             if hasattr(ql, "verbose") and prev_verbose is not None:
                 ql.verbose = prev_verbose

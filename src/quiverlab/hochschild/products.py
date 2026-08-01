@@ -355,12 +355,32 @@ def connes_b_tables(A, top, max_cells=4_000_000):
     labels = BR.labels_of(AU)
     if isinstance(dom, PrimeField):
         import numpy as np
+        from quiverlab.errors import DepthLimitError
         from quiverlab.engine.adapter import to_engine
         from quiverlab.engine.cyclic import connes_B_matrix
         from quiverlab.engine.hh_engine import cn_basis
         from quiverlab.engine.tt_calculus import homology_classes
         p = dom.p
         E = to_engine(AU)
+        # Guard the bar (b,B) blow-up BEFORE building any matrix. homology_classes(n)
+        # materializes the DENSE boundary matrices b_n (cn[n-1] x cn[n]) and b_{n+1}
+        # (cn[n] x cn[n+1]); the bar chain basis grows exponentially with degree, so at
+        # high top these are gigabytes (e.g. QuantumCI connes_b:0..7 needs b_8, an
+        # 8748 x 26244 int64 matrix ~= 1.8 GB, whose rref/nullspace copies peaked ~6 GB
+        # and SIGKILLed the memory-capped worker). This mirrors the cup/cap/bracket
+        # cochain-pair guard: over GF(p) connes has NO Chouhy-Solotar route, so -- like
+        # an explicit bar engine -- it refuses LOUDLY rather than silently OOMing. The
+        # max_cells parameter was already honoured on the generic-Domain branch below;
+        # the GF(p) branch simply dropped it (the bug). Dims/other invariants stand.
+        cdims = [len(cn_basis(E, n)) for n in range(top + 2)]
+        for n in range(top + 1):
+            cells = max(cdims[n] * cdims[n + 1],
+                        cdims[n - 1] * cdims[n] if n else 0)
+            if cells > max_cells:
+                raise DepthLimitError(
+                    f"connes_b: the bar (b,B) boundary at degree {n} pairs {cells} "
+                    f"cells (> max_cells = {max_cells})",
+                    hint="raise max_cells or lower top")
         H = {n: homology_classes(E, n, p) for n in range(top + 1)}
         matrices, ranks = {}, {}
         for n in range(top):
