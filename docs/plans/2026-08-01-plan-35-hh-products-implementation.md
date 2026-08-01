@@ -244,7 +244,7 @@ pytestmark = [pytest.mark.oracle_crossengine]
 
 @pytest.fixture(scope="module")
 def A():
-    return ql.TruncatedPolynomial(2, field=ql.GF(7))
+    return ql.truncated_polynomial(2, field=ql.GF(7))
 
 
 def test_cup_tables_match_tt(A):
@@ -573,7 +573,7 @@ pytestmark = [pytest.mark.oracle_selfcert]
 
 @pytest.fixture(scope="module", params=[ql.GF(7), ql.QQ], ids=["GF7", "QQ"])
 def A(request):
-    return ql.TruncatedPolynomial(2, field=request.param)
+    return ql.truncated_polynomial(2, field=request.param)
 
 
 def test_induced_B_squares_to_zero(A):
@@ -606,8 +606,8 @@ def test_ranks_and_dims_recorded(A):
 
 def test_gfp_and_generic_ranks_agree():
     from quiverlab.hochschild.products import connes_b_tables
-    A7 = ql.TruncatedPolynomial(3, field=ql.GF(32003))
-    Aq = ql.TruncatedPolynomial(3, field=ql.QQ)
+    A7 = ql.truncated_polynomial(3, field=ql.GF(32003))
+    Aq = ql.truncated_polynomial(3, field=ql.QQ)
     r7 = connes_b_tables(A7, 3, max_cells=4_000_000).ranks
     rq = connes_b_tables(Aq, 3, max_cells=4_000_000).ranks
     assert r7 == rq          # char-0-shaped p: ranks agree (32003 is the big prime)
@@ -760,7 +760,7 @@ pytestmark = [pytest.mark.oracle_selfcert]
 
 
 def test_gfp_routes_to_bar():
-    A = ql.TruncatedPolynomial(2, field=ql.GF(7))
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
     hp = A.cup_products(2)
     assert hp.basis == "bar/GF(7)"
 
@@ -773,11 +773,9 @@ def test_quiver_presented_qq_routes_to_cs():
 
 
 def test_structure_constants_off_gfp_refuse():
-    A = ql.TruncatedPolynomial(2, field=ql.QQ)   # presentation-less over QQ?
-    # TruncatedPolynomial IS quiver-presented; build a genuinely presentation-less
-    # algebra from structure constants:
+    # a genuinely presentation-less algebra: k[x]/(x^2) from structure constants
     B = ql.Algebra.from_structure_constants(
-        [[[1, 0], [0, 1]], [[0, 1], [0, 0]]], field=ql.QQ)  # k[x]/(x^2) as SC
+        [[[1, 0], [0, 1]], [[0, 1], [0, 0]]], unit=[1, 0], field=ql.QQ)
     with pytest.raises(QuiverlabError):
         B.cup_products(2)
 
@@ -790,7 +788,7 @@ def test_bracket_refuses_off_gfp():
 
 
 def test_unknown_engine_refuses():
-    A = ql.TruncatedPolynomial(2, field=ql.GF(7))
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
     with pytest.raises(QuiverlabError):
         A.cup_products(2, engine="fast")     # products know auto/bar/cs only
 
@@ -804,15 +802,11 @@ def test_explicit_cs_on_gfp_serves_cs_basis():
 
 def test_connes_serves_both_fields():
     for F in (ql.GF(7), ql.QQ):
-        A = ql.TruncatedPolynomial(2, field=F)
+        A = ql.truncated_polynomial(2, field=F)
         cb = A.connes_differentials(2)
         assert set(cb.matrices) == {0, 1}
 ```
 
-Check `Algebra.from_structure_constants`'s real name before running (grep
-`from_structure_constants\|structure_constants` in `core/algebra.py`; the
-Plan-19 refusal tests already construct such an algebra — copy their
-construction verbatim if the name differs).
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -959,7 +953,7 @@ def _compose(hp, p, q, r, prime):
 @pytest.mark.oracle_selfcert
 @pytest.mark.parametrize("prime", PRIMES)
 def test_cup_graded_commutative_and_associative(prime):
-    A = ql.TruncatedPolynomial(3, field=ql.GF(prime))
+    A = ql.truncated_polynomial(3, field=ql.GF(prime))
     hp = A.cup_products(3)
     for (p, q), t in hp.tables.items():
         if (q, p) not in hp.tables:
@@ -979,7 +973,7 @@ def test_cup_graded_commutative_and_associative(prime):
 @pytest.mark.oracle_selfcert
 @pytest.mark.parametrize("prime", PRIMES)
 def test_bracket_antisymmetry(prime):
-    A = ql.TruncatedPolynomial(3, field=ql.GF(prime))
+    A = ql.truncated_polynomial(3, field=ql.GF(prime))
     hb = A.gerstenhaber_brackets(3)
     for (p, q), t in hb.tables.items():
         if (q, p) not in hb.tables:
@@ -1070,7 +1064,7 @@ def _entry(t, k, i, j):
 
 
 def test_dual_numbers_cup_ring_char0_shape():
-    A = ql.TruncatedPolynomial(2, field=ql.GF(32003))
+    A = ql.truncated_polynomial(2, field=ql.GF(32003))
     hp = A.cup_products(4)
     dims = {n: hp.tables[(0, n)].dims[1] for n in range(5)}
     assert dims == {0: 1, 1: 1, 2: 1, 3: 1, 4: 1}
@@ -1082,7 +1076,7 @@ def test_dual_numbers_cup_ring_char0_shape():
 
 
 def test_dual_numbers_char2_odd_squares_survive():
-    A = ql.TruncatedPolynomial(2, field=ql.GF(2))
+    A = ql.truncated_polynomial(2, field=ql.GF(2))
     hp = A.cup_products(2)
     # char 2: HH^* of k[x]/(x^2) is the polynomial-like ring where the odd
     # generator squares NONZERO (the classical char-2 phenomenon)
@@ -1096,7 +1090,7 @@ def test_qci_dims_line_up_with_bgms():
 
 
 def test_connes_b_rank_dual_numbers():
-    A = ql.TruncatedPolynomial(2, field=ql.GF(32003))
+    A = ql.truncated_polynomial(2, field=ql.GF(32003))
     cb = A.connes_differentials(4)
     # HH_n(k[x]/(x^2)) has dim 1 in every degree (char-0 shape); Connes B
     # alternates iso/zero along the SBI pattern: rank B_0 = 1 here.
@@ -1436,7 +1430,7 @@ pytestmark = [pytest.mark.oracle_selfcert]
 def test_chapter_events_render_and_carry_tables(tmp_path):
     from quiverlab.trace.products import products_chapter
     from quiverlab.trace.render_html import render_html
-    A = ql.TruncatedPolynomial(2, field=ql.GF(7))
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
     hp = A.cup_products(2)
     events = products_chapter(A, "cup", hp)
     assert events, "chapter must not be empty"
@@ -1454,7 +1448,7 @@ def test_chapter_events_render_and_carry_tables(tmp_path):
 
 def test_drift_gate_fires_on_dim_mismatch():
     from quiverlab.trace.products import products_chapter
-    A = ql.TruncatedPolynomial(2, field=ql.GF(7))
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
     hp = A.cup_products(1)
     # sabotage a dim -- the builder must refuse to narrate inconsistent data
     hp.tables[(0, 0)] = hp.tables[(0, 0)].__class__(
