@@ -695,7 +695,7 @@ def build_algebra(spec):
 
 def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
         result_max_bytes: int | None = None, *, result_schema: int | None = None,
-        write_result: bool = True) -> dict:
+        write_result: bool = True, capture_reps: bool = True) -> dict:
     """Build the algebra, run each requested computation, and (once the result
     JSON is under the byte cap) write ``result.json`` plus the requested artifacts
     into ``artifact_dir``. Returns the result dict.
@@ -703,7 +703,15 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     ``result_schema`` (CLI only) stamps the envelope with ``result_schema``; the
     webapp passes None so the returned dict is byte-identical to the pre-Plan-28
     runner. ``write_result=False`` (CLI) writes only the sidecar artifacts and
-    leaves the authoritative ``result.json`` write to the caller."""
+    leaves the authoritative ``result.json`` write to the caller.
+
+    ``capture_reps=False`` skips the Plan-35 explicit-HH-representatives capture on the
+    plain ``hh_cohomology`` / ``hh_homology`` dims blocks. The instant tier passes it:
+    that capture runs the GF(p) bar route through ``engine.tt_calculus``, whose cold
+    numba JIT (paid fresh in every spawned instant child) is tens of seconds -- far over
+    the instant wall net -- while the reps only ever feed the report / GUI, which the
+    instant tier discards. The dims block is byte-identical to before this wave when the
+    flag is off, so a request that would have been instant stays instant."""
     t0_ns = time.monotonic_ns()
     req = parse_request(req)
     artifact_dir = Path(artifact_dir)
@@ -766,7 +774,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                     results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
                     per_kind[item.kind] = _item_resources(t_item)
                     continue
-                block, hh = _dispatch(A, item, events, hh_kwargs)
+                block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps)
                 results[item.kind] = block
                 per_kind[item.kind] = _item_resources(t_item)
                 if hh is not None:
@@ -1081,7 +1089,7 @@ def _dispatch_deepen(A, item: ComputeItem, hpc: HpcConfig, progress_cb) -> dict:
 # Per-invariant dispatch (block shapes mirror docs/gui/runner.py::compute_one)
 # --------------------------------------------------------------------------- #
 
-def _dispatch(A, item, events, hh_kwargs) -> tuple:
+def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
     kind = item.kind
     if kind in ("hh_cohomology", "hh_homology"):
         top = item.hi
@@ -1102,6 +1110,22 @@ def _dispatch(A, item, events, hh_kwargs) -> tuple:
         block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                  "engine": table.engine, "references": keys,
                  "citations": _citation_pairs(keys)}
+        # Plan 35 wave 3d: capture the explicit HH^n / HH_n representatives alongside the
+        # dims (basis_classes / chain_basis / differentials / inner_dims per degree),
+        # from the SAME dims path (GF(p) bar or Chouhy-Solotar). Additive block fields;
+        # None (dims-only) when no representative route applies. Byte-identical Pyodide
+        # twin (docs/gui/runner.py). The reader can read off HH^0's centre, HH^1's
+        # derivations, HH^2's deformation cochain, HH_0's commutator residues.
+        if capture_reps:                       # skipped by the instant tier (report-only
+            from quiverlab.hochschild.hh_reps import hh_reps_blocks
+            try:                               # data + a cold-JIT cost over its wall net)
+                reps = hh_reps_blocks(A, kind, top, list(table.dims), table.engine)
+            except Exception:                  # reps are ADDITIVE + best-effort: capture
+                _log.warning("hh reps capture failed for %s; shipping dims only",
+                             kind, exc_info=True)   # must NEVER break the dims block
+                reps = None
+            if reps:
+                block.update(reps)
         return block, (table, table.kind, top)
     # Cyclic homology HC_0..HC_top (Connes (b, B) mixed complex). A range kind that
     # mirrors the hh_homology block (HHTable-based), but with NO worked-steps chapter

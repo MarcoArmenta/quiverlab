@@ -97,8 +97,12 @@ def _child(spec_dict: dict, artifact_dir: str, result_max_bytes: int,
     # artifact dir rather than the repo root.
     os.chdir(artifact_dir)
     try:
+        # capture_reps=False: the instant tier discards its artifact dir (no report), so
+        # the Plan-35 explicit-HH representatives are unused here -- and their GF(p) route
+        # pays tens of seconds of cold numba JIT in this fresh spawn child, over the wall
+        # net. Skipping keeps a small hh_cohomology/hh_homology request instant.
         result = run_spec(ComputeRequest.model_validate(spec_dict), Path(artifact_dir),
-                          result_max_bytes=result_max_bytes)
+                          result_max_bytes=result_max_bytes, capture_reps=False)
         q.put(("ok", result))
     except RunError as exc:
         q.put(("fail", {"error_type": exc.error_type, "message": exc.message}))

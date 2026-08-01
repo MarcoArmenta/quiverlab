@@ -58,14 +58,22 @@ def build_algebra(spec):
 
 def run_spec(req: ComputeRequest, artifact_dir,
              progress_cb: Callable[[dict], None] | None = None,
-             result_max_bytes: int | None = None) -> dict:
+             result_max_bytes: int | None = None,
+             capture_reps: bool = True) -> dict:
     """Run a validated request against the public quiverlab API and write
     ``result.json`` + artifacts into ``artifact_dir``. Returns the result dict,
     byte-identical to the pre-Plan-28 runner (the webapp never sets an ``hpc``
-    block or a ``result_schema``, so the spec core takes its default path)."""
+    block or a ``result_schema``, so the spec core takes its default path).
+
+    ``capture_reps=False`` (the instant tier) skips the Plan-35 explicit-HH-reps
+    capture, whose GF(p) route pays tens of seconds of cold numba JIT in every spawned
+    instant child -- over the wall net -- for report/GUI data the instant tier discards.
+    The dims block stays byte-identical to before that wave, so an instant-classified
+    request stays instant."""
     try:
         return _core_run(req.model_dump(by_alias=True), artifact_dir,
-                         progress_cb=progress_cb, result_max_bytes=result_max_bytes)
+                         progress_cb=progress_cb, result_max_bytes=result_max_bytes,
+                         capture_reps=capture_reps)
     except ComputeError as exc:
         raise RunError(exc.error_type, exc.message)
     except SpecError as exc:                       # defensive: pydantic already validated

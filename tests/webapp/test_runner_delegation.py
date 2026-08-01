@@ -63,7 +63,18 @@ never hide behind one:
     realizing it). Gated re-freeze, scoped BY KEY: the regenerated blob was asserted
     byte-identical to the old one after deleting the ``interpretation`` key from the EXT
     block ONLY, so no pre-existing content moved. ``canonical_key`` is request-derived
-    and UNCHANGED. (Only ``module_ext`` computes ``ext``.)"""
+    and UNCHANGED. (Only ``module_ext`` computes ``ext``.)
+  * 2026-08-01 (``family_hh_cartan`` + ``quiver_hh_homology`` re-freeze, Plan 35
+    wave 3d -- explicit HH representatives): the plain ``hh_cohomology`` /
+    ``hh_homology`` dims blocks gained the additive ``basis_classes`` / ``chain_basis``
+    / ``differentials`` / ``inner_dims`` fields (the per-degree (co)cycle
+    representatives + coordinate vectors + annihilating differential, so HH^0's centre,
+    HH^1's derivations, HH^2's deformation cochain and HH_0's commutator residues can be
+    read off). Gated re-freeze, scoped BY KEY: each regenerated blob was asserted
+    byte-identical to the old one after deleting those four keys from the
+    ``hh_cohomology`` / ``hh_homology`` block ONLY, so no pre-existing content moved.
+    ``canonical_key`` is request-derived and UNCHANGED. (The other five entries carry no
+    plain HH dims block and are untouched.)"""
 import json
 import pathlib
 

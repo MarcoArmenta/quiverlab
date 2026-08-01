@@ -594,6 +594,18 @@ def compute_one(spec):
             block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                      "engine": table.engine,
                      "citations": _citation_pairs(table.references)}
+            # Plan 35 wave 3d: capture the explicit HH^n / HH_n representatives alongside
+            # the dims (basis_classes / chain_basis / differentials / inner_dims per
+            # degree) from the SAME dims path -- key-for-key identical to the server twin
+            # (quiverlab.hpc.spec._dispatch), so the cross-runner contract holds. None
+            # (dims-only) when no representative route applies.
+            from quiverlab.hochschild.hh_reps import hh_reps_blocks
+            try:                               # reps are ADDITIVE + best-effort: a
+                reps = hh_reps_blocks(A, name, top, list(table.dims), table.engine)
+            except Exception:                  # capture must NEVER break the dims block
+                reps = None
+            if reps:
+                block.update(reps)
         elif name == "cyclic_homology":
             # Plan-35 follow-up: cyclic homology HC_0..HC_n (Connes (b, B) mixed
             # complex). Range kind; the block is key-for-key identical to the server
