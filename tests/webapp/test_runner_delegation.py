@@ -46,7 +46,17 @@ never hide behind one:
     resolution blocks ONLY (the pre-existing overloaded ``differentials`` key was not
     touched), so no pre-existing content moved. The ``canonical_key`` is
     request-derived and UNCHANGED. (``products_loop_gf2`` and the other five entries
-    are untouched -- only ``module_ext`` carries an actual resolution block.)"""
+    are untouched -- only ``module_ext`` carries an actual resolution block.)
+  * 2026-08-01 (``module_ext`` re-freeze, Plan 35 wave 3a -- explicit Ext
+    representatives): the ``ext`` block gained the additive ``basis_classes`` /
+    ``chain_basis`` / ``differentials`` fields (the per-degree cocycle representatives
+    over the ordered Hom basis + the annihilating coboundary). Gated re-freeze, scoped
+    BY KEY: the regenerated blob was asserted byte-identical to the old one after
+    deleting those three keys from the EXT block ONLY (the ``projective_resolution``
+    block's overloaded LIST-shaped ``differentials`` was NOT touched -- ext/tor ship the
+    dict shape ``{str(degree): ...}``), so no pre-existing content moved. The
+    ``canonical_key`` is request-derived and UNCHANGED. (The other six entries are
+    untouched -- only ``module_ext`` computes ``ext``.)"""
 import json
 import pathlib
 
