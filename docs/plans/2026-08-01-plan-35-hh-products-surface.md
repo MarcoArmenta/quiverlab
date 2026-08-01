@@ -37,6 +37,8 @@ A.cap_products(top, engine="auto", max_cells=4_000_000)
 A.gerstenhaber_brackets(top, engine="auto", max_cells=4_000_000)
     # tables [·,·]: HH^p ⊗ HH^q -> HH^{p+q-1} for p+q-1 <= top
     # (window-bounded past the bar window; the result SAYS so)
+    # tables cover pairs p, q >= 1 (the degree-0 insertion action is out of
+    # scope, stated in the block)
 A.connes_differentials(top, max_cells=4_000_000)
     # induced B: HH_n -> HH_{n+1} matrices + ranks for 0 <= n < top
     # (no engine= — the two paths are a field property, not a user choice)
@@ -68,7 +70,7 @@ degrees.
 | Algebra / field | cup & cap | bracket | Connes B |
 |---|---|---|---|
 | GF(p), `top` within bar window | bar/`tt_calculus` (fast rank engine, bar HH basis) | bar/`tt_calculus` | `engine/cyclic.py`, induced on the bar HH basis |
-| Quiver-presented, any exact Domain (incl. GF(p) past window, QQ, CC) | CS native (Plan-20/21 diagonal, CS basis via `cs_hh_basis`) | CS transport — honestly **window-bounded**; the block records the reachable degrees | generic `(b,B)` (`hochschild/cyclic.py`), induced on HH over the Domain |
+| Quiver-presented, any exact Domain (incl. GF(p) past window, QQ, CC) | CS native (Plan-20/21 diagonal, CS basis via `cs_hh_basis`) | no route — loud refusal off GF(p) (the transport itself is the GF(p) tt facade, `comparison.py:66`) | generic `(b,B)` (`hochschild/cyclic.py`), induced on HH over the Domain |
 | Structure-constants only, off GF(p) | loud refusal (Plan-19 wording: path basis needed) | loud refusal | generic `(b,B)` — works, no quiver needed |
 
 * Explicit `engine="bar"` / `engine="cs"` keep honest walls — error, never a
