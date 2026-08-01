@@ -519,6 +519,71 @@ class Algebra:
         from quiverlab.hochschild.cyclic import cyclic_homology_dims
         return cyclic_homology_dims(self, top, max_cells=max_cells)
 
+    def _product_dispatch(self, kind, top, engine, max_cells):
+        """Shared Plan-35 routing: GF(p) -> bar/tt tables; quiver-presented ->
+        CS native (any Domain; also the DepthLimitError fallback target);
+        presentation-less off GF(p) -> loud refusal. One engine end-to-end."""
+        from quiverlab.errors import DepthLimitError
+        from quiverlab.fields.primefield import PrimeField
+        from quiverlab.hochschild.products import gfp_product_tables
+        if engine not in ("auto", "bar", "cs"):
+            raise QuiverlabError(
+                f"unknown engine {engine!r} for {kind} tables",
+                hint="choose 'auto', 'bar', or 'cs'")
+        is_gfp = isinstance(self.domain, PrimeField)
+        presented = self.quiver is not None and self.relations is not None
+        if engine == "cs" or (engine == "auto" and not is_gfp):
+            if kind == "bracket":
+                raise QuiverlabError(
+                    "the Gerstenhaber bracket is served over GF(p) only "
+                    "(bar window; no CS-native brace machinery in v1)",
+                    hint="construct the algebra over GF(p)")
+            if not presented:
+                raise QuiverlabError(
+                    f"{kind} tables off GF(p) need a quiver presentation "
+                    "(the CS route); this algebra has structure constants only",
+                    hint="build the algebra via Quiver.algebra, or use GF(p)")
+            from quiverlab.resolutions_cs.products import cs_product_tables
+            return cs_product_tables(self, kind, top, max_cells)
+        if not is_gfp:            # engine == "bar" explicitly, off GF(p)
+            raise QuiverlabError(
+                f"engine='bar' {kind} tables need GF(p) (the tt facade)",
+                hint="use engine='auto' (routes CS for presented algebras)")
+        try:
+            return gfp_product_tables(self, kind, top, max_cells)
+        except DepthLimitError:
+            if engine != "auto" or not presented or kind == "bracket":
+                raise
+            from quiverlab.resolutions_cs.products import cs_product_tables
+            return cs_product_tables(self, kind, top, max_cells)
+
+    def cup_products(self, top, engine="auto", max_cells=4_000_000):
+        """Structure-constant tables of the cup product HH^p (x) HH^q ->
+        HH^{p+q} for every p+q <= top, on the recorded basis. Exact. engine:
+        'auto' (GF(p) -> bar/tt, else CS for presented algebras, with the CS
+        depth fallback), 'bar' (GF(p) tt facade, loud otherwise), 'cs'
+        (Chouhy-Solotar native diagonal, presented algebras, any Domain)."""
+        return self._product_dispatch("cup", top, engine, max_cells)
+
+    def cap_products(self, top, engine="auto", max_cells=4_000_000):
+        """Structure-constant tables of the cap action HH^p (x) HH_n ->
+        HH_{n-p} for p <= n <= top. Same engine semantics as cup_products."""
+        return self._product_dispatch("cap", top, engine, max_cells)
+
+    def gerstenhaber_brackets(self, top, engine="auto", max_cells=4_000_000):
+        """Structure-constant tables of the Gerstenhaber bracket HH^p (x)
+        HH^q -> HH^{p+q-1} for pairs p, q >= 1 with p+q-1 <= top. GF(p) only
+        and window-bounded (the result records the served window); the
+        degree-0 insertion action is out of scope."""
+        return self._product_dispatch("bracket", top, engine, max_cells)
+
+    def connes_differentials(self, top, max_cells=4_000_000):
+        """Induced Connes differentials B : HH_n -> HH_{n+1} (matrices +
+        ranks) for 0 <= n < top. GF(p) via the engine (b,B); any other exact
+        Domain via the generic mixed complex — no engine choice to make."""
+        from quiverlab.hochschild.products import connes_b_tables
+        return connes_b_tables(self, top, max_cells=max_cells)
+
     def nakayama_automorphism(self):
         """Nakayama automorphism nu as a matrix (columns = images) in the
         algebra's basis. GF(p): integer matrix via the engine (unit-adapted
