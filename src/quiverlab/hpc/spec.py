@@ -80,12 +80,17 @@ MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
 _MODULE_TRACE_KINDS = frozenset({
     "projective_resolution", "injective_resolution", "ext", "tau", "tau_minus",
 })
+# HH product surface (Plan 35): cup / cap / bracket / connes_b. Each backs a
+# worked-steps chapter (quiverlab.trace.products) when a products request asks for
+# ``artifacts.pdf`` and no HH/module trace already claimed the bundle.
+PRODUCT_KINDS = frozenset({"cup", "cap", "bracket", "connes_b"})
 
 # Honest labels for ``meta["pdf"]`` (the request flag is still named ``pdf``; the
 # worked-steps report is now HTML + JSON, PDF/TeX output having been removed).
 _WORKED_STEPS_OK = "worked steps in trace_steps.html"
 _WORKED_STEPS_NO_HH = "no traced computation requested (the worked-steps report covers HH)"
 _WORKED_STEPS_MODULE_FAIL = "worked-steps bundle could not be generated for this module computation"
+_WORKED_STEPS_PRODUCT_FAIL = "worked-steps bundle could not be generated for this product computation"
 
 _MOD_REFS = {
     "dimension_vector": ["assem_book"],
@@ -706,6 +711,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
     tikz_src = None
     hh_trace = None
     module_trace = None
+    product_trace = None
     A = None
     events: list = []
     hh_kwargs = _hh_kwargs(req.hpc)
@@ -765,6 +771,12 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                 per_kind[item.kind] = _item_resources(t_item)
                 if hh is not None:
                     hh_trace = hh
+                elif (req.artifacts.pdf and product_trace is None
+                      and item.kind in PRODUCT_KINDS):
+                    # products are their own tables (no HH run): the first product
+                    # kind backs the worked-steps bundle when nothing else claimed
+                    # it. HH and module traces still take precedence at write time.
+                    product_trace = (item.kind, item.hi)
         finally:
             if hasattr(ql, "verbose") and prev_verbose is not None:
                 ql.verbose = prev_verbose
@@ -830,6 +842,13 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                                                  used_keys, artifact_dir, meta,
                                                  results=results,
                                                  modules=_named(M, N, T))
+        payload = json.dumps(result, indent=2, default=str)
+    elif req.artifacts.pdf and product_trace is not None:
+        p_kind, p_top = product_trace
+        meta["pdf"] = _write_product_worked_steps(A, p_kind, p_top, used_keys,
+                                                  artifact_dir, meta,
+                                                  results=results,
+                                                  modules=_named(M, N, T))
         payload = json.dumps(result, indent=2, default=str)
     elif req.artifacts.pdf:
         # No traceable computation was requested (say: Cartan + centre only) -- the
@@ -985,6 +1004,38 @@ def _write_module_worked_steps(A, kind, top, M, N, used_keys, artifact_dir,
     except Exception:
         _log.exception("module worked-steps bundle failed for kind=%s", kind)
         return _WORKED_STEPS_MODULE_FAIL
+
+
+def _product_object(A, kind, top):
+    """Recompute the Task-1 product result object for the worked-steps chapter --
+    the sibling of ``_write_module_worked_steps`` re-running the trace from its
+    inputs (``A``, ``kind``, ``top``); the report re-derives, it does not cache."""
+    method = {"cup": A.cup_products, "cap": A.cap_products,
+              "bracket": A.gerstenhaber_brackets,
+              "connes_b": A.connes_differentials}[kind]
+    return method(top)
+
+
+def _write_product_worked_steps(A, kind, top, used_keys, artifact_dir,
+                                meta=None, results=None, modules=()) -> str:
+    """Render the worked-steps bundle (HTML + JSON) for an HH-PRODUCT computation via
+    the Plan-35 trace chapter (``quiverlab.trace.products``), mirroring the HH and
+    module bundles. Best-effort: a trace failure never loses the already-computed
+    JSON result -- it degrades to an honest note."""
+    from quiverlab.trace.products import products_chapter
+    from quiverlab.trace.writer import write_trace
+    try:
+        obj = _product_object(A, kind, top)
+        events = products_chapter(A, kind, obj)
+        produced = Path(write_trace(list(events), None, algebra=A, kind=kind,
+                                    top=(top if top is not None else 0),
+                                    references=_trace_references(used_keys, events),
+                                    out_dir=str(artifact_dir), results=results,
+                                    modules=modules))
+        return _promote_trace_artifacts(produced, artifact_dir)
+    except Exception:
+        _log.exception("product worked-steps bundle failed for kind=%s", kind)
+        return _WORKED_STEPS_PRODUCT_FAIL
 
 
 def _trace_references(used_keys, events):

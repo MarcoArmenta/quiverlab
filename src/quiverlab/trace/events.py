@@ -153,11 +153,38 @@ class ResultDims:
     note: str = ""
 
 
+# --------------------------------------------------------------------------- #
+# Plan 35: the HH-product worked-step event. One ``ProductStep`` is a single
+# bidegree's block of a product chapter -- a structure-constant table
+# (cup/cap/bracket) rendered as its nonzero-product EQUATION LINES, or one induced
+# Connes differential B rendered as a MATRIX. It mirrors the other events'
+# exact-string contract: every coefficient is a domain-element string, never a float.
+# --------------------------------------------------------------------------- #
+
+@dataclass
+class ProductStep:
+    """One block of an HH-product worked-steps chapter (cup / cap / bracket /
+    connes_b). ``kind`` is the product kind. ``degrees`` is the bidegree tuple --
+    ``(p, q)`` for cup/bracket, ``(p, n)`` for cap, ``(n,)`` for one Connes
+    differential. ``heading`` is the TeX map label (e.g.
+    ``HH^{p} \\otimes HH^{q} \\to HH^{p+q}``), typeset by the renderer. ``lines`` is
+    the list of TeX equation lines spelling out the nonzero products in the recorded
+    class bases (cup/cap/bracket); ``matrix`` is the induced-B matrix
+    (``list[list[str]]`` of exact coefficient strings) for connes_b, else ``None``.
+    ``note`` is an optional one-liner (a vanishing bidegree, the induced rank)."""
+    kind: str
+    degrees: object
+    heading: str = ""
+    lines: object = ()
+    matrix: object = None
+    note: str = ""
+
+
 __all__ = [
     "Dispatch", "ReductionStep", "AmbiguityEvent", "ResolutionTerm",
     "DifferentialEvent", "LiftStep", "RankStep",
     "ModuleTerm", "ModuleDifferential", "ExtDegree", "StepNote", "ResultDims",
-    "ALL_EVENTS",
+    "ProductStep", "ALL_EVENTS",
 ]
 
 # The complete tuple of trace event types.  Renderers validate their input
@@ -166,4 +193,5 @@ __all__ = [
 # silently skipping it would drop worked steps from the report.
 ALL_EVENTS = (Dispatch, ReductionStep, AmbiguityEvent, ResolutionTerm,
               DifferentialEvent, LiftStep, RankStep,
-              ModuleTerm, ModuleDifferential, ExtDegree, StepNote, ResultDims)
+              ModuleTerm, ModuleDifferential, ExtDegree, StepNote, ResultDims,
+              ProductStep)

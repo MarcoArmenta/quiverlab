@@ -25,7 +25,7 @@ import re
 
 from quiverlab.trace.events import (
     Dispatch, ResolutionTerm, RankStep, ModuleTerm, ModuleDifferential,
-    ExtDegree, StepNote, ResultDims,
+    ExtDegree, StepNote, ResultDims, ProductStep,
 )
 from quiverlab.trace.render_text import (
     derive_dims, _dims_kind, compute_algebra_objects, ext_result_runs,
@@ -170,6 +170,11 @@ _CMD_MO = {
     r"\rightarrow": "&#8594;", r"\mapsto": "&#8614;", r"\cdot": "&#8901;",
     r"\times": "&#215;", r"\cong": "&#8773;", r"\leq": "&#8804;",
     r"\geq": "&#8805;",
+    # Plan 35 product-chapter operators: cup, cap, the Gerstenhaber circle, the
+    # cyclic-sum ellipsis and sigma.
+    r"\cup": "&#8746;", r"\cap": "&#8745;", r"\circ": "&#8728;",
+    r"\cdots": "&#8943;", r"\sum": "&#8721;", r"\smile": "&#8994;",
+    r"\frown": "&#8995;",
 }
 # \command -> an <mspace> of the given width.
 _CMD_SPACE = {
@@ -619,6 +624,11 @@ def _ext_degree_html(e):
 
 
 def _module_steps_html(events):
+    # A products chapter owns its StepNotes (the product definition); it is rendered
+    # by _products_html, not here, so a product stream never spawns a spurious
+    # "Worked module steps" section from its lone definitional StepNote.
+    if any(isinstance(e, ProductStep) for e in events):
+        return []
     mods = [e for e in events
             if isinstance(e, (ModuleTerm, ModuleDifferential, ExtDegree, StepNote))]
     if not mods:
@@ -666,6 +676,66 @@ def _module_steps_html(events):
         sep = "_" if op == "Tor" else "^"
         out.append("<h3>%s</h3>" % _esc(op))
         out.append(_dims_table("dim %s%sn" % (op, sep), dims))
+    return out
+
+
+# --------------------------------------------------------------------------- #
+# Plan 35: the HH-product worked-steps chapter. The ProductStep stream (built by
+# trace.products) carries the DATA (per-bidegree equation lines / induced-B
+# matrices); the fixed per-kind DEFINITIONAL FORMULA is the renderer's, since this
+# module is the sole owner of the worked-steps math source (see the module
+# docstring). Anything the MathML converter cannot typeset falls back to escaped
+# source (readable), so the definitions never garble.
+# --------------------------------------------------------------------------- #
+
+_PRODUCT_TITLE = {
+    "cup": "The cup product on Hochschild cohomology",
+    "cap": "The cap product",
+    "bracket": "The Gerstenhaber bracket",
+    "connes_b": "The Connes differential B",
+}
+_PRODUCT_DEF = {
+    "cup": (r"(f \cup g)(a_1 \otimes \cdots \otimes a_{p+q}) = "
+            r"f(a_1 \otimes \cdots \otimes a_p) \cdot "
+            r"g(a_{p+1} \otimes \cdots \otimes a_{p+q})"),
+    "cap": (r"(f \cap z)(a_1 \otimes \cdots \otimes a_{n-p}) = "
+            r"a_0\, f(a_1 \otimes \cdots \otimes a_p) \otimes "
+            r"a_{p+1} \otimes \cdots \otimes a_n"),
+    "bracket": (r"[f, g] = f \circ g - (-1)^{(p-1)(q-1)}\, g \circ f, \quad "
+                r"HH^{p} \otimes HH^{q} \to HH^{p+q-1}"),
+    "connes_b": (r"B : HH_n \to HH_{n+1}, \quad "
+                 r"B([a_1 \otimes \cdots \otimes a_n]) = "
+                 r"\sum_i (-1)^{ni}\, [1 \otimes a_i \otimes \cdots \otimes a_{i-1}]"),
+}
+
+
+def _products_html(events):
+    """The HH-product chapter body: the prose definition (the chapter's StepNote),
+    the typeset definitional formula for the kind, then one block per bidegree -- the
+    structure-constant equation lines (cup/cap/bracket) or the induced Connes
+    differential grid (connes_b), each headed by its typeset map label."""
+    steps = [e for e in events if isinstance(e, ProductStep)]
+    if not steps:
+        return []
+    kind = steps[0].kind
+    out = []
+    for e in events:                                  # the definitional StepNote(s)
+        if isinstance(e, StepNote):
+            out.append("<p><b>%s</b>%s</p>" % (
+                _esc(e.text),
+                "<br><i>%s</i>" % _esc(e.detail) if e.detail else ""))
+    formula = _PRODUCT_DEF.get(kind)
+    if formula:
+        out.append(_math(formula))
+    for s in steps:
+        if s.heading:
+            out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
+        for line in (s.lines or ()):
+            out.append(_math(line))
+        if s.matrix is not None:
+            out.append(matrix_grid(s.matrix))
+        if s.note:
+            out.append("<p class='ql-note'>%s</p>" % _esc(s.note))
     return out
 
 
@@ -913,6 +983,16 @@ def render_html(events, title="", references=(), algebra=None, results=None,
     mod = _module_steps_html(events)
     if mod:
         sections.append(("module-steps", "Worked module steps", mod[1:]))
+
+    # Plan 35: the HH-product chapter (cup / cap / bracket / connes_b). The stream
+    # carries ProductStep events; the section names the product and shows the
+    # definition + per-bidegree tables/matrices. The HH result (a ResultDims the
+    # products builder injects) still renders below via the shared path.
+    prod = _products_html(events)
+    if prod:
+        pkind = next(e.kind for e in events if isinstance(e, ProductStep))
+        sections.append(("product-steps",
+                         _PRODUCT_TITLE.get(pkind, "HH products"), prod))
 
     # The (co)homology Result: prefer the AUTHORITATIVE dims the engine returned (a
     # ResultDims event, injected by writer.py) so the line carries the engine's numbers
