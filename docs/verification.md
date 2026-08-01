@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2506 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2520 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-01, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
 Marco's report-completeness pass, and the Plan-35 Hochschild product surface). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
@@ -373,24 +373,24 @@ Plan-35 product surface).
 
 | Subsystem (`src/quiverlab/`) | Tests | Bucket | Primary oracle class |
 |---|---:|---|---|
-| `fields/` (QQ, GF(p), GF(p^n), exact CC = QQ_I) | 37 | fast | exact-arithmetic axioms; base-change invariance |
+| `fields/` (QQ, GF(p), GF(p^n), exact CC = QQ_I) | 41 | fast | exact-arithmetic axioms; base-change invariance |
 | `core/` + `combinat/` (Quiver, Algebra, relations, dispatch) | 43 | fast | structure-constant identities; left-to-right path law |
 | `groebner/` (overlap completion, admissibility) | 50 | fast | admissibility certificate; finiteness; lowering |
-| `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery; the Plan-35 product surface — `products.py`: cup/cap/bracket tables + the induced Connes `B`) | 53 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins; **the Gerstenhaber identity batteries** (graded-commutative + associative cup, antisymmetric bracket, cup-Leibniz, cap module law, `B²=0`, SBI rank) + the `k[x]/(x²)`/QuantumCI-BGMS product literature pins + the bar↔CS in-window cross-engine gate |
-| `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama; Plan-29 literature/identity batteries) | 572 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
+| `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery; the Plan-35 product surface — `products.py`: cup/cap/bracket tables + the induced Connes `B`) | 57 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins; **the Gerstenhaber identity batteries** (graded-commutative + associative cup, antisymmetric bracket, cup-Leibniz, cap module law, `B²=0`, SBI rank) + the `k[x]/(x²)`/QuantumCI-BGMS product literature pins + the bar↔CS in-window cross-engine gate |
+| `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama; Plan-29 literature/identity batteries) | 579 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
 | `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries; the Plan-35 Domain-generic CS product tables `products.py` — cup/cap on the CS basis over any exact Domain) | 227 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization; the CS product unit-law + Domain-genericity self-cert |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact) | 250 | deep | AR/duality literature pins (ASS2006); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks |
-| `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 112 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
+| `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 115 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
-| `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, and the 2026-07-29 report-completeness battery) | 173 | fast | golden-file equality (dims derived from ranks) |
+| `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, and the 2026-07-29 report-completeness battery) | 183 | fast | golden-file equality (dims derived from ranks) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
-| `qpa/` (GAP/QPA crosscheck) | 130 | 123 qpa + 7 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
-| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 411 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
-| `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 58 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
-| `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 66 | fast | runner artifacts / invariants; build hook; freshness |
-| release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`; the Plan-32 `test_oracle_classes` audit gate) | 44 | fast (audit gates: deep) | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage; **oracle-class count audit** (page == live collection) |
+| `qpa/` (GAP/QPA crosscheck) | 144 | 123 qpa + 21 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
+| `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 426 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
+| `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 64 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
+| `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 77 | fast | runner artifacts / invariants; build hook; freshness |
+| release + top-level (`test_no_floats`, `test_errors`, `test_quickstart`; the Plan-32 `test_oracle_classes` audit gate) | 57 | fast (audit gates: deep) | **float-ban AST gate**; error taxonomy; packaging; docs-nav coverage; **oracle-class count audit** (page == live collection) |
 
 Non-algebraic glue (`webapp/`, `docs/gui/`) carries no oracle *because it holds no
 mathematics of its own* — it calls `import quiverlab` and is tested for correct
@@ -405,7 +405,7 @@ plus the **orthogonal** oracle-class markers below (which never change a bucket)
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1105 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `fast` | 1119 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
 | `deep` | 1278 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 123 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
@@ -463,10 +463,10 @@ They overlap by design, so the union is smaller than their sum.
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 726 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 416 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 678 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Cross-engine agreement | `-m oracle_crossengine` | 418 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 684 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 123 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1378 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1386 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-08-01 (through Plan 35). The oracle markers live only on the pure-library
 `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` / `families` /
