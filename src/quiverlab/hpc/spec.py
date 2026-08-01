@@ -819,10 +819,15 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
         if req.artifacts.pdf:
             meta["pdf"] = _WORKED_STEPS_NO_HH if hh_trace is None else _WORKED_STEPS_OK
 
+        from quiverlab.trace.json_guide import build_json_guide
         result = {
             "quiverlab_version": getattr(ql, "__version__", "unknown"),
             "algebra": req.raw_algebra,
             "results": results,
+            # Marco 2026-07-31 (ADDENDUM 2): a per-computation index of how to recover
+            # every computed object from THIS result.json (generated from the actual
+            # keys present, self-validated so it can never point at an absent object).
+            "json_guide": build_json_guide(results),
             "references": resolve_references(used_keys),
             "reproduce": _snippet(req, A),
             "meta": meta,

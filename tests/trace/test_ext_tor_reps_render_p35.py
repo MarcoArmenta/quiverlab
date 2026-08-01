@@ -58,12 +58,15 @@ def test_results_section_renders_per_degree_sections(kind):
 
 
 @pytest.mark.oracle_literature
-def test_ext_results_inline_vector_handcheck():
-    """The Ext^1 class of the x^3 loop is the single Hom-basis element, coordinate
-    vector e_1, term-sum [P_1 → n_1,1]."""
+def test_ext_results_class_written_over_ordered_basis():
+    """The Ext^1 class of the x^3 loop is the single Hom-basis element, written as its
+    term-sum [P_1 → n_1,1] over the ordered basis (Marco 2026-07-31: no ``= e_1``
+    coordinate tail -- coordinates are in the JSON)."""
     html = "".join(results_section({"ext": _loop_block("ext")}))
     assert "[P_1 → n_1,1]" in html
-    assert "= e_1" in html                      # inline coordinate vector
+    assert "[P_1 → n_1,1] = e_1" not in html     # coordinate inline gone
+    # the Ext class-label explanation is present (Marco item 6)
+    assert "P_v#k" in html and "n_{v,j}" in html
 
 
 @pytest.mark.oracle_literature

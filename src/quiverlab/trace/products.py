@@ -49,12 +49,15 @@ _PROSE = {
             "induced level. Each induced matrix in the class bases is below."),
 }
 
-# Display symbols for the operand / output generators of a table equation. Left is
-# always a cohomology class; the right and output are cohomology for cup/bracket and
-# homology for cap (different letters signal the variance).
+# Display symbols for the operand / output generators of a table equation. Marco
+# 2026-07-31: notation is UNIFORM -- every cohomology class is written alpha^n_j (the
+# j-th basis class of HH^n; superscript = degree, subscript = index) and every
+# homology class z^n_j. So cup/bracket (all cohomology) use alpha throughout, and cap
+# (cohomology acting on homology) uses alpha on the left, z on the right and output.
+# beta / gamma / w are gone.
 _LEFT = r"\alpha"
-_RIGHT = {"cup": r"\beta", "bracket": r"\beta", "cap": r"z"}
-_OUT = {"cup": r"\gamma", "bracket": r"\gamma", "cap": r"w"}
+_RIGHT = {"cup": r"\alpha", "bracket": r"\alpha", "cap": r"z"}
+_OUT = {"cup": r"\alpha", "bracket": r"\alpha", "cap": r"z"}
 
 
 def notation_legend(kind, degrees_note, basis):
@@ -74,38 +77,35 @@ def notation_legend(kind, degrees_note, basis):
     ``results_html._product_tables_html``; the GUI hardcodes the same wording."""
     on_basis = ("relative to the recorded basis %s" % basis if basis
                 else "relative to the recorded class basis")
-    # Plan-35 UNIT 2 (Marco): the legend no longer only NAMES the symbols -- it points
-    # at the explicit per-degree listings, where every α/β/γ/z/w is printed as its
-    # (co)cycle term-sum + coordinate vector with the annihilating differential. β_j /
-    # γ_k / w_k are the SAME degree classes as the α_i / z_j listed there, viewed as
-    # the operand / output of this product.
-    _EXPLICIT = (" Each class is listed explicitly by degree above -- its term-sum, "
-                 "its coordinate vector, and the differential that annihilates it.")
+    # Marco 2026-07-31: UNIFORM notation, α^n_j = the j-th basis class of HH^n and
+    # z^n_j = the j-th of HH_n (superscript = degree, subscript = index); β/γ/w are
+    # gone. The legend names the symbols, states the product in that notation, and
+    # points at the explicit per-degree listings (where each class is written as a
+    # combination of the ordered basis elements). Coordinate vectors live in the JSON.
+    _EXPLICIT = (" Each class is listed explicitly by degree above as a combination of "
+                 "the ordered basis elements; the coordinate vectors are recorded in "
+                 "the JSON.")
     if kind == "cup":
-        s = ("α₁,…,α_{d_p} are the recorded basis classes of "
-             "HH^p and β₁,…,β_{d_q} those of HH^q; "
-             "γ₁,…,γ_{d_{p+q}} the basis of HH^{p+q}. Every table "
-             "line states α_i ∪ β_j = Σ_k c·γ_k, %s; "
+        s = ("α^n_j denotes the j-th basis class of HH^n (superscript = degree, "
+             "subscript = index). Every table line states "
+             "α^p_i ∪ α^q_j = Σ_k c·α^{p+q}_k, %s; "
              "the constants c are basis-dependent.%s" % (on_basis, _EXPLICIT))
     elif kind == "bracket":
-        s = ("α₁,…,α_{d_p} are the recorded basis classes of "
-             "HH^p and β₁,…,β_{d_q} those of HH^q; "
-             "γ₁,…,γ_{d_{p+q-1}} the basis of HH^{p+q-1}. Every "
-             "table line states [α_i, β_j] = Σ_k c·γ_k in "
-             "degree p+q−1, %s; the constants c are basis-dependent.%s"
-             % (on_basis, _EXPLICIT))
+        s = ("α^n_j denotes the j-th basis class of HH^n (superscript = degree, "
+             "subscript = index). Every table line states "
+             "[α^p_i, α^q_j] = Σ_k c·α^{p+q-1}_k in degree p+q−1, %s; "
+             "the constants c are basis-dependent.%s" % (on_basis, _EXPLICIT))
     elif kind == "cap":
-        s = ("z₁,…,z_{d_n} are the recorded basis classes of HH_n "
-             "(homology) and w₁,…,w_{d_{n-p}} those of HH_{n-p}; "
-             "α₁,…,α_{d_p} the basis of HH^p. Every table line "
-             "states α_i ∩ z_j = Σ_k c·w_k, %s; the constants c "
+        s = ("α^p_j denotes the j-th basis class of HH^p (cohomology) and z^n_j the "
+             "j-th of HH_n (homology). Every table line states "
+             "α^p_i ∩ z^n_j = Σ_k c·z^{n-p}_k, %s; the constants c "
              "are basis-dependent.%s" % (on_basis, _EXPLICIT))
     elif kind == "connes_b":
         s = ("each induced Connes differential B_n: HH_n → HH_{n+1} is written "
              "on the recorded homology bases -- rows index HH_{n+1}, columns index "
              "HH_n; the entries are basis-dependent. The homology cycle classes z^n_j "
-             "are listed explicitly by degree above, each with its coordinate vector "
-             "and the boundary b_n that annihilates it.")
+             "(z^n_j = the j-th basis class of HH_n) are listed explicitly by degree "
+             "above as combinations of the ordered basis elements.")
     else:
         raise QuiverlabError(
             "unknown product kind %r for the notation legend" % (kind,))

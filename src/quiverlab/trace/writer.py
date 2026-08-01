@@ -155,8 +155,14 @@ def write_trace(events, table, algebra, kind, top, references=(), out_dir=None,
         render_json(events, title=title, references=references, algebra=algebra),
         encoding="utf-8")
     html = out / (stem + ".html")
+    # Marco 2026-07-31 (ADDENDUM 2): the "Reading the JSON record" appendix -- concrete
+    # path recipes for every object this computation produced. Built from the same
+    # result blocks the report already renders; '' when nothing was computed.
+    from quiverlab.trace.json_guide import build_json_guide
+    guide = build_json_guide(results) if results else ()
     html.write_text(render_html(events, title=title, references=references,
-                                algebra=algebra, results=results, modules=modules),
+                                algebra=algebra, results=results, modules=modules,
+                                json_guide=guide),
                     encoding="utf-8")
     print("Worked steps: %s (self-contained HTML, no JavaScript; pairs with the "
           "JSON record)" % _rel(html))

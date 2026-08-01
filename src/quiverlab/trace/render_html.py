@@ -87,6 +87,18 @@ _STYLE = (
     "table.ql-matrix th.ql-corner{background:#e4e4e4;border-color:#c4c4c4}"
     ".ql-mlabel{margin:.6em 0 .1em}"
     "ol,ul{padding-left:1.4em}"
+    # Fine-grained table of contents (Marco 2026-07-31): top-level sections with
+    # per-degree / per-theory / per-product subsections nested beneath.
+    "ol.ql-toc,ol.ql-toc-sub{list-style:none}"
+    "ol.ql-toc>li{margin:.25em 0}"
+    "ol.ql-toc-sub{margin:.1em 0 .3em;font-size:.95em;color:#333}"
+    "ol.ql-toc a{text-decoration:none}"
+    # The JSON-guide appendix table.
+    "table.ql-guide{border-collapse:collapse;margin:.7em 0;font-size:.92em}"
+    "table.ql-guide td,table.ql-guide th{border:1px solid #bbb;padding:3px 9px;"
+    "text-align:left;vertical-align:top}"
+    "table.ql-guide th{background:#f2f2f2}"
+    "table.ql-guide code{font-size:.95em}"
     # Plan 35 UNIT 2: the ordered (co)chain enumeration and the explicit basis
     # classes -- compact lists so the per-degree reps read as one block.
     ".ql-enum,.ql-classes{margin:.2em 0 .6em}"
@@ -423,6 +435,16 @@ def matrix_grid(matrix, label=None):
     ncols = len(rows[0]) if rows and rows[0] is not None else 0
     if not rows or not ncols:
         return _math("%s = 0" % label) if label else _math("0")
+    # Marco 2026-07-31: only matrices with fewer than DISPLAY_CAP rows AND columns are
+    # shown; a larger one states its size and points at the JSON (the complete matrix
+    # is always in result.json / trace.json). This is the single chokepoint, so the cap
+    # applies to every matrix the report displays.
+    if len(rows) >= DISPLAY_CAP or ncols >= DISPLAY_CAP:
+        pre = "%s = " % _esc(label) if label else ""
+        return ("<p class='ql-note'>%s%d×%d matrix (%d rows and %d columns exceed the "
+                "%d-line display cap); the complete matrix is in the accompanying "
+                "JSON record.</p>" % (pre, len(rows), ncols, len(rows), ncols,
+                                      DISPLAY_CAP))
     out = []
     if label:
         out.append('<p class="ql-mlabel">%s =</p>' % _math_inline(label))
@@ -494,6 +516,28 @@ def _hh_heading(kind):
     """Section heading naming WHAT the table is. "Result" said nothing -- every
     section of the page is a result (Marco 2026-07-29)."""
     return "Hochschild cohomology" if kind == "HH^" else "Hochschild homology"
+
+
+def hh_typing_html(kind, route):
+    """The typing paragraph for a Hochschild (co)homology section (Marco 2026-07-31):
+    exactly what the engine computes and what the bar-bracket/tensor notation means.
+    ``kind`` is HH^ / HH_ (or hh_cohomology / hh_homology); ``route`` is "bar"/"cs"."""
+    from quiverlab.trace.interpretations import hh_space_typing
+    return "<p class='ql-note'>%s</p>" % _esc(hh_space_typing(kind, route))
+
+
+def route_of_engine(engine):
+    """"cs" when the recorded engine/basis string names Chouhy-Solotar, else "bar"
+    (the bar / fast / minimal cochain bases all share the bar cochain typing)."""
+    r = (str(engine) or "").lower()
+    return "cs" if ("cs" in r or "chouhy" in r or "solotar" in r) else "bar"
+
+
+def _route_of_dispatch(used):
+    for e in used or ():
+        if route_of_engine(getattr(e, "route", "")) == "cs":
+            return "cs"
+    return "bar"
 
 
 def _results_carry_hh(results, kind):
@@ -691,10 +735,11 @@ def _module_steps_html(events):
             secs = module_reps_sections(e.basis_classes, e.chain_basis,
                                         e.differentials, e.op, anchor_prefix="ws")
             if secs:
-                out.append("<h3>Explicit representatives by degree</h3>")
-                out.append("<p class='ql-note'>Each class is shown as a term-sum and a "
-                           "coordinate vector over the ordered basis, with the "
-                           "differential that annihilates it.</p>")
+                out.append("<h3 id='ws-module-reps'>Explicit representatives by "
+                           "degree</h3>")
+                out.append("<p class='ql-note'>Each class is written over the ordered "
+                           "basis, with the differential that annihilates it; the "
+                           "coordinate vectors are recorded in the JSON.</p>")
                 out.extend(secs)
         elif isinstance(e, ExtDegree):
             out.extend(_ext_degree_html(e))
@@ -704,7 +749,7 @@ def _module_steps_html(events):
     runs = ext_result_runs(events)
     for op, dims in runs:
         sep = "_" if op == "Tor" else "^"
-        out.append("<h3>%s</h3>" % _esc(op))
+        out.append("<h3 id='ws-run-%s'>%s</h3>" % (op.lower(), _esc(op)))
         out.append(_dims_table("dim %s%sn" % (op, sep), dims))
     return out
 
@@ -733,9 +778,15 @@ def _module_steps_html(events):
 # UNIT 1 elided the body) + a one-line self-cert verification sentence.
 # --------------------------------------------------------------------------- #
 
+# Marco 2026-07-31: from now on the report shows at most the first DISPLAY_CAP basis
+# elements of any space, and never a matrix with DISPLAY_CAP or more rows/columns --
+# beyond that it states the size and points at the accompanying JSON, which always
+# carries the complete data. One constant for every display cap.
+DISPLAY_CAP = 50
+
 # ordered-enumeration entries shown inline before a machine-record pointer (display
 # only; the full ordered enumeration always lives in result.json / trace.json).
-_REPS_ENUM_DISPLAY = 64
+_REPS_ENUM_DISPLAY = DISPLAY_CAP
 
 # per side: (long name, HH symbol, differential TeX symbol, chain kind, class-symbol
 # letter, cocycle/cycle word).
@@ -765,18 +816,6 @@ def _coeff_split(coeff):
     return neg, (c[1:] if neg else c)
 
 
-def _coord_vector_text(vector):
-    """A class's sparse coordinate vector ``[[idx, coeff], ...]`` as a plain-text linear
-    combination of the 1-based enumeration symbols ``e_k`` -- e.g. ``e_3 - 2 e_7`` (the
-    vector REFERENCES the ordered enumeration listed for the degree)."""
-    pieces = []
-    for idx, coeff in vector:
-        neg, mag = _coeff_split(coeff)
-        sym = "e_%d" % (int(idx) + 1)
-        pieces.append((neg, sym if mag == "1" else "%s %s" % (mag, sym)))
-    return _signed_join(pieces)
-
-
 def _term_sum_text(terms, kind):
     """The class's labeled term-sum as readable text, e.g. ``[x → x]`` (cochain) /
     ``e_1 ⊗ x`` (chain); a non-unit coefficient is shown. Reuses UNIT 1's
@@ -797,8 +836,8 @@ def _enumeration_html(enum, long_name, hh, n):
     the machine record."""
     ambient = "C^{%d}" % n if hh == "HH^" else "C_{%d}" % n
     intro = ("<p>Ordered basis of the degree-%d %s space %s "
-             "(entry <i>k</i> is the symbol e<sub><i>k</i></sub> the coordinate "
-             "vectors below refer to):</p>"
+             "(entry <i>k</i> is the <i>k</i>-th basis element; the JSON coordinate "
+             "vectors index into it):</p>"
              % (n, long_name, _math_inline(ambient)))
     if isinstance(enum, dict):                    # UNIT-1 record-elided enumeration
         return [intro, "<p class='ql-note'>%s elements; the full ordered enumeration "
@@ -822,14 +861,16 @@ def _classes_html(classes, letter, n, chain_kind):
     if not classes:
         return ["<p class='ql-note'>no classes (the space is zero in this degree).</p>"]
     lis = []
-    for i, cl in enumerate(classes, start=1):
+    for i, cl in enumerate(classes[:DISPLAY_CAP], start=1):
         name = "%s^{%d}_{%d}" % (letter, n, i)
         term = _term_sum_text(cl.get("terms") or [], cl.get("kind") or chain_kind)
-        coord = _coord_vector_text(cl.get("vector") or [])
-        lis.append("<li>%s = %s = %s</li>"
-                   % (_math_inline(name), _esc(term), _esc(coord)))
-    return ["<p>Basis classes (term-sum = coordinate vector over the enumeration "
-            "above):</p>", "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+        lis.append("<li>%s = %s</li>" % (_math_inline(name), _esc(term)))
+    out = ["<p>Basis classes, each written over the ordered basis above:</p>",
+           "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+    if len(classes) > DISPLAY_CAP:
+        out.append("<p class='ql-note'>… and %d more classes (see the JSON record).</p>"
+                   % (len(classes) - DISPLAY_CAP))
+    return out
 
 
 def _reps_differential_html(diff, dsym, n, letter, cyc, hh, has_classes):
@@ -950,11 +991,18 @@ def _product_out_degree(kind, degrees):
     return degrees[0]                            # connes: handled by the reference builder
 
 
-def product_degree_sections(basis_classes, chain_basis, differentials, anchor_prefix):
+def product_degree_sections(basis_classes, chain_basis, differentials, anchor_prefix,
+                            show_differential=True):
     """Per-degree explicit-representatives sub-sections for a product/Connes block
     (Plan 35 UNIT 2). ``basis_classes`` / ``chain_basis`` / ``differentials`` are the
     UNIT-1 ``{side: {str(degree): ...}}`` payloads; ``anchor_prefix`` namespaces the
     ``<prefix>-hh-<side>-deg-<n>`` anchors the product tables reference.
+
+    ``show_differential`` (Marco 2026-07-31): the plain HH degree sections keep the
+    annihilating differential; the PRODUCT sections drop it (they state only the
+    products in terms of the basis classes -- the differentials already live in the HH
+    degree sections). A degree whose (co)homology is ZERO collapses to a one-line
+    ``HH^n = 0`` statement, keeping its anchor so the vanishing is still findable.
 
     Returns ``[]`` when the block carries no explicit-reps fields (a legacy/old-cache
     block) -- the caller then falls back to the naming-only legend (tolerance)."""
@@ -970,14 +1018,18 @@ def product_degree_sections(basis_classes, chain_basis, differentials, anchor_pr
             n = int(dkey)
             anchor = "%s-hh-%s-deg-%d" % (anchor_prefix, side, n)
             classes = by_deg[dkey] or []
-            enum = (chain_basis or {}).get(side, {}).get(dkey)
-            diff = (differentials or {}).get(side, {}).get(dkey)
             out.append("<h4 id='%s'>Hochschild %s in degree %d</h4>"
                        % (anchor, long_name, n))
+            if not classes:                     # zero space: one line, keep the anchor
+                out.append(_math(r"%s{%d} = 0" % (hh, n)))
+                continue
+            enum = (chain_basis or {}).get(side, {}).get(dkey)
             out.extend(_enumeration_html(enum, long_name, hh, n))
             out.extend(_classes_html(classes, letter, n, chain_kind))
-            out.extend(_reps_differential_html(diff, dsym, n, letter, cyc, hh,
-                                               bool(classes)))
+            if show_differential:
+                diff = (differentials or {}).get(side, {}).get(dkey)
+                out.extend(_reps_differential_html(diff, dsym, n, letter, cyc, hh,
+                                                   bool(classes)))
     return out
 
 
@@ -1076,8 +1128,8 @@ def _module_enumeration_html(enum, ambient_tex, n):
     """The ordered basis enumeration of the ambient Hom / tensor space as a numbered
     (1-based) list; entry k is the symbol e_k the coordinate vectors refer to. Capped,
     with a machine-record pointer for an over-long or record-elided enumeration."""
-    intro = ("<p>Ordered basis of %s (entry <i>k</i> is the symbol "
-             "e<sub><i>k</i></sub> the coordinate vectors below refer to):</p>"
+    intro = ("<p>Ordered basis of %s (entry <i>k</i> is the <i>k</i>-th basis "
+             "element; the JSON coordinate vectors index into it):</p>"
              % _math_inline(ambient_tex))
     if isinstance(enum, dict):                    # capture-layer record-elided enumeration
         return [intro, "<p class='ql-note'>%s elements; the full ordered enumeration "
@@ -1101,14 +1153,16 @@ def _module_classes_html(classes, letter, n, kind):
     if not classes:
         return ["<p class='ql-note'>no classes (the group is zero in this degree).</p>"]
     lis = []
-    for i, cl in enumerate(classes, start=1):
+    for i, cl in enumerate(classes[:DISPLAY_CAP], start=1):
         name = "%s^{%d}_{%d}" % (letter, n, i)
         term = _module_term_sum_text(cl.get("terms") or [], kind)
-        coord = _coord_vector_text(cl.get("vector") or [])
-        lis.append("<li>%s = %s = %s</li>"
-                   % (_math_inline(name), _esc(term), _esc(coord)))
-    return ["<p>Basis classes (term-sum = coordinate vector over the enumeration "
-            "above):</p>", "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+        lis.append("<li>%s = %s</li>" % (_math_inline(name), _esc(term)))
+    out = ["<p>Basis classes, each written over the ordered basis above:</p>",
+           "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+    if len(classes) > DISPLAY_CAP:
+        out.append("<p class='ql-note'>… and %d more classes (see the JSON record).</p>"
+                   % (len(classes) - DISPLAY_CAP))
+    return out
 
 
 def _module_reps_differential_html(diff, kind, n, letter, cyc):
@@ -1150,21 +1204,24 @@ def module_reps_sections(basis_classes, chain_basis, differentials, kind, anchor
     block) -- the caller then falls back to the dims table only (tolerance)."""
     if not basis_classes:
         return []
+    from quiverlab.trace.interpretations import module_reps_label_note
     ambient_t, letter, cyc, _dsym, _arrow, _v = _MODULE_REPS[kind]
     long_name = "Ext^{%d}" if kind == "ext" else "Tor_{%d}"
-    out = []
+    out = ["<p class='ql-note'>%s</p>" % _esc(module_reps_label_note(kind))]
     for dkey in sorted(basis_classes, key=lambda s: int(s)):
         n = int(dkey)
         anchor = "%s-%s-deg-%d" % (anchor_prefix, kind, n)
         classes = basis_classes.get(dkey) or []
-        enum = (chain_basis or {}).get(dkey)
-        diff = (differentials or {}).get(dkey)
         out.append("<h4 id='%s'>%s in degree %d</h4>"
                    % (anchor, _math_inline(long_name % n), n))
+        if not classes:                         # zero group: one line, keep the anchor
+            out.append(_math(long_name % n + " = 0"))
+            continue
+        enum = (chain_basis or {}).get(dkey)
+        diff = (differentials or {}).get(dkey)
         out.extend(_module_enumeration_html(enum, ambient_t % n, n))
         out.extend(_module_classes_html(classes, letter, n, kind))
-        if classes:
-            out.extend(_module_reps_differential_html(diff, kind, n, letter, cyc))
+        out.extend(_module_reps_differential_html(diff, kind, n, letter, cyc))
     return out
 
 
@@ -1322,14 +1379,18 @@ def _cyclic_classes_html(classes, n, enum):
     if not classes:
         return ["<p class='ql-note'>no classes (HC_%d is zero).</p>" % n]
     lis = []
-    for i, cl in enumerate(classes, start=1):
+    for i, cl in enumerate(classes[:DISPLAY_CAP], start=1):
         name = "z^{%d}_{%d}" % (n, i)
-        coord = _coord_vector_text(cl.get("vector") or [])
         term = _cyclic_term_sum_from_vector(cl.get("vector") or [], enum)
-        rhs = ("%s = %s" % (_esc(term), _esc(coord))) if term is not None else _esc(coord)
+        rhs = _esc(term) if term is not None else \
+            "(class recorded in the JSON; the ordered basis is too large to display)"
         lis.append("<li>%s = %s</li>" % (_math_inline(name), rhs))
-    return ["<p>Basis classes (term-sum = coordinate vector over the enumeration "
-            "above):</p>", "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+    out = ["<p>Basis classes, each written over the ordered basis above:</p>",
+           "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
+    if len(classes) > DISPLAY_CAP:
+        out.append("<p class='ql-note'>… and %d more classes (see the JSON record).</p>"
+                   % (len(classes) - DISPLAY_CAP))
+    return out
 
 
 def _cyclic_reps_differential_html(diff, n, has_classes):
@@ -1377,6 +1438,9 @@ def cyclic_degree_sections(basis_classes, chain_basis, differentials, column_str
         cs = (column_structure or {}).get(dkey)
         out.append("<h4 id='%s'>%s in degree %d</h4>"
                    % (anchor, _math_inline("HC_{%d}" % n), n))
+        if not classes:                         # zero space: one line, keep the anchor
+            out.append(_math("HC_{%d} = 0" % n))
+            continue
         out.extend(_cyclic_column_heading(cs, n))
         out.extend(_module_enumeration_html(enum, r"\mathrm{Tot}_{%d}" % n, n))
         out.extend(_cyclic_classes_html(classes, n, enum))
@@ -1432,8 +1496,11 @@ def _products_html(events):
     pb = next((e for e in events if isinstance(e, ProductBasis)), None)
     have_reps = False
     if pb is not None:
+        # Marco 2026-07-31: the product sections drop the annihilating differential
+        # (it already lives in the HH degree sections) -- show_differential=False.
         secs = product_degree_sections(pb.basis_classes, pb.chain_basis,
-                                       pb.differentials, anchor_prefix="ws-" + kind)
+                                       pb.differentials, anchor_prefix="ws-" + kind,
+                                       show_differential=False)
         if secs:
             have_reps = True
             out.append("<h3 id='ws-%s-reps'>Explicit representatives by degree</h3>"
@@ -1443,6 +1510,16 @@ def _products_html(events):
             out.append("<p class='ql-note'>The tables below are written in the "
                        "explicit classes listed by degree above; each table links to "
                        "the degree sections of its operands and output.</p>")
+    # Addendum (Marco 2026-07-31): a product FAMILY whose every bidegree vanishes
+    # collapses to one section-level line -- no page of empty per-bidegree tables. A
+    # SINGLE vanishing bidegree keeps its own honest one-line note (below).
+    table_steps = [s for s in steps if s.kind in ("cup", "cap", "bracket")]
+    if len(table_steps) > 1 and all(not s.lines for s in table_steps):
+        name = {"cup": "cup products", "cap": "cap products",
+                "bracket": "Gerstenhaber brackets"}.get(kind, "products")
+        out.append("<p class='ql-note'>All %s in the served bidegrees vanish.</p>"
+                   % name)
+        return out
     for s in steps:
         if s.heading:
             out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
@@ -1581,6 +1658,28 @@ _JSON_NOTE = (
     "formats — this page is the complete human-readable record.</p>")
 
 
+def _json_guide_html(json_guide):
+    """The 'Reading the JSON record' appendix (Marco 2026-07-31): a table mapping each
+    object THIS computation produced to its concrete path in ``result.json`` and a
+    note. ``json_guide`` is a list of ``{object, path, note}`` dicts built per
+    computation by the shared serializer; ``[]``/absent -> no section (tolerated for a
+    pre-guide cached result)."""
+    rows = [g for g in (json_guide or []) if isinstance(g, dict)]
+    if not rows:
+        return []
+    out = ["<p><i>How to recover each object this computation produced from the "
+           "machine-readable <code>result.json</code>. Every path is relative to the "
+           "result object and uses only dot and <code>[\"key\"]</code> steps.</i></p>",
+           "<table class='ql-guide'><tr><th>object</th><th>path</th>"
+           "<th>note</th></tr>"]
+    for g in rows:
+        out.append("<tr><td>%s</td><td><code>%s</code></td><td>%s</td></tr>"
+                   % (_esc(str(g.get("object", ""))), _esc(str(g.get("path", ""))),
+                      _esc(str(g.get("note", "")))))
+    out.append("</table>")
+    return out
+
+
 def _used_dispatches(events):
     """Collapse each CONSECUTIVE run of Dispatch events to its LAST entry --
     the resolution actually used. The engine may first record the bar attempt
@@ -1599,8 +1698,76 @@ def _used_dispatches(events):
     return used
 
 
+# --------------------------------------------------------------------------- #
+# Fine-grained table of contents (Marco 2026-07-31): each top-level section lists,
+# nested beneath it, the h3/h4 sub-headings it contains (a theory, a product, a
+# degree). Built by scanning the already-rendered chunks for headings that carry a
+# stable id -- render-side only, no data change.
+# --------------------------------------------------------------------------- #
+_SUBHEAD_RE = re.compile(r"<h([34]) id='([^']+)'>(.*?)</h\1>", re.DOTALL)
+_MATH_BLOCK_RE = re.compile(r"<math\b[^>]*>.*?</math>", re.DOTALL)
+_ANNOTATION_RE = re.compile(r"<annotation[^>]*>(.*?)</annotation>", re.DOTALL)
+_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def _toc_label(heading_html):
+    """A plain-text ToC label from a heading's inner HTML: a ``<math>`` run collapses
+    to its x-tex annotation source, the remaining tags are stripped, entities decoded."""
+    def _annot(m):
+        a = _ANNOTATION_RE.search(m.group(0))
+        return " %s " % a.group(1) if a else " "
+    s = _MATH_BLOCK_RE.sub(_annot, heading_html)
+    s = _TAG_RE.sub("", s)
+    s = s.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">")
+    return " ".join(s.split())
+
+
+def _sub_headings(section_html):
+    """``[(level, id, label), ...]`` for every h3/h4 carrying an id, in document order."""
+    return [(int(m.group(1)), m.group(2), _toc_label(m.group(3)))
+            for m in _SUBHEAD_RE.finditer(section_html)]
+
+
+def _nested_toc(subs):
+    """A nested ``<ol>`` for a section: each h3 is a group, following h4s nest beneath
+    the nearest preceding h3 (a stray h4 with no preceding h3 sits at the group level)."""
+    out, i = ["<ol class='ql-toc-sub'>"], 0
+    while i < len(subs):
+        lvl, sid, label = subs[i]
+        if lvl == 3:
+            j, children = i + 1, []
+            while j < len(subs) and subs[j][0] == 4:
+                children.append(subs[j])
+                j += 1
+            out.append("<li><a href='#%s'>%s</a>" % (sid, _esc(label)))
+            if children:
+                out.append("<ol class='ql-toc-sub'>")
+                out += ["<li><a href='#%s'>%s</a></li>" % (cid, _esc(clab))
+                        for _l, cid, clab in children]
+                out.append("</ol>")
+            out.append("</li>")
+            i = j
+        else:
+            out.append("<li><a href='#%s'>%s</a></li>" % (sid, _esc(label)))
+            i += 1
+    out.append("</ol>")
+    return "".join(out)
+
+
+def _build_toc(sections):
+    body = ["<h2>Contents</h2><ol class='ql-toc'>"]
+    for anchor, heading, chunks in sections:
+        subs = _sub_headings("".join(chunks))
+        body.append("<li><a href='#%s'>%s</a>" % (anchor, _esc(heading)))
+        if subs:
+            body.append(_nested_toc(subs))
+        body.append("</li>")
+    body.append("</ol>")
+    return body
+
+
 def render_html(events, title="", references=(), algebra=None, results=None,
-                modules=()):
+                modules=(), json_guide=()):
     """The worked-steps report.
 
     ``results`` (optional) are the COMPUTED RESULT BLOCKS of the session -- every
@@ -1705,9 +1872,9 @@ def render_html(events, title="", references=(), algebra=None, results=None,
                     cs_res = cs_labels = None
         for n in sorted(terms):
             t = terms[n]
-            chunks.append("<h3>Degree %d</h3><p>Term with %d generators "
-                          "(dim C<sub>%d</sub> = %d).</p>"
-                          % (n, t.n_generators, n, t.collapsed_dim))
+            chunks.append("<h3 id='resstep-deg-%d'>Degree %d</h3><p>Term with %d "
+                          "generators (dim C<sub>%d</sub> = %d).</p>"
+                          % (n, n, t.n_generators, n, t.collapsed_dim))
             summ = _term_summands_html(t, n)
             if summ:
                 chunks.append(summ)
@@ -1765,12 +1932,21 @@ def render_html(events, title="", references=(), algebra=None, results=None,
     kind = rd.kind if rd is not None else _dims_kind(events)
     dims = list(rd.dims) if rd is not None else derive_dims(events)
     if dims and not _results_carry_hh(results, kind):
-        chunks = [_dims_table(_hh_row_label(kind), dims)]
+        chunks = []
+        if kind in ("HH^", "HH_"):              # typing statement at the top (Marco)
+            chunks.append(hh_typing_html(kind, _route_of_dispatch(used)))
+        chunks.append(_dims_table(_hh_row_label(kind), dims))
         if rd is not None and rd.note:
             chunks.append("<p><i>%s</i></p>" % _esc(rd.note))
         sections.append(("result", _hh_heading(kind), chunks))
 
     sections.append(("json-record", "The JSON record", [_JSON_NOTE]))
+
+    # Addendum (Marco 2026-07-31): "Reading the JSON record" -- concrete path recipes
+    # for every object THIS computation produced. Empty on a pre-guide cache (tolerated).
+    guide = _json_guide_html(json_guide)
+    if guide:
+        sections.append(("json-guide", "Reading the JSON record", guide))
 
     if references:
         chunks = ["<ol>"]
@@ -1789,10 +1965,7 @@ def render_html(events, title="", references=(), algebra=None, results=None,
             "computed. Deliverables are this HTML page and the JSON records "
             "described at the end — mathematics is typeset as MathML.</p>"]
     if len(sections) > 1:
-        body.append("<h2>Contents</h2><ol class='ql-toc'>")
-        for anchor, heading, _ in sections:
-            body.append("<li><a href='#%s'>%s</a></li>" % (anchor, _esc(heading)))
-        body.append("</ol>")
+        body.extend(_build_toc(sections))
     for anchor, heading, chunks in sections:
         body.append("<h2 id='%s'>%s</h2>" % (anchor, _esc(heading)))
         body.extend(chunks)

@@ -381,10 +381,11 @@ def test_product_blocks_render_in_the_computed_results_section():
                "cup": A.cup_products(2).blocks(),
                "connes_b": A.connes_differentials(2).blocks()}
     html = render_html(list(tr), title="t", algebra=A, results=results)
-    # the sections carry the gui.js i18n titles (was the bare "cup"/"connes_b").
-    assert "<h3>Cup product tables</h3>" in html
-    assert "<h3>Connes differentials</h3>" in html
-    assert "<h3>cup</h3>" not in html and "<h3>connes_b</h3>" not in html
+    # the sections carry the gui.js i18n titles (was the bare "cup"/"connes_b"); the
+    # h3 now carries a ToC anchor id (Marco 2026-08-01 fine-grained contents).
+    assert "<h3 id='cr-cup'>Cup product tables</h3>" in html
+    assert "<h3 id='cr-connes_b'>Connes differentials</h3>" in html
+    assert ">cup</h3>" not in html and ">connes_b</h3>" not in html
     # ...the cup equations really render (the ∪ operator appears in the map label
     # AND the structure-constant equations), NOT the missing-branch stub...
     assert r"\cup" in html

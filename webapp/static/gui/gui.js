@@ -945,6 +945,14 @@
     if (!mat.length || !ncols) {
       return h("p", { "class": "arithmatex", text: "\\( 0 \\)" });
     }
+    // Marco 2026-07-31: only matrices with fewer than 50 rows AND columns are shown;
+    // a larger one states its size and points at the JSON (the complete matrix is
+    // always in the accompanying record). Single chokepoint -> applies everywhere.
+    if (mat.length >= 50 || ncols >= 50) {
+      return h("p", { "class": "qlgui-cites", text: mat.length + "×" + ncols
+        + " matrix (exceeds the 50-line display cap); the complete matrix is in the "
+        + "accompanying JSON record." });
+    }
     if (matTooBig(mat)) {                   // sanity backstop only (never normal use)
       return h("p", { "class": "qlgui-cites",
         text: mat.length + "\u00d7" + ncols + " matrix beyond the display backstop" });
@@ -1141,7 +1149,7 @@
   // their columns (projective) / rows (injective). Tolerant of a block WITHOUT
   // `term_basis` (an older cached result / a structure-constants algebra): renders
   // nothing. Mirrors quiverlab.trace.results_html._term_basis_html.
-  var TERM_BASIS_DISPLAY = 64;
+  var TERM_BASIS_DISPLAY = 50;
   function appendTermBasis(div, b, proj) {
     var tb = b.term_basis;
     if (!tb || !tb.length) return;
@@ -1231,8 +1239,11 @@
     var degs = t.degrees || [0, 0], out = t.out_degree;
     var dl = dims[0], dr = dims[1], dout = dims[2], lines = [];
     var p = degs[0], q = degs[1];
-    var rightSym = name === "cap" ? "z" : "\\beta";
-    var outSym = name === "cap" ? "w" : "\\gamma";
+    // Marco 2026-07-31: UNIFORM notation -- every cohomology class is α^deg_index and
+    // every homology class z^deg_index; β/γ/w are gone. cup/bracket act on cohomology
+    // (all α); cap outputs homology (z).
+    var rightSym = name === "cap" ? "z" : "\\alpha";
+    var outSym = name === "cap" ? "z" : "\\alpha";
     for (var i = 0; i < dl; i++) {
       for (var j = 0; j < dr; j++) {
         var terms = [];
@@ -1262,20 +1273,21 @@
     // Plan-35 UNIT 2: the legend points at the explicit per-degree listings, where
     // every α/β/γ/z/w is printed as its (co)cycle term-sum + coordinate vector with
     // the annihilating differential (mirrors trace.products.notation_legend).
-    var explicit = " Each class is listed explicitly by degree below — its term-sum, "
-      + "its coordinate vector, and the differential that annihilates it.";
+    var explicit = " Each class is listed explicitly by degree below as a combination "
+      + "of the ordered basis elements; the coordinate vectors are recorded in the JSON.";
     if (name === "cup")
-      return "α₁,…,α_{d_p} are the recorded basis classes of HH^p and β₁,…,β_{d_q} "
-        + "those of HH^q; γ₁,…,γ_{d_{p+q}} the basis of HH^{p+q}. Every line states "
-        + "α_i ∪ β_j = Σ_k c·γ_k, " + onBasis + "; the constants c are "
+      return "α^n_j denotes the j-th basis class of HH^n (superscript = degree, "
+        + "subscript = index). Every table line states "
+        + "α^p_i ∪ α^q_j = Σ_k c·α^{p+q}_k, " + onBasis + "; the constants c are "
         + "basis-dependent." + explicit;
     if (name === "bracket")
-      return "α₁,…,α_{d_p} are the recorded basis classes of HH^p and β₁,…,β_{d_q} "
-        + "those of HH^q; γ₁,…,γ_{d_{p+q-1}} the basis of HH^{p+q-1}. Every line "
-        + "states [α_i, β_j] = Σ_k c·γ_k in degree p+q−1, " + onBasis + "." + explicit;
-    return "z₁,…,z_{d_n} are the recorded basis classes of HH_n (homology) and "
-      + "w₁,…,w_{d_{n-p}} those of HH_{n-p}; α₁,…,α_{d_p} the basis of HH^p. Every "
-      + "line states α_i ∩ z_j = Σ_k c·w_k, " + onBasis + "." + explicit;
+      return "α^n_j denotes the j-th basis class of HH^n (superscript = degree, "
+        + "subscript = index). Every table line states "
+        + "[α^p_i, α^q_j] = Σ_k c·α^{p+q-1}_k in degree p+q−1, " + onBasis
+        + "; the constants c are basis-dependent." + explicit;
+    return "α^p_j denotes the j-th basis class of HH^p (cohomology) and z^n_j the j-th "
+      + "of HH_n (homology). Every table line states α^p_i ∩ z^n_j = Σ_k c·z^{n-p}_k, "
+      + onBasis + "; the constants c are basis-dependent." + explicit;
   }
   // ---- Plan 35 UNIT 2: per-degree explicit representatives (product / Connes) ----
   // The block carries basis_classes / chain_basis / differentials as {side: {degree:
@@ -1286,7 +1298,53 @@
   // `b.differentials` here is the product {side:{degree:...}} shape, read ONLY inside
   // these product renderers (the module-resolution block ships a LIST under the same
   // key -- never read it shape-blind). Tolerant of a block WITHOUT these fields.
-  var REPS_ENUM_DISPLAY = 64;
+  // Marco 2026-07-31: typing statements + Ext/Tor label notes, mirroring the Python
+  // single source quiverlab.trace.interpretations (hh_space_typing / module_reps_label_note).
+  var NOTATION_TAIL = " Here | and ⊗ are tensor products over k, and · inside a word "
+    + "is composition of arrows along a path (left to right) -- not a scalar.";
+  function hhTyping(theory, route) {
+    var coh = (theory === "hh_cohomology" || theory === "HH^");
+    if (route === "cs") {
+      if (coh)
+        return "What the engine computes: Hochschild cohomology as the cohomology of "
+          + "Hom_{A^e}(P_•, A), where P_• → A is the Chouhy–Solotar projective bimodule "
+          + "resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A (σ over the degree-n "
+          + "ambiguity chains). Degree n collapses to the corner space "
+          + "C^n = ⊕_σ e_{o(σ)} A e_{t(σ)}. A basis element v ⊗ p pairs a path v ∈ A "
+          + "with a chain word p = a_1·a_2·…." + NOTATION_TAIL;
+      return "What the engine computes: Hochschild homology as the homology of "
+        + "A ⊗_{A^e} P_•, where P_• → A is the Chouhy–Solotar projective bimodule "
+        + "resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A. Degree n collapses to "
+        + "the corner space C_n = ⊕_σ e_{t(σ)} A e_{o(σ)}. A basis element v ⊗ p pairs "
+        + "a path v ∈ A with a chain word p = a_1·a_2·…." + NOTATION_TAIL;
+    }
+    if (coh)
+      return "What the engine computes: Hochschild cohomology as the cohomology of the "
+        + "normalized bar cochain complex. A degree-n cochain is a k-linear map "
+        + "C^n = Hom_k(Ā^⊗n, A), where Ā = A/(k·1) is the algebra modulo its unit "
+        + "(spanned by the arrows and longer paths); by the tensor–hom adjunction this "
+        + "is Hom_{A^e}(A ⊗ Ā^⊗n ⊗ A, A), a bimodule map out of the n-th term of the "
+        + "bar resolution of A. A basis functional written [w_1|…|w_n ↦ v] sends the "
+        + "single basis tensor w_1 ⊗ … ⊗ w_n (each w_i ∈ Ā) to v ∈ A and every other "
+        + "basis tensor to 0." + NOTATION_TAIL;
+    return "What the engine computes: Hochschild homology as the homology of the "
+      + "normalized bar chain complex C_n = A ⊗_k Ā^⊗n (equivalently "
+      + "A ⊗_{A^e} (A ⊗ Ā^⊗n ⊗ A)). A basis chain written v ⊗ w_1 ⊗ … ⊗ w_n has v ∈ A "
+      + "and each w_i ∈ Ā." + NOTATION_TAIL;
+  }
+  function moduleRepsLabelNote(kind) {
+    var common = "Notation. In a class term-sum, P_v is the generator of the projective "
+      + "summand A e_v of the resolution term P_n, and P_v#k the k-th copy of P_v when "
+      + "the vertex v repeats among the summands of P_n; ";
+    if (kind === "ext")
+      return common + "n_{v,j} is the j-th basis vector of the vertex-v part N e_v of N. "
+        + "A basis functional [P_v#k → n_{w,j}] is the A-linear map sending that "
+        + "generator to n_{w,j} and every other generator to 0.";
+    return common + "n_{v,j} is the j-th basis vector of the vertex-v part e_v N of N. "
+      + "A basis element P_v#k ⊗ n_{w,j} is the tensor of that generator with n_{w,j} "
+      + "in P_n ⊗_A N.";
+  }
+  var REPS_ENUM_DISPLAY = 50;
   var REPS_SIDE = {
     coh: { longName: "cohomology", dsym: "\\delta", isCoh: true, letter: "\\alpha",
            cyc: "cocycle" },
@@ -1307,12 +1365,6 @@
       return (p.neg ? " - " : " + ") + p.mag;
     }).join("");
   }
-  function coordVectorText(vector) {        // -> "e_3 - 2 e_7" (1-based enumeration)
-    return signedJoin((vector || []).map(function (pair) {
-      var cs = coeffSplit(pair[1]), sym = "e_" + (pair[0] + 1);
-      return { neg: cs.neg, mag: cs.mag === "1" ? sym : cs.mag + " " + sym };
-    }));
-  }
   function termSumText(vector, enumLabels) {  // reuse the UNIT-1 enumeration labels
     if (!Array.isArray(enumLabels) || !enumLabels.length) return null;  // elided -> coord only
     return signedJoin((vector || []).map(function (pair) {
@@ -1323,7 +1375,7 @@
   function appendRepsEnumeration(div, enumLabels, S, n) {
     var amb = (S.isCoh ? "C^" : "C_") + n;
     div.appendChild(h("p", { text: "Ordered basis of the degree-" + n + " " + S.longName
-      + " space " + amb + " (entry k is the symbol e_k the coordinate vectors use):" }));
+      + " space " + amb + " (entry k is the k-th basis element; the JSON coordinate vectors index into it):" }));
     if (enumLabels && enumLabels.elided) {
       div.appendChild(h("p", { "class": "qlgui-cites", text: enumLabels.length
         + " elements; the full enumeration is in the report data" }));
@@ -1349,18 +1401,19 @@
         text: "no classes (the space is zero in this degree)" }));
       return;
     }
-    div.appendChild(h("p", { text: "Basis classes (term-sum = coordinate vector over "
-      + "the enumeration above):" }));
-    classes.forEach(function (cl, i) {
+    div.appendChild(h("p", { text: "Basis classes, each written over the ordered basis above:" }));
+    classes.slice(0, 50).forEach(function (cl, i) {
       var nm = S.letter + "^{" + n + "}_{" + (i + 1) + "}";
-      var coord = coordVectorText(cl.vector);
       var term = termSumText(cl.vector, enumLabels);
       var p = h("p");
       p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + nm + "\\)" }));
       p.appendChild(document.createTextNode(
-        " = " + (term != null ? term + " = " : "") + coord));
+        " = " + (term != null ? term : "(recorded in the report data)")));
       div.appendChild(p);
     });
+    if (classes.length > 50)
+      div.appendChild(h("p", { "class": "qlgui-cites", text: "… and "
+        + (classes.length - 50) + " more classes (see the report data)" }));
   }
   function appendRepsDifferential(div, diff, S, n, nClasses) {
     if (!diff) return;
@@ -1406,7 +1459,7 @@
     });
     div.appendChild(pr);
   }
-  function appendProductReps(div, b, name) {
+  function appendProductReps(div, b, name, showDiff) {
     var bc = b.basis_classes;
     if (!bc) return false;
     var cb = b.chain_basis || {}, diffs = b.differentials || {};
@@ -1421,10 +1474,18 @@
           var key = String(n);
           div.appendChild(h("p", { id: "gui-" + name + "-hh-" + side + "-deg-" + n },
             h("b", { text: "Hochschild " + S.longName + " in degree " + n })));
+          if (!(byDeg[key] || []).length) {     // zero space: one line, keep the anchor
+            div.appendChild(h("p", { "class": "arithmatex",
+              text: "\\(" + (S.isCoh ? "HH^{" : "HH_{") + n + "} = 0\\)" }));
+            return;
+          }
           appendRepsEnumeration(div, (cb[side] || {})[key], S, n);
           appendRepsClasses(div, byDeg[key], (cb[side] || {})[key], S, n);
-          appendRepsDifferential(div, (diffs[side] || {})[key], S, n,
-            (byDeg[key] || []).length);
+          // Marco 2026-07-31: product sections drop the annihilating differential
+          // (it lives in the plain HH degree sections); showDiff picks the surface.
+          if (showDiff)
+            appendRepsDifferential(div, (diffs[side] || {})[key], S, n,
+              (byDeg[key] || []).length);
         });
     });
     return rendered;
@@ -1509,7 +1570,7 @@
     w.basis_classes[side] = b.basis_classes;
     w.chain_basis[side] = b.chain_basis || {};
     w.differentials[side] = b.differentials || {};
-    appendProductReps(div, w, name);
+    appendProductReps(div, w, name, true);      // plain HH keeps the differential
   }
 
   // Plan 35 wave 3a: module Ext / Tor explicit representatives. The block carries a
@@ -1534,7 +1595,7 @@
     div.appendChild(h("p", {}, [
       document.createTextNode("Ordered basis of "),
       h("span", { "class": "arithmatex", text: "\\(" + cfg.ambient(n) + "\\)" }),
-      document.createTextNode(" (entry k is the symbol e_k the coordinate vectors use):")
+      document.createTextNode(" (entry k is the k-th basis element; the JSON coordinate vectors index into it):")
     ]));
     if (enumLabels && enumLabels.elided) {
       div.appendChild(h("p", { "class": "qlgui-cites", text: enumLabels.length
@@ -1578,6 +1639,7 @@
     if (!bc) return false;
     var cb = b.chain_basis || {}, diffs = b.differentials || {}, cfg = MODULE_REPS[kind];
     var rendered = false;
+    div.appendChild(h("p", { "class": "qlgui-cites", text: moduleRepsLabelNote(kind) }));
     Object.keys(bc).map(Number).sort(function (a, c) { return a - c; }).forEach(function (n) {
       rendered = true;
       var key = String(n);
@@ -1585,25 +1647,26 @@
         h("span", { "class": "arithmatex", text: "\\(" + cfg.head + "{" + n + "}\\)" }),
         document.createTextNode(" in degree " + n)
       ])));
-      appendModuleRepsEnum(div, cb[key], cfg, n);
-      // classes: term-sum (from the enumeration labels) = coordinate vector
       var classes = bc[key] || [], enumLabels = cb[key];
-      if (!classes.length) {
-        div.appendChild(h("p", { "class": "qlgui-cites",
-          text: "no classes (the group is zero in this degree)" }));
-      } else {
-        div.appendChild(h("p", { text: "Basis classes (term-sum = coordinate vector "
-          + "over the enumeration above):" }));
-        classes.forEach(function (cl, i) {
-          var nm = cfg.letter + "^{" + n + "}_{" + (i + 1) + "}";
-          var term = termSumText(cl.vector, enumLabels), coord = coordVectorText(cl.vector);
-          var p = h("p");
-          p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + nm + "\\)" }));
-          p.appendChild(document.createTextNode(
-            " = " + (term != null ? term + " = " : "") + coord));
-          div.appendChild(p);
-        });
+      if (!classes.length) {                    // zero group: one line, keep the anchor
+        div.appendChild(h("p", { "class": "arithmatex",
+          text: "\\(" + cfg.head + "{" + n + "} = 0\\)" }));
+        return;
       }
+      appendModuleRepsEnum(div, cb[key], cfg, n);
+      div.appendChild(h("p", { text: "Basis classes, each written over the ordered basis above:" }));
+      classes.slice(0, 50).forEach(function (cl, i) {
+        var nm = cfg.letter + "^{" + n + "}_{" + (i + 1) + "}";
+        var term = termSumText(cl.vector, enumLabels);
+        var p = h("p");
+        p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + nm + "\\)" }));
+        p.appendChild(document.createTextNode(
+          " = " + (term != null ? term : "(recorded in the report data)")));
+        div.appendChild(p);
+      });
+      if (classes.length > 50)
+        div.appendChild(h("p", { "class": "qlgui-cites", text: "… and "
+          + (classes.length - 50) + " more classes (see the report data)" }));
       appendModuleRepsDiff(div, diffs[key], cfg, n, classes.length);
     });
     return rendered;
@@ -1780,7 +1843,7 @@
     div.appendChild(h("p", {}, [
       document.createTextNode("Ordered basis of "),
       h("span", { "class": "arithmatex", text: "\\(\\mathrm{Tot}_{" + n + "}\\)" }),
-      document.createTextNode(" (entry k is the symbol e_k the coordinate vectors use):")
+      document.createTextNode(" (entry k is the k-th basis element; the JSON coordinate vectors index into it):")
     ]));
     if (enumLabels && enumLabels.elided) {
       div.appendChild(h("p", { "class": "qlgui-cites", text: enumLabels.length
@@ -1806,17 +1869,19 @@
       div.appendChild(h("p", { "class": "qlgui-cites", text: "no classes (HC_" + n + " is zero)" }));
       return;
     }
-    div.appendChild(h("p", { text: "Basis classes (term-sum = coordinate vector over "
-      + "the enumeration above):" }));
-    classes.forEach(function (cl, i) {
+    div.appendChild(h("p", { text: "Basis classes, each written over the ordered basis above:" }));
+    classes.slice(0, 50).forEach(function (cl, i) {
       var nm = "z^{" + n + "}_{" + (i + 1) + "}";
-      var coord = coordVectorText(cl.vector), term = termSumText(cl.vector, enumLabels);
+      var term = termSumText(cl.vector, enumLabels);
       var p = h("p");
       p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + nm + "\\)" }));
       p.appendChild(document.createTextNode(
-        " = " + (term != null ? term + " = " : "") + coord));
+        " = " + (term != null ? term : "(recorded in the report data)")));
       div.appendChild(p);
     });
+    if (classes.length > 50)
+      div.appendChild(h("p", { "class": "qlgui-cites", text: "… and "
+        + (classes.length - 50) + " more classes (see the report data)" }));
   }
   function appendCyclicDiff(div, diff, n, nClasses) {
     if (!diff) return;
@@ -1850,6 +1915,10 @@
         h("span", { "class": "arithmatex", text: "\\(HC_{" + n + "}\\)" }),
         document.createTextNode(" in degree " + n)
       ])));
+      if (!(bc[key] || []).length) {            // zero space: one line, keep the anchor
+        div.appendChild(h("p", { "class": "arithmatex", text: "\\(HC_{" + n + "} = 0\\)" }));
+        return;
+      }
       appendCyclicColumnHeading(div, cs[key], n);
       appendCyclicEnum(div, cb[key], n);
       appendCyclicClasses(div, bc[key] || [], cb[key], n);
@@ -1861,26 +1930,39 @@
   function renderProductTables(div, name, b) {
     div.appendChild(h("p", { text: PRODUCT_TITLE[name] }));
     div.appendChild(h("p", { "class": "qlgui-hint", text: productLegend(name, b) }));
-    var reps = appendProductReps(div, b, name);
+    var reps = appendProductReps(div, b, name, false);   // product sections drop d
     if (reps) {
       div.appendChild(h("p", {}, h("b", { text: "Structure-constant tables "
         + "(in the explicit classes above; each links to its degree sections):" })));
     }
-    (b.tables || []).forEach(function (t) {
-      div.appendChild(h("p", { "class": "arithmatex",
-        text: productHeading(name, t.degrees, t.out_degree) }));
-      if (reps) productTableLinks(div, name, t.degrees, t.out_degree);
+    // Marco 2026-07-31: a product FAMILY whose every bidegree vanishes collapses to
+    // one section-level line -- no empty per-bidegree tables.
+    var allZero = (b.tables || []).length && (b.tables || []).every(function (t) {
       var d = t.dims || [0, 0, 0];
-      var zero = !d[0] || !d[1] || (t.constants || []).every(matIsZero);
-      if (zero) {
-        div.appendChild(h("p", { "class": "qlgui-hint",
-          text: "all products vanish in this degree pair" }));
-        return;
-      }
-      productEquations(name, t).forEach(function (line) {
-        div.appendChild(h("p", { "class": "arithmatex", text: line }));
-      });
+      return !d[0] || !d[1] || (t.constants || []).every(matIsZero);
     });
+    if (allZero) {
+      var fam = { cup: "cup products", cap: "cap products",
+                  bracket: "Gerstenhaber brackets" }[name] || "products";
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "All " + fam + " in the served bidegrees vanish." }));
+    } else {
+      (b.tables || []).forEach(function (t) {
+        div.appendChild(h("p", { "class": "arithmatex",
+          text: productHeading(name, t.degrees, t.out_degree) }));
+        if (reps) productTableLinks(div, name, t.degrees, t.out_degree);
+        var d = t.dims || [0, 0, 0];
+        var zero = !d[0] || !d[1] || (t.constants || []).every(matIsZero);
+        if (zero) {
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: "all products vanish in this degree pair" }));
+          return;
+        }
+        productEquations(name, t).forEach(function (line) {
+          div.appendChild(h("p", { "class": "arithmatex", text: line }));
+        });
+      });
+    }
     if (name === "bracket" && b.window != null) {
       div.appendChild(h("p", { "class": "qlgui-hint",
         text: "served to degree window " + b.window + " (bar-transport bound)" }));
@@ -1893,7 +1975,7 @@
       text: "each induced Connes differential B_n: HH_n → HH_{n+1} is written on "
           + "the recorded homology bases — rows index HH_{n+1}, columns index HH_n. "
           + "The cycle classes z^n_j are listed explicitly by degree below." }));
-    var reps = appendProductReps(div, b, "connes_b");
+    var reps = appendProductReps(div, b, "connes_b", false);
     if (reps) {
       div.appendChild(h("p", {}, h("b", { text: "Induced Connes differentials "
         + "(in the explicit cycle classes above; each links to its degree sections):" })));
@@ -1922,6 +2004,11 @@
     var div = h("div", { "class": "qlgui-block" });
     if (name === "hh_cohomology" || name === "hh_homology") {
       var sup = name === "hh_cohomology";
+      // Typing statement at the top (Marco 2026-07-31): exactly what the engine
+      // computes and what the bar-bracket / tensor notation means.
+      var route = /cs|chouhy|solotar/.test(String(b.engine || "").toLowerCase())
+        ? "cs" : "bar";
+      div.appendChild(h("p", { "class": "qlgui-hint", text: hhTyping(name, route) }));
       var head = h("tr"), row = h("tr");
       head.appendChild(h("th", { text: "n" }));
       row.appendChild(h("th", { text: sup ? "dim HH^n" : "dim HH_n" }));

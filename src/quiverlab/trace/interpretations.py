@@ -26,6 +26,65 @@ through each surface's proper math path, not through this prose. Float-free."""
 
 
 # --------------------------------------------------------------------------- #
+# Typing statements (Marco 2026-07-31): at the top of every (co)homology section,
+# state EXACTLY what object the engine computes and what the tensor/bar-bracket
+# notation means -- true to the code (engine.tt_calculus / hochschild.bar cochains
+# C^n = Hom_k(Ā^⊗n, A), chains C_n = A ⊗_k Ā^⊗n; resolutions_cs P_n = ⊕ A e_o ⊗ e_t A).
+# ``route`` is "bar" (bar / fast / minimal cochain bases) or "cs" (Chouhy-Solotar).
+# Plain unicode so the report (MathML surface) and the GUI (MathJax) render identically.
+# --------------------------------------------------------------------------- #
+_NOTATION_TAIL = (" Here | and ⊗ are tensor products over k, and · inside a word is "
+                  "composition of arrows along a path (left to right) -- not a scalar.")
+
+
+def hh_space_typing(theory, route):
+    """The one-paragraph typing statement for an HH cohomology / homology section."""
+    coh = theory in ("hh_cohomology", "HH^")
+    if route == "cs":
+        if coh:
+            return ("What the engine computes: Hochschild cohomology as the cohomology "
+                    "of Hom_{A^e}(P_•, A), where P_• → A is the Chouhy–Solotar projective "
+                    "bimodule resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A (σ over "
+                    "the degree-n ambiguity chains). Degree n collapses to the corner "
+                    "space C^n = ⊕_σ e_{o(σ)} A e_{t(σ)}. A basis element v ⊗ p pairs a "
+                    "path v ∈ A with a chain word p = a_1·a_2·…." + _NOTATION_TAIL)
+        return ("What the engine computes: Hochschild homology as the homology of "
+                "A ⊗_{A^e} P_•, where P_• → A is the Chouhy–Solotar projective bimodule "
+                "resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A. Degree n collapses "
+                "to the corner space C_n = ⊕_σ e_{t(σ)} A e_{o(σ)}. A basis element "
+                "v ⊗ p pairs a path v ∈ A with a chain word p = a_1·a_2·…."
+                + _NOTATION_TAIL)
+    if coh:
+        return ("What the engine computes: Hochschild cohomology as the cohomology of "
+                "the normalized bar cochain complex. A degree-n cochain is a k-linear "
+                "map C^n = Hom_k(Ā^⊗n, A), where Ā = A/(k·1) is the algebra modulo its "
+                "unit (spanned by the arrows and longer paths); by the tensor–hom "
+                "adjunction this is Hom_{A^e}(A ⊗ Ā^⊗n ⊗ A, A), a bimodule map out of "
+                "the n-th term of the bar resolution of A. A basis functional written "
+                "[w_1|…|w_n ↦ v] sends the single basis tensor w_1 ⊗ … ⊗ w_n (each "
+                "w_i ∈ Ā) to v ∈ A and every other basis tensor to 0." + _NOTATION_TAIL)
+    return ("What the engine computes: Hochschild homology as the homology of the "
+            "normalized bar chain complex C_n = A ⊗_k Ā^⊗n (equivalently "
+            "A ⊗_{A^e} (A ⊗ Ā^⊗n ⊗ A)). A basis chain written v ⊗ w_1 ⊗ … ⊗ w_n has "
+            "v ∈ A and each w_i ∈ Ā." + _NOTATION_TAIL)
+
+
+def module_reps_label_note(kind):
+    """The Ext / Tor class-label explanation (Marco 2026-07-31): what P_v, P_v#k and
+    n_{v,j} denote in a term-sum. ``kind`` is "ext" / "tor"."""
+    common = ("Notation. In a class term-sum, P_v is the generator of the projective "
+              "summand A e_v of the resolution term P_n, and P_v#k the k-th copy of "
+              "P_v when the vertex v repeats among the summands of P_n; ")
+    if kind == "ext":
+        return (common + "n_{v,j} is the j-th basis vector of the vertex-v part N e_v "
+                "of N. A basis functional [P_v#k → n_{w,j}] is the A-linear map sending "
+                "that generator to n_{w,j} and every other generator to 0.")
+    return (common + "n_{v,j} is the j-th basis vector of the vertex-v part e_v N of N. "
+            "A basis element P_v#k ⊗ n_{w,j} is the tensor of that generator with "
+            "n_{w,j} in P_n ⊗_A N.")
+
+
+# --------------------------------------------------------------------------- #
 # Ext / Tor
 # --------------------------------------------------------------------------- #
 def ext_degree(n):

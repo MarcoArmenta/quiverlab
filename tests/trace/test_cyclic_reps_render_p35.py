@@ -56,8 +56,10 @@ def test_inline_vector_handcheck_dualnumbers():
     column-tagged term-sum = coordinate vector; D_0 = 0 states HC_0 = A/[A,A]."""
     html = "".join(results_section({"cyclic_homology": _hc_block()}))
     assert "col C_0: e_1" in html                       # column-tagged term-sum
-    assert "= e_1" in html                              # inline coordinate vector
     assert "A/[A,A]" in html                            # the D_0 note
+    # Marco 2026-07-31: the class is written over the ordered basis; the ``= e_1``
+    # coordinate inline is gone (coordinates live in the JSON).
+    assert "col C_0: e_1 = e_1" not in html
 
 
 # --------------------------------------------------------------------------- #

@@ -716,10 +716,12 @@ def trace_html():
         return ""
     from quiverlab.trace.provenance import references_for, resolve_references
     from quiverlab.trace.render_html import render_html
+    from quiverlab.trace.json_guide import build_json_guide
     title = "Worked steps — %s" % repr(_state["algebra"]).splitlines()[0]
     return render_html(list(events), title=title, algebra=_state["algebra"],
                        references=resolve_references(references_for(events)),
-                       results=results, modules=_named_modules())
+                       results=results, modules=_named_modules(),
+                       json_guide=build_json_guide(results))
 
 
 def trace_json():
@@ -834,9 +836,14 @@ def _module_snippet_lines(mspec, varname):
 
 
 def result_bundle():
+    # Marco 2026-07-31 (ADDENDUM 2): mirror the spec envelope's json_guide so the
+    # Pyodide result bundle documents how to recover every computed object too.
+    from quiverlab.trace.json_guide import build_json_guide
+    results = _state["results"] or []
     return json.dumps({"schema": SCHEMA_VERSION, "request": _state["request"],
                        "quiverlab_version": quiverlab.__version__,
-                       "results": _state["results"] or []}, indent=1)
+                       "results": results,
+                       "json_guide": build_json_guide(results)}, indent=1)
 
 
 # --- Plan 11: wait-time estimation (pure arithmetic; spec 2026-07-22) --------

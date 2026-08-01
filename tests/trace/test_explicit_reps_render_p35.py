@@ -56,36 +56,41 @@ def test_products_chapter_per_degree_order_and_anchor():
     # enumeration -> classes -> differential + verification.
     start = html.index("id='ws-cup-hh-coh-deg-1'")
     section = html[start:html.index("<h4", start + 1)]
+    # Marco 2026-07-31: product sections state only the classes over the ordered
+    # basis (no annihilating differential -- that lives in the HH degree sections).
     p = _order(section,
                "Ordered basis of the degree-1 cohomology space",
-               "Basis classes",
-               "Verification:")
+               "Basis classes")
     assert p == sorted(p), p
+    assert "Verification:" not in section       # differential removed from products
     # the structure-constant tables FOLLOW the degree sections and reference them
     assert "Structure-constant tables" in html
     assert html.index("Explicit representatives by degree") < html.index("Structure-constant tables")
 
 
 @pytest.mark.oracle_literature
-def test_vector_inline_handcheck_kx2_gf7():
-    """k[x]/(x^2) over GF(7): HH^1 is 1-dim, class alpha^1_1 = [x -> x], which is the
-    2nd enumeration element -> its coordinate vector is e_2 (the spec anchor, now
-    RENDERED as term-sum = coordinate vector)."""
+def test_class_written_over_ordered_basis_kx2_gf7():
+    """k[x]/(x^2) over GF(7): HH^1 is 1-dim, class alpha^1_1 = [x -> x], written
+    directly over the ordered basis (Marco 2026-07-31: no e_k coordinate reduction --
+    the coordinate vector lives in the JSON)."""
     A = ql.truncated_polynomial(2, field=ql.GF(7))
     html = render_html(products_chapter(A, "cup", A.cup_products(1)),
                        title="cup", algebra=A)
-    assert "[x → x] = e_2" in html
+    assert "[x → x]" in html
+    assert "[x → x] = e_2" not in html          # the coordinate inline is gone
 
 
 @pytest.mark.oracle_literature
-def test_vector_inline_handcheck_kx2_gf2_unit_valued():
-    """Over GF(2), HH^1 is 2-dim: class 1 is the unit-valued [x -> e_1] (enumeration
-    slot 1 -> e_1), class 2 is [x -> x] (slot 2 -> e_2)."""
+def test_classes_written_over_ordered_basis_kx2_gf2():
+    """Over GF(2), HH^1 is 2-dim: the classes are [x -> e_1] and [x -> x], each written
+    over the ordered basis -- no ``= e_k`` coordinate tail (that is JSON-only)."""
     A = ql.truncated_polynomial(2, field=ql.GF(2))
     html = render_html(products_chapter(A, "cup", A.cup_products(1)),
                        title="cup", algebra=A)
-    assert "[x → e_1] = e_1" in html
-    assert "[x → x] = e_2" in html
+    assert "[x → e_1]" in html
+    assert "[x → x]" in html
+    assert "[x → e_1] = e_1" not in html
+    assert "[x → x] = e_2" not in html
 
 
 @pytest.mark.oracle_selfcert
@@ -114,16 +119,17 @@ def test_both_surfaces_coexist_with_unique_anchors():
 
 
 @pytest.mark.oracle_selfcert
-def test_connes_degree_sections_homology_verification():
-    """connes_b: homology-side degree sections, the cycle z^n_j classes, and the
-    'is a cycle' verification (the homology twin of the cocycle sentence)."""
+def test_connes_degree_sections_homology_classes():
+    """connes_b: homology-side degree sections and the cycle z^n_j classes written over
+    the ordered basis. The annihilating differential (and its verification) is dropped
+    from the product section (Marco 2026-07-31); it lives in the HH_ degree sections."""
     A = ql.truncated_polynomial(2, field=ql.GF(7))
     cb = A.connes_differentials(2)
     html = render_html(products_chapter(A, "connes_b", cb), title="B", algebra=A)
     assert "id='ws-connes_b-hh-hom-deg-1'" in html
-    assert "is a cycle" in html
-    # the cycle class z^1_1 = (e_1 (x) x) = e_1 (enumeration slot 1) -- rendered
-    assert "e_1 ⊗ x = e_1" in html
+    # the cycle class z^1_1 = e_1 (x) x, written over the ordered basis (no coord tail)
+    assert "e_1 ⊗ x" in html
+    assert "e_1 ⊗ x = e_1" not in html
 
 
 @pytest.mark.oracle_selfcert
@@ -390,12 +396,14 @@ def test_gui_js_copies_byte_identical():
 def test_gui_js_wires_product_degree_sections():
     src = GUI_DOCS.read_text(encoding="utf-8")
     for fn in ("function appendProductReps", "function appendRepsClasses",
-               "function appendRepsDifferential", "function coordVectorText",
-               "function termSumText"):
+               "function appendRepsDifferential", "function termSumText"):
         assert fn in src, fn
-    # called in both product renderers, before the tables
-    assert "appendProductReps(div, b, name)" in src
-    assert 'appendProductReps(div, b, "connes_b")' in src
+    # Marco 2026-07-31: the coordinate-vector inline is gone -- coordVectorText removed.
+    assert "function coordVectorText" not in src
+    # called in both product renderers with show-differential FALSE (the differential
+    # is dropped from product sections, kept in the HH sections).
+    assert "appendProductReps(div, b, name, false)" in src
+    assert 'appendProductReps(div, b, "connes_b", false)' in src
     # the legend points at the explicit listings
     assert "listed explicitly by degree below" in src
     # MINOR 1: degree headings carry linkable anchors and the tables link to them

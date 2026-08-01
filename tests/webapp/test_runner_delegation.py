@@ -74,7 +74,14 @@ never hide behind one:
     byte-identical to the old one after deleting those four keys from the
     ``hh_cohomology`` / ``hh_homology`` block ONLY, so no pre-existing content moved.
     ``canonical_key`` is request-derived and UNCHANGED. (The other five entries carry no
-    plain HH dims block and are untouched.)"""
+    plain HH dims block and are untouched.)
+  * 2026-07-31 (ALL entries re-freeze, Marco ADDENDUM 2 -- json_guide): the result
+    envelope gained ONE additive top-level key, ``json_guide`` -- a per-computation list
+    of ``{object, path, note}`` recipes for recovering every computed object from
+    result.json (``quiverlab.trace.json_guide.build_json_guide``, self-validating). Gated
+    re-freeze: each regenerated blob was asserted byte-identical to the old one after
+    DELETING the ``json_guide`` top-level key, so no pre-existing content moved. The
+    ``canonical_key`` is request-derived and UNCHANGED (no new request fields)."""
 import json
 import pathlib
 

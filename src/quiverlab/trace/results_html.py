@@ -88,7 +88,7 @@ def results_section(results):
     out = []
     for kind, block in items:
         heading = _HEADINGS.get(kind, kind.replace("_", " "))
-        out.append("<h3>%s</h3>" % _esc(heading))
+        out.append("<h3 id='cr-%s'>%s</h3>" % (_esc(kind), _esc(heading)))
         err = block.get("error")
         if err:
             out.append("<p class='ql-note'>not computed — %s</p>"
@@ -106,23 +106,28 @@ def results_section(results):
 def _block_html(kind, b):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
-        chunks = [_dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or [])]
+        from quiverlab.trace.render_html import (
+            hh_element_interpretation, hh_reps_sections, hh_typing_html,
+            route_of_engine)
+        # Typing statement at the TOP of the section (Marco 2026-07-31): exactly what
+        # the engine computes and what the bar-bracket / tensor notation means.
+        chunks = [hh_typing_html(kind, route_of_engine(b.get("engine"))),
+                  _dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or [])]
         if b.get("engine"):
             chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
         chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
         # Plan 35 wave 3d: the element-wise dictionary read-offs (central elements /
         # derivations / deformation cochain / commutator residues) and the per-degree
         # EXPLICIT REPRESENTATIVES, when the block carries them (hochschild.hh_reps).
-        from quiverlab.trace.render_html import (
-            hh_element_interpretation, hh_reps_sections)
         chunks.extend(hh_element_interpretation(kind, b.get("basis_classes"),
                                                 b.get("inner_dims")))
         secs = hh_reps_sections(kind, b.get("basis_classes"), b.get("chain_basis"),
                                 b.get("differentials"), anchor_prefix="cr-" + kind)
         if secs:
-            chunks.append("<p><i>Explicit representatives by degree — each class as a "
-                          "term-sum and a coordinate vector over the ordered (co)chain "
-                          "basis, with the differential that annihilates it.</i></p>")
+            chunks.append("<p><i>Explicit representatives by degree — each class "
+                          "written over the ordered (co)chain basis, with the "
+                          "differential that annihilates it. Coordinate vectors are "
+                          "in the JSON.</i></p>")
             chunks.extend(secs)
         return chunks
     if kind == "cyclic_homology":
@@ -139,9 +144,9 @@ def _block_html(kind, b):
                                       anchor_prefix="cr")
         if secs:
             chunks.append("<p><i>Explicit representatives by degree — the total complex "
-                          "Tot_n = C_n ⊕ C_{n-2} ⊕ …, each class as a term-sum and a "
-                          "coordinate vector over the ordered basis, with the total "
-                          "differential b+B that annihilates it.</i></p>")
+                          "Tot_n = C_n ⊕ C_{n-2} ⊕ …, each class written over the "
+                          "ordered basis, with the total differential b+B that "
+                          "annihilates it. Coordinate vectors are in the JSON.</i></p>")
             chunks.extend(secs)
         return chunks
     if kind == "cartan":
@@ -181,9 +186,9 @@ def _block_html(kind, b):
                                     b.get("differentials"), kind,
                                     anchor_prefix="cr")
         if secs:
-            chunks.append("<p><i>Explicit representatives by degree — each class as a "
-                          "term-sum and a coordinate vector over the ordered basis, with "
-                          "the differential that annihilates it.</i></p>")
+            chunks.append("<p><i>Explicit representatives by degree — each class "
+                          "written over the ordered basis, with the differential that "
+                          "annihilates it. Coordinate vectors are in the JSON.</i></p>")
             chunks.extend(secs)
         # Plan 35 wave 3c: the Yoneda exact-sequence interpretation (Ext only) -- each
         # class as the constructed + certified exact sequence 0 -> N -> Q -> ... -> M -> 0.
@@ -340,8 +345,9 @@ def _resolution_html(kind, b):
     return out
 
 
-# ordered term-basis entries shown inline before a machine-record pointer.
-_TERM_BASIS_DISPLAY = 64
+# ordered term-basis entries shown inline before a machine-record pointer (Marco
+# 2026-07-31: at most the first 50 basis elements of a space are displayed).
+_TERM_BASIS_DISPLAY = 50
 
 
 def _term_basis_html(b, proj):
@@ -438,8 +444,11 @@ def _product_tables_html(kind, b):
         product_degree_sections, product_table_reference)
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend(kind, "", b.get("basis")))]
+    # Product sections drop the annihilating differential (Marco 2026-07-31); it lives
+    # in the HH degree sections.
     secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
-                                   b.get("differentials"), anchor_prefix="cr-" + kind)
+                                   b.get("differentials"), anchor_prefix="cr-" + kind,
+                                   show_differential=False)
     have_reps = bool(secs)
     if have_reps:
         out.append("<p><b>Explicit representatives by degree</b></p>")
@@ -483,7 +492,8 @@ def _connes_b_html(b):
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend("connes_b", "", None))]
     secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
-                                   b.get("differentials"), anchor_prefix="cr-connes_b")
+                                   b.get("differentials"), anchor_prefix="cr-connes_b",
+                                   show_differential=False)
     have_reps = bool(secs)
     if have_reps:
         out.append("<p><b>Explicit representatives by degree</b></p>")
