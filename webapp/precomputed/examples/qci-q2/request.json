@@ -20,6 +20,10 @@
   "compute": [
     "hh_cohomology:0..8",
     "hh_homology:0..8",
+    "cup:0..5",
+    "cap:0..5",
+    "bracket:0..5",
+    "connes_b:0..7",
     "cartan",
     "coxeter_polynomial",
     "global_dimension",

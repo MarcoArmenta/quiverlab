@@ -13,28 +13,55 @@
 # The six entries below are the curated worked examples of container/examples/
 # (same requests minus the CLI-only hpc block); the offline GUI replays each one
 # instantly from the Plan-25 result cache.
+#
+# Plan 35 -- the HH product surface (cup / cap / bracket / connes_b) is now part
+# of each request, inserted right after hh_homology in the GUI compose order
+# (gated by tests/webapp/test_curated_reachability.py). Each product's degree top
+# is the largest that finishes the ~120s Task-12 feasibility probe box; the
+# per-example "products:" note below records every trim and every omission. The
+# products route through the bar/tt calculus (to_engine + cochain bases); its
+# cochain dimensions grow fast with degree, so tops are trimmed well below the HH
+# top on all but the hereditary Kronecker example, and the two deep bar-blow-up
+# examples (dim >= 220) carry NO products at all.
 examples:
   # QuantumCI q=2 over GF(32003): the full invariant surface on the dim-4
   # quantum complete intersection (HH to degree 8, module surface on S(1)).
+  # products: cup/cap/bracket:0..5, connes_b:0..7 -- trimmed from HH top 8; the
+  # bar/tt cochain growth blows the probe box past degree 5 (cup/cap/bracket) and
+  # degree 7 (connes_b).
   - stored: examples/qci-q2
 
   # Cyclic Nakayama kZ_4/J^3 over GF(7): decomposable no-code module
   # M = P(1) (+) S(2), additive tau, rotating resolutions.
+  # products: cup/cap/bracket/connes_b:0..2 -- trimmed from HH top 6 (bar/tt
+  # cochain growth past degree 2 on the cyclic Nakayama bar complex).
   - stored: examples/nakayama-kz4
 
   # The 3x3 commutative grid kA_3 (x) kA_3 (dim 36, explicit quiver,
   # non-monomial relations): interior staircase modules, N = tau M,
   # Ext^1 = the AR class, finite global dimension.
+  # products: cup/cap/bracket/connes_b:0..1 -- trimmed from HH top 4 (dim 36,
+  # bar/tt cochain growth blows the probe box past degree 1).
   - stored: examples/grid3x3
 
   # Deep-degree kZ_20/J^11 (dim 220): the period-4 HH pattern to degree 10,
   # Omega-periodic Ext/Tor on interval modules.
+  # products: OMITTED -- the bar/tt product route's to_engine setup alone is ~290s
+  # (past the probe box) and the degree-2 cochain basis is 10.5M cells (max_cells
+  # forces the CS route or OOM); bracket/connes_b have no CS route at all. No
+  # product finishes the box at any degree. (HH is computed via the cheap Bardzell
+  # engine, which never builds to_engine -- that is why HH:0..10 ships but the
+  # products do not.)
   - stored: examples/nakayama-kz20-deep
 
   # Scale run kZ_24/J^13 (dim 312): same HH pattern (family invariant),
   # 13x13 resolution differentials.
+  # products: OMITTED -- same bar-blow-up wall as kZ_20, only worse (larger
+  # to_engine + cochain bases at dim 312).
   - stored: examples/nakayama-kz24-deep
 
   # The Kronecker homogeneous tube: M = R_2(20) (dim 40, Jordan-block action),
   # tau M = M, Ext^1 = min(n, m), full 40x60 / 60x20 differentials.
+  # products: cup/cap/bracket/connes_b:0..4 -- the FULL HH top (hereditary path
+  # algebra, HH concentrated in low degree, no cochain blow-up).
   - stored: examples/kronecker-regular
