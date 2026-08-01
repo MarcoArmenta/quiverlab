@@ -61,6 +61,11 @@
     '<div class="qlgui-row" id="qlgui-invariants">' +
     '  <label><input type="checkbox" id="qlgui-hhc" checked> HH^0..<select id="qlgui-hhc-top"></select></label>' +
     '  <label><input type="checkbox" id="qlgui-hhh"> HH_0..<select id="qlgui-hhh-top"></select></label>' +
+    // ---- Plan 35: HH product surface (cup / cap / bracket / connes_b) ----
+    '  <label><input type="checkbox" id="qlgui-cup"> cup 0..<input type="number" id="qlgui-cup-top" value="2" min="0"></label>' +
+    '  <label><input type="checkbox" id="qlgui-cap"> cap 0..<input type="number" id="qlgui-cap-top" value="2" min="0"></label>' +
+    '  <label><input type="checkbox" id="qlgui-bracket"> bracket 0..<input type="number" id="qlgui-bracket-top" value="2" min="0"></label>' +
+    '  <label><input type="checkbox" id="qlgui-connes_b"> Connes B 0..<input type="number" id="qlgui-connes_b-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
@@ -129,7 +134,10 @@
 
   var el = {};
   ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
-   "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top", "cartan",
+   "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top",
+   // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
+   "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
+   "connes_b", "connes_b-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -629,6 +637,12 @@
     var compute = [];
     if (el.hhc.checked) compute.push("hh_cohomology:0.." + el["hhc-top"].value);
     if (el.hhh.checked) compute.push("hh_homology:0.." + el["hhh-top"].value);
+    // Plan 35 HH product surface, in the Task-12 curated-request order (cup, cap,
+    // bracket, connes_b) immediately after hh_homology -- do not reorder.
+    if (el.cup.checked) compute.push("cup:0.." + el["cup-top"].value);
+    if (el.cap.checked) compute.push("cap:0.." + el["cap-top"].value);
+    if (el.bracket.checked) compute.push("bracket:0.." + el["bracket-top"].value);
+    if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
@@ -1151,6 +1165,86 @@
     appendInputCert(div, t, name);
   }
 
+  // ---- HH product surface rendering (Plan 35) ----
+  // .blocks() shapes: cup/cap/bracket carry `tables`, each with degrees /
+  // out_degree / dims=[dl,dr,dout] / constants[k][i][j] (exact strings);
+  // connes_b carries per-n `matrices` + `ranks`. gui.js hardcodes English (the
+  // webapp families page carries the i18n twins block.*.title / products.zero).
+  var PRODUCT_TITLE = { cup: "Cup product tables", cap: "Cap product tables",
+                        bracket: "Gerstenhaber bracket tables",
+                        connes_b: "Connes differentials" };
+  var PRODUCT_OP = { cup: "\\cup", cap: "\\cap" };
+  function productHeading(name, degrees, out) {
+    var p = degrees[0], q = degrees[1];
+    if (name === "cup")
+      return "\\( HH^{" + p + "} \\cup HH^{" + q + "} \\to HH^{" + out + "} \\)";
+    if (name === "cap")
+      return "\\( HH^{" + p + "} \\cap HH_{" + q + "} \\to HH_{" + out + "} \\)";
+    return "\\( [HH^{" + p + "}, HH^{" + q + "}] \\to HH^{" + out + "} \\)";
+  }
+  function coeffTerm(c, sym) {              // exact-string coeff -> "c f_k" LaTeX
+    if (c === "1") return sym;
+    if (c === "-1") return "-" + sym;
+    return c + " \\cdot " + sym;
+  }
+  // The nonzero structure-constant equations of ONE table: for each (i, j),
+  // e_i * e_j = sum_k constants[k][i][j] f_k, zero terms skipped and a fully-zero
+  // equation omitted (the whole-table-zero case is the caller's "vanish" line).
+  function productEquations(name, t) {
+    var K = t.constants || [], dims = t.dims || [0, 0, 0];
+    var dl = dims[0], dr = dims[1], dout = dims[2], lines = [];
+    for (var i = 0; i < dl; i++) {
+      for (var j = 0; j < dr; j++) {
+        var terms = [];
+        for (var k = 0; k < dout; k++) {
+          var c = String(((K[k] || [])[i] || [])[j]);
+          if (c === "0" || c === "undefined") continue;
+          terms.push(coeffTerm(c, "f_{" + (k + 1) + "}"));
+        }
+        if (!terms.length) continue;
+        var lhs = (name === "bracket")
+          ? "[e_{" + (i + 1) + "}, e_{" + (j + 1) + "}]"
+          : "e_{" + (i + 1) + "} " + PRODUCT_OP[name] + " e_{" + (j + 1) + "}";
+        lines.push("\\( " + lhs + " = " + terms.join(" + ") + " \\)");
+      }
+    }
+    return lines;
+  }
+  function renderProductTables(div, name, b) {
+    div.appendChild(h("p", { text: PRODUCT_TITLE[name] }));
+    (b.tables || []).forEach(function (t) {
+      div.appendChild(h("p", { "class": "arithmatex",
+        text: productHeading(name, t.degrees, t.out_degree) }));
+      var d = t.dims || [0, 0, 0];
+      var zero = !d[0] || !d[1] || (t.constants || []).every(matIsZero);
+      if (zero) {
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "all products vanish in this degree pair" }));
+        return;
+      }
+      productEquations(name, t).forEach(function (line) {
+        div.appendChild(h("p", { "class": "arithmatex", text: line }));
+      });
+    });
+    if (name === "bracket" && b.window != null) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "served to degree window " + b.window + " (bar-transport bound)" }));
+    }
+    div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+  }
+  function renderConnesB(div, b) {
+    div.appendChild(h("p", { text: PRODUCT_TITLE.connes_b }));
+    var keys = Object.keys(b.matrices || {})
+      .map(Number).sort(function (a, c) { return a - c; });
+    keys.forEach(function (n) {
+      div.appendChild(h("p", { "class": "arithmatex",
+        text: "\\( B_{" + n + "} : HH_{" + n + "} \\to HH_{" + (n + 1) + "} \\)" }));
+      div.appendChild(matrixGrid(b.matrices[String(n)]));
+      div.appendChild(h("p", { text: "rank B_" + n + " = " + b.ranks[String(n)] }));
+    });
+    div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+  }
+
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
     var div = h("div", { "class": "qlgui-block" });
@@ -1166,6 +1260,10 @@
       div.appendChild(h("p", { text: sup ? "Hochschild cohomology" : "Hochschild homology" }));
       div.appendChild(h("table", {}, head, row));
       div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+    } else if (name === "cup" || name === "cap" || name === "bracket") {
+      renderProductTables(div, name, b);
+    } else if (name === "connes_b") {
+      renderConnesB(div, b);
     } else if (name === "cartan") {
       div.appendChild(h("p", { text: "Cartan matrix:" }));
       div.appendChild(matrixGrid(b.matrix));
@@ -1271,7 +1369,9 @@
     fitTimer = setTimeout(fitMath, 150);
   });
   el.relations.addEventListener("input", scheduleProbe);
-  [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"], el.cartan,
+  [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
+   el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
+   el.connes_b, el["connes_b-top"], el.cartan,
    el.coxeter_polynomial, el.global_dimension, el.center]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls

@@ -40,6 +40,11 @@
   <label>{{ t("form.invariants") }}</label>
   <label><input type="checkbox" name="compute" value="hh_cohomology:0..6" checked> {{ t("inv.hh_cohomology") }}</label>
   <label><input type="checkbox" name="compute" value="hh_homology:0..6"> {{ t("inv.hh_homology") }}</label>
+  {# Plan 35: HH product surface (cup / cap / bracket / connes_b). #}
+  <label><input type="checkbox" name="compute" value="cup:0..2"> {{ t("inv.cup") }}</label>
+  <label><input type="checkbox" name="compute" value="cap:0..2"> {{ t("inv.cap") }}</label>
+  <label><input type="checkbox" name="compute" value="bracket:0..2"> {{ t("inv.bracket") }}</label>
+  <label><input type="checkbox" name="compute" value="connes_b:0..2"> {{ t("inv.connes_b") }}</label>
   <label><input type="checkbox" name="compute" value="coxeter_polynomial"> {{ t("inv.coxeter") }}</label>
   <label><input type="checkbox" name="compute" value="cartan"> {{ t("inv.cartan") }}</label>
   <label><input type="checkbox" name="compute" value="global_dimension"> {{ t("inv.gldim") }}</label>
