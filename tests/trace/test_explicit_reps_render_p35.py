@@ -219,6 +219,23 @@ def test_bar_term_basis_omitted_without_algebra():
     assert "Ordered basis of the degree-1 cochain space" not in html
 
 
+@pytest.mark.oracle_selfcert
+def test_cs_worked_steps_carry_cs_term_basis():
+    """Review fix (IMPORTANT): an engine='cs' HH report used to show the differential
+    grid with corner naming only and NO way to read its columns. The CS resolution term
+    basis is now enumerated (rebuilt from the deterministic CS resolution, length-guarded
+    against the recorded term dim). k[x]/(x^3): C^1 = {[x -> e_1], [x -> x], [x -> x*x]}."""
+    A = ql.truncated_polynomial(3, field=QQ)
+    events = []
+    A.hochschild_cohomology(2, verbose=False, trace=events, engine="cs")
+    html = render_html(events, title="HH cs", algebra=A)
+    assert "Worked resolution steps" in html
+    assert "Ordered basis of the degree-1 cochain space" in html
+    p = _order(html, "Ordered basis of the degree-1 cochain space",
+               "[x → e_1]", "[x → x]", "[x → x*x]")
+    assert p == sorted(p), p
+
+
 # --------------------------------------------------------------------------- #
 # (3) Module resolutions: term_basis interpretability + rendering + tolerance.
 # --------------------------------------------------------------------------- #
@@ -254,6 +271,51 @@ def test_term_basis_lengths_match_injective_differential_rows():
         D = res.differential(n)
         rows = len(D) if D else 0
         assert len(tb[n]) == rows, (n, len(tb[n]), rows)          # rows index E^n
+
+
+@pytest.mark.oracle_selfcert
+def test_injective_term_basis_content_order_pinned():
+    """Review MINOR 2: pin the injective term_basis CONTENT ORDER (labels order ==
+    differential row order), not only its length. E^n's dual basis IS the projective
+    resolution of DM (over A^op), and the injective differential is that resolution's
+    transpose -- so the injective term basis paths equal the proj-resolution-of-DM term
+    basis paths IN ORDER, and each differential's ROW count is the term size (rows index
+    E^n). Plus an exact label-order literal for a known injective resolution."""
+    from quiverlab.hpc.spec import _term_basis_blocks
+    from quiverlab.modules.duality import dualize
+    A = _kA3()
+    M = A.simple(3)
+    inj = M.injective_resolution(3)
+    tb = _term_basis_blocks(inj, "injective_resolution", M)
+    assert tb[0] == ["I_3: e_3", "I_3: b", "I_3: b*a"]     # exact order, not just length
+    assert tb[1] == ["I_2: e_2", "I_2: a"]
+    # independent order pin: the injective differential is the transpose of the proj.
+    # resolution of DM, so its rows index that resolution's term basis, in order.
+    DM = dualize(M)
+    ptb = _term_basis_blocks(DM.projective_resolution(3), "projective_resolution", DM)
+    for n in range(len(inj.terms)):
+        assert [x.split(": ", 1)[1] for x in tb[n]] == [x.split(": ", 1)[1] for x in ptb[n]]
+        D = inj.differential(n)
+        assert len(tb[n]) == (len(D) if D else 0)          # rows index E^n, this order
+
+
+def test_product_tables_link_to_their_degree_sections():
+    """Review MINOR 1: the degree anchors are LINKED, not merely present -- each product
+    table carries a 'classes:' line hyperlinking its operands' and output's degree
+    sections, in both the worked-steps chapter (ws-) and the Computed-results block (cr-)."""
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
+    hp = A.cup_products(1)
+    html = render_html(products_chapter(A, "cup", hp), title="cup", algebra=A,
+                       results={"cup": hp.blocks()})
+    assert "href='#ws-cup-hh-coh-deg-1'" in html          # chapter table -> degree section
+    assert "href='#cr-cup-hh-coh-deg-1'" in html          # results table -> degree section
+    assert "id='ws-cup-hh-coh-deg-1'" in html             # the targets exist
+    # connes links to source/target homology degrees
+    cb = A.connes_differentials(2)
+    h2 = render_html(products_chapter(A, "connes_b", cb), title="B", algebra=A,
+                     results={"connes_b": cb.blocks()})
+    assert "href='#ws-connes_b-hh-hom-deg-1'" in h2
+    assert "href='#cr-connes_b-hh-hom-deg-1'" in h2
 
 
 @pytest.mark.oracle_crossengine
@@ -332,9 +394,13 @@ def test_gui_js_wires_product_degree_sections():
                "function termSumText"):
         assert fn in src, fn
     # called in both product renderers, before the tables
-    assert "if (appendProductReps(div, b))" in src
+    assert "appendProductReps(div, b, name)" in src
+    assert 'appendProductReps(div, b, "connes_b")' in src
     # the legend points at the explicit listings
     assert "listed explicitly by degree below" in src
+    # MINOR 1: degree headings carry linkable anchors and the tables link to them
+    assert "function degreeLink" in src and "function productTableLinks" in src
+    assert 'id: "gui-" + name + "-hh-" + side + "-deg-" + n' in src
 
 
 def test_gui_js_wires_term_basis_next_to_differentials():

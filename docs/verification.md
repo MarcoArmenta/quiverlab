@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2566 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2569 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-01, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
 Marco's report-completeness pass, the Plan-35 Hochschild product surface, its
 explicit-representatives capture, and the Plan-35 UNIT-2 rendering — each product
@@ -387,7 +387,7 @@ Plan-35 product surface).
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
-| `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, and the Plan-35 UNIT-2 explicit-reps rendering) | 209 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar HH worked-steps carry each (co)chain term's ordered basis; module resolution `term_basis` lengths match the differential row/col dims) + the missing-fields tolerance + the two-runner `term_basis` equality |
+| `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, and the Plan-35 UNIT-2 explicit-reps rendering) | 212 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + the missing-fields tolerance + the two-runner `term_basis` equality |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
 | `qpa/` (GAP/QPA crosscheck) | 144 | 123 qpa + 21 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
 | `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 426 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
@@ -408,7 +408,7 @@ plus the **orthogonal** oracle-class markers below (which never change a bucket)
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1165 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `fast` | 1168 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
 | `deep` | 1278 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 123 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
@@ -467,9 +467,9 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 732 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 421 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 710 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 712 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 123 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1421 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1423 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-08-01 (through Plan 35 UNIT 2). The oracle markers live only on the
 pure-library `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` /
