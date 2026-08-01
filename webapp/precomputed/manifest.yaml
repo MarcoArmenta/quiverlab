@@ -47,9 +47,12 @@ examples:
   # Deep-degree kZ_20/J^11 (dim 220): the period-4 HH pattern to degree 10,
   # Omega-periodic Ext/Tor on interval modules.
   # products: OMITTED -- the bar/tt product route's to_engine setup alone is ~290s
-  # (past the probe box) and the degree-2 cochain basis is 10.5M cells (max_cells
-  # forces the CS route or OOM); bracket/connes_b have no CS route at all. No
-  # product finishes the box at any degree. (HH is computed via the cheap Bardzell
+  # (past the ~120s feasibility probe box) and the degree-2 cochain basis is 10.5M
+  # cells (max_cells forces the CS route or OOM); bracket/connes_b have no CS route
+  # at all. No product finishes the box at any degree. Confirmed directly: the
+  # controller ran cup:0..2 on this algebra under a 1500s (25-min) in-process
+  # signal.alarm and it TIMED OUT with no result -- the omission is not a
+  # short-box artifact but a hard wall. (HH is computed via the cheap Bardzell
   # engine, which never builds to_engine -- that is why HH:0..10 ships but the
   # products do not.)
   - stored: examples/nakayama-kz20-deep
@@ -57,7 +60,9 @@ examples:
   # Scale run kZ_24/J^13 (dim 312): same HH pattern (family invariant),
   # 13x13 resolution differentials.
   # products: OMITTED -- same bar-blow-up wall as kZ_20, only worse (larger
-  # to_engine + cochain bases at dim 312).
+  # to_engine + cochain bases at dim 312). The controller's 1500s (25-min)
+  # in-process-alarm cup:0..2 timeout on the smaller kZ_20 settles this a
+  # fortiori: dim 312 cannot finish where dim 220 already could not.
   - stored: examples/nakayama-kz24-deep
 
   # The Kronecker homogeneous tube: M = R_2(20) (dim 40, Jordan-block action),
