@@ -3,8 +3,10 @@ via the Plan-20/21 native collapses of the lifted diagonal. Any exact Domain,
 any degree (no bar window). The bracket is NOT served here: its only route is
 the GF(p) tt facade (see the Plan-35 spec amendment)."""
 from quiverlab.errors import QuiverlabError
-from quiverlab.fields.linalg import solve
-from quiverlab.hochschild.products import HHProducts, ProductTable, _pairs, _REFERENCES
+# _class_coords: the shared solve-in-[image|reps] lives in hochschild.products
+# (stringify=True is exactly this module's former string-returning behavior).
+from quiverlab.hochschild.products import (
+    HHProducts, ProductTable, _class_coords, _pairs, _REFERENCES)
 
 
 def _columns(M):
@@ -12,28 +14,6 @@ def _columns(M):
     identical to ``resolutions_cs.homology._columns`` (the image basis the reps
     were reduced against, so reps and image share one orientation)."""
     return [[row[c] for row in M] for c in range(len(M[0]))] if M and M[0] else []
-
-
-def _class_coords(vec, reps, image_cols, dom):
-    """Coordinates of `vec` in the class basis `reps`, modulo `image_cols`:
-    solve [image | reps] x = vec and read off the reps segment. Loud when the
-    vector is not a (co)cycle representative (descent failure).
-
-    The reps segment is well-defined for any particular solution: the reps are
-    linearly independent modulo span(image_cols) (that is how ``cs_hh_basis``
-    picks them), so two solutions differ only in the image block."""
-    cols = list(image_cols) + list(reps)
-    if not cols:
-        if any(not dom.is_zero(dom.coerce(v)) for v in vec):
-            raise QuiverlabError("product failed to land in the zero space")
-        return []
-    Mat = [[dom.coerce(cols[c][r]) for c in range(len(cols))]
-           for r in range(len(vec))]
-    x = solve(Mat, [dom.coerce(v) for v in vec], dom)
-    if x is None:
-        raise QuiverlabError("product failed to descend to (co)homology "
-                             "(not in the cycle span) -- this is a bug, report it")
-    return [str(c) for c in x[len(image_cols):]]
 
 
 def cs_product_tables(A, kind, top, max_cells):
