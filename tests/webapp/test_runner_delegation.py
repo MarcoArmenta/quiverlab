@@ -56,7 +56,14 @@ never hide behind one:
     block's overloaded LIST-shaped ``differentials`` was NOT touched -- ext/tor ship the
     dict shape ``{str(degree): ...}``), so no pre-existing content moved. The
     ``canonical_key`` is request-derived and UNCHANGED. (The other six entries are
-    untouched -- only ``module_ext`` computes ``ext``.)"""
+    untouched -- only ``module_ext`` computes ``ext``.)
+  * 2026-08-01 (``module_ext`` re-freeze, Plan 35 wave 3c -- Yoneda exact sequences):
+    the ``ext`` block gained the additive ``interpretation`` key (per class, the
+    constructed + self-certified n-fold exact sequence 0 -> N -> Q -> ... -> M -> 0
+    realizing it). Gated re-freeze, scoped BY KEY: the regenerated blob was asserted
+    byte-identical to the old one after deleting the ``interpretation`` key from the EXT
+    block ONLY, so no pre-existing content moved. ``canonical_key`` is request-derived
+    and UNCHANGED. (Only ``module_ext`` computes ``ext``.)"""
 import json
 import pathlib
 

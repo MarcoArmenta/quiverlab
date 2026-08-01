@@ -83,7 +83,8 @@ def cyclic_homology_dims(A, top, max_cells=4_000_000, with_reps=False):
         src, tgt = _tot_degrees(n), _tot_degrees(n - 1)
         if not tgt:
             ranks[n] = 0
-            Dstore[n] = []                       # 0-row total differential (n = 0)
+            if with_reps:
+                Dstore[n] = []                   # 0-row total differential (n = 0)
             continue
         row_off, off = {}, 0
         for d in tgt:
@@ -110,7 +111,8 @@ def cyclic_homology_dims(A, top, max_cells=4_000_000, with_reps=False):
                             Dr[c0 + c] = dom.add(Dr[c0 + c], val)
             c0 += dims[d]
         ranks[n] = rank(D, dom) if nrows and ncols else 0
-        Dstore[n] = D
+        if with_reps:                            # dims-only path keeps no O(top) matrices
+            Dstore[n] = D
     out = []
     for n in range(top + 1):
         tot = sum(dims[d] for d in _tot_degrees(n))
