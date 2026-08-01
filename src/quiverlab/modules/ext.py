@@ -25,14 +25,16 @@ def _delta_matrix(Hn, Hn1, dn1, dom):
     return lm.cols_to_matrix(cols)
 
 
-def ext_dims(A, M, N, top, with_reps=False):
+def ext_dims(A, M, N, top, with_reps=False, interpret=False):
     """``[dim Ext^0, ..., dim Ext^top]``. With ``with_reps=True`` returns
     ``(dims, payload)`` where ``payload`` carries the explicit cocycle representatives
     (``basis_classes`` / ``chain_basis`` / ``differentials`` per degree, Plan 35 wave
-    3a) captured from the SAME Hom complex -- see ``modules.complex_reps.ext_reps``."""
+    3a) captured from the SAME Hom complex -- see ``modules.complex_reps.ext_reps``.
+    With ``interpret=True`` the payload also carries the Yoneda exact-sequence
+    ``interpretation`` of every class (Plan 35 wave 3c)."""
     if with_reps:
         from quiverlab.modules.complex_reps import ext_reps
-        return ext_reps(A, M, N, top)
+        return ext_reps(A, M, N, top, interpret=interpret)
     _assert_comparable(M, N, "Ext")             # left vs right is a category error
     dom = A.domain
     terms, dmats = minimal_resolution(M, top + 1)

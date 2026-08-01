@@ -193,11 +193,18 @@ def _hom_adjunction_basis(N, tinfo, dom, vbcache):
     return elements, homs
 
 
-def ext_reps(A, M, N, top):
+def ext_reps(A, M, N, top, interpret=False):
     """``(dims, payload)`` for ``Ext^0..top_A(M, N)``. ``payload`` carries
     ``basis_classes`` / ``chain_basis`` / ``differentials`` keyed by ``str(degree)``
     (single side -- Ext is cohomological). ``dims`` is asserted equal to
-    ``ext_dims(A, M, N, top)`` (basis independence)."""
+    ``ext_dims(A, M, N, top)`` (basis independence).
+
+    With ``interpret=True`` the payload also carries ``interpretation`` (Plan 35 wave
+    3c): for each degree ``n >= 1`` class, the explicit Yoneda ``n``-fold exact
+    sequence ``0 -> N -> Q -> P_{n-2} -> ... -> P_0 -> M -> 0`` realizing it -- the
+    middle module ``Q`` as a full representation, every connecting map as a matrix, and
+    the SELF-CERTIFIED exactness facts (a class whose sequence fails certification ships
+    an honest ``error`` entry, never a wrong sequence)."""
     from quiverlab.modules.ext import _delta_matrix
     from quiverlab.modules.hom import _assert_comparable
     _assert_comparable(M, N, "Ext")
@@ -216,12 +223,13 @@ def ext_reps(A, M, N, top):
         deltas.append(_delta_matrix(homs[n], homs[n + 1], dn1, dom)
                       if (dn1 and dn1[0]) else
                       lm.zeros(len(homs[n + 1]), len(homs[n]), dom))
-    bc, cb, diffs, dims = {}, {}, {}, []
+    bc, cb, diffs, dims, cols_by_deg = {}, {}, {}, [], {}
     for n in range(top + 1):
         space = len(homs[n]) if n < len(homs) else 0
         here = deltas[n] if n < len(deltas) else None
         prev = deltas[n - 1] if 0 <= n - 1 < len(deltas) else None
         cols = _reps_from_complex(here, prev, space, dom) if space else []
+        cols_by_deg[n] = cols
         dims.append(len(cols))
         elems = elements[n] if n < len(elements) else []
         bc[str(n)] = _classes_from_columns(cols, elems, n, "ext", dom)
@@ -229,7 +237,120 @@ def ext_reps(A, M, N, top):
         diffs[str(n)] = _ext_differential(here, space,
                                           len(homs[n + 1]) if n + 1 < len(homs) else 0, n)
     _cross_check(dims, A, M, N, top, "Ext")
-    return dims, {"basis_classes": bc, "chain_basis": cb, "differentials": diffs}
+    payload = {"basis_classes": bc, "chain_basis": cb, "differentials": diffs}
+    if interpret:
+        payload["interpretation"] = _ext_interpretation(
+            A, M, N, top, terms, dmats, homs, cols_by_deg)
+    return dims, payload
+
+
+def _ext_interpretation(A, M, N, top, terms, dmats, homs, cols_by_deg):
+    """The Yoneda-extension interpretation of every degree ``n >= 1`` Ext class: build
+    the ``n``-fold exact sequence, self-certify it, and serialize it. Guarded per class
+    -- a construction/certification failure yields an honest ``error`` entry."""
+    dom = A.domain
+    sequences = {}
+    for n in range(1, top + 1):
+        cols = cols_by_deg.get(n) or []
+        if not cols:
+            continue
+        width = len(homs[n][0][0]) if (n < len(homs) and homs[n]) else 0
+        out = []
+        for i, col in enumerate(cols):
+            name = "\\alpha^{%d}_{%d}" % (n, i + 1)
+            out.append(_one_ext_sequence(A, M, N, n, col, homs[n], width, terms,
+                                         dmats, name))
+        sequences[str(n)] = out
+    return {"theory": "ext", "sequences": sequences}
+
+
+def _reconstruct_cocycle(col, homs_n, n_dim, width, dom):
+    """The class's actual cocycle ``f: P_n -> N`` (``n_dim x width`` matrix) as the
+    ``col``-combination of the ambient Hom-basis matrices ``homs_n``."""
+    f = lm.zeros(n_dim, width, dom)
+    for idx, c in enumerate(col):
+        if dom.is_zero(c):
+            continue
+        h = homs_n[idx]
+        for r in range(n_dim):
+            fr, hr = f[r], h[r]
+            for j in range(width):
+                fr[j] = dom.add(fr[j], dom.mul(c, hr[j]))
+    return f
+
+
+def _summand_display(mod):
+    """A resolution term module's display label ``P_{v} (+) P_{w}`` from its summand
+    vertices, or its dimension-vector shape when the summands are not recorded."""
+    verts = getattr(mod, "_summand_vertices", None)
+    if not verts:
+        return "P"
+    counts = {}
+    for v in verts:
+        counts[v] = counts.get(v, 0) + 1
+    parts = []
+    for v in sorted(counts, key=lambda x: (0, x) if isinstance(x, int)
+                    and not isinstance(x, bool) else (1, str(x))):
+        c = counts[v]
+        parts.append("P_{%s}^{%d}" % (v, c) if c > 1 else "P_{%s}" % v)
+    return " \\oplus ".join(parts)
+
+
+def _safe_identify(mod):
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.modules.hom import identify_standard
+    try:
+        return identify_standard(mod)
+    except QuiverlabError:
+        return None
+
+
+def _one_ext_sequence(A, M, N, n, col, homs_n, width, terms, dmats, name):
+    """Build + certify + serialize ONE class's Yoneda sequence. Never raises -- a loud
+    library refusal (bad cocycle, oversize, undecidable) becomes an honest error entry."""
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.modules.qpa_module import module_blocks
+    from quiverlab.modules.yoneda import yoneda_sequence
+    dom = A.domain
+    try:
+        f = _reconstruct_cocycle(col, homs_n, N.dim, width, dom)
+        seq = yoneda_sequence(M, N, f, n, terms, dmats)
+        ok, info = seq.check_exact()
+    except QuiverlabError as exc:
+        return {"class_name": name, "degree": n, "certified": False,
+                "error": str(exc)}
+    mods_out = []
+    for mod, role in zip(seq.modules, seq.roles):
+        dv = {str(v): int(d) for v, d
+              in sorted(mod.dimension_vector().items(), key=lambda kv: str(kv[0]))}
+        entry = {"role": role, "dim": mod.dim, "dimvec": dv}
+        if role == "sub":
+            entry["label"] = "N"
+        elif role == "quotient":
+            entry["label"] = "M"
+        elif role == "middle":
+            entry["label"] = "E" if n == 1 else "Q"
+            entry["module"] = module_blocks(mod)
+            std = _safe_identify(mod)
+            if std is not None:
+                entry["standard"] = {"kind": std[0], "vertex": str(std[1])}
+        else:                                            # resolution_term
+            entry["label"] = _summand_display(mod)
+        mods_out.append(entry)
+    maps_out = []
+    for i, fmat in enumerate(seq.maps):
+        rows = len(fmat)
+        cols = len(fmat[0]) if (fmat and fmat[0]) else 0
+        ser = serialize_differential((rows, cols), (lambda fm=fmat: fm),
+                                     "connecting map", _Str)
+        ser["from"] = mods_out[i]["label"]
+        ser["to"] = mods_out[i + 1]["label"]
+        maps_out.append(ser)
+    return {"class_name": name, "degree": n,
+            "kind": "baer" if n == 1 else "spliced",
+            "certified": bool(ok),
+            "modules": mods_out, "maps": maps_out,
+            "facts": info if ok else [], **({} if ok else {"error": info})}
 
 
 def _ext_differential(here, cols, rows, n):
