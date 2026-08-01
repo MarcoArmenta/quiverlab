@@ -64,6 +64,20 @@ def test_product_blocks_match_spec_runner(tmp_path):
         assert gui[kind] == ref[kind], kind
 
 
+def test_both_runners_carry_explicit_reps(tmp_path):
+    """Plan 35 explicit representatives: both runners emit basis_classes /
+    chain_basis / differentials for every product kind (the key-for-key equality
+    above passes even if BOTH dropped them, so pin their PRESENCE here)."""
+    gui = _gui_blocks(_BODY)
+    ref = _server_blocks(_BODY, tmp_path)
+    for kind in _KINDS:
+        for field in ("basis_classes", "chain_basis", "differentials"):
+            assert field in gui[kind], (kind, field, "gui")
+            assert field in ref[kind], (kind, field, "server")
+        # every product block carries a homology or cohomology side (never empty)
+        assert gui[kind]["basis_classes"], kind
+
+
 def test_product_block_carries_references_and_citations(tmp_path):
     # The twin's product block keeps `references` (from `.blocks()`) AND the
     # resolved `citations` pairs, exactly like every other invariant block --

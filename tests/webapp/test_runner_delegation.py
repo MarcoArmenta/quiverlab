@@ -29,7 +29,14 @@ never hide behind one:
   * 2026-08-01 (``products_loop_gf2``): ADDED for Plan 35 -- the new
     cup/cap/bracket/connes_b compute kinds. One entry (``cup:0..2`` +
     ``connes_b:0..2`` over the ``x^3`` loop / GF(2)); the existing six entries
-    are untouched."""
+    are untouched.
+  * 2026-08-01 (``products_loop_gf2`` re-freeze, explicit representatives): the
+    product blocks gained the additive ``basis_classes`` / ``chain_basis`` /
+    ``differentials`` fields (Marco: the class symbols must PRINT their explicit
+    (co)cycle + coordinate vector + annihilating differential). Gated re-freeze:
+    the regenerated blob was asserted byte-identical to the old one after DELETING
+    those three keys everywhere, so no pre-existing content moved. The
+    ``canonical_key`` is request-derived and UNCHANGED (no new request fields)."""
 import json
 import pathlib
 
