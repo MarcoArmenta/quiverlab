@@ -1,21 +1,38 @@
-"""Every curated request must be reachable from the GUI compose path: kinds in
-the GUI's push order, and the seed cache key a fresh seeding run would write must
-be a stable fixed point (Plan 35 §5).
+"""Two guarantees over the curated seed requests (Plan 35 §5):
+  (1) each request's compute list is in the CURATED SEED CONVENTION order
+      (``_GUI_ORDER``), with the Plan-35 PRODUCTS in exact gui.js relative order
+      right after ``hh_homology``; and
+  (2) the seed cache key a fresh seeding run writes is a stable validate->dump
+      fixed point.
 
-``_GUI_ORDER`` mirrors ``webapp/static/gui/gui.js::buildRequest`` (the offline GUI
-twin ``docs/gui/gui.js`` is byte-identical). Push order there:
+``_GUI_ORDER`` is the CURATED SEED CONVENTION -- the fixed order the stored
+``request.json`` files use and that the ``validate->dump`` canonicalisation
+preserves. It is NOT byte-for-byte the ``webapp/static/gui/gui.js::buildRequest``
+push order. It agrees with gui.js on the part that matters for Task 12 -- the
+products ``cup, cap, bracket, connes_b`` are placed in exact gui.js relative order
+immediately after ``hh_homology`` (gui.js:642-645; Task 10 landed them with a
+do-not-reorder comment) -- and that products-after-hh placement is what the order
+test guarantees going forward. It DIVERGES from gui.js on two pre-existing points
+(seed-convention artifacts, NOT to be "fixed" by reordering requests -- that would
+re-key all six bundles and lose content):
 
-  * hh_cohomology, hh_homology                                     (gui.js:638-639)
-  * cup, cap, bracket, connes_b -- the Plan-35 products, inserted   (gui.js:642-645)
-    right after hh_homology; Task 10 landed them with a do-not-reorder comment
-  * cartan, coxeter_polynomial, global_dimension, center           (gui.js:646)
-  * the module-panel kinds                                         (gui.js:652-665)
+  * **resolutions-first.** ``_GUI_ORDER`` lists ``projective_resolution`` /
+    ``injective_resolution`` BEFORE ``projective_dimension`` /
+    ``injective_dimension`` / ``decompose``. gui.js pushes the module panel in the
+    opposite block order -- ``projective_dimension, injective_dimension, decompose``
+    (gui.js:652-655) come first, THEN ``projective_resolution, injective_resolution``
+    (gui.js:656-659). So in gui.js ``decompose`` PRECEDES the resolutions; here it
+    follows them.
+  * **bare ``dimension``.** The curated requests carry a ``dimension`` kind (the
+    algebra's total dimension) slotted beside the other scalars. gui.js has no
+    checkbox for it and never pushes it.
 
-Two kinds that have no GUI checkbox but are valid seed kinds are slotted at their
-natural position: ``dimension`` (an algebra scalar, beside the other scalars); the
-resolution/dimension relative order follows the curated seed convention
-(``projective_resolution`` before ``projective_dimension``). The test enforces that
-every seed request is INTERNALLY CONSISTENT with this one order and carries the
+Consequence (honest, intended): the curated requests are NOT fully GUI-composable
+-- a user cannot reproduce them by ticking boxes (``dimension`` is not offered, and
+the resolution/dimension/decompose block would come out in gui.js order). This test
+is therefore NOT a GUI-composability proof; it pins the seed convention + the
+products' GUI-relative placement + the key fixed point. The order test enforces that
+every seed request is INTERNALLY CONSISTENT with this one convention and carries the
 products where they are feasible.
 
 Products carried per example is a FEASIBILITY decision (Task-12 probe, box ~120s;
@@ -44,6 +61,11 @@ from webapp.server.cache import canonical_key, library_version
 from webapp.server.schema import ComputeRequest, parse_compute_item
 
 _EX = pathlib.Path(__file__).resolve().parents[2] / "webapp" / "precomputed" / "examples"
+# The CURATED SEED CONVENTION order -- NOT the literal gui.js push order (see the
+# module docstring): products in exact gui.js relative order after hh_homology, but
+# it diverges from gui.js by listing the resolutions BEFORE the dimensions/decompose
+# and by carrying a bare ``dimension`` kind the GUI never pushes. Do not "align" it
+# to gui.js by reordering the requests -- that re-keys all six bundles.
 _GUI_ORDER = ["hh_cohomology", "hh_homology", "cup", "cap", "bracket",
               "connes_b", "cartan", "coxeter_polynomial", "global_dimension",
               "center", "dimension", "dimension_vector", "rad_top_soc", "tau",
@@ -62,7 +84,8 @@ def test_compute_list_is_in_gui_order(bundle):
     kinds = [parse_compute_item(s).kind for s in body["compute"]]
     order = {k: i for i, k in enumerate(_GUI_ORDER)}
     assert kinds == sorted(kinds, key=order.__getitem__), \
-        f"{bundle}: compute list must follow the GUI compose order"
+        f"{bundle}: compute list must follow the curated seed-convention order " \
+        "(_GUI_ORDER; products in gui.js relative order, see module docstring)"
     if bundle in _DEEP_NO_PRODUCTS:
         assert not (_PRODUCTS & set(kinds)), \
             f"{bundle}: deep bar-blow-up example carries no products (see manifest.yaml)"

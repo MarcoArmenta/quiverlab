@@ -140,16 +140,24 @@ kinds in their `request.json`** and are recomputed:
   trimming that example's product tops with an honest note in the manifest —
   never a silent partial result.
 * Changing `request.json` **changes the Plan-25 canonical keys** — accepted
-  and intended. The true hit mechanism (there is no examples page): a seeded
-  example replays when a USER-COMPOSED GUI request canonicalizes to the same
-  key. Sorted-key hashing makes dict order irrelevant, but the compute list
-  is ORDER-SENSITIVE — so each curated `request.json` must list its kinds in
-  the GUI's compose order, product kinds included, and this reachability is
-  test-gated (§6): a test composes each curated request the way the GUI does
-  and asserts key equality with the seeded row. Known consequences, stated:
-  a user must tick the products too to replay the seeded example; ticking the
-  OLD kind subset computes fresh (different request, different key — correct
-  semantics, but it makes seeded hits rarer, Marco's accepted trade).
+  and intended. The seed key (`container/seed_cache.py`) is
+  `canonical_key(model_validate(request.json).model_dump())`; sorted-key hashing
+  makes dict order irrelevant, but the compute list is ORDER-SENSITIVE. The
+  reachability gate (`tests/webapp/test_curated_reachability.py`, §6) pins TWO
+  things: (a) the seed key is a stable `validate→dump` fixed point (a live request
+  re-travels the same path, so it shares the key), and (b) the Plan-35 PRODUCTS
+  sit in exact gui.js relative order right after `hh_homology`, plus every curated
+  request is internally consistent with the one curated-seed-convention order
+  (`_GUI_ORDER`). **Full GUI-composability of the curated requests is a
+  pre-existing NON-GOAL** — they carry kinds the GUI panel does not offer
+  (a bare `dimension`) and order the resolution/dimension/decompose block
+  differently from gui.js (which pushes `projective_dimension, injective_dimension,
+  decompose` before the resolutions). So `_GUI_ORDER` is the seed convention, not a
+  byte-for-byte gui.js mirror, and the test is not a GUI-composability proof.
+  Honest consequence, unchanged: a user who DOES tick the products (the kinds the
+  GUI offers) computes fresh under a different key — seeded hits stay rare, Marco's
+  accepted trade — and the seeded bundles exist to ship the worked examples, not to
+  be reconstructed box-by-box.
 * The bundle regeneration reuses the Plan-34-era gate discipline from the
   2026-07-31 release prep: recompute through the real runner, assert every
   pre-existing block byte-identical, the only additions being the four new
