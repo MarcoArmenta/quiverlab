@@ -172,6 +172,82 @@ def test_report_round_trips_under_a_non_utf8_locale(tmp_path):
     # non-ASCII is spelled chr(...) inside it.
     assert script.isascii()
     proc = subprocess.run([sys.executable, "-c", script], capture_output=True,
-                          text=True, env=env, timeout=180)
+                          text=True, encoding="utf-8", env=env, timeout=180)
     assert proc.returncode == 0, proc.stderr
     assert "ROUNDTRIP-OK" in proc.stdout
+
+
+# --------------------------------------------------------------------------- #
+# The subprocess READING side: a TEST that runs a child in TEXT mode
+# (``text=True`` / ``universal_newlines=True``) and reads its stdout/stderr
+# DECODES with the parent's LOCALE codec unless ``encoding=`` is passed. On
+# Windows that codec is cp1252, so a node/python child that writes UTF-8 -- the
+# report's em dash, non-ASCII in gui.js output -- decode-mangles into U+FFFD.
+# That is exactly the ``assert '—' == '�'`` that failed every Windows fast
+# cell on ``tests/gui/test_cayley_gui.py`` (the THIRD instance of this bug, after
+# the write side and the repo-file read side above). Guard the whole test tree so
+# it cannot recur: every text-mode ``subprocess.run``/``check_output`` must ask
+# for utf-8.
+# --------------------------------------------------------------------------- #
+_SUBPROCESS_VERBS = ("run", "check_output")
+
+
+def _is_true(node):
+    return isinstance(node, ast.Constant) and node.value is True
+
+
+def _scan_subprocess_text(tree):
+    """Each ``subprocess.run(...)`` / ``subprocess.check_output(...)`` call in the
+    AST that runs in TEXT mode (``text=True`` or ``universal_newlines=True``) but
+    passes no ``encoding=``, as (line, verb) pairs. Byte-mode calls carry no codec
+    and are fine; ``capture_output=True`` alone is bytes and is not flagged."""
+    bad = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        if isinstance(fn, ast.Attribute):
+            verb = fn.attr
+        elif isinstance(fn, ast.Name):
+            verb = fn.id
+        else:
+            continue
+        if verb not in _SUBPROCESS_VERBS:
+            continue
+        kw = {k.arg: k.value for k in node.keywords if k.arg}
+        text_mode = _is_true(kw.get("text")) or _is_true(kw.get("universal_newlines"))
+        if not text_mode or "encoding" in kw:
+            continue
+        bad.append((node.lineno, verb))
+    return bad
+
+
+def _subprocess_text_without_encoding(path):
+    return _scan_subprocess_text(ast.parse(path.read_text(encoding="utf-8")))
+
+
+def test_no_test_runs_a_subprocess_in_text_mode_without_encoding():
+    offenders = []
+    for path in sorted((_ROOT / "tests").rglob("test_*.py")):
+        if "__pycache__" in path.as_posix():
+            continue
+        for line, verb in _subprocess_text_without_encoding(path):
+            offenders.append("%s:%d subprocess.%s()"
+                             % (path.relative_to(_ROOT).as_posix(), line, verb))
+    assert not offenders, (
+        "text-mode subprocess.run/check_output without encoding='utf-8' (the child's "
+        "UTF-8 stdout decodes with Windows' cp1252 locale and mangles em dashes / "
+        "non-ASCII program output): " + "; ".join(offenders))
+
+
+def test_the_subprocess_gate_catches_the_pre_fix_pattern():
+    """The detector must FLAG the pre-fix pattern and CLEAR the fixed / byte-mode
+    forms -- otherwise the gate above is a rubber stamp."""
+    pre = "subprocess.run(cmd, capture_output=True, text=True)"
+    uni = "subprocess.check_output(cmd, universal_newlines=True)"
+    post = "subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8')"
+    byte = "subprocess.run(cmd, capture_output=True)"
+    assert _scan_subprocess_text(ast.parse(pre)), "gate missed the pre-fix text=True pattern"
+    assert _scan_subprocess_text(ast.parse(uni)), "gate missed universal_newlines=True"
+    assert not _scan_subprocess_text(ast.parse(post)), "gate false-flags the encoding= fix"
+    assert not _scan_subprocess_text(ast.parse(byte)), "gate flags a byte-mode call"

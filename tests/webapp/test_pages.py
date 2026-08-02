@@ -375,7 +375,8 @@ def test_is_http_url_rejects_non_http_schemes():
         "}));\n"
     )
     proc = subprocess.run([node, "-e", harness],
-                          capture_output=True, text=True, timeout=30)
+                          capture_output=True, text=True, encoding="utf-8",
+                          timeout=30)
     assert proc.returncode == 0, proc.stderr
     got = json.loads(proc.stdout)
     assert got["rejected"] == [False] * len(rejected), \

@@ -118,7 +118,7 @@ def test_js_emitter_round_trips_like_the_helper(req):
     fn = _extract_js_fn("configYaml")
     harness = fn + "\nprocess.stdout.write(configYaml(" + json.dumps(req) + "));\n"
     proc = subprocess.run([node, "-e", harness], capture_output=True, text=True,
-                          timeout=30)
+                          encoding="utf-8", timeout=30)
     assert proc.returncode == 0, proc.stderr
     loaded = yaml.safe_load(proc.stdout)         # JS-emitted YAML -> dict
     revalidated = ComputeRequest.model_validate(loaded)   # must be schema-valid

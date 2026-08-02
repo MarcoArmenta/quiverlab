@@ -46,13 +46,13 @@ print("ok")
 
 def test_hpc_import_pulls_no_web_or_engine_deepen():
     proc = subprocess.run([sys.executable, "-c", _PROBE],
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding="utf-8")
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip().endswith("ok")
 
 
 def test_hpc_imports_with_web_stack_uninstalled():
     proc = subprocess.run([sys.executable, "-c", _BASE_PROBE],
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding="utf-8")
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip().endswith("ok")

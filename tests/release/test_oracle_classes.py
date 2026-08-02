@@ -46,7 +46,8 @@ def _ids(expr):
     """Collected node ids under a -m expression."""
     cmd = [VENV, "-m", "pytest", "-q", "--collect-only", "-p", "no:cacheprovider",
            "-m", expr]
-    out = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                         cwd=str(ROOT))
     blob = out.stdout + out.stderr
     assert "PytestUnknownMarkWarning" not in blob, blob
     # returncode 0 == a clean, complete collection with matches. A collection

@@ -20,12 +20,12 @@ def test_build_and_twine_check(tmp_path):
         pytest.skip("build/twine not installed; acceptance task runs the real build")
     out = tmp_path / "dist"
     r = subprocess.run([sys.executable, "-m", "build", "--outdir", str(out)],
-                       cwd=ROOT, capture_output=True, text=True)
+                       cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0, r.stderr[-3000:]
     dists = list(out.glob("quiverlab-*.whl")) + list(out.glob("quiverlab-*.tar.gz"))
     assert len(dists) == 2, [p.name for p in dists]
     r2 = subprocess.run([sys.executable, "-m", "twine", "check", *map(str, out.glob("*"))],
-                        capture_output=True, text=True)
+                        capture_output=True, text=True, encoding="utf-8")
     assert r2.returncode == 0, r2.stdout + r2.stderr
     assert "PASSED" in r2.stdout
 
@@ -55,7 +55,7 @@ def test_wheel_and_sdist_contain_package_data(tmp_path):
     for egg in ROOT.glob("src/*.egg-info"):
         shutil.rmtree(egg, ignore_errors=True)
     r = subprocess.run([sys.executable, "-m", "build", "--outdir", str(out)],
-                       cwd=ROOT, capture_output=True, text=True)
+                       cwd=ROOT, capture_output=True, text=True, encoding="utf-8")
     assert r.returncode == 0, r.stderr[-3000:]
 
     # wheel is a zip; package-data lands at quiverlab/<subpkg>/<file> (no src/ prefix).

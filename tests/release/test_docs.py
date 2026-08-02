@@ -45,7 +45,7 @@ def test_mkdocs_builds_strict_when_available():
         import pytest
         pytest.skip("[docs] extra not installed; the acceptance task runs the real build")
     out = subprocess.run(["mkdocs", "build", "--strict", "-d", "/tmp/quiverlab_site"],
-                         cwd=ROOT, capture_output=True, text=True,
+                         cwd=ROOT, capture_output=True, text=True, encoding="utf-8",
                          env={"NUMBA_NUM_THREADS": "2", "OMP_NUM_THREADS": "2",
                               "MPLBACKEND": "Agg",  # headless notebook execution
                               "PATH": __import__("os").environ["PATH"]})

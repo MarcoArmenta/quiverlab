@@ -22,7 +22,8 @@ def _ids(expr):
     cmd = [VENV, "-m", "pytest", "-q", "--collect-only", "-p", "no:cacheprovider"]
     if expr:
         cmd += ["-m", expr]
-    out = subprocess.run(cmd, capture_output=True, text=True, cwd=ROOT)
+    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8",
+                         cwd=ROOT)
     assert "PytestUnknownMarkWarning" not in (out.stdout + out.stderr), out.stdout + out.stderr
     return {ln.strip() for ln in out.stdout.splitlines() if "::" in ln}
 

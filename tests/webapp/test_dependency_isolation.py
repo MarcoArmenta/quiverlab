@@ -21,6 +21,6 @@ print("ok")
 
 def test_library_imports_without_web_stack():
     proc = subprocess.run([sys.executable, "-c", _PROBE],
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding="utf-8")
     assert proc.returncode == 0, proc.stderr
     assert proc.stdout.strip().endswith("ok")

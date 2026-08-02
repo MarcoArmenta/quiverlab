@@ -25,7 +25,7 @@ def _run(code: str, cwd, env_extra=None) -> subprocess.CompletedProcess:
     if env_extra:
         env.update(env_extra)
     return subprocess.run([sys.executable, "-c", code], cwd=str(cwd),
-                          env=env, capture_output=True, text=True)
+                          env=env, capture_output=True, text=True, encoding="utf-8")
 
 
 def test_ensure_webapp_on_path_from_foreign_cwd(tmp_path):
