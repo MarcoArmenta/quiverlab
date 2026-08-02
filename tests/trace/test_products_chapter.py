@@ -17,22 +17,31 @@ pytestmark = [pytest.mark.oracle_selfcert]
 
 
 def test_chapter_events_render_and_carry_tables(tmp_path):
+    # Marco 2026-08-01: the whole family renders as ONE big degree-major CAYLEY table --
+    # rows/cols over every cohomology class, each cell the product in the target basis,
+    # zeros SHOWN, a beyond-window cell an em dash (not computed, not zero).
     from quiverlab.trace.products import products_chapter
     from quiverlab.trace.render_html import render_html
-    A = ql.truncated_polynomial(2, field=ql.GF(7))
-    hp = A.cup_products(2)
-    events = products_chapter(A, "cup", hp)
+    from tests.trace._matrix_grid import cayley_cells, cayley_headers
+    A = ql.truncated_polynomial(2, field=ql.GF(2))       # k[x]/(x^2), the canonical case
+    events = products_chapter(A, "cup", A.cup_products(2))
     assert events, "chapter must not be empty"
     html = render_html(events, title="cup", algebra=A)
-    assert "cup product" in html.lower()
-    assert "HH" in html
-    # every nonzero constant appears in the page
-    for t in hp.tables.values():
-        for mat in t.constants:
-            for row in mat:
-                for c in row:
-                    if c != "0":
-                        assert c in html
+    assert "cup product" in html.lower() and "HH" in html
+    assert "ql-cayley" in html
+    tables = cayley_cells(html)
+    assert len(tables) == 1                               # ONE big table for the family
+    big = tables[0]
+    # degree-major axis: alpha^0_1, alpha^0_2, alpha^1_1, alpha^1_2, alpha^2_1, alpha^2_2
+    cols, rows = cayley_headers(html)
+    assert rows == [r"\alpha^{0}_{1}", r"\alpha^{0}_{2}", r"\alpha^{1}_{1}",
+                    r"\alpha^{1}_{2}", r"\alpha^{2}_{1}", r"\alpha^{2}_{2}"]
+    # a known nonzero product (alpha^1_1 cup alpha^1_1 = alpha^2_1), a SHOWN computed
+    # zero (alpha^1_2 cup alpha^1_2 = 0), and a BEYOND-WINDOW em dash (target 3 > 2).
+    assert big[2][2] == r"\alpha^{2}_{1}"
+    assert big[3][3] == "0"
+    assert big[2][4] == "—"
+    assert "beyond the computed window" in html
 
 
 def test_chapter_carries_notation_legend_before_the_tables():
@@ -71,12 +80,27 @@ def test_cap_and_bracket_chapters_render():
         assert events
         html = render_html(events, title=kind, algebra=A)
         assert "HH" in html
-        for t in obj.tables.values():
-            for mat in t.constants:
-                for row in mat:
-                    for c in row:
-                        if c != "0":
-                            assert c in html
+        # rendered as Cayley grids (unless the whole family vanishes to one line)
+        assert "ql-cayley" in html or "vanish" in html.lower()
+
+
+def test_bracket_shows_balanced_representatives():
+    # GF(7) bracket constants include 5, which displays as the balanced rep -2 (the
+    # JSON keeps the raw residue "5"). The balanced-rep legend is stated once.
+    from quiverlab.trace.products import products_chapter
+    from quiverlab.trace.render_html import render_html
+    from tests.trace._matrix_grid import cayley_cells
+    A = ql.truncated_polynomial(2, field=ql.GF(7))
+    obj = A.gerstenhaber_brackets(2)
+    # a raw 5 exists in the recorded constants
+    assert any("5" in str(c) for t in obj.tables.values()
+               for mat in t.constants for row in mat for c in row)
+    html = render_html(products_chapter(A, "bracket", obj), title="bracket", algebra=A)
+    assert "balanced representatives mod 7" in html
+    cells = [c for tbl in cayley_cells(html) for row in tbl for c in row]
+    joined = " ".join(cells)
+    assert "-2" in joined                       # 5 shown balanced as -2
+    assert r"5 \," not in joined                 # never the raw residue in a cell
 
 
 def test_connes_chapter_carries_the_matrix():

@@ -409,12 +409,15 @@ def test_product_tables_carry_a_notation_legend_with_the_basis():
     assert html.index("recorded basis") < html.index(r"\cup")
 
 
-def test_a_fully_vanishing_product_bidegree_states_so_not_a_stub():
+def test_a_fully_vanishing_product_family_states_so_not_a_stub():
+    # Marco 2026-08-01: an all-vanishing family collapses to ONE honest line (never an
+    # empty grid of zeros), not a silent stub.
     block = {"kind": "cup", "engine": "bar/GF(7)",
              "tables": [{"degrees": [1, 1], "out_degree": 2, "dims": [1, 1, 1],
                          "constants": [[["0"]]]}]}
     html = "".join(results_section({"cup": block}))
-    assert "every product in this bidegree vanishes" in html
+    assert "All cup products in the served bidegrees vanish." in html
+    assert "ql-cayley" not in html                    # no grid of zeros
     assert "computed; see the JSON record for its data" not in html
 
 

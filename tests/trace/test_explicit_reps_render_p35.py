@@ -103,7 +103,7 @@ def test_computed_results_product_block_degree_sections():
     html = "\n".join(chunks)
     assert "id='cr-cup-hh-coh-deg-1'" in html
     assert "Explicit representatives by degree" in html
-    assert "Structure-constant tables" in html
+    assert "Structure-constant table" in html
 
 
 @pytest.mark.oracle_selfcert
@@ -164,13 +164,14 @@ def test_results_product_block_without_reps_renders_tables_only():
     no crash, no empty 'Explicit representatives' heading."""
     from quiverlab.hochschild.products import HHProducts, ProductTable
     t = ProductTable(kind="cup", degrees=(0, 0), out_degree=0, dims=(1, 1, 1),
-                     constants=(((("1",),),),))
+                     constants=((("1",),),))         # [dout=1][dl=1][dr=1]
     b = HHProducts(kind="cup", top=0, tables={(0, 0): t}, engine="x",
                    basis="bar/GF(7)", window=None, references=["cup"]).blocks()
     assert "basis_classes" not in b
     html = "\n".join(results_section({"cup": b}))
     assert "Explicit representatives by degree" not in html
-    assert "HH^{0} \\cup HH^{0}" in html            # the table still renders
+    # the big degree-major table still renders (family heading + grid)
+    assert "HH^{*} \\cup HH^{*}" in html and "ql-cayley" in html
 
 
 def test_products_chapter_without_productbasis_event_is_tolerated():

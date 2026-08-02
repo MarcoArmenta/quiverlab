@@ -5,9 +5,10 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2700 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
-2026-08-01, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
-Marco's report-completeness pass, the Plan-35 Hochschild product surface, its
+The suite is **2724 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+2026-08-02, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
+Marco's report-completeness pass, Marco's Cayley product-table render wave, the
+Plan-35 Hochschild product surface, its
 explicit-representatives capture, the Plan-35 UNIT-2/wave-3a rendering, the
 Plan-35 wave-3b cyclic-homology explicit representatives, the Plan-35 wave-3c
 Yoneda exact sequences + classical dictionary, and the Plan-35 wave-3d plain-HH
@@ -481,9 +482,9 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 748 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 430 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 792 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 812 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 123 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1526 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1546 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-08-01 (through Plan 35 UNIT 2). The oracle markers live only on the
 pure-library `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` /

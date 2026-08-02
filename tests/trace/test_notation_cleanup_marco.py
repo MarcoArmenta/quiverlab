@@ -91,10 +91,14 @@ def test_products_source_has_no_beta_gamma_w():
 def test_cup_equation_uses_alpha_throughout():
     A = ql.truncated_polynomial(2, field=ql.GF(2))
     from quiverlab.trace.products import products_chapter
+    from tests.trace._matrix_grid import cayley_headers
     html = render_html(products_chapter(A, "cup", A.cup_products(1)),
                        title="cup", algebra=A)
-    # a nonzero cup equation is alpha^p_i ∪ alpha^q_j = ... alpha^{p+q}_k
-    assert r"\alpha^{0}_{1} \cup \alpha^{0}_{1}" in html
+    # Marco 2026-08-01: the Cayley grid's headers are the alpha classes and the corner
+    # is the cup operator; the cells (in the alpha output basis) carry no beta/gamma.
+    cols, rows = cayley_headers(html)
+    assert r"\alpha^{0}_{1}" in cols and r"\alpha^{0}_{1}" in rows
+    assert r"\cup" in html
     assert r"\beta" not in html and r"\gamma" not in html
 
 
