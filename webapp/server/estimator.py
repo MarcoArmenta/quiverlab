@@ -100,10 +100,12 @@ def _fits_big(ops: int, max_deg: int, cfg: Config) -> bool:
 def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
     """Full tier decision WITH the honest numbers the warning UX shows.
     Returns {"tier", "reason", "estimate": {"cells", "minutes", "bytes",
-    "mem_human"}}. `reason` is None unless tier == "reject", where it is
-    "big_disabled" (fits big caps but SMTP is off) or "beyond_big_cap" (exceeds
-    big caps). ``bytes`` is the integer memory ESTIMATE (see
-    :func:`estimate_bytes`); ``mem_human`` is its binary-unit rendering."""
+    "mem_human"}}. `reason` is None unless tier == "reject" -- "big_disabled"
+    (fits big caps but SMTP is off) or "beyond_big_cap" (exceeds big caps) -- or a
+    would-be-instant request was upgraded to "queued" because it asks for the
+    worked-steps report ("report_artifacts", see below). ``bytes`` is the integer
+    memory ESTIMATE (see :func:`estimate_bytes`); ``mem_human`` is its binary-unit
+    rendering."""
     max_deg = _max_degree(req)
     ops = estimate_ops(dim, max_deg, req.algebra.field.kind)
     minutes = max(1, -(-ops // _OPS_PER_MINUTE))          # ceil division, ≥ 1
@@ -111,6 +113,20 @@ def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
     est = {"cells": ops, "minutes": minutes,
            "bytes": mem, "mem_human": human_bytes(mem)}
     if ops <= cfg.instant_ops_threshold and max_deg <= cfg.instant_max_degree:
+        # The worked-steps report (``artifacts.pdf``) is written into the tier's
+        # artifact dir, but the INSTANT tier discards that dir unconditionally AND
+        # runs ``capture_reps=False`` (see webapp/server/instant.py) -- so a report
+        # request served instantly would silently return NO report and no plain-HH
+        # representatives. Only the queued tier keeps a persistent artifact dir, so
+        # a report request that would classify instant is upgraded to queued. This
+        # only ever downgrades instant->queued (a would-be-instant request always
+        # fits the wider queued caps), never bypassing the big/reject logic below.
+        # TikZ is NOT a trigger: it is written to the same dir and likewise lost on
+        # instant, but the canvas GUI sets ``tikz: true`` on EVERY compute, so
+        # gating on it would force every GUI request to queue -- and the diagram is
+        # cheap and user-drawn, unlike the report.
+        if req.artifacts.pdf:
+            return {"tier": "queued", "reason": "report_artifacts", "estimate": est}
         return {"tier": "instant", "reason": None, "estimate": est}
     if ops <= cfg.queued_ops_threshold and max_deg <= cfg.queued_max_degree:
         return {"tier": "queued", "reason": None, "estimate": est}

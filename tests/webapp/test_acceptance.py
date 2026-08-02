@@ -115,6 +115,36 @@ def test_instant_path_end_to_end(tmp_path):
     assert "coxeter_polynomial" in r.json()["result"]["results"]
 
 
+def test_report_request_routes_queued_and_produces_trace(tmp_path):
+    # A small hh_cohomology request that classifies INSTANT with pdf=False must
+    # route to the QUEUED tier when the worked-steps report is ticked (pdf=True):
+    # the instant tier discards its artifact dir, so it would silently return no
+    # report. After the worker runs, the report (trace_steps.html) is downloadable.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})   # default thresholds
+    client = TestClient(create_app(cfg))
+    compute = ["hh_cohomology:0..3"]
+
+    # Same maths, no report -> instant (proves the flag, not the size, drives it).
+    plain = {"schema": 1, "algebra": _gf(2), "compute": compute,
+             "artifacts": {"pdf": False, "tikz": False}}
+    assert client.post("/api/compute", json=plain).json()["tier"] == "instant"
+
+    # Report ticked -> queued job.
+    body = {"schema": 1, "algebra": _gf(2), "compute": compute,
+            "artifacts": {"pdf": True, "tikz": False}}
+    r = client.post("/api/compute", json=body)
+    assert r.status_code == 202, r.text
+    assert r.json()["tier"] == "queued"
+    jid = r.json()["job_id"]
+
+    store = JobStore(cfg.db_path)
+    assert worker_tick(store, cfg) is True
+    assert client.get(f"/api/jobs/{jid}").json()["status"] == "done"
+
+    trace = client.get(f"/download/{jid}/trace_steps.html")
+    assert trace.status_code == 200, "the report the user ticked must be downloadable"
+
+
 def test_spanish_page_and_feedback_roundtrip(tmp_path):
     cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
     client = TestClient(create_app(cfg))

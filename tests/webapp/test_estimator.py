@@ -3,12 +3,12 @@ from webapp.server.estimator import classify, decide_tier, estimate_ops, sizing_
 from webapp.server.schema import ComputeRequest
 
 
-def _req(field, compute):
+def _req(field, compute, pdf=False, tikz=False):
     return ComputeRequest.model_validate({
         "schema": 1,
         "algebra": {"kind": "family", "family": "QuantumCI",
                     "params": {"n": 3}, "field": field},
-        "compute": compute, "artifacts": {"pdf": False, "tikz": False}})
+        "compute": compute, "artifacts": {"pdf": pdf, "tikz": tikz}})
 
 
 def test_gf_is_cheaper_than_cc():
@@ -61,6 +61,50 @@ def test_classify_carries_estimate_and_reason(tmp_path):
     assert info["estimate"]["cells"] > 0 and info["estimate"]["minutes"] >= 1
     beyond = classify(5000, _req({"kind": "CC"}, ["hh_cohomology:0..200"]), cfg)
     assert beyond["reason"] == "beyond_big_cap"
+
+
+# --------------------------------------------------------------------------- #
+# Report artifacts (artifacts.pdf) need the queued tier's persistent artifact dir:
+# the instant tier discards its dir (and runs capture_reps=False), so an instant
+# report request would silently return no report. A would-be-instant request that
+# asks for the report is therefore upgraded to queued; big/reject are unaffected.
+# --------------------------------------------------------------------------- #
+
+def test_small_no_report_stays_instant(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    req = _req({"kind": "GF", "p": 5, "n": 1}, ["hh_cohomology:0..4"], pdf=False)
+    assert decide_tier(4, req, cfg) == "instant"          # unchanged
+
+
+def test_small_report_request_upgrades_to_queued(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    req = _req({"kind": "GF", "p": 5, "n": 1}, ["hh_cohomology:0..4"], pdf=True)
+    info = classify(4, req, cfg)                           # same dims as instant test
+    assert info["tier"] == "queued"                        # ...but the report forces queued
+    assert info["reason"] == "report_artifacts"
+
+
+def test_tikz_alone_stays_instant(tmp_path):
+    # TikZ is written to the same discarded dir but is NOT a trigger: the canvas GUI
+    # requests it on every compute, so gating on it would defeat the instant tier.
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    req = _req({"kind": "GF", "p": 5, "n": 1}, ["hh_cohomology:0..4"], tikz=True)
+    assert decide_tier(4, req, cfg) == "instant"
+
+
+def test_report_flag_does_not_disturb_big_or_reject(tmp_path):
+    # The pdf flag only ever downgrades instant->queued; it never rescues or reroutes
+    # a big/reject request. Same big (SMTP on) and reject (SMTP off) verdicts as the
+    # no-report cases above.
+    big_cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path),
+                               "QLWEB_SMTP_HOST": "relay", "QLWEB_SMTP_FROM": "q@e.org"})
+    big = _req({"kind": "CC"}, ["hh_cohomology:0..30"], pdf=True)
+    assert decide_tier(300, big, big_cfg) == "big"
+    reject_cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})   # no SMTP
+    reject = _req({"kind": "CC"}, ["hh_cohomology:0..30"], pdf=True)
+    assert decide_tier(300, reject, reject_cfg) == "reject"
+    beyond = _req({"kind": "CC"}, ["hh_cohomology:0..200"], pdf=True)
+    assert classify(5000, beyond, big_cfg)["reason"] == "beyond_big_cap"
 
 
 # --------------------------------------------------------------------------- #
