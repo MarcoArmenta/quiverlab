@@ -3,7 +3,11 @@ name: Desktop app
 # Build the one-file double-clickable QuiverLab desktop app (PyInstaller,
 # desktop/quiverlab-desktop.spec) for every OS, package it, then unpack the
 # package and smoke THAT copy -- the one a user downloads -- with a REAL exact
-# computation (desktop/smoke.py), and publish the assets on the rolling
+# computation AND a full queued report job whose downloaded worked-steps HTML/JSON
+# must carry every product Cayley table (cup/cap/bracket/connes_b/cyclic_homology),
+# the JSON guide, and the cup/ordered-basis anchors (desktop/smoke.py), so no OS
+# binary publishes unless it produces the complete report. Then publish the assets
+# on the rolling
 # `app-latest` prerelease that the README's "DOWNLOAD APPLICATION HERE" banner
 # links to. Packaging per OS:
 #   * Windows: raw .exe (double-click works as downloaded)
@@ -109,7 +113,7 @@ jobs:
               || { echo "::error::executable bit lost in ${{ matrix.asset }}"; exit 1; }
           fi
 
-      - name: Smoke the shipped asset -- serve + real exact computation
+      - name: Smoke the shipped asset -- serve + exact compute + complete report
         shell: bash
         run: |
           BIN=shipped/QuiverLab
