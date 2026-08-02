@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2695 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2700 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-01, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
 Marco's report-completeness pass, the Plan-35 Hochschild product surface, its
 explicit-representatives capture, the Plan-35 UNIT-2/wave-3a rendering, the
