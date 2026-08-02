@@ -842,7 +842,9 @@ def _module_steps_html(events):
 # Marco 2026-07-31: from now on the report shows at most the first DISPLAY_CAP basis
 # elements of any space, and never a matrix with DISPLAY_CAP or more rows/columns --
 # beyond that it states the size and points at the accompanying JSON, which always
-# carries the complete data. One constant for every display cap.
+# carries the complete data. One constant for every display cap. Deliberately equal to
+# products.CAYLEY_AXIS_CAP (which bounds a combined product table's per-axis class
+# count before it is built): the same 50 threshold, different roles -- keep in lockstep.
 DISPLAY_CAP = 50
 
 # ordered-enumeration entries shown inline before a machine-record pointer (display

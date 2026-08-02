@@ -1471,6 +1471,12 @@
     var totalCols = rightDegs.reduce(function (s, q) { return s + rightDims[q]; }, 0);
     if (totalRows >= CAYLEY_AXIS_CAP || totalCols >= CAYLEY_AXIS_CAP)
       return { overCap: true, rows: totalRows, cols: totalCols };
+    // The block's computed top = max recorded out_degree; classify cells against it
+    // EXPLICITLY (target > top -> beyond window / em dash), not by a missing key (an
+    // in-window bidegree that is absent means the recording broke -> throw). Mirrors
+    // quiverlab.trace.products.combined_cayley (Marco 2026-08-02).
+    var top = 0;
+    (tables || []).forEach(function (t) { if (t.out_degree > top) top = t.out_degree; });
     var rowLabels = [], rowDegsep = [], rowMeta = [];
     leftDegs.forEach(function (p, bi) {
       for (var i = 0; i < leftDims[p]; i++) {
@@ -1491,13 +1497,22 @@
       var p = rm[0], i = rm[1], row = [];
       colMeta.forEach(function (cm) {
         var q = cm[0], j = cm[1], target = combinedOutDegree(name, p, q);
-        if (target < 0) { row.push("0"); return; }
+        if (target < 0) { row.push("0"); return; }   // cap below degree 0: structural zero
+        if (target > top) {                           // beyond the computed window
+          if (name === "cap")
+            throw new Error("combined Cayley cap table: cell (" + p + ", " + q
+              + ") target degree " + target + " > top " + top
+              + ", impossible for a cap (n-p <= n <= top)");
+          hasBeyond = true; row.push(EM_DASH); return;
+        }
         var t = tbl[p + "," + q];
-        if (t) {
-          var dout = t.dims[2], coeffs = [];
-          for (var k = 0; k < dout; k++) coeffs.push(((t.constants[k] || [])[i] || [])[j]);
-          row.push(cellTex(name, target, coeffs, prime));
-        } else { hasBeyond = true; row.push(EM_DASH); }
+        if (!t)                                        // in-window but not recorded: a bug
+          throw new Error("combined Cayley table: in-window bidegree (" + p + ", " + q
+            + ") (target " + target + " <= top " + top
+            + ") has no recorded structure constants -- recording is incomplete");
+        var dout = t.dims[2], coeffs = [];
+        for (var k = 0; k < dout; k++) coeffs.push(((t.constants[k] || [])[i] || [])[j]);
+        row.push(cellTex(name, target, coeffs, prime));
       });
       cells.push(row);
     });

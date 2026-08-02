@@ -435,7 +435,12 @@ def cayley_table(kind, degrees, out_degree, dims, constants, prime=None):
 # cap, the surface falls back to the per-bidegree ``cayley_table`` grids.
 # --------------------------------------------------------------------------- #
 
-CAYLEY_AXIS_CAP = 50            # per-axis class count above which the big form is dropped
+# Per-axis class count at or above which the big combined table is dropped for the
+# per-bidegree fallback. Deliberately equal to render_html.DISPLAY_CAP (the >=50
+# rows-or-cols matrix cap): the two are the SAME threshold serving different roles --
+# DISPLAY_CAP bounds a single matrix/grid, CAYLEY_AXIS_CAP bounds a combined table's
+# axis before it is even built. Keep them in lockstep.
+CAYLEY_AXIS_CAP = 50
 EM_DASH = "—"
 
 
@@ -528,7 +533,14 @@ def combined_cayley(kind, tables, prime=None):
     total_cols = sum(right_dims[q] for q in right_degs)
     if total_rows >= CAYLEY_AXIS_CAP or total_cols >= CAYLEY_AXIS_CAP:
         return {"over_cap": True, "rows": total_rows, "cols": total_cols}
-    top = max(left_degs + right_degs) if (left_degs and right_degs) else 0
+    # The block's computed top degree: every recorded bidegree lands in HH^{out_degree}
+    # (cup out=p+q, bracket out=p+q-1, cap out=n-p), and the recording covers EXACTLY
+    # the in-window bidegrees, so the maximum recorded out_degree is the top. Classify
+    # cells against it EXPLICITLY (out_degree > top) rather than by a missing key, so a
+    # cell that is beyond the window (never computed) is told apart from a cell the
+    # recording SHOULD carry -- if the latter is absent the recording broke, and we
+    # raise instead of masquerading it as an em dash (Marco 2026-08-02).
+    top = max((t["out_degree"] for t in tables), default=0)
 
     row_labels, row_degsep, row_meta = [], [], []
     for bi, p in enumerate(left_degs):
@@ -551,15 +563,25 @@ def combined_cayley(kind, tables, prime=None):
             if target < 0:                          # cap below degree 0: structural zero
                 row.append("0")
                 continue
-            t = tbl.get((p, q))
-            if t is not None:
-                dout = t["dims"][2]
-                row.append(cell_tex(kind, target,
-                                    [t["constants"][k][i][j] for k in range(dout)],
-                                    prime))
-            else:                                   # target > top: not computed
+            if target > top:                        # beyond the computed window
+                if kind == "cap":
+                    # cap target = n - p <= n <= top: structurally impossible.
+                    raise QuiverlabError(
+                        "combined Cayley cap table: cell (%d, %d) has target degree "
+                        "%d > top %d, impossible for a cap (n-p <= n <= top) -- the "
+                        "table data is inconsistent" % (p, q, target, top))
                 has_beyond = True
                 row.append(EM_DASH)
+                continue
+            t = tbl.get((p, q))
+            if t is None:                           # in-window but not recorded: a bug
+                raise QuiverlabError(
+                    "combined Cayley table: in-window bidegree (%d, %d) (target degree "
+                    "%d <= top %d) has no recorded structure constants -- the product "
+                    "recording is incomplete" % (p, q, target, top))
+            dout = t["dims"][2]
+            row.append(cell_tex(kind, target,
+                                [t["constants"][k][i][j] for k in range(dout)], prime))
         cells.append(row)
 
     return {"over_cap": False, "corner": _CORNER[kind],

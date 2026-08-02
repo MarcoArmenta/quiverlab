@@ -215,6 +215,36 @@ def test_over_axis_cap_falls_back_to_per_bidegree(monkeypatch):
     assert "ql-cayley" in html                        # the per-bidegree grids still render
 
 
+def test_axis_cap_boundary_49_big_50_fallback():
+    # The exact edge: per-axis class total 49 -> big table; 50 -> per-bidegree fallback.
+    from quiverlab.trace.render_html import family_cayley_html
+
+    def one_bidegree(n):
+        constants = [[["1" if i == j else "0" for j in range(n)] for i in range(n)]]
+        return [{"degrees": (0, 0), "out_degree": 0, "dims": [n, n, 1],
+                 "constants": constants}]
+    big = "".join(family_cayley_html("cup", one_bidegree(49), 2))
+    assert "ql-cayley" in big                              # 49 < 50 -> big table
+    assert "exceeding the 50-class display cap" not in big
+    fall = "".join(family_cayley_html("cup", one_bidegree(50), 2))
+    assert "exceeding the 50-class display cap" in fall     # 50 -> fallback
+    assert "per-bidegree tables follow" in fall
+
+
+def test_missing_in_window_bidegree_raises_not_em_dash():
+    # The explicit predicate: an in-window bidegree (target <= top) that is NOT recorded
+    # is a broken recording -> raise, never a silent em dash. (top = 2 from (1,1); the
+    # on-axis pair (0,1) has target 1 <= 2 but is absent.)
+    from quiverlab.trace.products import combined_cayley
+    from quiverlab.errors import QuiverlabError
+    tables = [{"degrees": (0, 0), "out_degree": 0, "dims": [1, 1, 1],
+               "constants": [[["1"]]]},
+              {"degrees": (1, 1), "out_degree": 2, "dims": [1, 1, 1],
+               "constants": [[["1"]]]}]
+    with pytest.raises(QuiverlabError):
+        combined_cayley("cup", tables, 2)
+
+
 def test_degree_boundary_separators_present():
     A = ql.truncated_polynomial(2, field=ql.GF(2))
     html = "".join(results_section({"cup": A.cup_products(2).blocks()}))
