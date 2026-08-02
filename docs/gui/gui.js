@@ -1289,6 +1289,248 @@
       + "of HH_n (homology). Every table line states α^p_i ∩ z^n_j = Σ_k c·z^{n-p}_k, "
       + onBasis + "; the constants c are basis-dependent." + explicit;
   }
+  // ---- Cayley multiplication tables (Marco 2026-08-01) ----
+  // Every product bidegree renders as a GRID (not equation lines): rows = left classes,
+  // cols = right classes, each cell the product written DIRECTLY in the target basis
+  // (0 / a signed combination). Zeros are SHOWN inside a table that is nonzero
+  // somewhere. Mirrors quiverlab.trace.products.cayley_table byte-for-byte in logic.
+  var PRODUCT_CORNER = { cup: "\\cup", cap: "\\cap", bracket: "[-,-]" };
+  function primeFromBasis(basis) {           // "bar/GF(7)" -> 7, "cs/QQ" -> null
+    var m = /GF\((\d+)\)/.exec(String(basis || ""));
+    return m ? parseInt(m[1], 10) : null;
+  }
+  function balancedCoeff(c, prime) {         // residue c > p/2 shown as c-p (display only)
+    c = String(c);
+    if (prime == null) return c;
+    if (!/^\d+$/.test(c)) return c;          // fraction / non-residue -> verbatim
+    var v = parseInt(c, 10);
+    return (v >= 0 && v < prime && 2 * v > prime) ? String(v - prime) : c;
+  }
+  function balancedRepNote(prime) {
+    return "Coefficients are shown as balanced representatives mod " + prime
+      + " (a residue c > " + prime + "/2 is written c-" + prime + "); the JSON record "
+      + "keeps the raw residues.";
+  }
+  function signedJoinTex(pieces) {           // (coeff, gen) terms -> signed TeX sum
+    if (!pieces.length) return "0";          // spacing matches trace.products._signed_join
+    return pieces.map(function (p, i) {
+      var neg = p.c.charAt(0) === "-", mag = neg ? p.c.slice(1) : p.c;
+      var term = (mag === "1") ? p.g : (mag + "\\," + p.g);
+      if (i === 0) return neg ? ("-" + term) : term;
+      return (neg ? " - " : " + ") + term;
+    }).join("");
+  }
+  function cellTex(name, out, coeffs, prime) {   // one cell: Σ_k c_k·g_k in the target basis
+    var outSym = name === "cap" ? "z" : "\\alpha", pieces = [];
+    for (var k = 0; k < coeffs.length; k++) {
+      var disp = balancedCoeff(coeffs[k], prime);
+      if (String(disp) === "0") continue;
+      pieces.push({ c: disp, g: outSym + "^{" + out + "}_{" + (k + 1) + "}" });
+    }
+    return signedJoinTex(pieces);
+  }
+  function mirrorSign(name, p, q) {          // graded transpose sign (+1 / -1)
+    if (name === "cup") return ((p * q) % 2) ? -1 : 1;
+    return (((p - 1) * (q - 1)) % 2 === 0) ? -1 : 1;   // bracket
+  }
+  function isIntStr(s) { return /^-?\d+$/.test(String(s)); }
+  // Honest structural notes DERIVED from the constants (cup/bracket, square bidegree).
+  function cayleyStructuralNotes(name, degrees, dims, constants, prime) {
+    if (name !== "cup" && name !== "bracket") return [];
+    var p = degrees[0], q = degrees[1], dl = dims[0], dr = dims[1], dout = dims[2];
+    if (p !== q || dl !== dr || !dl) return [];
+    var n = dl, K = constants || [], notes = [], i, j, k;
+    var squares = true;
+    for (i = 0; i < n && squares; i++)
+      for (k = 0; k < dout; k++)
+        if (String(((K[k] || [])[i] || [])[i]) !== "0") { squares = false; break; }
+    if (squares) notes.push("all squares are 0");
+    if (prime != null) {
+      var allInt = true, mirrored = true, sign = mirrorSign(name, p, q);
+      for (i = 0; i < n; i++) for (j = 0; j < n; j++) for (k = 0; k < dout; k++) {
+        var a = String(((K[k] || [])[i] || [])[j]), b = String(((K[k] || [])[j] || [])[i]);
+        if (!isIntStr(a) || !isIntStr(b)) { allInt = false; }
+        else if (((parseInt(a, 10) - sign * parseInt(b, 10)) % prime + prime) % prime !== 0)
+          mirrored = false;
+      }
+      if (allInt && mirrored)
+        notes.push(sign === -1 ? "the table is graded-antisymmetric"
+                               : "the table is graded-commutative (symmetric)");
+    }
+    return notes;
+  }
+  function cayleyNoteLine(name, degrees, dims, constants, prime) {
+    var notes = cayleyStructuralNotes(name, degrees, dims, constants, prime);
+    if (!notes.length) return "";
+    var s = notes.join("; ");
+    return s.charAt(0).toUpperCase() + s.slice(1) + ".";
+  }
+  // A Cayley grid as an indexed table (reuses qlgui-matrix: double zebra + corner):
+  // corner = the product operator, header row = right classes, header column = left
+  // classes, each cell the product math in the target basis.
+  function mathCell(tex) {
+    return h("span", { "class": "arithmatex", text: "\\(" + tex + "\\)" });
+  }
+  function cayleyGrid(name, t, prime) {
+    var dims = t.dims || [0, 0, 0], K = t.constants || [];
+    var dl = dims[0], dr = dims[1], dout = dims[2], out = t.out_degree;
+    var p = (t.degrees || [0, 0])[0], q = (t.degrees || [0, 0])[1];
+    if (!dl || !dr) return mathCell("0");
+    if (dl >= 50 || dr >= 50) {
+      return h("p", { "class": "qlgui-cites", text: dl + "×" + dr
+        + " product table (exceeds the 50-line display cap); the complete structure "
+        + "constants are in the accompanying JSON record." });
+    }
+    var rightSym = name === "cap" ? "z" : "\\alpha";
+    var head = h("tr");
+    head.appendChild(h("th", { "class": "qlgui-corner" }, mathCell(PRODUCT_CORNER[name])));
+    for (var j = 0; j < dr; j++)
+      head.appendChild(h("th", {}, mathCell(rightSym + "^{" + q + "}_{" + (j + 1) + "}")));
+    var tbl = h("table", { "class": "qlgui-matrix qlgui-cayley" }, head);
+    for (var i = 0; i < dl; i++) {
+      var r = h("tr");
+      r.appendChild(h("th", {}, mathCell("\\alpha^{" + p + "}_{" + (i + 1) + "}")));
+      for (j = 0; j < dr; j++) {
+        var coeffs = [];
+        for (var k = 0; k < dout; k++) coeffs.push(((K[k] || [])[i] || [])[j]);
+        r.appendChild(h("td", {}, mathCell(cellTex(name, out, coeffs, prime))));
+      }
+      tbl.appendChild(r);
+    }
+    return tbl;
+  }
+  // ---- ONE big degree-major Cayley table per family (Marco 2026-08-01 addendum) ----
+  // Rows/columns run over ALL (co)homology classes, degree-major; a cell whose target
+  // degree is beyond the computed window is an em dash (not computed), a computed
+  // vanishing product is 0. Mirrors quiverlab.trace.products.combined_cayley.
+  var CAYLEY_AXIS_CAP = 50, EM_DASH = "—";
+  var FAMILY_HEADING = { cup: "HH^{*} \\cup HH^{*} \\to HH^{*}",
+    cap: "HH^{*} \\cap HH_{*} \\to HH_{*}", bracket: "[HH^{*}, HH^{*}] \\to HH^{*}" };
+  var FAMILY_AXIS_NOTE = "One row per left class and one column per right class, "
+    + "ordered degree-major (the degree is the class' superscript); a heavier rule "
+    + "marks each degree boundary.";
+  function beyondWindowNote() {
+    return EM_DASH + " marks a cell whose target degree lies beyond the computed "
+      + "window (not computed); a computed vanishing product is shown as 0.";
+  }
+  function combinedOutDegree(name, p, q) {
+    if (name === "cup") return p + q;
+    if (name === "bracket") return p + q - 1;
+    return q - p;                            // cap: (p, n) -> n - p
+  }
+  function combinedNote(name, tbl, rowMeta, prime) {
+    if (name !== "cup" && name !== "bracket") return "";
+    var notes = [], diagSeen = 0, diagZero = 0;
+    rowMeta.forEach(function (rm) {
+      var p = rm[0], ii = rm[1], t = tbl[p + "," + p];
+      if (!t) return;
+      diagSeen++;
+      var dout = t.dims[2], z = true;
+      for (var k = 0; k < dout; k++)
+        if (String(((t.constants[k] || [])[ii] || [])[ii]) !== "0") z = false;
+      if (z) diagZero++;
+    });
+    if (diagSeen && diagZero === diagSeen) notes.push("all squares are 0");
+    if (prime != null) {
+      var seen = 0, ok = 0, allInt = true;
+      rowMeta.forEach(function (rm) {
+        var p = rm[0], ii = rm[1];
+        rowMeta.forEach(function (cm) {
+          var q = cm[0], jj = cm[1], t = tbl[p + "," + q], tT = tbl[q + "," + p];
+          if (!t || !tT || !allInt) return;
+          var dout = t.dims[2], sign = mirrorSign(name, p, q), good = true;
+          for (var k = 0; k < dout; k++) {
+            var av = ((t.constants[k] || [])[ii] || [])[jj];
+            var bv = ((tT.constants[k] || [])[jj] || [])[ii];
+            if (!isIntStr(av) || !isIntStr(bv)) { allInt = false; return; }
+            if ((((parseInt(av, 10) - sign * parseInt(bv, 10)) % prime) + prime)
+                % prime !== 0) good = false;
+          }
+          seen++; if (good) ok++;
+        });
+      });
+      if (allInt && seen && ok === seen)
+        notes.push(name === "cup" ? "the cup product is graded-commutative"
+                                  : "the Gerstenhaber bracket is graded-antisymmetric");
+    }
+    if (!notes.length) return "";
+    var s = notes.join("; ");
+    return s.charAt(0).toUpperCase() + s.slice(1) + ".";
+  }
+  function combinedCayley(name, tables, prime) {
+    var tbl = {}, leftDims = {}, rightDims = {};
+    (tables || []).forEach(function (t) {
+      var d = t.degrees || [0, 0], dims = t.dims || [0, 0, 0];
+      tbl[d[0] + "," + d[1]] = { dims: dims, constants: t.constants };
+      leftDims[d[0]] = dims[0]; rightDims[d[1]] = dims[1];
+    });
+    var num = function (a, b) { return a - b; };
+    var leftDegs = Object.keys(leftDims).map(Number).sort(num);
+    var rightDegs = Object.keys(rightDims).map(Number).sort(num);
+    var totalRows = leftDegs.reduce(function (s, p) { return s + leftDims[p]; }, 0);
+    var totalCols = rightDegs.reduce(function (s, q) { return s + rightDims[q]; }, 0);
+    if (totalRows >= CAYLEY_AXIS_CAP || totalCols >= CAYLEY_AXIS_CAP)
+      return { overCap: true, rows: totalRows, cols: totalCols };
+    var rowLabels = [], rowDegsep = [], rowMeta = [];
+    leftDegs.forEach(function (p, bi) {
+      for (var i = 0; i < leftDims[p]; i++) {
+        rowLabels.push("\\alpha^{" + p + "}_{" + (i + 1) + "}");
+        rowDegsep.push(i === 0 && bi > 0); rowMeta.push([p, i]);
+      }
+    });
+    var rightSym = name === "cap" ? "z" : "\\alpha";
+    var colLabels = [], colDegsep = [], colMeta = [];
+    rightDegs.forEach(function (q, bj) {
+      for (var j = 0; j < rightDims[q]; j++) {
+        colLabels.push(rightSym + "^{" + q + "}_{" + (j + 1) + "}");
+        colDegsep.push(j === 0 && bj > 0); colMeta.push([q, j]);
+      }
+    });
+    var cells = [], hasBeyond = false;
+    rowMeta.forEach(function (rm) {
+      var p = rm[0], i = rm[1], row = [];
+      colMeta.forEach(function (cm) {
+        var q = cm[0], j = cm[1], target = combinedOutDegree(name, p, q);
+        if (target < 0) { row.push("0"); return; }
+        var t = tbl[p + "," + q];
+        if (t) {
+          var dout = t.dims[2], coeffs = [];
+          for (var k = 0; k < dout; k++) coeffs.push(((t.constants[k] || [])[i] || [])[j]);
+          row.push(cellTex(name, target, coeffs, prime));
+        } else { hasBeyond = true; row.push(EM_DASH); }
+      });
+      cells.push(row);
+    });
+    return { overCap: false, corner: PRODUCT_CORNER[name], rowLabels: rowLabels,
+      colLabels: colLabels, rowDegsep: rowDegsep, colDegsep: colDegsep, cells: cells,
+      dl: totalRows, dr: totalCols, hasBeyond: hasBeyond,
+      note: combinedNote(name, tbl, rowMeta, prime) };
+  }
+  function cayleyBigGrid(c) {
+    var head = h("tr");
+    head.appendChild(h("th", { "class": "qlgui-corner" }, mathCell(c.corner)));
+    c.colLabels.forEach(function (lbl, j) {
+      head.appendChild(h("th", c.colDegsep[j] ? { "class": "qlgui-degcol" } : {},
+                         mathCell(lbl)));
+    });
+    var tbl = h("table", { "class": "qlgui-matrix qlgui-cayley" }, head);
+    c.cells.forEach(function (row, i) {
+      var r = h("tr");
+      r.appendChild(h("th", c.rowDegsep[i] ? { "class": "qlgui-degrow" } : {},
+                      mathCell(c.rowLabels[i])));
+      row.forEach(function (cell, j) {
+        var cls = [];
+        if (c.rowDegsep[i]) cls.push("qlgui-degrow");
+        if (c.colDegsep[j]) cls.push("qlgui-degcol");
+        var td = h("td", cls.length ? { "class": cls.join(" ") } : {});
+        td.appendChild((cell === "0" || cell === EM_DASH)
+                       ? document.createTextNode(cell) : mathCell(cell));
+        r.appendChild(td);
+      });
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
   // ---- Plan 35 UNIT 2: per-degree explicit representatives (product / Connes) ----
   // The block carries basis_classes / chain_basis / differentials as {side: {degree:
   // ...}} (quiverlab.hochschild.basis_reps). Render one sub-section per (side, degree):
@@ -1928,16 +2170,20 @@
   }
 
   function renderProductTables(div, name, b) {
+    var prime = primeFromBasis(b.basis);
     div.appendChild(h("p", { text: PRODUCT_TITLE[name] }));
     div.appendChild(h("p", { "class": "qlgui-hint", text: productLegend(name, b) }));
+    if (prime != null)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: balancedRepNote(prime) }));
     var reps = appendProductReps(div, b, name, false);   // product sections drop d
     if (reps) {
-      div.appendChild(h("p", {}, h("b", { text: "Structure-constant tables "
-        + "(in the explicit classes above; each links to its degree sections):" })));
+      div.appendChild(h("p", {}, h("b", { text: "Structure-constant table "
+        + "(in the explicit classes above):" })));
     }
+    var tables = b.tables || [];
     // Marco 2026-07-31: a product FAMILY whose every bidegree vanishes collapses to
-    // one section-level line -- no empty per-bidegree tables.
-    var allZero = (b.tables || []).length && (b.tables || []).every(function (t) {
+    // one section-level line -- no empty tables.
+    var allZero = tables.length && tables.every(function (t) {
       var d = t.dims || [0, 0, 0];
       return !d[0] || !d[1] || (t.constants || []).every(matIsZero);
     });
@@ -1947,21 +2193,36 @@
       div.appendChild(h("p", { "class": "qlgui-hint",
         text: "All " + fam + " in the served bidegrees vanish." }));
     } else {
-      (b.tables || []).forEach(function (t) {
-        div.appendChild(h("p", { "class": "arithmatex",
-          text: productHeading(name, t.degrees, t.out_degree) }));
-        if (reps) productTableLinks(div, name, t.degrees, t.out_degree);
-        var d = t.dims || [0, 0, 0];
-        var zero = !d[0] || !d[1] || (t.constants || []).every(matIsZero);
-        if (zero) {
-          div.appendChild(h("p", { "class": "qlgui-hint",
-            text: "all products vanish in this degree pair" }));
-          return;
-        }
-        productEquations(name, t).forEach(function (line) {
-          div.appendChild(h("p", { "class": "arithmatex", text: line }));
+      // ONE big degree-major Cayley table for the family (Marco 2026-08-01).
+      div.appendChild(h("p", { "class": "arithmatex",
+        text: "\\(" + FAMILY_HEADING[name] + "\\)" }));
+      div.appendChild(h("p", { "class": "qlgui-hint", text: FAMILY_AXIS_NOTE }));
+      var c = combinedCayley(name, tables, prime);
+      if (c.overCap) {
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "The combined table has " + c.rows + " rows and " + c.cols
+            + " columns, exceeding the " + CAYLEY_AXIS_CAP + "-class display cap; the "
+            + "per-bidegree tables follow (the complete data is in the JSON record)." }));
+        tables.forEach(function (t) {
+          div.appendChild(h("p", { "class": "arithmatex",
+            text: productHeading(name, t.degrees, t.out_degree) }));
+          var d = t.dims || [0, 0, 0];
+          var zero = !d[0] || !d[1] || (t.constants || []).every(matIsZero);
+          if (zero) {
+            div.appendChild(h("p", { "class": "qlgui-hint",
+              text: "all products vanish in this degree pair" }));
+            return;
+          }
+          var nl = cayleyNoteLine(name, t.degrees || [0, 0], d, t.constants, prime);
+          if (nl) div.appendChild(h("p", { "class": "qlgui-hint", text: nl }));
+          div.appendChild(cayleyGrid(name, t, prime));
         });
-      });
+      } else {
+        if (c.note) div.appendChild(h("p", { "class": "qlgui-hint", text: c.note }));
+        if (c.hasBeyond)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: beyondWindowNote() }));
+        div.appendChild(cayleyBigGrid(c));
+      }
     }
     if (name === "bracket" && b.window != null) {
       div.appendChild(h("p", { "class": "qlgui-hint",

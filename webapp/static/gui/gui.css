@@ -75,6 +75,14 @@
   background-color: rgba(255, 255, 255, .06); }
 [data-md-color-scheme="slate"] #qlgui-results table.qlgui-matrix td:nth-child(even) {
   background-image: linear-gradient(rgba(255, 255, 255, .05), rgba(255, 255, 255, .05)); }
+/* Big-family Cayley table (Marco 2026-08-01): a heavier rule at each DEGREE boundary
+   so the degree blocks read apart (CSS-only; the structural read-back is unaffected).
+   qlgui-degrow on the first row of a new left-degree block draws its top edge,
+   qlgui-degcol on the first column of a new right-degree block its left edge. */
+#qlgui-results table.qlgui-cayley td.qlgui-degrow,
+#qlgui-results table.qlgui-cayley th.qlgui-degrow { border-top: 2px solid #8a8a8a; }
+#qlgui-results table.qlgui-cayley td.qlgui-degcol,
+#qlgui-results table.qlgui-cayley th.qlgui-degcol { border-left: 2px solid #8a8a8a; }
 [data-md-color-scheme="slate"] #qlgui-canvas .sel circle,
 [data-md-color-scheme="slate"] #qlgui-canvas .sel path { stroke: #ef5350; }
 [data-md-color-scheme="slate"] #qlgui-status.ok  { color: #81c784; }
