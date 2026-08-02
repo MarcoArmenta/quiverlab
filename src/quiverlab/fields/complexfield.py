@@ -8,7 +8,7 @@ import sympy
 from sympy.polys.constructor import construct_domain
 
 from quiverlab.errors import ExactnessError, FieldError
-from quiverlab.fields.domain import Domain, reject_inexact
+from quiverlab.fields.domain import Domain, exact_rational, reject_inexact
 
 _FLOAT_HINT = "quiverlab is exact-only: write '1/2', 'sqrt(2)', 'i', E(3), never 0.5"
 
@@ -101,8 +101,11 @@ class ComplexField:
                     raise FieldError(f"cannot read {x!r} as an exact complex number",
                                      hint="examples: '1/3', 'i', 'sqrt(2)', 'E(3)'") from exc
             else:
-                raise FieldError(f"cannot read {type(x).__name__} {x!r} as an exact scalar",
-                                 hint=_FLOAT_HINT)
+                pq = exact_rational(x)      # PythonMPQ / gmpy2 mpq leaking from QQ arithmetic
+                if pq is None:
+                    raise FieldError(f"cannot read {type(x).__name__} {x!r} as an exact scalar",
+                                     hint=_FLOAT_HINT)
+                expr = sympy.Rational(*pq)
         if not isinstance(expr, sympy.Basic):
             raise FieldError(f"cannot read {x!r} as an exact complex number",
                              hint="examples: '1/3', 'i', 'sqrt(2)', 'E(3)'")

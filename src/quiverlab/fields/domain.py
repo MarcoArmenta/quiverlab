@@ -26,6 +26,35 @@ def reject_inexact(x):
     return x
 
 
+def exact_rational(x):
+    """If ``x`` carries the exact rational protocol -- an integer ``.numerator``
+    and ``.denominator`` -- return the pair ``(p, q)`` as Python ints; otherwise
+    ``None``. This admits values by PROTOCOL, not by a name-list: sympy's own QQ
+    elements (``sympy.external.pythonmpq.PythonMPQ`` in a pure install, ``gmpy2``
+    ``mpq``/``mpz`` when the C backend is present), ``fractions.Fraction``,
+    ``int``, and ``sympy`` ``Rational``/``Integer`` all qualify. Such a value is
+    an EXACT rational -- refusing it as "not an exact scalar" is a false refusal
+    (these leak out of sympy Matrix/domain arithmetic over QQ and re-enter the
+    exact-scalar readers).
+
+    Float/complex/Decimal have no integer num/den pair and miss. ``bool`` IS a
+    ``numbers.Rational`` and would qualify, so callers MUST reject it upstream
+    via :func:`reject_inexact` (house style) BEFORE consulting this helper."""
+    num = getattr(x, "numerator", None)
+    den = getattr(x, "denominator", None)
+    if num is None or den is None:
+        return None
+    if isinstance(num, (float, complex)) or isinstance(den, (float, complex)):
+        return None
+    try:
+        p, q = int(num), int(den)
+    except (TypeError, ValueError):
+        return None
+    if p != num or q != den:          # a non-integral num/den that int() truncated
+        return None
+    return (p, q)
+
+
 class Domain:
     """Abstract exact field. Elements are plain Python objects; ops go through the domain."""
 
@@ -80,7 +109,10 @@ class Domain:
 
 
 def parse_rational(x) -> Fraction:
-    """int | Fraction | 'a/b' string -> Fraction, loudly exact."""
+    """int | Fraction | 'a/b' string -> Fraction, loudly exact. Also accepts any
+    exact rational carried by the numerator/denominator protocol (PythonMPQ,
+    gmpy2 mpq/mpz, sympy Rational/Integer) -- how sympy's QQ domain represents its
+    own elements, which leak back into the readers through Matrix arithmetic."""
     reject_inexact(x)
     if isinstance(x, int):
         return Fraction(x)
@@ -93,5 +125,8 @@ def parse_rational(x) -> Fraction:
             raise ExactnessError(
                 f"cannot read {x!r} as an exact rational", hint="use forms like '2' or '-1/3'"
             ) from exc
+    pq = exact_rational(x)
+    if pq is not None:
+        return Fraction(*pq)
     raise ExactnessError(f"cannot read {type(x).__name__} {x!r} as an exact scalar",
                          hint=_FLOAT_HINT)
