@@ -439,11 +439,15 @@ def _product_tables_html(kind, b):
     no drift. ``b["differentials"]`` here is the product ``{side:{degree:...}}`` shape,
     read ONLY inside this kind-scoped function (the module-resolution block ships a
     LIST under the same key -- never read it shape-blind)."""
-    from quiverlab.trace.products import equation_lines, notation_legend
+    from quiverlab.trace.products import (
+        notation_legend, balanced_rep_note, prime_from_basis)
     from quiverlab.trace.render_html import (
-        product_degree_sections, product_table_reference)
+        product_degree_sections, family_cayley_html)
+    prime = prime_from_basis(b.get("basis"))
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend(kind, "", b.get("basis")))]
+    if prime is not None:                             # the balanced-rep legend, once
+        out.append("<p class='ql-note'>%s</p>" % _esc(balanced_rep_note(prime)))
     # Product sections drop the annihilating differential (Marco 2026-07-31); it lives
     # in the HH degree sections.
     secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
@@ -453,24 +457,12 @@ def _product_tables_html(kind, b):
     if have_reps:
         out.append("<p><b>Explicit representatives by degree</b></p>")
         out.extend(secs)
-        out.append("<p><b>Structure-constant tables</b> (in the explicit classes "
-                   "above; each table links to its operands' and output's degree "
-                   "sections):</p>")
-    for t in (b.get("tables") or []):
-        degrees = list(t.get("degrees") or [])
-        out_degree = t.get("out_degree")
-        dims = list(t.get("dims") or [0, 0, 0])
-        constants = t.get("constants") or []
-        out.append('<p class="ql-mlabel">%s</p>'
-                   % _math_inline(_product_heading(kind, degrees, out_degree)))
-        if have_reps and degrees:               # MINOR 1: link to the degree sections
-            out.append(product_table_reference(kind, degrees, out_degree, "cr-" + kind))
-        lines = equation_lines(kind, degrees, out_degree, dims, constants)
-        if lines:
-            out.extend(_math(line) for line in lines)
-        else:
-            out.append("<p class='ql-note'>every product in this bidegree "
-                       "vanishes.</p>")
+        out.append("<p><b>Structure-constant table</b> (in the explicit classes "
+                   "above):</p>")
+    # ONE big degree-major Cayley table for the whole family (Marco 2026-08-01), with
+    # the em-dash beyond-window mark and the >cap per-bidegree fallback -- the SAME
+    # builder + renderer the worked-steps chapter uses (no drift).
+    out.extend(family_cayley_html(kind, list(b.get("tables") or []), prime))
     if kind == "bracket" and b.get("window") is not None:
         out.append("<p class='ql-note'>bracket structure constants served to the "
                    "degree window %s (bar-transport bound).</p>"

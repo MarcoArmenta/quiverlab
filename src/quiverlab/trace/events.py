@@ -212,13 +212,24 @@ class ProductStep:
     the list of TeX equation lines spelling out the nonzero products in the recorded
     class bases (cup/cap/bracket); ``matrix`` is the induced-B matrix
     (``list[list[str]]`` of exact coefficient strings) for connes_b, else ``None``.
-    ``note`` is an optional one-liner (a vanishing bidegree, the induced rank)."""
+    ``note`` is an optional one-liner (a vanishing bidegree, the induced rank).
+
+    Cayley-table fields (Marco 2026-08-01, cup/cap/bracket only): ``dims`` is
+    ``[dl, dr, dout]``, ``constants`` the raw ``constants[k][i][j]`` residue strings,
+    ``out_degree`` the target degree, and ``prime`` the GF(p) prime (or ``None``) for
+    the balanced-representative display -- the render surface builds the grid from
+    these. All default absent, so a legacy/connes step and the JSON record are
+    unaffected; ``lines`` is retained for the JSON prose and as the vanish sentinel."""
     kind: str
     degrees: object
     heading: str = ""
     lines: object = ()
     matrix: object = None
     note: str = ""
+    dims: object = None
+    constants: object = None
+    out_degree: object = None
+    prime: object = None
 
 
 __all__ = [

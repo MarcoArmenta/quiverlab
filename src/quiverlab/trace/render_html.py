@@ -85,6 +85,16 @@ _STYLE = (
     "table.ql-matrix th{background:#f0f0f0;color:#555;font-weight:normal;"
     "font-size:.85em;text-align:center}"
     "table.ql-matrix th.ql-corner{background:#e4e4e4;border-color:#c4c4c4}"
+    # Big-family Cayley table (Marco 2026-08-01): a heavier rule at each DEGREE
+    # boundary so the degree blocks read apart (CSS-only; the structural read-back is
+    # unaffected). ql-degrow on the first row of a new left-degree block draws its top
+    # edge; ql-degcol on the first column of a new right-degree block draws its left
+    # edge. Applied to both the header (<th>) and the body (<td>) cells of that
+    # boundary so the rule is continuous.
+    "table.ql-cayley td.ql-degrow,table.ql-cayley th.ql-degrow"
+    "{border-top:2px solid #8a8a8a}"
+    "table.ql-cayley td.ql-degcol,table.ql-cayley th.ql-degcol"
+    "{border-left:2px solid #8a8a8a}"
     ".ql-mlabel{margin:.6em 0 .1em}"
     "ol,ul{padding-left:1.4em}"
     # Fine-grained table of contents (Marco 2026-07-31): top-level sections with
@@ -457,6 +467,57 @@ def matrix_grid(matrix, label=None):
     out.append('<table class="ql-matrix"><tr>%s</tr>%s</table>'
                % ("".join(head), "".join(body)))
     return "".join(out)
+
+
+def _cayley_cell_html(c, classes):
+    """One Cayley body cell: ``0`` / em dash rendered as plain text, a combination
+    typeset; the degree-boundary classes (CSS-only heavier rule) are attached to the
+    ``<td>`` -- the read-back helper tolerates the attribute."""
+    attr = ' class="%s"' % " ".join(classes) if classes else ""
+    inner = c if c in ("0", "—") else _math_inline(c)
+    return "<td%s>%s</td>" % (attr, inner)
+
+
+def cayley_grid_html(table):
+    """Render a structured Cayley multiplication table
+    (:func:`quiverlab.trace.products.cayley_table` per-bidegree, or
+    :func:`quiverlab.trace.products.combined_cayley` for the whole family) as an INDEXED
+    GRID, reusing the ``matrix_grid`` conventions: the corner cell holds the product
+    operator, the header ROW the right-factor classes, the header COLUMN the left-factor
+    classes, and each body cell the product in the target basis (``0`` / a signed
+    combination / an em dash beyond the computed window). Double zebra striping + print
+    colours come free from the shared ``ql-matrix`` CSS; ``ql-cayley`` marks it for the
+    read-back helper, and the optional ``row_degsep`` / ``col_degsep`` flags add a
+    heavier CSS-only rule (``ql-degrow`` / ``ql-degcol``) at each degree boundary. A
+    table past :data:`DISPLAY_CAP` on either axis states its size and points at the
+    JSON (the single grid chokepoint)."""
+    dl, dr = table["dl"], table["dr"]
+    if not dl or not dr:
+        return _math("0")
+    if dl >= DISPLAY_CAP or dr >= DISPLAY_CAP:
+        return ("<p class='ql-note'>%d×%d product table (%d rows and %d columns exceed "
+                "the %d-line display cap); the complete structure constants are in the "
+                "accompanying JSON record.</p>" % (dl, dr, dl, dr, DISPLAY_CAP))
+    rds = table.get("row_degsep") or [False] * dl
+    cds = table.get("col_degsep") or [False] * dr
+    head = ['<th class="ql-corner">%s</th>' % _math_inline(table["corner"])]
+    for j, lbl in enumerate(table["col_labels"]):
+        cls = ' class="ql-degcol"' if cds[j] else ""
+        head.append("<th%s>%s</th>" % (cls, _math_inline(lbl)))
+    body = []
+    for i, row in enumerate(table["cells"]):
+        rcls = ' class="ql-degrow"' if rds[i] else ""
+        cells = ["<th%s>%s</th>" % (rcls, _math_inline(table["row_labels"][i]))]
+        for j, c in enumerate(row):
+            classes = []
+            if rds[i]:
+                classes.append("ql-degrow")
+            if cds[j]:
+                classes.append("ql-degcol")
+            cells.append(_cayley_cell_html(c, classes))
+        body.append("<tr>%s</tr>" % "".join(cells))
+    return ('<table class="ql-matrix ql-cayley"><tr>%s</tr>%s</table>'
+            % ("".join(head), "".join(body)))
 
 
 def _event_grid(ev, label=None):
@@ -1480,6 +1541,7 @@ def _products_html(events):
     if not steps:
         return []
     kind = steps[0].kind
+    from quiverlab.trace.products import balanced_rep_note
     out = []
     for e in events:                                  # the definitional StepNote(s)
         if isinstance(e, StepNote):
@@ -1489,6 +1551,13 @@ def _products_html(events):
     formula = _PRODUCT_DEF.get(kind)
     if formula:
         out.append(_math(formula))
+    # The balanced-representative legend, once per family, when the constants are GF(p)
+    # residues (Marco 2026-08-01). The tables show c-p for c > p/2; the JSON keeps raw.
+    prime = next((s.prime for s in steps
+                  if s.kind in ("cup", "cap", "bracket")
+                  and getattr(s, "prime", None) is not None), None)
+    if prime is not None:
+        out.append("<p class='ql-note'>%s</p>" % _esc(balanced_rep_note(prime)))
     # Plan 35 UNIT 2: the explicit representatives, per degree, BEFORE the tables --
     # the tables then reference these classes ("gamma_k are the degree-(p+q) classes
     # above"). Driven by the ProductBasis event the chapter emits; absent on a legacy
@@ -1510,30 +1579,118 @@ def _products_html(events):
             out.append("<p class='ql-note'>The tables below are written in the "
                        "explicit classes listed by degree above; each table links to "
                        "the degree sections of its operands and output.</p>")
-    # Addendum (Marco 2026-07-31): a product FAMILY whose every bidegree vanishes
-    # collapses to one section-level line -- no page of empty per-bidegree tables. A
-    # SINGLE vanishing bidegree keeps its own honest one-line note (below).
+    # connes_b stays per-degree matrices (a map, not a pairing) -- unchanged.
+    if kind == "connes_b":
+        for s in steps:
+            if s.heading:
+                out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
+            if have_reps:
+                out.append(product_table_reference(
+                    s.kind, s.degrees, _product_out_degree(s.kind, s.degrees),
+                    "ws-" + kind))
+            if s.matrix is not None:
+                out.append(matrix_grid(s.matrix))
+            if s.note:
+                out.append("<p class='ql-note'>%s</p>" % _esc(s.note))
+        return out
+    # cup / cap / bracket: ONE big degree-major Cayley table for the whole family
+    # (Marco 2026-08-01 addendum). An all-vanishing family collapses to one line
+    # (handled inside family_cayley_html so both report surfaces share the rule).
     table_steps = [s for s in steps if s.kind in ("cup", "cap", "bracket")]
-    if len(table_steps) > 1 and all(not s.lines for s in table_steps):
+    tables_data = [{"degrees": tuple(s.degrees), "out_degree": s.out_degree,
+                    "dims": list(s.dims), "constants": s.constants}
+                   for s in table_steps if s.constants is not None]
+    if not tables_data:                               # legacy events: equation lines
+        for s in table_steps:
+            if s.heading:
+                out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
+            for line in (s.lines or ()):
+                out.append(_math(line))
+            if s.note:
+                out.append("<p class='ql-note'>%s</p>" % _esc(s.note))
+        return out
+    prime = next((s.prime for s in table_steps
+                  if getattr(s, "prime", None) is not None), None)
+    out.extend(family_cayley_html(kind, tables_data, prime))
+    return out
+
+
+_FAMILY_HEADING = {
+    "cup": r"HH^{*} \cup HH^{*} \to HH^{*}",
+    "cap": r"HH^{*} \cap HH_{*} \to HH_{*}",
+    "bracket": r"[HH^{*}, HH^{*}] \to HH^{*}",
+}
+_FAMILY_AXIS_NOTE = (
+    "One row per left class and one column per right class, ordered degree-major "
+    "(the degree is the class' superscript); a heavier rule marks each degree "
+    "boundary.")
+
+
+def _bidegree_heading_tex(kind, degrees, out_degree):
+    p = degrees[0] if degrees else 0
+    q = degrees[1] if len(degrees) > 1 else 0
+    if kind == "cap":
+        return r"HH^{%s} \cap HH_{%s} \to HH_{%s}" % (p, q, out_degree)
+    if kind == "bracket":
+        return r"[HH^{%s}, HH^{%s}] \to HH^{%s}" % (p, q, out_degree)
+    return r"HH^{%s} \cup HH^{%s} \to HH^{%s}" % (p, q, out_degree)
+
+
+def _per_bidegree_cayley_html(kind, tables_data, prime):
+    """The over-cap fallback: each nonzero bidegree as its own Cayley grid, a
+    fully-vanishing bidegree stating the one-liner. Works from the normalized table
+    dicts, so both report surfaces share it."""
+    from quiverlab.trace.products import cayley_table, equation_lines
+    out = []
+    for t in tables_data:
+        degrees, out_degree = list(t["degrees"]), t["out_degree"]
+        dims, constants = list(t["dims"]), t["constants"]
+        out.append('<p class="ql-mlabel">%s</p>'
+                   % _math_inline(_bidegree_heading_tex(kind, degrees, out_degree)))
+        if equation_lines(kind, degrees, out_degree, dims, constants):
+            tbl = cayley_table(kind, degrees, out_degree, dims, constants, prime)
+            if tbl["note"]:
+                out.append("<p class='ql-note'>%s</p>" % _esc(tbl["note"]))
+            out.append(cayley_grid_html(tbl))
+        else:
+            out.append("<p class='ql-note'>every product in this bidegree "
+                       "vanishes.</p>")
+    return out
+
+
+def family_cayley_html(kind, tables_data, prime):
+    """Render a whole cup/cap/bracket family (given its per-bidegree table dicts) as ONE
+    big degree-major Cayley table -- the family heading, the axis/degree-boundary note,
+    the whole-region structural caption, the em-dash beyond-window legend, then the
+    grid. Over the per-axis class cap it falls back to per-bidegree grids with a stated
+    note + JSON pointer. Shared by the worked-steps chapter and the Computed-results
+    section (no drift). ``tables_data`` empty -> ``[]``."""
+    from quiverlab.trace.products import (
+        beyond_window_note, combined_cayley, equation_lines, CAYLEY_AXIS_CAP)
+    tables_data = [t for t in tables_data if t.get("constants") is not None]
+    if not tables_data:
+        return []
+    # An all-vanishing family keeps the one-line statement (Marco), never a grid of 0s.
+    if all(not equation_lines(kind, list(t["degrees"]), t["out_degree"],
+                              list(t["dims"]), t["constants"]) for t in tables_data):
         name = {"cup": "cup products", "cap": "cap products",
                 "bracket": "Gerstenhaber brackets"}.get(kind, "products")
-        out.append("<p class='ql-note'>All %s in the served bidegrees vanish.</p>"
-                   % name)
+        return ["<p class='ql-note'>All %s in the served bidegrees vanish.</p>" % name]
+    out = ['<p class="ql-mlabel">%s</p>' % _math_inline(_FAMILY_HEADING[kind]),
+           "<p class='ql-note'>%s</p>" % _esc(_FAMILY_AXIS_NOTE)]
+    combined = combined_cayley(kind, tables_data, prime)
+    if combined.get("over_cap"):
+        out.append("<p class='ql-note'>The combined table has %d rows and %d columns, "
+                   "exceeding the %d-class display cap; the per-bidegree tables follow "
+                   "(the complete data is in the JSON record).</p>"
+                   % (combined["rows"], combined["cols"], CAYLEY_AXIS_CAP))
+        out.extend(_per_bidegree_cayley_html(kind, tables_data, prime))
         return out
-    for s in steps:
-        if s.heading:
-            out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
-        # MINOR 1: link this table to the degree sections its classes live in.
-        if have_reps:
-            out.append(product_table_reference(
-                s.kind, s.degrees, _product_out_degree(s.kind, s.degrees),
-                "ws-" + kind))
-        for line in (s.lines or ()):
-            out.append(_math(line))
-        if s.matrix is not None:
-            out.append(matrix_grid(s.matrix))
-        if s.note:
-            out.append("<p class='ql-note'>%s</p>" % _esc(s.note))
+    if combined["note"]:
+        out.append("<p class='ql-note'>%s</p>" % _esc(combined["note"]))
+    if combined["has_beyond"]:
+        out.append("<p class='ql-note'>%s</p>" % _esc(beyond_window_note()))
+    out.append(cayley_grid_html(combined))
     return out
 
 

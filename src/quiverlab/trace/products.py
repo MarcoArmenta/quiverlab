@@ -21,6 +21,8 @@ Float-free: every number is an int or an exact domain-element string. The fixed
 per-kind definitional formula lives in ``render_html`` (the sole owner of the
 worked-steps math source); this module owns only the DATA-derived equations.
 """
+import re
+
 from quiverlab.errors import QuiverlabError
 from quiverlab.trace.events import ProductBasis, ProductStep, ResultDims, StepNote
 
@@ -58,6 +60,15 @@ _PROSE = {
 _LEFT = r"\alpha"
 _RIGHT = {"cup": r"\alpha", "bracket": r"\alpha", "cap": r"z"}
 _OUT = {"cup": r"\alpha", "bracket": r"\alpha", "cap": r"z"}
+
+# The product operator shown in the Cayley table's CORNER cell (the mnemonic that
+# every cell of the grid is left-class OP right-class): cup ∪, cap ∩, bracket [-,-].
+_CORNER = {"cup": r"\cup", "cap": r"\cap", "bracket": r"[-,-]"}
+
+# The GF(p) prime carried in a recorded basis string ("bar/GF(7)", "cs/GF(2)"); a
+# non-GF basis (QQ, an extension-field repr) yields None -> no balancing, coefficients
+# verbatim.
+_GF_RE = re.compile(r"GF\((\d+)\)")
 
 
 def notation_legend(kind, degrees_note, basis):
@@ -149,6 +160,7 @@ def _table_chapter(A, kind, obj):
     coh = list(A.hochschild_cohomology(top, verbose=False).dims)
     hom = (list(A.hochschild_homology(top, verbose=False).dims)
            if kind == "cap" else None)
+    prime = prime_from_basis(obj.basis)
     steps = []
     for key in sorted(obj.tables):
         t = obj.tables[key]
@@ -159,7 +171,7 @@ def _table_chapter(A, kind, obj):
                 "Hochschild dimensions are %s -- refusing to narrate a table that "
                 "misstates the computation"
                 % (kind, tuple(t.degrees), tuple(t.dims), tuple(want)))
-        steps.append(_table_step(kind, t))
+        steps.append(_table_step(kind, t, prime))
     title, prose = _PROSE[kind]
     result_kind = "HH_" if kind == "cap" else "HH^"
     result_dims = hom if kind == "cap" else coh
@@ -182,14 +194,18 @@ def _expected_dims(kind, degrees, coh, hom):
     return (coh[p], hom[second], hom[second - p])          # cap: (HH^p, HH_n, HH_{n-p})
 
 
-def _table_step(kind, t):
-    """One bidegree's ProductStep: its map heading and the nonzero-product equation
-    lines (an all-vanishing bidegree carries a note instead)."""
+def _table_step(kind, t, prime=None):
+    """One bidegree's ProductStep: its map heading, the raw structure-constant data the
+    HTML surface turns into a Cayley grid, AND the nonzero-product equation lines
+    (kept for the JSON prose and as the vanish sentinel -- ``lines`` empty <=> the
+    whole table vanishes, which carries the one-line note instead of a grid)."""
     lines = _equation_lines(kind, t)
     note = "" if lines else "every product in this bidegree vanishes."
     return ProductStep(kind=kind, degrees=tuple(t.degrees),
                        heading=_map_heading(kind, t.degrees, t.out_degree),
-                       lines=lines, matrix=None, note=note)
+                       lines=lines, matrix=None, note=note,
+                       dims=list(t.dims), constants=t.constants,
+                       out_degree=t.out_degree, prime=prime)
 
 
 def _map_heading(kind, degrees, out_degree):
@@ -243,6 +259,315 @@ def _lhs(kind, left_deg, i, right_deg, j):
 def _term(kind, c, out_deg, k):
     g = r"%s^{%d}_{%d}" % (_OUT[kind], out_deg, k + 1)
     return g if c == "1" else r"%s\,%s" % (c, g)
+
+
+# --------------------------------------------------------------------------- #
+# Cayley multiplication tables (Marco 2026-08-01). Every product bidegree renders
+# as a grid: rows = left classes, cols = right classes, each cell the product
+# expressed DIRECTLY in the target basis (0 / a signed linear combination). Zeros
+# are SHOWN inside a table that is nonzero somewhere -- they are information.
+#
+# This module owns the pure/data-derived part -- the cell TeX, the balanced-rep
+# coefficient display, the structural-note derivations -- as float-free functions of
+# the recorded structure constants. Each HTML surface (render_html, results_html)
+# turns the returned struct into a grid via ``render_html.cayley_grid_html``; the GUI
+# mirrors the same logic in JS. ``equation_lines`` stays exported (JSON prose / the
+# vanish test), but the RENDERED product tables are Cayley grids.
+# --------------------------------------------------------------------------- #
+
+def prime_from_basis(basis):
+    """The prime ``p`` of a recorded GF(p) basis string, else ``None`` (QQ / an
+    extension-field repr -> coefficients shown verbatim, no balancing)."""
+    if not basis:
+        return None
+    m = _GF_RE.search(str(basis))
+    return int(m.group(1)) if m else None
+
+
+def balanced_coeff(c, prime):
+    """A GF(p) residue displayed as its BALANCED representative: ``c`` with ``c > p/2``
+    (equivalently ``2c > p``) shows as ``c - p`` (so p-1 -> -1, p-2 -> -2). Display
+    only -- the JSON keeps the raw residue string. A coefficient that is not a residue
+    in ``[0, p)`` (a fraction, an out-of-range or already-signed value, or no prime at
+    all) is returned verbatim."""
+    c = str(c)
+    if prime is None:
+        return c
+    try:
+        v = int(c)
+    except ValueError:
+        return c
+    if 0 <= v < prime and 2 * v > prime:
+        return str(v - prime)
+    return c
+
+
+def balanced_rep_note(prime):
+    """The one-sentence legend for the balanced-representative display, or ``""`` for a
+    non-GF basis (nothing to balance)."""
+    if prime is None:
+        return ""
+    return ("Coefficients are shown as balanced representatives mod %d (a residue "
+            "c > %d/2 is written c-%d); the JSON record keeps the raw residues."
+            % (prime, prime, prime))
+
+
+def _signed_join(pieces):
+    """Join ``(coeff_display, generator_tex)`` terms into one signed TeX sum, the unit
+    magnitude left implicit (``\\alpha^{2}_{1}``, ``-\\alpha^{2}_{1}``,
+    ``\\alpha^{2}_{1} + 2\\,\\alpha^{2}_{3}``). ``[]`` -> ``"0"``."""
+    if not pieces:
+        return "0"
+    out = []
+    for idx, (c, g) in enumerate(pieces):
+        neg = c.startswith("-")
+        mag = c[1:] if neg else c
+        term = g if mag == "1" else r"%s\,%s" % (mag, g)
+        if idx == 0:
+            out.append("-" + term if neg else term)
+        else:
+            out.append((" - " if neg else " + ") + term)
+    return "".join(out)
+
+
+def cell_tex(kind, out_degree, coeffs, prime):
+    """One Cayley cell: the product expressed in the TARGET basis as
+    ``Σ_k balanced(c_k)·g_k`` (``g_k`` the k-th output generator), or ``"0"`` when
+    every coefficient vanishes. ``coeffs`` is ``[constants[k][i][j] for k]``."""
+    pieces = []
+    for k, c in enumerate(coeffs):
+        disp = balanced_coeff(c, prime)
+        if str(disp) == "0":
+            continue
+        pieces.append((disp, r"%s^{%d}_{%d}" % (_OUT[kind], out_degree, k + 1)))
+    return _signed_join(pieces)
+
+
+def _is_int(s):
+    try:
+        int(str(s))
+        return True
+    except ValueError:
+        return False
+
+
+def _mirror_sign(kind, p, q):
+    """The graded sign relating a product table to its transpose: cup satisfies
+    ``α^p∪α^q = (-1)^{pq} α^q∪α^p``; the Gerstenhaber bracket
+    ``[α^p,α^q] = -(-1)^{(p-1)(q-1)} [α^q,α^p]``. Returns +1 or -1."""
+    if kind == "cup":
+        return -1 if (p * q) % 2 else 1
+    return -1 if ((p - 1) * (q - 1)) % 2 == 0 else 1        # bracket
+
+
+def structural_notes(kind, degrees, dims, constants, prime):
+    """Honest structural observations DERIVED from the constants (never asserted
+    blindly):
+
+      * ``"all squares are 0"`` when every diagonal product ``x·x`` vanishes;
+      * ``"the table is graded-antisymmetric"`` / ``"...graded-commutative
+        (symmetric)"`` when the table equals its sign-mirrored transpose, the sign read
+        off the degrees by :func:`_mirror_sign`.
+
+    Only meaningful for cup/bracket on a SQUARE bidegree (``p == q`` and
+    ``dl == dr``) -- the two operands then live in the same space, so the diagonal and
+    the transpose make sense; ``[]`` otherwise. The sign-mirror note needs residue
+    arithmetic and is emitted only over a GF(p) basis."""
+    if kind not in ("cup", "bracket"):
+        return []
+    p, q = degrees
+    dl, dr, dout = dims
+    if p != q or dl != dr or not dl:
+        return []
+    n = dl
+    notes = []
+    if all(str(constants[k][i][i]) == "0" for i in range(n) for k in range(dout)):
+        notes.append("all squares are 0")
+    if prime is not None:
+        all_int = all(_is_int(constants[k][i][j])
+                      for i in range(n) for j in range(n) for k in range(dout))
+        if all_int:
+            sign = _mirror_sign(kind, p, q)
+            mirrored = all(
+                (int(constants[k][i][j]) - sign * int(constants[k][j][i])) % prime == 0
+                for i in range(n) for j in range(n) for k in range(dout))
+            if mirrored:
+                notes.append("the table is graded-antisymmetric" if sign == -1
+                             else "the table is graded-commutative (symmetric)")
+    return notes
+
+
+def structural_note_line(kind, degrees, dims, constants, prime):
+    """The structural notes of one table as a single caption sentence, or ``""``."""
+    notes = structural_notes(kind, degrees, dims, constants, prime)
+    if not notes:
+        return ""
+    s = "; ".join(notes)
+    return s[0].upper() + s[1:] + "."
+
+
+def cayley_table(kind, degrees, out_degree, dims, constants, prime=None):
+    """The structured Cayley multiplication table of one product bidegree: row labels
+    (left classes ``α^p_i``), column labels (right classes ``α^q_j`` / ``z^n_j`` for
+    cap), the corner operator, and one TeX cell per entry -- the product in the target
+    basis (``α^out`` / ``z^out``), balanced-rep coefficients. Presentation-agnostic:
+    the HTML surfaces render it via ``render_html.cayley_grid_html``, the GUI mirrors
+    it. ``structural_note_line`` is carried alongside so a caller shows it above the
+    grid."""
+    dl, dr, dout = dims
+    left_deg, right_deg = degrees
+    row_labels = [r"%s^{%d}_{%d}" % (_LEFT, left_deg, i + 1) for i in range(dl)]
+    col_labels = [r"%s^{%d}_{%d}" % (_RIGHT[kind], right_deg, j + 1) for j in range(dr)]
+    cells = [[cell_tex(kind, out_degree,
+                       [constants[k][i][j] for k in range(dout)], prime)
+              for j in range(dr)] for i in range(dl)]
+    return {"corner": _CORNER[kind], "row_labels": row_labels,
+            "col_labels": col_labels, "cells": cells, "dl": dl, "dr": dr,
+            "note": structural_note_line(kind, degrees, dims, constants, prime)}
+
+
+# --------------------------------------------------------------------------- #
+# ONE BIG Cayley table per family (Marco 2026-08-01 addendum). Rows/columns run over
+# ALL (co)homology basis classes, degree-major, the degree read from the class'
+# superscript; a heavier rule marks each degree boundary. A cell whose target degree
+# lies beyond the computed window is an em dash (NOT computed, NOT zero); a computed
+# vanishing product is 0. When a family's per-axis class count exceeds the display
+# cap, the surface falls back to the per-bidegree ``cayley_table`` grids.
+# --------------------------------------------------------------------------- #
+
+CAYLEY_AXIS_CAP = 50            # per-axis class count above which the big form is dropped
+EM_DASH = "—"
+
+
+def _combined_out_degree(kind, p, q):
+    if kind == "cup":
+        return p + q
+    if kind == "bracket":
+        return p + q - 1
+    return q - p                # cap: (p, n) -> n - p
+
+
+def beyond_window_note():
+    """The legend for the em-dash honesty mark used by the big product table."""
+    return (EM_DASH + " marks a cell whose target degree lies beyond the computed "
+            "window (not computed); a computed vanishing product is shown as 0.")
+
+
+def _combined_note(kind, tbl, row_meta, prime):
+    """The structural caption derived over the WHOLE in-window region of a big cup/
+    bracket table (row and column axes coincide): "all squares are 0" when every
+    COMPUTED diagonal product vanishes, and the graded (anti)symmetry law when every
+    both-computed transpose pair satisfies it with its per-block sign. ``""`` for cap
+    (rows are cohomology, columns homology -- no transpose) or when nothing is
+    certifiable."""
+    if kind not in ("cup", "bracket"):
+        return ""
+    notes = []
+    diag_seen = diag_zero = 0
+    for gi, (p, i) in enumerate(row_meta):
+        t = tbl.get((p, p))
+        if t is None:
+            continue
+        diag_seen += 1
+        dout = t["dims"][2]
+        if all(str(t["constants"][k][i][i]) == "0" for k in range(dout)):
+            diag_zero += 1
+    if diag_seen and diag_zero == diag_seen:
+        notes.append("all squares are 0")
+    if prime is not None:
+        seen = ok = 0
+        all_int = True
+        for gi, (p, i) in enumerate(row_meta):
+            for gj, (q, j) in enumerate(row_meta):
+                t, tT = tbl.get((p, q)), tbl.get((q, p))
+                if t is None or tT is None:
+                    continue
+                dout = t["dims"][2]
+                sign = _mirror_sign(kind, p, q)
+                pairs = [(t["constants"][k][i][j], tT["constants"][k][j][i])
+                         for k in range(dout)]
+                if not all(_is_int(a) and _is_int(b) for a, b in pairs):
+                    all_int = False           # a non-residue entry: cannot certify
+                    break
+                good = all((int(a) - sign * int(b)) % prime == 0 for a, b in pairs)
+                seen += 1
+                ok += 1 if good else 0
+            if not all_int:
+                break
+        if all_int and seen and ok == seen:
+            notes.append("the cup product is graded-commutative" if kind == "cup"
+                         else "the Gerstenhaber bracket is graded-antisymmetric")
+    if not notes:
+        return ""
+    s = "; ".join(notes)
+    return s[0].upper() + s[1:] + "."
+
+
+def combined_cayley(kind, tables, prime=None):
+    """The ONE big Cayley table of a whole product family, from the per-bidegree
+    ``tables`` (each a mapping with ``degrees`` / ``out_degree`` / ``dims`` /
+    ``constants``). Rows run over every left (cohomology) class degree-major; columns
+    over every right class (cohomology for cup/bracket, homology for cap) degree-major.
+
+    Returns ``{"over_cap": True, "rows", "cols"}`` when either axis exceeds
+    :data:`CAYLEY_AXIS_CAP` (the caller then renders per-bidegree grids); otherwise a
+    struct ``{corner, row_labels, col_labels, row_degsep, col_degsep, cells, dl, dr,
+    note, has_beyond}`` where each cell is ``"0"`` / a signed combination / the em dash
+    (beyond the computed window). ``row_degsep[i]`` / ``col_degsep[j]`` flag the first
+    class of a new degree block (skipping the very first) for the heavier grid rule."""
+    tbl, left_dims, right_dims = {}, {}, {}
+    for t in tables:
+        p, q = t["degrees"]
+        dl, dr, _ = t["dims"]
+        tbl[(p, q)] = {"out_degree": t["out_degree"], "dims": list(t["dims"]),
+                       "constants": t["constants"]}
+        left_dims[p] = dl
+        right_dims[q] = dr
+    left_degs, right_degs = sorted(left_dims), sorted(right_dims)
+    total_rows = sum(left_dims[p] for p in left_degs)
+    total_cols = sum(right_dims[q] for q in right_degs)
+    if total_rows >= CAYLEY_AXIS_CAP or total_cols >= CAYLEY_AXIS_CAP:
+        return {"over_cap": True, "rows": total_rows, "cols": total_cols}
+    top = max(left_degs + right_degs) if (left_degs and right_degs) else 0
+
+    row_labels, row_degsep, row_meta = [], [], []
+    for bi, p in enumerate(left_degs):
+        for i in range(left_dims[p]):
+            row_labels.append(r"%s^{%d}_{%d}" % (_LEFT, p, i + 1))
+            row_degsep.append(i == 0 and bi > 0)
+            row_meta.append((p, i))
+    col_labels, col_degsep, col_meta = [], [], []
+    for bj, q in enumerate(right_degs):
+        for j in range(right_dims[q]):
+            col_labels.append(r"%s^{%d}_{%d}" % (_RIGHT[kind], q, j + 1))
+            col_degsep.append(j == 0 and bj > 0)
+            col_meta.append((q, j))
+
+    cells, has_beyond = [], False
+    for (p, i) in row_meta:
+        row = []
+        for (q, j) in col_meta:
+            target = _combined_out_degree(kind, p, q)
+            if target < 0:                          # cap below degree 0: structural zero
+                row.append("0")
+                continue
+            t = tbl.get((p, q))
+            if t is not None:
+                dout = t["dims"][2]
+                row.append(cell_tex(kind, target,
+                                    [t["constants"][k][i][j] for k in range(dout)],
+                                    prime))
+            else:                                   # target > top: not computed
+                has_beyond = True
+                row.append(EM_DASH)
+        cells.append(row)
+
+    return {"over_cap": False, "corner": _CORNER[kind],
+            "row_labels": row_labels, "col_labels": col_labels,
+            "row_degsep": row_degsep, "col_degsep": col_degsep,
+            "cells": cells, "dl": total_rows, "dr": total_cols,
+            "has_beyond": has_beyond,
+            "note": _combined_note(kind, tbl, row_meta, prime)}
 
 
 # --------------------------------------------------------------------------- #
