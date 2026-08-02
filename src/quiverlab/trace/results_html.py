@@ -428,37 +428,27 @@ def _product_heading(kind, degrees, out_degree):
 
 
 def _product_tables_html(kind, b):
-    """cup / cap / bracket: the notation legend, the per-degree EXPLICIT
-    REPRESENTATIVES (ordered basis -> classes -> differential + verification, Plan 35
-    UNIT 2), then one map heading plus its nonzero-product equation lines per bidegree
-    (an all-vanishing table states so), the bracket's served-window note, and the
-    engine provenance. The equation lines come from the SAME builder the worked-steps
-    chapter uses (``quiverlab.trace.products.equation_lines``); the degree sections
-    come from the SAME renderer the chapter uses
-    (``quiverlab.trace.render_html.product_degree_sections``) -- one implementation,
-    no drift. ``b["differentials"]`` here is the product ``{side:{degree:...}}`` shape,
-    read ONLY inside this kind-scoped function (the module-resolution block ships a
-    LIST under the same key -- never read it shape-blind)."""
+    """cup / cap / bracket: the notation legend, ONE flat list of ALL (co)homology basis
+    classes across degrees (Marco 2026-08-02 -- the chain bases live in the HH sections
+    above, so the products just remind the classes then show the table), then the whole
+    family's Cayley multiplication table, the bracket's served-window note, and the engine
+    provenance. The flat class list comes from the SAME builder the worked-steps chapter
+    uses (``quiverlab.trace.render_html.product_flat_classes_html``) and the Cayley table
+    from ``family_cayley_html`` -- one implementation, no drift."""
     from quiverlab.trace.products import (
         notation_legend, balanced_rep_note, prime_from_basis)
     from quiverlab.trace.render_html import (
-        product_degree_sections, family_cayley_html)
+        product_flat_classes_html, family_cayley_html)
     prime = prime_from_basis(b.get("basis"))
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend(kind, "", b.get("basis")))]
     if prime is not None:                             # the balanced-rep legend, once
         out.append("<p class='ql-note'>%s</p>" % _esc(balanced_rep_note(prime)))
-    # Product sections drop the annihilating differential (Marco 2026-07-31); it lives
-    # in the HH degree sections.
-    secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
-                                   b.get("differentials"), anchor_prefix="cr-" + kind,
-                                   show_differential=False)
-    have_reps = bool(secs)
-    if have_reps:
-        out.append("<p><b>Explicit representatives by degree</b></p>")
-        out.extend(secs)
-        out.append("<p><b>Structure-constant table</b> (in the explicit classes "
-                   "above):</p>")
+    # Marco 2026-08-02: for the products, one flat list of ALL (co)homology basis classes
+    # across degrees, then the multiplication table right away -- no per-degree
+    # sub-sections (those live in the HH cohomology/homology sections above). The flat
+    # list's own intro line heads it (symmetric with the worked-steps chapter).
+    out.extend(product_flat_classes_html(b.get("basis_classes")))
     # ONE big degree-major Cayley table for the whole family (Marco 2026-08-01), with
     # the em-dash beyond-window mark and the >cap per-bidegree fallback -- the SAME
     # builder + renderer the worked-steps chapter uses (no drift).

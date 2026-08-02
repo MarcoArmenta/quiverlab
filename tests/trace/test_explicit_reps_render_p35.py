@@ -42,30 +42,27 @@ def _order(html, *needles):
 
 
 # --------------------------------------------------------------------------- #
-# (1) Per-degree layout: heading(anchor) -> enumeration -> classes -> differential
-#     + verification, in that order; the tables follow and reference the classes.
+# (1) Marco 2026-08-02: the product section is a FLAT class list, then the table.
+#     No per-degree sub-sections (chain enumeration / per-degree headings /
+#     differentials) INSIDE the product section -- those live in the HH sections.
 # --------------------------------------------------------------------------- #
 @pytest.mark.oracle_selfcert
-def test_products_chapter_per_degree_order_and_anchor():
+def test_products_chapter_flat_class_list_then_table():
     A = ql.truncated_polynomial(2, field=ql.GF(7))
     html = render_html(products_chapter(A, "cup", A.cup_products(2)),
                        title="cup", algebra=A)
-    # a stable, unique degree anchor (id="...-hh-coh-deg-1" style)
-    assert "id='ws-cup-hh-coh-deg-1'" in html
-    # within the degree-1 section (from its anchor to the next h4): the order is
-    # enumeration -> classes -> differential + verification.
-    start = html.index("id='ws-cup-hh-coh-deg-1'")
-    section = html[start:html.index("<h4", start + 1)]
-    # Marco 2026-07-31: product sections state only the classes over the ordered
-    # basis (no annihilating differential -- that lives in the HH degree sections).
-    p = _order(section,
-               "Ordered basis of the degree-1 cohomology space",
-               "Basis classes")
-    assert p == sorted(p), p
-    assert "Verification:" not in section       # differential removed from products
-    # the structure-constant tables FOLLOW the degree sections and reference them
-    assert "Structure-constant tables" in html
-    assert html.index("Explicit representatives by degree") < html.index("Structure-constant tables")
+    prod = html[html.index("id='product-steps'"):]     # the product section onward
+    # the flat class list is present...
+    assert "Hochschild (co)homology basis classes" in prod
+    # ...with NO per-degree sub-section markers inside the product section:
+    assert "id='ws-cup-hh-coh-deg-1'" not in html       # no per-degree anchor
+    assert "Ordered basis of the degree" not in prod    # chain enumeration not repeated
+    assert "Verification:" not in prod                  # differential dropped
+    assert "Explicit representatives by degree" not in prod
+    assert "Structure-constant tables" not in prod      # no intermediate heading
+    # the flat list precedes the Cayley table (table follows the list, immediately)
+    assert (prod.index("Hochschild (co)homology basis classes")
+            < prod.index("ql-cayley"))
 
 
 @pytest.mark.oracle_literature
@@ -94,28 +91,37 @@ def test_classes_written_over_ordered_basis_kx2_gf2():
 
 
 @pytest.mark.oracle_selfcert
-def test_computed_results_product_block_degree_sections():
-    """The Computed-results surface (results_html, from the block dict) lays out the
-    SAME per-degree sections under its own anchor prefix (cr-...), so a report carrying
-    both surfaces has unique, referenceable anchors."""
+def test_computed_results_product_flat_list_and_hh_sections_unchanged():
+    """The Computed-results surface shows the product family as a FLAT class list then the
+    Cayley table (no per-degree product sections) -- while a plain HH block in the SAME
+    report KEEPS its per-degree sections (guards against over-deleting)."""
+    from quiverlab.hochschild.hh_reps import hh_reps_blocks
     A = ql.truncated_polynomial(2, field=ql.GF(7))
-    chunks = results_section({"cup": A.cup_products(1).blocks()})
-    html = "\n".join(chunks)
-    assert "id='cr-cup-hh-coh-deg-1'" in html
-    assert "Explicit representatives by degree" in html
-    assert "Structure-constant table" in html
+    tbl = A.hochschild_cohomology(2, verbose=False)
+    hh = {"kind": tbl.kind, "top": 2, "dims": list(tbl.dims), "engine": tbl.engine}
+    hh.update(hh_reps_blocks(A, "hh_cohomology", 2, list(tbl.dims), tbl.engine) or {})
+    html = "\n".join(results_section({"hh_cohomology": hh,
+                                      "cup": A.cup_products(1).blocks()}))
+    # cup: flat list, NO per-degree product anchors
+    assert "Hochschild (co)homology basis classes" in html
+    assert "id='cr-cup-hh-coh-deg-1'" not in html
+    assert "ql-cayley" in html                               # the product table renders
+    # the HH block KEEPS its per-degree structure (unchanged by this change)
+    assert "id='cr-hh_cohomology-hh-coh-deg-1'" in html
+    assert "Explicit representatives by degree" in html      # from the HH block
 
 
 @pytest.mark.oracle_selfcert
-def test_both_surfaces_coexist_with_unique_anchors():
-    """A generated products report carries the worked-steps chapter (ws-) AND the
-    Computed-results block (cr-): the anchors must not collide."""
+def test_both_surfaces_render_the_flat_list_once_each():
+    """A generated products report carries the worked-steps chapter AND the
+    Computed-results block; each renders the flat class list ONCE, and neither emits the
+    old per-degree product anchors."""
     A = ql.truncated_polynomial(2, field=ql.GF(7))
     hp = A.cup_products(1)
     html = render_html(products_chapter(A, "cup", hp), title="cup", algebra=A,
                        results={"cup": hp.blocks()})
-    assert html.count("id='ws-cup-hh-coh-deg-1'") == 1
-    assert html.count("id='cr-cup-hh-coh-deg-1'") == 1
+    assert html.count("Hochschild (co)homology basis classes") == 2   # ws + cr surfaces
+    assert "hh-coh-deg-1" not in html                                 # no per-degree product anchor
 
 
 @pytest.mark.oracle_selfcert
@@ -133,12 +139,17 @@ def test_connes_degree_sections_homology_classes():
 
 
 @pytest.mark.oracle_selfcert
-def test_cap_renders_both_cohomology_and_homology_sections():
+def test_cap_flat_list_carries_cohomology_and_homology_classes():
     A = ql.truncated_polynomial(2, field=ql.GF(7))
     html = render_html(products_chapter(A, "cap", A.cap_products(2)),
                        title="cap", algebra=A)
-    assert "id='ws-cap-hh-coh-deg-1'" in html      # cohomology operands alpha^p
-    assert "id='ws-cap-hh-hom-deg-1'" in html      # homology operands z_n / outputs w
+    # the flat list precedes the first Cayley table; bound to it so we read the LIST only
+    flat = html[html.index("Hochschild (co)homology basis classes"):
+                html.index('<table class="ql-matrix ql-cayley"')]
+    assert r"\alpha^{1}_{1}" in flat               # a cohomology class in the flat list
+    assert r"z^{1}_{1}" in flat                    # a homology class in the flat list
+    assert "id='ws-cap-hh-coh-deg-1'" not in html  # no per-degree sub-sections
+    assert "id='ws-cap-hh-hom-deg-1'" not in html
 
 
 # --------------------------------------------------------------------------- #
@@ -170,6 +181,7 @@ def test_results_product_block_without_reps_renders_tables_only():
     assert "basis_classes" not in b
     html = "\n".join(results_section({"cup": b}))
     assert "Explicit representatives by degree" not in html
+    assert "Hochschild (co)homology basis classes" not in html   # no flat list either
     # the big degree-major table still renders (family heading + grid)
     assert "HH^{*} \\cup HH^{*}" in html and "ql-cayley" in html
 
@@ -184,6 +196,7 @@ def test_products_chapter_without_productbasis_event_is_tolerated():
                           lines=[r"\alpha^{0}_{1} \cup \beta^{0}_{1} = \gamma^{0}_{1}"])]
     html = render_html(events, title="cup")
     assert "Explicit representatives by degree" not in html
+    assert "Hochschild (co)homology basis classes" not in html   # no flat list either
     assert "gamma" in html
 
 
@@ -306,23 +319,25 @@ def test_injective_term_basis_content_order_pinned():
         assert len(tb[n]) == (len(D) if D else 0)          # rows index E^n, this order
 
 
-def test_product_tables_link_to_their_degree_sections():
-    """Review MINOR 1: the degree anchors are LINKED, not merely present -- each product
-    table carries a 'classes:' line hyperlinking its operands' and output's degree
-    sections, in both the worked-steps chapter (ws-) and the Computed-results block (cr-)."""
+def test_connes_tables_link_to_their_degree_sections():
+    """connes_b keeps its per-degree explicit representatives and the 'classes:' links to
+    its source/target homology degree sections (unchanged, Marco 2026-08-02). cup/cap/
+    bracket no longer carry per-degree product sections, so they emit no per-degree
+    product anchors."""
     A = ql.truncated_polynomial(2, field=ql.GF(7))
-    hp = A.cup_products(1)
-    html = render_html(products_chapter(A, "cup", hp), title="cup", algebra=A,
-                       results={"cup": hp.blocks()})
-    assert "href='#ws-cup-hh-coh-deg-1'" in html          # chapter table -> degree section
-    assert "href='#cr-cup-hh-coh-deg-1'" in html          # results table -> degree section
-    assert "id='ws-cup-hh-coh-deg-1'" in html             # the targets exist
-    # connes links to source/target homology degrees
+    # connes links to source/target homology degrees, in both surfaces (kept)
     cb = A.connes_differentials(2)
     h2 = render_html(products_chapter(A, "connes_b", cb), title="B", algebra=A,
                      results={"connes_b": cb.blocks()})
     assert "href='#ws-connes_b-hh-hom-deg-1'" in h2
     assert "href='#cr-connes_b-hh-hom-deg-1'" in h2
+    assert "id='ws-connes_b-hh-hom-deg-1'" in h2           # the targets exist
+    # cup: the flat list surfaces, but NO per-degree product anchors
+    hp = A.cup_products(1)
+    hc = render_html(products_chapter(A, "cup", hp), title="cup", algebra=A,
+                     results={"cup": hp.blocks()})
+    assert "ws-cup-hh-coh-deg-1" not in hc
+    assert "cr-cup-hh-coh-deg-1" not in hc
 
 
 @pytest.mark.oracle_crossengine
@@ -394,20 +409,22 @@ def test_gui_js_copies_byte_identical():
     assert GUI_DOCS.read_bytes() == GUI_WEBAPP.read_bytes()
 
 
-def test_gui_js_wires_product_degree_sections():
+def test_gui_js_wires_product_flat_list_and_connes_degree_sections():
     src = GUI_DOCS.read_text(encoding="utf-8")
-    for fn in ("function appendProductReps", "function appendRepsClasses",
-               "function appendRepsDifferential", "function termSumText"):
+    for fn in ("function appendProductReps", "function appendProductFlatClasses",
+               "function appendRepsClasses", "function appendRepsDifferential",
+               "function termSumText"):
         assert fn in src, fn
     # Marco 2026-07-31: the coordinate-vector inline is gone -- coordVectorText removed.
     assert "function coordVectorText" not in src
-    # called in both product renderers with show-differential FALSE (the differential
-    # is dropped from product sections, kept in the HH sections).
-    assert "appendProductReps(div, b, name, false)" in src
+    # Marco 2026-08-02: cup/cap/bracket render the FLAT class list; connes_b keeps its
+    # per-degree explicit representatives (appendProductReps, show-differential FALSE).
+    assert "appendProductFlatClasses(div, b)" in src
+    assert "appendProductReps(div, b, name, false)" not in src     # no per-degree in cup/cap/bracket
     assert 'appendProductReps(div, b, "connes_b", false)' in src
     # the legend points at the explicit listings
     assert "listed explicitly by degree below" in src
-    # MINOR 1: degree headings carry linkable anchors and the tables link to them
+    # connes_b degree headings carry linkable anchors and its tables link to them
     assert "function degreeLink" in src and "function productTableLinks" in src
     assert 'id: "gui-" + name + "-hh-" + side + "-deg-" + n' in src
 

@@ -1748,6 +1748,50 @@
     return rendered;
   }
 
+  // Marco 2026-08-02: for the products, ONE flat list of ALL (co)homology basis classes
+  // across degrees (cohomology α^n_i then, for the cap, homology z^n_i), degree-major,
+  // each written over the chain basis enumerated in the HH sections above -- no per-degree
+  // sub-sections here (that is Marco's point: just remind the classes, all at once, then
+  // show the table). Respects the 50-class display cap. Mirrors
+  // quiverlab.trace.render_html.product_flat_classes_html.
+  function appendProductFlatClasses(div, b) {
+    var bc = b.basis_classes;
+    if (!bc) return false;
+    var cb = b.chain_basis || {}, items = [], total = 0, truncated = false;
+    ["coh", "hom"].forEach(function (side) {
+      if (truncated) return;
+      var byDeg = bc[side];
+      if (!byDeg) return;
+      var S = REPS_SIDE[side];
+      Object.keys(byDeg).map(Number).sort(function (a, c) { return a - c; })
+        .forEach(function (n) {
+          if (truncated) return;
+          var key = String(n), enumLabels = (cb[side] || {})[key];
+          (byDeg[key] || []).forEach(function (cl, i) {
+            if (truncated) return;
+            if (total >= 50) { truncated = true; return; }
+            items.push({ nm: S.letter + "^{" + n + "}_{" + (i + 1) + "}",
+                         term: termSumText(cl.vector, enumLabels) });
+            total += 1;
+          });
+        });
+    });
+    if (!items.length) return false;
+    div.appendChild(h("p", { text: "The Hochschild (co)homology basis classes, over the "
+      + "chain bases enumerated in the sections above:" }));
+    items.forEach(function (it) {
+      var p = h("p");
+      p.appendChild(h("span", { "class": "arithmatex", text: "\\(" + it.nm + "\\)" }));
+      p.appendChild(document.createTextNode(
+        " = " + (it.term != null ? it.term : "(recorded in the report data)")));
+      div.appendChild(p);
+    });
+    if (truncated)
+      div.appendChild(h("p", { "class": "qlgui-cites",
+        text: "… and more classes (the complete list is in the report data)" }));
+    return true;
+  }
+
   // Plan 35 wave 3d: the PLAIN hh_cohomology / hh_homology blocks. The reps payload is
   // SINGLE-side {str(degree): ...} (like Ext / Tor / HC); we reuse appendProductReps by
   // wrapping the single side, and read off the element-wise classical dictionary
@@ -2190,11 +2234,7 @@
     div.appendChild(h("p", { "class": "qlgui-hint", text: productLegend(name, b) }));
     if (prime != null)
       div.appendChild(h("p", { "class": "qlgui-hint", text: balancedRepNote(prime) }));
-    var reps = appendProductReps(div, b, name, false);   // product sections drop d
-    if (reps) {
-      div.appendChild(h("p", {}, h("b", { text: "Structure-constant table "
-        + "(in the explicit classes above):" })));
-    }
+    appendProductFlatClasses(div, b);      // flat class list, then the table right away
     var tables = b.tables || [];
     // Marco 2026-07-31: a product FAMILY whose every bidegree vanishes collapses to
     // one section-level line -- no empty tables.

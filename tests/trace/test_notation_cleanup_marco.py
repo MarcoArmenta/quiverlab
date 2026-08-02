@@ -135,14 +135,19 @@ def test_basis_listing_capped_at_50_with_pointer():
 # --------------------------------------------------------------------------- #
 @pytest.mark.oracle_selfcert
 def test_toc_is_nested_with_degree_subsections():
+    # Marco 2026-08-02: products no longer carry per-degree sub-sections, so the nested
+    # ToC is exercised on a plain HH block (which KEEPS its per-degree structure).
+    from quiverlab.hochschild.hh_reps import hh_reps_blocks
     A = ql.truncated_polynomial(2, field=ql.GF(7))
-    block = A.cup_products(2).blocks()
-    html = render_html([], title="cup", algebra=A, results={"cup": block})
+    tbl = A.hochschild_cohomology(2, verbose=False)
+    block = {"kind": tbl.kind, "top": 2, "dims": list(tbl.dims), "engine": tbl.engine}
+    block.update(hh_reps_blocks(A, "hh_cohomology", 2, list(tbl.dims), tbl.engine) or {})
+    html = render_html([], title="hh", algebra=A, results={"hh_cohomology": block})
     assert "<h2>Contents</h2>" in html
     assert "ql-toc-sub" in html                        # nested list present
     # the Computed-results section lists its per-degree subsections, linked
-    assert "href='#cr-cup-hh-coh-deg-1'" in html
-    assert "id='cr-cup-hh-coh-deg-1'" in html          # the target exists
+    assert "href='#cr-hh_cohomology-hh-coh-deg-1'" in html
+    assert "id='cr-hh_cohomology-hh-coh-deg-1'" in html   # the target exists
 
 
 # --------------------------------------------------------------------------- #

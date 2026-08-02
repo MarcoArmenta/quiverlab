@@ -1096,6 +1096,53 @@ def product_degree_sections(basis_classes, chain_basis, differentials, anchor_pr
     return out
 
 
+def product_flat_classes_html(basis_classes):
+    """ONE compact flat list of ALL (co)homology basis classes across degrees (Marco
+    2026-08-02): cohomology classes ``α^n_i`` first, then -- for the cap -- the homology
+    classes ``z^n_i``, ordered degree-major (the degree is the class' superscript). Each
+    class is written as its representative term-sum over the chain basis ALREADY
+    enumerated in the HH (co)homology sections above -- the enumeration, differential and
+    per-degree headings are NOT repeated here (that is Marco's whole point: for the
+    products just remind the (co)homology basis, all at once, then show the table). The
+    combined list respects :data:`DISPLAY_CAP` with a JSON pointer.
+
+    Returns ``[]`` when the block carries no ``basis_classes`` (a legacy/old-cache block)
+    -- the caller then shows the tables only (tolerance). Shared by the products
+    worked-steps chapter (``render_html._products_html``) and the Computed-results product
+    block (``results_html._product_tables_html``) -- one implementation, no drift."""
+    if not basis_classes:
+        return []
+    items, total, truncated = [], 0, False
+    for side in ("coh", "hom"):
+        by_deg = basis_classes.get(side)
+        if not by_deg:
+            continue
+        chain_kind, letter = _REPS_SIDE[side][3], _REPS_SIDE[side][4]
+        for dkey in sorted(by_deg, key=lambda s: int(s)):
+            n = int(dkey)
+            for i, cl in enumerate(by_deg[dkey] or [], start=1):
+                if total >= DISPLAY_CAP:
+                    truncated = True
+                    break
+                name = "%s^{%d}_{%d}" % (letter, n, i)
+                term = _term_sum_text(cl.get("terms") or [], cl.get("kind") or chain_kind)
+                items.append("<li>%s = %s</li>" % (_math_inline(name), _esc(term)))
+                total += 1
+            if truncated:
+                break
+        if truncated:
+            break
+    if not items:
+        return []
+    out = ["<p>The Hochschild (co)homology basis classes, over the chain bases "
+           "enumerated in the sections above:</p>",
+           "<ul class='ql-classes'>%s</ul>" % "".join(items)]
+    if truncated:
+        out.append("<p class='ql-note'>… and more classes (the complete list is in the "
+                   "JSON record).</p>")
+    return out
+
+
 # --------------------------------------------------------------------------- #
 # Plan 35 wave 3d: the PLAIN hh_cohomology / hh_homology blocks. The block carries a
 # SINGLE-side `{str(degree): ...}` reps payload (like Ext / Tor / HC); the per-degree
@@ -1560,13 +1607,15 @@ def _products_html(events):
                   and getattr(s, "prime", None) is not None), None)
     if prime is not None:
         out.append("<p class='ql-note'>%s</p>" % _esc(balanced_rep_note(prime)))
-    # Plan 35 UNIT 2: the explicit representatives, per degree, BEFORE the tables --
-    # the tables then reference these classes ("gamma_k are the degree-(p+q) classes
-    # above"). Driven by the ProductBasis event the chapter emits; absent on a legacy
-    # object -> the section falls back to tables only (tolerance).
+    # The (co)homology basis classes, then the multiplication table right away (Marco
+    # 2026-08-02). connes_b keeps its per-degree explicit representatives (a map, not a
+    # pairing); cup/cap/bracket show ONE flat list of ALL classes across degrees and
+    # then the Cayley table -- no per-degree sub-sections (those live in the HH
+    # cohomology/homology sections above). Driven by the ProductBasis event the chapter
+    # emits; absent on a legacy object -> the section falls back to tables only.
     pb = next((e for e in events if isinstance(e, ProductBasis)), None)
     have_reps = False
-    if pb is not None:
+    if pb is not None and kind == "connes_b":
         # Marco 2026-07-31: the product sections drop the annihilating differential
         # (it already lives in the HH degree sections) -- show_differential=False.
         secs = product_degree_sections(pb.basis_classes, pb.chain_basis,
@@ -1581,6 +1630,10 @@ def _products_html(events):
             out.append("<p class='ql-note'>The tables below are written in the "
                        "explicit classes listed by degree above; each table links to "
                        "the degree sections of its operands and output.</p>")
+    elif pb is not None:
+        # cup/cap/bracket: one flat class list, then the table (no per-degree sections,
+        # no anchors -> no per-degree ToC sub-entries).
+        out.extend(product_flat_classes_html(pb.basis_classes))
     # connes_b stays per-degree matrices (a map, not a pairing) -- unchanged.
     if kind == "connes_b":
         for s in steps:
