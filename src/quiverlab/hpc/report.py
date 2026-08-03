@@ -388,6 +388,64 @@ def _section_for(name: str, block: dict) -> _Section:
         return _Section("Injective dimension",
                         [f"id M = {v if v is not None else 'infinite'} "
                          f"(finite: {block.get('finite')})"])
+    if name in ("cup", "cap", "bracket"):
+        titles = {"cup": "Cup products  HH^p x HH^q -> HH^(p+q)",
+                  "cap": "Cap products  HH^p x HH_q -> HH_(q-p)",
+                  "bracket": "Gerstenhaber brackets  [HH^p, HH^q] -> HH^(p+q-1)"}
+        opsym = {"cup": "&cup;", "cap": "&cap;", "bracket": "[,]"}[name]
+        rows = [f"engine: {block.get('engine', '?')}  |  basis: {block.get('basis', '?')}",
+                "structure constants per bidegree; one matrix per basis class of "
+                "the RIGHT factor (rows: left-factor basis, columns: target basis).",
+                "basis classes and lifted chain data are recorded in result.json."]
+        html = [f"<p>engine: {_esc(str(block.get('engine', '?')))}&ensp;|&ensp;"
+                f"basis: {_esc(str(block.get('basis', '?')))}</p>",
+                "<p class='dv'>structure constants per bidegree; one matrix per "
+                "basis class of the <b>right</b> factor (rows: left-factor basis, "
+                "columns: target basis). Basis classes and lifted chain data are "
+                "recorded in result.json.</p>"]
+        if block.get("window") is not None:
+            line = f"window: degrees 0..{block['window']}"
+            rows.append(line)
+            html.append(f"<p class='dv'>{_esc(line)}</p>")
+        for t in block.get("tables", []):
+            p, q = t.get("degrees", ["?", "?"])
+            out = t.get("out_degree")
+            dims = t.get("dims", [])
+            head = f"degrees ({p}, {q}) -> {out}   (dims {dims})"
+            rows.append(head)
+            html.append(f"<p class='resterm'><b>({p}, {q}) &rarr; {out}</b>"
+                        f"&ensp;<span class='dv'>(dims {_esc(str(dims))})</span></p>")
+            for j, mat in enumerate(t.get("constants", [])):
+                rows.append(f"  right basis class {j + 1}: {mat}")
+                html.append("<div class='arrowmap'><span>"
+                            f"&minus; {opsym} f<sub>{j + 1}</sub>:</span> "
+                            f"{_matrix_html(mat)}</div>")
+        return _Section(titles[name], rows, html)
+    if name == "connes_b":
+        rows = [f"engine: {block.get('engine', '?')}",
+                "the Connes differential B: HH_n -> HH_(n+1) on the computed "
+                "HH basis (rows: target basis, columns: source basis)."]
+        html = [f"<p>engine: {_esc(str(block.get('engine', '?')))}</p>",
+                "<p class='dv'>the Connes differential B: HH<sub>n</sub> &rarr; "
+                "HH<sub>n+1</sub> on the computed HH basis (rows: target basis, "
+                "columns: source basis).</p>"]
+        ranks = block.get("ranks") or {}
+        if ranks:
+            line = "ranks: " + ", ".join(
+                f"B_{k} = {ranks[k]}" for k in sorted(ranks, key=lambda s: int(s)))
+            rows.append(line)
+            html.append("<p>" + ",&ensp;".join(
+                f"rank B<sub>{k}</sub> = {ranks[k]}"
+                for k in sorted(ranks, key=lambda s: int(s))) + "</p>")
+        mats = block.get("matrices") or {}
+        keys = (sorted(mats, key=lambda s: int(s)) if isinstance(mats, dict)
+                else range(len(mats)))
+        for k in keys:
+            mat = mats[k]
+            rows.append(f"  B_{k}: {mat}")
+            html.append("<div class='arrowmap'><span>"
+                        f"B<sub>{k}</sub>:</span> {_matrix_html(mat)}</div>")
+        return _Section("Connes differential B", rows, html)
     # Unknown block: dump its keys honestly rather than dropping it -- but never
     # the inline citation texts (the full references live at the bottom of the
     # report); only the reference keys are mentioned.
