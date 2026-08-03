@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2730 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2740 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-02, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
 Marco's report-completeness pass, Marco's Cayley product-table render wave, the
 Plan-35 Hochschild product surface, its
@@ -423,7 +423,7 @@ plus the **orthogonal** oracle-class markers below (which never change a bucket)
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1270 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `fast` | 1315 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
 | `deep` | 1302 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 123 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
