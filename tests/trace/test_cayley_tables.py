@@ -153,7 +153,8 @@ def test_cayley_grid_uncapped_renders_full():
 def test_cayley_uncapped_but_ordinary_matrix_still_elides():
     from quiverlab.trace.render_html import matrix_grid
     # a 25x25 ORDINARY differential elides (20 cap), while a 25-axis Cayley does not.
-    diff = matrix_grid([["0"] * 25 for _ in range(25)], label="d")
+    # (non-zero entries: a zero MAP is stated as "d = 0" outright, Marco 2026-08-03)
+    diff = matrix_grid([["1"] * 25 for _ in range(25)], label="d")
     assert "ql-matrix" not in diff and "display cap" in diff
 
 

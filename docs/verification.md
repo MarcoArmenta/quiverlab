@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2740 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2758 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-02, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
 Marco's report-completeness pass, Marco's Cayley product-table render wave, the
 Plan-35 Hochschild product surface, its
@@ -423,7 +423,7 @@ plus the **orthogonal** oracle-class markers below (which never change a bucket)
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1315 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `fast` | 1333 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
 | `deep` | 1302 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 123 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
@@ -462,7 +462,7 @@ edge-case ruling.
   Nakayama `λ`/`ν` identities, and the unit/Leibniz/module identities that arbitrate
   a sign convention (including the Plan-35 Gerstenhaber-algebra product batteries —
   graded commutativity, associativity, antisymmetry, cup-Leibniz, the cap module law,
-  and `B²=0`). (These are the "self-certifying internal identities" of Class 1,
+  and `B²=0`; plus the 2026-08-03 report-presentation contract: a zero differential is STATED (`d = 0`), never drawn or echoed, Ext/Tor name the resolved module + resolution before any number, engine provenance lines gloss themselves, and the worked-resolution-steps chapter names the A^e-resolution it walks -- `tests/trace/test_report_fixes_m0803.py`). (These are the "self-certifying internal identities" of Class 1,
   surfaced as their own runnable class.)
 - **`qpa`** — the existing bucket marker *is* the fourth oracle class: our value ≡
   live GAP/QPA. It needs no new marker; the live-QPA face of **Class 2**.
@@ -482,11 +482,11 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 748 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 430 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 818 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 833 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 123 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1552 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1567 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
-Collected 2026-08-01 (through Plan 35 UNIT 2). The oracle markers live only on the
+Collected 2026-08-03 (through the 2026-08-03 report-presentation pass). The oracle markers live only on the
 pure-library `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` /
 `families` / `batch` / `trace` suites (the `trace` renderer tests import the
 pure-library serializers only, and their `hpc.spec` uses are function-local), so these

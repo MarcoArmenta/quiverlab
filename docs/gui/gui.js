@@ -942,7 +942,9 @@
   function matrixGrid(mat) {
     mat = mat || [];
     var ncols = mat.length ? (mat[0] || []).length : 0;
-    if (!mat.length || !ncols) {
+    // Marco 2026-08-03: a zero MAP is stated ("0"), never drawn as a grid of 0s
+    // (mirrors quiverlab.trace.render_html.matrix_grid).
+    if (!mat.length || !ncols || matIsZero(mat)) {
       return h("p", { "class": "arithmatex", text: "\\( 0 \\)" });
     }
     // Marco 2026-08-02: only matrices with fewer than 20 rows AND columns are shown;
@@ -992,6 +994,24 @@
   }
   // A matrix is EXACTLY zero -- its arrow carries no information, so the display
   // omits it and names it in one line instead (Marco, 2026-07-29).
+  // Marco 2026-08-03: an engine provenance line says what the engine IS (mirrors
+  // quiverlab.trace.results_html._ENGINE_GLOSS).
+  function engineNote(engine) {
+    var s = String(engine || "");
+    var low = s.toLowerCase();
+    if (low.indexOf("hanlab") !== -1)
+      return s + " \u2014 the exact GF(p) linear-algebra core ported from the "
+        + "HomologicalAlgebra/HansConjecture bank ('hanlab'); it computes the exact "
+        + "rank of each recorded (co)boundary matrix over F_p \u2014 nothing numerical.";
+    if (low.indexOf("chouhy") !== -1 || low.indexOf("solotar") !== -1)
+      return s + " \u2014 the Chouhy\u2013Solotar projective bimodule resolution built "
+        + "from the admissible presentation, certified per instance "
+        + "(d\u2218d = 0 + the order gate).";
+    if (low.indexOf("(b,b)") !== -1)
+      return s + " \u2014 the exact (b, B) mixed-complex engine on the normalized bar "
+        + "complex: b is the Hochschild boundary, B the Connes boundary.";
+    return s;
+  }
   function matIsZero(mat) {
     return (mat || []).every(function (row) {
       return (row || []).every(function (x) { return String(x) === "0"; });
@@ -1127,6 +1147,11 @@
       if (d.elided || !d.matrix) {
         div.appendChild(h("p", { text: label + ": " + d.rows + "×" + d.cols
           + " matrix (too large to display; it is complete in the report data)" }));
+        return;
+      }
+      if (matIsZero(d.matrix)) {
+        // Marco 2026-08-03: a zero map is stated, never drawn or cross-referenced.
+        div.appendChild(h("p", { "class": "arithmatex", text: "\\(" + sym + " = 0\\)" }));
         return;
       }
       var key = JSON.stringify(d.matrix);
@@ -2145,7 +2170,7 @@
       div.appendChild(h("p", { "class": "qlgui-hint",
         text: "served to degree window " + b.window + " (bar-transport bound)" }));
     }
-    div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+    div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
   function renderConnesB(div, b) {
     div.appendChild(h("p", { text: PRODUCT_TITLE.connes_b }));
@@ -2168,7 +2193,7 @@
       div.appendChild(matrixGrid(b.matrices[String(n)]));
       div.appendChild(h("p", { text: "rank B_" + n + " = " + b.ranks[String(n)] }));
     });
-    div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+    div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
 
   function renderBlock(res) {
@@ -2190,7 +2215,7 @@
       });
       div.appendChild(h("p", { text: sup ? "Hochschild cohomology" : "Hochschild homology" }));
       div.appendChild(h("table", {}, head, row));
-      div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+      div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
       appendDictionaryFraming(div, name, b.dims);
       // Plan 35 wave 3d: the element-wise dictionary read-offs + per-degree explicit
       // representatives (when the block carries them; tolerant of an old-cache block).
@@ -2214,7 +2239,7 @@
       });
       div.appendChild(h("p", { text: "Cyclic homology" }));
       div.appendChild(h("table", {}, chead, crow));
-      div.appendChild(h("div", { "class": "qlgui-cites", text: b.engine }));
+      div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
       appendDictionaryFraming(div, name, b.dims);
       // Plan 35 wave 3b: the per-degree explicit representatives over the total complex.
       if (b.basis_classes)
@@ -2270,6 +2295,14 @@
       var isExt = name === "ext";
       div.appendChild(h("p", { text: (isExt ? "Ext to the target module — dim vector "
         : "Tor with the target left module — dim vector ") + dvText(b.target.dimvec) + ":" }));
+      if (b.resolved) {
+        // Marco 2026-08-03: name the objects BEFORE the numbers -- which module
+        // was resolved, and by which resolution.
+        div.appendChild(h("p", { text: "Object resolved: the " + b.resolved.side
+          + " A-module M, by its " + b.resolved.resolution + "; "
+          + (isExt ? "Ext^n(M, N) = H^n(Hom_A(P_\u2022, N))."
+                   : "Tor_n(M, N) = H_n(P_\u2022 \u2297_A N).") }));
+      }
       div.appendChild(degreeTable(isExt ? "dim Ext^n" : "dim Tor_n", b.dims));
       appendDictionaryFraming(div, name, b.dims);
       if (b.basis_classes)

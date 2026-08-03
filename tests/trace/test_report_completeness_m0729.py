@@ -118,8 +118,11 @@ def test_repeated_differentials_reference_the_first_occurrence():
     A.hochschild_homology(8, engine="cs", trace=tr)
     html = render_html(list(tr), title="t", algebra=A)
     assert "the same matrix as above" in html
-    # the two distinct matrices are each shown once; the 7 repeats are references
-    assert html.count("the same matrix as above") >= 5
+    # Marco 2026-08-03 refinement: the ZERO differentials (b_1, b_3, ...) are now
+    # STATED as "b_n = 0" rather than echoed -- only genuine non-zero repeats are
+    # cross-referenced (b_4 = b_2 etc.), and each such repeat is a reference.
+    assert html.count("the same matrix as above") >= 3
+    assert "b_{3} = 0" in html and "b_{5} = 0" in html
 
 
 def test_repeated_resolution_differentials_are_referenced():

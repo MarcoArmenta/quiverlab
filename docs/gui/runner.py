@@ -485,7 +485,11 @@ def _module_block(name, top):
         # Plan 35 wave 3c: interpret=True captures the Yoneda exact sequence of each class.
         raw, reps = ext_dims(A, M, N, top, with_reps=True, interpret=True)
         block = {"kind": name, "top": top, "dims": [int(d) for d in raw],
-                 "target": _mod_view(N), "citations": cites}
+                 "target": _mod_view(N), "citations": cites,
+                 # Marco 2026-08-03: WHICH module was resolved, by WHICH resolution
+                 # (byte-identical to the hpc spec runner's stamp).
+                 "resolved": {"module": "M", "side": M.side,
+                              "resolution": "minimal projective resolution"}}
         block.update(reps)
         return block
     if name == "tor":
@@ -499,7 +503,9 @@ def _module_block(name, top):
         N = _build_module(A, _tor_target_spec(), "N")
         raw, reps = tor_dims(A, M, N, top, with_reps=True)
         block = {"kind": name, "top": top, "dims": [int(d) for d in raw],
-                 "target": _mod_view(N), "citations": cites}
+                 "target": _mod_view(N), "citations": cites,
+                 "resolved": {"module": "M", "side": M.side,
+                              "resolution": "minimal projective resolution"}}
         block.update(reps)
         return block
     if name in ("projective_resolution", "injective_resolution"):

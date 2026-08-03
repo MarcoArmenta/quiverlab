@@ -257,8 +257,10 @@ def _worker_loop(cfg: Config, stop) -> None:
 def _banner_lines(port: int, cfg: Config, caps: dict, open_hint: bool,
                   host: str = "127.0.0.1") -> list[str]:
     lines = ["quiverlab -- offline GUI"]
-    lines.append(f"  open  http://localhost:{port}" if open_hint
-                 else f"  serving on http://{host}:{port}")
+    # /draw is the landing page: draw a quiver and compute, right away (Marco
+    # 2026-08-03); the catalog stays at "/".
+    lines.append(f"  open  http://localhost:{port}/draw" if open_hint
+                 else f"  serving on http://{host}:{port}/draw")
     lines.append(f"  data dir:     {cfg.data_dir}")
     lines.append(f"  host:         {caps['cores']} core(s), {caps['ram_human']} RAM detected")
     wall = caps["worker_wall_seconds"]

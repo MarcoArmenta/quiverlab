@@ -577,3 +577,30 @@ Suite recount 2506 (fast 1105 / deep 1278 / qpa 123); oracle classes lit 726 /
 xeng 416 / selfcert 678 / qpa 123 / union 1378. Verification page + internals ch. 04
 + README updated. Design docs: `docs/plans/2026-08-01-plan-35-hh-products-surface.md`
 (spec), `...-implementation.md` (13 TDD tasks).
+
+**Marco's report-presentation pass 2 (2026-08-03, branch
+`marco-report-fixes-0803`)** -- five report items off his GF(7) `k[x,y]/(x²,y²)`
+all-kinds desktop report + one app-shell ask, all delivered: (1) a ZERO
+differential is STATED, never drawn -- `render_html.matrix_grid` (the single
+ordinary-grid chokepoint) and both JS `matrixGrid`s print `d_n = 0` for an
+exactly-zero matrix, and a zero map is never echoed as `d_3 = d_1`
+(`_MatrixEcho` + both echo loops skip zeros; conservative test -- an entry the
+fraction grammar can't read counts as NON-zero); (2) Ext/Tor name the objects
+first -- both runners stamp `resolved: {module, side, resolution}` on ext/tor
+blocks (`module_ext` golden re-frozen, gated + documented in
+`test_runner_delegation.py`), and report + draw page state "Object resolved:
+the right A-module M, by its minimal projective resolution; Ext^n(M,N) =
+H^n(Hom_A(P_•,N))" BEFORE the dims table; (3) every `engine:` provenance line
+glosses itself (`results_html._ENGINE_GLOSS` + `gui.js engineNote` -- hanlab =
+the exact GF(p) linear-algebra core ported from the
+HomologicalAlgebra/HansConjecture bank; Chouhy–Solotar; (b,B) mixed complex);
+(4) the worked-resolution-steps chapter states it resolves A as a bimodule
+(A^e = A⊗A^op-module) and NAMES the resolution used, keyed off the SAME
+corners signal the term-basis reconstruction uses (bar vs Chouhy–Solotar --
+the name can never drift from the math); (5) the app lands on `/draw` right
+away (desktop launcher + offline banner; the catalog stays at `/`). Tests:
+`tests/trace/test_report_fixes_m0803.py` (15, `oracle_selfcert`),
+`tests/webapp/test_report_fixes_m0803.py` (3, unmarked cross-runner + shell);
+the m0729 echo pin refined (zero diffs now stated) and the Cayley cap fixture
+made non-zero. Suite 2758 (fast 1333 / deep 1302 / qpa 123); oracle classes
+selfcert 833 / union 1567; verification page + README badge updated.

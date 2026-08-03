@@ -103,6 +103,59 @@ def results_section(results):
 # Per-kind rendering
 # --------------------------------------------------------------------------- #
 
+# Marco 2026-08-03: an engine provenance line must SAY what the engine is, not
+# just drop an internal codename ("hanlab"). Substring-keyed glosses; an engine
+# string matching none renders verbatim, unchanged.
+_ENGINE_GLOSS = (
+    ("hanlab", "the exact GF(p) linear-algebra core ported from the "
+               "HomologicalAlgebra/HansConjecture bank ('hanlab'); it computes the "
+               "exact rank of each recorded (co)boundary matrix over F_p -- nothing "
+               "numerical, no floating point"),
+    ("chouhy", "the Chouhy–Solotar projective bimodule resolution built from "
+               "the admissible presentation, certified per instance "
+               "(d∘d = 0 + the order gate)"),
+    ("solotar", "the Chouhy–Solotar projective bimodule resolution built from "
+                "the admissible presentation, certified per instance "
+                "(d∘d = 0 + the order gate)"),
+    ("(b,b)", "the exact (b, B) mixed-complex engine on the normalized bar "
+              "complex: b is the Hochschild boundary, B the Connes boundary"),
+)
+
+
+def _engine_note(engine):
+    """The ``engine: ...`` provenance line, glossed when the name is one of ours."""
+    s = str(engine)
+    low = s.lower()
+    for key, gloss in _ENGINE_GLOSS:
+        if key in low:
+            return ("<p class='ql-note'>engine: %s — %s.</p>"
+                    % (_esc(s), _esc(gloss)))
+    return "<p class='ql-note'>engine: %s</p>" % _esc(s)
+
+
+def _resolved_note(kind, b):
+    """Ext/Tor: WHICH module was resolved and BY WHICH resolution, stated before
+    any number (Marco 2026-08-03 -- the products precedent: name the objects
+    first). Rendered only when the block carries the runner's ``resolved``
+    provenance (an older cached block renders as before -- tolerance)."""
+    res = b.get("resolved")
+    if not res:
+        return []
+    side = res.get("side", "right")
+    resolution = res.get("resolution", "minimal projective resolution")
+    if kind == "ext":
+        formula = _math_inline(
+            r"\operatorname{Ext}^{n}(M, N) = "
+            r"H^{n}(\operatorname{Hom}_{A}(P_{\bullet}, N))")
+    else:
+        formula = _math_inline(
+            r"\operatorname{Tor}_{n}(M, N) = H_{n}(P_{\bullet} \otimes_{A} N)")
+    return ["<p>Object resolved: the %s A-module M, by its %s "
+            "%s; then %s.</p>"
+            % (_esc(side), _esc(resolution),
+               _math_inline(r"P_{\bullet} \to M"), formula)]
+
+
 def _block_html(kind, b):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
@@ -114,7 +167,7 @@ def _block_html(kind, b):
         chunks = [hh_typing_html(kind, route_of_engine(b.get("engine"))),
                   _dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or [])]
         if b.get("engine"):
-            chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+            chunks.append(_engine_note(b["engine"]))
         chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
         # Plan 35 wave 3d: the element-wise dictionary read-offs (central elements /
         # derivations / deformation cochain / commutator residues) and the per-degree
@@ -136,7 +189,7 @@ def _block_html(kind, b):
         # REPRESENTATIVES over the total complex Tot_n = C_n (+) C_{n-2} (+) ...
         chunks = [_dims_table("dim HC_n", b.get("dims") or [])]
         if b.get("engine"):
-            chunks.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+            chunks.append(_engine_note(b["engine"]))
         chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
         from quiverlab.trace.render_html import cyclic_degree_sections
         secs = cyclic_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
@@ -176,6 +229,9 @@ def _block_html(kind, b):
         target = (b.get("target") or {}).get("dimvec")
         if target:
             chunks.append("<p>against N, dimension vector %s.</p>" % _esc(_dv(target)))
+        # Marco 2026-08-03: name the objects BEFORE the numbers -- which module was
+        # resolved, and by which resolution (the products precedent).
+        chunks.extend(_resolved_note(kind, b))
         chunks.append(_dims_table("dim %sn" % op, b.get("dims") or []))
         # Plan 35 wave 3c: the classical dictionary framing per degree (what each class
         # MEANS), keyed only off the theory + the number of degrees computed.
@@ -396,6 +452,11 @@ def _differentials_html(b, proj):
                        "— it exceeded the recorder's memory backstop).</p>"
                        % (_esc(label), _num(d.get("rows")), _num(d.get("cols"))))
             continue
+        if _is_zero(matrix):
+            # Marco 2026-08-03: a zero map is STATED, never drawn -- and never
+            # cross-referenced ("d_3 = d_1" between two zero maps hides the fact).
+            out.append(matrix_grid(matrix, label=sym))
+            continue
         key = _matrix_key(matrix)
         if key in seen:
             out.append(_math("%s = %s" % (sym, seen[key])))
@@ -460,7 +521,7 @@ def _product_tables_html(kind, b):
                    "degree window %s (bar-transport bound).</p>"
                    % _num(b.get("window")))
     if b.get("engine"):
-        out.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+        out.append(_engine_note(b["engine"]))
     return out
 
 
@@ -489,7 +550,7 @@ def _connes_b_html(b):
         out.append("<p class='ql-note'>induced rank B_%d = %s</p>"
                    % (n, _num(ranks.get(key))))
     if b.get("engine"):
-        out.append("<p class='ql-note'>engine: %s</p>" % _esc(str(b["engine"])))
+        out.append(_engine_note(b["engine"]))
     return out
 
 

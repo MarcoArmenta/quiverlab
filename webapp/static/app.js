@@ -197,7 +197,8 @@ function fitMath(root) {
 function matrixGrid(mat) {
   mat = mat || [];
   const ncols = mat.length ? (mat[0] || []).length : 0;
-  if (!mat.length || !ncols) {
+  // Marco 2026-08-03: a zero MAP is stated ("0"), never drawn as a grid of 0s.
+  if (!mat.length || !ncols || matIsZero(mat)) {
     const p = document.createElement("p");
     p.className = "arithmatex";
     p.textContent = "\\( 0 \\)";
@@ -403,6 +404,13 @@ function differentialsBlock(block, proj, d) {
       p.textContent = label + ": " + df.rows + "×" + df.cols + " — "
         + ((d || {}).modMatrixTooLarge
            || "matrix too large to display; it is complete in the report data");
+      wrap.appendChild(p);
+      return;
+    }
+    if (matIsZero(df.matrix)) {
+      // Marco 2026-08-03: a zero map is stated, never drawn or cross-referenced.
+      p.className = "arithmatex";
+      p.textContent = "\\(" + sym + " = 0\\)";
       wrap.appendChild(p);
       return;
     }

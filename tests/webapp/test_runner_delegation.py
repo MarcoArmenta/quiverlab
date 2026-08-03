@@ -75,6 +75,14 @@ never hide behind one:
     ``hh_cohomology`` / ``hh_homology`` block ONLY, so no pre-existing content moved.
     ``canonical_key`` is request-derived and UNCHANGED. (The other five entries carry no
     plain HH dims block and are untouched.)
+  * 2026-08-03 (``module_ext`` re-freeze, Marco report pass -- resolved provenance):
+    the ``ext`` / ``tor`` blocks gained the additive ``resolved`` key ({module, side,
+    resolution} -- WHICH module the engine resolved and by which resolution, so the
+    report/GUI can state the objects before the numbers). Gated re-freeze, scoped BY
+    KEY: the regenerated blob was asserted byte-identical to the old one after
+    deleting ``resolved`` from the ext/tor blocks ONLY, so no pre-existing content
+    moved. ``canonical_key`` is request-derived and UNCHANGED. (Only ``module_ext``
+    computes ext; no golden computes tor.)
   * 2026-07-31 (ALL entries re-freeze, Marco ADDENDUM 2 -- json_guide): the result
     envelope gained ONE additive top-level key, ``json_guide`` -- a per-computation list
     of ``{object, path, note}`` recipes for recovering every computed object from

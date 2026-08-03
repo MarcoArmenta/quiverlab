@@ -79,7 +79,9 @@ def _open_when_ready(port: int, timeout_s: int = 120) -> None:
             time.sleep(0.3)
     else:
         return
-    webbrowser.open(f"http://localhost:{port}/")
+    # Land on the draw-a-quiver-and-compute page right away (Marco 2026-08-03);
+    # the catalog stays one click away at "/".
+    webbrowser.open(f"http://localhost:{port}/draw")
 
 
 def main() -> int:

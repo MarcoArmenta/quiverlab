@@ -431,6 +431,31 @@ def _math_inline(expr):
             '</semantics></math>' % (pres, _esc(expr)))
 
 
+def _entry_is_zero(x):
+    """True when a verbatim exact entry (int / "0" / "0/1"-style string) is zero.
+    Anything the fraction grammar cannot read (e.g. a GF(p^n) display element)
+    counts as NON-zero -- the conservative direction: we only suppress a grid we
+    can PROVE is the zero map."""
+    if isinstance(x, bool):
+        return False
+    if isinstance(x, int):
+        return x == 0
+    s = str(x).strip()
+    if s == "0":
+        return True
+    try:
+        from fractions import Fraction
+        return Fraction(s) == 0
+    except (ValueError, ZeroDivisionError):
+        return False
+
+
+def matrix_is_zero(matrix):
+    """True when every entry of a NON-empty matrix is exactly zero."""
+    rows = matrix or []
+    return bool(rows) and all(_entry_is_zero(x) for row in rows for x in (row or []))
+
+
 def matrix_grid(matrix, label=None):
     """A matrix as an INDEXED GRID (Marco 2026-07-29): a header row of column
     indices, a header column of row indices, and a light rule between every cell,
@@ -439,11 +464,13 @@ def matrix_grid(matrix, label=None):
 
     Returns the HTML for the whole block (caption + grid). A zero-DIMENSIONAL
     matrix (no rows or no columns) renders as the symbol ``0`` -- an empty grid
-    would be a stray box. Entries are copied verbatim (exact ints / fraction
-    strings), never reformatted."""
+    would be a stray box; and a zero MAP (every entry exactly 0) is STATED,
+    ``label = 0``, never drawn (Marco 2026-08-03: his report drew every zero Tor
+    differential as a full grid of 0s). Entries are copied verbatim (exact ints /
+    fraction strings), never reformatted."""
     rows = matrix or []
     ncols = len(rows[0]) if rows and rows[0] is not None else 0
-    if not rows or not ncols:
+    if not rows or not ncols or matrix_is_zero(rows):
         return _math("%s = 0" % label) if label else _math("0")
     # Marco 2026-08-02: only matrices with fewer than DISPLAY_CAP (=20) rows AND columns
     # are shown; a larger one states its size and points at the JSON (the complete matrix
@@ -552,13 +579,17 @@ class _MatrixEcho:
 
     ``label_for(event, symbol)`` returns the earlier symbol when this exact matrix
     has been shown, else None (and records it). An elided matrix is never matched:
-    its body was dropped, so equality is unknowable."""
+    its body was dropped, so equality is unknowable. A ZERO matrix is never
+    matched either (Marco 2026-08-03): it is stated as ``symbol = 0`` by
+    :func:`matrix_grid`, and ``d_3 = d_1`` between two zero maps would hide that."""
 
     def __init__(self):
         self._seen = {}
 
     def label_for(self, ev, symbol):
         if getattr(ev, "elided", False) or getattr(ev, "matrix", None) is None:
+            return None
+        if matrix_is_zero(ev.matrix):
             return None
         key = (ev.nrows, ev.ncols,
                tuple(tuple(row) for row in ev.matrix))
@@ -1913,9 +1944,23 @@ def render_html(events, title="", references=(), algebra=None, results=None,
     terms = {e.degree: e for e in events if isinstance(e, ResolutionTerm)}
     ranks = {e.degree: e for e in events if isinstance(e, RankStep)}
     if terms:
-        chunks = ["<p><i>C<sub>n</sub> is the degree-n term of the resolution "
-                  "named above; the matrices below are its differentials "
-                  "(rows: target basis, columns: source basis).</i></p>"]
+        # Marco 2026-08-03: SAY what is being resolved and by which resolution --
+        # P_bullet -> A is a projective resolution of A as a bimodule (an
+        # A^e-module). A term carrying corners is a Chouhy-Solotar term; a term
+        # without is a (normalized) bar term -- the same signal the term-basis
+        # reconstruction below keys on, so the name can never drift from the math.
+        _any_cs = any(getattr(terms[k], "corners", None) is not None for k in terms)
+        _res_name = ("the Chouhy&#8211;Solotar resolution of the admissible "
+                     "presentation" if _any_cs
+                     else "the (normalized) bar resolution")
+        chunks = ["<p><i>These steps resolve the algebra itself: "
+                  "P<sub>&#8226;</sub> &#8594; A is a projective resolution of A "
+                  "as a bimodule &#8212; a module over the enveloping algebra "
+                  "A<sup>e</sup> = A &#8855; A<sup>op</sup> &#8212; built with "
+                  "%s. C<sub>n</sub> is the (co)chain space that resolution "
+                  "induces in degree n; the matrices below are its differentials "
+                  "(rows: target basis, columns: source basis).</i></p>"
+                  % _res_name]
         echo = _MatrixEcho()
         # Plan 35 UNIT 2 (deliverable 2 + review fix): the ordered basis of each HH
         # (co)chain term, reconstructed with UNIT 1's builders. report_side (all RankSteps
@@ -1938,7 +1983,7 @@ def render_html(events, title="", references=(), algebra=None, results=None,
             # Build the CS resolution ONCE, only when a term carries corners (the run used
             # Chouhy-Solotar). The report re-derives it (the `_product_object` pattern); a
             # non-admissible / structure-constants algebra fails the build -> omit.
-            if any(getattr(terms[k], "corners", None) is not None for k in terms):
+            if _any_cs:
                 try:
                     from quiverlab.hochschild import basis_reps as BR
                     from quiverlab.resolutions_cs.build import reduction_system_of

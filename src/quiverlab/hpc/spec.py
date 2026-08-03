@@ -1591,7 +1591,11 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         # 0 -> N -> Q -> ... -> M -> 0 realizing each class (an `interpretation` key).
         dims, reps = ext_dims(A, M, N, top, with_reps=True, interpret=True)
         block = {"kind": "ext", "top": top, "dims": [int(d) for d in dims],
-                 "target": _mod_view(N)}
+                 "target": _mod_view(N),
+                 # Marco 2026-08-03: say WHICH module the engine resolved and by
+                 # WHICH resolution (renderers state it before the numbers).
+                 "resolved": {"module": "M", "side": M.side,
+                              "resolution": "minimal projective resolution"}}
         block.update(reps)
         return _with_refs(block, kind)
     if kind == "tor":
@@ -1607,7 +1611,11 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         # the dims (Tor_0 = M (x)_A N as the cokernel), from the SAME tensor complex.
         dims, reps = tor_dims(A, M, T, top, with_reps=True)
         block = {"kind": "tor", "top": top, "dims": [int(d) for d in dims],
-                 "target": _mod_view(T)}
+                 "target": _mod_view(T),
+                 # Tor resolves the RIGHT module M and tensors with the left N
+                 # (modules/tor.py, resolve="first").
+                 "resolved": {"module": "M", "side": M.side,
+                              "resolution": "minimal projective resolution"}}
         block.update(reps)
         return _with_refs(block, kind)
     if kind in ("projective_resolution", "injective_resolution"):
