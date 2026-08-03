@@ -143,10 +143,11 @@ def _block_html(kind, b):
                                       b.get("differentials"), b.get("column_structure"),
                                       anchor_prefix="cr")
         if secs:
-            chunks.append("<p><i>Explicit representatives by degree — the total complex "
-                          "Tot_n = C_n ⊕ C_{n-2} ⊕ …, each class written over the "
-                          "ordered basis, with the total differential b+B that "
-                          "annihilates it. Coordinate vectors are in the JSON.</i></p>")
+            chunks.append("<p><i>Explicit representatives by degree — each class as its "
+                          "representative, with the total differential b+B that "
+                          "annihilates it. The total complex Tot_n and its ordered basis "
+                          "(into which the coordinate vectors index) are in the "
+                          "JSON.</i></p>")
             chunks.extend(secs)
         return chunks
     if kind == "cartan":
@@ -186,9 +187,10 @@ def _block_html(kind, b):
                                     b.get("differentials"), kind,
                                     anchor_prefix="cr")
         if secs:
-            chunks.append("<p><i>Explicit representatives by degree — each class "
-                          "written over the ordered basis, with the differential that "
-                          "annihilates it. Coordinate vectors are in the JSON.</i></p>")
+            chunks.append("<p><i>Explicit representatives by degree — each class as its "
+                          "representative, with the differential that annihilates it. The "
+                          "ordered basis (into which the coordinate vectors index) is in "
+                          "the JSON.</i></p>")
             chunks.extend(secs)
         # Plan 35 wave 3c: the Yoneda exact-sequence interpretation (Ext only) -- each
         # class as the constructed + certified exact sequence 0 -> N -> Q -> ... -> M -> 0.
@@ -346,8 +348,8 @@ def _resolution_html(kind, b):
 
 
 # ordered term-basis entries shown inline before a machine-record pointer (Marco
-# 2026-07-31: at most the first 50 basis elements of a space are displayed).
-_TERM_BASIS_DISPLAY = 50
+# 2026-08-02: at most the first 20 basis elements of a listed space are displayed).
+_TERM_BASIS_DISPLAY = 20
 
 
 def _term_basis_html(b, proj):
@@ -463,34 +465,26 @@ def _product_tables_html(kind, b):
 
 
 def _connes_b_html(b):
-    """connes_b: the legend, the per-degree explicit homology-cycle representatives
-    (Plan 35 UNIT 2), then one induced Connes differential grid
-    ``B_n : HH_n → HH_{n+1}`` per degree with its induced rank, and the engine
-    provenance. ``b["differentials"]`` is the product ``{side:{degree:...}}`` shape,
-    read ONLY here (kind-scoped)."""
+    """connes_b (Marco 2026-08-02): the legend, ONE flat homology-cycle class list
+    (z^n_j, degree-major, all degrees at once -- the SAME builder the products use, no
+    per-degree sub-sections and no chain enumerations), then one induced Connes
+    differential grid ``B_n : HH_n → HH_{n+1}`` per degree with its induced rank, and the
+    engine provenance."""
     from quiverlab.trace.products import notation_legend
-    from quiverlab.trace.render_html import (
-        product_degree_sections, product_table_reference)
+    from quiverlab.trace.render_html import product_flat_classes_html
     out = ["<p class='ql-note'>%s</p>"
            % _esc(notation_legend("connes_b", "", None))]
-    secs = product_degree_sections(b.get("basis_classes"), b.get("chain_basis"),
-                                   b.get("differentials"), anchor_prefix="cr-connes_b",
-                                   show_differential=False)
-    have_reps = bool(secs)
-    if have_reps:
-        out.append("<p><b>Explicit representatives by degree</b></p>")
-        out.extend(secs)
-        out.append("<p><b>Induced Connes differentials</b> (in the explicit cycle "
-                   "classes above; each links to its source/target degree "
-                   "sections):</p>")
+    out.extend(product_flat_classes_html(b.get("basis_classes")))
+    out.append("<p class='ql-note'>Each cycle class is written over the chain basis "
+               "enumerated in the Hochschild homology sections / JSON; the induced "
+               "matrices below act on these classes (rows index HH_{n+1}, columns "
+               "HH_n).</p>")
     matrices = b.get("matrices") or {}
     ranks = b.get("ranks") or {}
     for key in sorted(matrices, key=lambda s: int(s)):
         n = int(key)
         out.append('<p class="ql-mlabel">%s</p>'
                    % _math_inline(r"B_{%d} : HH_{%d} \to HH_{%d}" % (n, n, n + 1)))
-        if have_reps:                           # MINOR 1: link to the degree sections
-            out.append(product_table_reference("connes_b", (n,), n, "cr-connes_b"))
         out.append(matrix_grid(matrices[key], label="B_{%d}" % n))
         out.append("<p class='ql-note'>induced rank B_%d = %s</p>"
                    % (n, _num(ranks.get(key))))

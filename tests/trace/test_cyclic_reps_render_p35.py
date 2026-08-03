@@ -32,7 +32,10 @@ def test_results_section_renders_per_degree_sections():
     html = "".join(results_section({"cyclic_homology": _hc_block()}))
     for n in range(4):
         assert "cr-hc-deg-%d" % n in html
-    assert "Ordered basis of" in html
+    # Marco 2026-08-02: the Tot column enumerations are dropped (a JSON pointer replaces
+    # them); the class list + verification stay.
+    assert "Ordered basis of" not in html
+    assert "recorded in the JSON" in html              # the pointer
     assert "Basis classes" in html
     assert "Verification" in html
     # anchors in increasing degree order
@@ -41,13 +44,16 @@ def test_results_section_renders_per_degree_sections():
 
 
 @pytest.mark.oracle_selfcert
-def test_column_structure_heading_stated():
-    """Each degree opens with the total-complex column structure Tot_n = C_n (+) ...
-    before the enumeration -- deliverable-3 heading line."""
+def test_column_structure_enumerations_dropped():
+    """Marco 2026-08-02: the Tot column enumerations (the Tot_n = C_n (+) C_{n-2} (+) ...
+    decomposition heading and the coordinate-slice note) are NOT re-listed per degree --
+    one section-level JSON pointer replaces them."""
     html = "".join(results_section({"cyclic_homology": _hc_block()}))
-    assert r"\mathrm{Tot}_{2}" in html                 # the LaTeX heading source
-    assert r"C_{2} \oplus C_{0}" in html               # Tot_2 = C_2 (+) C_0
-    assert "coordinate slices" in html                 # the slice map note
+    assert r"C_{2} \oplus C_{0}" not in html           # decomposition heading dropped
+    assert "coordinate slices" not in html             # the per-column slice note dropped
+    assert "recorded in the JSON" in html              # the pointer
+    # the differential arrow still names the total complex
+    assert r"\mathrm{Tot}_{2}" in html
 
 
 @pytest.mark.oracle_literature
@@ -83,8 +89,11 @@ def test_gui_js_wiring_both_copies():
     webapp = (root / "webapp" / "static" / "gui" / "gui.js").read_text(encoding="utf-8")
     docs = (root / "docs" / "gui" / "gui.js").read_text(encoding="utf-8")
     assert webapp == docs                               # byte-identical
-    for needle in ("function appendCyclicReps", "appendCyclicColumnHeading",
+    for needle in ("function appendCyclicReps", "function appendCyclicClasses",
                    "gui-cyclic-hc-deg-", r"\\mathrm{Tot}_{"):
         assert needle in webapp
+    # Marco 2026-08-02: the Tot column enumerations are dropped -- their helpers are gone.
+    assert "function appendCyclicColumnHeading" not in webapp
+    assert "function appendCyclicEnum" not in webapp
     # wired into the cyclic_homology branch of renderBlock
     assert "appendCyclicReps(div, b);" in webapp

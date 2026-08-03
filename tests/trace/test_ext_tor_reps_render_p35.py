@@ -48,8 +48,10 @@ def test_results_section_renders_per_degree_sections(kind):
     # a per-degree heading + stable anchor per degree, in order
     for n in range(4):
         assert "cr-%s-deg-%d" % (kind, n) in html
-    # ordered-basis enumeration + classes + a verification sentence
-    assert "Ordered basis of" in html
+    # Marco 2026-08-02: the Hom/tensor ENUMERATION is dropped (a JSON pointer replaces it);
+    # the class list + a verification sentence stay.
+    assert "Ordered basis of" not in html
+    assert "recorded in the JSON" in html                # the pointer
     assert "Basis classes" in html
     assert "Verification" in html
     # anchors appear in increasing degree order

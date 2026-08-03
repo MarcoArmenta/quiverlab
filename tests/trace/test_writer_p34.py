@@ -50,13 +50,15 @@ def test_html_report_is_print_ready_and_typeset():
     assert "<link" not in html.lower()
 
 
-def test_wide_differential_renders_full_matrix_in_html():
-    """A >10-column differential is shown IN FULL in the HTML report (the HTML has
-    no page bound, so nothing is elided or scaled away)."""
+def test_wide_differential_over_cap_points_to_json():
+    """Marco 2026-08-02: a differential exceeding the 20-line display cap on either
+    dimension is stated as a size note pointing at the JSON, not a full grid (the
+    complete matrix always lives in trace.json). The HH^*(k[x]/(x^3)) degree-2
+    differential is 24x12 (24 rows > 20), so it elides to the note."""
     _A, ev = _wide_events()
     html = render_html(ev, title="HH")
-    got = grids(html)
-    assert got and max(len(r) for g in got for r in g) >= 11   # every column present
+    assert "24 rows and 12 columns exceed the 20-line display cap" in html
+    assert "JSON record" in html
 
 
 def test_render_html_is_byte_deterministic():

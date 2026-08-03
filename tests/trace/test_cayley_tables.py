@@ -131,15 +131,30 @@ def test_cap_table_rows_alpha_cols_z():
 
 
 # --------------------------------------------------------------------------- #
-# Display cap: a >=50 x/y table points at the JSON, no grid.
+# Cayley tables are UNCAPPED (Marco 2026-08-02): the one big grid always renders,
+# however many classes the axes carry -- the deliberate exception to the 20-line
+# matrix_grid cap. A 25-axis Cayley renders every cell; a 25x25 ordinary differential
+# still elides.
 # --------------------------------------------------------------------------- #
-def test_cayley_grid_display_cap():
-    struct = {"corner": r"\cup", "row_labels": [], "col_labels": [], "cells": [],
-              "dl": 50, "dr": 2, "note": ""}
+def test_cayley_grid_uncapped_renders_full():
+    n = 25
+    struct = {"corner": r"\cup",
+              "row_labels": [r"\alpha^{1}_{%d}" % (i + 1) for i in range(n)],
+              "col_labels": [r"\alpha^{1}_{%d}" % (j + 1) for j in range(n)],
+              "cells": [["0" for _ in range(n)] for _ in range(n)],
+              "dl": n, "dr": n, "note": ""}
     html = cayley_grid_html(struct)
-    assert "ql-cayley" not in html
-    assert "display cap" in html and "JSON record" in html
-    assert "50×2 product table" in html
+    assert "ql-cayley" in html                          # the grid renders (not elided)
+    assert "display cap" not in html
+    cells = cayley_cells(html)[0]
+    assert len(cells) == n and len(cells[0]) == n       # every cell present
+
+
+def test_cayley_uncapped_but_ordinary_matrix_still_elides():
+    from quiverlab.trace.render_html import matrix_grid
+    # a 25x25 ORDINARY differential elides (20 cap), while a 25-axis Cayley does not.
+    diff = matrix_grid([["0"] * 25 for _ in range(25)], label="d")
+    assert "ql-matrix" not in diff and "display cap" in diff
 
 
 # --------------------------------------------------------------------------- #
@@ -197,38 +212,21 @@ def test_all_zero_family_keeps_one_line_vanish(monkeypatch):
     assert "ql-cayley" not in html
 
 
-def test_over_axis_cap_falls_back_to_per_bidegree(monkeypatch):
-    # When a family's per-axis class count exceeds the cap, the big table is dropped
-    # for per-bidegree grids with a stated note + JSON pointer.
-    from quiverlab.trace.render_html import family_cayley_html
-    # two bidegrees, each 30 classes per axis -> 60 > 50 total on each axis
-    def mk(p, q, dl, dr):
-        constants = [[["1" if (i == 0 and j == 0) else "0" for j in range(dr)]
-                      for i in range(dl)]]
-        return {"degrees": (p, q), "out_degree": p + q, "dims": [dl, dr, 1],
-                "constants": constants}
-    tables = [mk(0, 0, 30, 30), mk(0, 1, 30, 30), mk(1, 0, 30, 30)]
-    html = "".join(family_cayley_html("cup", tables, 2))
-    assert "exceeding the 50-class display cap" in html
-    assert "per-bidegree tables follow" in html
-    assert "JSON record" in html
-    assert "ql-cayley" in html                        # the per-bidegree grids still render
-
-
-def test_axis_cap_boundary_49_big_50_fallback():
-    # The exact edge: per-axis class total 49 -> big table; 50 -> per-bidegree fallback.
+def test_large_family_renders_one_big_uncapped_table():
+    # Marco 2026-08-02: a family with a large per-axis class count renders ONE big table
+    # (no per-bidegree fallback, no axis cap) -- 60 classes per axis all appear.
     from quiverlab.trace.render_html import family_cayley_html
 
     def one_bidegree(n):
         constants = [[["1" if i == j else "0" for j in range(n)] for i in range(n)]]
         return [{"degrees": (0, 0), "out_degree": 0, "dims": [n, n, 1],
                  "constants": constants}]
-    big = "".join(family_cayley_html("cup", one_bidegree(49), 2))
-    assert "ql-cayley" in big                              # 49 < 50 -> big table
-    assert "exceeding the 50-class display cap" not in big
-    fall = "".join(family_cayley_html("cup", one_bidegree(50), 2))
-    assert "exceeding the 50-class display cap" in fall     # 50 -> fallback
-    assert "per-bidegree tables follow" in fall
+    html = "".join(family_cayley_html("cup", one_bidegree(60), 2))
+    assert "ql-cayley" in html                             # the one big table renders
+    assert "display cap" not in html                       # never dropped
+    assert "per-bidegree tables follow" not in html        # no fallback path
+    cells = cayley_cells(html)[0]
+    assert len(cells) == 60 and len(cells[0]) == 60        # all classes on both axes
 
 
 def test_missing_in_window_bidegree_raises_not_em_dash():

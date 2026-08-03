@@ -103,31 +103,64 @@ def test_cup_equation_uses_alpha_throughout():
 
 
 # --------------------------------------------------------------------------- #
-# (4) Display caps: 50x50 matrices, 50-element basis listings.
+# (4) Display caps (Marco 2026-08-02: reduced 50 -> 20): matrices and basis listings.
 # --------------------------------------------------------------------------- #
 @pytest.mark.oracle_selfcert
-def test_matrix_over_50_columns_elides_to_json_pointer():
-    big = [[str(j) for j in range(51)] for _ in range(2)]
+def test_matrix_over_20_columns_elides_to_json_pointer():
+    big = [[str(j) for j in range(21)] for _ in range(2)]
     html = matrix_grid(big, label="M")
     assert "ql-matrix" not in html                     # NOT rendered as a grid
     assert "display cap" in html and "JSON record" in html
-    assert "2×51 matrix" in html
+    assert "2×21 matrix" in html
 
 
 @pytest.mark.oracle_selfcert
-def test_matrix_under_50_still_renders_grid():
+def test_matrix_under_20_still_renders_grid():
     small = [["1", "0"], ["0", "1"]]
     assert "ql-matrix" in matrix_grid(small)
+    # the exact boundary: 19 columns render, 20 elide.
+    assert "ql-matrix" in matrix_grid([[str(j) for j in range(19)]])
+    assert "ql-matrix" not in matrix_grid([[str(j) for j in range(20)]])
 
 
 @pytest.mark.oracle_selfcert
-def test_basis_listing_capped_at_50_with_pointer():
+def test_hh_enumeration_listing_capped_at_20_with_pointer():
+    """The chain/cochain-space ENUMERATION in an HH degree section is a basis LISTING,
+    so it keeps the 20 cap (Marco 2026-08-02). The (co)homology CLASS list above it is
+    uncapped -- exercised in test_hh_class_list_uncapped."""
+    from quiverlab.trace.render_html import product_degree_sections
+    enum = ["u_%d" % i for i in range(25)]
+    bc = {"coh": {"1": [{"terms": [["1", [], "u_0"]], "vector": [[0, "1"]],
+                         "kind": "cochain"}]}}
+    html = "".join(product_degree_sections(bc, {"coh": {"1": enum}}, None, "cr"))
+    assert "u_0" in html and "u_19" in html            # first 20 shown
+    assert "u_24" not in html                          # the 25th is not
+    assert "5 more" in html and "machine record" in html
+
+
+@pytest.mark.oracle_selfcert
+def test_hh_class_list_uncapped():
+    """The (co)homology CLASS list (alpha^n_i) is UNCAPPED (Marco 2026-08-02: "no limit
+    for the bases of (co)homology") -- 30 classes all render, no "more classes" note."""
+    from quiverlab.trace.render_html import product_degree_sections
+    classes = [{"terms": [["1", [], "u_0"]], "vector": [[0, "1"]], "kind": "cochain"}
+               for _ in range(30)]
+    bc = {"coh": {"1": classes}}
+    html = "".join(product_degree_sections(bc, {"coh": {"1": ["u_0"]}}, None, "cr"))
+    assert r"\alpha^{1}_{30}" in html                  # the 30th class renders
+    assert "more classes" not in html                  # no class-list truncation
+
+
+@pytest.mark.oracle_selfcert
+def test_module_reps_enumeration_dropped_pointer_present():
+    """Ext/Tor sections drop the Hom/tensor enumeration (Marco 2026-08-02); a single JSON
+    pointer replaces it, the class list stays."""
     enum = ["u_%d" % i for i in range(60)]
     block_reps = {"0": [{"terms": [["1", "P_1", "n_1,1"]], "vector": [[0, "1"]]}]}
     html = "".join(module_reps_sections(block_reps, {"0": enum}, None, "ext", "cr"))
-    assert "u_0" in html and "u_49" in html            # first 50 shown
-    assert "u_59" not in html                          # the 60th is not
-    assert "10 more" in html and "machine record" in html
+    assert "u_0" not in html                            # NO enumeration listing
+    assert "recorded in the JSON" in html               # the pointer replaces it
+    assert "[P_1 → n_1,1]" in html                      # the class list stays
 
 
 # --------------------------------------------------------------------------- #

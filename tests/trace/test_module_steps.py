@@ -146,11 +146,13 @@ def test_matrix_rendering_follows_the_artifact_contract():
     js = render_json(events, title="t")
     # small matrix: a real matrix in text and an indexed grid in HTML
     assert has_grid(html, [["1", "0"]])
-    # wide (3x30): shown IN FULL everywhere -- nothing page-elides it away now
+    # wide (3x30): TEXT and JSON keep it IN FULL; the HTML report caps grids at 20 on a
+    # dimension (Marco 2026-08-02), so 30 columns elide to a size note pointing at JSON.
     assert "shown in full in the HTML/JSON report" not in txt      # text is complete
-    assert "shown in full in the HTML/JSON report" not in html     # HTML is complete
     assert "  ".join(["1"] + ["0"] * 29) in txt                    # the full 30-col row
-    assert has_grid(html, [["1"] + ["0"] * 29] * 3)                # ...and in HTML
+    assert not has_grid(html, [["1"] + ["0"] * 29] * 3)           # HTML: NOT a full grid
+    assert "30 columns exceed the 20-line display cap" in html     # ...it elides
+    assert "JSON record" in html
     # >250k memory backstop: a shape+rank note in text and HTML (never a 260k-cell body)
     for s in (txt, html):
         assert "2x130000" in s and "elided" in s

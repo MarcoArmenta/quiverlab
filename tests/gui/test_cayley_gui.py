@@ -22,11 +22,15 @@ GUI_WEBAPP = ROOT / "webapp" / "static" / "gui" / "gui.js"
 def test_gui_copies_carry_the_cayley_builders():
     for path in (GUI_DOCS, GUI_WEBAPP):
         src = path.read_text(encoding="utf-8")
+        # Marco 2026-08-02: the per-bidegree cayleyGrid fallback is gone (the one big
+        # cayleyBigGrid always renders); cayleyStructuralNotes / cayleyNoteLine stay (the
+        # combinedNote parity helpers).
         for name in ("primeFromBasis", "balancedCoeff", "balancedRepNote",
-                     "cellTex", "cayleyStructuralNotes", "cayleyGrid",
+                     "cellTex", "cayleyStructuralNotes",
                      "cayleyNoteLine", "combinedCayley", "combinedNote",
                      "cayleyBigGrid", "beyondWindowNote"):
             assert ("function %s" % name) in src, (path.name, name)
+        assert "function cayleyGrid" not in src, path.name   # fallback removed
         assert "qlgui-cayley" in src and "qlgui-degrow" in src, path.name
         assert "Cayley" in src, path.name
 
@@ -109,9 +113,10 @@ process.stdout.write(JSON.stringify({
 
 def test_js_combined_cayley_big_table():
     src = GUI_WEBAPP.read_text(encoding="utf-8")
-    # CAYLEY_AXIS_CAP / EM_DASH are declared as scalars alongside; inline them.
+    # EM_DASH is declared as a scalar alongside; inline it (CAYLEY_AXIS_CAP is gone --
+    # the combined table is uncapped, Marco 2026-08-02).
     pieces = [_grab_var(src, "PRODUCT_CORNER"),
-              'var CAYLEY_AXIS_CAP = 50, EM_DASH = "\\u2014";']
+              'var EM_DASH = "\\u2014";']
     for fn in ("primeFromBasis", "balancedCoeff", "signedJoinTex", "cellTex",
                "mirrorSign", "isIntStr", "combinedOutDegree", "combinedNote",
                "combinedCayley"):

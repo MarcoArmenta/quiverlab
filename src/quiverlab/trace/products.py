@@ -431,16 +431,12 @@ def cayley_table(kind, degrees, out_degree, dims, constants, prime=None):
 # ALL (co)homology basis classes, degree-major, the degree read from the class'
 # superscript; a heavier rule marks each degree boundary. A cell whose target degree
 # lies beyond the computed window is an em dash (NOT computed, NOT zero); a computed
-# vanishing product is 0. When a family's per-axis class count exceeds the display
-# cap, the surface falls back to the per-bidegree ``cayley_table`` grids.
+# vanishing product is 0. Marco 2026-08-02: the product Cayley table is UNCAPPED --
+# the one big degree-graded table ALWAYS renders (product tables can be large, and
+# that is fine), so there is no per-bidegree fallback and no per-axis cap. This is the
+# deliberate exception to the DISPLAY_CAP (20) that bounds every ordinary matrix grid.
 # --------------------------------------------------------------------------- #
 
-# Per-axis class count at or above which the big combined table is dropped for the
-# per-bidegree fallback. Deliberately equal to render_html.DISPLAY_CAP (the >=50
-# rows-or-cols matrix cap): the two are the SAME threshold serving different roles --
-# DISPLAY_CAP bounds a single matrix/grid, CAYLEY_AXIS_CAP bounds a combined table's
-# axis before it is even built. Keep them in lockstep.
-CAYLEY_AXIS_CAP = 50
 EM_DASH = "—"
 
 
@@ -514,12 +510,12 @@ def combined_cayley(kind, tables, prime=None):
     ``constants``). Rows run over every left (cohomology) class degree-major; columns
     over every right class (cohomology for cup/bracket, homology for cap) degree-major.
 
-    Returns ``{"over_cap": True, "rows", "cols"}`` when either axis exceeds
-    :data:`CAYLEY_AXIS_CAP` (the caller then renders per-bidegree grids); otherwise a
-    struct ``{corner, row_labels, col_labels, row_degsep, col_degsep, cells, dl, dr,
-    note, has_beyond}`` where each cell is ``"0"`` / a signed combination / the em dash
-    (beyond the computed window). ``row_degsep[i]`` / ``col_degsep[j]`` flag the first
-    class of a new degree block (skipping the very first) for the heavier grid rule."""
+    Returns a struct ``{corner, row_labels, col_labels, row_degsep, col_degsep,
+    cells, dl, dr, note, has_beyond}`` where each cell is ``"0"`` / a signed
+    combination / the em dash (beyond the computed window). ``row_degsep[i]`` /
+    ``col_degsep[j]`` flag the first class of a new degree block (skipping the very
+    first) for the heavier grid rule. The table is UNCAPPED (Marco 2026-08-02): it
+    always renders, however many classes the axes carry."""
     tbl, left_dims, right_dims = {}, {}, {}
     for t in tables:
         p, q = t["degrees"]
@@ -531,8 +527,6 @@ def combined_cayley(kind, tables, prime=None):
     left_degs, right_degs = sorted(left_dims), sorted(right_dims)
     total_rows = sum(left_dims[p] for p in left_degs)
     total_cols = sum(right_dims[q] for q in right_degs)
-    if total_rows >= CAYLEY_AXIS_CAP or total_cols >= CAYLEY_AXIS_CAP:
-        return {"over_cap": True, "rows": total_rows, "cols": total_cols}
     # The block's computed top degree: every recorded bidegree lands in HH^{out_degree}
     # (cup out=p+q, bracket out=p+q-1, cap out=n-p), and the recording covers EXACTLY
     # the in-window bidegrees, so the maximum recorded out_degree is the top. Classify
@@ -584,7 +578,7 @@ def combined_cayley(kind, tables, prime=None):
                                 [t["constants"][k][i][j] for k in range(dout)], prime))
         cells.append(row)
 
-    return {"over_cap": False, "corner": _CORNER[kind],
+    return {"corner": _CORNER[kind],
             "row_labels": row_labels, "col_labels": col_labels,
             "row_degsep": row_degsep, "col_degsep": col_degsep,
             "cells": cells, "dl": total_rows, "dr": total_cols,

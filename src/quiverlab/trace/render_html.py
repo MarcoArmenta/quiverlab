@@ -445,10 +445,11 @@ def matrix_grid(matrix, label=None):
     ncols = len(rows[0]) if rows and rows[0] is not None else 0
     if not rows or not ncols:
         return _math("%s = 0" % label) if label else _math("0")
-    # Marco 2026-07-31: only matrices with fewer than DISPLAY_CAP rows AND columns are
-    # shown; a larger one states its size and points at the JSON (the complete matrix
-    # is always in result.json / trace.json). This is the single chokepoint, so the cap
-    # applies to every matrix the report displays.
+    # Marco 2026-08-02: only matrices with fewer than DISPLAY_CAP (=20) rows AND columns
+    # are shown; a larger one states its size and points at the JSON (the complete matrix
+    # is always in result.json / trace.json). This is the single chokepoint for every
+    # ORDINARY matrix grid. Product Cayley tables do NOT route through here -- they render
+    # via cayley_grid_html and are deliberately uncapped.
     if len(rows) >= DISPLAY_CAP or ncols >= DISPLAY_CAP:
         pre = "%s = " % _esc(label) if label else ""
         return ("<p class='ql-note'>%s%d×%d matrix (%d rows and %d columns exceed the "
@@ -488,16 +489,15 @@ def cayley_grid_html(table):
     combination / an em dash beyond the computed window). Double zebra striping + print
     colours come free from the shared ``ql-matrix`` CSS; ``ql-cayley`` marks it for the
     read-back helper, and the optional ``row_degsep`` / ``col_degsep`` flags add a
-    heavier CSS-only rule (``ql-degrow`` / ``ql-degcol``) at each degree boundary. A
-    table past :data:`DISPLAY_CAP` on either axis states its size and points at the
-    JSON (the single grid chokepoint)."""
+    heavier CSS-only rule (``ql-degrow`` / ``ql-degcol``) at each degree boundary.
+
+    Marco 2026-08-02: the product Cayley table is UNCAPPED -- it always renders in full,
+    however many classes the axes carry (the deliberate exception to
+    :data:`DISPLAY_CAP`, which bounds every ordinary matrix grid via
+    :func:`matrix_grid`). A ``ql-cayley`` grid never routes through that cap."""
     dl, dr = table["dl"], table["dr"]
     if not dl or not dr:
         return _math("0")
-    if dl >= DISPLAY_CAP or dr >= DISPLAY_CAP:
-        return ("<p class='ql-note'>%d×%d product table (%d rows and %d columns exceed "
-                "the %d-line display cap); the complete structure constants are in the "
-                "accompanying JSON record.</p>" % (dl, dr, dl, dr, DISPLAY_CAP))
     rds = table.get("row_degsep") or [False] * dl
     cds = table.get("col_degsep") or [False] * dr
     head = ['<th class="ql-corner">%s</th>' % _math_inline(table["corner"])]
@@ -839,13 +839,16 @@ def _module_steps_html(events):
 # UNIT 1 elided the body) + a one-line self-cert verification sentence.
 # --------------------------------------------------------------------------- #
 
-# Marco 2026-07-31: from now on the report shows at most the first DISPLAY_CAP basis
-# elements of any space, and never a matrix with DISPLAY_CAP or more rows/columns --
-# beyond that it states the size and points at the accompanying JSON, which always
-# carries the complete data. One constant for every display cap. Deliberately equal to
-# products.CAYLEY_AXIS_CAP (which bounds a combined product table's per-axis class
-# count before it is built): the same 50 threshold, different roles -- keep in lockstep.
-DISPLAY_CAP = 50
+# Marco 2026-08-02: the report shows at most the first DISPLAY_CAP basis elements of a
+# LISTED space, and never a matrix grid with DISPLAY_CAP or more rows/columns -- beyond
+# that it states the size and points at the accompanying JSON, which always carries the
+# complete data. One constant for every ordinary display cap. TWO deliberate exceptions
+# (both Marco 2026-08-02, and only these): (a) the product Cayley tables are UNCAPPED
+# (products.combined_cayley / cayley_grid_html always render -- product tables can be
+# big); (b) the flat (co)homology class lists (alpha^n_i / z^n_i) are UNCAPPED wherever
+# they render (products, Connes, and the HH degree-section class blocks). The
+# chain/cochain-space ENUMERATIONS in the HH sections keep this cap.
+DISPLAY_CAP = 20
 
 # ordered-enumeration entries shown inline before a machine-record pointer (display
 # only; the full ordered enumeration always lives in result.json / trace.json).
@@ -920,20 +923,18 @@ def _enumeration_html(enum, long_name, hh, n):
 
 def _classes_html(classes, letter, n, chain_kind):
     """The explicit basis classes of one degree, each as its labeled term-sum AND its
-    coordinate vector over the enumeration (UNIT 1's two coherent views)."""
+    coordinate vector over the enumeration (UNIT 1's two coherent views). The
+    (co)homology CLASS list is UNCAPPED (Marco 2026-08-02: "no limit for the bases of
+    (co)homology") -- only the chain-space enumeration above it is capped."""
     if not classes:
         return ["<p class='ql-note'>no classes (the space is zero in this degree).</p>"]
     lis = []
-    for i, cl in enumerate(classes[:DISPLAY_CAP], start=1):
+    for i, cl in enumerate(classes, start=1):
         name = "%s^{%d}_{%d}" % (letter, n, i)
         term = _term_sum_text(cl.get("terms") or [], cl.get("kind") or chain_kind)
         lis.append("<li>%s = %s</li>" % (_math_inline(name), _esc(term)))
-    out = ["<p>Basis classes, each written over the ordered basis above:</p>",
-           "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
-    if len(classes) > DISPLAY_CAP:
-        out.append("<p class='ql-note'>… and %d more classes (see the JSON record).</p>"
-                   % (len(classes) - DISPLAY_CAP))
-    return out
+    return ["<p>Basis classes, each written over the ordered basis above:</p>",
+            "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
 
 
 def _reps_differential_html(diff, dsym, n, letter, cyc, hh, has_classes):
@@ -1014,46 +1015,6 @@ def _cs_term_basis_chunks(cs_res, cs_labels, n, collapsed_dim, side_key, kind):
     return _enumeration_html(enum, long_name, hh, n)
 
 
-def _degree_link(prefix, side, n, label):
-    """A hyperlink to a degree section's stable anchor (Plan 35 UNIT 2 review MINOR 1 --
-    the anchors are now linked, not merely present)."""
-    return "<a href='#%s-hh-%s-deg-%d'>%s</a>" % (prefix, side, int(n), _esc(label))
-
-
-def product_table_reference(kind, degrees, out_degree, prefix):
-    """A one-line 'classes: ...' cross-reference from a product table to the degree
-    sections its operands / output live in (Plan 35 UNIT 2 review MINOR 1). Shared by the
-    worked-steps chapter (prefix ``ws-<kind>``) and the Computed-results block
-    (``cr-<kind>``), so both surfaces link to their own degree sections."""
-    p = degrees[0]
-    if kind == "connes_b":                       # degrees=(n,): B_n : HH_n -> HH_{n+1}
-        links = [_degree_link(prefix, "hom", p, "HH_%d" % p),
-                 _degree_link(prefix, "hom", p + 1, "HH_%d" % (p + 1))]
-    elif kind == "cap":                          # HH^p (x) HH_n -> HH_{n-p}
-        q = degrees[1]
-        links = [_degree_link(prefix, "coh", p, "HH^%d" % p),
-                 _degree_link(prefix, "hom", q, "HH_%d" % q),
-                 _degree_link(prefix, "hom", out_degree, "HH_%d" % out_degree)]
-    else:                                        # cup / bracket: HH^p (x) HH^q -> HH^out
-        q = degrees[1]
-        links = [_degree_link(prefix, "coh", p, "HH^%d" % p),
-                 _degree_link(prefix, "coh", q, "HH^%d" % q),
-                 _degree_link(prefix, "coh", out_degree, "HH^%d" % out_degree)]
-    return "<p class='ql-note'>classes: %s</p>" % " · ".join(links)
-
-
-def _product_out_degree(kind, degrees):
-    """The output degree of a product table from its kind + bidegree (the ProductStep
-    stream does not carry it separately)."""
-    if kind == "cup":
-        return degrees[0] + degrees[1]
-    if kind == "bracket":
-        return degrees[0] + degrees[1] - 1
-    if kind == "cap":
-        return degrees[1] - degrees[0]
-    return degrees[0]                            # connes: handled by the reference builder
-
-
 def product_degree_sections(basis_classes, chain_basis, differentials, anchor_prefix,
                             show_differential=True):
     """Per-degree explicit-representatives sub-sections for a product/Connes block
@@ -1104,7 +1065,8 @@ def product_flat_classes_html(basis_classes):
     enumerated in the HH (co)homology sections above -- the enumeration, differential and
     per-degree headings are NOT repeated here (that is Marco's whole point: for the
     products just remind the (co)homology basis, all at once, then show the table). The
-    combined list respects :data:`DISPLAY_CAP` with a JSON pointer.
+    flat (co)homology class list is UNCAPPED (Marco 2026-08-02: "no limit for the bases
+    of (co)homology").
 
     Returns ``[]`` when the block carries no ``basis_classes`` (a legacy/old-cache block)
     -- the caller then shows the tables only (tolerance). Shared by the products
@@ -1112,7 +1074,7 @@ def product_flat_classes_html(basis_classes):
     block (``results_html._product_tables_html``) -- one implementation, no drift."""
     if not basis_classes:
         return []
-    items, total, truncated = [], 0, False
+    items = []
     for side in ("coh", "hom"):
         by_deg = basis_classes.get(side)
         if not by_deg:
@@ -1121,26 +1083,14 @@ def product_flat_classes_html(basis_classes):
         for dkey in sorted(by_deg, key=lambda s: int(s)):
             n = int(dkey)
             for i, cl in enumerate(by_deg[dkey] or [], start=1):
-                if total >= DISPLAY_CAP:
-                    truncated = True
-                    break
                 name = "%s^{%d}_{%d}" % (letter, n, i)
                 term = _term_sum_text(cl.get("terms") or [], cl.get("kind") or chain_kind)
                 items.append("<li>%s = %s</li>" % (_math_inline(name), _esc(term)))
-                total += 1
-            if truncated:
-                break
-        if truncated:
-            break
     if not items:
         return []
-    out = ["<p>The Hochschild (co)homology basis classes, over the chain bases "
-           "enumerated in the sections above:</p>",
-           "<ul class='ql-classes'>%s</ul>" % "".join(items)]
-    if truncated:
-        out.append("<p class='ql-note'>… and more classes (the complete list is in the "
-                   "JSON record).</p>")
-    return out
+    return ["<p>The Hochschild (co)homology basis classes, over the chain bases "
+            "enumerated in the sections above:</p>",
+            "<ul class='ql-classes'>%s</ul>" % "".join(items)]
 
 
 # --------------------------------------------------------------------------- #
@@ -1234,32 +1184,12 @@ def _module_term_sum_text(terms, kind):
     return _signed_join(pieces)
 
 
-def _module_enumeration_html(enum, ambient_tex, n):
-    """The ordered basis enumeration of the ambient Hom / tensor space as a numbered
-    (1-based) list; entry k is the symbol e_k the coordinate vectors refer to. Capped,
-    with a machine-record pointer for an over-long or record-elided enumeration."""
-    intro = ("<p>Ordered basis of %s (entry <i>k</i> is the <i>k</i>-th basis "
-             "element; the JSON coordinate vectors index into it):</p>"
-             % _math_inline(ambient_tex))
-    if isinstance(enum, dict):                    # capture-layer record-elided enumeration
-        return [intro, "<p class='ql-note'>%s elements; the full ordered enumeration "
-                "is in the machine record.</p>" % _esc(str(enum.get("length", "?")))]
-    enum = list(enum or [])
-    if not enum:
-        return [intro, "<p class='ql-note'>the space is zero-dimensional.</p>"]
-    items = "".join(
-        "<li>%s</li>" % _esc(str(lbl).replace("->", "→").replace("(x)", "⊗"))
-        for lbl in enum[:_REPS_ENUM_DISPLAY])
-    out = [intro, "<ol class='ql-enum'>%s</ol>" % items]
-    if len(enum) > _REPS_ENUM_DISPLAY:
-        out.append("<p class='ql-note'>… %d more (the full ordered enumeration is in "
-                   "the machine record).</p>" % (len(enum) - _REPS_ENUM_DISPLAY))
-    return out
-
-
 def _module_classes_html(classes, letter, n, kind):
-    """The explicit basis classes of one degree, each as its labelled term-sum AND its
-    coordinate vector over the enumeration (the two coherent views)."""
+    """The explicit basis classes of one degree, each as its labelled term-sum (a
+    self-contained representative -- e.g. Ext ``[g -> v]`` / Tor ``g (x) v``). The
+    ordered Hom/tensor basis it indexes into is NOT re-listed here (Marco 2026-08-02:
+    the complex-space enumerations live only in the JSON record); the class list keeps
+    the ordinary :data:`DISPLAY_CAP` listing cap with a JSON pointer."""
     if not classes:
         return ["<p class='ql-note'>no classes (the group is zero in this degree).</p>"]
     lis = []
@@ -1267,7 +1197,7 @@ def _module_classes_html(classes, letter, n, kind):
         name = "%s^{%d}_{%d}" % (letter, n, i)
         term = _module_term_sum_text(cl.get("terms") or [], kind)
         lis.append("<li>%s = %s</li>" % (_math_inline(name), _esc(term)))
-    out = ["<p>Basis classes, each written over the ordered basis above:</p>",
+    out = ["<p>Basis classes, each as its labelled representative:</p>",
            "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
     if len(classes) > DISPLAY_CAP:
         out.append("<p class='ql-note'>… and %d more classes (see the JSON record).</p>"
@@ -1315,9 +1245,13 @@ def module_reps_sections(basis_classes, chain_basis, differentials, kind, anchor
     if not basis_classes:
         return []
     from quiverlab.trace.interpretations import module_reps_label_note
-    ambient_t, letter, cyc, _dsym, _arrow, _v = _MODULE_REPS[kind]
+    _ambient_t, letter, cyc, _dsym, _arrow, _v = _MODULE_REPS[kind]
     long_name = "Ext^{%d}" if kind == "ext" else "Tor_{%d}"
-    out = ["<p class='ql-note'>%s</p>" % _esc(module_reps_label_note(kind))]
+    # Marco 2026-08-02: the ordered Hom/tensor basis is NOT enumerated per degree here --
+    # one pointer states it lives in the JSON; the class list + differentials stay.
+    out = ["<p class='ql-note'>%s</p>" % _esc(module_reps_label_note(kind)),
+           "<p class='ql-note'>The ordered basis of each Hom/tensor space (into which "
+           "the coordinate vectors index) is recorded in the JSON.</p>"]
     for dkey in sorted(basis_classes, key=lambda s: int(s)):
         n = int(dkey)
         anchor = "%s-%s-deg-%d" % (anchor_prefix, kind, n)
@@ -1327,9 +1261,7 @@ def module_reps_sections(basis_classes, chain_basis, differentials, kind, anchor
         if not classes:                         # zero group: one line, keep the anchor
             out.append(_math(long_name % n + " = 0"))
             continue
-        enum = (chain_basis or {}).get(dkey)
         diff = (differentials or {}).get(dkey)
-        out.extend(_module_enumeration_html(enum, ambient_t % n, n))
         out.extend(_module_classes_html(classes, letter, n, kind))
         out.extend(_module_reps_differential_html(diff, kind, n, letter, cyc))
     return out
@@ -1452,25 +1384,12 @@ def ext_interpretation_sections(interpretation, anchor_prefix):
 # --------------------------------------------------------------------------- #
 # Plan 35 wave 3b: the per-degree EXPLICIT-REPRESENTATIVES layout for cyclic homology
 # HC, the sibling of `module_reps_sections`. The HC block carries a SINGLE-side
-# `{str(degree): ...}` payload (HC is homological) PLUS a `column_structure` giving the
-# total complex Tot_n = C_n (+) C_{n-2} (+) ... layout, stated as a heading before each
-# degree's enumeration. Data is the capture layer's (hochschild.cyclic_reps); nothing is
-# recomputed here.
+# `{str(degree): ...}` payload (HC is homological) PLUS a `column_structure`. Marco
+# 2026-08-02: the Tot column enumerations (the total-complex decomposition heading and
+# the ordered Tot_n basis) are NOT re-listed per degree -- they live in the JSON; the
+# section keeps the class list + total differential. Data is the capture layer's
+# (hochschild.cyclic_reps); nothing is recomputed here.
 # --------------------------------------------------------------------------- #
-def _cyclic_column_heading(cs, n):
-    """The total-complex column structure of Tot_n as a typeset heading line
-    'Tot_n = C_n (+) C_{n-2} (+) ...' plus the coordinate-slice note."""
-    if not cs or not cs.get("columns"):
-        return []
-    tex = r"\mathrm{Tot}_{%d} = %s" % (
-        n, r" \oplus ".join("C_{%d}" % c["degree"] for c in cs["columns"]))
-    slices = ", ".join("C_%d [%d:%d]" % (c["degree"], c["offset"],
-                                         c["offset"] + c["dim"]) for c in cs["columns"])
-    return [_math(tex),
-            "<p class='ql-note'>coordinate slices (which vector entries live in which "
-            "column): %s.</p>" % _esc(slices)]
-
-
 def _cyclic_term_sum_from_vector(vector, enum):
     """The HC class's term-sum built from its sparse vector + the column-annotated
     enumeration labels ('col C_d: v (x) w...'), so each term names its column. Returns
@@ -1495,7 +1414,7 @@ def _cyclic_classes_html(classes, n, enum):
         rhs = _esc(term) if term is not None else \
             "(class recorded in the JSON; the ordered basis is too large to display)"
         lis.append("<li>%s = %s</li>" % (_math_inline(name), rhs))
-    out = ["<p>Basis classes, each written over the ordered basis above:</p>",
+    out = ["<p>Basis classes, each as its labelled representative:</p>",
            "<ul class='ql-classes'>%s</ul>" % "".join(lis)]
     if len(classes) > DISPLAY_CAP:
         out.append("<p class='ql-note'>… and %d more classes (see the JSON record).</p>"
@@ -1532,27 +1451,29 @@ def cyclic_degree_sections(basis_classes, chain_basis, differentials, column_str
                            anchor_prefix):
     """Per-degree explicit-representatives sub-sections for a cyclic-homology block
     (Plan 35 wave 3b). Single-side ``{str(degree): ...}`` payloads (HC is homological)
-    plus ``column_structure``; each degree opens with the total-complex column heading
-    ``Tot_n = C_n (+) C_{n-2} (+) ...`` before the ordered Tot_n basis -> classes ->
-    total differential ``D_n = b + B`` + verification, under a stable anchor
+    plus ``column_structure``. Marco 2026-08-02: the Tot column enumerations (the
+    ``Tot_n = C_n (+) C_{n-2} (+) ...`` decomposition heading and the ordered Tot_n basis)
+    are NOT re-listed -- one pointer states they live in the JSON; each degree keeps its
+    class list -> total differential ``D_n = b + B`` + verification, under a stable anchor
     ``<prefix>-hc-deg-<n>``. Returns ``[]`` on a legacy/old-cache block (tolerance)."""
     if not basis_classes:
         return []
-    out = []
+    # One pointer for the whole section (the Tot column structure + ordered basis are in
+    # the JSON; the coordinate vectors index into it).
+    out = ["<p class='ql-note'>The total complex Tot_n = C_n ⊕ C_{n-2} ⊕ … and the "
+           "ordered basis of each Tot_n (into which the coordinate vectors index) are "
+           "recorded in the JSON.</p>"]
     for dkey in sorted(basis_classes, key=lambda s: int(s)):
         n = int(dkey)
         anchor = "%s-hc-deg-%d" % (anchor_prefix, n)
         classes = basis_classes.get(dkey) or []
         enum = (chain_basis or {}).get(dkey)
         diff = (differentials or {}).get(dkey)
-        cs = (column_structure or {}).get(dkey)
         out.append("<h4 id='%s'>%s in degree %d</h4>"
                    % (anchor, _math_inline("HC_{%d}" % n), n))
         if not classes:                         # zero space: one line, keep the anchor
             out.append(_math("HC_{%d} = 0" % n))
             continue
-        out.extend(_cyclic_column_heading(cs, n))
-        out.extend(_module_enumeration_html(enum, r"\mathrm{Tot}_{%d}" % n, n))
         out.extend(_cyclic_classes_html(classes, n, enum))
         out.extend(_cyclic_reps_differential_html(diff, n, bool(classes)))
     return out
@@ -1607,42 +1528,24 @@ def _products_html(events):
                   and getattr(s, "prime", None) is not None), None)
     if prime is not None:
         out.append("<p class='ql-note'>%s</p>" % _esc(balanced_rep_note(prime)))
-    # The (co)homology basis classes, then the multiplication table right away (Marco
-    # 2026-08-02). connes_b keeps its per-degree explicit representatives (a map, not a
-    # pairing); cup/cap/bracket show ONE flat list of ALL classes across degrees and
-    # then the Cayley table -- no per-degree sub-sections (those live in the HH
-    # cohomology/homology sections above). Driven by the ProductBasis event the chapter
-    # emits; absent on a legacy object -> the section falls back to tables only.
+    # The (co)homology basis classes as ONE flat list of ALL classes across degrees
+    # (Marco 2026-08-02), then the tables/matrices right away -- no per-degree
+    # sub-sections and no chain enumerations (those live ONLY in the HH cohomology/
+    # homology sections). connes_b uses the SAME flat homology (z^n_j) class list, then
+    # its induced B matrices per degree with rank lines. Driven by the ProductBasis event
+    # the chapter emits; absent on a legacy object -> the section falls back to tables
+    # only.
     pb = next((e for e in events if isinstance(e, ProductBasis)), None)
-    have_reps = False
-    if pb is not None and kind == "connes_b":
-        # Marco 2026-07-31: the product sections drop the annihilating differential
-        # (it already lives in the HH degree sections) -- show_differential=False.
-        secs = product_degree_sections(pb.basis_classes, pb.chain_basis,
-                                       pb.differentials, anchor_prefix="ws-" + kind,
-                                       show_differential=False)
-        if secs:
-            have_reps = True
-            out.append("<h3 id='ws-%s-reps'>Explicit representatives by degree</h3>"
-                       % kind)
-            out.extend(secs)
-            out.append("<h3>Structure-constant tables</h3>")
-            out.append("<p class='ql-note'>The tables below are written in the "
-                       "explicit classes listed by degree above; each table links to "
-                       "the degree sections of its operands and output.</p>")
-    elif pb is not None:
-        # cup/cap/bracket: one flat class list, then the table (no per-degree sections,
-        # no anchors -> no per-degree ToC sub-entries).
+    if pb is not None:
         out.extend(product_flat_classes_html(pb.basis_classes))
-    # connes_b stays per-degree matrices (a map, not a pairing) -- unchanged.
     if kind == "connes_b":
+        out.append("<p class='ql-note'>Each cycle class is written over the chain basis "
+                   "enumerated in the Hochschild homology sections / JSON; the induced "
+                   "matrices below act on these classes (rows index HH_{n+1}, columns "
+                   "HH_n).</p>")
         for s in steps:
             if s.heading:
                 out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))
-            if have_reps:
-                out.append(product_table_reference(
-                    s.kind, s.degrees, _product_out_degree(s.kind, s.degrees),
-                    "ws-" + kind))
             if s.matrix is not None:
                 out.append(matrix_grid(s.matrix))
             if s.note:
@@ -1681,47 +1584,17 @@ _FAMILY_AXIS_NOTE = (
     "boundary.")
 
 
-def _bidegree_heading_tex(kind, degrees, out_degree):
-    p = degrees[0] if degrees else 0
-    q = degrees[1] if len(degrees) > 1 else 0
-    if kind == "cap":
-        return r"HH^{%s} \cap HH_{%s} \to HH_{%s}" % (p, q, out_degree)
-    if kind == "bracket":
-        return r"[HH^{%s}, HH^{%s}] \to HH^{%s}" % (p, q, out_degree)
-    return r"HH^{%s} \cup HH^{%s} \to HH^{%s}" % (p, q, out_degree)
-
-
-def _per_bidegree_cayley_html(kind, tables_data, prime):
-    """The over-cap fallback: each nonzero bidegree as its own Cayley grid, a
-    fully-vanishing bidegree stating the one-liner. Works from the normalized table
-    dicts, so both report surfaces share it."""
-    from quiverlab.trace.products import cayley_table, equation_lines
-    out = []
-    for t in tables_data:
-        degrees, out_degree = list(t["degrees"]), t["out_degree"]
-        dims, constants = list(t["dims"]), t["constants"]
-        out.append('<p class="ql-mlabel">%s</p>'
-                   % _math_inline(_bidegree_heading_tex(kind, degrees, out_degree)))
-        if equation_lines(kind, degrees, out_degree, dims, constants):
-            tbl = cayley_table(kind, degrees, out_degree, dims, constants, prime)
-            if tbl["note"]:
-                out.append("<p class='ql-note'>%s</p>" % _esc(tbl["note"]))
-            out.append(cayley_grid_html(tbl))
-        else:
-            out.append("<p class='ql-note'>every product in this bidegree "
-                       "vanishes.</p>")
-    return out
-
-
 def family_cayley_html(kind, tables_data, prime):
     """Render a whole cup/cap/bracket family (given its per-bidegree table dicts) as ONE
     big degree-major Cayley table -- the family heading, the axis/degree-boundary note,
     the whole-region structural caption, the em-dash beyond-window legend, then the
-    grid. Over the per-axis class cap it falls back to per-bidegree grids with a stated
-    note + JSON pointer. Shared by the worked-steps chapter and the Computed-results
-    section (no drift). ``tables_data`` empty -> ``[]``."""
+    grid. Marco 2026-08-02: the table is UNCAPPED (product tables can be big) -- there is
+    no per-bidegree fallback; the one combined table always renders. Shared by the
+    worked-steps chapter and the Computed-results section (no drift). ``tables_data``
+    empty -> ``[]``; an all-vanishing family keeps the one-line statement, never a grid
+    of 0s (the beyond-window/zero semantics are unchanged)."""
     from quiverlab.trace.products import (
-        beyond_window_note, combined_cayley, equation_lines, CAYLEY_AXIS_CAP)
+        beyond_window_note, combined_cayley, equation_lines)
     tables_data = [t for t in tables_data if t.get("constants") is not None]
     if not tables_data:
         return []
@@ -1734,13 +1607,6 @@ def family_cayley_html(kind, tables_data, prime):
     out = ['<p class="ql-mlabel">%s</p>' % _math_inline(_FAMILY_HEADING[kind]),
            "<p class='ql-note'>%s</p>" % _esc(_FAMILY_AXIS_NOTE)]
     combined = combined_cayley(kind, tables_data, prime)
-    if combined.get("over_cap"):
-        out.append("<p class='ql-note'>The combined table has %d rows and %d columns, "
-                   "exceeding the %d-class display cap; the per-bidegree tables follow "
-                   "(the complete data is in the JSON record).</p>"
-                   % (combined["rows"], combined["cols"], CAYLEY_AXIS_CAP))
-        out.extend(_per_bidegree_cayley_html(kind, tables_data, prime))
-        return out
     if combined["note"]:
         out.append("<p class='ql-note'>%s</p>" % _esc(combined["note"]))
     if combined["has_beyond"]:

@@ -125,17 +125,21 @@ def test_both_surfaces_render_the_flat_list_once_each():
 
 
 @pytest.mark.oracle_selfcert
-def test_connes_degree_sections_homology_classes():
-    """connes_b: homology-side degree sections and the cycle z^n_j classes written over
-    the ordered basis. The annihilating differential (and its verification) is dropped
-    from the product section (Marco 2026-07-31); it lives in the HH_ degree sections."""
+def test_connes_flat_homology_class_list():
+    """connes_b (Marco 2026-08-02): ONE flat homology (z^n_j) class list, all degrees at
+    once -- NO per-degree sub-sections, NO chain enumerations (those live in the HH_
+    sections). The cycle class z^1_1 = e_1 (x) x is written over the ordered basis."""
     A = ql.truncated_polynomial(2, field=ql.GF(7))
     cb = A.connes_differentials(2)
     html = render_html(products_chapter(A, "connes_b", cb), title="B", algebra=A)
-    assert "id='ws-connes_b-hh-hom-deg-1'" in html
+    assert "Hochschild (co)homology basis classes" in html   # the flat list heading
+    assert "id='ws-connes_b-hh-hom-deg-1'" not in html        # no per-degree anchor
+    assert "Ordered basis of" not in html                     # no chain enumeration
     # the cycle class z^1_1 = e_1 (x) x, written over the ordered basis (no coord tail)
     assert "e_1 ⊗ x" in html
     assert "e_1 ⊗ x = e_1" not in html
+    # the induced B matrices still render with rank lines
+    assert "induced rank" in html
 
 
 @pytest.mark.oracle_selfcert
@@ -319,20 +323,16 @@ def test_injective_term_basis_content_order_pinned():
         assert len(tb[n]) == (len(D) if D else 0)          # rows index E^n, this order
 
 
-def test_connes_tables_link_to_their_degree_sections():
-    """connes_b keeps its per-degree explicit representatives and the 'classes:' links to
-    its source/target homology degree sections (unchanged, Marco 2026-08-02). cup/cap/
-    bracket no longer carry per-degree product sections, so they emit no per-degree
-    product anchors."""
+def test_products_and_connes_emit_no_per_degree_anchors():
+    """Marco 2026-08-02: cup/cap/bracket AND connes_b all show a flat class list then the
+    tables/matrices -- no per-degree product/Connes sub-sections, so no per-degree
+    anchors (or links to them) in either surface."""
     A = ql.truncated_polynomial(2, field=ql.GF(7))
-    # connes links to source/target homology degrees, in both surfaces (kept)
     cb = A.connes_differentials(2)
     h2 = render_html(products_chapter(A, "connes_b", cb), title="B", algebra=A,
                      results={"connes_b": cb.blocks()})
-    assert "href='#ws-connes_b-hh-hom-deg-1'" in h2
-    assert "href='#cr-connes_b-hh-hom-deg-1'" in h2
-    assert "id='ws-connes_b-hh-hom-deg-1'" in h2           # the targets exist
-    # cup: the flat list surfaces, but NO per-degree product anchors
+    for token in ("ws-connes_b-hh-hom-deg-1", "cr-connes_b-hh-hom-deg-1"):
+        assert token not in h2                             # no per-degree anchors/links
     hp = A.cup_products(1)
     hc = render_html(products_chapter(A, "cup", hp), title="cup", algebra=A,
                      results={"cup": hp.blocks()})
@@ -409,7 +409,7 @@ def test_gui_js_copies_byte_identical():
     assert GUI_DOCS.read_bytes() == GUI_WEBAPP.read_bytes()
 
 
-def test_gui_js_wires_product_flat_list_and_connes_degree_sections():
+def test_gui_js_wires_product_flat_list_and_connes_flat_list():
     src = GUI_DOCS.read_text(encoding="utf-8")
     for fn in ("function appendProductReps", "function appendProductFlatClasses",
                "function appendRepsClasses", "function appendRepsDifferential",
@@ -417,16 +417,13 @@ def test_gui_js_wires_product_flat_list_and_connes_degree_sections():
         assert fn in src, fn
     # Marco 2026-07-31: the coordinate-vector inline is gone -- coordVectorText removed.
     assert "function coordVectorText" not in src
-    # Marco 2026-08-02: cup/cap/bracket render the FLAT class list; connes_b keeps its
-    # per-degree explicit representatives (appendProductReps, show-differential FALSE).
+    # Marco 2026-08-02: cup/cap/bracket AND connes_b render the FLAT class list; no
+    # per-degree product/Connes sub-sections (the per-degree call is gone).
     assert "appendProductFlatClasses(div, b)" in src
-    assert "appendProductReps(div, b, name, false)" not in src     # no per-degree in cup/cap/bracket
-    assert 'appendProductReps(div, b, "connes_b", false)' in src
-    # the legend points at the explicit listings
-    assert "listed explicitly by degree below" in src
-    # connes_b degree headings carry linkable anchors and its tables link to them
-    assert "function degreeLink" in src and "function productTableLinks" in src
-    assert 'id: "gui-" + name + "-hh-" + side + "-deg-" + n' in src
+    assert "appendProductReps(div, b, name, false)" not in src
+    assert 'appendProductReps(div, b, "connes_b", false)' not in src   # connes now flat
+    # the Connes degree-link helpers are gone (no per-degree anchors to link to)
+    assert "function degreeLink" not in src and "function productTableLinks" not in src
 
 
 def test_gui_js_wires_term_basis_next_to_differentials():
