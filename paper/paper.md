@@ -33,14 +33,13 @@ computes the working invariants of the field: modules with their Ext and Tor,
 minimal projective and injective resolutions, the Auslander–Reiten translates,
 Krull–Schmidt decomposition into indecomposables, Yoneda Ext-algebras with a
 Koszulity verdict, Hochschild cohomology and homology with their Gerstenhaber
-operations (cup product, cap action, and bracket), cyclic homology, and Cartan,
-Coxeter, and spectral data. Every number is exact. The library works over the rationals, over exact
+operations (cup product, cap action, and bracket), cyclic homology, and Cartan and Coxeter data. Every number is exact. The library works over the rationals, over exact
 subfields of the complex numbers (algebraic number fields $\mathbb{Q}(\alpha)$), and over every
 finite field `GF(p^n)`, and it fails loudly on any floating-point input rather than
-returning an approximation. It is built for research algebraists who need not
-program: a presentation reaches a certified table in three lines, the same
-computations run in a browser with no code at all, and any computation can emit a
-human-readable worked-steps document. Version 0.1.0 ships on PyPI, as a multi-arch container image, and as one-file desktop applications.
+returning an approximation. It is built for algebraists who need not program: a
+presentation reaches a certified table in three lines, the same computations run
+in a browser with no code, and any computation can emit a human-readable
+worked-steps document. Version 0.1.0 ships on PyPI, as a multi-arch container image, and as one-file desktop applications.
 
 # Statement of need
 
@@ -83,17 +82,13 @@ reproduces its results wherever the two overlap. QPA also marks the boundary. It
 ships no Hochschild cohomology, which must be assembled by hand through the
 enveloping algebra, and no cup product or Gerstenhaber bracket; it has no native Tor,
 no Koszulity verdict, and no facility for the deep-degree cup and cap products that
-`quiverlab` computes past the bar-resolution window. Installation requires GAP, a
-barrier for users who do not program. **SageMath** [@sagemath] provides the free path
+`quiverlab` computes past the bar-resolution window, and installing it requires GAP. **SageMath** [@sagemath] provides the free path
 algebra but no quotient-by-relations object, and an unreduced bar complex usable only
 at toy sizes. **Magma**, **Macaulay2/Singular**, and **QuiverTools** address adjacent
 problems (Ext algebras, noncommutative Gröbner bases, moduli of representations) but
 none computes finite-dimensional Hochschild theory with its operations. On PyPI there
 is nothing of this kind, and we believe `quiverlab` to be the first system to
-implement the Chouhy–Solotar resolution [@ChouhySolotar2015] in full. `quiverlab` is
-designed to occupy that space rather than to extend any of these systems: its
-exact-only kernel, its four resolution engines, and its no-code surfaces differ in
-architecture from each of them.
+implement the Chouhy–Solotar resolution [@ChouhySolotar2015] in full; its exact-only kernel, four resolution engines, and no-code surfaces are designed to occupy that space rather than extend any of these systems.
 
 # Software design
 
@@ -130,8 +125,7 @@ nondegenerate-trace-form certifier [@SkowronskiYamagata2011], and the trivial
 extension `T(A)` returned as a genuine quiver presentation [@Happel1988].
 
 The differentiator is not the list of features but how they are trusted. `quiverlab`
-is verified against two classes of oracle, documented on a verification page that
-every development plan extends as it ships. The first is theory and literature:
+is verified against two classes of oracle, documented on a living verification page. The first is theory and literature:
 algebras whose invariants the literature or a theorem has already resolved are
 constructed, and `quiverlab` must reproduce the published value exactly, over several
 characteristics, each source cited at the precision the repository can verify. The
@@ -190,10 +184,7 @@ direct consequence of that fact. The design and the mathematics are the author's
 implementation is carried out with Anthropic's Claude Code, whose Claude models
 (Opus- and Fable-class, 2026) work as multiple coordinated agents under the
 author's direction, with research agents surveying the
-literature and paired adversarial critics reviewing each unit of work. This is exactly why every invariant the library reports is
-pinned by a literature or theory oracle and, wherever the GAP package QPA implements
-it, cross-checked against an independent computation, so that no value shipped by
-`quiverlab` rests on unverified generated code. The disagreement recorded above is an
+literature and paired adversarial critics reviewing each unit of work. This is exactly why every reported invariant is pinned by a literature or theory oracle and, wherever QPA implements it, cross-checked independently: no value `quiverlab` ships rests on unverified generated code. The disagreement recorded above is an
 instance of the same discipline: the oracles, not the expectation of the author or of
 an assistant, decide what the library reports. The author has reviewed, edited, and
 validated all AI-assisted output, and takes full responsibility for the content of
