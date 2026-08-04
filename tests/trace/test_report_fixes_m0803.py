@@ -156,8 +156,9 @@ def test_engine_note_glosses_hanlab_in_cyclic_homology():
     block = {"kind": "HC_", "top": 1, "dims": [2, 1],
              "engine": "hanlab engine (F_p fast rank)"}
     html = "".join(results_section({"cyclic_homology": block}))
-    assert "HomologicalAlgebra/HansConjecture" in html
-    assert "exact rank" in html
+    # public wording only (the bank the engine was ported from is not public):
+    assert "HansConjecture" not in html
+    assert "Gaussian elimination mod p" in html
 
 
 def test_engine_note_glosses_hanlab_in_connes_b():

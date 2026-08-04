@@ -137,6 +137,29 @@ def _reps_from_complex(diff_here, diff_prev, space_dim, dom):
 # ordered path basis the resolution's differentials use (deterministic factories), so
 # the coordinates line up with ``dmats``.
 # --------------------------------------------------------------------------- #
+def _resolution_payload(terms):
+    r"""The resolution of M the Ext/Tor engines actually walk, as display data
+    (Marco 2026-08-03: the report shows the resolution BEFORE the Ext/Tor
+    numbers). One latex ⊕-decomposition per degree + the Betti numbers; the same
+    ``P_{v}^{k} \oplus ...`` shape the projective_resolution block uses."""
+    summands, betti = [], []
+    for t in terms:
+        vs = list(t.vertices)
+        betti.append(len(vs))
+        if not vs:
+            summands.append("0")
+            continue
+        counts = {}
+        for v in vs:
+            counts[v] = counts.get(v, 0) + 1
+        parts = []
+        for v in sorted(counts, key=lambda x: (str(type(x)), str(x))):
+            base = "P_{%s}" % v
+            parts.append(base if counts[v] == 1 else "%s^{%d}" % (base, counts[v]))
+        summands.append(r" \oplus ".join(parts))
+    return {"resolved": "M", "summands": summands, "betti": betti}
+
+
 def _terms_info(A, terms):
     cache = {}
 
@@ -237,7 +260,8 @@ def ext_reps(A, M, N, top, interpret=False):
         diffs[str(n)] = _ext_differential(here, space,
                                           len(homs[n + 1]) if n + 1 < len(homs) else 0, n)
     _cross_check(dims, A, M, N, top, "Ext")
-    payload = {"basis_classes": bc, "chain_basis": cb, "differentials": diffs}
+    payload = {"basis_classes": bc, "chain_basis": cb, "differentials": diffs,
+               "resolution": _resolution_payload(terms)}
     if interpret:
         payload["interpretation"] = _ext_interpretation(
             A, M, N, top, terms, dmats, homs, cols_by_deg)
@@ -464,7 +488,8 @@ def tor_reps(A, M, N, top):
         cb[str(n)] = enumeration_labels(elems, "tor")
         diffs[str(n)] = _tor_differential(here, tdim, n)
     _cross_check(dims, A, M, N, top, "Tor")
-    return dims, {"basis_classes": bc, "chain_basis": cb, "differentials": diffs}
+    return dims, {"basis_classes": bc, "chain_basis": cb, "differentials": diffs,
+                  "resolution": _resolution_payload(terms)}
 
 
 def _tor_differential(here, cols, n):

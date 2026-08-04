@@ -33,7 +33,7 @@ through each surface's proper math path, not through this prose. Float-free."""
 # ``route`` is "bar" (bar / fast / minimal cochain bases) or "cs" (Chouhy-Solotar).
 # Plain unicode so the report (MathML surface) and the GUI (MathJax) render identically.
 # --------------------------------------------------------------------------- #
-_NOTATION_TAIL = (" Here | and ⊗ are tensor products over k, and · inside a word is "
+_NOTATION_TAIL = (" Here ⊗ is the tensor product over k, and · inside a word is "
                   "composition of arrows along a path (left to right) -- not a scalar.")
 
 
@@ -47,13 +47,21 @@ def hh_space_typing(theory, route):
                     "bimodule resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A (σ over "
                     "the degree-n ambiguity chains). Degree n collapses to the corner "
                     "space C^n = ⊕_σ e_{o(σ)} A e_{t(σ)}. A basis element v ⊗ p pairs a "
-                    "path v ∈ A with a chain word p = a_1·a_2·…." + _NOTATION_TAIL)
+                    "path v ∈ A with a chain word p = a_1·a_2·…. The word p NAMES the "
+                    "free generator of P_n attached to that degree-n chain (an "
+                    "iterated overlap of the relations): it is not the product of its "
+                    "letters in A -- that product is typically zero there, the "
+                    "generator never is. A cochain [p → v] sends THAT generator to "
+                    "v ∈ A." + _NOTATION_TAIL)
         return ("What the engine computes: Hochschild homology as the homology of "
                 "A ⊗_{A^e} P_•, where P_• → A is the Chouhy–Solotar projective bimodule "
                 "resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A. Degree n collapses "
                 "to the corner space C_n = ⊕_σ e_{t(σ)} A e_{o(σ)}. A basis element "
-                "v ⊗ p pairs a path v ∈ A with a chain word p = a_1·a_2·…."
-                + _NOTATION_TAIL)
+                "v ⊗ p pairs a path v ∈ A with a chain word p = a_1·a_2·…. The word "
+                "p NAMES the free generator of P_n attached to that degree-n chain "
+                "(an iterated overlap of the relations): it is not the product of "
+                "its letters in A -- that product is typically zero there, the "
+                "generator never is." + _NOTATION_TAIL)
     if coh:
         return ("What the engine computes: Hochschild cohomology as the cohomology of "
                 "the normalized bar cochain complex. A degree-n cochain is a k-linear "
@@ -61,12 +69,16 @@ def hh_space_typing(theory, route):
                 "unit (spanned by the arrows and longer paths); by the tensor–hom "
                 "adjunction this is Hom_{A^e}(A ⊗ Ā^⊗n ⊗ A, A), a bimodule map out of "
                 "the n-th term of the bar resolution of A. A basis functional written "
-                "[w_1|…|w_n ↦ v] sends the single basis tensor w_1 ⊗ … ⊗ w_n (each "
-                "w_i ∈ Ā) to v ∈ A and every other basis tensor to 0." + _NOTATION_TAIL)
+                "[w_1 ⊗ … ⊗ w_n ↦ v] sends the single basis tensor w_1 ⊗ … ⊗ w_n "
+                "(each w_i ∈ Ā) to v ∈ A and every other basis tensor to 0. The "
+                "argument is a TENSOR over k, not a product in A: w ⊗ w is a basis "
+                "element of Ā^⊗2 and stays nonzero even when w·w = 0 in A."
+                + _NOTATION_TAIL)
     return ("What the engine computes: Hochschild homology as the homology of the "
             "normalized bar chain complex C_n = A ⊗_k Ā^⊗n (equivalently "
             "A ⊗_{A^e} (A ⊗ Ā^⊗n ⊗ A)). A basis chain written v ⊗ w_1 ⊗ … ⊗ w_n has "
-            "v ∈ A and each w_i ∈ Ā." + _NOTATION_TAIL)
+            "v ∈ A and each w_i ∈ Ā. It is a TENSOR over k, not a product in A: "
+            "v ⊗ w ⊗ w stays nonzero even when w·w = 0 in A." + _NOTATION_TAIL)
 
 
 def module_reps_label_note(kind):

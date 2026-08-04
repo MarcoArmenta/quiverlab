@@ -53,6 +53,9 @@ def test_both_runners_stamp_resolved_provenance_identically():
         r = server[kind]["resolved"]
         assert r["module"] == "M" and r["side"] == "right"
         assert "minimal projective" in r["resolution"]
+        # ... and the SAME displayed resolution of M (Marco 2026-08-03 pass 2)
+        assert server[kind]["resolution"] == gui[kind]["resolution"]
+        assert server[kind]["resolution"]["summands"]
 
 
 def test_offline_banner_points_at_draw(tmp_path):

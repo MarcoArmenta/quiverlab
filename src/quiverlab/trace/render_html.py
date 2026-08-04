@@ -431,6 +431,21 @@ def _math_inline(expr):
             '</semantics></math>' % (pres, _esc(expr)))
 
 
+# Marco 2026-08-03: every mention of max_cells explains itself. One shared gloss,
+# appended wherever a reason/error string names the knob.
+_MAX_CELLS_GLOSS = (" — max_cells is the engine's safety cap on the size of one "
+                    "differential matrix, counted in cells = rows × columns; a "
+                    "computation that would exceed it is refused or rerouted instead "
+                    "of exhausting memory (raise max_cells= if you have the RAM).")
+
+
+def gloss_max_cells(text):
+    t = str(text)
+    if "max_cells" in t and "rows × columns" not in t:
+        return t + _MAX_CELLS_GLOSS
+    return t
+
+
 def _entry_is_zero(x):
     """True when a verbatim exact entry (int / "0" / "0/1"-style string) is zero.
     Anything the fraction grammar cannot read (e.g. a GF(p^n) display element)
@@ -1916,30 +1931,15 @@ def render_html(events, title="", references=(), algebra=None, results=None,
     if mod_sec:
         sections.append(("modules", "The modules", mod_sec))
 
-    from quiverlab.trace.results_html import results_section
-    computed = results_section(results)
-    if computed:
-        sections.append(("computed", "Computed results", computed))
-
     used = _used_dispatches(events)
     if used:
         chunks = []
         for e in used:
             chunks.append("<p><b>Resolution used:</b> %s<br><i>%s</i><br>"
                           "defining relations: %d</p>"
-                          % (_esc(e.route), _esc(e.reason), e.n_relations))
+                          % (_esc(e.route), _esc(gloss_max_cells(e.reason)),
+                             e.n_relations))
         sections.append(("resolution", "Resolution", chunks))
-
-    objects, note = compute_algebra_objects(algebra)
-    pi = _pi_section_html(objects, note)
-    if pi:
-        # _pi_section_html emits its own h2; keep its body, retitle via TOC.
-        chunks = pi[1:]
-        chunks.append("<p class='ql-cite'>Loewy series and the projectives/"
-                      "injectives P<sub>v</sub>, I<sub>v</sub> follow [ASS2006] "
-                      "(see References).</p>")
-        sections.append(("projectives-injectives",
-                         "The projectives and injectives of A", chunks))
 
     terms = {e.degree: e for e in events if isinstance(e, ResolutionTerm)}
     ranks = {e.degree: e for e in events if isinstance(e, RankStep)}
@@ -1957,8 +1957,12 @@ def render_html(events, title="", references=(), algebra=None, results=None,
                   "P<sub>&#8226;</sub> &#8594; A is a projective resolution of A "
                   "as a bimodule &#8212; a module over the enveloping algebra "
                   "A<sup>e</sup> = A &#8855; A<sup>op</sup> &#8212; built with "
-                  "%s. C<sub>n</sub> is the (co)chain space that resolution "
-                  "induces in degree n; the matrices below are its differentials "
+                  "%s. Collapsing it computes both sides: "
+                  "HH<sup>n</sup> = H<sup>n</sup> Hom<sub>A<sup>e</sup></sub>"
+                  "(P<sub>&#8226;</sub>, A) and HH<sub>n</sub> = "
+                  "H<sub>n</sub>(P<sub>&#8226;</sub> &#8855;<sub>A<sup>e</sup></sub> A). "
+                  "C<sub>n</sub> is the (co)chain space this resolution induces in "
+                  "degree n; the matrices below are its differentials "
                   "(rows: target basis, columns: source basis).</i></p>"
                   % _res_name]
         echo = _MatrixEcho()
@@ -2029,6 +2033,24 @@ def render_html(events, title="", references=(), algebra=None, results=None,
                 else:
                     chunks.append(_event_grid(rs, label=sym))
         sections.append(("resolution-steps", "Worked resolution steps", chunks))
+
+    # Computed results AFTER the resolution chapters (Marco 2026-08-03: show the
+    # resolution of A as an A^e-module before the Hochschild numbers it produces).
+    from quiverlab.trace.results_html import results_section
+    computed = results_section(results)
+    if computed:
+        sections.append(("computed", "Computed results", computed))
+
+    objects, note = compute_algebra_objects(algebra)
+    pi = _pi_section_html(objects, note)
+    if pi:
+        # _pi_section_html emits its own h2; keep its body, retitle via TOC.
+        chunks = pi[1:]
+        chunks.append("<p class='ql-cite'>Loewy series and the projectives/"
+                      "injectives P<sub>v</sub>, I<sub>v</sub> follow [ASS2006] "
+                      "(see References).</p>")
+        sections.append(("projectives-injectives",
+                         "The projectives and injectives of A", chunks))
 
     mod = _module_steps_html(events)
     if mod:

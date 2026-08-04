@@ -53,7 +53,8 @@ def test_typing_statement_bar_route():
     html = hh_typing_html("hh_cohomology", "bar")
     assert "What the engine computes" in html
     assert "Hom_k(Ā" in html and "Hom_{A^e}" in html
-    assert "tensor products over k" in html and "composition of arrows" in html
+    # pass 3 (2026-08-03): the tail is ⊗-only -- "| and ⊗" became "⊗ is the ..."
+    assert "tensor product over k" in html and "composition of arrows" in html
 
 
 @pytest.mark.oracle_selfcert

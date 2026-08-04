@@ -1000,9 +1000,11 @@
     var s = String(engine || "");
     var low = s.toLowerCase();
     if (low.indexOf("hanlab") !== -1)
-      return s + " \u2014 the exact GF(p) linear-algebra core ported from the "
-        + "HomologicalAlgebra/HansConjecture bank ('hanlab'); it computes the exact "
-        + "rank of each recorded (co)boundary matrix over F_p \u2014 nothing numerical.";
+      return s + " \u2014 quiverlab's exact GF(p) linear-algebra engine: it assembles "
+        + "the boundary/coboundary matrices of the chosen (co)chain complex with "
+        + "integer entries mod p and computes their exact rank by Gaussian "
+        + "elimination mod p; every dimension follows by rank-nullity \u2014 nothing "
+        + "numerical, no floating point.";
     if (low.indexOf("chouhy") !== -1 || low.indexOf("solotar") !== -1)
       return s + " \u2014 the Chouhy\u2013Solotar projective bimodule resolution built "
         + "from the admissible presentation, certified per instance "
@@ -1548,7 +1550,7 @@
   // key -- never read it shape-blind). Tolerant of a block WITHOUT these fields.
   // Marco 2026-07-31: typing statements + Ext/Tor label notes, mirroring the Python
   // single source quiverlab.trace.interpretations (hh_space_typing / module_reps_label_note).
-  var NOTATION_TAIL = " Here | and ⊗ are tensor products over k, and · inside a word "
+  var NOTATION_TAIL = " Here ⊗ is the tensor product over k, and · inside a word "
     + "is composition of arrows along a path (left to right) -- not a scalar.";
   function hhTyping(theory, route) {
     var coh = (theory === "hh_cohomology" || theory === "HH^");
@@ -1559,12 +1561,19 @@
           + "resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A (σ over the degree-n "
           + "ambiguity chains). Degree n collapses to the corner space "
           + "C^n = ⊕_σ e_{o(σ)} A e_{t(σ)}. A basis element v ⊗ p pairs a path v ∈ A "
-          + "with a chain word p = a_1·a_2·…." + NOTATION_TAIL;
+          + "with a chain word p = a_1·a_2·…. The word p NAMES the free generator of "
+          + "P_n attached to that degree-n chain (an iterated overlap of the "
+          + "relations): it is not the product of its letters in A -- that product is "
+          + "typically zero there, the generator never is. A cochain [p → v] sends "
+          + "THAT generator to v ∈ A." + NOTATION_TAIL;
       return "What the engine computes: Hochschild homology as the homology of "
         + "A ⊗_{A^e} P_•, where P_• → A is the Chouhy–Solotar projective bimodule "
         + "resolution with P_n = ⊕_σ A e_{o(σ)} ⊗ e_{t(σ)} A. Degree n collapses to "
         + "the corner space C_n = ⊕_σ e_{t(σ)} A e_{o(σ)}. A basis element v ⊗ p pairs "
-        + "a path v ∈ A with a chain word p = a_1·a_2·…." + NOTATION_TAIL;
+        + "a path v ∈ A with a chain word p = a_1·a_2·…. The word p NAMES the free "
+        + "generator of P_n attached to that degree-n chain (an iterated overlap of "
+        + "the relations): it is not the product of its letters in A -- that product "
+        + "is typically zero there, the generator never is." + NOTATION_TAIL;
     }
     if (coh)
       return "What the engine computes: Hochschild cohomology as the cohomology of the "
@@ -1572,13 +1581,16 @@
         + "C^n = Hom_k(Ā^⊗n, A), where Ā = A/(k·1) is the algebra modulo its unit "
         + "(spanned by the arrows and longer paths); by the tensor–hom adjunction this "
         + "is Hom_{A^e}(A ⊗ Ā^⊗n ⊗ A, A), a bimodule map out of the n-th term of the "
-        + "bar resolution of A. A basis functional written [w_1|…|w_n ↦ v] sends the "
-        + "single basis tensor w_1 ⊗ … ⊗ w_n (each w_i ∈ Ā) to v ∈ A and every other "
-        + "basis tensor to 0." + NOTATION_TAIL;
+        + "bar resolution of A. A basis functional written [w_1 ⊗ … ⊗ w_n ↦ v] sends "
+        + "the single basis tensor w_1 ⊗ … ⊗ w_n (each w_i ∈ Ā) to v ∈ A and every "
+        + "other basis tensor to 0. The argument is a TENSOR over k, not a product in "
+        + "A: w ⊗ w is a basis element of Ā^⊗2 and stays nonzero even when w·w = 0 "
+        + "in A." + NOTATION_TAIL;
     return "What the engine computes: Hochschild homology as the homology of the "
       + "normalized bar chain complex C_n = A ⊗_k Ā^⊗n (equivalently "
       + "A ⊗_{A^e} (A ⊗ Ā^⊗n ⊗ A)). A basis chain written v ⊗ w_1 ⊗ … ⊗ w_n has v ∈ A "
-      + "and each w_i ∈ Ā." + NOTATION_TAIL;
+      + "and each w_i ∈ Ā. It is a TENSOR over k, not a product in A: v ⊗ w ⊗ w stays "
+      + "nonzero even when w·w = 0 in A." + NOTATION_TAIL;
   }
   function moduleRepsLabelNote(kind) {
     var common = "Notation. In a class term-sum, P_v is the generator of the projective "
@@ -2302,6 +2314,22 @@
           + " A-module M, by its " + b.resolved.resolution + "; "
           + (isExt ? "Ext^n(M, N) = H^n(Hom_A(P_\u2022, N))."
                    : "Tor_n(M, N) = H_n(P_\u2022 \u2297_A N).") }));
+      }
+      if (b.resolution && b.resolution.summands && b.resolution.summands.length) {
+        // ... and SHOW that resolution before the data (terms to the depth used).
+        div.appendChild(h("p", { text: "The resolution of M used:" }));
+        var rtbl = h("table", { "class": "qlgui-table" });
+        var rhead = h("tr"); rhead.appendChild(h("th", { text: "n" }));
+        rhead.appendChild(h("th", { text: "P_n" })); rtbl.appendChild(rhead);
+        b.resolution.summands.forEach(function (tex, n) {
+          var tr = h("tr"); tr.appendChild(h("td", { text: String(n) }));
+          var td = h("td", { "class": "arithmatex", text: "\\(" + tex + "\\)" });
+          tr.appendChild(td); rtbl.appendChild(tr);
+        });
+        div.appendChild(rtbl);
+        div.appendChild(h("p", { "class": "qlgui-hint", text: isExt
+          ? "N is not resolved: it enters through Hom_A(\u2212, N) applied to this resolution."
+          : "N is not resolved: it enters through \u2212 \u2297_A N applied to this resolution." }));
       }
       div.appendChild(degreeTable(isExt ? "dim Ext^n" : "dim Tor_n", b.dims));
       appendDictionaryFraming(div, name, b.dims);

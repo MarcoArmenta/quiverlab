@@ -604,3 +604,30 @@ away (desktop launcher + offline banner; the catalog stays at `/`). Tests:
 the m0729 echo pin refined (zero diffs now stated) and the Cayley cap fixture
 made non-zero. Suite 2758 (fast 1333 / deep 1302 / qpa 123); oracle classes
 selfcert 833 / union 1567; verification page + README badge updated.
+
+**Marco's report-presentation pass 3 (2026-08-03, branch
+`marco-report-notation-0803`)** -- his mathematical reading of the regenerated
+report ("μ(xx)=e₁ but xx=0 in A?!") drove six fixes: (1) tensor separators are
+⊗-ONLY -- bar cochain labels are ``[w1 (x) ... (x) wp -> v]`` (never ``|``),
+and the typing paragraphs now STATE the two label semantics: a bar label is a
+k-TENSOR (w ⊗ w ≠ 0 in Ā^⊗2 even when w² = 0 in A); a Chouhy-Solotar word
+label NAMES the free generator of P_n attached to that chain (an iterated
+overlap of the relations), never a product in A; (2) the hanlab gloss no
+longer names the non-public bank -- it says exactly what the engine does
+(boundary matrices mod p, exact rank by Gaussian elimination, rank-nullity);
+(3) a product section whose recorded basis differs from the HH sections'
+route prints an independent-enumerations warning (indices do NOT correspond;
+no coordinates are ever mixed inside a table; dims are basis-independent) and
+the bracket window note speaks plain language ("arguments of total degree ≤ W");
+(4) Ext/Tor sections SHOW the resolution of M (⊕-decomposition + Betti, the
+``resolution`` payload built once in ``modules/complex_reps.py`` for both
+runners) before the data, and state N enters unresolved (balance remark);
+(5) every ``max_cells`` mention glosses itself (``render_html.gloss_max_cells``
+on dispatch reasons + error blocks); (6) the report reorders: Resolution +
+Worked resolution steps (whose intro now states BOTH collapses HH^ = Hom,
+HH_ = ⊗ come from THIS resolution) precede Computed results;
+projectives/injectives follow the results. Goldens ``family_hh_cartan`` /
+``products_loop_gf2`` / ``module_ext`` re-frozen under a transform gate
+(separator map + additive-key deletion reproduce the old bytes). Tests:
+`tests/trace/test_report_notation_m0803b.py` (14, oracle_selfcert). Suite 2772
+(fast 1347 / deep 1302 / qpa 123); selfcert 847 / union 1581.

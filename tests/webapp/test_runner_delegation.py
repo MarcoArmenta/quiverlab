@@ -75,6 +75,17 @@ never hide behind one:
     ``hh_cohomology`` / ``hh_homology`` block ONLY, so no pre-existing content moved.
     ``canonical_key`` is request-derived and UNCHANGED. (The other five entries carry no
     plain HH dims block and are untouched.)
+  * 2026-08-03 (``family_hh_cartan`` + ``products_loop_gf2`` + ``module_ext``
+    re-freeze, Marco report pass 2 -- tensor separators + Ext/Tor resolution):
+    (a) bar-route cochain labels now separate tensor factors with `` (x) `` like
+    the chain side, never ``|`` (``[x (x) y -> v]``; Marco: keep only ⊗ -- a
+    ``|`` read as something other than a k-tensor); (b) the ``ext``/``tor``
+    blocks gained the additive ``resolution`` key (the ⊕-decomposition + Betti
+    numbers of the resolution of M the engine walked, shown BEFORE the data).
+    Gated re-freeze: each regenerated blob was asserted byte-identical to the
+    old one after mapping `` (x) `` back to ``|`` inside bracketed labels and
+    deleting ``resolution`` from ext/tor blocks -- so nothing else moved.
+    ``canonical_key`` is request-derived and UNCHANGED.
   * 2026-08-03 (``module_ext`` re-freeze, Marco report pass -- resolved provenance):
     the ``ext`` / ``tor`` blocks gained the additive ``resolved`` key ({module, side,
     resolution} -- WHICH module the engine resolved and by which resolution, so the

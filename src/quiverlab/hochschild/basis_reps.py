@@ -39,12 +39,15 @@ def labels_of(A):
 def element_label(word_labels, value_label, kind):
     """One ordered-basis element as a display string.
 
-    cochain: ``[w1|...|wp -> v]`` (degree 0: just ``v``, an element of A = C^0);
-    chain:   ``v (x) w1 (x) ... (x) wn`` (degree 0: just ``v``)."""
+    cochain: ``[w1 (x) ... (x) wp -> v]`` (degree 0: just ``v``, an element of
+    A = C^0); chain: ``v (x) w1 (x) ... (x) wn`` (degree 0: just ``v``). The
+    separator is ALWAYS the k-tensor ``(x)`` (displayed ⊗) -- Marco 2026-08-03:
+    ``|`` read as something else, and a tensor w (x) w is nonzero even when the
+    product w*w vanishes in A."""
     if kind == "cochain":
         if not word_labels:
             return value_label
-        return "[%s -> %s]" % ("|".join(word_labels), value_label)
+        return "[%s -> %s]" % (" (x) ".join(word_labels), value_label)
     if not word_labels:
         return value_label
     return " (x) ".join((value_label,) + tuple(word_labels))

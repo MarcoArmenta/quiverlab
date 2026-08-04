@@ -86,6 +86,11 @@ def results_section(results):
     if not items:
         return []
     out = []
+    # Marco 2026-08-03: the product sections must SAY when their recorded basis
+    # differs from the route the HH sections were computed on (independent class
+    # enumerations, indices do not correspond). The HH engines are the context.
+    ctx = {"hh_engines": [b.get("engine") for k, b in items
+                          if k in ("hh_cohomology", "hh_homology") and b.get("engine")]}
     for kind, block in items:
         heading = _HEADINGS.get(kind, kind.replace("_", " "))
         out.append("<h3 id='cr-%s'>%s</h3>" % (_esc(kind), _esc(heading)))
@@ -94,7 +99,7 @@ def results_section(results):
             out.append("<p class='ql-note'>not computed — %s</p>"
                        % _esc(_error_text(err)))
             continue
-        out.extend(_block_html(kind, block))
+        out.extend(_block_html(kind, block, ctx))
         out.extend(_citations_html(block))
     return out
 
@@ -107,10 +112,11 @@ def results_section(results):
 # just drop an internal codename ("hanlab"). Substring-keyed glosses; an engine
 # string matching none renders verbatim, unchanged.
 _ENGINE_GLOSS = (
-    ("hanlab", "the exact GF(p) linear-algebra core ported from the "
-               "HomologicalAlgebra/HansConjecture bank ('hanlab'); it computes the "
-               "exact rank of each recorded (co)boundary matrix over F_p -- nothing "
-               "numerical, no floating point"),
+    ("hanlab", "quiverlab's exact GF(p) linear-algebra engine: it assembles the "
+               "boundary/coboundary matrices of the chosen (co)chain complex with "
+               "integer entries mod p and computes their exact rank by Gaussian "
+               "elimination mod p; every dimension follows by rank-nullity -- "
+               "nothing numerical, no floating point"),
     ("chouhy", "the Chouhy–Solotar projective bimodule resolution built from "
                "the admissible presentation, certified per instance "
                "(d∘d = 0 + the order gate)"),
@@ -150,13 +156,35 @@ def _resolved_note(kind, b):
     else:
         formula = _math_inline(
             r"\operatorname{Tor}_{n}(M, N) = H_{n}(P_{\bullet} \otimes_{A} N)")
-    return ["<p>Object resolved: the %s A-module M, by its %s "
-            "%s; then %s.</p>"
-            % (_esc(side), _esc(resolution),
-               _math_inline(r"P_{\bullet} \to M"), formula)]
+    out = ["<p>Object resolved: the %s A-module M, by its %s "
+           "%s; then %s.</p>"
+           % (_esc(side), _esc(resolution),
+              _math_inline(r"P_{\bullet} \to M"), formula)]
+    # Marco 2026-08-03: SHOW the resolution before the data. The runner ships the
+    # terms of the resolution of M it actually used (payload key `resolution`).
+    rt = b.get("resolution")
+    if rt and rt.get("summands"):
+        rows = ["<tr><th>n</th><th>P<sub>n</sub></th></tr>"]
+        for n, tex in enumerate(rt["summands"]):
+            rows.append("<tr><td>%d</td><td>%s</td></tr>"
+                        % (n, _math_inline(tex)))
+        out.append("<p><i>The resolution of M used (terms shown to the depth "
+                   "this computation needed):</i></p>")
+        out.append('<table class="ql-table">%s</table>' % "".join(rows))
+    if kind == "ext":
+        out.append("<p class='ql-note'>N is not resolved: it enters through "
+                   "Hom_A(−, N) applied to this resolution. (Equivalently one "
+                   "could coresolve N injectively — Ext is balanced — but the "
+                   "engine resolves M.)</p>")
+    else:
+        out.append("<p class='ql-note'>N is not resolved: it enters through "
+                   "− ⊗_A N applied to this resolution. (Equivalently one could "
+                   "resolve the left module N over A^op — Tor is balanced — but "
+                   "the engine resolves M.)</p>")
+    return out
 
 
-def _block_html(kind, b):
+def _block_html(kind, b, ctx=None):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
         from quiverlab.trace.render_html import (
@@ -256,7 +284,7 @@ def _block_html(kind, b):
                                                       anchor_prefix="cr"))
         return chunks
     if kind in ("cup", "cap", "bracket"):
-        return _product_tables_html(kind, b)
+        return _product_tables_html(kind, b, ctx)
     if kind == "connes_b":
         return _connes_b_html(b)
     if kind in ("projective_resolution", "injective_resolution"):
@@ -490,7 +518,7 @@ def _product_heading(kind, degrees, out_degree):
     return r"HH^{%s} \cup HH^{%s} \to HH^{%s}" % (p, q, out_degree)
 
 
-def _product_tables_html(kind, b):
+def _product_tables_html(kind, b, ctx=None):
     """cup / cap / bracket: the notation legend, ONE flat list of ALL (co)homology basis
     classes across degrees (Marco 2026-08-02 -- the chain bases live in the HH sections
     above, so the products just remind the classes then show the table), then the whole
@@ -507,6 +535,23 @@ def _product_tables_html(kind, b):
            % _esc(notation_legend(kind, "", b.get("basis")))]
     if prime is not None:                             # the balanced-rep legend, once
         out.append("<p class='ql-note'>%s</p>" % _esc(balanced_rep_note(prime)))
+    # Marco 2026-08-03: structure constants are basis-dependent. When the HH
+    # sections were computed on a DIFFERENT route (say Chouhy-Solotar) than this
+    # table's recorded basis (say bar), the two class enumerations are independent
+    # -- say so, loudly, so nobody cross-reads indices between them. No coordinates
+    # from different resolutions are ever mixed inside one table.
+    from quiverlab.trace.render_html import route_of_engine
+    hh_routes = {route_of_engine(e) for e in (ctx or {}).get("hh_engines", [])}
+    if hh_routes and route_of_engine(b.get("basis")) not in hh_routes:
+        out.append("<p class='ql-note'>Note: this table's classes are enumerated "
+                   "over its recorded basis (%s); the Hochschild sections above "
+                   "were computed on a different route (%s). The two class lists "
+                   "are independent enumerations — their indices do not correspond "
+                   "— and no coordinates from different resolutions are mixed "
+                   "inside this table; the dimension tables agree because "
+                   "dimensions are basis-independent.</p>"
+                   % (_esc(str(b.get("basis"))),
+                      _esc(", ".join(sorted(str(e) for e in (ctx or {}).get("hh_engines", []))))))
     # Marco 2026-08-02: for the products, one flat list of ALL (co)homology basis classes
     # across degrees, then the multiplication table right away -- no per-degree
     # sub-sections (those live in the HH cohomology/homology sections above). The flat
@@ -517,9 +562,11 @@ def _product_tables_html(kind, b):
     # builder + renderer the worked-steps chapter uses (no drift).
     out.extend(family_cayley_html(kind, list(b.get("tables") or []), prime))
     if kind == "bracket" and b.get("window") is not None:
-        out.append("<p class='ql-note'>bracket structure constants served to the "
-                   "degree window %s (bar-transport bound).</p>"
-                   % _num(b.get("window")))
+        out.append("<p class='ql-note'>bracket structure constants are served for "
+                   "arguments of total degree ≤ %s — the largest window this "
+                   "bar-route computation certifies; a cell beyond it is marked "
+                   "—. The bracket is computed entirely on the bar (co)chain "
+                   "route.</p>" % _num(b.get("window")))
     if b.get("engine"):
         out.append(_engine_note(b["engine"]))
     return out
@@ -599,9 +646,11 @@ def _num(x):
 
 
 def _error_text(err):
+    from quiverlab.trace.render_html import gloss_max_cells
     if isinstance(err, dict):
-        return "%s: %s" % (err.get("type", "error"), err.get("message", ""))
-    return str(err)
+        return gloss_max_cells("%s: %s" % (err.get("type", "error"),
+                                           err.get("message", "")))
+    return gloss_max_cells(str(err))
 
 
 def _citations_html(b):
