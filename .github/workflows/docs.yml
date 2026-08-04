@@ -41,7 +41,12 @@ jobs:
 
   deploy:
     needs: build
-    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')
+    # main only: the github-pages environment's deployment-branch policy allows
+    # ONLY main, so a tag ref is rejected at the environment gate (seen live on
+    # v0.1.0: deploy failed with zero steps run). Tags still run the strict
+    # BUILD above as a release-time docs check; the same commit's branch push
+    # already deployed the site.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
