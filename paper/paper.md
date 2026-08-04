@@ -11,14 +11,15 @@ tags:
   - exact computation
 authors:
   - name: Marco Armenta
-    orcid: 0000-0000-0000-0000        # TODO(Marco): replace with the real ORCID before submission
+    orcid: 0000-0003-3023-7634
     corresponding: true
     email: drmarcoarmenta@gmail.com
     affiliation: 1
 affiliations:
   - index: 1
-    name: "Affiliation TODO(Marco)"   # TODO(Marco): set the real affiliation before submission
-date: 26 July 2026
+    name: "Département de mathématiques, Université de Sherbrooke, Sherbrooke, Québec, Canada"
+    ror: 00kybxq39
+date: 4 August 2026
 bibliography: paper.bib
 ---
 
@@ -34,16 +35,16 @@ Krull–Schmidt decomposition into indecomposables, Yoneda Ext-algebras with a
 Koszulity verdict, Hochschild cohomology and homology with their Gerstenhaber
 operations (cup product, cap action, and bracket), cyclic homology, and Cartan,
 Coxeter, and spectral data. Every number is exact. The library works over the rationals, over exact
-subfields of the complex numbers (algebraic number fields `Q(α)`), and over every
+subfields of the complex numbers (algebraic number fields $\mathbb{Q}(\alpha)$), and over every
 finite field `GF(p^n)`, and it fails loudly on any floating-point input rather than
-returning an approximation. It is built for research algebraists and does not require
-them to program: a presentation reaches a certified table in three lines, the same
+returning an approximation. It is built for research algebraists who need not
+program: a presentation reaches a certified table in three lines, the same
 computations run in a browser with no code at all, and any computation can emit a
-human-readable worked-steps document.
+human-readable worked-steps document. Version 0.1.0 ships on PyPI, as a multi-arch container image, and as one-file desktop applications.
 
 # Statement of need
 
-Hochschild cohomology `HH^\bullet(A)`, with its Gerstenhaber algebra structure, is a
+Hochschild cohomology $HH^{\bullet}(A)$, with its Gerstenhaber algebra structure, is a
 central invariant in representation theory and deformation theory, and it is hard to
 compute by hand past the smallest examples. The same holds for the module-theoretic
 and homological data that surround it. Researchers who study quivers with relations,
@@ -60,18 +61,17 @@ certification per instance. Rather than trust that an algorithm is correct in
 general, `quiverlab` checks each answer against explicit conditions and against
 independent engines, and refuses loudly when it cannot certify a result.
 
-Two long-term goals organize the project, and every release is measured against them.
+Two long-term goals organize the project.
 
 - **No code required.** Every computation is reachable without writing code: draw the
   quiver and relations on a browser canvas, specify modules entry by entry in a
   no-code panel, or export a configuration file for a cluster, and read the results as
-  rendered mathematics or a PDF report. Python is a power-user option, never a
+  rendered mathematics or a printable worked-steps report. Python is a power-user option, never a
   prerequisite.
 - **Any computation done in representation theory.** The aim is that whatever a
   representation theorist of finite-dimensional algebras computes in a paper is
   computable here, exactly and with oracle-tested results, or the documentation says
-  honestly why not yet. The distance between this goal and the current surface is
-  tracked openly as a coverage program.
+  honestly why not yet; the distance is tracked openly as a coverage program.
 
 # State of the field
 
@@ -112,7 +112,7 @@ bimodule: the normalized bar complex [@Hochschild1945], the minimal corner-typed
 `A^e` resolution, Bardzell's resolution for monomial algebras [@Bardzell1997], and
 the general Chouhy–Solotar resolution [@ChouhySolotar2015], which specializes exactly
 to Bardzell in the monomial case. Hochschild dimensions are computed per instance and
-gated by three independent checks: `d∘d = 0`, an order condition, and degreewise
+gated by three independent checks: $d \circ d = 0$, an order condition, and degreewise
 agreement with the bar and minimal engines inside the window where those are
 buildable. The Gerstenhaber operations [@Gerstenhaber1963; @NegronWitherspoon2016;
 @Volkov2019] are transported to bar cochains inside that window, and, because the cup
@@ -122,7 +122,7 @@ Leibniz rule and by agreement with the transported operation rather than assumed
 Cyclic homology rests on Connes' mixed complex [@Connes1985]. Around this core sits a
 module-theoretic surface: left and right modules on the same engine, minimal
 projective and injective resolutions with Ext and Tor [@GSZ2001], the
-Auslander–Reiten translates `τ` and `τ⁻` built through the opposite algebra and the
+Auslander–Reiten translates $\tau$ and $\tau^{-}$ built through the opposite algebra and the
 `k`-duality [@ASS2006], Krull–Schmidt decomposition into indecomposables, Yoneda
 Ext-algebras with a three-valued Koszulity verdict [@Priddy1970; @Froberg1999;
 @PolishchukPositselski2005], Frobenius and symmetric recognition by a
@@ -138,11 +138,12 @@ characteristics, each source cited at the precision the repository can verify. T
 second is cross-engine and external agreement: the independent resolutions must agree
 degreewise where they overlap; the accelerated and pure kernels must agree exactly;
 and wherever QPA implements a feature, an optional `pip install quiverlab[qpa]`
-backend drives GAP to recompute it and refuses to disagree silently. The two classes
-are complementary. A regression that corrupted two of the library's own engines
-identically would still be caught by a literature pin or by QPA, and a mistranscribed
-literature value would be caught by the live cross-engine agreement. Over two thousand
-such oracle-pinned tests run on every change. Where QPA cannot reach, over `CC` and
+backend drives GAP to recompute it and refuses to disagree silently. The two classes are
+complementary: identical corruption of two internal engines is caught by a
+literature pin or by QPA, a mistranscribed literature value by the live
+cross-engine agreement. Of the library's 2,772 automated
+tests, 1,581 are pinned by at least one such oracle, and the full suite runs on
+every change. Where QPA cannot reach, over `CC` and
 `GF(p^n)`, for cyclic homology, for the deep cup and cap, and for the Koszul verdict,
 the verification page names the theory oracle that stands in, and where nothing yet
 certifies a result the library refuses rather than guess.
@@ -156,23 +157,27 @@ than one example at a time. It reproduces published invariants — the Hochschil
 dimensions of quantum complete intersections [@BGMS2005; @BerghErdmann2008] and the
 vanishing behavior of hereditary algebras [@Happel1989] — and extends them along
 parameter sweeps impractical by hand: the quantum-complete-intersection cohomology
-`[2,2,1,0,…]` is confirmed independent of the exponents `(a,b)` through `(5,5)` while
-the homology `[a+b−1, a+b−2, …]` grows with them, the `m`-Kronecker algebra is
-verified to have `HH¹ = m²−1` [@Happel1989], and Bardzell's minimal resolution
+$[2,2,1,0,\dots]$ is confirmed independent of the exponents `(a,b)` through `(5,5)` while
+the homology $[a{+}b{-}1,\, a{+}b{-}2,\, \dots]$ grows with them, the `m`-Kronecker algebra is
+verified to have $HH^1 = m^2{-}1$ [@Happel1989], and Bardzell's minimal resolution
 [@Bardzell1997] reaches Hochschild degree 300 on the dimension-220 self-injective
-Nakayama algebra `kZ₂₀/J¹¹`, far past the degree at which the bar complex is
-buildable. The tool grew out of, and now serves, work on Han's conjecture [@Han2006]
-and the finiteness questions around it, but it is independent of the application that
-produced it.
+Nakayama algebra $kZ_{20}/J^{11}$, far past the degree at which the bar complex is
+buildable. The representative ongoing project is the author's *hanlab* program on Han's
+conjecture [@Han2006], that vanishing of high-degree Hochschild homology forces
+finite global dimension: `quiverlab` drives its search for counterexamples,
+sweeping families of admissible presentations in batch and pushing each algebra's
+Hochschild homology to deep degrees on HPC clusters through the library's
+checkpoint-and-resume engines and its container/Slurm tier, flagging any candidate
+whose homology vanishes while no finite resolution appears. The library is
+nonetheless independent of the application that produced it.
 
 Exactness and per-instance certification also change what a computation can be used
 for. Because every reported number is checked, a disagreement with the literature is
 informative rather than fatal. On Example 2.20 of Cibils–Redondo–Saorín
 [@cibilsredondosaorin2004] the validated bar oracle robustly returns `dim HH^1 = 1`,
-an explicit surviving oriented cycle, where the published statement records `0`;
-`quiverlab` pins the verified value, over both orientations and several
-characteristics, and documents the discrepancy rather than freezing the printed
-number against a live engine disagreement. Being exact, pip-installable, and
+an explicit surviving oriented cycle where the published statement records `0`;
+`quiverlab` pins the verified value over both orientations and several
+characteristics and documents the discrepancy. Being exact, pip-installable, and
 reproducible, the library lowers the barrier to computational experiments in the
 representation theory of finite-dimensional algebras and provides a citable reference
 implementation, of the Chouhy–Solotar resolution in particular, against which future
@@ -182,21 +187,22 @@ work can be checked.
 
 `quiverlab` is developed with heavy use of AI, and its verification doctrine is a
 direct consequence of that fact. The design and the mathematics are the author's; the
-implementation is carried out by Claude (Anthropic) working as multiple coordinated
-agents under the author's direction, with research agents surveying the literature,
-paired adversarial critics reviewing each unit of work, and the author verifying the
-mathematics line by line. This is exactly why every invariant the library reports is
+implementation is carried out with Anthropic's Claude Code, whose Claude models
+(Opus- and Fable-class, 2026) work as multiple coordinated agents under the
+author's direction, with research agents surveying the
+literature and paired adversarial critics reviewing each unit of work. This is exactly why every invariant the library reports is
 pinned by a literature or theory oracle and, wherever the GAP package QPA implements
 it, cross-checked against an independent computation, so that no value shipped by
 `quiverlab` rests on unverified generated code. The disagreement recorded above is an
 instance of the same discipline: the oracles, not the expectation of the author or of
-an assistant, decide what the library reports. The author takes full responsibility
-for the content of the library and of this paper.
+an assistant, decide what the library reports. The author has reviewed, edited, and
+validated all AI-assisted output, and takes full responsibility for the content of
+the library and of this paper.
 
 # Acknowledgements
 
 We thank the developers of QPA [@qpa] and GAP [@gap4], and the SymPy and NumPy
-projects, on whose tools and ideas this work builds.
-<!-- TODO(Marco): add financial support / funding acknowledgement before submission -->
+projects, on whose tools and ideas this work builds. No external funding supported
+this work.
 
 # References
