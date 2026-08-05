@@ -590,6 +590,14 @@ class Algebra:
         from quiverlab.invariants.geometry import canonical_decomposition
         return canonical_decomposition(self, d, budget=budget)
 
+    def degeneration_order(self, d, *, budget=256):
+        """The degeneration (= hom) order poset of all iso-classes of dimension
+        vector d, for a representation-FINITE algebra (Plan 49 / C8). Returns a
+        DegenerationPoset; complete iff rep-finite, else a loud status (never a
+        silent partial poset)."""
+        from quiverlab.modules.degeneration import degeneration_order
+        return degeneration_order(self, d, budget=budget)
+
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
         """True iff A is semisimple (Loewy length 1)."""

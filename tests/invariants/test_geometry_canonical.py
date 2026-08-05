@@ -18,6 +18,18 @@ def _kA2():
     return Quiver([1, 2], {"a": (1, 2)}).algebra(relations=[], field=QQ)
 
 
+def _summand_roots(vertex, A):
+    """Read a poset vertex's module back to (root-tuple, mult) pairs via the
+    independent Krull-Schmidt route (decompose) -- NOT the canonical search."""
+    from quiverlab.modules.decompose import decompose
+    verts = list(A.quiver.vertices)
+    out = []
+    for mod, mult in decompose(vertex["module"]):
+        dv = mod.dimension_vector()
+        out.append((tuple(dv[v] for v in verts), mult))
+    return out
+
+
 @lit
 def test_kA2_21_is_P1_plus_S1():
     A = _kA2()
@@ -44,6 +56,21 @@ def test_kA2_decomposition_is_certified(d):
     # each component is a positive root
     roots = {tuple(r) for r in A.positive_roots()}
     assert all(tuple(c["root"]) in roots for c in cd)
+
+
+@xeng
+def test_canonical_top_equals_generic_over_kA3():
+    # cross-engine tie: the canonical decomposition of d is the decomposition of
+    # the MAXIMUM of degeneration_order(A, d) (the generic/open-orbit module).
+    from quiverlab.modules.degeneration import degeneration_order
+    A = linear_path_algebra(3, field=QQ)
+    d = {1: 1, 2: 1, 3: 1}
+    cd = canonical_decomposition(A, d)
+    poset = degeneration_order(A, d)
+    top = max(poset.vertices, key=lambda x: x["orbit_dim"])
+    cd_multiset = sorted((c["root"], c["multiplicity"]) for c in cd)
+    top_multiset = sorted((s_root, m) for (s_root, m) in _summand_roots(top, A))
+    assert cd_multiset == top_multiset
 
 
 @selfcert
