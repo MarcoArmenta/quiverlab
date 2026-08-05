@@ -651,6 +651,15 @@ def compute_one(spec):
                      "engine": table.engine, "references": keys,
                      "citations": _citation_pairs(keys)}
             block.update(reps)
+        elif name == "ss_hochschild":
+            # Hochschild (b, B) spectral sequence (Plan 42). Range kind on the algebra
+            # block; byte-identical to the server twin (quiverlab.hpc.spec._dispatch) --
+            # SAME shared builder (specseq.block.specseq_block) + references->citations.
+            if top is None:
+                raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+            from quiverlab.specseq.block import specseq_block
+            block = specseq_block(A, top)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             m = A.cartan_matrix()
             block = {"matrix": m, "latex": _latex_matrix(m),
@@ -827,6 +836,7 @@ def python_snippet():
     calls = {"hh_cohomology": "A.hochschild_cohomology(%d)",
              "hh_homology": "A.hochschild_homology(%d)",
              "cyclic_homology": "A.cyclic_homology(%d)",
+             "ss_hochschild": "A.hochschild_bB_ss(%d)",
              "cartan": "A.cartan_matrix()", "coxeter_polynomial": "A.coxeter_polynomial()",
              "global_dimension": "A.global_dimension()", "center": "A.center()",
              # `dimension` is a scalar invariant compute_one serves (A.dim) -- it MUST
@@ -926,7 +936,10 @@ ETA_MODEL = {
                 "projective_dimension": 0.3, "injective_dimension": 0.3,
                 # Plan 38: ext_algebra walks a resolution + Yoneda products;
                 # recognizers is cheap structural combinatorics + a reduction system.
-                "ext_algebra": 2.0, "recognizers": 0.1},
+                "ext_algebra": 2.0, "recognizers": 0.1,
+                # Plan 42: the (b, B) spectral sequence builds the same exponential
+                # bar (b, B) bicomplex cyclic homology uses, plus the page algebra.
+                "ss_hochschild": 2.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

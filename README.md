@@ -250,6 +250,11 @@ ported and wired in:
   (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
+- **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
+  canonical representatives + a convergence certificate (`E_∞` totals == total
+  homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,
+  radical filtration, Hochschild `(b, B)`); the `(b, B)` SS is clickable via
+  `ss_hochschild`.
 - **Invariants:** the integer **Cartan** matrix, the **Coxeter** matrix and its
   characteristic polynomial (all fields, exact via sympy); **Euler / Tits forms**
   with exact finite/tame/wild definiteness, orientation-blind **Dynkin/Euclidean

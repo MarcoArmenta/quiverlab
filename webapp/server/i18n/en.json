@@ -22,6 +22,7 @@
   "inv.bracket": "Gerstenhaber brackets 0..N",
   "inv.connes_b": "Connes differentials 0..N",
   "inv.cyclic_homology": "Cyclic homology 0..N",
+  "inv.ss_hochschild": "Hochschild (b,B) spectral sequence 0..N",
   "block.cup.title": "Cup product tables",
   "block.cap.title": "Cap product tables",
   "block.bracket.title": "Gerstenhaber bracket tables",

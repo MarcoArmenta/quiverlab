@@ -68,6 +68,8 @@
     '  <label><input type="checkbox" id="qlgui-connes_b"> Connes B 0..<input type="number" id="qlgui-connes_b-top" value="2" min="0"></label>' +
     // Plan-35 follow-up: cyclic homology HC_0..HC_n (default 6), right after Connes B.
     '  <label><input type="checkbox" id="qlgui-cyclic_homology"> cyclic homology 0..<input type="number" id="qlgui-cyclic_homology-top" value="6" min="0"></label>' +
+    // Plan-42: the Hochschild (b, B) spectral sequence (abutting to HC), right after cyclic homology.
+    '  <label><input type="checkbox" id="qlgui-ss_hochschild"> (b,B) spectral sequence 0..<input type="number" id="qlgui-ss_hochschild-top" value="4" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
@@ -144,7 +146,9 @@
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top",
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
-   "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top", "cartan",
+   "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top",
+   // Plan 42: the Hochschild (b, B) spectral sequence + its degree picker
+   "ss_hochschild", "ss_hochschild-top", "cartan",
    "coxeter_polynomial", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
@@ -657,6 +661,9 @@
     if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
     if (el.cyclic_homology.checked)
       compute.push("cyclic_homology:0.." + el["cyclic_homology-top"].value);
+    // Plan 42: the (b, B) spectral sequence, right after cyclic homology.
+    if (el.ss_hochschild.checked)
+      compute.push("ss_hochschild:0.." + el["ss_hochschild-top"].value);
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
@@ -2323,6 +2330,26 @@
       if (b.basis_classes)
         div.appendChild(h("p", {}, h("b", { text: "Explicit representatives by degree:" })));
       appendCyclicReps(div, b);
+    } else if (name === "ss_hochschild") {
+      // Plan 42: the Hochschild (b, B) spectral sequence. Abutment table (E_inf
+      // totals == HC_n), the netPage E_inf grid, and the convergence prose. A loud
+      // DepthLimit guard is reported as an honest error line, never a crash.
+      if (b.error) {
+        div.appendChild(h("p", { text: b.error }));
+      } else {
+        var shead = h("tr"), srow = h("tr");
+        shead.appendChild(h("th", { text: "n" }));
+        srow.appendChild(h("th", { text: "dim E_inf total (= HC_n)" }));
+        (b.abutment || []).forEach(function (d, n) {
+          shead.appendChild(h("td", { text: String(n) }));
+          srow.appendChild(h("td", { text: String(d) }));
+        });
+        div.appendChild(h("p", { text: "Hochschild (b,B) spectral sequence" }));
+        div.appendChild(h("table", {}, shead, srow));
+        if (b.grid)
+          div.appendChild(h("pre", { text: b.grid.replace(/```/g, "").trim() }));
+        if (b.prose) div.appendChild(h("p", { text: b.prose }));
+      }
     } else if (name === "cartan") {
       div.appendChild(h("p", { text: "Cartan matrix:" }));
       div.appendChild(matrixGrid(b.matrix));
@@ -2524,7 +2551,8 @@
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
    el.connes_b, el["connes_b-top"],
-   el.cyclic_homology, el["cyclic_homology-top"], el.cartan,
+   el.cyclic_homology, el["cyclic_homology-top"],
+   el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
    el.coxeter_polynomial, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile]

@@ -125,6 +125,39 @@ def commutative_ext_script(p: int, variables, relations, top: int) -> str:
     ]) + "\n"
 
 
+def _m2_map(mat, p: int) -> str:
+    """An integer matrix as an M2 ``map(kk^rows, kk^cols, {...})`` over ``kk = ZZ/p``
+    (entries reduced mod p; empty rows/cols handled)."""
+    rows = len(mat)
+    cols = len(mat[0]) if (mat and mat[0]) else 0
+    if rows == 0 or cols == 0:
+        return f"map(kk^{rows}, kk^{cols}, {{}})"
+    body = ",".join("{" + ",".join(str(int(x) % p) for x in row) + "}" for row in mat)
+    return f"map(kk^{rows}, kk^{cols}, {{{body}}})"
+
+
+def commutative_ss_script(p: int, dmats, top: int) -> str:
+    """M2 script printing ``<<QL>> n rank(HH_n C)`` for the total complex ``C`` given
+    by its integer homological differentials ``dmats[n] : Tot_n -> Tot_{n-1}`` (rows =
+    target, the quiverlab layout), over ``kk = ZZ/p``.
+
+    Used for the Plan-42 spectral-sequence crosscheck: M2 1.26's ``SpectralSequences``
+    package rides the removed ``ChainComplex`` type and cannot be scripted, so the
+    convention-robust comparison is the ``E_inf`` totals (== total-complex homology,
+    by strong convergence) against M2's ``Complexes`` homology of the SAME total
+    complex -- the plan's sanctioned fallback."""
+    ns = sorted(int(n) for n in dmats)
+    lines = ['needsPackage "Complexes"', f"kk = ZZ/{p}"]
+    for n in ns:
+        lines.append(f"d{n} = {_m2_map(dmats[n], p)}")
+    maplist = ",".join(f"d{n}" for n in ns)
+    lines.append(f"C = complex {{{maplist}}}" if ns else "C = complex kk^0")
+    lines.append(
+        f'for n from 0 to {top} do print("{SENTINEL} " | toString n | " " '
+        "| toString rank HH_n C)")
+    return "\n".join(lines) + "\n"
+
+
 def parse_sentinels(stdout: str) -> list:
     """Extract the ``<<QL>> n v`` values in degree order; exact ints only."""
     got = {}

@@ -25,6 +25,8 @@ from quiverlab.families import (  # noqa: E402,F401
 from quiverlab.citations import bibliography  # noqa: E402,F401
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 from quiverlab.modules.complexes import ChainComplex, ChainMap  # noqa: E402,F401
+from quiverlab.specseq import (  # noqa: E402,F401
+    DoubleComplex, FilteredComplex, SpectralSequence)
 
 __all__ = [
     "__version__",
@@ -41,4 +43,5 @@ __all__ = [
     "bibliography",
     "sweep",
     "ChainComplex", "ChainMap",
+    "FilteredComplex", "DoubleComplex", "SpectralSequence",
 ]

@@ -133,6 +133,13 @@ never hide behind one:
     new one was appended (the delegation test passed on all seven unchanged). Its
     ``canonical_key`` is request-derived; the ``result_json`` was frozen from the
     server runner, and the Plan-40 cross-runner test asserts the Pyodide twin agrees."""
+  * 2026-08-05 (Plan 42, NEW golden ``ss_hochschild_dualnumbers``): the
+    ``ss_hochschild`` compute kind -- the Hochschild ``(b, B)`` spectral-sequence block
+    (E_inf page dims + abutment == HC + convergence prose) on ``k[x]/(x^2)`` over
+    GF(5), schema v1. A pure ADDITION (a new golden key); every pre-existing entry is
+    byte-identical (the parametrized byte-identity + canonical-key tests confirm it),
+    and the ``canonical_key`` is request-derived (no new request fields -- an
+    algebra-only range kind)."""
 import json
 import pathlib
 

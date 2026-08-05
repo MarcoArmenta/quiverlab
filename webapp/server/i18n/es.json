@@ -22,6 +22,7 @@
   "inv.bracket": "Corchetes de Gerstenhaber 0..N",
   "inv.connes_b": "Diferenciales de Connes 0..N",
   "inv.cyclic_homology": "Homología cíclica 0..N",
+  "inv.ss_hochschild": "Secuencia espectral de Hochschild (b,B) 0..N",
   "block.cup.title": "Tablas de productos cup",
   "block.cap.title": "Tablas de productos cap",
   "block.bracket.title": "Tablas de corchetes de Gerstenhaber",
