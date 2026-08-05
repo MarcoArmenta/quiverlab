@@ -10,10 +10,12 @@ from quiverlab.derived.tilting import (TiltingReport, is_tilting_complex,
                                        end_algebra_of_complex,
                                        corner_cartan_of_complex,
                                        two_term_silting_from_presentation)
+from quiverlab.derived.fingerprint import derived_fingerprint, compare_fingerprints
 
 __all__ = [
     "hyper_hom_basis",
     "tau_Db", "tau_Db_minus",
     "TiltingReport", "is_tilting_complex", "end_algebra_of_complex",
     "corner_cartan_of_complex", "two_term_silting_from_presentation",
+    "derived_fingerprint", "compare_fingerprints",
 ]
