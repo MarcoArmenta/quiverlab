@@ -10,7 +10,10 @@ Every construction returns a pre-certified :class:`SpectralSequence` (the standi
 ``E_inf`` totals == total-homology self-certificate runs at ``__init__``). No
 floats (``src/`` AST gate)."""
 from quiverlab.errors import DepthLimitError
+from quiverlab.modules import linalg_mod as lm
+from quiverlab.specseq import _subspace as sub
 from quiverlab.specseq.double import DoubleComplex
+from quiverlab.specseq.filtered import FilteredComplex
 from quiverlab.specseq.pages import SpectralSequence
 
 _GUARD_HINT = ("the (b, B) bar bicomplex is exponential (dim C_n = m*(m-1)^n); "
@@ -84,3 +87,57 @@ def hochschild_bB_ss(A, top, max_cells=4_000_000):
             d_h[(p, q)] = Bmats[c]
     dc = DoubleComplex(terms, d_h, d_v, dom, check=True)
     return SpectralSequence(dc.column_filtration())
+
+
+# --------------------------------------------------------------------------- #
+# Preset 3 -- associated-graded / radical filtration (Task 6).
+# --------------------------------------------------------------------------- #
+def _rad_powers(M):
+    """The descending radical chain ``[rad^0 M, rad^1 M, ..., rad^{L-1} M]`` as
+    column-span bases INSIDE ``M``'s coordinates (``rad^0 = M`` whole, stopping just
+    before the first zero power). ``rad^{i} M = sum_a action[a](rad^{i-1} M)`` -- the
+    single-step ``radtopsoc.radical`` definition, iterated in place so every power
+    stays in ``M``'s basis (``radical()`` alone returns a fresh submodule)."""
+    dom = M.domain
+    d = M.dim
+    if d == 0:
+        return [[]]
+    arrows = list(M.algebra.quiver.arrows)
+    ident = lm.identity(d, dom)
+    full = [lm.col(ident, j) for j in range(d)]
+    powers, cur = [full], full
+    while arrows:
+        gens = [lm.matvec(M.action[a], c, dom) for a in arrows for c in cur]
+        nxt = sub.reduce_to_independent(gens, dom)
+        if not nxt or sub.span_dim(nxt, dom) >= sub.span_dim(cur, dom):
+            break                      # rad^i = 0 (nilpotent) -- or a defensive no-shrink
+        powers.append(nxt)
+        cur = nxt
+    return powers
+
+
+def radical_filtration_ss(X):
+    """The associated-graded (radical-filtration) spectral sequence of a P39
+    :class:`~quiverlab.modules.complexes.ChainComplex` ``X`` of ``A``-modules.
+
+    ``F_p X_n = X_n . rad^{max(0,-p)}`` -- an INCREASING (in ``p``), exhaustive
+    (``F_0 = X_n``), Hausdorff (``rad`` nilpotent so ``F_{-large} = 0``) subcomplex
+    filtration (the differentials are module maps, hence preserve the radical
+    powers). Converges to ``H_*(X)`` by the standing self-certificate. A complex of
+    semisimple modules (``rad = 0``) gives the trivial one-step filtration
+    (collapse at ``E_1``); for a Koszul algebra the minimal resolution is linear and
+    the associated-graded sequence degenerates early -- the exact page is arbitrated
+    per instance (never forced), see the verification page."""
+    degs = X.degrees()
+    powers = {n: _rad_powers(X.term(n)) for n in degs}
+    maxL = max((len(powers[n]) for n in degs), default=1)
+    lo = -(maxL - 1)
+    filt = {}
+    for n in degs:
+        pw, Ln = powers[n], len(powers[n])
+        levels = []
+        for j in range(maxL):               # p = lo + j; radical exponent i = -p = maxL-1-j
+            i = (maxL - 1) - j
+            levels.append([list(c) for c in pw[i]] if i < Ln else [])
+        filt[n] = levels
+    return SpectralSequence(FilteredComplex.from_chain_complex(X, filt, lo=lo))
