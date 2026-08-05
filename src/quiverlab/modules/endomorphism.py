@@ -118,6 +118,51 @@ def _structure_constants(M):
     return T, unit, basis, B
 
 
+def _radical_endos(M):
+    """A basis of ``rad(End_A(M))`` as :class:`ModuleHom` objects ``M -> M`` (Plan 44).
+
+    ``rad(End)`` is the nullspace of the trace form ``T[i][j] = tr_M(H_i H_j)`` on the
+    ``hom_basis(M, M)`` (Dickson / Cohen--Ivanyos--Wales), rigorous over ``char 0`` or
+    ``char > dim M`` -- the SAME bound ``decompose`` / ``end_algebra`` rely on. Off that
+    scope it refuses LOUDLY (never a wrong radical, which would silently inflate the
+    minimal-approximation generator count). ``End = k*id`` returns ``[]`` (rad = 0)."""
+    from quiverlab.modules.morphism import ModuleHom
+    dom = M.domain
+    d = M.dim
+    char = dom.characteristic
+    if not (char == 0 or char > d):
+        raise QuiverlabError(
+            f"End(M) radical: the trace form is unreliable in characteristic "
+            f"{char} <= dim M = {d}", hint="work over QQ or a prime > dim M")
+    basis = hom_basis(M, M)
+    r = len(basis)
+    if r <= 1:
+        return []                                   # End = k*id: rad = 0
+    hmats = [f.matrix for f in basis]
+    T = lm.zeros(r, r, dom)
+    for i in range(r):
+        for j in range(r):
+            prod = lm.matmul(hmats[i], hmats[j], dom)
+            s = dom.zero()
+            for t in range(d):
+                s = dom.add(s, prod[t][t])
+            T[i][j] = s
+    rad_coords = lm.kernel_columns(T, dom)
+    out = []
+    for coeffs in rad_coords:
+        mat = lm.zeros(d, d, dom)
+        for k, c in enumerate(coeffs):
+            if dom.is_zero(c):
+                continue
+            hk = hmats[k]
+            for i in range(d):
+                mi, hi = mat[i], hk[i]
+                for j in range(d):
+                    mi[j] = dom.add(mi[j], dom.mul(c, hi[j]))
+        out.append(ModuleHom(M, M, mat, check=False))
+    return out
+
+
 def regular_corner_dims(A):
     """dim(e_v . End(A_A) . e_w) for the summand projectors e_v of the
     regular module (+)_v P_v, computed THROUGH the structure constants --
