@@ -150,6 +150,43 @@ def crosscheck_tau(algebra, M, minus: bool = False) -> ModuleCrosscheckReport:
     return ModuleCrosscheckReport(what, ours_dv, qpa_dv, ours_dv == qpa_dv and iso, iso)
 
 
+def crosscheck_tau_complex(algebra, M) -> ModuleCrosscheckReport:
+    """The derived AR translate ``tau_Db`` (Plan 43) vs QPA. Build ``X`` = the minimal
+    projective resolution of ``M`` as a perfect complex, apply ``tau_Db``; for a
+    non-projective indecomposable interval module over ``kA_n`` its homology is
+    concentrated in degree 0 and isomorphic to the module ``tau M`` (verified in
+    ``tests/modules/test_derived_tau.py``), which QPA computes as ``DTr(M)``.
+
+    DOCUMENTED FALLBACK (P39 Ch.10 complex-scripting hazard, confirmed live 2026-08-05):
+    QPA's ``TauOfComplex(ProjectiveResolution(M))`` raises inside libgap
+    (``no method found for DirectSumInclusions``), so the complex object cannot be
+    scripted; we compare against the module-level ``DTr(M)`` instead -- a genuine
+    cross-engine oracle (our DERIVED-category ``tau_Db`` of the resolution vs QPA's
+    MODULE AR translate), never a silent skip. Compares the concentration + the
+    degree-0 homology's dimension vector AND its isomorphism class (via
+    ``IsomorphicModules``)."""
+    session.require_gap()
+    from quiverlab.derived.tau import tau_Db
+    from quiverlab.modules.complexes import ChainComplex
+    length = max(4, len(list(algebra.quiver.vertices)) + 2)
+    X = ChainComplex.from_projective_resolution(M, length=length)
+    T = tau_Db(X)
+    hd = T.homology_dims()
+    concentrated = all(d == 0 for k, d in hd.items() if k != 0)
+    H0 = T.homology(0)
+    ours = _dv_list(algebra, H0)
+    dvM, arrM = _graded(algebra, M)
+    base = scripts.quiver_and_algebra_script(algebra)
+    base += "\n" + scripts.module_decl(algebra, dvM, arrM, "M")
+    qpa = _read_int_list(session.run(base + "\nt := DTr(M);;\nDimensionVector(t);"))
+    # isomorphism class: emit H0 as a QPA module, compare to DTr(M)
+    dvT, arrT = _graded(algebra, H0)
+    iso_script = base + "\n" + scripts.module_decl(algebra, dvT, arrT, "H0")
+    iso = bool(session.run(iso_script + "\nt := DTr(M);;\nIsomorphicModules(H0, t);"))
+    agree = concentrated and ours == qpa and iso
+    return ModuleCrosscheckReport("tau_complex", ours, qpa, agree, iso)
+
+
 def crosscheck_almost_split(algebra, M) -> ModuleCrosscheckReport:
     """Almost-split sequence middle term vs QPA ``AlmostSplitSequence(M)`` (Plan 41).
     Compares the middle-term DIMENSION VECTOR always (works over QQ), and -- over a FINITE
@@ -486,6 +523,8 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_tau(algebra, *args, minus=False, **kwargs)
     if what == "tau_minus":
         return crosscheck_tau(algebra, *args, minus=True, **kwargs)
+    if what == "tau_complex":
+        return crosscheck_tau_complex(algebra, *args, **kwargs)
     if what == "almost_split":
         return crosscheck_almost_split(algebra, *args, **kwargs)
     if what == "predecessors":
@@ -516,6 +555,7 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     raise QuiverlabError(f"unknown cross-check {what!r}",
                          hint='use "hochschild", "module_ext", "symmetric", '
                               '"trivial_extension", "tau", "tau_minus", '
+                              '"tau_complex", '
                               '"almost_split", "predecessors", '
                               '"proj_resolution", "inj_resolution", '
                               '"inj_dimension", "decompose", "indecomposable", '
