@@ -562,6 +562,26 @@ class Algebra:
         from quiverlab.invariants.roots import positive_roots
         return positive_roots(self)
 
+    # -- geometry of representations (Plan 49 / C8) ---------------------------
+    def orbit_dimension(self, M):
+        """dim of the GL(d)-orbit of the module M in Rep(Q, d):
+        dim O_M = sum_v d_v^2 - dim_k End_A(M) (Plan 49 / C8). Exact over every
+        Domain."""
+        from quiverlab.invariants.geometry import orbit_dimension
+        return orbit_dimension(M)
+
+    def is_rigid(self, M):
+        """Voigt: M is rigid iff Ext^1_A(M, M) = 0 (=> the orbit O_M is open in
+        the module variety) (Plan 49 / C8)."""
+        from quiverlab.invariants.geometry import is_rigid
+        return is_rigid(M)
+
+    def rigidity_codim(self, M):
+        """dim Ext^1_A(M, M): the codimension of the orbit closure in Rep(Q, d)
+        on HEREDITARY A (Voigt), an UPPER BOUND on general kQ/I (Plan 49 / C8)."""
+        from quiverlab.invariants.geometry import rigidity_codim
+        return rigidity_codim(M)
+
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
         """True iff A is semisimple (Loewy length 1)."""
