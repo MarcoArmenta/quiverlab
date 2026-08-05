@@ -48,65 +48,20 @@ def _presentation_transpose(M):
     and, dualising, ``ker(D d1star) = tau M`` / ``coker(D d1star) = nu M`` (Plan 41).
 
     Single source of the corner-slicing: :func:`transpose_module` and
-    :func:`quiverlab.modules.ar.nakayama_functor` both consume this. ``N`` (and thus
-    ``d1star``) is empty exactly when ``M`` is projective (``P_1 = 0``)."""
-    from quiverlab.modules.builders import projective
-    from quiverlab.modules.resolution import _direct_sum, minimal_resolution
+    :func:`quiverlab.modules.ar.nakayama_functor` both consume this. Since Plan 43 the
+    slicing lives once in :func:`quiverlab.derived._corner.corner_transpose` (the shared
+    home the derived AR translate also imports); this presents the minimal projective
+    presentation of ``M`` to it. ``N`` (and thus ``d1star``) is empty exactly when ``M``
+    is projective (``P_1 = 0``)."""
+    from quiverlab.derived._corner import corner_transpose
+    from quiverlab.modules.resolution import minimal_resolution
 
     R = M.algebra
-    Rop = opposite_algebra(R)
-    dom = R.domain
-    out_side = _other_side(M.side)      # Tr / nu-map are contravariant: flip the side
-
     terms, dmats = minimal_resolution(M, 1)
-    v_list = terms[0].vertices          # P_0 summand vertices
-    w_list = terms[1].vertices          # P_1 summand vertices
-
-    # M0op = Hom(P_0, A) = (+)_i projective(Rop, v_i); its ordered basis = the column
-    # order of d1star (built per source summand i over S0op[i]'s path basis).
-    S0op = [projective(Rop, v) for v in v_list]
-    M0op, _ = (_direct_sum(S0op, name=f"({M.name})^*_0", side=out_side) if S0op
-               else (_zero_module(Rop, side=out_side), []))
-
-    if not w_list:                      # M projective (or zero) => Tr M = 0, d1star = 0
-        N = _zero_module(Rop, side=out_side)
-        return Rop, N, M0op, lm.zeros(0, M0op.dim, dom), out_side
-
+    v_list = terms[0].vertices          # P_0 summand vertices (target of d_1)
+    w_list = terms[1].vertices          # P_1 summand vertices (source of d_1)
     d1 = dmats[1]                       # P_1 -> P_0 in k-bases (P0.dim x P1.dim)
-
-    # Target module N = P_1^{op} = (+)_j projective(Rop, w_j).
-    Sop = [projective(Rop, w) for w in w_list]
-    N, off1op = _direct_sum(Sop, name=f"Tr({M.name})_cover", side=out_side)
-    posmap = [{lab: k for k, lab in enumerate(s._pv_basis_labels)} for s in Sop]
-    off1op_start = [s for (s, _d) in off1op]
-
-    # A-side P_0 / P_1 summands to slice corner elements out of d1.
-    S0 = [projective(R, v) for v in v_list]
-    off0 = _offsets([s.dim for s in S0])
-    off1 = _offsets([projective(R, w).dim for w in w_list])
-
-    cols_dstar = []
-    for i, S0i in enumerate(S0):
-        # h_i in N = image of the source generator g_i = e_{v_i}: sum_j ybar_{ij}.
-        h_i = [dom.zero()] * N.dim
-        for j in range(len(w_list)):
-            gen_col = off1[j]                       # generator (e_{w_j}) column of P_1 summ. j
-            for k in range(S0i.dim):
-                val = d1[off0[i] + k][gen_col]
-                if dom.is_zero(val):
-                    continue
-                rlab = reverse_label(S0i._pv_basis_labels[k])   # A^op-label at w_j
-                loc = posmap[j].get(rlab)
-                assert loc is not None, (
-                    "transpose_module: corner element off the vertex grading "
-                    "(module-map violation)")
-                h_i[off1op_start[j] + loc] = val
-        # d_1^* columns for source summand i: (g_i .^op p) |-> N.action[p] @ h_i
-        for p in S0op[i]._pv_basis_labels:
-            cols_dstar.append(lm.matvec(N.action[p], h_i, dom))
-
-    d1star = lm.cols_to_matrix(cols_dstar) if cols_dstar else lm.zeros(N.dim, 0, dom)
-    return Rop, N, M0op, d1star, out_side
+    return corner_transpose(d1, from_verts=v_list, to_verts=w_list, A=R, side=M.side)
 
 
 def transpose_module(M):
