@@ -582,6 +582,14 @@ class Algebra:
         from quiverlab.invariants.geometry import rigidity_codim
         return rigidity_codim(M)
 
+    def canonical_decomposition(self, d, *, budget=4096):
+        """The Kac canonical decomposition of the dimension vector d over a
+        HEREDITARY DYNKIN algebra: d = sum m_i * beta_i into positive roots whose
+        generic module is rigid (Plan 49 / C8). Loud off scope (Euclidean/wild
+        deferred, non-hereditary refused)."""
+        from quiverlab.invariants.geometry import canonical_decomposition
+        return canonical_decomposition(self, d, budget=budget)
+
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
         """True iff A is semisimple (Loewy length 1)."""
