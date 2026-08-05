@@ -243,6 +243,43 @@ def crosscheck_indecomposable(algebra, M) -> ModuleCrosscheckReport:
 
 
 # ---------------------------------------------------------------------------
+# Plan 37: C1 categorical glue -- Hom dims (+ kernel/image/cokernel dim-vectors
+# where QPA exposes them: KernelInclusion / ImageInclusion / CoKernelProjection)
+# ---------------------------------------------------------------------------
+def crosscheck_hom_glue(algebra, M, N) -> ModuleCrosscheckReport:
+    """``dim Hom_A(M, N)`` (our ``hom_basis``) vs QPA ``Length(HomOverAlgebra(M, N))``,
+    and -- whenever ``dim Hom = 1`` (the nonzero hom is then unique up to a scalar, so
+    its kernel/image/cokernel dimension vectors are well-defined invariants both bases
+    agree on) -- the kernel/image/cokernel dimension vectors of that canonical hom vs
+    QPA's ``KernelInclusion`` / ``ImageInclusion`` / ``CoKernelProjection`` (QPA Ch. 7).
+    ``ours`` / ``qpa`` are dicts keyed ``hom_dim`` (always) and, when comparable,
+    ``kernel`` / ``image`` / ``cokernel`` (dimension vectors in quiver-vertex order)."""
+    session.require_gap()
+    ours_hom = algebra.hom(M, N)
+    dvM, arrM = _graded(algebra, M)
+    dvN, arrN = _graded(algebra, N)
+    base = scripts.hom_glue_script(algebra, dvM, arrM, dvN, arrN)
+    qpa_hom = int(session.run(base + "\nLength(homs);"))
+    ours = {"hom_dim": ours_hom}
+    qpa = {"hom_dim": qpa_hom}
+    if ours_hom == 1 and qpa_hom == 1:
+        f = algebra.hom_basis(M, N)[0]
+        K, _ = f.kernel()
+        I, _, _ = f.image()
+        C, _ = f.cokernel()
+        ours["kernel"] = _dv_list(algebra, K)
+        ours["image"] = _dv_list(algebra, I)
+        ours["cokernel"] = _dv_list(algebra, C)
+        qpa["kernel"] = _read_int_list(session.run(
+            base + "\nf := homs[1];;\nDimensionVector(Source(KernelInclusion(f)));"))
+        qpa["image"] = _read_int_list(session.run(
+            base + "\nf := homs[1];;\nDimensionVector(Source(ImageInclusion(f)));"))
+        qpa["cokernel"] = _read_int_list(session.run(
+            base + "\nf := homs[1];;\nDimensionVector(Range(CoKernelProjection(f)));"))
+    return ModuleCrosscheckReport("hom_glue", ours, qpa, ours == qpa)
+
+
+# ---------------------------------------------------------------------------
 # Plan 27: the Yoneda / Ext-algebra E(A) = Ext^*(A/J, A/J) crosschecks
 # ---------------------------------------------------------------------------
 def crosscheck_ext_algebra_dims(algebra, top: int) -> CrosscheckReport:
@@ -357,6 +394,8 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_decompose(algebra, *args, **kwargs)
     if what == "indecomposable":
         return crosscheck_indecomposable(algebra, *args, **kwargs)
+    if what == "hom_glue":
+        return crosscheck_hom_glue(algebra, *args, **kwargs)
     if what == "ext_algebra_dims":
         return crosscheck_ext_algebra_dims(algebra, *args, **kwargs)
     if what == "ext_generator_degrees":
