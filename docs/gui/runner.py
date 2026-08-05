@@ -698,6 +698,13 @@ def compute_one(spec):
             from quiverlab.invariants.recognizers import recognizers_block
             block = recognizers_block(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "strings":
+            # Gentle / string subsystem (Plan 46): census + bands + rep-type + AG.
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # library block builder + `references`->citations.
+            from quiverlab.strings.block import strings_block
+            block = strings_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
             # library method returns a frozen result whose .blocks() IS the block
@@ -926,7 +933,10 @@ ETA_MODEL = {
                 "projective_dimension": 0.3, "injective_dimension": 0.3,
                 # Plan 38: ext_algebra walks a resolution + Yoneda products;
                 # recognizers is cheap structural combinatorics + a reduction system.
-                "ext_algebra": 2.0, "recognizers": 0.1},
+                "ext_algebra": 2.0, "recognizers": 0.1,
+                # Plan 46: strings = a bounded string/band DFS + AG walk on the
+                # reduction system; a touch heavier than recognizers.
+                "strings": 0.2},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

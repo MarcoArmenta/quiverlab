@@ -1223,6 +1223,14 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block = recognizers_block(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Gentle / string subsystem (Plan 46): an algebra-only scalar kind -- recognizer
+    # verdicts + string census + band presence + honest rep-type + (gentle) AG
+    # invariant. Shared builder (strings.block.strings_block), byte-identical twin.
+    if kind == "strings":
+        from quiverlab.strings.block import strings_block
+        block = strings_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each library
     # method returns a frozen result object whose .blocks() IS the block dict
     # (kind/top/engine/basis/tables/window or hh_dims/matrices/ranks + references);
@@ -1778,6 +1786,11 @@ def _snippet(req: ComputeRequest, A) -> str:
              "recognizers": lambda it: ("[A.is_semisimple(), A.is_hereditary(), "
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),
+             "strings": lambda it: ("from quiverlab.strings import "
+                                    "enumerate_strings, find_bands\n"
+                                    "from quiverlab.strings.ag import ag_invariant\n"
+                                    "enumerate_strings(A), find_bands(A), "
+                                    "ag_invariant(A)"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",

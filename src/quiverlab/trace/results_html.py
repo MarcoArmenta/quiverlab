@@ -43,6 +43,7 @@ _HEADINGS = {
     "dimension": "Dimension",
     "ext_algebra": "Yoneda Ext-algebra and Koszulity",
     "recognizers": "Structural recognizers and type",
+    "strings": "Strings and bands",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -273,6 +274,61 @@ def _recognizers_html(b):
     return out
 
 
+def _strings_html(b):
+    """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
+    census + band presence + honest rep-type + (gentle) AG invariant."""
+    rc = b.get("recognizers") or {}
+    out = []
+    lis = []
+    for key, label in (("is_special_biserial", "special biserial"),
+                       ("is_string", "string"), ("is_gentle", "gentle")):
+        if key not in rc:
+            continue
+        v = rc[key]
+        if isinstance(v, dict) and "error" in v:
+            lis.append("<li>%s: not decided — %s</li>" % (label, _esc(str(v["error"]))))
+        elif v is True:
+            lis.append("<li>%s: <b>yes</b></li>" % label)
+        else:
+            lis.append("<li>%s: no</li>" % label)
+    if lis:
+        out.append("<ul class='ql-flags'>%s</ul>" % "".join(lis))
+    s = b.get("strings")
+    if s:
+        if s.get("status") == "complete":
+            out.append("<p>String modules: <b>%s</b> (a complete list up to length %s — "
+                       "all indecomposable string modules).</p>"
+                       % (_num(s.get("count")), _num(s.get("max_length"))))
+        else:
+            out.append("<p>String modules: <b>%s</b> (a length-capped sample up to length "
+                       "%s; not claimed complete — the algebra has bands).</p>"
+                       % (_num(s.get("count")), _num(s.get("max_length"))))
+        if s.get("sample"):
+            out.append("<p>Sample walks: %s.</p>"
+                       % _esc(", ".join(str(x) for x in s["sample"])))
+    bands = b.get("bands")
+    if bands:
+        if bands.get("exist"):
+            out.append("<p>Bands: <b>yes</b> — %s (the algebra is representation-infinite)."
+                       "</p>" % _esc(", ".join(str(x) for x in bands.get("sample", []))))
+        else:
+            out.append("<p>Bands: none.</p>")
+    rt = {"finite": "representation-finite", "infinite": "representation-infinite",
+          "unknown": "undetermined (budget/length cut)"}
+    out.append("<p>Representation type: <b>%s</b>.</p>"
+               % _esc(rt.get(b.get("rep_type"), str(b.get("rep_type")))))
+    ag = b.get("ag_invariant")
+    if isinstance(ag, list):
+        pairs = ", ".join("(%s, %s)" % (p[0], p[1]) for p in ag)
+        out.append("<p>Avella-Alaminos–Geiss invariant (a DERIVED invariant, honestly "
+                   "NOT complete): {%s}.</p>" % _esc(pairs))
+    elif isinstance(ag, dict) and "error" in ag:
+        out.append("<p>AG invariant: not decided — %s.</p>" % _esc(str(ag["error"])))
+    if b.get("note"):
+        out.append("<p>%s.</p>" % _esc(str(b["note"])))
+    return out
+
+
 def _block_html(kind, b, ctx=None):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
@@ -338,6 +394,8 @@ def _block_html(kind, b, ctx=None):
         return _ext_algebra_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
+    if kind == "strings":
+        return _strings_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":

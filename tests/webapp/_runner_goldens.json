@@ -446,5 +446,45 @@
   },
   "canonical_key": "fd851ac873c42096547549d23338413902d397f8b34f88f546aa17193d3bb538",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Auslander-Reiten theory reference: almost-split sequences, irreducible maps, the AR quiver, and the Nakayama functor -- the ground truth for Plan 41.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ARS1995\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Auslander, Maurice; Reiten, Idun; Smalo, Sverre O. (1995). Representation Theory of Artin Algebras. Cambridge University Press 36.\", \"key\": \"ars_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(5))\\nM = A.simple(2, side=\\\"right\\\")\\nM.almost_split_sequence()\", \"results\": {\"almost_split\": {\"M\": {\"dim\": 1, \"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}}, \"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"], [\"ARS1995\", \"Auslander, Maurice; Reiten, Idun; Smalo, Sverre O. (1995). Representation Theory of Artin Algebras. Cambridge University Press 36.\"]], \"exists\": true, \"indecomposable\": true, \"kind\": \"almost_split\", \"latex\": \"0 \\\\to \\\\tau M \\\\to E \\\\to M \\\\to 0\", \"middle\": {\"summands\": [{\"dim_vector\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"indecomposable\": true, \"multiplicity\": 1, \"standard\": {\"kind\": \"projective\", \"vertex\": \"2\"}}]}, \"references\": [\"assem_book\", \"ars_book\"], \"side\": \"right\", \"tau\": {\"dims\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"maps\": {}}}}}"
+ },
+ "strings_gentle_a3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "relations": [
+     "a*b"
+    ],
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 5
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "strings"
+   ]
+  },
+  "canonical_key": "1b7d7a945c7b085e72bebfc6e0f77d3fed4acb27e85fa3f6d23e774d605a4818",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [\"a*b\"], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Butler-Ringel: the string/band module classification and the hook/cohook description of the AR translate -- the ground truth for the string subsystem.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ButlerRingel1987\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\", \"key\": \"butler_ringel\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The AG-invariant: a multiset of (n,m) pairs from permitted/forbidden threads; a DERIVED invariant, provably NOT complete.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AvellaAlaminosGeiss2008\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Avella-Alaminos, Diana; Geiss, Christof (). Combinatorial derived invariants for gentle algebras. Journal of Pure and Applied Algebra.\", \"key\": \"avella_geiss\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=['a*b'], field=GF(5))\\nfrom quiverlab.strings import enumerate_strings, find_bands\\nfrom quiverlab.strings.ag import ag_invariant\\nenumerate_strings(A), find_bands(A), ag_invariant(A)\", \"results\": {\"strings\": {\"ag_invariant\": [[4, 2]], \"bands\": {\"exist\": false, \"sample\": []}, \"citations\": [[\"ButlerRingel1987\", \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\"], [\"AvellaAlaminosGeiss2008\", \"Avella-Alaminos, Diana; Geiss, Christof (). Combinatorial derived invariants for gentle algebras. Journal of Pure and Applied Algebra.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"recognizers\": {\"is_gentle\": true, \"is_special_biserial\": true, \"is_string\": true}, \"references\": [\"butler_ringel\", \"avella_geiss\", \"assem_book\"], \"rep_type\": \"finite\", \"strings\": {\"count\": 5, \"max_length\": 8, \"sample\": [\"a^-1\", \"b^-1\", \"e_1\", \"e_2\", \"e_3\"], \"status\": \"complete\"}}}}"
  }
 }

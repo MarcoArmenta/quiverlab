@@ -17,6 +17,7 @@ Public surface (reach via ``import quiverlab`` or ``quiverlab.strings``):
 from quiverlab.strings.ag import (AGInvariant, ag_invariant, forbidden_threads,
                                   permitted_threads)
 from quiverlab.strings.ar_strings import string_tau, string_tau_minus
+from quiverlab.strings.block import strings_block
 from quiverlab.strings.modules import band_module, string_module
 from quiverlab.strings.walks import (StringCensus, enumerate_strings, find_bands,
                                      invert, is_valid_walk, letter_source,
@@ -28,4 +29,5 @@ __all__ = [
     "band_module", "string_module",
     "string_tau", "string_tau_minus",
     "AGInvariant", "ag_invariant", "forbidden_threads", "permitted_threads",
+    "strings_block",
 ]
