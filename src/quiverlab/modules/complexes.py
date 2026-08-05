@@ -266,3 +266,213 @@ class ChainComplex:
             return "ChainComplex(0)"
         body = " <- ".join(f"C_{n}({self.term(n).dim})" for n in reversed(degs))
         return f"ChainComplex[{self.side} {self.algebra}]: {body}"
+
+
+# --------------------------------------------------------------------------- #
+# Domain-generic helpers.
+# --------------------------------------------------------------------------- #
+def _get(mat, i, j, dom):
+    """Entry ``(i, j)`` of a possibly-shapeless matrix (matmul returns ``[]`` when an
+    inner dimension is 0); out-of-range / empty reads as the domain zero."""
+    if not mat or i >= len(mat) or not mat[0] or j >= len(mat[0]):
+        return dom.zero()
+    return mat[i][j]
+
+
+def _squares_equal(lhs, rhs, rows, cols, dom):
+    """Exact equality of two ``rows x cols`` matrices, tolerant of the shapeless ``[]``
+    that ``matmul`` returns through a zero-dimensional module."""
+    for i in range(rows):
+        for j in range(cols):
+            if not dom.is_zero(dom.sub(_get(lhs, i, j, dom), _get(rhs, i, j, dom))):
+                return False
+    return True
+
+
+def _block_diag_module(Xm, Ym, dom, name="(+)"):
+    """``Xm (+) Ym`` (X first) as a block-diagonal Module over the shared algebra.
+    Zero-dimensional summands contribute nothing (no action read), so a stalk cone with
+    one empty block is exact."""
+    dx, dy = Xm.dim, Ym.dim
+    n = dx + dy
+    A = Xm.algebra if dx else Ym.algebra
+    side = Xm.side if dx else Ym.side
+    if dx and dy:
+        labels = [lab for lab in Xm.action if lab in Ym.action]
+    elif dx:
+        labels = list(Xm.action)
+    else:
+        labels = list(Ym.action)
+    action = {}
+    for lab in labels:
+        blk = lm.zeros(n, n, dom)
+        if dx:
+            Xb = Xm.action[lab]
+            for i in range(dx):
+                bi, xi = blk[i], Xb[i]
+                for j in range(dx):
+                    bi[j] = xi[j]
+        if dy:
+            Yb = Ym.action[lab]
+            for i in range(dy):
+                bi, yi = blk[dx + i], Yb[i]
+                for j in range(dy):
+                    bi[dx + j] = yi[j]
+        action[lab] = blk
+    return Module(A, n, action, name=name, side=side)
+
+
+class ChainMap:
+    """A validated chain map ``f: src -> tgt`` between complexes on one side.
+
+    ``components[n]`` is the module map ``f_n : src_n -> tgt_n`` (rows=target). With
+    ``check=True`` every ``f_n`` is validated as an ``A``-module map AND every square
+    ``d^tgt_n . f_n == f_{n-1} . d^src_n`` is asserted -- both refuse loudly ("chain
+    map ...")."""
+
+    def __init__(self, src, tgt, components, check=True):
+        if src.algebra is not tgt.algebra:
+            raise QuiverlabError(
+                "ChainMap: src and tgt are complexes over different algebras")
+        if src.side != tgt.side:
+            raise QuiverlabError(
+                f"ChainMap: src is {src.side}, tgt is {tgt.side} (a chain map stays "
+                "on one side)")
+        self.src, self.tgt = src, tgt
+        self.domain = src.domain
+        self._comps = {int(n): _coerce_matrix(mat, self.domain)
+                       for n, mat in components.items()}
+        if check:
+            self._validate()
+
+    def component(self, n):
+        src_n, tgt_n = self.src.term(n), self.tgt.term(n)
+        mat = self._comps.get(int(n))
+        if mat is None:
+            return lm.zeros(tgt_n.dim, src_n.dim, self.domain)
+        return mat
+
+    def _validate(self):
+        from quiverlab.modules.morphism import ModuleHom
+        dom = self.domain
+        for n, mat in self._comps.items():
+            try:
+                ModuleHom(self.src.term(n), self.tgt.term(n), mat, check=True)
+            except QuiverlabError as exc:
+                raise QuiverlabError(
+                    f"chain map: component f_{n} is not a module map ({exc})")
+        degs = set(self.src.degrees()) | set(self.tgt.degrees())
+        degs |= {n - 1 for n in list(degs)} | {n + 1 for n in list(degs)}
+        for n in degs:
+            fn = self.component(n)
+            fn1 = self.component(n - 1)
+            dX = self.src._dmats.get(n)
+            dY = self.tgt._dmats.get(n)
+            if dX is None:
+                dX = lm.zeros(self.src.term(n - 1).dim, self.src.term(n).dim, dom)
+            if dY is None:
+                dY = lm.zeros(self.tgt.term(n - 1).dim, self.tgt.term(n).dim, dom)
+            lhs = lm.matmul(dY, fn, dom)          # X_n -> Y_{n-1}
+            rhs = lm.matmul(fn1, dX, dom)         # X_n -> Y_{n-1}
+            rows, cols = self.tgt.term(n - 1).dim, self.src.term(n).dim
+            if not _squares_equal(lhs, rhs, rows, cols, dom):
+                raise QuiverlabError(
+                    f"chain map square at degree {n} does not commute: "
+                    "d^tgt . f != f . d^src")
+
+    # -- mapping cone / triangle / quasi-iso -------------------------------- #
+    def _cone_degrees(self):
+        ndegs = set()
+        for p in self.src.degrees():
+            ndegs.add(p + 1)                      # X_{n-1} nonzero -> n = p+1
+        for q in self.tgt.degrees():
+            ndegs.add(q)
+        return ndegs
+
+    def _cone_diff(self, n):
+        """``d^cone_n : X_{n-1} (+) Y_n -> X_{n-2} (+) Y_{n-1}``, the block matrix
+        ``[[-d_X, 0], [f, d_Y]]`` (rows=target)."""
+        X, Y, dom = self.src, self.tgt, self.domain
+        dXm1, dYn = X.term(n - 1).dim, Y.term(n).dim
+        dXm2, dYm1 = X.term(n - 2).dim, Y.term(n - 1).dim
+        M = lm.zeros(dXm2 + dYm1, dXm1 + dYn, dom)
+        dX = X._dmats.get(n - 1)                   # X_{n-1} -> X_{n-2}
+        if dX and dX[0]:
+            for i in range(dXm2):
+                mi, di = M[i], dX[i]
+                for j in range(dXm1):
+                    mi[j] = dom.neg(di[j])
+        f = self.component(n - 1)                  # X_{n-1} -> Y_{n-1}
+        for i in range(dYm1):
+            mi = M[dXm2 + i]
+            for j in range(dXm1):
+                mi[j] = _get(f, i, j, dom)
+        dY = Y._dmats.get(n)                       # Y_n -> Y_{n-1}
+        if dY and dY[0]:
+            for i in range(dYm1):
+                mi, di = M[dXm2 + i], dY[i]
+                for j in range(dYn):
+                    mi[dXm1 + j] = di[j]
+        return M
+
+    def cone(self):
+        """The mapping cone ``cone(f)_n = X_{n-1} (+) Y_n`` with differential
+        ``[[-d_X, 0], [f, d_Y]]``. ``d^2 = 0`` is automatic from ``f`` being a chain map
+        and is re-asserted here (``check=True``) as the self-certificate."""
+        X, Y, dom = self.src, self.tgt, self.domain
+        terms = {}
+        for n in self._cone_degrees():
+            Xm, Ym = X.term(n - 1), Y.term(n)
+            if Xm.dim + Ym.dim == 0:
+                continue
+            terms[n] = _block_diag_module(Xm, Ym, dom, name=f"cone_{n}")
+        dmats = {}
+        for n in list(terms):
+            if (n - 1) in terms:
+                dmats[n] = self._cone_diff(n)
+        C = ChainComplex(terms, dmats, check=True)
+        if getattr(X, "_perfect", False) and getattr(Y, "_perfect", False):
+            C._perfect = True
+        return C
+
+    def is_quasi_iso(self):
+        """``f`` is a quasi-isomorphism iff its mapping cone is acyclic."""
+        return self.cone().is_acyclic()
+
+    def triangle(self):
+        """The distinguished triangle ``X -f-> Y -i-> cone(f) -p-> X[1]``: returns
+        ``(X, Y, cone, (i, p))`` with ``i`` the block inclusion ``Y -> cone`` and ``p``
+        the block projection ``cone -> X[1]``."""
+        X, Y, dom = self.src, self.tgt, self.domain
+        C = self.cone()
+        # i: Y_n -> cone_n = X_{n-1} (+) Y_n, the second-block inclusion [0; I].
+        incl = {}
+        for n in Y.degrees():
+            dXm1, dYn = X.term(n - 1).dim, Y.term(n).dim
+            if dYn == 0:
+                continue
+            mat = lm.zeros(dXm1 + dYn, dYn, dom)
+            for j in range(dYn):
+                mat[dXm1 + j][j] = dom.one()
+            incl[n] = mat
+        i_map = ChainMap(Y, C, incl, check=True)
+        # p: cone_n = X_{n-1} (+) Y_n -> X[1]_n = X_{n-1}, the first-block projection.
+        Xshift = X.shift(1)
+        proj = {}
+        for n in C.degrees():
+            dXm1, dYn = X.term(n - 1).dim, Y.term(n).dim
+            if dXm1 == 0:
+                continue
+            mat = lm.zeros(dXm1, dXm1 + dYn, dom)
+            for i in range(dXm1):
+                mat[i][i] = dom.one()
+            proj[n] = mat
+        p_map = ChainMap(C, Xshift, proj, check=True)
+        return (X, Y, C, (i_map, p_map))
+
+
+def identity_chain_map(X):
+    """The identity chain map ``id_X : X -> X``."""
+    dom = X.domain
+    comps = {n: lm.identity(X.term(n).dim, dom) for n in X.degrees()}
+    return ChainMap(X, X, comps, check=True)
