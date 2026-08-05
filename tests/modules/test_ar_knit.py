@@ -3,7 +3,8 @@
 trips the budget LOUDLY (status 'budget', not a silent partial quiver)."""
 import pytest
 
-from quiverlab import NakayamaAlgebra, Quiver, linear_path_algebra
+from quiverlab import (NakayamaAlgebra, Quiver, linear_path_algebra,
+                       truncated_polynomial)
 from quiverlab.fields import QQ
 from quiverlab.families.dynkin import dynkin_quiver
 from quiverlab.modules.ar import knit_ar_quiver
@@ -50,6 +51,25 @@ def test_mesh_relations_hold_on_a3():
             continue
         into = sum(m for (i, k), m in ar.arrows.items() if k == j)
         assert into >= 1                           # every non-projective is a mesh sink
+
+
+@selfcert
+@pytest.mark.parametrize("A", [
+    truncated_polynomial(3, field=QQ),                 # k[x]/(x^3): self-injective, 3 indec
+    NakayamaAlgebra(n=3, l=2, cyclic=True, field=QQ),  # kZ_3/rad^2: self-injective, 6 indec
+])
+def test_self_injective_knitting_refuses_loudly(A):
+    # Devil's-advocate round (Finding A): the projective-seeded BFS DRAINS immediately on a
+    # SELF-INJECTIVE algebra -- every indecomposable projective is also injective, so
+    # tau^-(P) = 0 for each seed and the queue empties before discovering the rest of the
+    # (periodic) component. It used to return status="complete" while grossly UNDERCOUNTING
+    # (k[x]/(x^3): 1 vertex vs the true 3; cyclic kZ_3/rad^2: 3 vs 6). The projective-seeded
+    # knitter must REFUSE LOUDLY, never emit a silently truncated "AR quiver".
+    ar = knit_ar_quiver(A)
+    assert ar.status == "unsupported"
+    assert ar.is_complete is False
+    assert ar.status != "complete"          # "complete" is UNREACHABLE for self-injective A
+    assert "self-injective" in (ar.note or "")
 
 
 @selfcert

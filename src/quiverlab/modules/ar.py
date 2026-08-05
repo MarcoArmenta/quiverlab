@@ -411,16 +411,25 @@ def almost_split_sequence(M):
 
     Algorithm (ARS IV.1-IV.3): ``End(M)`` is local (Fitting), so ``rad End(M)`` is the
     trace-form radical (char 0 or char > dim M); it acts on ``Ext^1(M, tau M)`` (Task 4)
-    and the classes annihilated by ``rad End(M)`` form the SOCLE, which is nonzero and
-    (over ``End/rad = k``) 1-dimensional. ANY nonzero socle class ``xi`` gives THE
+    and the classes annihilated by ``rad End(M)`` form the SOCLE. By ARS IV that socle is a
+    SIMPLE ``End(M)``-module -- isomorphic to the top ``End(M)/rad = D`` (the residue
+    division algebra) -- so its ``k``-dimension is ``dim_k D = dim_k End(M) - dim_k rad
+    End(M)`` (``= 1`` only for a brick, ``D = k``). ANY nonzero socle class ``xi`` gives THE
     almost-split sequence: reconstruct its cocycle ``f: P_1 -> tau M`` and push out.
 
-    Certification basis: by ARS IV.1-IV.3 a sequence ``0 -> tau M -> E -> M -> 0`` whose
-    class lies in ``soc Ext^1(M, tau M)`` with both ends indecomposable IS almost split.
-    The returned :class:`ShortExactSequence` additionally carries the computational
-    self-certs -- exact (Yoneda ``assert_exact`` + P37 SES), non-split (P37 ``is_split``
-    False), ends indecomposable (Plan 30) -- so nothing rests on trusting the socle pick:
-    a wrong pick splits and is refused loudly.
+    Certification basis: the almost-split class is identified by (i) the char-scoped
+    trace-form ``rad End(M)`` (char 0 or char > dim M -- Dickson / Cohen--Ivanyos--Wales),
+    (ii) the ARS socle theorem (soc ``Ext^1(M, tau M)`` is simple over ``End(M)``), and
+    (iii) the socle-SIMPLICITY dimension check below (``dim_k soc = dim_k End(M) - dim_k
+    rad End(M)``), which certifies we computed the true one-copy socle -- so any nonzero
+    element of it is THE class. The exact / non-split / indecomposable-ends checks on the
+    returned :class:`ShortExactSequence` are NECESSARY sanity checks (a genuine AR sequence
+    has all three) but NOT sufficient to identify the class and DO NOT arbitrate the pick:
+    a non-socle class of ``Ext^1(M, tau M)`` can have an exact, non-split extension with
+    indecomposable ends and still fail to be almost split (over ``k[x]/(x^4)`` with
+    ``M = k[x]/(x^2)``, ``dim Ext^1 = 2`` and a non-socle class yields the PROJECTIVE middle
+    ``k[x]/(x^4)``, not the true mesh middle ``{1, 3}``). The socle-simplicity certificate
+    is what makes the pick correct.
 
     Refuses loudly for a projective, decomposable, or undecidable (budget/char) input."""
     from quiverlab.modules.decompose import is_indecomposable
@@ -449,7 +458,24 @@ def almost_split_sequence(M):
         raise QuiverlabError(
             "almost_split: empty socle of Ext^1(M, tau M) -- the End(M)-action or the "
             "class basis is inconsistent")
-    xi = socle_cols[0]                            # any nonzero socle class
+    # Socle-simplicity certificate (ARS IV.1-IV.3): soc_{End M} Ext^1(M, tau M) is a SIMPLE
+    # End(M)-module isomorphic to the top End(M)/rad = D, so its k-dimension equals dim_k D =
+    # dim_k End(M) - dim_k rad End(M). socle_cols is the annihilator of rad End(M) acting on
+    # Ext^1 -- the socle by definition -- so its dimension MUST match. If it does not, rad
+    # End was mis-computed (its annihilator over-/under-shoots) or Ext^1 has an anomalous
+    # socle; either way a NON-socle class could survive here, and such a class can pass the
+    # exact / non-split / indecomposable-ends guards below yet NOT be almost split (its middle
+    # a wrong module). We refuse rather than pick from an uncertified socle -- the guards are
+    # necessary, not sufficient, so they cannot arbitrate the pick.
+    dim_socle = len(socle_cols)
+    dim_residue = len(_H) - len(rad_coords)       # dim_k End(M) - dim_k rad End(M) = dim_k D
+    if dim_socle != dim_residue:
+        raise QuiverlabError(
+            "almost_split: socle of Ext^1(M, tau M) is not the simple ARS socle -- "
+            "dim soc = %d but dim_k End(M)/rad = %d - %d = %d (rad End mis-computed or an "
+            "anomalous socle; the socle pick is uncertified)"
+            % (dim_socle, len(_H), len(rad_coords), dim_residue))
+    xi = socle_cols[0]                            # any nonzero socle class (socle certified)
     cocycle_mats, _cob, terms, dmats = _ext1_data(A, M, tauM)
     width = len(dmats[1][0]) if (len(dmats) > 1 and dmats[1] and dmats[1][0]) else 0
     f = _combine_matrices(cocycle_mats, xi, tauM.dim, width, dom)
@@ -553,7 +579,9 @@ class ARQuiver:
     ``(i, j) -> multiplicity`` (the irreducible-map multiplicity from vertex ``i`` to
     ``j``); ``tau_orbits`` are the ``X -- tau^- X`` linked vertex classes; ``is_complete``
     is ``True`` iff the closure was reached (rep-finite) and ``False`` iff the budget
-    tripped; ``status`` is ``"complete" | "budget" | "error"``."""
+    tripped or the input is out of scope; ``status`` is
+    ``"complete" | "budget" | "error" | "unsupported"`` (``"unsupported"`` = the
+    projective-seeded knitter cannot handle this algebra -- see :func:`knit_ar_quiver`)."""
 
     def __init__(self, vertices, arrows, tau_orbits, is_complete, status, note=None):
         self.vertices = vertices
@@ -580,11 +608,31 @@ def knit_ar_quiver(A, budget_modules=256, budget_dim=4096):
     (``A`` is rep-finite on this component). The budget (``budget_modules`` /
     ``budget_dim``) trips => ``status="budget"``, ``is_complete=False`` -- a LOUD cap, never
     a silently truncated 'AR quiver'. A module the AR machinery cannot certify surfaces as
-    ``status="error"`` with the offending dim vector, never a silent skip."""
+    ``status="error"`` with the offending dim vector, never a silent skip.
+
+    SELF-INJECTIVE input is REFUSED loudly (``status="unsupported"``, ``is_complete=False``):
+    the projective-seeded BFS is only valid on an algebra with a postprojective slice, and a
+    self-injective algebra has none (see the guard below)."""
     from quiverlab.modules.builders import projective
     from quiverlab.modules.decompose import decompose
     from quiverlab.modules.duality import tau_minus as tau_minus_of
+    from quiverlab.modules.ext import is_selfinjective
     from quiverlab.modules.hom import identify_standard, is_isomorphic
+    if is_selfinjective(A):
+        # Self-injective input: every indecomposable projective is ALSO injective, so
+        # tau^-(P) = 0 for each projective seed and the BFS DRAINS immediately -- it used to
+        # return status="complete" while grossly UNDERCOUNTING (k[x]/(x^3): 1 vertex vs the
+        # true 3; cyclic kZ_3/rad^2: 3 vs 6). The stable AR component of a self-injective
+        # algebra is periodic (a tube / ZA_infty mod tau), reachable only by STABLE-component
+        # knitting -- seed an arbitrary indecomposable and walk BOTH tau directions -- which
+        # is not implemented here. NB the plan doc's suggested fix, "seed from projectives
+        # AND their tau^- orbit", does NOT help: that orbit is EMPTY for self-injective input
+        # (tau^- of each projective-injective seed is 0). So we REFUSE loudly rather than
+        # emit a silently truncated "complete" quiver.
+        return ARQuiver(
+            [], {}, [], is_complete=False, status="unsupported",
+            note="self-injective algebras need stable-component knitting -- deferred; "
+                 "the projective-seeded BFS would silently undercount")
     discovered = []
 
     def find(X):

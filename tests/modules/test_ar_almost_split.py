@@ -46,6 +46,32 @@ def test_decomposable_input_refused():
         almost_split_sequence(D)
 
 
+@selfcert
+def test_kx4_non_brick_middle_is_mesh_not_projective():
+    # Devil's-advocate round (Finding B): the DISCRIMINATING non-brick case. Over k[x]/(x^4)
+    # (GF(32003)), M = k[x]/(x^2) -- the length-2 module, x acting as the lower Jordan block
+    # J_2 = [[0,0],[1,0]] -- is indecomposable but NOT a brick: End(M) = k[x]/(x^2) is local
+    # of k-dimension 2, so dim Ext^1(M, tau M) = 2 and the three sanity guards (exact +
+    # non-split + indecomposable ends) are necessary but NOT sufficient. A non-socle class of
+    # the 2-dimensional Ext^1 has the PROJECTIVE middle k[x]/(x^4) = {4} (exact, non-split,
+    # indecomposable ends) yet is NOT almost split. Only the socle-simplicity certificate
+    # forces the true mesh middle {1, 3}.
+    from quiverlab import truncated_polynomial
+    from quiverlab.fields import GF
+    from quiverlab.modules.ar import end_action_on_ext1
+    A = truncated_polynomial(4, field=GF(32003))
+    M = A.module({1: 2}, {"x": [[0, 0], [1, 0]]}, name="M")   # k[x]/(x^2)
+    M.check_module()
+    assert M.is_indecomposable()
+    tauM = M.tau()
+    _basis, action = end_action_on_ext1(M, tauM)
+    assert len(action[0]) == 2                                 # dim Ext^1(M, tau M) = 2
+    ses = M.almost_split_sequence()
+    mid_dims = sorted(s.dim for s, mult in ses.M.decompose() for _ in range(mult))
+    assert mid_dims == [1, 3]                                  # true AR mesh middle
+    assert mid_dims != [4]                                     # NOT the projective middle
+
+
 @lit
 def test_ka3_middle_terms_match_the_mesh():
     # kA3 (1->2->3, linear) AR quiver is the ZA3 slice. The almost-split sequence ending

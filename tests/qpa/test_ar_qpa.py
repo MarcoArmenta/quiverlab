@@ -7,7 +7,7 @@ middle-term DIMENSION VECTOR is crosschecked over QQ; QPA's ``DecomposeModule`` 
 immediate-predecessor multiset are crosschecked over GF(p)."""
 import pytest
 
-from quiverlab import GF, NakayamaAlgebra, linear_path_algebra
+from quiverlab import GF, NakayamaAlgebra, linear_path_algebra, truncated_polynomial
 from quiverlab.fields import QQ
 from quiverlab.qpa import session
 
@@ -43,3 +43,13 @@ def test_almost_split_summands_and_predecessors_vs_qpa(A):
             continue
         A.crosscheck("almost_split", M).assert_agree()
         A.crosscheck("predecessors", M).assert_agree()
+
+
+def test_almost_split_non_brick_middle_vs_qpa():
+    # Devil's-advocate round (Finding B): the NON-BRICK case the battery lacked. Over
+    # k[x]/(x^4) (GF(32003)), M = k[x]/(x^2) has dim Ext^1(M, tau M) = 2, so the socle pick
+    # -- not the three sanity guards -- decides the middle term. QPA's AlmostSplitSequence +
+    # DecomposeModule are the live oracle: the middle is {1, 3}, never the projective {4}.
+    A = truncated_polynomial(4, field=GF(32003))
+    M = A.module({1: 2}, {"x": [[0, 0], [1, 0]]}, name="M")   # k[x]/(x^2)
+    A.crosscheck("almost_split", M).assert_agree()
