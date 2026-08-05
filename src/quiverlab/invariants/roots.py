@@ -21,9 +21,9 @@ def positive_roots(A):
             "positive_roots needs the quiver presentation",
             hint="build the algebra via Quiver.algebra(...)")
     from quiverlab.invariants.dynkin_type import dynkin_type
+    from quiverlab.invariants.recognizers import is_hereditary
     dt = dynkin_type(A.quiver)
-    hereditary = (not A.relations) and A.quiver.is_acyclic()
-    if not (hereditary and dt is not None and dt[0] in ("A", "D", "E")):
+    if not (is_hereditary(A) and dt is not None and dt[0] in ("A", "D", "E")):
         raise QuiverlabError(
             "positive roots enumerated only for Dynkin hereditary type; "
             "affine/wild have infinitely many",

@@ -494,6 +494,52 @@ class Algebra:
         from quiverlab.invariants.roots import positive_roots
         return positive_roots(self)
 
+    # -- recognizers (Plan 38 / C2) -------------------------------------------
+    def is_semisimple(self):
+        """True iff A is semisimple (Loewy length 1)."""
+        from quiverlab.invariants.recognizers import is_semisimple
+        return is_semisimple(self)
+
+    def is_radical_square_zero(self):
+        """True iff rad^2 A = 0 (Loewy length <= 2)."""
+        from quiverlab.invariants.recognizers import is_radical_square_zero
+        return is_radical_square_zero(self)
+
+    def is_hereditary(self):
+        """True iff A is hereditary: a path algebra kQ with Q acyclic and no
+        relations (gl.dim <= 1)."""
+        from quiverlab.invariants.recognizers import is_hereditary
+        return is_hereditary(self)
+
+    def is_basic(self):
+        """True for every kQ/I presentation (basic algebra); loud on
+        presentation-less input."""
+        from quiverlab.invariants.recognizers import is_basic
+        return is_basic(self)
+
+    def is_nakayama(self):
+        """True iff the quiver is a union of linear A_n and single oriented
+        cycles (every vertex in/out-degree <= 1)."""
+        from quiverlab.invariants.recognizers import is_nakayama
+        return is_nakayama(self)
+
+    def is_special_biserial(self):
+        """True iff A is special biserial (ASS: <= 2 arrows in/out per vertex +
+        the one-continuation condition)."""
+        from quiverlab.invariants.recognizers import is_special_biserial
+        return is_special_biserial(self)
+
+    def is_string(self):
+        """True iff A is a string algebra (special biserial + monomial ideal)."""
+        from quiverlab.invariants.recognizers import is_string
+        return is_string(self)
+
+    def is_gentle(self):
+        """True iff A is a gentle algebra (string + length-2 ideal + dual
+        one-relation condition)."""
+        from quiverlab.invariants.recognizers import is_gentle
+        return is_gentle(self)
+
     def loewy_length(self):
         """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
         from quiverlab.invariants.scalar import loewy_length
