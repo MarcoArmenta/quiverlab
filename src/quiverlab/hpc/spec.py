@@ -1167,6 +1167,19 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
                  "citations": _citation_pairs(keys)}
         block.update(reps)
         return block, None
+    # Hochschild (b, B) spectral sequence (Plan 42): an algebra-only range kind. The
+    # shared builder (specseq.block.specseq_block) is byte-identical to the Pyodide
+    # twin (docs/gui/runner.py); the loud DepthLimit guard is caught INSIDE the
+    # builder into {"error": ...}, so a big bar basis is an honest block, not a 500.
+    if kind == "ss_hochschild":
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..4'")
+        from quiverlab.specseq.block import specseq_block
+        block = specseq_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -1735,6 +1748,7 @@ def _snippet(req: ComputeRequest, A) -> str:
     _snip = {"hh_cohomology": lambda it: f"A.hochschild_cohomology({it.hi})",
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
              "cyclic_homology": lambda it: f"A.cyclic_homology({it.hi})",
+             "ss_hochschild": lambda it: f"A.hochschild_bB_ss({it.hi})",
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",

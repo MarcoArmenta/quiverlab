@@ -366,5 +366,39 @@
   },
   "canonical_key": "b9103cf9ace9a466178419941081ec68c25d9f90b70423206b171fc8bbc2e4ff",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [\"a*b\"], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=['a*b'], field=GF(5))\\n[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), A.dynkin_type(), A.form_type()]\", \"results\": {\"recognizers\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"dynkin_type\": \"A3\", \"flags\": {\"is_basic\": true, \"is_gentle\": true, \"is_hereditary\": false, \"is_nakayama\": true, \"is_radical_square_zero\": true, \"is_selfinjective\": false, \"is_semisimple\": false, \"is_special_biserial\": true, \"is_string\": true, \"is_symmetric\": false}, \"form_type\": \"finite\", \"references\": [\"assem_book\"]}}}"
+ },
+ "ss_hochschild_dualnumbers": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "relations": [
+     "x*x"
+    ],
+    "field": {
+     "kind": "GF",
+     "p": 5,
+     "n": 1
+    }
+   },
+   "compute": [
+    "ss_hochschild:0..4"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "d299ae6cb7edd66e9d60967da33e4457b4c4f98cf415c384adeeac57bfb8ed88",
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [\"x*x\"], \"vertices\": [1]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Connes' B-operator and the SBI sequence -- quiverlab's cyclic homology.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Connes1985\", \"doi\": \"10.1007/BF02698807\", \"doi_url\": \"https://doi.org/10.1007/BF02698807\", \"formatted\": \"Connes, Alain (1985). Non-commutative differential geometry. Publications Math'ematiques de l'IH'ES 62, 41-144.\", \"key\": \"cyclic\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The section-5.4 spectral-sequence page formulas and the strong-convergence theorem -- quiverlab's spectral-sequence engine (Plan 42).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Weibel1994\", \"doi\": \"10.1017/CBO9781139644136\", \"doi_url\": \"https://doi.org/10.1017/CBO9781139644136\", \"formatted\": \"Weibel, Charles A. (1994). An Introduction to Homological Algebra. Cambridge University Press 38.\", \"key\": \"weibel_homological\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x'], field=GF(5))\\nA.hochschild_bB_ss(4)\", \"results\": {\"ss_hochschild\": {\"abutment\": [2, 0, 2, 0, 2], \"citations\": [[\"Connes1985\", \"Connes, Alain (1985). Non-commutative differential geometry. Publications Math'ematiques de l'IH'ES 62, 41-144.\"], [\"Weibel1994\", \"Weibel, Charles A. (1994). An Introduction to Homological Algebra. Cambridge University Press 38.\"]], \"collapse\": true, \"degenerates_at\": 2, \"einf\": [[0, 0, 2], [0, 2, 1], [0, 4, 1], [1, 1, 1], [2, 2, 1]], \"grid\": \"```\\nE_inf page  (p across, q up):\\nq= 4 |  1  .  .\\nq= 2 |  1  .  1\\nq= 1 |  .  1  .\\nq= 0 |  2  .  .\\n      p=0 p=1 p=2\\n```\", \"kind\": \"ss_hochschild\", \"prose\": \"The Hochschild (b, B) spectral sequence converges to cyclic homology (HC_0=2, HC_1=0, HC_2=2, HC_3=0, HC_4=2); it degenerates at E_2 (all higher differentials vanish).\", \"references\": [\"cyclic\", \"weibel_homological\"], \"top\": 4}}}"
  }
 }

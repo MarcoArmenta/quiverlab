@@ -21,7 +21,7 @@ Presentation rules carried over from the GUI (all Marco, 2026-07-29):
 Float-free: every number is copied from block data (ints / exact strings).
 """
 from quiverlab.trace.render_html import (
-    _dims_table, _esc, _math, _math_inline, matrix_grid)
+    _dims_table, _esc, _math, _math_inline, gloss_max_cells, matrix_grid)
 
 # Human headings per compute kind. A kind missing here still renders (the key is
 # shown verbatim), so a newly added invariant degrades to an honest label rather
@@ -30,6 +30,7 @@ _HEADINGS = {
     "hh_cohomology": "Hochschild cohomology",
     "hh_homology": "Hochschild homology",
     "cyclic_homology": "Cyclic homology",
+    "ss_hochschild": "Hochschild (b,B) spectral sequence",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
     "cap": "Cap product tables",
@@ -317,6 +318,18 @@ def _block_html(kind, b, ctx=None):
                           "(into which the coordinate vectors index) are in the "
                           "JSON.</i></p>")
             chunks.extend(secs)
+        return chunks
+    if kind == "ss_hochschild":
+        # The Hochschild (b, B) spectral sequence (Plan 42): the abutment table
+        # (E_inf totals == HC_n), the netPage E_inf grid, and the convergence prose.
+        if b.get("error"):
+            return ["<p>%s</p>" % gloss_max_cells(_esc(str(b["error"])))]
+        chunks = [_dims_table("dim E_inf total (= HC_n)", b.get("abutment") or [])]
+        grid = (b.get("grid") or "").replace("```", "").strip()
+        if grid:
+            chunks.append("<pre class=\"ql-ss-grid\">%s</pre>" % _esc(grid))
+        if b.get("prose"):
+            chunks.append("<p>%s</p>" % _esc(str(b["prose"])))
         return chunks
     if kind == "cartan":
         if b.get("matrix"):

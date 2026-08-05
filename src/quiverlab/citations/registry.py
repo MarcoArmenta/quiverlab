@@ -89,6 +89,21 @@ REGISTRY: dict = {r.key: r for r in [
        "Cyclic homology",
        "Connes' B-operator and the SBI sequence -- quiverlab's cyclic homology.",
        "cyclic"),
+    _r("weibel_homological", "Weibel1994", "foundation",
+       "An Introduction to Homological Algebra",
+       "The section-5.4 spectral-sequence page formulas and the strong-convergence "
+       "theorem -- quiverlab's spectral-sequence engine (Plan 42).",
+       "spectral", "resolution"),
+    _r("barakat_homalg", "BarakatLangeHegermann2011", "algorithm",
+       "Spectral filtrations via generalized morphisms",
+       "The Grothendieck spectral sequence over general module categories (the homalg "
+       "framing) -- quiverlab's Grothendieck / Cartan-Eilenberg change-of-rings preset.",
+       "spectral"),
+    _r("cartan_eilenberg", "CartanEilenberg1956", "foundation",
+       "Homological Algebra",
+       "The change-of-rings spectral sequence -- quiverlab's Cartan-Eilenberg preset "
+       "(Plan 42).",
+       "spectral"),
     _r("cup", "Gerstenhaber1963", "algorithm",
        "Cup product on Hochschild cohomology",
        "The associative cup product on HH^* (Gerstenhaber-algebra structure).",

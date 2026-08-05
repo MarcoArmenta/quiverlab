@@ -118,7 +118,14 @@ never hide behind one:
     result.json (``quiverlab.trace.json_guide.build_json_guide``, self-validating). Gated
     re-freeze: each regenerated blob was asserted byte-identical to the old one after
     DELETING the ``json_guide`` top-level key, so no pre-existing content moved. The
-    ``canonical_key`` is request-derived and UNCHANGED (no new request fields)."""
+    ``canonical_key`` is request-derived and UNCHANGED (no new request fields).
+  * 2026-08-05 (Plan 42, NEW golden ``ss_hochschild_dualnumbers``): the
+    ``ss_hochschild`` compute kind -- the Hochschild ``(b, B)`` spectral-sequence block
+    (E_inf page dims + abutment == HC + convergence prose) on ``k[x]/(x^2)`` over
+    GF(5), schema v1. A pure ADDITION (a new golden key); every pre-existing entry is
+    byte-identical (the parametrized byte-identity + canonical-key tests confirm it),
+    and the ``canonical_key`` is request-derived (no new request fields -- an
+    algebra-only range kind)."""
 import json
 import pathlib
 
