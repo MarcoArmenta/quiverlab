@@ -30,7 +30,7 @@ _PD_BOUND = 32
 _MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
-    "projective_dimension", "injective_dimension", "decompose",
+    "projective_dimension", "injective_dimension", "decompose", "almost_split",
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
@@ -279,6 +279,7 @@ _MOD_REFS = {
     "injective_resolution": ["minimal_resolution", "assem_book"],
     "injective_dimension": ["minimal_resolution", "assem_book"],
     "decompose": ["assem_book"],
+    "almost_split": ["assem_book", "ars_book"],
 }
 
 
@@ -478,6 +479,24 @@ def _module_block(name, top):
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return {"kind": name, "side": M.side, "summands": summands,
                 "iso_classes": len(summands), "citations": cites}
+    if name == "almost_split":
+        # The almost-split sequence 0 -> tau M -> E -> M -> 0 for M indecomposable
+        # non-projective (Plan 41). Byte-identical block shape to quiverlab.hpc.spec's
+        # almost_split branch (tau = full repr; E's summands via the shared serializer;
+        # honest exists:false refusal for projective/decomposable/undecidable input).
+        from quiverlab.modules.decompose import decompose
+        try:
+            ses = M.almost_split_sequence()
+        except quiverlab.QuiverlabError as exc:
+            return {"kind": name, "exists": False, "reason": str(exc),
+                    "references": list(keys), "citations": cites}
+        return {"kind": name, "exists": True, "side": M.side,
+                "tau": _mod_repr(ses.L),
+                "middle": {"summands": [_summand_view(s, m)
+                                        for (s, m) in decompose(ses.M)]},
+                "M": _mod_view(M), "indecomposable": True,
+                "latex": r"0 \to \tau M \to E \to M \to 0",
+                "references": list(keys), "citations": cites}
     if name == "ext":
         if top is None:
             raise RequestError("ext needs a range, e.g. 'ext:0..4'")
@@ -829,6 +848,7 @@ def python_snippet():
              "ext": "[A.ext(M, N, i) for i in range(%d + 1)]",
              "tor": "tor_dims(A, M, N, %d)  # from quiverlab.modules.tor",
              "decompose": "M.decompose()",
+             "almost_split": "M.almost_split_sequence()",
              "projective_resolution": "M.projective_resolution(%d).dimension_vectors()",
              "injective_resolution": "M.injective_resolution(%d).dimension_vectors()",
              "projective_dimension": "M.projective_resolution(%d).pd()" % _PD_BOUND,
@@ -901,7 +921,7 @@ ETA_MODEL = {
                 # resolution/dimension probes that build syzygies to depth.
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,
                 "tau": 0.1, "tau_minus": 0.1, "ext": 0.2, "tor": 0.2,
-                "decompose": 0.3,
+                "decompose": 0.3, "almost_split": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
                 "projective_dimension": 0.3, "injective_dimension": 0.3,
                 # Plan 38: ext_algebra walks a resolution + Yoneda products;

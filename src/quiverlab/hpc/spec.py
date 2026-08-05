@@ -70,7 +70,7 @@ SIDES = ("right", "left")
 MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
-    "projective_dimension", "injective_dimension", "decompose",
+    "projective_dimension", "injective_dimension", "decompose", "almost_split",
 })
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
@@ -104,6 +104,7 @@ _MOD_REFS = {
     "injective_resolution": ["minimal_resolution", "assem_book"],
     "injective_dimension": ["minimal_resolution", "assem_book"],
     "decompose": ["assem_book"],
+    "almost_split": ["assem_book", "ars_book"],
 }
 
 
@@ -1610,6 +1611,26 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return _with_refs({"kind": "decompose", "side": M.side,
                            "summands": summands, "iso_classes": len(summands)}, kind)
+    if kind == "almost_split":
+        # The almost-split (Auslander-Reiten) sequence 0 -> tau M -> E -> M -> 0 for M
+        # indecomposable non-projective (Plan 41). tau M ships as a full representation;
+        # E's Krull-Schmidt summands go through the SAME summand serializer as decompose
+        # (standard summands NAMED, others full matrices). A projective / decomposable /
+        # undecidable input is caught into an honest refusal block -- a clean typed
+        # result, never a 500.
+        from quiverlab.modules.decompose import decompose
+        try:
+            ses = M.almost_split_sequence()
+        except qerr.QuiverlabError as exc:
+            return _with_refs({"kind": "almost_split", "exists": False,
+                               "reason": str(exc)}, kind)
+        block = {"kind": "almost_split", "exists": True, "side": M.side,
+                 "tau": _mod_repr(ses.L),
+                 "middle": {"summands": [_summand_view(s, m)
+                                         for (s, m) in decompose(ses.M)]},
+                 "M": _mod_view(M), "indecomposable": True,
+                 "latex": r"0 \to \tau M \to E \to M \to 0"}
+        return _with_refs(block, kind)
     if kind == "ext":
         top = item.hi
         if top is None:
@@ -1770,6 +1791,7 @@ def _snippet(req: ComputeRequest, A) -> str:
                                 f"tor_dims(A, M, N, {it.hi})"),
              "decompose": lambda it: ("from quiverlab.modules.decompose import "
                                       "decompose\ndecompose(M)"),
+             "almost_split": lambda it: "M.almost_split_sequence()",
              "projective_resolution":
                  lambda it: f"M.projective_resolution({it.hi}).dimension_vectors()",
              "injective_resolution":

@@ -150,6 +150,55 @@ def crosscheck_tau(algebra, M, minus: bool = False) -> ModuleCrosscheckReport:
     return ModuleCrosscheckReport(what, ours_dv, qpa_dv, ours_dv == qpa_dv and iso, iso)
 
 
+def crosscheck_almost_split(algebra, M) -> ModuleCrosscheckReport:
+    """Almost-split sequence middle term vs QPA ``AlmostSplitSequence(M)`` (Plan 41).
+    Compares the middle-term DIMENSION VECTOR always (works over QQ), and -- over a FINITE
+    field, where QPA's ``DecomposeModule`` is defined -- the order-independent multiset of
+    summand dimension vectors (via the Plan-30 ``_flat_dimvec_multiset``). ``M`` must be
+    indecomposable non-projective (a projective end has no almost-split sequence)."""
+    session.require_gap()
+    ses = M.almost_split_sequence()
+    mid = ses.M
+    ours_dv = _dv_list(algebra, mid)
+    dvM, arrM = _graded(algebra, M)
+    base = scripts.almost_split_sequence_script(algebra, dvM, arrM)
+    qpa_dv = _read_int_list(session.run(base + "\nDimensionVector(mid);"))
+    if algebra.domain.characteristic != 0:                # finite field: also compare summands
+        ours_ms = _flat_dimvec_multiset(
+            algebra, [(_dv_list(algebra, s), m) for s, m in mid.decompose()])
+        qpa_ms = sorted(tuple(_read_int_list(row)) for row in
+                        session.run(base + "\nList(DecomposeModule(mid), DimensionVector);"))
+        ours = {"dimvec": ours_dv, "summands": ours_ms}
+        qpa = {"dimvec": qpa_dv, "summands": qpa_ms}
+        return ModuleCrosscheckReport("almost_split", ours, qpa, ours == qpa)
+    return ModuleCrosscheckReport("almost_split", {"dimvec": ours_dv},
+                                  {"dimvec": qpa_dv}, ours_dv == qpa_dv)
+
+
+def crosscheck_predecessors(algebra, M) -> ModuleCrosscheckReport:
+    """Immediate AR predecessors of ``M`` vs QPA ``PredecessorsOfModule(M, 1)`` (Plan 41).
+    The immediate predecessors are exactly the middle summands of the almost-split
+    sequence ``0 -> tau M -> E -> M -> 0``; we compare the order-independent multiset of
+    their dimension vectors. FINITE FIELD ONLY (QPA's ``PredecessorsOfModule`` requires
+    it). ``M`` indecomposable non-projective."""
+    session.require_gap()
+    if algebra.domain.characteristic == 0:
+        raise QuiverlabError(
+            "crosscheck_predecessors needs a finite field (QPA PredecessorsOfModule "
+            "refuses over QQ)", hint="run over a prime GF(p)")
+    ses = M.almost_split_sequence()
+    ours = _flat_dimvec_multiset(
+        algebra, [(_dv_list(algebra, s), m) for s, m in ses.M.decompose()])
+    dvM, arrM = _graded(algebra, M)
+    # PredecessorsOfModule(M, 2): pred[1] is the level list -- pred[1][1] = [M],
+    # pred[1][2] = the IMMEDIATE predecessors (= the middle summands). (n=1 returns a
+    # degenerate structure that is not level-indexable; n=2 is the smallest that is.)
+    base = scripts.predecessors_script(algebra, dvM, arrM, 2)
+    qpa = sorted(tuple(_read_int_list(row)) for row in
+                 session.run(base + "\nList(pred[1][2], DimensionVector);"))
+    return ModuleCrosscheckReport("predecessors", ours, qpa, ours == qpa)
+
+
 def crosscheck_proj_resolution(algebra, M, top: int) -> ModuleCrosscheckReport:
     """Projective resolution term dimension vectors vs QPA ProjectiveResolution."""
     session.require_gap()
@@ -437,6 +486,10 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_tau(algebra, *args, minus=False, **kwargs)
     if what == "tau_minus":
         return crosscheck_tau(algebra, *args, minus=True, **kwargs)
+    if what == "almost_split":
+        return crosscheck_almost_split(algebra, *args, **kwargs)
+    if what == "predecessors":
+        return crosscheck_predecessors(algebra, *args, **kwargs)
     if what == "proj_resolution":
         return crosscheck_proj_resolution(algebra, *args, **kwargs)
     if what == "inj_resolution":
@@ -463,6 +516,7 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     raise QuiverlabError(f"unknown cross-check {what!r}",
                          hint='use "hochschild", "module_ext", "symmetric", '
                               '"trivial_extension", "tau", "tau_minus", '
+                              '"almost_split", "predecessors", '
                               '"proj_resolution", "inj_resolution", '
                               '"inj_dimension", "decompose", "indecomposable", '
                               '"ext_algebra_dims", "ext_generator_degrees", '

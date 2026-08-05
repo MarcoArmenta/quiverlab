@@ -271,6 +271,10 @@ ported and wired in:
   family, each result carrying the `GlobalDimension`-style certified-value-or-honest-bound
   honesty (never a bare number when unresolved, `is_gorenstein` three-valued
   True/None), and clickable end-to-end via the no-code `homological_profile`.
+- **Auslander–Reiten theory.** The AR translates τ / τ⁻ and the Nakayama functor
+  ν / ν⁻ as named functors, **almost-split sequences** `0 → τM → E → M → 0` with the
+  middle term built and certified (exact, non-split, indecomposable ends), irreducible
+  maps and `rad(M,N)/rad²`, stable Hom, and **AR-quiver knitting** — complete for a
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

@@ -129,6 +129,11 @@ REGISTRY: dict = {r.key: r for r in [
        "Elements of the Representation Theory of Associative Algebras",
        "The standard reference for bound quivers and the representation theory quiverlab implements.",
        "book"),
+    _r("ars_book", "ARS1995", "foundation",
+       "Representation Theory of Artin Algebras",
+       "The Auslander-Reiten theory reference: almost-split sequences, irreducible "
+       "maps, the AR quiver, and the Nakayama functor -- the ground truth for Plan 41.",
+       "book"),
     _r("han_conjecture", "Han2006", "foundation",
        "Han's conjecture",
        "Finite global dimension iff finite Hochschild homology dimension -- the "

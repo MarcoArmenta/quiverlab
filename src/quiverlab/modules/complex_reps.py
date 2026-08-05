@@ -216,18 +216,13 @@ def _hom_adjunction_basis(N, tinfo, dom, vbcache):
     return elements, homs
 
 
-def ext_reps(A, M, N, top, interpret=False):
-    """``(dims, payload)`` for ``Ext^0..top_A(M, N)``. ``payload`` carries
-    ``basis_classes`` / ``chain_basis`` / ``differentials`` keyed by ``str(degree)``
-    (single side -- Ext is cohomological). ``dims`` is asserted equal to
-    ``ext_dims(A, M, N, top)`` (basis independence).
-
-    With ``interpret=True`` the payload also carries ``interpretation`` (Plan 35 wave
-    3c): for each degree ``n >= 1`` class, the explicit Yoneda ``n``-fold exact
-    sequence ``0 -> N -> Q -> P_{n-2} -> ... -> P_0 -> M -> 0`` realizing it -- the
-    middle module ``Q`` as a full representation, every connecting map as a matrix, and
-    the SELF-CERTIFIED exactness facts (a class whose sequence fails certification ships
-    an honest ``error`` entry, never a wrong sequence)."""
+def _ext_complex(A, M, N, top):
+    """Shared core of :func:`ext_reps` and the Plan-41 accessor
+    :func:`ext_cocycle_data`: the ``Hom_A(P_*, N)`` cochain complex of the minimal
+    resolution of ``M`` through degree ``top``. Returns
+    ``(terms, dmats, tinfo, elements, homs, deltas, cols_by_deg, dims)``. ONE
+    construction, so the serialized reps, the ``dims``, and the Plan-41 End-action all
+    read the very same ambient Hom basis (no basis mismatch)."""
     from quiverlab.modules.ext import _delta_matrix
     from quiverlab.modules.hom import _assert_comparable
     _assert_comparable(M, N, "Ext")
@@ -246,7 +241,7 @@ def ext_reps(A, M, N, top, interpret=False):
         deltas.append(_delta_matrix(homs[n], homs[n + 1], dn1, dom)
                       if (dn1 and dn1[0]) else
                       lm.zeros(len(homs[n + 1]), len(homs[n]), dom))
-    bc, cb, diffs, dims, cols_by_deg = {}, {}, {}, [], {}
+    cols_by_deg, dims = {}, []
     for n in range(top + 1):
         space = len(homs[n]) if n < len(homs) else 0
         here = deltas[n] if n < len(deltas) else None
@@ -254,6 +249,41 @@ def ext_reps(A, M, N, top, interpret=False):
         cols = _reps_from_complex(here, prev, space, dom) if space else []
         cols_by_deg[n] = cols
         dims.append(len(cols))
+    return terms, dmats, tinfo, elements, homs, deltas, cols_by_deg, dims
+
+
+def ext_cocycle_data(A, M, N, top):
+    """Plan-41 internal accessor: the raw ``Ext^0..top_A(M, N)`` cohomology data WITHOUT
+    serialization. Returns ``(terms, dmats, homs, cols_by_deg)`` where ``homs[n]`` is the
+    ambient ``Hom(P_n, N)`` basis (matrices ``N.dim x P_n.dim``) and ``cols_by_deg[n]``
+    the chosen cohomology-class coordinate columns over that basis -- the SAME complex
+    :func:`ext_reps` walks (shared :func:`_ext_complex` core), so a class reconstructed
+    from these columns coincides byte-for-byte with the serialized reps."""
+    terms, dmats, _tinfo, _elements, homs, _deltas, cols_by_deg, _dims = _ext_complex(
+        A, M, N, top)
+    return terms, dmats, homs, cols_by_deg
+
+
+def ext_reps(A, M, N, top, interpret=False):
+    """``(dims, payload)`` for ``Ext^0..top_A(M, N)``. ``payload`` carries
+    ``basis_classes`` / ``chain_basis`` / ``differentials`` keyed by ``str(degree)``
+    (single side -- Ext is cohomological). ``dims`` is asserted equal to
+    ``ext_dims(A, M, N, top)`` (basis independence).
+
+    With ``interpret=True`` the payload also carries ``interpretation`` (Plan 35 wave
+    3c): for each degree ``n >= 1`` class, the explicit Yoneda ``n``-fold exact
+    sequence ``0 -> N -> Q -> P_{n-2} -> ... -> P_0 -> M -> 0`` realizing it -- the
+    middle module ``Q`` as a full representation, every connecting map as a matrix, and
+    the SELF-CERTIFIED exactness facts (a class whose sequence fails certification ships
+    an honest ``error`` entry, never a wrong sequence)."""
+    dom = A.domain
+    terms, dmats, _tinfo, elements, homs, deltas, cols_by_deg, dims = _ext_complex(
+        A, M, N, top)
+    bc, cb, diffs = {}, {}, {}
+    for n in range(top + 1):
+        space = len(homs[n]) if n < len(homs) else 0
+        here = deltas[n] if n < len(deltas) else None
+        cols = cols_by_deg[n]
         elems = elements[n] if n < len(elements) else []
         bc[str(n)] = _classes_from_columns(cols, elems, n, "ext", dom)
         cb[str(n)] = enumeration_labels(elems, "ext")
