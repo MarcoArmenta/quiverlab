@@ -43,6 +43,7 @@ _HEADINGS = {
     "dimension": "Dimension",
     "ext_algebra": "Yoneda Ext-algebra and Koszulity",
     "recognizers": "Structural recognizers and type",
+    "derived_fingerprint": "Derived fingerprint",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -273,6 +274,38 @@ def _recognizers_html(b):
     return out
 
 
+def _derived_fingerprint_html(b):
+    """The derived fingerprint: the invariant tuple rendered as a table, plus the
+    binding necessary-condition scope line. A field captured as an error prints its
+    message; no field is silently dropped."""
+    fp = b.get("fingerprint") or {}
+
+    def _cell(val):
+        if isinstance(val, dict) and "error" in val:
+            return "unavailable — %s" % _esc(str(val["error"]))
+        if isinstance(val, list):
+            return _esc("[" + ", ".join(str(x) for x in val) + "]")
+        return _esc(str(val))
+
+    rows = [
+        ("Coxeter polynomial", fp.get("coxeter_polynomial")),
+        ("det C", fp.get("cartan_det")),
+        ("Cartan Smith factors", fp.get("cartan_smith")),
+        ("dim HH^• (cohomology)", fp.get("hh_cohomology_dims")),
+        ("dim HH_• (homology)", fp.get("hh_homology_dims")),
+        ("dim HC_• (cyclic)", fp.get("cyclic_dims")),
+        ("dim Z(A)", fp.get("center_dim")),
+        ("global dimension", fp.get("gl_dim")),
+    ]
+    body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(k), _cell(v))
+                   for k, v in rows)
+    out = ["<table class='ql-fingerprint'><tbody>%s</tbody></table>" % body]
+    out.append("<p><em>%s.</em></p>" % _esc(
+        b.get("scope", "a derived-invariant fingerprint; equal values are a "
+                       "necessary condition for derived equivalence, not a proof")))
+    return out
+
+
 def _block_html(kind, b, ctx=None):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
@@ -338,6 +371,8 @@ def _block_html(kind, b, ctx=None):
         return _ext_algebra_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
+    if kind == "derived_fingerprint":
+        return _derived_fingerprint_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":

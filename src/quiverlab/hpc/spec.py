@@ -1216,6 +1216,16 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block = ext_algebra_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Derived fingerprint (Plan 43): a scalar kind on the algebra block (schema v1).
+    # The optional range gives the top HH/HC degree (default 4). Both runners share
+    # derived.block.derived_fingerprint_block, so the blocks are byte-identical; the
+    # two-algebra compare panel is deferred to P50 (needs a second-algebra field).
+    if kind == "derived_fingerprint":
+        top = item.hi if item.hi is not None else 4
+        from quiverlab.derived.block import derived_fingerprint_block
+        block = derived_fingerprint_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Recognizer batch + type detection (Plan 38): a pure scalar kind on the
     # algebra block; per-flag honest errors, never a silent False.
     if kind == "recognizers":
@@ -1778,6 +1788,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "recognizers": lambda it: ("[A.is_semisimple(), A.is_hereditary(), "
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),
+             "derived_fingerprint":
+                 lambda it: ("from quiverlab.derived import derived_fingerprint; "
+                             f"derived_fingerprint(A, {it.hi if it.hi is not None else 4})"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",

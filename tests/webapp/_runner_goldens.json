@@ -446,5 +446,48 @@
   },
   "canonical_key": "fd851ac873c42096547549d23338413902d397f8b34f88f546aa17193d3bb538",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Auslander-Reiten theory reference: almost-split sequences, irreducible maps, the AR quiver, and the Nakayama functor -- the ground truth for Plan 41.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ARS1995\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Auslander, Maurice; Reiten, Idun; Smalo, Sverre O. (1995). Representation Theory of Artin Algebras. Cambridge University Press 36.\", \"key\": \"ars_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(5))\\nM = A.simple(2, side=\\\"right\\\")\\nM.almost_split_sequence()\", \"results\": {\"almost_split\": {\"M\": {\"dim\": 1, \"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}}, \"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"], [\"ARS1995\", \"Auslander, Maurice; Reiten, Idun; Smalo, Sverre O. (1995). Representation Theory of Artin Algebras. Cambridge University Press 36.\"]], \"exists\": true, \"indecomposable\": true, \"kind\": \"almost_split\", \"latex\": \"0 \\\\to \\\\tau M \\\\to E \\\\to M \\\\to 0\", \"middle\": {\"summands\": [{\"dim_vector\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"indecomposable\": true, \"multiplicity\": 1, \"standard\": {\"kind\": \"projective\", \"vertex\": \"2\"}}]}, \"references\": [\"assem_book\", \"ars_book\"], \"side\": \"right\", \"tau\": {\"dims\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"maps\": {}}}}}"
+ },
+ "derived_fingerprint_a4": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ],
+     "c": [
+      3,
+      4
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 5
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "derived_fingerprint"
+   ]
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3], \"c\": [3, 4]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3, 4]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The derived-category reference: the Serre functor / AR triangles of D^b(mod A) exist iff gl.dim < infinity, tau_{D^b} = nu[-1] -- the ground truth for the Plan-43 derived surface.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Happel1988\", \"doi\": \"10.1017/CBO9780511629228\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511629228\", \"formatted\": \"Happel, Dieter (1988). Triangulated Categories in the Representation Theory of Finite Dimensional Algebras. Cambridge University Press 119.\", \"key\": \"happel_triangulated\", \"topic\": \"Foundations\"}, {\"annotation\": \"Derived-equivalent algebras (e.g. a Brauer tree and its Brauer star) share Hochschild and cyclic homology -- the derived-invariance oracle.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Rickard1989\", \"doi\": \"10.1112/jlms/s2-39.3.436\", \"doi_url\": \"https://doi.org/10.1112/jlms/s2-39.3.436\", \"formatted\": \"Rickard, Jeremy (1989). Morita theory for derived categories. Journal of the London Mathematical Society. Second Series 39, 436-456.\", \"key\": \"rickard_derived\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and Happel's trace identity -- the spectral-invariant oracle.\", \"arxiv\": \"0805.1018\", \"arxiv_url\": \"https://arxiv.org/abs/0805.1018\", \"bibtex_key\": \"LenzingdlPena2008spectral\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\", \"key\": \"lenzing_delapena_spectral\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3, 4], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3), \\\"c\\\": (3, 4)})\\nA = Q.algebra(relations=[], field=GF(5))\\nfrom quiverlab.derived import derived_fingerprint; derived_fingerprint(A, 4)\", \"results\": {\"derived_fingerprint\": {\"citations\": [[\"Happel1988\", \"Happel, Dieter (1988). Triangulated Categories in the Representation Theory of Finite Dimensional Algebras. Cambridge University Press 119.\"], [\"Rickard1989\", \"Rickard, Jeremy (1989). Morita theory for derived categories. Journal of the London Mathematical Society. Second Series 39, 436-456.\"], [\"LenzingdlPena2008spectral\", \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\"]], \"fingerprint\": {\"cartan_det\": 1, \"cartan_smith\": [1, 1, 1, 1], \"center_dim\": 1, \"coxeter_polynomial\": \"t**4 + t**3 + t**2 + t + 1\", \"cyclic_dims\": {\"error\": \"cyclic homology: bar boundary b_3 pairs 5904900 cells (> max_cells = 4000000)  [hint: the (b, B) bar complex is exponential (dim C_n = m*(m-1)^n); raise max_cells or lower top only if you know what you are doing]\"}, \"gl_dim\": \"gl.dim = 1 (exact)\", \"hh_cohomology_dims\": [1, 0, 0, 0, 0], \"hh_homology_dims\": [4, 0, 0, 0, 0]}, \"kind\": \"derived_fingerprint\", \"latex\": \"\\\\begin{aligned}\\\\text{Coxeter polynomial } p(t) &= t**4 + t**3 + t**2 + t + 1 \\\\\\\\ \\\\det C &= 1 \\\\\\\\ \\\\text{Cartan Smith factors} &= [1, 1, 1, 1] \\\\\\\\ \\\\dim HH^\\\\bullet &= [1, 0, 0, 0, 0] \\\\\\\\ \\\\dim HH_\\\\bullet &= [4, 0, 0, 0, 0] \\\\\\\\ \\\\dim HC_\\\\bullet &= [error] \\\\\\\\ \\\\dim Z(A) &= 1 \\\\\\\\ \\\\text{gl.dim} &: \\\\text{gl.dim = 1 (exact)}\\\\end{aligned}\", \"references\": [\"happel_triangulated\", \"rickard_derived\", \"lenzing_delapena_spectral\"], \"scope\": \"a derived-invariant fingerprint; equal values are a necessary condition for derived equivalence, not a proof\", \"top\": 4}}}",
+  "canonical_key": "cc09aeababfbbaa5227b907f5d924750451eee8985967e213322cbaf5302abc1"
  }
 }
