@@ -138,6 +138,9 @@ class ChainComplex:
         Y = ChainComplex(new_terms, new_dmats, check=False)
         if getattr(self, "_perfect", False):
             Y._perfect = True
+        prov = getattr(self, "_proj_vertices", None)
+        if prov is not None:                    # X[k]_{n+k} = X_n: carry the vertex lists
+            Y._proj_vertices = {n + k: list(vs) for n, vs in prov.items()}
         return Y
 
     def truncate(self, lo, hi):
@@ -266,6 +269,11 @@ class ChainComplex:
                     dmats[n] = mat
         X = cls(terms, dmats, check=True)
         X._perfect = True
+        # Provenance for the derived AR translate (Plan 43 / Task 2): the per-degree
+        # projective-summand vertex multiset, in the resolution's summand order (the
+        # block order of every dmat). nu is applied termwise off exactly this list.
+        X._proj_vertices = {n: list(terms_list[n].vertices)
+                            for n in terms if terms_list[n].module is not None}
         return X
 
     def __repr__(self):
@@ -442,6 +450,24 @@ class ChainMap:
         if getattr(X, "_perfect", False) and getattr(Y, "_perfect", False):
             C._perfect = True
         return C
+
+    def then(self, g):
+        """``self`` then ``g`` (left-to-right, mirroring ``ModuleHom.then``):
+        ``(self.then(g)).component(n) = g.component(n) @ self.component(n)``. Refuses
+        if the middle complexes differ (``g.src is self.tgt``). ``check=False`` -- each
+        square is the matmul of two commuting squares; callers re-validate on demand."""
+        if g.src is not self.tgt:
+            raise QuiverlabError("ChainMap.then: middle complexes differ")
+        dom = self.domain
+        comps = {}
+        degs = set(self.src.degrees()) | set(g.tgt.degrees())
+        for n in degs:
+            fn, gn = self.component(n), g.component(n)
+            if self.tgt.term(n).dim == 0:            # matmul is shapeless through 0
+                comps[n] = lm.zeros(g.tgt.term(n).dim, self.src.term(n).dim, dom)
+            else:
+                comps[n] = lm.matmul(gn, fn, dom)
+        return ChainMap(self.src, g.tgt, comps, check=False)
 
     def is_quasi_iso(self):
         """``f`` is a quasi-isomorphism iff its mapping cone is acyclic."""
