@@ -97,6 +97,54 @@ class ModuleHom:
     def is_iso(self) -> bool:
         return self.src.dim == self.tgt.dim and self.rank() == self.src.dim
 
+    # -- kernel / image / cokernel as Modules-with-maps (Task 2) ------------- #
+    def kernel(self):
+        """``(K, iota)`` with ``K = ker(self)`` a submodule of ``src`` and
+        ``iota: K -> src`` the (mono) inclusion. ``iota.then(self) == 0``."""
+        from quiverlab.modules import radtopsoc
+        dom = self.domain
+        cols = lm.kernel_columns(self.matrix, dom) if (self.matrix and self.matrix[0]) \
+            else ([lm.col(lm.identity(self.src.dim, dom), j)
+                   for j in range(self.src.dim)] if self.src.dim else [])
+        K = radtopsoc.submodule(self.src, cols,
+                                name=f"ker({self.src.name}->{self.tgt.name})")
+        iota = ModuleHom(K, self.src, _cols_to_mat(cols, self.src.dim, dom),
+                         check=False)
+        return K, iota
+
+    def image(self):
+        """``(I, epi, mono)``: ``I = im(self)`` as a submodule of ``tgt``, with
+        ``epi: src ->> I`` and ``mono: I >-> tgt`` and ``self == epi.then(mono)``."""
+        from quiverlab.modules import radtopsoc
+        dom = self.domain
+        pivots = lm.column_space_pivots(self.matrix, dom)
+        cols = [lm.col(self.matrix, j) for j in pivots]
+        I = radtopsoc.submodule(self.tgt, cols,
+                                name=f"im({self.src.name}->{self.tgt.name})")
+        mono = ModuleHom(I, self.tgt, _cols_to_mat(cols, self.tgt.dim, dom),
+                         check=False)
+        if I.dim == 0:
+            epi = ModuleHom(self.src, I, lm.zeros(0, self.src.dim, dom), check=False)
+        else:
+            # express each column of self (image of a src basis vector) in the chosen
+            # image basis (mono's columns) -- solvable because those columns span im.
+            coeffs = lm.solve_columns(mono.matrix, self.matrix, dom)
+            epi = ModuleHom(self.src, I,
+                            [[coeffs[j][i] for j in range(self.src.dim)]
+                             for i in range(I.dim)], check=False)
+        return I, epi, mono
+
+    def cokernel(self):
+        """``(C, proj)`` with ``C = tgt / im(self)`` and ``proj: tgt ->> C`` (epi).
+        ``self.then(proj) == 0``."""
+        from quiverlab.modules.yoneda import _quotient_with_maps
+        dom = self.domain
+        img_cols = [lm.col(self.matrix, j) for j in range(self.src.dim)]
+        C, proj_mat, _lift = _quotient_with_maps(
+            self.tgt, img_cols, dom,
+            name=f"coker({self.src.name}->{self.tgt.name})")
+        return C, ModuleHom(self.tgt, C, proj_mat, check=False)
+
     def __repr__(self):
         return f"Hom({self.src.name} -> {self.tgt.name}, rank {self.rank()})"
 
