@@ -118,3 +118,141 @@ def costandard_modules(A, order=None):
         nab.name = f"Nabla_{i}"
         out[i] = nab
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Task C: is_quasi_hereditary (QHReport) + delta_multiplicities + BGG reciprocity.
+# --------------------------------------------------------------------------- #
+@dataclass
+class QHReport:
+    """Three-valued (like ``TiltingReport``): ``bool(report)`` is
+    ``is_quasi_hereditary``; ``repr`` names the failing clause. ``per_index`` records, per
+    vertex, the ``brick`` (``End Delta(i) = k``) and ``delta_filters_P`` certificates."""
+    is_quasi_hereditary: bool
+    order: list
+    gl_dim: object          # GlobalDimension (qh => finite, Dlab-Ringel)
+    per_index: dict         # vertex -> {"brick": bool, "delta_filters_P": bool, "note": str}
+    note: str               # names the failing clause, "quasi-hereditary" when ok
+
+    def __bool__(self):
+        return self.is_quasi_hereditary
+
+    def __repr__(self):
+        if self.is_quasi_hereditary:
+            return f"quasi-hereditary (order {self.order})"
+        return f"not quasi-hereditary: {self.note}"
+
+
+def _hom_dim(M, N):
+    return len(hom_space(M, N))
+
+
+def _combine_homs(homs, coeffs, dom):
+    """The dom-linear combination ``sum coeffs[k] * homs[k].matrix`` (a raw matrix)."""
+    nrow = len(homs[0].matrix)
+    ncol = len(homs[0].matrix[0]) if homs[0].matrix else 0
+    out = lm.zeros(nrow, ncol, dom)
+    for c, f in zip(coeffs, homs):
+        if dom.is_zero(c):
+            continue
+        for i in range(nrow):
+            oi, fi = out[i], f.matrix[i]
+            for j in range(ncol):
+                oi[j] = dom.add(oi[j], dom.mul(c, fi[j]))
+    return out
+
+
+def _find_surjection(M, D):
+    """An epi ``M ->> D`` as a raw matrix, or ``None``. A single basis hom already surjects
+    for the directed/uniserial oracles; the general case is a bounded search over small
+    field-coefficient combinations of ``hom_basis(M, D)`` (never fabricate a surjection --
+    ``None`` is the honest 'cannot peel Delta here')."""
+    dom = M.domain
+    homs = hom_basis(M, D)
+    for f in homs:
+        if f.is_epi():
+            return f.matrix
+    if not homs or D.dim == 0:
+        return None
+    # bounded combination search: units first, then a small integer ladder.
+    import itertools
+    from quiverlab.fields.primefield import PrimeField
+    r = len(homs)
+    if isinstance(dom, PrimeField):
+        vals = [dom.coerce(i) for i in range(dom.p)]
+    else:
+        vals = [dom.coerce(i) for i in range(-1, 3)]
+    cap = 20000
+    if len(vals) ** r > cap:
+        return None                                  # too big to search honestly
+    for idx in itertools.product(range(len(vals)), repeat=r):
+        if all(t == 0 for t in idx):
+            continue
+        C = _combine_homs(homs, [vals[t] for t in idx], dom)
+        if lm.mat_rank(C, dom) == D.dim:
+            return C
+    return None
+
+
+def delta_multiplicities(M, deltas, order=None):
+    """Greedy top-down Delta-peel: at each step take the HIGHEST-in-``order`` ``Delta(i)``
+    whose top ``S_i`` appears in ``top(M)`` and which admits an epi ``M ->> Delta(i)``;
+    quotient by its kernel; recurse. Returns ``(mult: vertex -> (M:Delta(i)), certified)``.
+    ``certified=False`` (LOUD) when the peel stalls with ``M != 0`` (no Delta-filtration) --
+    three-valued honesty like ``TiltingReport``; never a fabricated count."""
+    if not deltas:
+        return {}, M.dim == 0
+    A = deltas[next(iter(deltas))].base_algebra
+    ranks, order = _order_ranks(A, order)
+    mult = {i: 0 for i in deltas}
+    cur = M
+    guard = 0
+    while cur.dim > 0:
+        guard += 1
+        if guard > M.dim + 1:                        # cannot exceed dim M genuine layers
+            return mult, False
+        tops = cur.top().dimension_vector()
+        cands = sorted((i for i in deltas if tops.get(i, 0) > 0),
+                       key=lambda i: ranks.get(i, -1), reverse=True)
+        peeled = False
+        for i in cands:
+            fmat = _find_surjection(cur, deltas[i])
+            if fmat is None:
+                continue
+            epi = ModuleHom(cur, deltas[i], fmat, check=False)
+            K, _iota = epi.kernel()
+            mult[i] += 1
+            cur = K
+            peeled = True
+            break
+        if not peeled:
+            return mult, False                        # uncertified: no Delta peels off the top
+    return mult, True
+
+
+def is_quasi_hereditary(A, order=None):
+    """A :class:`QHReport`. ``A`` with order ``>`` is quasi-hereditary iff for every ``i``
+    (1) ``End_A(Delta(i)) = k`` (Delta(i) is a brick) and (2) ``P(i)`` has a Delta-filtration
+    (top ``Delta(i)``, rest ``Delta(j)``, ``j > i``); a NECESSARY classical consequence is
+    ``gl.dim A < infinity`` (Dlab-Ringel). Three-valued: ``True``, or ``False`` with a
+    ``note`` naming the first failing clause. Char-clean pure linear algebra."""
+    from quiverlab.modules.ext import global_dimension
+    ranks, order = _order_ranks(A, order)
+    deltas = standard_modules(A, order)
+    gld = global_dimension(A)                          # qh => finite (Dlab-Ringel)
+    per, ok = {}, True
+    for i in order:
+        brick = (_hom_dim(deltas[i], deltas[i]) == 1)   # End Delta(i) = k
+        _mult, filt = delta_multiplicities(A.projective(i), deltas, order)
+        note = ("ok" if (brick and filt) else
+                ("End Delta != k" if not brick else "P has no Delta-filtration"))
+        per[i] = {"brick": brick, "delta_filters_P": filt, "note": note}
+        ok = ok and brick and filt
+    ok = ok and gld.exact
+    if ok:
+        note = "quasi-hereditary"
+    elif not gld.exact:
+        note = f"gl.dim not finite ({gld!r})"
+    else:
+        note = "; ".join(f"{i}: {per[i]['note']}" for i in order if per[i]["note"] != "ok")
+    return QHReport(ok, order, gld, per, note)
