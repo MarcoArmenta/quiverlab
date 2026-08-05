@@ -43,6 +43,11 @@ CATALOG = (
     FamilyInfo("TensorProduct", "TensorProduct(A, B)",
                "structure-constant", ("tensor_product", "hodge"),
                "Tensor product A (x)_k B."),
+    FamilyInfo("BrauerGraphAlgebra", "BrauerGraphAlgebra(BrauerGraph, multiplicities)",
+               "general", ("schroll_brauer", "wald_waschbusch", "assem_book"),
+               "Symmetric special-biserial algebra of a ribbon graph with vertex "
+               "multiplicities (dim = sum_v m_v*val(v)^2). Non-scalar constructor: "
+               "not offered by the scalar form-builder."),
     FamilyInfo("zoo", "zoo(dim_max=12)",
                "iterator", ("han_conjecture", "chouhy_solotar"),
                "Iterator over the curated exact zoo of open (Han-conjecture) algebras."),

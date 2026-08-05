@@ -301,7 +301,7 @@ def resolve_references(keys) -> list:
 def _iter_families():
     for info in ql.families():
         name = info.name
-        if name == "zoo":
+        if name in ("zoo", "BrauerGraphAlgebra"):   # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:

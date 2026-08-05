@@ -1,4 +1,5 @@
 from quiverlab.families.basic import linear_path_algebra, truncated_polynomial  # noqa: F401
+from quiverlab.families.brauer import BrauerGraph, BrauerGraphAlgebra  # noqa: F401
 from quiverlab.families.dynkin import dynkin_quiver  # noqa: F401
 from quiverlab.families.exterior import ExteriorAlgebra  # noqa: F401
 from quiverlab.families.incidence import IncidenceAlgebra  # noqa: F401
