@@ -577,6 +577,33 @@ class Algebra:
         from quiverlab.invariants.recognizers import is_basic
         return is_basic(self)
 
+    def primitive_idempotents(self):
+        """A complete set of orthogonal primitive idempotents of this algebra (coordinate
+        vectors summing to the unit) via the exact Wedderburn/trace-form route (Plan 44 /
+        C7). Char 0 or char > dim only, else a loud QuiverlabError."""
+        from quiverlab.core.basic import primitive_idempotents
+        return primitive_idempotents(self)
+
+    def basic_algebra(self):
+        """The basic algebra ``eAe`` (one primitive idempotent per iso class),
+        Morita-equivalent to this algebra, as a structure-constant Algebra (Plan 44)."""
+        from quiverlab.core.basic import basic_algebra
+        return basic_algebra(self)
+
+    def gabriel_quiver(self):
+        """The Gabriel (Ext) quiver of this algebra (vertices = iso classes of primitive
+        idempotents, arrows off ``rad/rad^2`` of the basic algebra) (Plan 44)."""
+        from quiverlab.core.basic import gabriel_quiver
+        return gabriel_quiver(self)
+
+    def presented_form(self):
+        """A genuine ``kQ/I`` presentation of the basic algebra, recovered from the
+        structure constants and certified per instance (dim + multiplicativity), so
+        ``End(M)`` / ``End(T)`` read back as ``kQ/I`` (Plan 44 / C7). Loud refusal off
+        char-scope or on a non-split division-algebra block."""
+        from quiverlab.core.basic import presented_form
+        return presented_form(self)
+
     def is_nakayama(self):
         """True iff the quiver is a union of linear A_n and single oriented
         cycles (every vertex in/out-degree <= 1)."""
