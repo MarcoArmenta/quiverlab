@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2772 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2796 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-02, after Plans 21–33, the Plan-32 oracle-class markers + audit gate,
 Marco's report-completeness pass, Marco's Cayley product-table render wave, the
 Plan-35 Hochschild product surface, its
@@ -17,7 +17,8 @@ Tor / HC / HH class now ships its (co)cycle as a labeled term-sum + a coordinate
 vector self-certified against the differential, every Ext class is CONSTRUCTED as
 its explicit exact sequence, and the report/GUI lay it all out per degree with each
 space's classical interpretation stated — HH⁰'s centre, HH¹'s derivations, HH²'s
-deformation cochain, HH₀'s commutator residues read straight off the reps). It
+deformation cochain, HH₀'s commutator residues read straight off the reps; and the
+Plan-36 Macaulay2 oracle bridge — a fifth, external oracle class, `-m m2`). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one. Every test is
 **classifiable** into exactly this scheme — one of five oracle classes (literature,

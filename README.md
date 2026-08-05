@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-2772_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-2796_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -190,10 +190,10 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 2772 tests over the
+Every shipped feature is unit tested (the suite is 2796 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
-of oracle** — surfaced since Plan 32 as four orthogonal, runnable marker classes
-(`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa`), audited
+of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
+(`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
 against live collection:
 
 - **Theory and literature, on constructed examples.** We build many algebras the
@@ -210,7 +210,9 @@ against live collection:
   wherever the GAP package **QPA** implements a feature we recompute with it and
   demand equality (`A.crosscheck(...)`). QPA does not implement everything
   quiverlab does; the docs page names exactly where it is used and which theory
-  oracle stands in where it cannot.
+  oracle stands in where it cannot. And a live **Macaulay2** bridge recomputes nc
+  graded dimensions and commutative Ext data (single-vertex scope; `-m m2`) — a
+  genuinely different computer-algebra system as a second external oracle.
 
 Exactness is enforced structurally: an AST gate bans every float from `src/`, and
 the entire deep suite runs twice in CI — once on the numba kernels, once on the
