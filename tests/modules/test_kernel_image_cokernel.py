@@ -39,7 +39,7 @@ def test_rank_nullity_and_factorization_battery():
     # Nakayama algebra kA3/(ab) has exactly 14 hom-basis elements total (verified
     # degreewise via A.hom; P3 is simple so P3 == S3). The plan's ">= 20" was an
     # overestimate; 12 keeps the "substantial nonempty battery" intent.
-    assert seen >= 12                                     # battery is nonempty
+    assert seen == 14      # exact total Hom dim of the 6x6 grid (devil's-advocate pin)
 
 
 def test_kernel_of_projective_cover_is_radical_syzygy():

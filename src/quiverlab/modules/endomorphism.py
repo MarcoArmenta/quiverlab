@@ -1,11 +1,15 @@
 """End_A(M) as a structure-constant Algebra (Plan 37 / C1).
 
 Basis = ``hom_basis(M, M)``; the product of basis elements ``b_i * b_j`` is
-``b_i.then(b_j)`` (left-to-right, the house path convention -- this makes
-``End(A_A) ~ A`` as a k-algebra, and the regular-module oracle
-``E.loewy_length() == A.loewy_length()`` accepts this order: both ``dim`` and
-Loewy length are opposite-invariant, so the oracle passes with either order and
-we keep the house left-to-right ``.then``). The unit is ``id_M``.
+the COMPOSITE ``b_i o b_j`` (apply ``b_j`` first -- function-composition
+order, i.e. ``b_j.then(b_i)``). ARBITRATED (devil's-advocate round,
+2026-08-05): on the non-self-opposite source quiver ``1->2, 1->3`` the
+corner dimensions of ``End((+) P_v)`` equal the CARTAN MATRIX of ``A``
+under this order (``End(A_A) ~ A``) and its transpose under the path
+order ``b_i.then(b_j)`` (``~ A^op``); the original kA2 regular-module
+oracle was blind to the difference (kA2 is self-opposite). Pinned by
+``regular_corner_dims`` and ``test_end_of_regular_is_A_not_Aop``. The
+unit is ``id_M``.
 
 The returned :class:`~quiverlab.core.algebra.Algebra` is presentation-less
 (no quiver): arithmetic, ``center``, ``loewy_length`` and decompose-style analysis
@@ -42,23 +46,9 @@ def end_algebra(M):
         raise QuiverlabError(
             "End of the zero module is the zero ring -- not an Algebra with 1 here; "
             "refused.")
-    basis = hom_basis(M, M)
+    T, unit, basis, _B = _structure_constants(M)
     dom = M.domain
     d = M.dim
-    B = lm.cols_to_matrix([_vec(f.matrix, d) for f in basis])   # (d*d) x r
-    T = []
-    for bi in basis:
-        row = []
-        for bj in basis:
-            prod = bi.then(bj)                                   # b_i then b_j
-            x = solve(B, _vec(prod.matrix, d), dom)
-            if x is None:
-                raise QuiverlabError(
-                    "End(M) product left the Hom basis -- hom_space is inconsistent "
-                    "(bug)")
-            row.append(x)
-        T.append(row)
-    unit = solve(B, _vec(M.identity_hom().matrix, d), dom)
     E = Algebra.from_structure_constants(T, list(unit), field=dom, check=True)
     relabeled = _with_radical_labels(E, [f.matrix for f in basis], dom, d)
     return relabeled if relabeled is not None else E
@@ -102,3 +92,54 @@ def _with_radical_labels(E, hmats, dom, d):
     E2.basis_labels = ([f"e_{i}" for i in range(len(comp))]
                        + [f"r_{i}" for i in range(dim_rad)])
     return E2
+
+
+def _structure_constants(M):
+    """(T, unit, basis, B) of End_A(M) in the hom_basis, product
+    ``b_i * b_j = b_i o b_j`` (function composition = ``b_j.then(b_i)`` --
+    see the module docstring for the arbitration)."""
+    basis = hom_basis(M, M)
+    dom = M.domain
+    d = M.dim
+    B = lm.cols_to_matrix([_vec(f.matrix, d) for f in basis])   # (d*d) x r
+    T = []
+    for bi in basis:
+        row = []
+        for bj in basis:
+            prod = bj.then(bi)                    # b_i o b_j: apply b_j first
+            x = solve(B, _vec(prod.matrix, d), dom)
+            if x is None:
+                raise QuiverlabError(
+                    "End(M) product left the Hom basis -- hom_space is "
+                    "inconsistent (bug)")
+            row.append(x)
+        T.append(row)
+    unit = solve(B, _vec(M.identity_hom().matrix, d), dom)
+    return T, unit, basis, B
+
+
+def regular_corner_dims(A):
+    """dim(e_v . End(A_A) . e_w) for the summand projectors e_v of the
+    regular module (+)_v P_v, computed THROUGH the structure constants --
+    the sided oracle: equals ``cartan_matrix(A)`` iff End(A_A) ~ A."""
+    from quiverlab.modules.morphism import direct_sum
+    verts = list(A.quiver.vertices)
+    D, incls, projs = direct_sum(*[A.projective(v) for v in verts])
+    T, unit, basis, B = _structure_constants(D)
+    dom = D.domain
+    d = D.dim
+    E0 = Algebra.from_structure_constants(T, list(unit), field=dom, check=False)
+    eps = [solve(B, _vec(projs[i].then(incls[i]).matrix, d), dom)
+           for i in range(len(verts))]
+    n = len(basis)
+    out = []
+    for i in range(len(verts)):
+        row = []
+        for j in range(len(verts)):
+            vecs = []
+            for k in range(n):
+                bk = [dom.one() if m == k else dom.zero() for m in range(n)]
+                vecs.append(E0.multiply(eps[i], E0.multiply(bk, eps[j])))
+            row.append(lm.mat_rank(vecs, dom))
+        out.append(row)
+    return out

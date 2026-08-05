@@ -10,6 +10,13 @@ from quiverlab.fields import linalg
 def _radical_basis_indices(A):
     """Indices of the basis labels lying in rad A = the arrow ideal (all non-idempotent
     basis paths, i.e. every label that is not 'e_v')."""
+    if A.basis_labels is None:
+        from quiverlab.errors import QuiverlabError
+        raise QuiverlabError(
+            "this invariant reads the radical off e_-prefixed basis labels, and "
+            "this algebra has none (label-less structure constants -- e.g. an "
+            "End(M) over char <= dim M, where the radical split cannot be "
+            "certified). No silent guess is made.")
     return [i for i, lab in enumerate(A.basis_labels) if not lab.startswith("e_")]
 
 
