@@ -145,8 +145,16 @@ class ChainComplex:
         the differentials strictly inside the window (``lo < n <= hi``); the boundary
         differential ``d_lo`` (out of the window) is dropped."""
         new_terms = {n: M for n, M in self._terms.items() if lo <= n <= hi}
+        if not any(M.dim for M in new_terms.values()):
+            raise QuiverlabError(
+                f"truncate: the window [{lo}, {hi}] misses the support "
+                f"{self.degrees()} entirely -- an empty truncation has no home "
+                "(devil's-advocate targeted message, 2026-08-05).")
         new_dmats = {n: mat for n, mat in self._dmats.items() if lo < n <= hi}
-        return ChainComplex(new_terms, new_dmats, check=False)
+        out = ChainComplex(new_terms, new_dmats, check=False)
+        # brutal truncation of a perfect complex stays perfect
+        out._perfect = self._perfect
+        return out
 
     # -- homology ------------------------------------------------------------ #
     def homology_dims(self, lo=None, hi=None):

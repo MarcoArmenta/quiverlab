@@ -92,3 +92,18 @@ def test_toplevel_exports_and_algebra_wrapper():
     assert isinstance(X, ChainComplex)
     assert X.homology_dims() == {0: 1}
     assert X.homology(0).dimension_vector() == S1.dimension_vector()
+
+
+def test_truncate_out_of_support_targeted_error():
+    # Devil's-advocate minor (2026-08-05): the empty truncation must name
+    # the window and the support, not a generic constructor complaint.
+    A = _a3()
+    X = ChainComplex.from_projective_resolution(A.simple(1), length=2)
+    with pytest.raises(QuiverlabError, match=r"truncate.*\[10, 12\]"):
+        X.truncate(10, 12)
+
+
+def test_truncate_preserves_perfect_flag():
+    A = _a3()
+    X = ChainComplex.from_projective_resolution(A.simple(1), length=3)
+    assert X.truncate(1, 3).is_perfect()
