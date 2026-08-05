@@ -28,7 +28,6 @@
   "block.connes_b.title": "Diferenciales de Connes",
   "block.bracket.window": "calculado hasta la ventana de grado {n} (cota del transporte bar)",
   "block.products.zero": "todos los productos se anulan en este par de grados",
-<<<<<<< HEAD
   "inv.ext_algebra": "Álgebra de Ext / Koszulidad 0..N",
   "inv.recognizers": "Reconocedores + tipo Dynkin/euclidiano",
   "block.ext_algebra.title": "Álgebra de Yoneda-Ext y Koszulidad",
@@ -36,14 +35,12 @@
   "block.ext_algebra.koszul_no": "A no es de Koszul (obstrucción en grado {n})",
   "block.ext_algebra.koszul_undecided": "Koszulidad indecidida hasta el grado {n}",
   "block.recognizers.title": "Reconocedores estructurales y tipo",
-=======
   "block.homprofile.title": "Dimensiones homológicas",
   "block.homprofile.gldim": "Dimensión global",
   "block.homprofile.findim": "Dimensión finitística",
   "block.homprofile.domdim": "Dimensión dominante",
   "block.homprofile.gorenstein": "Gorenstein",
   "block.homprofile.igusa": "φ/ψ de Igusa–Todorov",
->>>>>>> plan-40-homdims
   "job.title": "Trabajo",
   "job.status": "Estado:",
   "job.downloads": "Descargas:",
