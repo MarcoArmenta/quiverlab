@@ -342,3 +342,38 @@ def ringel_dual(A, order=None):
         R._ringel_note = ("Ringel dual returned in structure-constant form: presented_form "
                           f"refused ({exc})")
         return R
+
+
+# --------------------------------------------------------------------------- #
+# Task F: the quasi_hereditary GUI/webapp scalar compute block (natural order).
+# --------------------------------------------------------------------------- #
+def quasi_hereditary_block(A, order=None):
+    """The ``quasi_hereditary`` algebra-scalar compute block (schema v1): the quasi-heredity
+    verdict + per-index brick / Delta-filtration certificates + the Delta dim-vectors, for
+    the given ``order`` (default the NATURAL vertex order, with the honest order-dependence
+    note). Shared by both runners (byte-identical). Refs Dlab-Ringel + ASS."""
+    rep = is_quasi_hereditary(A, order)
+    deltas = standard_modules(A, rep.order)
+    standard_dims = {}
+    for v in rep.order:
+        dv = deltas[v].dimension_vector()
+        standard_dims[str(v)] = {
+            "dim": deltas[v].dim,
+            "dimvec": {str(w): int(n) for w, n in sorted(dv.items(), key=lambda kv: str(kv[0]))},
+        }
+    per_index = {str(v): {"brick": bool(info["brick"]),
+                          "delta_filters_P": bool(info["delta_filters_P"]),
+                          "note": info["note"]}
+                 for v, info in rep.per_index.items()}
+    return {
+        "kind": "quasi_hereditary",
+        "is_quasi_hereditary": bool(rep.is_quasi_hereditary),
+        "order": [str(v) for v in rep.order],
+        "order_note": ("quasi-heredity is order-dependent; this report uses the natural "
+                       "vertex order"),
+        "gl_dim": {"value": int(rep.gl_dim.value), "exact": bool(rep.gl_dim.exact)},
+        "per_index": per_index,
+        "standard_dims": standard_dims,
+        "note": rep.note,
+        "references": ["dlab_ringel", "assem_book"],
+    }

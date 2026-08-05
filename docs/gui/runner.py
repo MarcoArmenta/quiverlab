@@ -737,6 +737,14 @@ def compute_one(spec):
             from quiverlab.strings.block import strings_block
             block = strings_block(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "quasi_hereditary":
+            # Quasi-hereditary structure (Plan 47): an algebra-scalar kind (schema v1).
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # library block builder (modules.quasihereditary.quasi_hereditary_block,
+            # natural order + order-dependence note) + `references`->citations.
+            from quiverlab.modules.quasihereditary import quasi_hereditary_block
+            block = quasi_hereditary_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
             # library method returns a frozen result whose .blocks() IS the block
@@ -877,6 +885,8 @@ def python_snippet():
              "ext_algebra": "A.ext_algebra()",
              "recognizers": ("[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), "
                              "A.dynkin_type(), A.form_type()]"),
+             # Quasi-hereditary structure (Plan 47): a scalar kind, no %d.
+             "quasi_hereditary": "A.is_quasi_hereditary()",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -977,7 +987,10 @@ ETA_MODEL = {
                 "derived_fingerprint": 1.0,
                 # Plan 46: strings = a bounded string/band DFS + AG walk on the
                 # reduction system; a touch heavier than recognizers.
-                "strings": 0.2},
+                "strings": 0.2,
+                # Plan 47: quasi_hereditary builds Delta/Nabla + a gl.dim check +
+                # the greedy Delta-peel of each P(v); a few small resolutions.
+                "quasi_hereditary": 0.5},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

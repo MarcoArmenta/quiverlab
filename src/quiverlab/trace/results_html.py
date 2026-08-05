@@ -46,6 +46,7 @@ _HEADINGS = {
     "recognizers": "Structural recognizers and type",
     "derived_fingerprint": "Derived fingerprint",
     "strings": "Strings and bands",
+    "quasi_hereditary": "Quasi-hereditary structure",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -277,6 +278,54 @@ def _recognizers_html(b):
     return out
 
 
+def _quasi_hereditary_html(b):
+    """The quasi-hereditary structure block (Plan 47): the verdict + the order (with the
+    honest order-dependence note), the per-index brick / Delta-filtration certificates, and
+    the standard-module dim-vectors table."""
+    out = []
+    verdict = "yes" if b.get("is_quasi_hereditary") else "no"
+    order = ", ".join(str(v) for v in (b.get("order") or []))
+    out.append("<p>Quasi-hereditary in this order: <b>%s</b>. Order (lowest to highest): "
+               "%s.</p>" % (verdict, _esc(order)))
+    if b.get("order_note"):
+        out.append("<p><em>%s.</em></p>" % _esc(str(b["order_note"])))
+    gl = b.get("gl_dim") or {}
+    if gl:
+        gtxt = ("%s (exact)" % gl.get("value") if gl.get("exact")
+                else ">= %s (certified lower bound)" % gl.get("value"))
+        out.append("<p>Global dimension: <b>%s</b> (quasi-heredity requires it finite).</p>"
+                   % _esc(gtxt))
+    if not b.get("is_quasi_hereditary") and b.get("note"):
+        out.append("<p>Failing clause: %s.</p>" % _esc(str(b["note"])))
+    # per-index certificates
+    per = b.get("per_index") or {}
+    if per:
+        rows = []
+        for v in (b.get("order") or list(per)):
+            info = per.get(str(v)) or per.get(v) or {}
+            brick = "yes" if info.get("brick") else "no"
+            filt = "yes" if info.get("delta_filters_P") else "no"
+            rows.append("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                        % (_esc(str(v)), brick, filt))
+        out.append("<table class='ql-qh'><thead><tr><th>i</th>"
+                   "<th>End &Delta;(i)=k</th><th>P(i) &Delta;-filtered</th></tr></thead>"
+                   "<tbody>%s</tbody></table>" % "".join(rows))
+    # standard-module dim vectors
+    sd = b.get("standard_dims") or {}
+    if sd:
+        rows = []
+        for v in (b.get("order") or list(sd)):
+            info = sd.get(str(v)) or sd.get(v) or {}
+            dv = info.get("dimvec") or {}
+            dvtxt = ", ".join("%s:%s" % (w, n) for w, n in dv.items())
+            rows.append("<tr><th>&Delta;(%s)</th><td>%s</td><td>%s</td></tr>"
+                        % (_esc(str(v)), _esc(str(info.get("dim"))), _esc(dvtxt)))
+        out.append("<table class='ql-qh-delta'><thead><tr><th>standard</th><th>dim</th>"
+                   "<th>dim vector</th></tr></thead><tbody>%s</tbody></table>"
+                   % "".join(rows))
+    return out
+
+
 def _derived_fingerprint_html(b):
     """The derived fingerprint: the invariant tuple rendered as a table, plus the
     binding necessary-condition scope line. A field captured as an error prints its
@@ -442,6 +491,8 @@ def _block_html(kind, b, ctx=None):
         return _derived_fingerprint_html(b)
     if kind == "strings":
         return _strings_html(b)
+    if kind == "quasi_hereditary":
+        return _quasi_hereditary_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":
