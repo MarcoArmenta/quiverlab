@@ -53,7 +53,12 @@ def _relation_to_m2(rel) -> str:
     ``_word_to_m2`` (caret powers) and emits no surrounding whitespace."""
     out = ""
     for coeff, word in rel.terms:
-        fr = Fraction(coeff)
+        try:
+            fr = Fraction(coeff)
+        except (TypeError, ValueError):
+            raise QuiverlabError(
+                "M2 bridge supports exact rational coefficients only; "
+                f"cannot render {coeff!r} as M2 source.") from None
         path = _word_to_m2(word)
         term = path if abs(fr) == 1 else f"{_coeff_magnitude_str(fr)}*{path}"
         if out == "":

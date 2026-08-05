@@ -52,3 +52,29 @@ def test_commutative_ext_script_shape():
     assert "ZZ/7[x,y]" in s.replace(" ", "")
     assert "freeResolution" in s and "LengthLimit" in s
     assert scripts.SENTINEL in s
+
+
+def test_coefficient_and_sign_render_verbatim():
+    # Devil's-advocate finding (2026-08-05): the graded-dims oracle is
+    # coefficient-blind on quadratic CIs (Hilbert [1,2,1] for ANY q), so the
+    # rendered source itself must pin coefficients and signs.
+    A = Quiver([1], {"x": (1, 1), "y": (1, 1)}).algebra(
+        relations=["x*x", "y*y", "y*x-2*x*y"], field=GF(32003))
+    s = scripts.graded_dims_script(A, top=4).replace(" ", "")
+    assert "y*x-2*x*y" in s
+    B = Quiver([1], {"x": (1, 1), "y": (1, 1)}).algebra(
+        relations=["x*x", "y*y", "x*y+y*x"], field=GF(32003))
+    t = scripts.graded_dims_script(B, top=4).replace(" ", "")
+    assert "x*y+y*x" in t
+
+
+def test_non_rational_coefficient_refused_loudly():
+    import fractions
+    import pytest as _pytest
+    from quiverlab.m2.scripts import _relation_to_m2
+
+    class _FakeRel:
+        terms = ((object(), ("x", "y")),)     # non-rational coefficient
+
+    with _pytest.raises(QuiverlabError, match="rational"):
+        _relation_to_m2(_FakeRel())
