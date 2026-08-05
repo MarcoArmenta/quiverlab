@@ -316,6 +316,41 @@ class Module:
         terms, dmats = minimal_resolution(self, length, max_term_dim=max_term_dim)
         return ProjectiveResolution(self, terms, dmats)
 
+    def syzygy(self):
+        """The syzygy Omega M = ker(projective cover -> M), a submodule of the cover
+        with no projective summands (Plan 40). Omega of a projective is zero."""
+        from quiverlab.modules.resolution import syzygy
+        return syzygy(self)
+
+    def cosyzygy(self):
+        """The cosyzygy Omega^{-1} M = D(Omega(D M)), the injective-side dual (Plan 40).
+        Cosyzygy of an injective is zero."""
+        from quiverlab.modules.resolution import cosyzygy
+        return cosyzygy(self)
+
+    def igusa_todorov_phi(self, budget=512, bound=64):
+        """The Igusa-Todorov function phi(M) (Plan 40). Raises loudly on the decompose
+        char-caveat (char <= dim M over GF(p)); phi = pd for finite proj. dimension."""
+        from quiverlab.modules.homdims import igusa_todorov_phi
+        return igusa_todorov_phi(self, budget=budget, bound=bound)
+
+    def igusa_todorov_psi(self, budget=512, bound=64):
+        """The Igusa-Todorov function psi(M) = phi(M) + fpd(Omega^phi M) (Plan 40)."""
+        from quiverlab.modules.homdims import igusa_todorov_psi
+        return igusa_todorov_psi(self, budget=budget, bound=bound)
+
+    def omega_periodicity(self, max_period=12, bound=64):
+        """The least period k with Omega^k M ~ M (is_isomorphic-certified), or None
+        (finite pd, or not periodic within max_period) (Plan 40)."""
+        from quiverlab.modules.homdims import omega_periodicity
+        return omega_periodicity(self, max_period=max_period, bound=bound)
+
+    def tau_periodicity(self, max_period=12):
+        """The least period k with tau^k M ~ M (is_isomorphic-certified), or None
+        (tau-orbit terminates, or not periodic within max_period) (Plan 40)."""
+        from quiverlab.modules.homdims import tau_periodicity
+        return tau_periodicity(self, max_period=max_period)
+
     # -- duality, transpose, AR translates (Plan 23; Plan 24 sides) -----------
     def dualize(self):
         """D M = Hom_k(M, k). Contravariant, exchanging the two sides over the SAME

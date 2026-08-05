@@ -475,8 +475,50 @@ function renderModuleBlocks(out, res) {
       out.appendChild(decomposeBlock(b, d));
     } else if (kind === "tau" || kind === "tau_minus") {
       out.appendChild(tauBlock(b, d, kind));
+    } else if (kind === "homological_profile") {
+      out.appendChild(homologicalProfileBlock(b, d));
     }
   }
+}
+
+// The C6 homological-dimensions family (Plan 40) as a labelled table. Values are
+// the block's own honest text fields (exact value / certified bound / infinity /
+// undecided / per-entry error); labels are i18n via the form dataset.
+function homProfileFindim(f) {
+  if (f.exact) return "findim = " + f.lower + "  (" + f.note + ")";
+  if (f.upper !== null && f.upper !== undefined)
+    return "findim ∈ [" + f.lower + ", " + f.upper + "]  (" + f.note + ")";
+  return "findim ≥ " + f.lower + "  (" + f.note + ")";
+}
+
+function homologicalProfileBlock(block, d) {
+  const wrap = document.createElement("div");
+  const p = document.createElement("p");
+  p.textContent = d.hpTitle || "Homological dimensions";
+  wrap.appendChild(p);
+  const rows = [
+    [d.hpGldim || "Global dimension", block.global_dimension.text],
+    [d.hpFindim || "Finitistic dimension", homProfileFindim(block.finitistic)],
+    [d.hpDomdim || "Dominant dimension", block.dominant.text],
+    [d.hpGoren || "Gorenstein", block.gorenstein.text],
+  ];
+  const it = block.igusa_todorov;
+  rows.push([(d.hpIgusa || "Igusa–Todorov φ/ψ"),
+             it.error ? ("not computed: " + it.error)
+                      : ("of " + it.module + ": φ = " + it.phi + ", ψ = " + it.psi)]);
+  const tbl = document.createElement("table");
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = r[1];
+    tr.appendChild(th);
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+  wrap.appendChild(tbl);
+  return wrap;
 }
 
 // Render a compute result into `out` using DOM nodes (server strings via

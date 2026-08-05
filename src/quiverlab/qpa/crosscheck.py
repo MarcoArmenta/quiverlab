@@ -199,6 +199,59 @@ def crosscheck_inj_dimension(algebra, M, bound: int) -> ModuleCrosscheckReport:
 
 
 # ---------------------------------------------------------------------------
+# Plan 40: homological-dimension family crosschecks. QPA exposes
+# GlobalDimensionOfAlgebra / DominantDimensionOfAlgebra / GorensteinDimensionOfAlgebra
+# (all bound-parametrised, returning an int or GAP `infinity`); it exposes NO
+# Igusa-Todorov surface (a live NamesGVars() probe finds none -- test_homdims_qpa),
+# so phi/psi have no QPA oracle (the Task-B literature battery covers them). The
+# verbs are inlined here, like crosscheck_inj_dimension, over quiver_and_algebra_script.
+# ---------------------------------------------------------------------------
+def _qpa_dim_or_none(val):
+    """A QPA homological dimension as ``int`` or ``None`` -- GAP ``infinity`` / ``false``
+    (dimension beyond the bound, i.e. our infinite / unresolved marker) both map to
+    ``None``, mirroring crosscheck_inj_dimension."""
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def crosscheck_global_dimension(algebra, bound: int = 20) -> CrosscheckReport:
+    """gl.dim vs QPA ``GlobalDimensionOfAlgebra(A, n)`` (int, or ``infinity`` -> None).
+    Our unresolved/infinite verdict (not exact) maps to ``None`` on both sides."""
+    session.require_gap()
+    g = algebra.global_dimension()
+    ours = g.value if g.exact else None
+    base = scripts.quiver_and_algebra_script(algebra)
+    qpa = _qpa_dim_or_none(session.run(base + f"\nGlobalDimensionOfAlgebra(A, {bound});"))
+    return CrosscheckReport("global_dimension", ours, qpa, ours == qpa)
+
+
+def crosscheck_dominant_dimension(algebra, bound: int = 20) -> CrosscheckReport:
+    """Dominant dimension vs QPA ``DominantDimensionOfAlgebra(A, n)`` (int, or
+    ``infinity`` -> None). Our ``infinite`` verdict (self-injective) maps to ``None``."""
+    session.require_gap()
+    dd = algebra.dominant_dimension()
+    ours = None if dd.infinite else dd.value
+    base = scripts.quiver_and_algebra_script(algebra)
+    qpa = _qpa_dim_or_none(session.run(base + f"\nDominantDimensionOfAlgebra(A, {bound});"))
+    return CrosscheckReport("dominant_dimension", ours, qpa, ours == qpa)
+
+
+def crosscheck_gorenstein(algebra, bound: int = 20) -> CrosscheckReport:
+    """Gorenstein dimension vs QPA ``GorensteinDimensionOfAlgebra(A, n)`` (int, or
+    ``infinity`` -> None). Ours = ``max(right inj.dim, left inj.dim)`` when Gorenstein
+    (``is_gorenstein`` True), else ``None`` (the bounded engine did not prove finiteness
+    -- QPA likewise returns ``infinity``)."""
+    session.require_gap()
+    gd = algebra.gorenstein_dimension()
+    ours = (max(gd.right_id, gd.left_id) if gd.is_gorenstein else None)
+    base = scripts.quiver_and_algebra_script(algebra)
+    qpa = _qpa_dim_or_none(session.run(base + f"\nGorensteinDimensionOfAlgebra(A, {bound});"))
+    return CrosscheckReport("gorenstein", ours, qpa, ours == qpa)
+
+
+# ---------------------------------------------------------------------------
 # Plan 30: Krull-Schmidt decomposition crosschecks (finite fields only -- QPA's
 # DecomposeModule requires GF(p))
 # ---------------------------------------------------------------------------

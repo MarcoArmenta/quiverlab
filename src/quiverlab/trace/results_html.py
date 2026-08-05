@@ -38,6 +38,7 @@ _HEADINGS = {
     "cartan": "Cartan matrix",
     "coxeter_polynomial": "Coxeter polynomial",
     "global_dimension": "Global dimension",
+    "homological_profile": "Homological dimensions",
     "center": "Centre",
     "dimension": "Dimension",
     "ext_algebra": "Yoneda Ext-algebra and Koszulity",
@@ -326,6 +327,8 @@ def _block_html(kind, b, ctx=None):
         return [_math(r"\chi(t) = " + b["latex"])] if b.get("latex") else []
     if kind == "global_dimension":
         return ["<p>%s</p>" % _esc(str(b.get("text", "")))]
+    if kind == "homological_profile":
+        return _homological_profile_html(b)
     if kind == "center":
         return [_math(r"\dim Z(A) = %s" % _num(b.get("dim")))]
     if kind == "dimension":
@@ -518,6 +521,37 @@ def _decompose_html(b):
         out.append("<p class='ql-note'>display only — entries lie outside the "
                    "integer/fraction input grammar (e.g. GF(p^n) elements).</p>")
     return out
+
+
+def _findim_text(f):
+    if f.get("exact"):
+        return "findim = %s  (%s)" % (_num(f.get("lower")), f.get("note", ""))
+    if f.get("upper") is not None:
+        return "findim in [%s, %s]  (%s)" % (
+            _num(f.get("lower")), _num(f.get("upper")), f.get("note", ""))
+    return "findim >= %s  (%s)" % (_num(f.get("lower")), f.get("note", ""))
+
+
+def _homological_profile_html(b):
+    """The C6 homological-dimensions family (Plan 40) as a labelled table -- each row
+    its own honest marker (exact value / certified bound / infinity / undecided /
+    per-entry error), never a bare number the engine did not resolve."""
+    it = b.get("igusa_todorov") or {}
+    if it.get("error"):
+        it_text = "not computed: %s" % it["error"]
+    else:
+        it_text = "of %s: φ = %s, ψ = %s" % (
+            it.get("module", ""), _num(it.get("phi")), _num(it.get("psi")))
+    rows = [
+        ("Global dimension", (b.get("global_dimension") or {}).get("text", "")),
+        ("Finitistic dimension", _findim_text(b.get("finitistic") or {})),
+        ("Dominant dimension", (b.get("dominant") or {}).get("text", "")),
+        ("Gorenstein", (b.get("gorenstein") or {}).get("text", "")),
+        ("Igusa–Todorov φ/ψ", it_text),
+    ]
+    body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(lab), _esc(str(val)))
+                   for lab, val in rows)
+    return ['<table class="ql-table">%s</table>' % body]
 
 
 def _resolution_html(kind, b):

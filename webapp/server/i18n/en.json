@@ -15,6 +15,7 @@
   "inv.coxeter": "Coxeter polynomial",
   "inv.cartan": "Cartan matrix",
   "inv.gldim": "Global dimension",
+  "inv.homological_profile": "Homological dimensions",
   "inv.center": "Center",
   "inv.cup": "Cup products (ring structure) 0..N",
   "inv.cap": "Cap products (module structure) 0..N",
@@ -27,6 +28,7 @@
   "block.connes_b.title": "Connes differentials",
   "block.bracket.window": "served to degree window {n} (bar-transport bound)",
   "block.products.zero": "all products vanish in this degree pair",
+<<<<<<< HEAD
   "inv.ext_algebra": "Ext-algebra / Koszulity 0..N",
   "inv.recognizers": "Recognizers + Dynkin/Euclidean type",
   "block.ext_algebra.title": "Yoneda Ext-algebra and Koszulity",
@@ -34,6 +36,14 @@
   "block.ext_algebra.koszul_no": "A is not Koszul (obstruction at degree {n})",
   "block.ext_algebra.koszul_undecided": "Koszulity undecided through degree {n}",
   "block.recognizers.title": "Structural recognizers and type",
+=======
+  "block.homprofile.title": "Homological dimensions",
+  "block.homprofile.gldim": "Global dimension",
+  "block.homprofile.findim": "Finitistic dimension",
+  "block.homprofile.domdim": "Dominant dimension",
+  "block.homprofile.gorenstein": "Gorenstein",
+  "block.homprofile.igusa": "Igusa–Todorov φ/ψ",
+>>>>>>> plan-40-homdims
   "job.title": "Job",
   "job.status": "Status:",
   "job.downloads": "Downloads:",

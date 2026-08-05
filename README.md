@@ -265,6 +265,12 @@ ported and wired in:
   inputs); and the
   exact **spectral radius** / **Mahler measure** of the Coxeter polynomial as
   sympy algebraic numbers — no floats, ever.
+- **Homological dimensions (C6).** Public **syzygy/cosyzygy** operators,
+  **finitistic / dominant / Gorenstein dimensions**, the **Igusa–Todorov φ/ψ**
+  functions, and **Ω/τ-periodicity certificates** — the C6 homological-dimensions
+  family, each result carrying the `GlobalDimension`-style certified-value-or-honest-bound
+  honesty (never a bare number when unresolved, `is_gorenstein` three-valued
+  True/None), and clickable end-to-end via the no-code `homological_profile`.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

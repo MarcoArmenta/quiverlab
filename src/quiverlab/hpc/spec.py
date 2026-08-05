@@ -1187,6 +1187,15 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         keys = ["assem_book"]
         return {"text": str(g), "exact": bool(g.exact), "value": g.value,
                 "references": keys, "citations": _citation_pairs(keys)}, None
+    if kind == "homological_profile":
+        # The C6 homological-dimension family (Plan 40): one shared library builder
+        # (modules.homdims.homological_profile) drives BOTH this runner and the
+        # Pyodide twin (docs/gui/runner.py), byte-identical by construction; here we
+        # only add the resolved citation pairs from the block's `references`.
+        from quiverlab.modules.homdims import homological_profile
+        block = homological_profile(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     if kind == "center":
         dim_z, basis = A.center()
         keys = ["bar"]                     # Z(A) = HH^0(A) -- Hochschild's paper
@@ -1738,6 +1747,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",
+             "homological_profile": lambda it: ("A.global_dimension(), "
+                 "A.finitistic_dimension_bounds(), A.dominant_dimension(), "
+                 "A.gorenstein_dimension()"),
              "center": lambda it: "A.center()",
              "dimension": lambda it: "A.dim",
              "ext_algebra":
