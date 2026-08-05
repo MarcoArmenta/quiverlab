@@ -510,3 +510,156 @@ def irreducible_maps(M, N, within):
     assert both == dim_rad, "irreducible_maps: rad^2 not inside rad (bug)"
     dim_rad2 = lm.mat_rank(lm.cols_to_matrix(rad2), dom)
     return dim_rad - dim_rad2
+
+
+# --------------------------------------------------------------------------- #
+# AR-quiver knitting (Task 7).
+# --------------------------------------------------------------------------- #
+def _std_name(std):
+    """The display name of a standard indecomposable ``identify_standard`` tuple, or
+    ``None`` when unnamed (shown by dimension vector)."""
+    if std is None:
+        return None
+    kind, v = std
+    letter = {"simple": "S", "projective": "P", "injective": "I"}[kind]
+    return "%s_%s" % (letter, v)
+
+
+def _union_find_orbits(n, pairs):
+    """Connected components (sorted index lists) of the graph on ``0..n-1`` with edges
+    ``pairs`` -- the tau-orbits (X -- tau^- X links)."""
+    parent = list(range(n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for a, b in pairs:
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[ra] = rb
+    groups = {}
+    for i in range(n):
+        groups.setdefault(find(i), []).append(i)
+    return [sorted(g) for g in groups.values()]
+
+
+class ARQuiver:
+    """The Auslander-Reiten quiver of a representation-finite algebra (or the loudly
+    budget-capped prefix of a wild/large one). ``vertices`` is a list of dicts
+    ``{"name": "S_2"|"P_1"|None, "dimvec": {...}, "module": Module}``; ``arrows`` maps
+    ``(i, j) -> multiplicity`` (the irreducible-map multiplicity from vertex ``i`` to
+    ``j``); ``tau_orbits`` are the ``X -- tau^- X`` linked vertex classes; ``is_complete``
+    is ``True`` iff the closure was reached (rep-finite) and ``False`` iff the budget
+    tripped; ``status`` is ``"complete" | "budget" | "error"``."""
+
+    def __init__(self, vertices, arrows, tau_orbits, is_complete, status, note=None):
+        self.vertices = vertices
+        self.arrows = arrows
+        self.tau_orbits = tau_orbits
+        self.is_complete = is_complete
+        self.status = status
+        self.note = note
+
+    def __repr__(self):
+        return ("ARQuiver(%d vertices, %d arrows, status=%s)"
+                % (len(self.vertices), len(self.arrows), self.status))
+
+
+def knit_ar_quiver(A, budget_modules=256, budget_dim=4096):
+    """Knit the AR quiver of ``A`` by a BFS from the indecomposable projectives via
+    almost-split sequences (classical knitting, honest semi-decision).
+
+    For each discovered indecomposable ``X`` that is NON-injective (``tau^- X != 0``), let
+    ``Y = tau^- X`` (a non-projective indecomposable with ``tau Y = X``) and compute the
+    almost-split sequence ``0 -> X -> E -> Y -> 0``; decompose ``E``, register ``Y`` and
+    every summand ``E_i``, and (in a final pass over the closed set) read the mesh arrow
+    multiplicities via :func:`irreducible_maps`. Closure reached => ``status="complete"``
+    (``A`` is rep-finite on this component). The budget (``budget_modules`` /
+    ``budget_dim``) trips => ``status="budget"``, ``is_complete=False`` -- a LOUD cap, never
+    a silently truncated 'AR quiver'. A module the AR machinery cannot certify surfaces as
+    ``status="error"`` with the offending dim vector, never a silent skip."""
+    from quiverlab.modules.builders import projective
+    from quiverlab.modules.decompose import decompose
+    from quiverlab.modules.duality import tau_minus as tau_minus_of
+    from quiverlab.modules.hom import identify_standard, is_isomorphic
+    discovered = []
+
+    def find(X):
+        dvX = X.dimension_vector()
+        for idx, Y in enumerate(discovered):
+            if Y.dim == X.dim and Y.dimension_vector() == dvX and is_isomorphic(Y, X):
+                return idx
+        return None
+
+    def register(X):
+        i = find(X)
+        if i is not None:
+            return i
+        discovered.append(X)
+        return len(discovered) - 1
+
+    status, is_complete, note = "complete", True, None
+    tau_pairs = []                                     # (index X, index tau^- X)
+    for v in A.quiver.vertices:
+        register(projective(A, v))
+    queue = list(range(len(discovered)))
+    processed = set()
+    while queue:
+        if len(discovered) > budget_modules:
+            status, is_complete = "budget", False
+            note = "exceeded budget_modules=%d" % budget_modules
+            break
+        i = queue.pop(0)
+        if i in processed:
+            continue
+        processed.add(i)
+        X = discovered[i]
+        if X.dim > budget_dim:
+            status, is_complete = "budget", False
+            note = "a module dim %d exceeds budget_dim=%d" % (X.dim, budget_dim)
+            break
+        tmX = tau_minus_of(X)
+        if tmX.dim == 0:                               # X injective (tau^- X = 0): a sink
+            continue
+        Y = tmX                                        # tau Y = X, Y non-projective indec
+        if Y.dim > budget_dim:
+            status, is_complete = "budget", False
+            note = "tau^- reached dim %d > budget_dim=%d" % (Y.dim, budget_dim)
+            break
+        try:
+            ses = almost_split_sequence(Y)             # 0 -> X -> E -> Y -> 0
+        except QuiverlabError as exc:
+            status, is_complete = "error", False
+            note = ("almost_split refused for dimvec %s: %s"
+                    % (Y.dimension_vector(), exc))
+            break
+        yi = register(Y)
+        tau_pairs.append((i, yi))
+        for idx in (yi,):
+            if idx not in processed and idx not in queue:
+                queue.append(idx)
+        for (summ, _mult) in decompose(ses.M):
+            si = register(summ)
+            if si not in processed and si not in queue:
+                queue.append(si)
+        if len(discovered) > budget_modules:
+            status, is_complete = "budget", False
+            note = "exceeded budget_modules=%d" % budget_modules
+            break
+    # Arrow multiplicities: read once over the FINAL discovered set (exact iff complete;
+    # a partial set may undercount, so the arrows are trustworthy only when complete).
+    arrows = {}
+    if is_complete:
+        within = list(discovered)
+        for i, Xi in enumerate(discovered):
+            for j, Xj in enumerate(discovered):
+                m = irreducible_maps(Xi, Xj, within)
+                if m:
+                    arrows[(i, j)] = m
+    tau_orbits = _union_find_orbits(len(discovered), tau_pairs)
+    vertices = [{"name": _std_name(identify_standard(m)),
+                 "dimvec": m.dimension_vector(), "module": m} for m in discovered]
+    return ARQuiver(vertices, arrows, tau_orbits, is_complete, status, note=note)

@@ -418,6 +418,14 @@ class Algebra:
         from quiverlab.modules.ext import ext
         return ext(self, M, N, n)
 
+    def ar_quiver(self, budget_modules=256, budget_dim=4096):
+        """The Auslander-Reiten quiver, knitted from the projectives via almost-split
+        sequences (Plan 41 / C3). Returns an ``ARQuiver``; complete iff rep-finite,
+        else a LOUD budget cap (``.is_complete``, ``.status``)."""
+        from quiverlab.modules.ar import knit_ar_quiver
+        return knit_ar_quiver(self, budget_modules=budget_modules,
+                              budget_dim=budget_dim)
+
     def ext_algebra(self, top=6):
         """The Yoneda / Ext-algebra E(A) = Ext^*_A(A/J, A/J) as a graded
         quiver-with-relations presentation over R = k^{Q_0}, through degree `top`
