@@ -25,6 +25,11 @@ from quiverlab.families import (  # noqa: E402,F401
 from quiverlab.citations import bibliography  # noqa: E402,F401
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 from quiverlab.modules.complexes import ChainComplex, ChainMap  # noqa: E402,F401
+from quiverlab.derived import (  # noqa: E402,F401
+    hyper_hom_basis, tau_Db, tau_Db_minus, is_tilting_complex,
+    end_algebra_of_complex, two_term_silting_from_presentation,
+    derived_fingerprint, compare_fingerprints,
+)
 
 __all__ = [
     "__version__",
@@ -41,4 +46,8 @@ __all__ = [
     "bibliography",
     "sweep",
     "ChainComplex", "ChainMap",
+    # Plan 43 -- derived-category surface
+    "hyper_hom_basis", "tau_Db", "tau_Db_minus", "is_tilting_complex",
+    "end_algebra_of_complex", "two_term_silting_from_presentation",
+    "derived_fingerprint", "compare_fingerprints",
 ]
