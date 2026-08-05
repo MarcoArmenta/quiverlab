@@ -487,6 +487,13 @@ class Algebra:
         from quiverlab.invariants.dynkin_type import dynkin_type
         return dynkin_type(self.quiver)
 
+    def positive_roots(self):
+        """Positive roots of the Tits form (= dimension vectors of the
+        indecomposables, Gabriel) for a hereditary Dynkin algebra; loud on
+        affine/wild/non-hereditary input (Plan 38 / C2)."""
+        from quiverlab.invariants.roots import positive_roots
+        return positive_roots(self)
+
     def loewy_length(self):
         """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
         from quiverlab.invariants.scalar import loewy_length
