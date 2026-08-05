@@ -34,6 +34,11 @@ from quiverlab.derived import (  # noqa: E402,F401
     end_algebra_of_complex, two_term_silting_from_presentation,
     derived_fingerprint, compare_fingerprints,
 )
+from quiverlab.surfaces import (  # noqa: E402,F401
+    MarkedSurface, Triangulation, fan_triangulation, annulus_triangulation,
+    once_punctured_torus, hexagon_with_internal_triangle,
+    quiver_of, potential_of, jacobian_of, flip, certify_flip_mutation, surface_block,
+)
 
 __all__ = [
     "__version__",
@@ -58,4 +63,9 @@ __all__ = [
     "hyper_hom_basis", "tau_Db", "tau_Db_minus", "is_tilting_complex",
     "end_algebra_of_complex", "two_term_silting_from_presentation",
     "derived_fingerprint", "compare_fingerprints",
+    # Plan 48 -- marked surfaces -> triangulations -> gentle Jacobian algebras
+    "MarkedSurface", "Triangulation", "fan_triangulation", "annulus_triangulation",
+    "once_punctured_torus", "hexagon_with_internal_triangle",
+    "quiver_of", "potential_of", "jacobian_of", "flip", "certify_flip_mutation",
+    "surface_block",
 ]

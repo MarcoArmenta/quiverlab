@@ -6,7 +6,8 @@ from dataclasses import dataclass
 class FamilyInfo:
     name: str
     signature: str
-    route: str          # "monomial" | "general" | "structure-constant" | "iterator"
+    # "monomial" | "general" | "structure-constant" | "iterator" | "surface"
+    route: str
     citations: tuple
     summary: str
 
@@ -61,6 +62,15 @@ CATALOG = (
     FamilyInfo("zoo", "zoo(dim_max=12)",
                "iterator", ("han_conjecture", "chouhy_solotar"),
                "Iterator over the curated exact zoo of open (Han-conjecture) algebras."),
+    FamilyInfo("fan_triangulation", "fan_triangulation(marked)",
+               "surface", ("fomin_shapiro_thurston", "abcp", "labardini"),
+               "Fan triangulation of a disc with `marked` boundary points (type A_{marked-3})."),
+    FamilyInfo("annulus_triangulation", "annulus_triangulation(n, m)",
+               "surface", ("fomin_shapiro_thurston", "abcp", "labardini"),
+               "Band triangulation of the annulus C(n, m) (affine A~ shape)."),
+    FamilyInfo("jacobian_of", "jacobian_of(Triangulation, field=...)",
+               "surface", ("fomin_shapiro_thurston", "abcp", "derksen_weyman_zelevinsky"),
+               "Gentle Jacobian algebra of an ideal triangulation (unpunctured, boundary)."),
 )
 
 

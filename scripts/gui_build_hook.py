@@ -42,6 +42,19 @@ def _preset_algebras():
             break
         entries.append(("Exact zoo #%d — dim %d (CC)" % (i + 1, A.dim), A,
                         {"kind": "CC"}))
+    # Plan 48 -- marked-surface presets (input side): the gentle Jacobian algebra of an
+    # ideal triangulation, built via the library so the round-trip test rebuilds them.
+    from quiverlab.surfaces.qp import jacobian_of
+    from quiverlab.surfaces.triangulation import (annulus_triangulation,
+                                                  fan_triangulation,
+                                                  hexagon_with_internal_triangle)
+    entries.append(("Surface: disc fan A3 (CC)",
+                    jacobian_of(fan_triangulation(6), field=ql.CC), {"kind": "CC"}))
+    entries.append(("Surface: annulus C(2,2) affine A~3 (CC)",
+                    jacobian_of(annulus_triangulation(2, 2), field=ql.CC), {"kind": "CC"}))
+    entries.append(("Surface: hexagon w/ internal triangle -> 3-cycle gentle (CC)",
+                    jacobian_of(hexagon_with_internal_triangle(), field=ql.CC),
+                    {"kind": "CC"}))
     return entries
 
 
