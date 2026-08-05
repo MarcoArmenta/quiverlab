@@ -316,6 +316,18 @@ class Module:
         terms, dmats = minimal_resolution(self, length, max_term_dim=max_term_dim)
         return ProjectiveResolution(self, terms, dmats)
 
+    def syzygy(self):
+        """The syzygy Omega M = ker(projective cover -> M), a submodule of the cover
+        with no projective summands (Plan 40). Omega of a projective is zero."""
+        from quiverlab.modules.resolution import syzygy
+        return syzygy(self)
+
+    def cosyzygy(self):
+        """The cosyzygy Omega^{-1} M = D(Omega(D M)), the injective-side dual (Plan 40).
+        Cosyzygy of an injective is zero."""
+        from quiverlab.modules.resolution import cosyzygy
+        return cosyzygy(self)
+
     # -- duality, transpose, AR translates (Plan 23; Plan 24 sides) -----------
     def dualize(self):
         """D M = Hom_k(M, k). Contravariant, exchanging the two sides over the SAME
