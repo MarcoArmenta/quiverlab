@@ -20,7 +20,7 @@ from __future__ import annotations
 from quiverlab.errors import QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.modules.hom import _assert_comparable, hom_space
-from quiverlab.modules.module import _coerce_matrix
+from quiverlab.modules.module import Module, _coerce_matrix
 from quiverlab.modules.yoneda import _is_module_map
 
 
@@ -160,3 +160,86 @@ def zero_hom(M, N):
     _assert_comparable(M, N, "Hom")
     z = N.domain.zero()
     return ModuleHom(M, N, [[z] * M.dim for _ in range(N.dim)], check=False)
+
+
+# --------------------------------------------------------------------------- #
+# k-ary direct sums with inclusion/projection maps; Krull-Schmidt summand test
+# (Task 4). Block-diagonal on every shared action label -- the k-ary
+# generalization of yoneda._direct_sum2, plus the obvious block inclusion/
+# projection matrices (certified by the biproduct identities in the test).
+# --------------------------------------------------------------------------- #
+def direct_sum(*modules):
+    """``D = M_1 (+) ... (+) M_k`` with the biproduct maps: returns
+    ``(D, inclusions, projections)`` where ``inclusions[i]: M_i -> D`` and
+    ``projections[i]: D -> M_i`` satisfy ``proj_i . incl_i = id_{M_i}`` (as
+    ``incl_i.then(proj_i)``) and ``sum_i incl_i . proj_i = id_D``."""
+    if not modules:
+        raise QuiverlabError("direct_sum needs at least one summand")
+    A = modules[0].algebra
+    dom = A.domain
+    side = modules[0].side
+    for M in modules[1:]:
+        if M.algebra is not A:
+            raise QuiverlabError(
+                "direct_sum: the summands are over different algebras")
+        if M.side != side:
+            raise QuiverlabError(
+                f"direct_sum: mixing a {side} and a {M.side} summand")
+    dims = [M.dim for M in modules]
+    n = sum(dims)
+    offs, o = [], 0
+    for d in dims:
+        offs.append(o)
+        o += d
+    action = {}
+    for label in modules[0].action:
+        blk = lm.zeros(n, n, dom)
+        for off, M in zip(offs, modules):
+            Mb = M.action.get(label)
+            if Mb is None:
+                raise QuiverlabError(
+                    f"direct_sum: summand {M.name!r} is missing the action of "
+                    f"{label!r} that the first summand carries")
+            for i in range(M.dim):
+                bi = blk[off + i]
+                Mbi = Mb[i]
+                for j in range(M.dim):
+                    bi[off + j] = Mbi[j]
+        action[label] = blk
+    D = Module(A, n, action, name="(+)".join(M.name for M in modules), side=side)
+    one = dom.one()
+    incls, projs = [], []
+    for off, M in zip(offs, modules):
+        inc = lm.zeros(n, M.dim, dom)
+        prj = lm.zeros(M.dim, n, dom)
+        for i in range(M.dim):
+            inc[off + i][i] = one
+            prj[i][off + i] = one
+        incls.append(ModuleHom(M, D, inc, check=False))
+        projs.append(ModuleHom(D, M, prj, check=False))
+    return D, incls, projs
+
+
+def is_direct_summand(N, M, budget=512):
+    """Krull-Schmidt test: ``N | M`` iff every indecomposable summand of ``N``
+    appears in ``M`` with at least its multiplicity. Certified by the Plan-30
+    ``decompose`` (each summand provably indecomposable, grouped by the exact
+    ``is_isomorphic`` certificate); raises loudly when ``decompose`` cannot certify
+    within budget -- never a silent verdict."""
+    from quiverlab.modules.decompose import decompose
+    from quiverlab.modules.hom import is_isomorphic
+    _assert_comparable(N, M, "is_direct_summand")
+    if N.dim == 0:
+        return True
+    dn = decompose(N, budget=budget)
+    dm = [[mi, mmult] for (mi, mmult) in decompose(M, budget=budget)]
+    for (ni, nmult) in dn:
+        hit = None
+        for k, (mi, mmult) in enumerate(dm):
+            if ni.dim == mi.dim and is_isomorphic(ni, mi):
+                hit = k
+                break
+        if hit is None or dm[hit][1] < nmult:
+            return False
+        dm[hit][1] -= nmult
+    return True
