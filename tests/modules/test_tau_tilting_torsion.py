@@ -54,14 +54,18 @@ def test_semibricks_are_hom_orthogonal():
 @lit
 @pytest.mark.parametrize("n, count", [(2, 5), (3, 14)])
 def test_air_four_way_identity_torsion_and_semibricks(n, count):
-    # #support tau-tilting pairs == #f.f. torsion classes == #semibricks (silting leg: G).
+    # THE AIR four-way identity on ONE run: #support tau-tilting pairs == #f.f. torsion
+    # classes == #2-term silting == #semibricks == Catalan(n+1). (Task G adds the silting
+    # leg so the full four-way count is pinned here.)
+    from quiverlab.tautilting.silting import silting_count
     A = linear_path_algebra(n, field=QQ)
     eg = exchange_graph(A)
     n_pairs = len(eg.vertices)
     n_torsion = len({tuple(torsion_class_data(v["pair"])["gen_dimvecs"])
                      for v in eg.vertices})
+    n_silting = silting_count(A)["count"]
     n_semibricks = len(semibricks(A))
-    assert n_pairs == n_torsion == n_semibricks == count
+    assert n_pairs == n_torsion == n_silting == n_semibricks == count
 
 
 @xeng
