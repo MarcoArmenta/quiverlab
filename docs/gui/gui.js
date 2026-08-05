@@ -1043,6 +1043,26 @@
     });
     return tbl;
   }
+  function loewyFactors(layer) {           // a Loewy layer as S_v ⊕ S_w^m (Plan 37)
+    var parts = [];
+    Object.keys(layer).sort().forEach(function (v) {
+      var m = layer[v];
+      if (m) parts.push(m === 1 ? "S_" + v : "S_" + v + "^" + m);
+    });
+    return parts.length ? parts.join(" ⊕ ") : "0";
+  }
+  function loewySeriesTable(series) {       // layer | factors, top to bottom
+    var head = h("tr");
+    ["layer", "factors"].forEach(function (t) { head.appendChild(h("th", { text: t })); });
+    var tbl = h("table", {}, head);
+    series.forEach(function (layer, i) {
+      var r = h("tr");
+      r.appendChild(h("td", { text: String(i + 1) }));
+      r.appendChild(h("td", { text: loewyFactors(layer) }));
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
   // One arrow-matrix line per arrow that acts NON-trivially. An arrow acting as the
   // zero map carries no information, so its matrix is not printed (Marco,
   // 2026-07-29) -- the arrows are named in a single trailing line so the reader can
@@ -2296,6 +2316,10 @@
         }
         var trio = [["rad M", b.radical], ["top M", b.top], ["soc M", b.socle]];
         div.appendChild(repDimTable(trio));
+        if (b.series && b.series.length) {   // the Loewy (radical) series (Plan 37)
+          div.appendChild(h("p", { text: "Loewy (radical) series, top to bottom:" }));
+          div.appendChild(loewySeriesTable(b.series));
+        }
         trio.forEach(function (p) { appendRepMaps(div, p[0], p[1]); });
       }
     } else if (name === "decompose") {

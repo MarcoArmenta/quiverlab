@@ -280,10 +280,37 @@ function radTopSocBlock(block, d) {
     tbl.appendChild(tr);
   }
   wrap.appendChild(tbl);
+  if (block.series && block.series.length) {   // the Loewy (radical) series (Plan 37)
+    const p2 = document.createElement("p");
+    p2.textContent = d.modLoewySeries || "Loewy (radical) series, top to bottom:";
+    wrap.appendChild(p2);
+    wrap.appendChild(loewySeriesTable(block.series));
+  }
   for (const pair of trio) {
     appendRepMaps(wrap, pair[0], pair[1], d);
   }
   return wrap;
+}
+
+// A Loewy layer as S_v ⊕ S_w^m; the series as a layer|factors table (Plan 37).
+function loewyFactors(layer) {
+  const parts = [];
+  for (const v of Object.keys(layer).sort()) {
+    const m = layer[v];
+    if (m) parts.push(m === 1 ? "S_" + v : "S_" + v + "^" + m);
+  }
+  return parts.length ? parts.join(" ⊕ ") : "0";
+}
+
+function loewySeriesTable(series) {
+  const tbl = tableWithHeader(["layer", "factors"]);
+  series.forEach((layer, i) => {
+    const tr = document.createElement("tr");
+    tr.appendChild(cellText(String(i + 1)));
+    tr.appendChild(cellText(loewyFactors(layer)));
+    tbl.appendChild(tr);
+  });
+  return tbl;
 }
 
 // One arrow-matrix line per arrow that acts NON-trivially; the zero arrows are

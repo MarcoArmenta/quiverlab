@@ -98,6 +98,7 @@
   "mod.display_only": "solo visualización — estas entradas están fuera de la gramática de enteros/fracciones (p. ej. elementos de GF(p^n)) y no pueden reintroducirse en el panel de módulos.",
   "mod.stale_recompute": "este resultado se calculó con una versión anterior y carece de la representación completa — recalcula para ver las acciones de las flechas.",
   "mod.rad_top_soc": "radical / tope / zócalo",
+  "mod.loewy_series": "serie de Loewy (radical), de arriba abajo:",
   "mod.arrows_zero": "todas las flechas actúan como cero",
   "mod.arrows_acting_zero": "flechas que actúan como cero:",
   "mod.differentials_proj": "diferenciales (filas: base del destino, columnas: base del origen; d_0 = ε: Q_0 → M)",

@@ -98,6 +98,7 @@
   "mod.display_only": "display only — these entries lie outside the integer/fraction input grammar (e.g. GF(p^n) elements) and cannot be re-entered in the module panel.",
   "mod.stale_recompute": "this result was computed by an older version and lacks the full representation — recompute to see the arrow actions.",
   "mod.rad_top_soc": "radical / top / socle",
+  "mod.loewy_series": "Loewy (radical) series, top to bottom:",
   "mod.arrows_zero": "every arrow acts as zero",
   "mod.arrows_acting_zero": "arrows acting as zero:",
   "mod.differentials_proj": "differentials (rows: target basis, columns: source basis; d_0 = ε: Q_0 → M)",
