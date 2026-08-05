@@ -705,6 +705,16 @@ class Algebra:
         from quiverlab.hochschild.products import connes_b_tables
         return connes_b_tables(self, top, max_cells=max_cells)
 
+    def hochschild_bB_ss(self, top, max_cells=4_000_000):
+        """The Hochschild ``(b, B)`` spectral sequence (Plan 42): the first-quadrant
+        ``(b, B)`` bicomplex whose total complex computes cyclic homology, returned
+        as a pre-certified :class:`~quiverlab.specseq.pages.SpectralSequence`
+        (``E_inf`` totals == ``HC_*(A)``). The exponential bar basis is guarded by
+        ``max_cells`` (loud ``DepthLimitError`` up front). Works over any exact
+        Domain."""
+        from quiverlab.specseq.presets import hochschild_bB_ss
+        return hochschild_bB_ss(self, top, max_cells=max_cells)
+
     def nakayama_automorphism(self):
         """Nakayama automorphism nu as a matrix (columns = images) in the
         algebra's basis. GF(p): integer matrix via the engine (unit-adapted
