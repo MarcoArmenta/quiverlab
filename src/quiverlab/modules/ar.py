@@ -146,3 +146,70 @@ def lift_endomorphism_along_resolution(phi, res=None, degrees=1):
             imgs.append(_solve_generator_image(dn, Pn, v, rhs, dom))
         phis.append(_map_from_generator_images(layout, Pn, imgs, dom))
     return phis
+
+
+# --------------------------------------------------------------------------- #
+# The Nakayama functor nu / nu^- (Task 2).
+# --------------------------------------------------------------------------- #
+def _dense_transpose(mat, rows, cols, dom):
+    """The exact ``cols x rows`` transpose of a ``rows x cols`` matrix (empty-shape
+    safe: ``lm.transpose`` collapses a 0-row matrix to ``[]``, which would break a
+    ModuleHom of nonzero target dim)."""
+    out = lm.zeros(cols, rows, dom)
+    for i in range(rows):
+        for j in range(cols):
+            out[j][i] = mat[i][j]
+    return out
+
+
+def nakayama_functor(M, _return_ker=False):
+    r"""The Nakayama functor value ``nu M = D Hom_A(M, A)``.
+
+    For ``M`` with minimal presentation ``P_1 --d_1--> P_0 -> M -> 0``, applying
+    ``nu = D Hom_A(-, A)`` yields the induced injective map ``g: nu P_1 -> nu P_0`` with
+    ``ker g = tau M`` and ``coker g = nu M`` (the two ends of
+    ``0 -> tau M -> nu P_1 -> nu P_0 -> nu M -> 0``). ``g = D(d_1^*)`` is the k-dual of the
+    corner-transpose ``d_1^*`` that :func:`duality._presentation_transpose` builds; since
+    ``D`` is exact and contravariant, ``ker(D d_1^*) = D(coker d_1^*) = D(Tr M) = tau M``
+    and ``coker(D d_1^*) = D(ker d_1^*) = D Hom_A(M, A) = nu M`` -- exactly, up to the
+    per-instance isomorphism the certificate below asserts.
+
+    Self-certified: ``g`` is a validated module map (``check=True``) and
+    ``is_isomorphic(ker g, tau M)`` ties ``nu`` to the trusted translate. ``nu(P_v) = I_v``
+    (a projective input has ``tau M = 0`` and ``nu M = coker(0 -> nu P_0) = I_v``)."""
+    from quiverlab.modules.duality import _presentation_transpose, dualize, tau as tau_of
+    from quiverlab.modules.hom import is_isomorphic
+    from quiverlab.modules.morphism import ModuleHom
+    dom = M.domain
+    _Rop, N, M0op, d1star, _out_side = _presentation_transpose(M)
+    nuP1 = dualize(N)                    # D Hom(P_1, A) = (+) I_{w_j}
+    nuP0 = dualize(M0op)                 # D Hom(P_0, A) = (+) I_{v_i}
+    g = _dense_transpose(d1star, N.dim, M0op.dim, dom)   # D(d_1^*): nu P_1 -> nu P_0
+    # Validate the intertwining when it is meaningful; a map out of / into the zero
+    # module (projective M => nu P_1 = 0) is trivially a module map, but the empty-shape
+    # matmul in _is_module_map returns a false negative, so skip check there. The
+    # ker g ~ tau M certificate below covers every case regardless.
+    check = nuP1.dim > 0 and nuP0.dim > 0
+    gmap = ModuleHom(nuP1, nuP0, g, check=check)         # self-cert: intertwines D-actions
+    K, _iota = gmap.kernel()
+    tauM = tau_of(M)
+    if not is_isomorphic(K, tauM):
+        raise QuiverlabError(
+            "nakayama: ker g not isomorphic to tau M -- the induced injective map "
+            "is inconsistent with the trusted AR translate (bug)")
+    nuM, _proj = gmap.cokernel()
+    nuM.name = f"nu({M.name})"
+    if _return_ker:
+        return nuM, K
+    return nuM
+
+
+def nakayama_functor_minus(M):
+    r"""The inverse Nakayama functor ``nu^- M = Hom_A(DA, M)``, implemented as the
+    opposite-algebra dual ``nu^-_A M = D( nu_{A^op}( D M ) )`` (``D`` contravariant on
+    each side of the ``A^op`` Nakayama functor -- no separate injective-copresentation
+    code). ``nu^-(I_v) = P_v`` self-certifies it (asserted in the battery)."""
+    from quiverlab.modules.duality import dualize
+    out = dualize(nakayama_functor(dualize(M)))
+    out.name = f"nu^-({M.name})"
+    return out

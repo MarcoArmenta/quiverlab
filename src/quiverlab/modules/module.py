@@ -340,6 +340,18 @@ class Module:
         from quiverlab.modules.duality import tau_minus
         return tau_minus(self)
 
+    def nakayama(self):
+        """The Nakayama functor value nu M = D Hom_A(M, A) (Plan 41 / C3). nu(P_v) = I_v;
+        ker(nu P_1 -> nu P_0) = tau M ties it to the trusted AR translate."""
+        from quiverlab.modules.ar import nakayama_functor
+        return nakayama_functor(self)
+
+    def nakayama_minus(self):
+        """The inverse Nakayama functor nu^- M = Hom_A(DA, M) (Plan 41 / C3).
+        nu^-(I_v) = P_v."""
+        from quiverlab.modules.ar import nakayama_functor_minus
+        return nakayama_functor_minus(self)
+
     def is_isomorphic(self, other):
         """True iff self and other are isomorphic right modules (exact certificate)."""
         from quiverlab.modules.hom import is_isomorphic
