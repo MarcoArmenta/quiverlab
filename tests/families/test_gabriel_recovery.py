@@ -88,6 +88,38 @@ def test_end_of_regular_recovers_kA3():
                                       for row in A.cartan_matrix()]
 
 
+def _perm_similar(C, D):
+    """True iff some permutation P has ``P^T C P == D`` (relabeling the vertices). Cartan
+    matrices of the SAME algebra under different vertex orders are permutation-similar, not
+    equal -- the cyclic case genuinely permutes (unlike the linear kA3 recovery, which is
+    exactly equal)."""
+    import itertools
+    n = len(C)
+    for perm in itertools.permutations(range(n)):
+        # D[i][j] ?= C[perm[i]][perm[j]]  (i.e. P sends new i -> old perm[i])
+        if all(D[i][j] == C[perm[i]][perm[j]] for i in range(n) for j in range(n)):
+            return True
+    return False
+
+
+@pytest.mark.oracle_crossengine
+def test_cyclic_presented_form_round_trip():
+    # kZ_3 / J^2 (cyclic Nakayama, dim 6): rebuild it as a presentation-LESS structure-
+    # constant algebra (End of its regular module, End(A_A) ~ A), then recover kQ/I by
+    # presented_form. The cyclic symmetry permutes the vertex labels, so the recovered
+    # Cartan is PERMUTATION-SIMILAR to the original (not equal, unlike the linear kA3 case).
+    from quiverlab import NakayamaAlgebra
+    from quiverlab.modules.endomorphism import end_algebra
+    from quiverlab.modules.morphism import direct_sum
+    N = NakayamaAlgebra(n=3, l=2, cyclic=True, field=QQ)      # kZ_3/J^2
+    reg, _, _ = direct_sum(*[N.projective(v) for v in N.quiver.vertices])
+    E = end_algebra(reg)                                      # presentation-less rebuild
+    assert E.quiver is None and E.dim == N.dim
+    R = presented_form(E)
+    assert R.dim == N.dim                                     # dim recovered exactly (6)
+    assert _perm_similar(N.cartan_matrix(), R.cartan_matrix())
+
+
 @pytest.mark.oracle_selfcert
 def test_char_caveat_refuses_loudly():
     from quiverlab.errors import QuiverlabError

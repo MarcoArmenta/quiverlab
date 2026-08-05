@@ -5,16 +5,30 @@ import pytest
 
 from quiverlab import Quiver
 from quiverlab.fields import QQ
-from quiverlab.modules.approximations import (left_add_approximation,
+from quiverlab.modules.approximations import (_left_approx_blocks, _prune,
+                                              _right_approx_blocks,
+                                              left_add_approximation,
                                               right_add_approximation)
-from quiverlab.modules.morphism import hom_basis
+from quiverlab.modules.morphism import direct_sum, hom_basis
 
 pytestmark = pytest.mark.oracle_selfcert
 
 
 def _kA2():
-    # QQ so the End(M) trace-form radical (the minimality selector) is rigorous.
+    # QQ so the decompose char scope (the minimal-approximation summand set) is rigorous.
     return Quiver([1, 2], {"a": (1, 2)}).algebra(relations=[], field=QQ)
+
+
+def _prune_removes_nothing(blocks_fn, M, C):
+    """Pruning-idempotence self-cert (Medium 1): prune the FULL approximation to its fixed
+    point, then prune the PRUNED block set again -- it must remove NOTHING and stay an
+    approximation. Replaces the old tautological 'k == k' minimality check, which compared
+    the constructor's output to itself."""
+    _types, blocks, is_approx = blocks_fn(M, C, 512)
+    _prune(blocks, is_approx)
+    n1 = len(blocks)
+    _prune(blocks, is_approx)                              # prune the already-pruned set
+    return len(blocks) == n1 and is_approx(blocks)
 
 
 def _factors_every_hom(f, M, C):
@@ -63,10 +77,29 @@ def test_approximation_property_and_minimality_battery(mv, cv):
     M, C = pool[mv], A.simple(cv)
     f = right_add_approximation(M, C)
     assert _factors_every_hom(f, M, C)                     # approximation property
-    # minimality: the returned k equals the minimal End(M)-generator count of Hom(M,C)
-    # BY CONSTRUCTION; assert it is not inflated (idempotent constructor).
-    k = f.src.dim // M.dim if M.dim else 0
-    assert k == (right_add_approximation(M, C).src.dim // M.dim)
+    # minimality (Medium 1): a REAL assertion, not the old 'k == k' tautology --
+    # pruning the pruned approximation removes nothing (irredundant = minimal).
+    assert _prune_removes_nothing(_right_approx_blocks, M, C)
+
+
+def test_decomposable_M_source_is_not_inflated():
+    # THE HIGH bug: over a DECOMPOSABLE M the old code multiplied the WHOLE M by the
+    # generator count, so it could never drop a superfluous summand of M. reg = P1 (+) P2:
+    # the min right add(reg)-approx of S1 is the projective cover P1 (dv [1,1]), NOT reg
+    # (dv [1,2]); of reg it is reg itself (dv [1,2]), NOT reg^2. QPA-arbitrated on the
+    # decomposable-M cases in tests/qpa/test_tilting_qpa.py.
+    A = _kA2()
+    reg, _, _ = direct_sum(A.projective(1), A.projective(2))
+    fS = right_add_approximation(reg, A.simple(1))
+    assert fS.src.dimension_vector() == A.projective(1).dimension_vector()   # P1 cover
+    assert _factors_every_hom(fS, reg, A.simple(1))
+    fR = right_add_approximation(reg, reg)
+    assert fR.src.dimension_vector() == reg.dimension_vector()               # reg, not reg^2
+    assert _factors_every_hom(fR, reg, reg)
+    # pruning-idempotence self-cert on the decomposable cases (Medium 1).
+    assert _prune_removes_nothing(_right_approx_blocks, reg, A.simple(1))
+    assert _prune_removes_nothing(_right_approx_blocks, reg, reg)
+    assert _prune_removes_nothing(_left_approx_blocks, reg, A.simple(2))
 
 
 def test_left_is_dual_of_right():

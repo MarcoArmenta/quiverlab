@@ -114,3 +114,49 @@ def test_left_add_approximation_crosscheck():
     ours = _dv_list(A, g.tgt)
     theirs = _qpa_left_approx_range_dv(A, P1, S2)
     assert ours == theirs                                 # target (M^k) dimension vector agrees
+
+
+# --------------------------------------------------------------------------- #
+# THE ARBITER for the devil's-advocate fix: DECOMPOSABLE M. The old "generators mod rad
+# End(M)" count multiplied the whole M by the generator number, so it over-counted for a
+# decomposable M (reg -> reg^2, and reg -> reg for a projective cover of S1). QPA's
+# MinimalRight/LeftAddMApproximation is the binding oracle on these cases.
+# --------------------------------------------------------------------------- #
+def _decomposable_right_cases():
+    A2, A3 = _kA2(), _kA3()
+    reg2, _, _ = direct_sum(A2.projective(1), A2.projective(2))
+    reg3, _, _ = direct_sum(*[A3.projective(v) for v in (1, 2, 3)])
+    return [
+        (A2, reg2, A2.simple(1)),     # reg -> S1: source is the projective cover P1 = [1,1]
+        (A2, reg2, reg2),             # reg -> reg: source is reg = [1,2], NOT reg^2
+        (A2, reg2, A2.simple(2)),
+        (A3, reg3, A3.simple(2)),
+        (A3, reg3, reg3),
+    ]
+
+
+@pytest.mark.parametrize("idx", range(5))
+def test_right_add_approximation_decomposable_M_crosscheck(idx):
+    A, M, C = _decomposable_right_cases()[idx]
+    ours = _dv_list(A, right_add_approximation(M, C).src)
+    theirs = _qpa_right_approx_source_dv(A, M, C)
+    assert ours == theirs                                 # decomposable-M source dv agrees
+
+
+def _decomposable_left_cases():
+    A2, A3 = _kA2(), _kA3()
+    reg2, _, _ = direct_sum(A2.projective(1), A2.projective(2))
+    reg3, _, _ = direct_sum(*[A3.projective(v) for v in (1, 2, 3)])
+    return [
+        (A2, reg2, A2.simple(1)),
+        (A2, reg2, A2.simple(2)),
+        (A3, reg3, A3.simple(2)),
+    ]
+
+
+@pytest.mark.parametrize("idx", range(3))
+def test_left_add_approximation_decomposable_M_crosscheck(idx):
+    A, M, C = _decomposable_left_cases()[idx]
+    ours = _dv_list(A, left_add_approximation(M, C).tgt)
+    theirs = _qpa_left_approx_range_dv(A, M, C)
+    assert ours == theirs                                 # decomposable-M target dv agrees

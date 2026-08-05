@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from quiverlab.errors import QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.modules.decompose import decompose
 from quiverlab.modules.ext import ext_dims
@@ -64,7 +65,7 @@ def _coresolves_A_in_add_T(A, T, n, budget):
     for _step in range(n + 1):
         if cur.dim == 0:
             return True
-        g = left_add_approximation(T, cur)           # cur >-> T^k
+        g = left_add_approximation(T, cur, budget=budget)   # cur >-> T^k (minimal)
         if not g.is_mono():
             return False                             # A does not embed in add T here
         cur, _proj = g.cokernel()
@@ -146,27 +147,59 @@ def _ext1_cocycles(T, N, terms, dmats):
     return out
 
 
+def _assert_partial_tilting(T, bound):
+    """Bongartz precondition: ``T`` is a PARTIAL tilting module -- ``pd T <= 1`` (exact)
+    and ``Ext^1(T, T) = 0``. These are exactly the ``is_tilting_module`` clauses MINUS the
+    summand count. Raises :class:`QuiverlabError` loudly otherwise (the Kronecker-regular
+    module with ``Ext^1(T, T) != 0``, and any ``pd > 1`` or unresolved ``pd``, are
+    refused rather than fed into the universal-extension machinery)."""
+    A = T.base_algebra
+    pd = T.projective_resolution(bound).pd()
+    if pd is None:
+        raise QuiverlabError(
+            "bongartz_completion needs a partial tilting module: pd T is unresolved "
+            f"within bound {bound} (not certified <= 1)")
+    if pd > 1:
+        raise QuiverlabError(
+            f"bongartz_completion needs a partial tilting module: pd T = {pd} is not <= 1")
+    ext1 = ext_dims(A, T, T, 1)[1]                    # dim Ext^1(T, T)
+    if ext1 != 0:
+        raise QuiverlabError(
+            "bongartz_completion needs a partial tilting module: "
+            f"Ext^1(T, T) has dimension {ext1} != 0 (T has a self-extension)")
+
+
 def bongartz_completion(T, bound=64):
     """The Bongartz complement middle term ``E`` (see the module docstring). Returns a
-    :class:`~quiverlab.modules.module.Module`; ``is_tilting_module(direct_sum(T, E))`` is
-    the self-certificate. ``d = dim Ext^1(T, A_A) = 0`` (e.g. ``T`` projective) returns
-    ``A_A`` itself."""
+    :class:`~quiverlab.modules.module.Module`. PRECONDITION: ``T`` is partial tilting
+    (``pd T <= 1`` and ``Ext^1(T, T) = 0``) -- asserted up front, refused loudly
+    otherwise. SELF-CERTIFICATE: ``is_tilting_module(direct_sum(T, E))`` is asserted True
+    before returning (never returns an ``E`` that fails to complete ``T``).
+    ``d = dim Ext^1(T, A_A) = 0`` (e.g. ``T`` projective) gives ``E = A_A``."""
     from quiverlab.modules.morphism import direct_sum
     from quiverlab.modules.yoneda import baer_extension
     A = T.base_algebra
     dom = T.domain
+    _assert_partial_tilting(T, bound)                # precondition (Medium 2)
     reg, _, _ = direct_sum(*[A.projective(v) for v in A.quiver.vertices])
     terms, dmats = minimal_resolution(T, 2)
     xis = _ext1_cocycles(T, reg, terms, dmats)       # list of matrices P_1(T) -> reg
     if not xis:
-        return reg                                   # already tilting-adjacent: E = A_A
-    cur = reg
-    a_to_cur = lm.identity(reg.dim, dom)             # module map A_A -> cur (matrix cur.dim x reg.dim)
-    for xi in xis:
-        pushed = lm.matmul(a_to_cur, xi, dom)        # cur.dim x P_1.dim : P_1(T) -> cur
-        seq = baer_extension(T, cur, pushed, terms=terms, dmats=dmats)
-        E = seq.middle
-        iota = seq.maps[0]                           # cur -> E (E.dim x cur.dim)
-        a_to_cur = lm.matmul(iota, a_to_cur, dom)    # A_A -> cur -> E
-        cur = E
-    return cur
+        E = reg                                      # already tilting-adjacent: E = A_A
+    else:
+        cur = reg
+        a_to_cur = lm.identity(reg.dim, dom)         # module map A_A -> cur (cur.dim x reg.dim)
+        for xi in xis:
+            pushed = lm.matmul(a_to_cur, xi, dom)    # cur.dim x P_1.dim : P_1(T) -> cur
+            seq = baer_extension(T, cur, pushed, terms=terms, dmats=dmats)
+            iota = seq.maps[0]                       # cur -> E (E.dim x cur.dim)
+            a_to_cur = lm.matmul(iota, a_to_cur, dom)  # A_A -> cur -> E
+            cur = seq.middle
+        E = cur
+    TE, _, _ = direct_sum(T, E)                       # self-certificate (Medium 2)
+    rep = is_tilting_module(TE)
+    if not rep.is_tilting:
+        raise QuiverlabError(
+            "bongartz_completion self-certificate failed: T (+) E is not a tilting "
+            f"module ({rep.note})")
+    return E

@@ -23,6 +23,20 @@ def test_regular_module_is_always_tilting():
     assert rep.pd == 0 and rep.self_ext_vanishes and rep.num_summands == rep.num_vertices
 
 
+@pytest.mark.oracle_selfcert
+@pytest.mark.parametrize("n", [2, 3])
+def test_regular_module_is_tilting_of_every_degree_regression(n):
+    # REGRESSION (devil's-advocate HIGH): A_A is an n-tilting module of every degree, but
+    # is_tilting_module(reg, n>=2) used to return False -- the n>=2 add(T)-coresolution
+    # path called the (buggy) minimal LEFT add(T)-approximation, which over a decomposable
+    # T returned T^k instead of T, so the cokernel never vanished. With the pruned minimal
+    # approximation the identity A_A >-> A_A has zero cokernel and the coresolution closes.
+    A = _kA2()
+    reg, _, _ = direct_sum(A.projective(1), A.projective(2))
+    assert is_tilting_module(reg, n=n).is_tilting is True
+    assert A.is_tilting_module(reg, n=n).is_tilting is True
+
+
 @pytest.mark.oracle_literature
 def test_apr_tilt_of_kA2():
     # T = P1 (+) S1 is a tilting module for kA2 (hereditary => pd S1 = 1, Ext^1(T,T)=0,
@@ -53,6 +67,36 @@ def test_bongartz_completes_a_nonprojective_partial_tilting():
     E = bongartz_completion(S1)
     T, _, _ = direct_sum(S1, E)
     assert is_tilting_module(T).is_tilting is True
+
+
+@pytest.mark.oracle_selfcert
+def test_bongartz_completion_with_d_geq_2():
+    # Star quiver 1->2, 1->3 (hereditary). T = S1 has d = dim Ext^1(S1, A_A) = 3, so the
+    # Bongartz completion runs THREE successive universal extensions (d >= 2, past the kA2
+    # d in {0, 1} tests). The result must complete S1 to a tilting module.
+    St = Quiver([1, 2, 3], {"a": (1, 2), "b": (1, 3)}).algebra(relations=[], field=QQ)
+    S1 = St.simple(1)
+    reg, _, _ = direct_sum(*[St.projective(v) for v in (1, 2, 3)])
+    from quiverlab.modules.ext import ext_dims
+    assert ext_dims(St, S1, reg, 1)[1] == 3                 # d = 3: the >=2 completion path
+    assert is_tilting_module(S1).is_tilting is False         # partial (1 summand, 3 vertices)
+    E = bongartz_completion(S1)
+    T, _, _ = direct_sum(S1, E)
+    assert is_tilting_module(T).is_tilting is True           # the self-certificate IS acceptance
+
+
+@pytest.mark.oracle_selfcert
+def test_bongartz_refuses_non_partial_tilting():
+    # PRECONDITION (Medium 2): bongartz_completion must refuse a module that is not partial
+    # tilting. The Kronecker-regular R (1 => 2, both arrows identity) has Ext^1(R, R) = 1 != 0
+    # (though pd R = 1 <= 1), so it is NOT partial tilting -- the completion must raise, not
+    # feed a self-extending module into the universal-extension machinery.
+    from quiverlab.errors import QuiverlabError
+    K = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=QQ)
+    zo = [[0, 0], [1, 0]]
+    R = K.module({1: 1, 2: 1}, {"a": zo, "b": zo})
+    with pytest.raises(QuiverlabError, match="partial tilting"):
+        bongartz_completion(R)
 
 
 @pytest.mark.oracle_selfcert
