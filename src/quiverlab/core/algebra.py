@@ -468,6 +468,14 @@ class Algebra:
         from quiverlab.modules.homdims import is_gorenstein
         return is_gorenstein(self, bound=bound)
 
+    def finitistic_dimension_bounds(self, bound=32):
+        """Finitistic dimension findim A, bracketed honestly (Plan 40): a rigorous
+        lower bound (a finite pd actually found) and an upper bound = gl.dim when
+        finite (findim = gl.dim), else None (no folklore number). A
+        ``FinitisticBounds``."""
+        from quiverlab.modules.homdims import finitistic_dimension_bounds
+        return finitistic_dimension_bounds(self, bound=bound)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""

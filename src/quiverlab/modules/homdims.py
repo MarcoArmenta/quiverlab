@@ -287,3 +287,110 @@ def tau_periodicity(M, max_period=12):
         if cur.dim == M.dim and is_isomorphic(cur, M):
             return k
     return None
+
+
+# ---------------------------------------------------------------------------
+# Finitistic-dimension bounds (rigorous lower; gl.dim upper when finite, honest
+# degrade otherwise)
+# ---------------------------------------------------------------------------
+@dataclass
+class FinitisticBounds:
+    """findim A = sup{ pd N : pd N < infinity }, bracketed honestly. ``lower`` is a
+    genuine lower bound (a finite pd actually found); ``upper`` is gl.dim when finite
+    (findim = gl.dim then) or ``None`` (honest degrade -- no folklore number). ``exact``
+    iff ``lower == upper`` both finite."""
+    lower: int
+    upper: "int | None"
+    exact: bool
+    note: str
+
+    def __repr__(self):
+        if self.exact:
+            return f"findim = {self.lower}"
+        if self.upper is not None:
+            return f"findim in [{self.lower}, {self.upper}]"
+        return f">= {self.lower} (upper bound undetermined)"
+
+
+def _finite_pd_probe_lower(A, bound):
+    """Max finite pd over ``{ S_v } U { Omega S_v } U { radical layers of P_v }`` -- a
+    rigorous lower bound: any finite pd found is a valid ``findim`` witness. The simples
+    are included, so this reaches ``gl.dim`` exactly whenever ``gl.dim`` is finite."""
+    lower = 0
+    probes = []
+    for v in A.quiver.vertices:
+        Sv = A.simple(v)
+        probes.append(Sv)
+        probes.append(syzygy(Sv))
+        layer = A.projective(v)                # walk rad^k P_v until zero
+        while layer.dim:
+            probes.append(layer)
+            layer = layer.radical()
+    for N in probes:
+        if N.dim == 0:
+            continue
+        pd = N.projective_resolution(bound).pd()
+        if pd is not None:                     # only FINITE pd enters the lower bound
+            lower = max(lower, pd)
+    return lower
+
+
+def _igusa_todorov_finitistic_upper(A, bound):
+    """The Igusa-Todorov psi-finitistic UPPER bound -- HONEST-DEGRADED to ``None``.
+
+    THEOREM PINNED (Igusa-Todorov, "On the finitistic global dimension conjecture for
+    Artin algebras", Fields Inst. Commun. 45 (2005), 201-204). For a short exact
+    sequence ``0 -> A -> B -> C -> 0`` of f.d. modules with ``pd C < infinity``,
+    ``pd C <= psi(A (+) B) + 1``. Applied to the syzygy sequence
+    ``0 -> Omega M -> P -> M -> 0`` (``P`` a projective cover) of any FINITE-pd ``M``,
+    and using ``psi(X (+) projective) = psi(X)``, this gives the genuine PER-MODULE
+    bound ``pd M <= psi(Omega M) + 1`` (constant ``+1``, from the one-term syzygy
+    sequence -- this is where the additive constant is fixed by the theorem itself).
+
+    WHY THE AGGREGATE ``psi((+)_v Omega S_v) + 1`` IS *NOT* SHIPPED AS ``findim``'s upper
+    bound. Bounding ``findim = sup{ pd M : pd M < infinity }`` needs ``sup_M psi(Omega
+    M)``, and ``psi(Omega M)`` for an arbitrary finite-pd ``M`` is NOT controlled by
+    ``psi((+)_v Omega S_v)``: ``Omega M`` need not lie in ``add((+)_v Omega S_v)`` (a
+    general syzygy is not built from the syzygies of the simples). More decisively, a
+    finite GENERAL upper bound for ``findim`` computed from the presentation would
+    resolve the finitistic dimension conjecture (findim ``< infinity`` for every Artin
+    algebra), which is OPEN. So no such certified finite bound exists for a general
+    algebra with infinite global dimension; a specific ``psi(...) + const`` number here
+    would be folklore, exactly what the house honesty rule forbids -- so the constant is
+    NOT "arbitrated" into a shipped number, the whole aggregate is degraded.
+
+    Hence this returns ``None`` (honest degrade). The only certified finite upper bound
+    this surface ships is ``gl.dim`` when it is finite (``findim = gl.dim`` then), in
+    :func:`finitistic_dimension_bounds`. A successor plan that supplies a certified
+    finite-representation-dimension witness ``V`` (so ``add V`` contains every relevant
+    syzygy) can then ship ``psi(V) + 1`` as a genuine bound and flip this degrade."""
+    return None
+
+
+def finitistic_dimension_bounds(A, bound=32):
+    """``findim A`` bracketed honestly (Plan 40). Lower bound: the max finite pd over
+    ``{S_v} U {Omega S_v} U {rad-layers of P_v}`` (rigorous). Upper bound: ``gl.dim``
+    when exact-finite (``findim = gl.dim``, ``exact=True``); otherwise ``None`` (the
+    Igusa-Todorov psi-bound is not a certifiable general theorem -- see
+    :func:`_igusa_todorov_finitistic_upper`). A numeric ``upper`` is ALWAYS ``>= lower``
+    (a violation is a mis-implementation -- raised, never clamped)."""
+    from quiverlab.modules.ext import global_dimension
+    lower = _finite_pd_probe_lower(A, bound)
+    g = global_dimension(A, bound=bound)
+    if g.exact:
+        upper = g.value
+        # findim <= gl.dim, equality when gl.dim finite; the simple probes make lower
+        # >= max_v pd(S_v) = gl.dim, so lower == upper == gl.dim here.
+        assert upper >= lower, "finitistic lower bound exceeded gl.dim (bug)"
+        return FinitisticBounds(lower, upper, exact=True,
+                                note="gl.dim exact and finite => findim = gl.dim")
+    upper = _igusa_todorov_finitistic_upper(A, bound)   # int or None (None here)
+    if upper is not None and upper < lower:
+        raise QuiverlabError(                           # the mandated sanity gate
+            "finitistic upper bound < lower bound: the Igusa-Todorov bound is "
+            "mis-implemented for this presentation")
+    return FinitisticBounds(
+        lower, upper, exact=False,
+        note=("Igusa-Todorov psi-bound" if upper is not None
+              else "upper bound undetermined (Igusa-Todorov psi-bound not certified "
+                   "for this presentation)"))
