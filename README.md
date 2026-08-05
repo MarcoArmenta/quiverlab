@@ -259,6 +259,11 @@ ported and wired in:
   inputs); and the
   exact **spectral radius** / **Mahler measure** of the Coxeter polynomial as
   sympy algebraic numbers — no floats, ever.
+- **Auslander–Reiten theory.** The AR translates τ / τ⁻ and the Nakayama functor
+  ν / ν⁻ as named functors, **almost-split sequences** `0 → τM → E → M → 0` with the
+  middle term built and certified (exact, non-split, indecomposable ends), irreducible
+  maps and `rad(M,N)/rad²`, stable Hom, and **AR-quiver knitting** — complete for a
+  representation-finite algebra, with an honest loud budget cap otherwise.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`
