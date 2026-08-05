@@ -1196,6 +1196,23 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         keys = ["assem_book"]
         return {"value": A.dim, "references": keys,
                 "citations": _citation_pairs(keys)}, None
+    # Yoneda / Ext-algebra + Koszulity (Plan 38): a scalar kind on the algebra
+    # block; the optional range gives the degree through which E(A) is computed
+    # (default 6), read like the other range kinds. Both runners share the block
+    # builder (modules.ext_algebra.ext_algebra_block), so they are byte-identical.
+    if kind == "ext_algebra":
+        top = item.hi if item.hi is not None else 6
+        from quiverlab.modules.ext_algebra import ext_algebra_block
+        block = ext_algebra_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Recognizer batch + type detection (Plan 38): a pure scalar kind on the
+    # algebra block; per-flag honest errors, never a silent False.
+    if kind == "recognizers":
+        from quiverlab.invariants.recognizers import recognizers_block
+        block = recognizers_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each library
     # method returns a frozen result object whose .blocks() IS the block dict
     # (kind/top/engine/basis/tables/window or hh_dims/matrices/ranks + references);
@@ -1723,6 +1740,11 @@ def _snippet(req: ComputeRequest, A) -> str:
              "global_dimension": lambda it: "A.global_dimension()",
              "center": lambda it: "A.center()",
              "dimension": lambda it: "A.dim",
+             "ext_algebra":
+                 lambda it: f"A.ext_algebra({it.hi if it.hi is not None else 6})",
+             "recognizers": lambda it: ("[A.is_semisimple(), A.is_hereditary(), "
+                                        "A.is_gentle(), A.dynkin_type(), "
+                                        "A.form_type()]"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",

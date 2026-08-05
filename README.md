@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-2772_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-2846_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -190,7 +190,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 2772 tests over the
+Every shipped feature is unit tested (the suite is 2846 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as four orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa`), audited
@@ -249,9 +249,13 @@ ported and wired in:
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
 - **Invariants:** the integer **Cartan** matrix, the **Coxeter** matrix and its
-  characteristic polynomial (all fields, exact via sympy); and, over GF(p), the
-  **Nakayama** automorphism with the **Frobenius** and **symmetric** tests
-  (loud `FieldError` off a prime field).
+  characteristic polynomial (all fields, exact via sympy); **Euler / Tits forms**
+  with exact finite/tame/wild definiteness, orientation-blind **Dynkin/Euclidean
+  type detection**, **positive-root** enumeration for Dynkin type, and the
+  **structural recognizers** (`is_semisimple` … `is_gentle`, with a live QPA
+  crosscheck); **Koszulity** and the Yoneda Ext-algebra clickable in the no-code
+  GUI; and, over GF(p), the **Nakayama** automorphism with the **Frobenius** and
+  **symmetric** tests (loud `FieldError` off a prime field).
 - **Modules, scalar invariants, and the exact spectral layer.** Right A-modules
   with exact **Ext**, **Hom**, and minimal **projective resolutions**; the scalar
   invariants **Loewy length**, **center**, and **complexity** (GF(p); the last a

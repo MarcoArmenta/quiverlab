@@ -40,6 +40,8 @@ _HEADINGS = {
     "global_dimension": "Global dimension",
     "center": "Centre",
     "dimension": "Dimension",
+    "ext_algebra": "Yoneda Ext-algebra and Koszulity",
+    "recognizers": "Structural recognizers and type",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -184,6 +186,91 @@ def _resolved_note(kind, b):
     return out
 
 
+_RECOGNIZER_LABELS = {
+    "is_semisimple": "semisimple", "is_radical_square_zero": "radical square zero",
+    "is_hereditary": "hereditary", "is_basic": "basic", "is_nakayama": "Nakayama",
+    "is_special_biserial": "special biserial", "is_string": "string",
+    "is_gentle": "gentle", "is_selfinjective": "self-injective",
+    "is_symmetric": "symmetric",
+}
+_FORM_TYPE_GLOSS = {
+    "finite": "positive definite Tits form (finite representation type when hereditary)",
+    "tame": "positive semidefinite, not definite (tame type when hereditary)",
+    "wild": "indefinite Tits form (wild type when hereditary)",
+}
+
+
+def _ext_algebra_html(b):
+    """The Yoneda Ext-algebra block: the three-valued Koszul verdict, the graded
+    (Betti) dimensions of E(A), and its minimal generators/relations by degree."""
+    koszul, reason = b.get("koszul"), b.get("koszul_reason")
+    obstruction, cdeg = b.get("obstruction"), b.get("certified_through_degree")
+    if koszul is True:
+        verdict = "A is <b>Koszul</b>"
+    elif koszul is False:
+        if obstruction:
+            verdict = ("A is <b>not Koszul</b> — obstruction at degree %s (%s)"
+                       % (_esc(str(obstruction[0])), _esc(str(obstruction[1]))))
+        else:
+            verdict = "A is <b>not Koszul</b>"
+    else:
+        verdict = "Koszulity is <b>undecided</b> through degree %s" % _esc(str(cdeg))
+    if reason and koszul is not False:
+        verdict += " — %s" % _esc(str(reason))
+    out = ["<p>%s. Graded (Betti) data for the Yoneda algebra %s through degree "
+           "%s:</p>" % (verdict,
+                        _math_inline(r"E(A) = \operatorname{Ext}^{*}_{A}(A/J, A/J)"),
+                        _esc(str(cdeg)))]
+    dims = b.get("graded_dims") or []
+    if dims:
+        out.append(_dims_table("dim E^n", dims))
+    if b.get("latex"):
+        out.append(_math(b["latex"]))
+    gens, rels = b.get("generators_by_degree") or {}, b.get("relations_by_degree") or {}
+
+    def _by_degree(d):
+        if not d:
+            return "none"
+        return ", ".join("degree %s: %s" % (_esc(k), _esc(str(v)))
+                         for k, v in sorted(d.items(), key=lambda kv: int(kv[0])))
+    out.append("<p>Minimal generators of E(A): %s. Minimal relations: %s.</p>"
+               % (_by_degree(gens), _by_degree(rels)))
+    return out
+
+
+def _recognizers_html(b):
+    """The recognizer batch + type block: each flag as yes/no (or an honest
+    per-flag 'not decided' when it refused), the Dynkin/Euclidean type and the
+    finite/tame/wild form type."""
+    flags = b.get("flags") or {}
+    lis = []
+    for key in ("is_semisimple", "is_radical_square_zero", "is_hereditary",
+                "is_basic", "is_nakayama", "is_special_biserial", "is_string",
+                "is_gentle", "is_selfinjective", "is_symmetric"):
+        if key not in flags:
+            continue
+        v = flags[key]
+        label = _esc(_RECOGNIZER_LABELS.get(key, key))
+        if isinstance(v, dict) and "error" in v:
+            lis.append("<li>%s: not decided — %s</li>" % (label, _esc(str(v["error"]))))
+        elif v is True:
+            lis.append("<li>%s: <b>yes</b></li>" % label)
+        else:
+            lis.append("<li>%s: no</li>" % label)
+    out = ["<ul class='ql-flags'>%s</ul>" % "".join(lis)] if lis else []
+    dt = b.get("dynkin_type")
+    out.append("<p>Underlying diagram type: <b>%s</b>.</p>" % _esc(str(dt)) if dt
+               else "<p>Underlying diagram type: not a Dynkin/Euclidean diagram.</p>")
+    ft = b.get("form_type")
+    if ft:
+        out.append("<p>Form type: <b>%s</b> — %s.</p>"
+                   % (_esc(ft), _esc(_FORM_TYPE_GLOSS.get(ft, ""))))
+    else:
+        out.append("<p>Form type: undefined (the Cartan matrix is not unimodular, "
+                   "so the Euler/Tits form has no integral matrix here).</p>")
+    return out
+
+
 def _block_html(kind, b, ctx=None):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
@@ -243,6 +330,10 @@ def _block_html(kind, b, ctx=None):
         return [_math(r"\dim Z(A) = %s" % _num(b.get("dim")))]
     if kind == "dimension":
         return [_math(r"\dim_k A = %s" % _num(b.get("value")))]
+    if kind == "ext_algebra":
+        return _ext_algebra_html(b)
+    if kind == "recognizers":
+        return _recognizers_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":

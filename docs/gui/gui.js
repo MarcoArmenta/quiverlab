@@ -72,6 +72,9 @@
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
+    // ---- Plan 38: Yoneda Ext-algebra + Koszulity, and the recognizer batch ----
+    '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
+    '  <label><input type="checkbox" id="qlgui-recognizers"> recognizers + type</label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -140,7 +143,10 @@
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
    "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top", "cartan",
-   "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
+   "coxeter_polynomial", "global_dimension", "center",
+   // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
+   "ext_algebra", "ext_algebra-top", "recognizers",
+   "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
    "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
@@ -648,7 +654,10 @@
     if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
     if (el.cyclic_homology.checked)
       compute.push("cyclic_homology:0.." + el["cyclic_homology-top"].value);
-    ["cartan", "coxeter_polynomial", "global_dimension", "center"].forEach(function (k) {
+    if (el.ext_algebra.checked)
+      compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
+    ["cartan", "coxeter_polynomial", "global_dimension", "center",
+     "recognizers"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     var module = null, extTarget = null, torTarget = null;
@@ -2370,6 +2379,48 @@
         (d == null ? "∞ (beyond the probed length)" : String(d)) }));
       appendTermBasis(div, b, proj);
       appendDifferentials(div, b, proj);
+    } else if (name === "ext_algebra") {
+      // Plan 38: the three-valued Koszul verdict + graded (Betti) data of E(A).
+      var kv;
+      if (b.koszul === true) kv = "A is Koszul" + (b.koszul_reason ? " — " + b.koszul_reason : "");
+      else if (b.koszul === false) kv = b.obstruction
+        ? "A is not Koszul — obstruction at degree " + b.obstruction[0] + " (" + b.obstruction[1] + ")"
+        : "A is not Koszul";
+      else kv = "Koszulity undecided through degree " + b.certified_through_degree
+        + (b.koszul_reason ? " — " + b.koszul_reason : "");
+      div.appendChild(h("p", { text: kv + "." }));
+      div.appendChild(degreeTable("dim E^n", b.graded_dims || []));
+      if (b.latex)
+        div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
+      var byDeg = function (d) {
+        d = d || {};
+        var ks = Object.keys(d).sort(function (a, c) { return (+a) - (+c); });
+        return ks.length ? ks.map(function (k) { return "degree " + k + ": " + d[k]; }).join(", ") : "none";
+      };
+      div.appendChild(h("p", { text: "Minimal generators of E(A): " + byDeg(b.generators_by_degree)
+        + "; minimal relations: " + byDeg(b.relations_by_degree) + "." }));
+    } else if (name === "recognizers") {
+      // Plan 38: the recognizer flags + Dynkin/Euclidean type + form type.
+      var RLBL = { is_semisimple: "semisimple", is_radical_square_zero: "radical square zero",
+        is_hereditary: "hereditary", is_basic: "basic", is_nakayama: "Nakayama",
+        is_special_biserial: "special biserial", is_string: "string", is_gentle: "gentle",
+        is_selfinjective: "self-injective", is_symmetric: "symmetric" };
+      var RORD = ["is_semisimple", "is_radical_square_zero", "is_hereditary", "is_basic",
+        "is_nakayama", "is_special_biserial", "is_string", "is_gentle",
+        "is_selfinjective", "is_symmetric"];
+      var ul = h("ul");
+      RORD.forEach(function (k) {
+        if (!b.flags || !(k in b.flags)) return;
+        var v = b.flags[k], txt;
+        if (v && typeof v === "object" && "error" in v) txt = RLBL[k] + ": not decided — " + v.error;
+        else txt = RLBL[k] + ": " + (v === true ? "yes" : "no");
+        ul.appendChild(h("li", { text: txt }));
+      });
+      div.appendChild(ul);
+      div.appendChild(h("p", { text: "Diagram type: "
+        + (b.dynkin_type || "not a Dynkin/Euclidean diagram") }));
+      div.appendChild(h("p", { text: "Form type: "
+        + (b.form_type || "undefined (Cartan not unimodular)") }));
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -2419,7 +2470,8 @@
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
    el.connes_b, el["connes_b-top"],
    el.cyclic_homology, el["cyclic_homology-top"], el.cartan,
-   el.coxeter_polynomial, el.global_dimension, el.center]
+   el.coxeter_polynomial, el.global_dimension, el.center,
+   el.ext_algebra, el["ext_algebra-top"], el.recognizers]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).

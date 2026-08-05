@@ -104,6 +104,14 @@ never hide behind one:
     on ``rad_top_soc`` blocks ONLY. The ``canonical_key`` is request-derived and
     UNCHANGED (no new request fields). Only ``module_basic`` carries a ``rad_top_soc``
     block; the other six entries are untouched.
+  * 2026-08-05 (``ext_algebra_exterior_gf7`` + ``recognizers_gentle_a3`` ADDED,
+    Plan 38): the two new algebra-block compute kinds ``ext_algebra`` (Yoneda
+    Ext-algebra + three-valued Koszulity, on the Koszul poster child
+    k<x,y>/(x^2, y^2, x*y+y*x) over GF(7)) and ``recognizers`` (the eight
+    structural recognizers + Dynkin/Euclidean type + form type, on gentle A3 over
+    GF(5)). Both are schema v1 (they act on the algebra block, no new request
+    block), so the existing seven entries are UNTOUCHED (verified byte-identical
+    on re-dump before appending). ``canonical_key`` is request-derived.
   * 2026-07-31 (ALL entries re-freeze, Marco ADDENDUM 2 -- json_guide): the result
     envelope gained ONE additive top-level key, ``json_guide`` -- a per-computation list
     of ``{object, path, note}`` recipes for recovering every computed object from
