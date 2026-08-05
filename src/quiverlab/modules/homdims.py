@@ -250,3 +250,40 @@ def is_gorenstein(A, bound=32):
     (an injective dimension did not resolve within ``bound``; infinity is not proven --
     never False) (Plan 40)."""
     return gorenstein_dimension(A, bound).is_gorenstein
+
+
+# ---------------------------------------------------------------------------
+# Omega- and tau-periodicity certificates (is_isomorphic-certified)
+# ---------------------------------------------------------------------------
+def omega_periodicity(M, max_period=12, bound=64):
+    """The least ``k`` in ``1..max_period`` with ``Omega^k M ~ M`` (is_isomorphic-
+    certified), else ``None`` -- including when some ``Omega^i M = 0`` (finite
+    projective dimension => not Omega-periodic). Raises the ``is_isomorphic`` loud
+    refusal unchanged when an iso comparison is undecidable (Plan 40)."""
+    if M.dim == 0 or _is_projective(M):
+        return None
+    cur = M
+    for k in range(1, max_period + 1):
+        cur = syzygy(cur)
+        if cur.dim == 0:                     # finite projective dimension
+            return None
+        if cur.dim == M.dim and is_isomorphic(cur, M):   # loud if undecidable
+            return k
+    return None
+
+
+def tau_periodicity(M, max_period=12):
+    """The least ``k`` in ``1..max_period`` with ``tau^k M ~ M`` (is_isomorphic-
+    certified), else ``None`` (a ``tau^i M = 0`` => the tau-orbit terminates => not
+    periodic). Raises the ``is_isomorphic`` loud refusal unchanged when undecidable
+    (Plan 40)."""
+    if M.dim == 0 or _is_projective(M):
+        return None
+    cur = M
+    for k in range(1, max_period + 1):
+        cur = cur.tau()
+        if cur.dim == 0:                     # tau-orbit terminated (hit a projective)
+            return None
+        if cur.dim == M.dim and is_isomorphic(cur, M):
+            return k
+    return None

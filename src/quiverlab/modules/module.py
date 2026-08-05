@@ -339,6 +339,18 @@ class Module:
         from quiverlab.modules.homdims import igusa_todorov_psi
         return igusa_todorov_psi(self, budget=budget, bound=bound)
 
+    def omega_periodicity(self, max_period=12, bound=64):
+        """The least period k with Omega^k M ~ M (is_isomorphic-certified), or None
+        (finite pd, or not periodic within max_period) (Plan 40)."""
+        from quiverlab.modules.homdims import omega_periodicity
+        return omega_periodicity(self, max_period=max_period, bound=bound)
+
+    def tau_periodicity(self, max_period=12):
+        """The least period k with tau^k M ~ M (is_isomorphic-certified), or None
+        (tau-orbit terminates, or not periodic within max_period) (Plan 40)."""
+        from quiverlab.modules.homdims import tau_periodicity
+        return tau_periodicity(self, max_period=max_period)
+
     # -- duality, transpose, AR translates (Plan 23; Plan 24 sides) -----------
     def dualize(self):
         """D M = Hom_k(M, k). Contravariant, exchanging the two sides over the SAME
