@@ -21,6 +21,7 @@ from quiverlab.families import (  # noqa: E402,F401
     NakayamaAlgebra, PathAlgebra, TruncatedPathAlgebra, RadicalSquareZero,
     IncidenceAlgebra, QuantumCI, ExteriorAlgebra, PreprojectiveAlgebra,
     TrivialExtension, TensorProduct, zoo, families,
+    OnePointExtension, repetitive_slice, JacobianAlgebra, Potential, cyclic_derivative,
 )
 from quiverlab.citations import bibliography  # noqa: E402,F401
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
@@ -38,6 +39,8 @@ __all__ = [
     "NakayamaAlgebra", "PathAlgebra", "TruncatedPathAlgebra", "RadicalSquareZero",
     "IncidenceAlgebra", "QuantumCI", "ExteriorAlgebra", "PreprojectiveAlgebra",
     "TrivialExtension", "TensorProduct", "zoo", "families",
+    "OnePointExtension", "repetitive_slice", "JacobianAlgebra", "Potential",
+    "cyclic_derivative",
     "bibliography",
     "sweep",
     "ChainComplex", "ChainMap",

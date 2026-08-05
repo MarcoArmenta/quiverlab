@@ -21,6 +21,14 @@ class CatalogError(ValueError):
     pass
 
 
+# Families that are NOT parameterized webapp forms: ``zoo`` (a batch iterator) and the
+# Plan-44 constructions (Algebra/Module/Potential arguments -- surfaced as drawable
+# presets, not a scalar form).
+_NON_FORM_FAMILIES = frozenset({
+    "zoo", "OnePointExtension", "repetitive_slice", "JacobianAlgebra",
+})
+
+
 def _iter_families():
     """Yield ``(name, builder)`` for each buildable v1 family.
 
@@ -30,7 +38,11 @@ def _iter_families():
     raise loudly rather than silently drop it."""
     for info in ql.families():
         name = info.name
-        if name == "zoo":
+        # zoo is a batch iterator; the Plan-44 constructions take Algebra/Module/Potential
+        # arguments (not scalar bool/int/str), so they do not fit the parameterized webapp
+        # FORM -- they are surfaced as drawable presets instead (gui_build_hook), and skipped
+        # here so the form builder never introspects their non-scalar signatures.
+        if name in _NON_FORM_FAMILIES:
             continue
         builder = getattr(ql, name, None)
         if builder is None:

@@ -71,6 +71,7 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose",
+    "tilting_check",
 })
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
@@ -104,6 +105,7 @@ _MOD_REFS = {
     "injective_resolution": ["minimal_resolution", "assem_book"],
     "injective_dimension": ["minimal_resolution", "assem_book"],
     "decompose": ["assem_book"],
+    "tilting_check": ["bongartz_tilting", "assem_book"],
 }
 
 
@@ -1685,6 +1687,22 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            "latex": _homdim_latex("id", idim),
                            **({} if idim is not None
                               else {"note": _HOMDIM_UNRESOLVED})}, kind)
+    if kind == "tilting_check":
+        # The candidate T is the request's module M (schema-2, no second module). n = the
+        # optional degree (item.hi), default 1 (classical tilting). The summand count leans
+        # on decompose -- a char-caveat QuiverlabError becomes an honest per-block error
+        # (the Plan-30 tau-block precedent), never a 500.
+        from quiverlab.modules.tilting import is_tilting_module
+        n = item.hi if item.hi is not None else 1
+        try:
+            rep = is_tilting_module(M, n=n)
+        except qerr.QuiverlabError as exc:
+            return _with_refs({"kind": "tilting_check", "error": str(exc)}, kind)
+        return _with_refs({"kind": "tilting_check", "is_tilting": rep.is_tilting,
+                           "n": rep.n, "pd": rep.pd,
+                           "self_ext_vanishes": rep.self_ext_vanishes,
+                           "num_summands": rep.num_summands,
+                           "num_vertices": rep.num_vertices, "note": rep.note}, kind)
     raise ComputeError("SchemaError", f"unsupported module computation {kind!r}")
 
 

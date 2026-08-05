@@ -125,7 +125,14 @@ never hide behind one:
     Pure addition: the seven existing entries were verified byte-identical BEFORE the
     new one was appended (the delegation test passed on all seven unchanged). Its
     ``canonical_key`` is request-derived; the ``result_json`` was frozen from the
-    server runner, and the Plan-40 cross-runner test asserts the Pyodide twin agrees."""
+    server runner, and the Plan-40 cross-runner test asserts the Pyodide twin agrees.
+  * 2026-08-05 (``module_tilting_check_kA2`` ADDED, Plan 44 C7): a NEW fixture for the
+    ``tilting_check`` module compute kind (kA2 over GF(5), module = the projective P1 --
+    NOT tilting: one indecomposable summand for two vertices). Pure addition: every
+    pre-existing entry was verified byte-identical BEFORE the new one was appended (the
+    delegation test passed on all of them unchanged). Its ``canonical_key`` is
+    request-derived; the ``result_json`` was frozen from the server runner, and the
+    Plan-44 cross-runner tests assert the Pyodide twin agrees on the math subkeys."""
 import json
 import pathlib
 

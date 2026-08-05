@@ -399,5 +399,44 @@
   },
   "canonical_key": "b9103cf9ace9a466178419941081ec68c25d9f90b70423206b171fc8bbc2e4ff",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [\"a*b\"], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=['a*b'], field=GF(5))\\n[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), A.dynkin_type(), A.form_type()]\", \"results\": {\"recognizers\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"dynkin_type\": \"A3\", \"flags\": {\"is_basic\": true, \"is_gentle\": true, \"is_hereditary\": false, \"is_nakayama\": true, \"is_radical_square_zero\": true, \"is_selfinjective\": false, \"is_semisimple\": false, \"is_special_biserial\": true, \"is_string\": true, \"is_symmetric\": false}, \"form_type\": \"finite\", \"references\": [\"assem_book\"]}}}"
+ },
+ "module_tilting_check_kA2": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 5
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "tilting_check"
+   ],
+   "module": {
+    "builtin": {
+     "kind": "projective",
+     "vertex": 1
+    }
+   },
+   "schema": 2
+  },
+  "canonical_key": "f980386045c78d82da94b935b8da89822553ab72ba8abca0cd3b3a72557a1031",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Bongartz's count criterion for tilting modules (# non-iso indecomposable summands = # vertices, given pd<=1 and self-Ext vanishing) and the Bongartz completion of a partial tilting module (Plan 44 / C7).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Bongartz1981\", \"doi\": \"10.1007/BFb0092982\", \"doi_url\": \"https://doi.org/10.1007/BFb0092982\", \"formatted\": \"Bongartz, Klaus (1981). Tilted algebras. Representations of Algebras (Puebla, 1980) 903, 26-38.\", \"key\": \"bongartz_tilting\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(5))\\nM = A.projective(1, side=\\\"right\\\")\", \"results\": {\"tilting_check\": {\"citations\": [[\"Bongartz1981\", \"Bongartz, Klaus (1981). Tilted algebras. Representations of Algebras (Puebla, 1980) 903, 26-38.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"is_tilting\": false, \"kind\": \"tilting_check\", \"n\": 1, \"note\": \"# summands 1 != # vertices 2\", \"num_summands\": 1, \"num_vertices\": 2, \"pd\": 0, \"references\": [\"bongartz_tilting\", \"assem_book\"], \"self_ext_vanishes\": true}}}"
  }
 }

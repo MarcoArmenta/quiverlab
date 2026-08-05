@@ -54,6 +54,7 @@ _HEADINGS = {
     "injective_resolution": "Injective resolution of M",
     "projective_dimension": "Projective dimension of M",
     "injective_dimension": "Injective dimension of M",
+    "tilting_check": "Tilting test",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -390,6 +391,25 @@ def _block_html(kind, b, ctx=None):
         if b.get("note"):
             chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
         return chunks
+    if kind == "tilting_check":
+        if b.get("error"):
+            return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+        verdict = ("M is a tilting module."
+                   if b.get("is_tilting")
+                   else "M is not a tilting module: %s." % _esc(str(b.get("note", ""))))
+        pd = b.get("pd")
+        rows = [
+            ("tilting", "yes" if b.get("is_tilting") else "no"),
+            ("n (pd bound tested)", _num(b.get("n"))),
+            ("pd M", _num(pd) if pd is not None else "&gt; bound"),
+            ("Ext<sup>i</sup>(M,M)=0 (1&#8804;i&#8804;n)",
+             "yes" if b.get("self_ext_vanishes") else "no"),
+            ("# non-iso indec. summands", _num(b.get("num_summands"))),
+            ("# vertices (rank K<sub>0</sub>)", _num(b.get("num_vertices"))),
+        ]
+        tbl = "".join("<tr><th>%s</th><td>%s</td></tr>" % (k, v) for k, v in rows)
+        return ["<p>%s</p>" % verdict,
+                '<table class="ql-table">%s</table>' % tbl]
     # An unknown kind still leaves a trace of what was asked for.
     return ["<p class='ql-note'>computed; see the JSON record for its data.</p>"]
 

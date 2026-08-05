@@ -128,6 +128,45 @@ function decomposeBlock(block, d) {
   return wrap;
 }
 
+// Plan 44 (C7): the tilting_check verdict as a small key/value table + a one-line
+// verdict sentence. Labels are i18n via the form dataset (fallback English).
+function tiltingBlock(block, d) {
+  const wrap = document.createElement("div");
+  if (block.error) {
+    const e = document.createElement("p");
+    e.className = "error";
+    e.textContent = block.error;
+    wrap.appendChild(e);
+    return wrap;
+  }
+  const p = document.createElement("p");
+  p.textContent = block.is_tilting
+    ? (d.modTiltingYes || "M is a tilting module.")
+    : (d.modTiltingNo || "M is not a tilting module") + ": " + block.note + ".";
+  wrap.appendChild(p);
+  const rows = [
+    [d.modTiltingRow || "tilting", block.is_tilting ? "yes" : "no"],
+    [d.modTiltingN || "n (pd bound tested)", String(block.n)],
+    ["pd M", (block.pd === null || block.pd === undefined) ? "> bound" : String(block.pd)],
+    [d.modTiltingSelfExt || "Ext^i(M,M)=0 (1≤i≤n)",
+     block.self_ext_vanishes ? "yes" : "no"],
+    [d.modTiltingSummands || "# non-iso indec. summands", String(block.num_summands)],
+    [d.modTiltingVertices || "# vertices (rank K_0)", String(block.num_vertices)]
+  ];
+  const tbl = document.createElement("table");
+  rows.forEach(function (r) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = r[1];
+    tr.appendChild(th); tr.appendChild(td);
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  return wrap;
+}
+
 // Plan 34 (Marco): rad/top/soc as FULL representations -- the dim VECTOR per object
 // (the redundant total-dim column is gone) plus each arrow's exact action matrix,
 // typeset by renderMath (KaTeX). The LaTeX is built from the block's {dims, maps}.
@@ -473,6 +512,8 @@ function renderModuleBlocks(out, res) {
       out.appendChild(radTopSocBlock(b, d));
     } else if (kind === "decompose") {
       out.appendChild(decomposeBlock(b, d));
+    } else if (kind === "tilting_check") {
+      out.appendChild(tiltingBlock(b, d));
     } else if (kind === "tau" || kind === "tau_minus") {
       out.appendChild(tauBlock(b, d, kind));
     } else if (kind === "homological_profile") {
