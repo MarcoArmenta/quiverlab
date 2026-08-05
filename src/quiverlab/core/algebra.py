@@ -474,6 +474,19 @@ class Algebra:
         from quiverlab.invariants.forms import form_type
         return form_type(self)
 
+    def dynkin_type(self):
+        """Orientation-blind Dynkin / Euclidean type of the underlying quiver:
+        ("A"|"D"|"E"|"~A"|"~D"|"~E", n) or None (Plan 38 / C2). Loud if this
+        algebra has no quiver presentation."""
+        if self.quiver is None:
+            from quiverlab.errors import QuiverlabError
+            raise QuiverlabError(
+                "dynkin_type needs the quiver presentation",
+                hint="build the algebra via Quiver.algebra(...); structure-constant "
+                     "algebras carry no quiver")
+        from quiverlab.invariants.dynkin_type import dynkin_type
+        return dynkin_type(self.quiver)
+
     def loewy_length(self):
         """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
         from quiverlab.invariants.scalar import loewy_length
