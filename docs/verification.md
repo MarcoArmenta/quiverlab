@@ -397,7 +397,7 @@ Plan-35 product surface).
 | `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery; the Plan-35 product surface — `products.py`: cup/cap/bracket tables + the induced Connes `B`, `basis_reps.py`: the explicit-representatives capture, `cyclic_reps.py`: the wave-3b cyclic-homology explicit representatives, and `hh_reps.py`: the wave-3d plain-HH explicit representatives) | 103 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins; **the Gerstenhaber identity batteries** (graded-commutative + associative cup, antisymmetric bracket, cup-Leibniz, cap module law, `B²=0`, SBI rank) + the `k[x]/(x²)`/QuantumCI-BGMS product literature pins + the bar↔CS in-window cross-engine gate + **the explicit-reps self-certification** (every shipped product class satisfies `δ·v = 0` / `b·v = 0` from its shipped or note-rebuilt differential; hand-checked `k[x]/(x²)` labels; elision+rebuild path) + **the cyclic-homology explicit representatives** (every shipped HC class is a cycle of the (b,B) total complex — `D·v = 0` on both engines; GF(p)≡generic on prime 32003; hand-checked dual-numbers `HC_0 = A/[A,A]` + `Tot_2 = C_2 ⊕ C_0` column structure) + **the plain-HH explicit representatives** (the `hh_cohomology`/`hh_homology` dims blocks now carry per-degree reps over BOTH routes — the GF(p) bar and Chouhy-Solotar; every shipped vector annihilates its shipped differential; the `k[x]/(x²)` HH¹ `[x ↦ x]` = derivation `D(x)=x` hand-check ties the classical dictionary read-off to the captured representative) |
 | `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama; Plan-29 literature/identity batteries) | 579 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
 | `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries; the Plan-35 Domain-generic CS product tables `products.py` — cup/cap on the CS basis over any exact Domain; the Plan-35 wave-3d `cs_hh_basis` 0-codomain fix) | 228 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization; the CS product unit-law + Domain-genericity self-cert; **the `cs_hh_basis` rep-count ≡ `cs_(co)homology_dims`** even when the top differential lands in a 0-dimensional space (the multi-vertex `kZ_3/J^2` witness — HH¹ = 1 with C² = 0 — that the old 0-row `nullspace` silently undercounted) |
-| `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`) | 297 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) |
+| `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-40 C6 homological-dimensions family — `homdims.py`: public `syzygy`/`cosyzygy` (byte-stable extraction from `minimal_resolution`), the Igusa–Todorov φ/ψ on the finite K₀, dominant + Gorenstein dimensions, Ω/τ-periodicity certificates, and finitistic-dimension bounds) | 322 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) + **the Plan-40 homological-dimensions oracles**: `oracle_selfcert` — the φ=ψ=pd identity for finite projective dimension, the Ω/τ-periodicity `is_isomorphic` certificates, and the decompose char-caveat propagation; `oracle_literature` — the Barrios–Mata truncated self-injective φ=ψ=0 closed form + projective additivity, the hereditary/self-injective dominant & Gorenstein values, and the cyclic-Nakayama period-from-Kupisch pins; `qpa` (`tests/qpa/test_homdims_qpa.py`) — live `GlobalDimensionOfAlgebra` / `DominantDimensionOfAlgebra` / `GorensteinDimensionOfAlgebra` agreement over kA₂ / kA₃(ab) / `line_abc_cde` / k[x]/(x³) (int or GAP `infinity`↔our infinite/unresolved marker) |
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 115 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
@@ -480,13 +480,15 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 748 | the engine reproduces a value/identity that exists outside the library |
+| Literature / theory pins | `-m oracle_literature` | 766 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 430 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 871 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 127 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1609 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Self-certifying certificates | `-m oracle_selfcert` | 880 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 140 | an independent external system (QPA) recomputes and agrees |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1647 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
-Collected 2026-08-03 (through the 2026-08-03 report-presentation passes 1-2). The oracle markers live only on the
+Collected 2026-08-05 (Plan 40, C6 homological-dimensions family; recounted from a live
+collection on the `plan-40-homdims` branch -- the pre-Plan-40 numbers were mid-merge-train
+stale). The oracle markers live only on the
 pure-library `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` /
 `families` / `batch` / `trace` suites (the `trace` renderer tests import the
 pure-library serializers only, and their `hpc.spec` uses are function-local), so these
@@ -558,6 +560,43 @@ verified precision and listed below as such.
   recorded HH basis (bar/GF(p) or the CS class basis), and each product object
   records which basis (`HHProducts.basis`); the cross-engine gate therefore compares
   only basis-independent data (dims and flattened rank), never the raw constants.
+- **The delooping level (Plan 40, Task F) is DEFERRED, not shipped.** Gélinas's
+  `dell(M) = inf{ n : Ωⁿ M is a direct summand of Ω^{n+1} N for SOME f.d. `N` }`
+  (Gélinas, *Adv. Math.* 394, 2022 — cited as `gelinas_delooping`) has an
+  existential quantifier over `N` with no crisp bounded decision procedure from
+  `syzygy` + `is_direct_summand` alone (it needs the injective-side cosyzygy tower
+  or an a-priori representation-dimension bound, neither of which this plan builds).
+  Shipping a heuristic that silently fixes a finite candidate set for `N` could
+  return a wrong finite `dell` when the true witness lies outside the probe — a
+  house-honesty violation. The one implementable special case (`findim(A) < ∞ ⇒
+  dell(A) ≤ findim(A)+1`) is a bound, not the value. The named successor is a
+  future C6-extension plan that builds the injective-side cosyzygy tower and the
+  summand-membership check, at which point `delooping_level_bound(A, probe_depth)`
+  becomes crisply implementable and this deferral flips.
+- **`is_gorenstein` is three-valued True/None — never a bare `False`** (Plan 40).
+  It is `True` when both the right and left injective dimensions of the regular
+  module resolve finite within the bounded engine, and `None` when either is only
+  a certified lower bound. A `False` verdict would require a *proof of infinite
+  injective dimension* that the syzygy/injective engines never furnish (they only
+  certify "resolved / not resolved within depth N"; only a periodicity certificate
+  proves infinity, and that is not wired into `is_gorenstein`).
+- **The finitistic-dimension UPPER bound degrades honestly to `None` when the
+  global dimension is infinite** (Plan 40). The lower bound is always rigorous (a
+  finite pd actually found); the upper bound is `gl.dim` when that is exact-finite
+  (`findim = gl.dim`), otherwise `None`. The Igusa–Todorov per-module theorem
+  `pd M ≤ ψ(ΩM)+1` (Igusa–Todorov 2005) is genuine, but the aggregate
+  `ψ(⊕_v ΩS_v)+1` is **not** a certifiable general `findim` bound — a finite
+  general upper bound computed from the presentation would resolve the OPEN
+  finitistic dimension conjecture — so no folklore number is emitted (a numeric
+  upper is always ≥ lower, gated).
+- **QPA has no Igusa–Todorov surface** (Plan 40, probed live 2026-08-05): a
+  `NamesGVars()` sweep finds no `Igusa`/`Todorov`/`phiDimension`/`psiDimension`
+  name, so the φ/ψ functions have no external QPA oracle — their coverage is the
+  Task-B literature battery (φ=pd for finite pd, the Barrios–Mata self-injective
+  closed form, projective additivity). `tests/qpa/test_homdims_qpa.py`'s IT probe
+  **skips that comparison honestly and FAILS should QPA ever ship an IT surface**;
+  the same file's `GlobalDimensionOfAlgebra`/`DominantDimensionOfAlgebra`/
+  `GorensteinDimensionOfAlgebra` crosschecks ARE live external oracles.
 - **The two deep curated examples carry no products** (Plan 35 §5, Task-12
   feasibility probe). The seeded webapp examples `nakayama-kz20-deep` and
   `nakayama-kz24-deep` (dim ≥ 220) omit the entire product surface: the products
