@@ -209,6 +209,12 @@ class Module:
             word = tuple(label.split("*"))
             self.action[label] = self._action_of_word(word)
 
+    def identity_hom(self):
+        """The identity homomorphism id_M as a ModuleHom (Plan 37 / C1)."""
+        from quiverlab.modules import linalg_mod as lm
+        from quiverlab.modules.morphism import ModuleHom
+        return ModuleHom(self, self, lm.identity(self.dim, self.domain), check=False)
+
     def radical(self):
         from quiverlab.modules.radtopsoc import radical as _r
         return _r(self)
