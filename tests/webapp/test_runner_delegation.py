@@ -141,7 +141,7 @@ never hide behind one:
     and the ``canonical_key`` is request-derived (no new request fields -- an
     algebra-only range kind)."""
 import json
-import pathlib"""
+import pathlib
 
 import pytest
 
