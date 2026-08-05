@@ -615,3 +615,224 @@ def hyper_hom_dims(X, Y, lo, hi):
                  if (deltas[n - 1][0] and deltas[n - 1][0][0]) else 0)
         out[n] = cn - rn - rprev
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Certified projective model + general hyper-Ext.
+#
+# The model of a bounded complex X is built by iterated MAPPING CONES over the
+# stupid filtration (equivalent to the twisted totalization of the termwise
+# resolutions, but organized so every step is one Task-2 cone plus a single
+# chain-map lift -- no bare higher-correction bookkeeping):
+#
+#   tau_{<=j} X  =  cone( g_j : stalk(X_j)[j-1] --d^X_j--> tau_{<=j-1} X )
+#
+# (the connecting map of  0 -> tau_{<=j-1}X -> tau_{<=j}X -> stalk(X_j)[j] -> 0).
+# Replace both ends by their perfect models, LIFT g_j through the augmentations
+# to a strict-square chain map of models, take the cone: the cone of perfect
+# complexes is perfect, and the cone of quasi-isos with a STRICT commuting square
+# is a quasi-iso (5-lemma / the LES of the triangle). The augmentation of every
+# model built this way is degreewise SURJECTIVE (covers are surjective; a cone of
+# surjections is surjective), which is exactly what makes the strict lift exist.
+#
+# CERTIFICATION: `projective_model` never returns an uncertified model -- it
+# asserts P.is_perfect() AND eps.is_quasi_iso() (cone acyclicity) before return.
+# A genuine quasi-iso needs each term's resolution to TERMINATE within `length`
+# (finite projective dimension); otherwise the truncated model is not acyclic and
+# the certificate refuses loudly (honest -- a truncated resolution is not a model).
+# The lift-solve is canonicalized via reduce_mod_nullspace (byte-reproducible, the
+# CS correction-solve precedent).
+# --------------------------------------------------------------------------- #
+def _combine_homs(H, coeffs, sdim, tdim, dom):
+    out = lm.zeros(tdim, sdim, dom)
+    for c, mat in zip(coeffs, H):
+        if dom.is_zero(c):
+            continue
+        for i in range(tdim):
+            oi, mi = out[i], mat[i]
+            for j in range(sdim):
+                oi[j] = dom.add(oi[j], dom.mul(c, mi[j]))
+    return out
+
+
+def _constraints_ok(psi, constraints, dom):
+    for (kind, Mmat, rhs) in constraints:
+        got = lm.matmul(Mmat, psi, dom) if kind == "left" else lm.matmul(psi, Mmat, dom)
+        rows = len(rhs)
+        cols = len(rhs[0]) if (rhs and rhs[0]) else 0
+        if not _squares_equal(got, rhs, rows, cols, dom):
+            return False
+    return True
+
+
+def _solve_module_map(S, T, constraints, dom):
+    """The module map ``psi: S -> T`` (rows=target) meeting every linear constraint
+    ``("left", L, rhs)`` (``L . psi = rhs``) / ``("right", R, rhs)`` (``psi . R = rhs``),
+    solved over a basis of ``Hom_A(S, T)`` so ``psi`` stays a module map. Returns the
+    canonical (``reduce_mod_nullspace``) solution or ``None`` if inconsistent."""
+    from quiverlab.fields import linalg as flinalg
+    from quiverlab.modules.hom import hom_space
+    if S.dim == 0:
+        return lm.zeros(T.dim, 0, dom)
+    if T.dim == 0:
+        return lm.zeros(0, S.dim, dom) if _constraints_ok(
+            lm.zeros(0, S.dim, dom), constraints, dom) else None
+    H = hom_space(S, T)
+    if not H:
+        Z = lm.zeros(T.dim, S.dim, dom)
+        return Z if _constraints_ok(Z, constraints, dom) else None
+    contrib = [[] for _ in H]
+    tflat = []
+    for (kind, Mmat, rhs) in constraints:
+        tflat.extend(_flatten(rhs))
+        for k, Hk in enumerate(H):
+            c = lm.matmul(Mmat, Hk, dom) if kind == "left" else lm.matmul(Hk, Mmat, dom)
+            contrib[k].extend(_flatten(c))
+    if not tflat:
+        return lm.zeros(T.dim, S.dim, dom)
+    Amat = [[contrib[k][r] for k in range(len(H))] for r in range(len(tflat))]
+    x = flinalg.solve(Amat, tflat, dom)
+    if x is None:
+        return None
+    x = flinalg.reduce_mod_nullspace(x, Amat, dom)
+    return _combine_homs(H, x, S.dim, T.dim, dom)
+
+
+def _stalk_model(M, degree, length, dom):
+    """The perfect model of ``stalk(M)[degree]``: the minimal projective resolution
+    of ``M`` shifted so its homology sits in ``degree``, plus the augmentation chain
+    map ``eps: model -> stalk(M, degree)`` (the cover at ``degree``, zero elsewhere)."""
+    from quiverlab.modules.resolution import minimal_resolution
+    terms_list, dmats_list = minimal_resolution(M, length)
+    terms, dmats = {}, {}
+    for n, td in enumerate(terms_list):
+        if td.module is not None and td.dim > 0:
+            terms[degree + n] = td.module
+    for n in range(1, len(dmats_list)):
+        if (degree + n) in terms and (degree + n - 1) in terms:
+            mat = dmats_list[n]
+            if mat and mat[0]:
+                dmats[degree + n] = mat
+    model = ChainComplex(terms, dmats, check=True)
+    model._perfect = True
+    stalk = ChainComplex.stalk(M, degree)
+    eps_comps = {degree: dmats_list[0]} if degree in terms else {}
+    eps = ChainMap(model, stalk, eps_comps, check=True)
+    return model, eps, stalk
+
+
+def _connecting_map(stalk, Xcur, j, X, dom):
+    """``g_j: stalk(X_j)[j-1] -> tau_{<=j-1}X`` with the single component ``d^X_j`` at
+    degree ``j-1`` (zero -- a disconnected direct sum -- when ``X_{j-1} = 0``)."""
+    dXj = X._dmats.get(j)
+    comps = {}
+    if dXj is not None and dXj and dXj[0] and Xcur.term(j - 1).dim:
+        comps[j - 1] = dXj
+    return ChainMap(stalk, Xcur, comps, check=True)
+
+
+def _lift_cone_map(Smodel, epsS, model, eps, g, dom):
+    """Lift ``g . epsS: Smodel -> tau_{<=j-1}X`` through the surjective quasi-iso
+    ``eps: model -> tau_{<=j-1}X`` to a strict chain map ``gt: Smodel -> model``
+    (``eps . gt == g . epsS``), built degree by degree upward (projectivity of
+    ``Smodel_m`` + acyclicity of ``cone(eps)`` guarantee each solve)."""
+    Sstalk = g.src
+    target = {}
+    for m in Smodel.degrees():
+        xdim, sdim = g.tgt.term(m).dim, Smodel.term(m).dim
+        if Sstalk.term(m).dim == 0:
+            target[m] = lm.zeros(xdim, sdim, dom)
+        else:
+            target[m] = lm.matmul(g.component(m), epsS.component(m), dom)
+    gt = {}
+    for m in sorted(Smodel.degrees()):
+        Sm, Tm = Smodel.term(m), model.term(m)
+        constraints = [("left", eps.component(m), target[m])]
+        dS = Smodel._dmats.get(m)                  # Smodel_m -> Smodel_{m-1}
+        if dS is not None and dS and dS[0] and (m - 1) in gt:
+            dModel = model._dmats.get(m)           # model_m -> model_{m-1}
+            if dModel is None or not (dModel and dModel[0]):
+                dModel = lm.zeros(model.term(m - 1).dim, Tm.dim, dom)
+            rhs = lm.matmul(gt[m - 1], dS, dom)
+            constraints.append(("left", dModel, rhs))
+        psi = _solve_module_map(Sm, Tm, constraints, dom)
+        if psi is None:
+            raise QuiverlabError(
+                "projective_model: could not lift the connecting map through the "
+                "surjective quasi-iso at degree %d (the term resolutions are "
+                "inconsistent -- report this)" % m)
+        gt[m] = psi
+    return ChainMap(Smodel, model, gt, check=True)
+
+
+def _cone_of_eps(g_tilde, g, epsS, eps, model_new, Xcur_new, dom):
+    """The induced augmentation ``cone(g_tilde) -> cone(g)``, block-diagonal
+    ``diag(epsS_{n-1}, eps_n)`` on ``cone_n = (src)_{n-1} (+) (tgt)_n``. It is a chain
+    map because the lift square ``eps . g_tilde = g . epsS`` is strict."""
+    comps = {}
+    for n in model_new.degrees():
+        srcS, srcM = g_tilde.src.term(n - 1).dim, g_tilde.tgt.term(n).dim
+        tgtS, tgtM = g.src.term(n - 1).dim, g.tgt.term(n).dim
+        eS, eM = epsS.component(n - 1), eps.component(n)
+        mat = lm.zeros(tgtS + tgtM, srcS + srcM, dom)
+        for i in range(tgtS):
+            for jj in range(srcS):
+                mat[i][jj] = _get(eS, i, jj, dom)
+        for i in range(tgtM):
+            for jj in range(srcM):
+                mat[tgtS + i][srcS + jj] = _get(eM, i, jj, dom)
+        comps[n] = mat
+    return ChainMap(model_new, Xcur_new, comps, check=True)
+
+
+def projective_model(X, length):
+    """``(P, eps)`` with ``P`` a perfect complex and ``eps: P -> X`` a chain map,
+    CERTIFIED: ``P.is_perfect()`` and ``eps.is_quasi_iso()`` are asserted before
+    return (never an uncertified model). Built by iterated cones over the stupid
+    filtration (see the section header). ``length`` bounds each term's resolution;
+    a genuine quasi-iso requires those resolutions to terminate within it (finite
+    pd), else the certificate refuses loudly."""
+    support = X.degrees()
+    if not support:
+        raise QuiverlabError(
+            "projective_model: the zero complex has no meaningful projective model")
+    dom = X.domain
+    p0 = support[0]
+    model, eps, Xcur = _stalk_model(X.term(p0), p0, length, dom)
+    for j in support[1:]:
+        Smodel, epsS, _Sstalk = _stalk_model(X.term(j), j - 1, length, dom)
+        g = _connecting_map(_Sstalk, Xcur, j, X, dom)
+        g_tilde = _lift_cone_map(Smodel, epsS, model, eps, g, dom)
+        model_new = g_tilde.cone()
+        Xcur_new = g.cone()
+        eps = _cone_of_eps(g_tilde, g, epsS, eps, model_new, Xcur_new, dom)
+        model, Xcur = model_new, Xcur_new
+    # retarget eps onto the ORIGINAL X (Xcur == X structurally: same terms, diffs)
+    eps_to_X = ChainMap(model, X,
+                        {n: eps.component(n) for n in model.degrees()}, check=True)
+    if not model.is_perfect():
+        raise QuiverlabError("projective_model failed certification: the model is "
+                             "not perfect")
+    if not eps_to_X.is_quasi_iso():
+        raise QuiverlabError(
+            "projective_model failed certification: the augmentation is not a "
+            "quasi-isomorphism -- a term's resolution did not terminate within "
+            "length=%d (raise length for a finite-pd complex)" % length)
+    model._perfect = True
+    return model, eps_to_X
+
+
+def hyper_ext_dims(X, Y, lo, hi, length=8):
+    """``{n: dim Hom_{D^b(mod A)}(X, Y[n])}`` (hyper-Ext) for any bounded source
+    ``X``: resolve ``X`` to a certified :func:`projective_model` then apply
+    :func:`hyper_hom_dims`. Honest window: a model of length ``L`` certifies degrees
+    ``hi <= L - 1`` only (the rank formula at degree ``hi`` reads ``d_{hi+1}``, one
+    resolution step of slack); a larger ``hi`` refuses loudly rather than report
+    silently-truncated dimensions."""
+    if hi > length - 1:
+        raise QuiverlabError(
+            "hyper_ext_dims: requested top degree hi=%d exceeds the model window "
+            "(length=%d certifies hyper-Ext degrees <= length-1=%d); raise length"
+            % (hi, length, length - 1))
+    P, _eps = projective_model(X, length)
+    return hyper_hom_dims(P, Y, lo, hi)
