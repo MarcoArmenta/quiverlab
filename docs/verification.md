@@ -18,12 +18,13 @@ Tor / HC / HH class now ships its (co)cycle as a labeled term-sum + a coordinate
 vector self-certified against the differential, every Ext class is CONSTRUCTED as
 its explicit exact sequence, and the report/GUI lay it all out per degree with each
 space's classical interpretation stated — HH⁰'s centre, HH¹'s derivations, HH²'s
-deformation cochain, HH₀'s commutator residues read straight off the reps). It
+deformation cochain, HH₀'s commutator residues read straight off the reps; and the
+Plan-36 Macaulay2 oracle bridge — a fifth, external oracle class, `-m m2`). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one. Every test is
-**classifiable** into exactly this scheme — one of four oracle classes (literature,
-cross-engine, self-certifying, or live QPA) or the contract/infrastructure
-remainder — and since Plan 32 each oracle class is also a **standalone one-liner** a
+**classifiable** into exactly this scheme — one of five oracle classes (literature,
+cross-engine, self-certifying, live QPA, or live Macaulay2) or the
+contract/infrastructure remainder — and since Plan 32 each oracle class is also a **standalone one-liner** a
 reviewer can run (`pytest -m oracle_literature`, and so on), with the counts audited
 against live collection (see [Oracle classes as runnable markers](#oracle-classes-as-runnable-markers)).
 
@@ -372,6 +373,38 @@ out of QPA scope, and raise loudly). Everything below is therefore covered by a
 | **The Koszul verdict itself** (Plan 27 — QPA 1.37 has no `IsKoszul`/`KoszulDual`, confirmed by an exhaustive `NamesGVars()` sweep) | the G-quadratic certifier (Priddy PBW: confluent length-2-tip reduction system ⇒ Koszul) plus the generated-in-degree-1 falsifier and the Fröberg matrix identity `P(t)·C_A(−t)=I`; QPA validates every INPUT to the verdict — graded Ext dims and minimal-generator degrees (`ExtAlgebraGenerators`), quadraticity (`IsQuadraticIdeal`), and the quadratic perp (`QuadraticPerpOfPathAlgebraIdeal`) |
 | Yoneda relations-by-degree (QPA exposes generator counts, not a presentation) | theory battery: `E(k[x]/x²)=k[y]`, `E(k[x]/xⁿ)=k[y,z]/(y²)` (char-independent, pinned over GF(2)/GF(3)/GF(32003)/char 0), hereditary `E=kQ/J²` with `as_algebra()` round-trip, rad²=0 `E=kQ` path counts, quantum CI `dim Eⁿ=n+1` (= the CS chain count), commutative square `E≅A` self-hosting; the monomial Anick chain-count gate; byte-reproducible lift products (Plan-17-style canonicalization) |
 
+### Live Macaulay2 cross-check
+
+`quiverlab.m2.crosscheck` (`src/quiverlab/m2/`) drives **Macaulay2** — a
+genuinely different computer-algebra system — to recompute two things
+independently and refuses to silently disagree (the same
+`CrosscheckReport.assert_agree()` container the QPA bridge uses). It is the
+**fifth oracle class** (`-m m2`), external and independent like `-m qpa`:
+
+- **Single-vertex graded dimensions** of `kQ/I` over `GF(p)` via M2's
+  `AssociativeAlgebras` package — an independent **noncommutative Gröbner (F4)**
+  engine. The script builds `kk<|x,y,…|>/(rels)` and reads
+  `dim_k B_n = numgens source ncBasis(n, B)` for `n = 0..top`; our side is the
+  Hilbert data of the same algebra from its own reduction-system tips
+  (`modules/koszul::_algebra_graded_matrices`). Because M2's Gröbner engine is
+  written and maintained entirely separately from ours, an agreement is a
+  cross-implementation check of the whole tip/normal-form stack.
+- **Commutative Ext dimensions** — for a commutative example
+  `k[x,y]/(relations)` (the presentation must carry the explicit commutator,
+  checked textually and refused loudly otherwise), M2's `freeResolution` of the
+  residue field over `ZZ/p[x,y]/(relations)` gives the graded Betti numbers
+  `rank C_n`, compared against `A.ext_algebra(top).graded_dims_through(top)` —
+  a fully independent homological route.
+
+The transport is a **subprocess**, not an in-process library: each call writes
+the script to a temp file and runs `M2 --script file`, parsing sentinel lines
+`<<QL>> n v` back through exact-integer parsing (no floats cross the boundary).
+Version policy: any Macaulay2 `≥ 1.24` with the bundled `AssociativeAlgebras` +
+`Complexes` packages; the CI job pins the Ubuntu PPA build and fails (never
+skips) when M2 is absent under `QUIVERLAB_REQUIRE_M2=1`. M2 sees **no**
+multi-vertex algebra and **no** Hochschild anything — those requests are refused
+loudly (see [Honest scope](#honest-scope)).
+
 ---
 
 ## Other structural gates
@@ -419,6 +452,7 @@ Plan-35 product surface).
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
 | `qpa/` (GAP/QPA crosscheck) | 148 | 127 qpa + 21 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`; Plan-38 `IsSpecialBiserialAlgebra`/`IsGentleAlgebra`; the Plan-37 **hom-glue battery** — `Length(HomOverAlgebra)` vs our `hom_basis` dim, and for a canonical dim-1 hom the kernel/image/cokernel dimension vectors vs QPA `KernelInclusion`/`ImageInclusion`/`CoKernelProjection` over kA₂/kA₃(ab)/`line_abc_cde`); script builders + guards run without GAP |
+| `m2/` (Macaulay2 crosscheck) | 24 | 10 m2 + 14 fast | **live Macaulay2** — nc graded dims (single-vertex `kQ/I` over GF(p), `AssociativeAlgebras`); commutative Ext/Betti (`freeResolution`); session/script/dispatch guards run without M2 |
 | `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 426 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
 | `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 64 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 80 | fast | runner artifacts / invariants; build hook; freshness; the two-runner Ext/Tor reps equality + the two-runner cyclic-homology reps equality |
@@ -432,14 +466,15 @@ plumbing, not for algebra.
 
 Test buckets are auto-assigned by directory in `tests/conftest.py` (an explicit
 marker wins); the partition is disjoint and exhaustive, enforced by a partition
-test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`;
-plus the **orthogonal** oracle-class markers below (which never change a bucket).
+test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`,
+`m2`; plus the **orthogonal** oracle-class markers below (which never change a bucket).
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
 | `fast` | 1418 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
 | `deep` | 1302 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 126 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `m2` | 10 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The
@@ -480,6 +515,11 @@ edge-case ruling.
   surfaced as their own runnable class.)
 - **`qpa`** — the existing bucket marker *is* the fourth oracle class: our value ≡
   live GAP/QPA. It needs no new marker; the live-QPA face of **Class 2**.
+- **`m2`** — the Plan-36 bucket marker *is* the fifth oracle class: our value ≡ live
+  **Macaulay2** (single-vertex nc graded dims via `AssociativeAlgebras`, commutative
+  Ext via `freeResolution`), driven as a subprocess. Like `qpa` it is an external
+  system, never double-marked with an `oracle_*` mark; the second live-external face
+  of **Class 2**.
 
 Everything else is **contract & infrastructure** (unmarked): refusal/error
 surfaces, API and protocol contracts, the float-ban AST gate, freshness/interface
@@ -498,7 +538,8 @@ They overlap by design, so the union is smaller than their sum.
 | Cross-engine agreement | `-m oracle_crossengine` | 430 | two independent implementations compute the same thing and match live |
 | Self-certifying certificates | `-m oracle_selfcert` | 871 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 127 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1609 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Live Macaulay2 | `-m m2` | 10 | an independent external system (Macaulay2) recomputes and agrees |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1591 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-08-03 (through the 2026-08-03 report-presentation passes 1-2). The oracle markers live only on the
 pure-library `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` /
@@ -539,6 +580,14 @@ verified precision and listed below as such.
   silently skipped: the dedicated job makes an absent QPA a hard failure, and the
   frozen-value validation (`test_qpa_reference_validation.py`) runs in every matrix
   cell as the always-on stand-in.
+- **Macaulay2 cannot see multi-vertex algebras or Hochschild anything** (Plan 36) —
+  its `AssociativeAlgebras` package has no quiver / vertex-idempotent type, so the M2
+  bridge is single-vertex `kQ/I` graded dimensions plus commutative-example Ext only;
+  multi-vertex and every Hochschild quantity stay with QPA + the theory oracles. The
+  bridge **refuses those inputs loudly** (multi-vertex and any non-`{graded_dims,
+  commutative_ext}` subject raise `QuiverlabError`), never silently narrows scope. The
+  live M2 bucket (`-m m2`) skips cleanly without a local Macaulay2 and is a hard
+  failure in the dedicated CI job under `QUIVERLAB_REQUIRE_M2=1`.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
 - **CRS-2004 Example 2.20 does not reproduce** (Plan 29): the paper states

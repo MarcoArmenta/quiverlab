@@ -38,3 +38,8 @@ class CitationError(QuiverlabError):
 class QpaUnavailableError(QuiverlabError):
     """The optional [qpa] GAP backend is not available (not installed, wrong
     platform, or QPA failed to load). The pure-Python core does not need it."""
+
+
+class M2UnavailableError(QuiverlabError):
+    """The Macaulay2 binary is not on PATH (or refused to run). The M2 oracle
+    bridge is a validation convenience only; the core does not need it."""
