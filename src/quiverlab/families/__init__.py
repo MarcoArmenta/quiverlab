@@ -3,6 +3,7 @@ from quiverlab.families.dynkin import dynkin_quiver  # noqa: F401
 from quiverlab.families.exterior import ExteriorAlgebra  # noqa: F401
 from quiverlab.families.incidence import IncidenceAlgebra  # noqa: F401
 from quiverlab.families.nakayama import NakayamaAlgebra  # noqa: F401
+from quiverlab.families.one_point import OnePointExtension  # noqa: F401
 from quiverlab.families.path_algebra import PathAlgebra  # noqa: F401
 from quiverlab.families.preprojective import PreprojectiveAlgebra  # noqa: F401
 from quiverlab.families.quantum import QuantumCI  # noqa: F401
