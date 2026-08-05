@@ -110,7 +110,14 @@ never hide behind one:
     result.json (``quiverlab.trace.json_guide.build_json_guide``, self-validating). Gated
     re-freeze: each regenerated blob was asserted byte-identical to the old one after
     DELETING the ``json_guide`` top-level key, so no pre-existing content moved. The
-    ``canonical_key`` is request-derived and UNCHANGED (no new request fields)."""
+    ``canonical_key`` is request-derived and UNCHANGED (no new request fields).
+  * 2026-08-05 (``homological_profile_kA2`` ADDED, Plan 40 C6): a NEW fixture for the
+    ``homological_profile`` scalar compute kind (kA2 over GF(7) -- global / finitistic
+    / dominant / Gorenstein dimensions + Igusa-Todorov phi/psi of the sum of simples).
+    Pure addition: the seven existing entries were verified byte-identical BEFORE the
+    new one was appended (the delegation test passed on all seven unchanged). Its
+    ``canonical_key`` is request-derived; the ``result_json`` was frozen from the
+    server runner, and the Plan-40 cross-runner test asserts the Pyodide twin agrees."""
 import json
 import pathlib
 

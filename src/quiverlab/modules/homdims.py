@@ -394,3 +394,48 @@ def finitistic_dimension_bounds(A, bound=32):
         note=("Igusa-Todorov psi-bound" if upper is not None
               else "upper bound undetermined (Igusa-Todorov psi-bound not certified "
                    "for this presentation)"))
+
+
+# ---------------------------------------------------------------------------
+# The homological_profile no-code block (Plan 40 Task H) -- ONE shared library
+# builder, so the server (hpc.spec) and Pyodide (docs/gui/runner) twins are
+# byte-identical by construction. Each runner adds the resolved `citations`.
+# ---------------------------------------------------------------------------
+def _igusa_todorov_entry(A, bound):
+    """The phi/psi of ``(+)_v S_v`` for the profile block, or a per-entry error dict
+    when the K0 bookkeeping refuses (the decompose char<=dim caveat) -- honest per
+    entry, never a silent omission (Plan-30 tau-block precedent)."""
+    from quiverlab.modules.morphism import direct_sum
+    try:
+        simples = [A.simple(v) for v in A.quiver.vertices]
+        M, _, _ = direct_sum(*simples)
+        return {"module": "(+)_v S_v",
+                "phi": igusa_todorov_phi(M, bound=bound),
+                "psi": igusa_todorov_psi(M, bound=bound)}
+    except QuiverlabError as exc:
+        return {"error": str(exc)}
+
+
+def homological_profile(A, bound=32):
+    """The whole C6 homological-dimension family as ONE block (Plan 40): global /
+    finitistic / dominant / Gorenstein dimensions + the Igusa-Todorov phi/psi of
+    ``(+)_v S_v``. Every entry carries its own honesty (exact/lower-bound/infinite/
+    undecided markers or a per-entry error). Returns the block minus ``citations``
+    (each runner resolves ``references`` to citation pairs)."""
+    from quiverlab.modules.ext import global_dimension
+    g = global_dimension(A, bound=bound)
+    fb = finitistic_dimension_bounds(A, bound=bound)
+    dd = dominant_dimension(A, bound=bound)
+    gd = gorenstein_dimension(A, bound=bound)
+    return {
+        "kind": "homological_profile",
+        "global_dimension": {"text": str(g), "exact": bool(g.exact), "value": g.value},
+        "finitistic": {"lower": fb.lower, "upper": fb.upper,
+                       "exact": bool(fb.exact), "note": fb.note},
+        "dominant": {"value": dd.value, "exact": bool(dd.exact),
+                     "infinite": bool(dd.infinite), "text": str(dd)},
+        "gorenstein": {"right_id": gd.right_id, "left_id": gd.left_id,
+                       "is_gorenstein": gd.is_gorenstein, "text": str(gd)},
+        "igusa_todorov": _igusa_todorov_entry(A, bound),
+        "references": ["igusa_todorov", "assem_book"],
+    }

@@ -25,7 +25,13 @@
       data-mod-matrix-too-large="{{ t('mod.matrix_too_large') }}"
       data-mod-tau-target-ext="{{ t('mod.tau_target_ext') }}"
       data-mod-tau-target-tor="{{ t('mod.tau_target_tor') }}"
-      data-mod-tau-unavailable="{{ t('mod.tau_unavailable') }}">
+      data-mod-tau-unavailable="{{ t('mod.tau_unavailable') }}"
+      data-hp-title="{{ t('block.homprofile.title') }}"
+      data-hp-gldim="{{ t('block.homprofile.gldim') }}"
+      data-hp-findim="{{ t('block.homprofile.findim') }}"
+      data-hp-domdim="{{ t('block.homprofile.domdim') }}"
+      data-hp-goren="{{ t('block.homprofile.gorenstein') }}"
+      data-hp-igusa="{{ t('block.homprofile.igusa') }}">
   <label for="family">{{ t("form.family") }}</label>
   <select id="family" name="family">
     {% for f in catalog.families %}<option value="{{ f.name }}">{{ f.name }}</option>{% endfor %}
@@ -50,6 +56,7 @@
   <label><input type="checkbox" name="compute" value="coxeter_polynomial"> {{ t("inv.coxeter") }}</label>
   <label><input type="checkbox" name="compute" value="cartan"> {{ t("inv.cartan") }}</label>
   <label><input type="checkbox" name="compute" value="global_dimension"> {{ t("inv.gldim") }}</label>
+  <label><input type="checkbox" name="compute" value="homological_profile"> {{ t("inv.homological_profile") }}</label>
   <label><input type="checkbox" name="compute" value="center"> {{ t("inv.center") }}</label>
   <label><input type="checkbox" name="pdf" value="1"> {{ t("form.pdf") }}</label>
   <button type="submit">{{ t("form.compute") }}</button>

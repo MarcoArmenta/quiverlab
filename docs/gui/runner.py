@@ -645,6 +645,15 @@ def compute_one(spec):
             g = A.global_dimension()
             block = {"text": str(g), "exact": g.exact, "value": g.value,
                      "citations": _citation_pairs(A.citations())}
+        elif name == "homological_profile":
+            # The C6 homological-dimension family (Plan 40). ONE shared library
+            # builder (modules.homdims.homological_profile) drives this Pyodide twin
+            # and the server (quiverlab.hpc.spec._dispatch), byte-identical by
+            # construction; we only add the resolved citation pairs from `references`
+            # (the cross-runner contract asserts key-for-key equality with the server).
+            from quiverlab.modules.homdims import homological_profile
+            block = homological_profile(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "center":
             dim_z, basis = A.center()
             # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
@@ -867,6 +876,9 @@ ETA_MODEL = {
     "fast": {"alpha": 5.3447e-07, "p": 1.1},
     "scalars": {"cartan": 0.01, "coxeter_polynomial": 0.2,
                 "center": 0.05, "global_dimension": 0.5,
+                # Plan 40: the C6 family aggregates gl.dim + finitistic + dominant +
+                # Gorenstein + Igusa-Todorov (several resolutions), so a bit heavier.
+                "homological_profile": 2.0,
                 # module kinds (Plan 26): cheap dim-vector reads up to
                 # resolution/dimension probes that build syzygies to depth.
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,

@@ -55,6 +55,39 @@
   "canonical_key": "cf7c4cee1d60a21f8e4bf9606336fd3d0a5786c85b441d2ca2ea8717f78241e8",
   "result_json": "{\"algebra\": {\"family\": \"QuantumCI\", \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 2}, \"kind\": \"family\", \"params\": {\"q\": 1}}, \"json_guide\": [{\"note\": \"the Coxeter polynomial (LaTeX source).\", \"object\": \"coxeter polynomial\", \"path\": \"results.coxeter_polynomial.latex\"}, {\"note\": \"the global dimension, stated in prose.\", \"object\": \"global dimension\", \"path\": \"results.global_dimension.text\"}, {\"note\": \"dim Z(A), the dimension of the centre.\", \"object\": \"center\", \"path\": \"results.center.dim\"}, {\"note\": \"dim_k A.\", \"object\": \"dimension\", \"path\": \"results.dimension.value\"}], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and Happel's trace identity -- the spectral-invariant oracle.\", \"arxiv\": \"0805.1018\", \"arxiv_url\": \"https://arxiv.org/abs/0805.1018\", \"bibtex_key\": \"LenzingdlPena2008spectral\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\", \"key\": \"lenzing_delapena_spectral\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}, {\"annotation\": \"Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Hochschild1945\", \"doi\": \"10.2307/1969145\", \"doi_url\": \"https://doi.org/10.2307/1969145\", \"formatted\": \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\", \"key\": \"bar\", \"topic\": \"Foundations\"}], \"reproduce\": \"import quiverlab as ql\\nA = ql.QuantumCI(field=ql.GF(2), q=1)\\nA.coxeter_polynomial()\\nA.global_dimension()\\nA.center()\\nA.dim\", \"results\": {\"center\": {\"basis\": [[\"1\", \"0\", \"0\", \"0\"], [\"0\", \"1\", \"0\", \"0\"], [\"0\", \"0\", \"1\", \"0\"], [\"0\", \"0\", \"0\", \"1\"]], \"citations\": [[\"Hochschild1945\", \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\"]], \"dim\": 4, \"references\": [\"bar\"]}, \"coxeter_polynomial\": {\"citations\": [[\"LenzingdlPena2008spectral\", \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"latex\": \"t + 1\", \"references\": [\"lenzing_delapena_spectral\", \"assem_book\"], \"text\": \"t + 1\"}, \"dimension\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"references\": [\"assem_book\"], \"value\": 4}, \"global_dimension\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"exact\": false, \"references\": [\"assem_book\"], \"text\": \">= 32 (certified lower bound; not resolved within depth 32)\", \"value\": 32}}}"
  },
+ "homological_profile_kA2": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 7
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "homological_profile"
+   ],
+   "schema": 1
+  },
+  "canonical_key": "3d1e8bfd6e471e6486f4bae5951ddd55759dd08722546b7c5a36b6aa368bd4af",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The Igusa-Todorov functions phi/psi on the finite K0 + syzygy operator (phi = pd for finite projective dimension) -- quiverlab's Plan-40 IT engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"IgusaTodorov2005\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\", \"key\": \"igusa_todorov\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(7))\\nA.global_dimension(), A.finitistic_dimension_bounds(), A.dominant_dimension(), A.gorenstein_dimension()\", \"results\": {\"homological_profile\": {\"citations\": [[\"IgusaTodorov2005\", \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"dominant\": {\"exact\": true, \"infinite\": false, \"text\": \"dom.dim = 1\", \"value\": 1}, \"finitistic\": {\"exact\": true, \"lower\": 1, \"note\": \"gl.dim exact and finite => findim = gl.dim\", \"upper\": 1}, \"global_dimension\": {\"exact\": true, \"text\": \"gl.dim = 1 (exact)\", \"value\": 1}, \"gorenstein\": {\"is_gorenstein\": true, \"left_id\": 1, \"right_id\": 1, \"text\": \"Gorenstein: right inj.dim 1, left inj.dim 1\"}, \"igusa_todorov\": {\"module\": \"(+)_v S_v\", \"phi\": 1, \"psi\": 1}, \"kind\": \"homological_profile\", \"references\": [\"igusa_todorov\", \"assem_book\"]}}}"
+ },
  "module_basic": {
   "body": {
    "algebra": {

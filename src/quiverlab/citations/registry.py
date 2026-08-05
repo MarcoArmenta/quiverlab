@@ -244,6 +244,22 @@ REGISTRY: dict = {r.key: r for r in [
        "HH^* of the canonical algebras (dim HH^2 = t-3, after Happel LNM 1404) "
        "-- the canonical-algebra Hochschild oracle.",
        "hochschild", "oracle"),
+    # --- Plan 40: C6 homological-dimensions family ---
+    _r("igusa_todorov", "IgusaTodorov2005", "algorithm",
+       "On the finitistic global dimension conjecture for Artin algebras",
+       "The Igusa-Todorov functions phi/psi on the finite K0 + syzygy operator "
+       "(phi = pd for finite projective dimension) -- quiverlab's Plan-40 IT engine.",
+       "homdim", "finitistic"),
+    _r("barrios_mata", "BarriosMataRama2020", "family",
+       "The Igusa-Todorov phi function for truncated path algebras",
+       "Closed forms for the phi/psi-dimension of truncated path algebras kQ/J^k "
+       "(via kQ/J^2) -- the Plan-40 Igusa-Todorov literature oracle.",
+       "homdim", "oracle"),
+    _r("gelinas_delooping", "Gelinas2022", "foundation",
+       "The depth, the delooping level and the finitistic dimension",
+       "The delooping level dell(A) as an upper bound for the finitistic dimension "
+       "-- the deferred Plan-40 Task-F invariant (honest-scope note).",
+       "homdim", "finitistic"),
 ]}
 
 

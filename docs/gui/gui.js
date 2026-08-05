@@ -71,6 +71,7 @@
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
+    '  <label><input type="checkbox" id="qlgui-homological_profile"> homological dimensions</label>' +
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
@@ -140,7 +141,7 @@
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
    "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top", "cartan",
-   "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
+   "coxeter_polynomial", "global_dimension", "homological_profile", "center", "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
    "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
@@ -648,7 +649,8 @@
     if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
     if (el.cyclic_homology.checked)
       compute.push("cyclic_homology:0.." + el["cyclic_homology-top"].value);
-    ["cartan", "coxeter_polynomial", "global_dimension", "center"].forEach(function (k) {
+    ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile",
+     "center"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     var module = null, extTarget = null, torTarget = null;
@@ -2228,6 +2230,40 @@
     div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
 
+  function homProfileFinitistic(f) {
+    if (f.exact) return "findim = " + f.lower + "  (" + f.note + ")";
+    if (f.upper != null) return "findim in [" + f.lower + ", " + f.upper + "]  (" + f.note + ")";
+    return "findim ≥ " + f.lower + "  (" + f.note + ")";
+  }
+
+  function renderHomologicalProfile(div, b) {
+    // The C6 homological-dimensions family (Plan 40) as a labelled list. Each row is
+    // its own honest marker (exact value / certified bound / infinity / undecided /
+    // per-entry error), never a bare number the engine did not resolve.
+    div.appendChild(h("p", {}, h("b", { text: "Homological dimensions" })));
+    var rows = [
+      ["global dimension", b.global_dimension.text],
+      ["finitistic dimension", homProfileFinitistic(b.finitistic)],
+      ["dominant dimension", b.dominant.text],
+      ["Gorenstein", b.gorenstein.text]
+    ];
+    var it = b.igusa_todorov;
+    if (it.error) {
+      rows.push(["Igusa–Todorov φ/ψ of ⊕ S_v", "not computed: " + it.error]);
+    } else {
+      rows.push(["Igusa–Todorov of " + it.module,
+                 "φ = " + it.phi + ",  ψ = " + it.psi]);
+    }
+    var tbl = h("table", { "class": "qlgui-table" });
+    rows.forEach(function (r) {
+      var tr = h("tr");
+      tr.appendChild(h("th", { text: r[0] }));
+      tr.appendChild(h("td", { text: r[1] }));
+      tbl.appendChild(tr);
+    });
+    div.appendChild(tbl);
+  }
+
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
     var div = h("div", { "class": "qlgui-block" });
@@ -2284,6 +2320,8 @@
       div.appendChild(h("p", { "class": "arithmatex", text: "\\[ \\chi(t) = " + b.latex + " \\]" }));
     } else if (name === "global_dimension") {
       div.appendChild(h("p", { text: b.text }));
+    } else if (name === "homological_profile") {
+      renderHomologicalProfile(div, b);
     } else if (name === "center") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
     } else if (name === "tau" || name === "tau_minus") {
@@ -2419,7 +2457,7 @@
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
    el.connes_b, el["connes_b-top"],
    el.cyclic_homology, el["cyclic_homology-top"], el.cartan,
-   el.coxeter_polynomial, el.global_dimension, el.center]
+   el.coxeter_polynomial, el.global_dimension, el.homological_profile, el.center]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
