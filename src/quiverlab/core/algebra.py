@@ -425,6 +425,16 @@ class Algebra:
         from quiverlab.modules.ext_algebra import ext_algebra
         return ext_algebra(self, top)
 
+    def chain_complex(self, terms, dmats, check=True):
+        """A bounded chain complex of A-modules (Plan 39): ``terms`` is
+        ``{degree: Module}`` and ``dmats`` is ``{n: d_n}`` with
+        ``d_n: terms[n] -> terms[n-1]`` (rows=target, the homological convention).
+        Returns a :class:`~quiverlab.modules.complexes.ChainComplex`; homology,
+        shift/truncate, mapping cones and hyper-Ext follow from it (validated
+        ``d.d = 0`` at construction unless ``check=False``)."""
+        from quiverlab.modules.complexes import ChainComplex
+        return ChainComplex(terms, dmats, check=check)
+
     def crosscheck(self, what="hochschild", *args, **kwargs):
         """Independently recompute an invariant via the optional QPA backend and
         compare (spec §5 c.12). Requires `pip install quiverlab[qpa]`; raises

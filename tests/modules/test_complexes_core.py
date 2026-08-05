@@ -76,3 +76,19 @@ def test_mixed_sides_refused():
     L = A.simple(1, side="left")
     with pytest.raises(QuiverlabError):
         ChainComplex({0: R, 1: L}, {1: [[0]]})
+
+
+def test_toplevel_exports_and_algebra_wrapper():
+    # public surface (Plan 39 Task 6): from quiverlab import ChainComplex, ChainMap
+    import quiverlab
+    from quiverlab import ChainComplex as CC
+    from quiverlab import ChainMap as CM
+    assert CC is ChainComplex
+    assert CM is quiverlab.modules.complexes.ChainMap
+    # A.chain_complex(...) convenience wrapper round-trips into a ChainComplex
+    A = _a3()
+    S1 = A.simple(1)
+    X = A.chain_complex({0: S1}, {})
+    assert isinstance(X, ChainComplex)
+    assert X.homology_dims() == {0: 1}
+    assert X.homology(0).dimension_vector() == S1.dimension_vector()
