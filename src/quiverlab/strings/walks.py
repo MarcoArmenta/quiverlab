@@ -275,6 +275,31 @@ def enumerate_strings(A, max_length=8, budget=4096):
                         max_length, len(walks), bool(bands))
 
 
+def _is_band_walk(A, walk, rs=None):
+    """True iff ``walk`` is a primitive band: cyclic (target of the last letter
+    meets the source of the first, without an inverse-cancellation at the wrap),
+    mixed directions, not a proper power, and every rotation a valid walk.
+    Extracted from ``find_bands``'s inline predicate (devil's-advocate round,
+    2026-08-05) so ``band_module`` can validate its input loudly."""
+    walk = tuple(walk)
+    if not walk:
+        return False
+    if rs is None:
+        rs = reduction_system_of(A)
+    Q = A.quiver
+    if letter_target(Q, walk[-1]) != letter_source(Q, walk[0]):
+        return False
+    if walk[0] == invert(walk[-1]):
+        return False
+    if not is_valid_walk(A, walk + (walk[0],), rs):
+        return False
+    if {d for _, d in walk} != {+1, -1}:
+        return False
+    if _is_proper_power(walk):
+        return False
+    return all(is_valid_walk(A, rot, rs) for rot in _rotations(walk))
+
+
 def find_bands(A, max_length=8):
     """Canonical band walks (cyclic strings) of length <= ``max_length``.
 

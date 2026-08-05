@@ -71,3 +71,28 @@ def test_dimension_certificate_refuses_on_bad_wiring():
     bad = BrauerGraph(edges=((0, 1),), cyclic_order={0: (), 1: ()})   # no ends ordered
     with pytest.raises(QuiverlabError):
         BrauerGraphAlgebra(bad, {0: 1, 1: 1}, field=QQ)
+
+
+def test_biserial_cartan_pins_two_gon_and_triangle():
+    # Devil's-advocate coverage (2026-08-05): the star cases reduce to
+    # Nakayama, so a wrong relation set on a GENUINELY biserial graph could
+    # pass the dim+symmetry certificates. Pin the hand-derived Cartans.
+    from quiverlab import GF
+    from quiverlab.families.brauer import BrauerGraph, BrauerGraphAlgebra
+
+    two_gon = BrauerGraphAlgebra(
+        BrauerGraph(edges=((1, 2), (1, 2)),
+                    cyclic_order={1: ((0, "a"), (1, "a")),
+                                  2: ((0, "b"), (1, "b"))}),
+        {1: 1, 2: 1}, field=GF(5))
+    assert two_gon.dim == 8
+    assert two_gon.cartan_matrix() == [[2, 2], [2, 2]]
+
+    triangle = BrauerGraphAlgebra(
+        BrauerGraph(edges=((1, 2), (2, 3), (3, 1)),
+                    cyclic_order={1: ((0, "a"), (2, "b")),
+                                  2: ((1, "a"), (0, "b")),
+                                  3: ((2, "a"), (1, "b"))}),
+        {1: 1, 2: 1, 3: 1}, field=GF(5))
+    assert triangle.dim == 12
+    assert triangle.cartan_matrix() == [[2, 1, 1], [1, 2, 1], [1, 1, 2]]

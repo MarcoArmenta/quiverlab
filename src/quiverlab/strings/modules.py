@@ -129,6 +129,20 @@ def band_module(A, walk, eigenvalue, mult=1, name=None):
             hint="the eigenvalue must be a nonzero element of A.domain") from exc
     if dom.is_zero(lam):
         raise QuiverlabError("strings: band eigenvalue must be nonzero")
+    # primitive-band guard (devil's-advocate fix, 2026-08-05): a proper power
+    # b^k materialises as a DECOMPOSABLE module -- silently wrong under the
+    # docstring's indecomposability promise. Refuse loudly instead.
+    from quiverlab.strings.walks import _is_band_walk, _is_proper_power
+    if _is_proper_power(tuple(walk)):
+        raise QuiverlabError(
+            "strings: the walk is a proper power of a shorter band -- a band "
+            "module needs a PRIMITIVE band",
+            hint="pass the primitive band once and use mult= for multiplicity")
+    if not _is_band_walk(A, tuple(walk)):
+        raise QuiverlabError(
+            "strings: the walk is not a band (cyclic, reduced, composable, "
+            "relation-avoiding at the closure)",
+            hint="find_bands(A) enumerates the primitive bands")
     Q = A.quiver
     L = len(walk)
     if L < 1:

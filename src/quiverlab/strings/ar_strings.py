@@ -221,7 +221,16 @@ def _walk_of_module(A, T, prefer=None):
 def string_tau(A, walk):
     """The walk ``w'`` with ``string_module(w') ~ tau(string_module(walk))``, by the
     Butler-Ringel hook/cohook combinatorics -- arbitrated against the trusted engine
-    translate. ``None`` when ``M(walk)`` is projective (``tau = 0``)."""
+    translate. ``None`` when ``M(walk)`` is projective (``tau = 0``).
+
+    HONESTY NOTE (devil's-advocate round, 2026-08-05): this function COMPUTES
+    the engine translate ``Module.tau()`` on every call and then identifies a
+    walk presentation for it (combinatorial rule first, census fallback), with
+    ``is_isomorphic`` verification before anything is returned. It is neither
+    faster than nor independent of the engine tau -- its value is the WALK
+    (the combinatorial presentation the engine does not provide). It can raise
+    where the engine succeeds (no walk found within budget); it can never
+    return a wrong walk."""
     T = string_module(A, walk).tau()
     if T.dim == 0:
         return None
