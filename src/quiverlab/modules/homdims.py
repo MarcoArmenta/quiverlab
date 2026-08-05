@@ -134,3 +134,71 @@ def igusa_todorov_psi(M, budget=512, bound=64):
         if pdY is not None:                   # only finite-pd summands enter fpd
             fpd = max(fpd, pdY)
     return phi + fpd
+
+
+# ---------------------------------------------------------------------------
+# Dominant dimension (leading projective-injective coresolvents of the regular
+# module; self-injective => infinity)
+# ---------------------------------------------------------------------------
+def _regular_module(A, side="right"):
+    """The regular module ``A_A = (+)_v P_v`` (Plan-37 ``direct_sum``)."""
+    from quiverlab.modules.morphism import direct_sum
+    Ps = [A.projective(v, side=side) for v in A.quiver.vertices]
+    D, _, _ = direct_sum(*Ps)
+    return D
+
+
+@dataclass
+class DominantDimension:
+    """dom.dim A, honest: an exact leading-projective count, a certified lower bound
+    (coresolution not resolved within depth), or a certified ``infinite`` (A self-
+    injective -- every injective coresolvent of the regular module is projective)."""
+    value: "int | None"
+    exact: bool
+    infinite: bool
+    _bound: int = 32
+
+    def __int__(self):
+        if self.value is None:
+            raise QuiverlabError("dominant dimension is infinite; it has no int value")
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, DominantDimension):
+            return ((self.value, self.exact, self.infinite)
+                    == (other.value, other.exact, other.infinite))
+        if isinstance(other, int):
+            return self.exact and not self.infinite and self.value == other
+        return NotImplemented
+
+    def __repr__(self):
+        if self.infinite:
+            return ("dom.dim = infinity (self-injective; every injective coresolvent "
+                    "of A is projective)")
+        if self.exact:
+            return f"dom.dim = {self.value}"
+        return (f">= {self.value} (certified lower bound; not resolved within depth "
+                f"{self._bound})")
+
+
+def dominant_dimension(A, bound=32):
+    """dom.dim A = the index of the first term in a minimal injective coresolution of
+    the regular right module ``A_A = (+)_v P_v`` that is NOT projective (``infinite``
+    iff every such term is projective, iff A is self-injective) (spec section 3.5;
+    Assem-Simson-Skowronski)."""
+    from quiverlab.modules.ext import is_selfinjective
+    from quiverlab.modules.injective import injective_resolution
+    if is_selfinjective(A):
+        return DominantDimension(None, exact=False, infinite=True, _bound=bound)
+    reg = _regular_module(A)
+    res = injective_resolution(reg, bound)
+    count = 0
+    for n in range(bound + 1):
+        term = res.terms[n] if n < len(res.terms) else None
+        if term is None or term.dim == 0:                 # coresolution ended proj.
+            return DominantDimension(count, exact=True, infinite=False, _bound=bound)
+        if term.projective_resolution(1).pd() == 0:        # E^n projective: it counts
+            count += 1
+        else:
+            return DominantDimension(count, exact=True, infinite=False, _bound=bound)
+    return DominantDimension(count, exact=False, infinite=False, _bound=bound)  # bound

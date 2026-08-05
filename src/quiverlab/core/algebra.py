@@ -446,6 +446,14 @@ class Algebra:
         from quiverlab.modules.ext import is_selfinjective
         return is_selfinjective(self)
 
+    def dominant_dimension(self, bound=32):
+        """Dominant dimension: the count of leading projective terms in a minimal
+        injective coresolution of the regular module, ``infinite`` iff self-injective
+        (Plan 40). A ``DominantDimension``: exact value, certified lower bound, or a
+        certified infinity -- never a bare number the engine did not resolve."""
+        from quiverlab.modules.homdims import dominant_dimension
+        return dominant_dimension(self, bound=bound)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
