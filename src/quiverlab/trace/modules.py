@@ -322,16 +322,11 @@ def trace_socle(M):
 def _radical_layers(M):
     """The Loewy (radical) layers of a module, top to bottom, each a str-keyed
     composition-factor multiplicity dict: [top(M), top(rad M), top(rad^2 M), ...].
-    Computed through the PUBLIC ``radical()`` / ``top()`` surface only."""
-    layers = []
-    cur = M
-    while cur.dim > 0:
-        layers.append(_dv(cur.top().dimension_vector()))
-        r = cur.radical()
-        if r.dim >= cur.dim:            # radical must strictly shrink for f.d. modules
-            break
-        cur = r
-    return layers
+
+    Plan 37 moved this logic to the public ``Module.loewy_layers`` (same
+    ``radical()`` / ``top()`` surface, same str-keyed vertex-sorted dicts); this
+    shim delegates so the report renderers stay byte-identical."""
+    return M.loewy_layers()
 
 
 def module_description(M, name="M"):
