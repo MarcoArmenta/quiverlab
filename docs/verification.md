@@ -20,9 +20,9 @@ space's classical interpretation stated — HH⁰'s centre, HH¹'s derivations, 
 deformation cochain, HH₀'s commutator residues read straight off the reps). It
 is not a pile of smoke tests: the mathematics is pinned by **two classes of
 oracle**, and most numbers are checked by more than one. Every test is
-**classifiable** into exactly this scheme — one of four oracle classes (literature,
-cross-engine, self-certifying, or live QPA) or the contract/infrastructure
-remainder — and since Plan 32 each oracle class is also a **standalone one-liner** a
+**classifiable** into exactly this scheme — one of five oracle classes (literature,
+cross-engine, self-certifying, live QPA, or live Macaulay2) or the
+contract/infrastructure remainder — and since Plan 32 each oracle class is also a **standalone one-liner** a
 reviewer can run (`pytest -m oracle_literature`, and so on), with the counts audited
 against live collection (see [Oracle classes as runnable markers](#oracle-classes-as-runnable-markers)).
 
@@ -437,6 +437,7 @@ Plan-35 product surface).
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
 | `qpa/` (GAP/QPA crosscheck) | 144 | 123 qpa + 21 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`); script builders + guards run without GAP |
+| `m2/` (Macaulay2 crosscheck) | 24 | 10 m2 + 14 fast | **live Macaulay2** — nc graded dims (single-vertex `kQ/I` over GF(p), `AssociativeAlgebras`); commutative Ext/Betti (`freeResolution`); session/script/dispatch guards run without M2 |
 | `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 426 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
 | `hpc/` (headless CLI + spec core + container assets — non-algebraic glue, Plan 28) | 64 | fast (checkpoint-resume: deep) | **CLI ≡ public-API parity** on fixture configs; renderer golden tokens (LaTeX/HTML/text ladder); checkpoint-resume end-to-end equals the uninterrupted run; import-boundary + exit-code contract; sbatch/Dockerfile/workflow asset gates |
 | `docs/gui/` (Pyodide GUI + no-code module panel — non-algebraic glue) | 80 | fast | runner artifacts / invariants; build hook; freshness; the two-runner Ext/Tor reps equality + the two-runner cyclic-homology reps equality |
@@ -450,14 +451,15 @@ plumbing, not for algebra.
 
 Test buckets are auto-assigned by directory in `tests/conftest.py` (an explicit
 marker wins); the partition is disjoint and exhaustive, enforced by a partition
-test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`;
-plus the **orthogonal** oracle-class markers below (which never change a bucket).
+test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`,
+`m2`; plus the **orthogonal** oracle-class markers below (which never change a bucket).
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1347 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `fast` | 1361 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
 | `deep` | 1302 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 123 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `m2` | 10 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The
@@ -498,6 +500,11 @@ edge-case ruling.
   surfaced as their own runnable class.)
 - **`qpa`** — the existing bucket marker *is* the fourth oracle class: our value ≡
   live GAP/QPA. It needs no new marker; the live-QPA face of **Class 2**.
+- **`m2`** — the Plan-36 bucket marker *is* the fifth oracle class: our value ≡ live
+  **Macaulay2** (single-vertex nc graded dims via `AssociativeAlgebras`, commutative
+  Ext via `freeResolution`), driven as a subprocess. Like `qpa` it is an external
+  system, never double-marked with an `oracle_*` mark; the second live-external face
+  of **Class 2**.
 
 Everything else is **contract & infrastructure** (unmarked): refusal/error
 surfaces, API and protocol contracts, the float-ban AST gate, freshness/interface
@@ -516,7 +523,8 @@ They overlap by design, so the union is smaller than their sum.
 | Cross-engine agreement | `-m oracle_crossengine` | 430 | two independent implementations compute the same thing and match live |
 | Self-certifying certificates | `-m oracle_selfcert` | 847 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 123 | an independent external system (QPA) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa"` | 1581 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Live Macaulay2 | `-m m2` | 10 | an independent external system (Macaulay2) recomputes and agrees |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1591 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-08-03 (through the 2026-08-03 report-presentation passes 1-2). The oracle markers live only on the
 pure-library `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` /
