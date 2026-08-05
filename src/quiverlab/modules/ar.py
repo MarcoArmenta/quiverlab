@@ -465,3 +465,48 @@ def almost_split_sequence(M):
     if not (is_indecomposable(seq.modules[0]) and is_indecomposable(M)):
         raise QuiverlabError("almost_split: an end is decomposable (bug)")
     return ses
+
+
+# --------------------------------------------------------------------------- #
+# Irreducible maps: dim rad(M,N)/rad^2(M,N) (Task 6).
+# --------------------------------------------------------------------------- #
+def _rad_basis(M, N):
+    """A spanning column set (vec) of rad(M, N) in the ``tgt.dim x src.dim`` vec space:
+    ALL of Hom(M, N) when ``M`` is not iso to ``N`` (a map between non-isomorphic
+    indecomposables is never invertible, so it lies in the radical); ``rad End(M)`` when
+    ``M ~ N``. ``M``, ``N`` indecomposable."""
+    from quiverlab.modules.hom import is_isomorphic
+    from quiverlab.modules.morphism import hom_basis
+    if not is_isomorphic(M, N):
+        return [_vec(f.matrix) for f in hom_basis(M, N)]
+    H, rad_coords = _rad_end_basis(M)
+    dom = M.domain
+    return [_vec(_combine_matrices(H, rc, M.dim, M.dim, dom)) for rc in rad_coords]
+
+
+def irreducible_maps(M, N, within):
+    """The AR-quiver arrow multiplicity ``dim rad(M, N) / rad^2(M, N)`` for
+    indecomposable ``M``, ``N``, with ``rad^2`` computed by composing radical maps
+    through the finite indecomposable set ``within`` (the knitted component's modules):
+    ``rad^2(M, N) = sum_{L in within} span{ h.then(g) : h in rad(M, L), g in rad(L, N) }``.
+    Exact once ``within`` contains all indecomposables (rep-finite)."""
+    dom = M.domain
+    rad_MN = _rad_basis(M, N)
+    if not rad_MN:
+        return 0
+    dim_rad = lm.mat_rank(lm.cols_to_matrix(rad_MN), dom)
+    rad2 = []
+    for L in within:
+        left = _rad_basis(M, L)                        # vecs of rad(M, L)  (L.dim x M.dim)
+        right = _rad_basis(L, N)                       # vecs of rad(L, N)  (N.dim x L.dim)
+        for hvec in left:
+            h = _unvec(hvec, L.dim, M.dim)             # M -> L
+            for gvec in right:
+                g = _unvec(gvec, N.dim, L.dim)         # L -> N
+                rad2.append(_vec(lm.matmul(g, h, dom)))  # g . h : M -> N
+    if not rad2:
+        return dim_rad
+    both = lm.mat_rank(lm.cols_to_matrix(rad_MN + rad2), dom)
+    assert both == dim_rad, "irreducible_maps: rad^2 not inside rad (bug)"
+    dim_rad2 = lm.mat_rank(lm.cols_to_matrix(rad2), dom)
+    return dim_rad - dim_rad2
