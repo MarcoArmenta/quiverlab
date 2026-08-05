@@ -458,6 +458,20 @@ class Algebra:
         from quiverlab.modules.ext import global_dimension
         return global_dimension(self)
 
+    def is_tilting_module(self, T, n=1):
+        """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
+        ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,
+        Ext^i(T,T)=0 (1<=i<=n), and the Bongartz count criterion for n=1. The summand
+        count inherits the ``decompose`` char caveat (char 0 or char > dim)."""
+        from quiverlab.modules.tilting import is_tilting_module
+        return is_tilting_module(T, n=n)
+
+    def bongartz_completion(self, T):
+        """The Bongartz complement middle term ``E`` of a partial tilting module ``T``
+        (pd<=1, Ext^1(T,T)=0): ``is_tilting_module(direct_sum(T, E))`` is True (Plan 44)."""
+        from quiverlab.modules.tilting import bongartz_completion
+        return bongartz_completion(T)
+
     def is_selfinjective(self):
         """True iff every indecomposable projective is injective (self-injective =
         Frobenius for a f.d. algebra); exact over any field (spec §3.5)."""
@@ -570,6 +584,33 @@ class Algebra:
         presentation-less input."""
         from quiverlab.invariants.recognizers import is_basic
         return is_basic(self)
+
+    def primitive_idempotents(self):
+        """A complete set of orthogonal primitive idempotents of this algebra (coordinate
+        vectors summing to the unit) via the exact Wedderburn/trace-form route (Plan 44 /
+        C7). Char 0 or char > dim only, else a loud QuiverlabError."""
+        from quiverlab.core.basic import primitive_idempotents
+        return primitive_idempotents(self)
+
+    def basic_algebra(self):
+        """The basic algebra ``eAe`` (one primitive idempotent per iso class),
+        Morita-equivalent to this algebra, as a structure-constant Algebra (Plan 44)."""
+        from quiverlab.core.basic import basic_algebra
+        return basic_algebra(self)
+
+    def gabriel_quiver(self):
+        """The Gabriel (Ext) quiver of this algebra (vertices = iso classes of primitive
+        idempotents, arrows off ``rad/rad^2`` of the basic algebra) (Plan 44)."""
+        from quiverlab.core.basic import gabriel_quiver
+        return gabriel_quiver(self)
+
+    def presented_form(self):
+        """A genuine ``kQ/I`` presentation of the basic algebra, recovered from the
+        structure constants and certified per instance (dim + multiplicativity), so
+        ``End(M)`` / ``End(T)`` read back as ``kQ/I`` (Plan 44 / C7). Loud refusal off
+        char-scope or on a non-split division-algebra block."""
+        from quiverlab.core.basic import presented_form
+        return presented_form(self)
 
     def is_nakayama(self):
         """True iff the quiver is a union of linear A_n and single oriented

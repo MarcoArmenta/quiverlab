@@ -292,6 +292,10 @@ ported and wired in:
   invariant, not complete), and a `BrauerGraphAlgebra` constructor from a ribbon
   graph — with the algebra-only `strings` no-code block (census + bands + rep-type
   + AG).
+- **Tilting and constructions (C7).** tilting/cotilting + Bongartz completion,
+  minimal add(M)-approximations, one-point extensions, repetitive slices,
+  Jacobian algebras from a potential, and Gabriel-quiver recovery of any
+  structural oracle) or refuses loudly; `tilting_check` is clickable in the no-code GUI.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

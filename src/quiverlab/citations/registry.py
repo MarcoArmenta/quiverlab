@@ -304,6 +304,27 @@ REGISTRY: dict = {r.key: r for r in [
        "Tame biserial algebras",
        "Biserial / special-biserial structure underlying string and Brauer graph "
        "algebras.", "families"),
+    _r("bongartz_tilting", "Bongartz1981", "foundation",
+       "Tilted algebras",
+       "Bongartz's count criterion for tilting modules (# non-iso indecomposable "
+       "summands = # vertices, given pd<=1 and self-Ext vanishing) and the Bongartz "
+       "completion of a partial tilting module (Plan 44 / C7).",
+       "tilting"),
+    _r("derksen_weyman_zelevinsky", "DWZ2008", "family",
+       "Quivers with potentials and their representations I",
+       "The Jacobian algebra kQ/(cyclic derivatives) of a quiver with potential (Q, W) "
+       "-- quiverlab's JacobianAlgebra constructor (Plan 44 / C7).",
+       "family", "jacobian"),
+    _r("labardini", "LabardiniFragoso2009", "family",
+       "Quivers with potentials associated to triangulated surfaces",
+       "Surface quivers with potentials whose Jacobian algebras are finite-dimensional "
+       "(the framework for the Plan-44 Jacobian constructor; surface QPs land in P48).",
+       "family", "jacobian"),
+    _r("hughes_waschbusche", "HughesWaschbusch1983", "family",
+       "Trivial extensions of tilted algebras",
+       "The repetitive algebra hat(A) and its connecting D(A) bimodule -- the source of "
+       "quiverlab's finite repetitive-algebra slices (Plan 44 / C7).",
+       "family", "repetitive"),
 ]}
 
 

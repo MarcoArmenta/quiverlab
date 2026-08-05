@@ -31,6 +31,8 @@ _MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
+    "projective_dimension", "injective_dimension", "decompose",
+    "tilting_check",
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
@@ -280,6 +282,7 @@ _MOD_REFS = {
     "injective_dimension": ["minimal_resolution", "assem_book"],
     "decompose": ["assem_book"],
     "almost_split": ["assem_book", "ars_book"],
+    "tilting_check": ["bongartz_tilting", "assem_book"],
 }
 
 
@@ -561,6 +564,20 @@ def _module_block(name, top):
         return {"kind": name, "value": idim, "finite": idim is not None, "citations": cites,
                 "bound": _PD_BOUND, "latex": _homdim_latex("id", idim),
                 **({} if idim is not None else {"note": _HOMDIM_UNRESOLVED})}
+    if name == "tilting_check":
+        # The candidate T is the request's module M (schema-2, no second module). top = the
+        # optional degree n, default 1. A decompose char-caveat becomes an honest per-block
+        # error (mirrors the hpc spec runner byte-for-byte on the math subkeys).
+        from quiverlab.errors import QuiverlabError
+        from quiverlab.modules.tilting import is_tilting_module
+        try:
+            rep = is_tilting_module(M, n=(top if top is not None else 1))
+        except QuiverlabError as exc:
+            return {"kind": name, "error": str(exc), "citations": cites}
+        return {"kind": name, "is_tilting": rep.is_tilting, "n": rep.n, "pd": rep.pd,
+                "self_ext_vanishes": rep.self_ext_vanishes,
+                "num_summands": rep.num_summands, "num_vertices": rep.num_vertices,
+                "note": rep.note, "citations": cites}
     raise RequestError("unknown module invariant %r" % (name,))
 
 

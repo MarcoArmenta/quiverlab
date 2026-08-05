@@ -112,6 +112,8 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
+    "projective_dimension", "injective_dimension", "decompose",
+    "tilting_check",
 })
 # Module kinds that consume a degree range (`kind:0..n`); the rest are scalars.
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",

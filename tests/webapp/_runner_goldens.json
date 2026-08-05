@@ -563,5 +563,44 @@
   },
   "canonical_key": "1b7d7a945c7b085e72bebfc6e0f77d3fed4acb27e85fa3f6d23e774d605a4818",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [\"a*b\"], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Butler-Ringel: the string/band module classification and the hook/cohook description of the AR translate -- the ground truth for the string subsystem.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ButlerRingel1987\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\", \"key\": \"butler_ringel\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The AG-invariant: a multiset of (n,m) pairs from permitted/forbidden threads; a DERIVED invariant, provably NOT complete.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AvellaAlaminosGeiss2008\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Avella-Alaminos, Diana; Geiss, Christof (). Combinatorial derived invariants for gentle algebras. Journal of Pure and Applied Algebra.\", \"key\": \"avella_geiss\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=['a*b'], field=GF(5))\\nfrom quiverlab.strings import enumerate_strings, find_bands\\nfrom quiverlab.strings.ag import ag_invariant\\nenumerate_strings(A), find_bands(A), ag_invariant(A)\", \"results\": {\"strings\": {\"ag_invariant\": [[4, 2]], \"bands\": {\"exist\": false, \"sample\": []}, \"citations\": [[\"ButlerRingel1987\", \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\"], [\"AvellaAlaminosGeiss2008\", \"Avella-Alaminos, Diana; Geiss, Christof (). Combinatorial derived invariants for gentle algebras. Journal of Pure and Applied Algebra.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"recognizers\": {\"is_gentle\": true, \"is_special_biserial\": true, \"is_string\": true}, \"references\": [\"butler_ringel\", \"avella_geiss\", \"assem_book\"], \"rep_type\": \"finite\", \"strings\": {\"count\": 5, \"max_length\": 8, \"sample\": [\"a^-1\", \"b^-1\", \"e_1\", \"e_2\", \"e_3\"], \"status\": \"complete\"}}}}"
+ },
+ "module_tilting_check_kA2": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 5
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "tilting_check"
+   ],
+   "module": {
+    "builtin": {
+     "kind": "projective",
+     "vertex": 1
+    }
+   },
+   "schema": 2
+  },
+  "canonical_key": "f980386045c78d82da94b935b8da89822553ab72ba8abca0cd3b3a72557a1031",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Bongartz's count criterion for tilting modules (# non-iso indecomposable summands = # vertices, given pd<=1 and self-Ext vanishing) and the Bongartz completion of a partial tilting module (Plan 44 / C7).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Bongartz1981\", \"doi\": \"10.1007/BFb0092982\", \"doi_url\": \"https://doi.org/10.1007/BFb0092982\", \"formatted\": \"Bongartz, Klaus (1981). Tilted algebras. Representations of Algebras (Puebla, 1980) 903, 26-38.\", \"key\": \"bongartz_tilting\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(5))\\nM = A.projective(1, side=\\\"right\\\")\", \"results\": {\"tilting_check\": {\"citations\": [[\"Bongartz1981\", \"Bongartz, Klaus (1981). Tilted algebras. Representations of Algebras (Puebla, 1980) 903, 26-38.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"is_tilting\": false, \"kind\": \"tilting_check\", \"n\": 1, \"note\": \"# summands 1 != # vertices 2\", \"num_summands\": 1, \"num_vertices\": 2, \"pd\": 0, \"references\": [\"bongartz_tilting\", \"assem_book\"], \"self_ext_vanishes\": true}}}"
  }
 }

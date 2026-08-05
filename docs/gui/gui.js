@@ -109,6 +109,7 @@
     '    <label><input type="checkbox" id="qlgui-injective_resolution"> inj.res 0..<select id="qlgui-ir-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-decompose"> decompose</label>' +
     '    <label><input type="checkbox" id="qlgui-almost_split"> almost-split</label>' +
+    '    <label><input type="checkbox" id="qlgui-tilting_check"> tilting?</label>' +
     '    <label><input type="checkbox" id="qlgui-ext"> Ext 0..<select id="qlgui-ext-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-tor"> Tor 0..<select id="qlgui-tor-top"></select></label>' +
     '  </div>' +
@@ -167,6 +168,7 @@
    "projective_dimension", "injective_dimension",
    "projective_resolution", "pr-top", "injective_resolution", "ir-top",
    "decompose", "almost_split", "ext", "ext-top", "tor", "tor-top",
+   "decompose", "tilting_check", "ext", "ext-top", "tor", "tor-top",
    "target", "target-mode", "target-side", "target-body", "target-note"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
   [el["hhc-top"], el["hhh-top"], el["pr-top"], el["ir-top"], el["ext-top"],
@@ -311,6 +313,7 @@
   var MOD_KIND_IDS = ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
     "projective_dimension", "injective_dimension",
     "projective_resolution", "injective_resolution", "decompose", "almost_split",
+    "projective_resolution", "injective_resolution", "decompose", "tilting_check",
     "ext", "tor"];
 
   // Generic matrix-editor helpers over a module-state {dims, maps} + a side. Used
@@ -682,7 +685,8 @@
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
       ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
-       "projective_dimension", "injective_dimension", "decompose"].forEach(function (k) {
+       "projective_dimension", "injective_dimension", "decompose",
+       "tilting_check"].forEach(function (k) {
         if (el[k].checked) compute.push(k);
       });
       if (el.projective_resolution.checked)
@@ -1057,6 +1061,16 @@
     return [block.radical, block.top, block.socle].some(function (v) {
       return v && v.display_only === true;
     });
+  }
+  function kvTable(rows) {                  // label | value (Plan 44 tilting_check)
+    var tbl = h("table", {});
+    rows.forEach(function (p) {
+      var r = h("tr");
+      r.appendChild(h("th", { text: p[0] }));
+      r.appendChild(h("td", { text: p[1] }));
+      tbl.appendChild(r);
+    });
+    return tbl;
   }
   function repDimTable(pairs) {             // label | dim vector (NO total-dim column)
     var head = h("tr");
@@ -2426,6 +2440,22 @@
         div.appendChild(decompTable(asum));
         appendSummandMaps(div, asum);
       }
+    } else if (name === "tilting_check") {
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: b.is_tilting
+          ? "M is a tilting module." : "M is not a tilting module: " + b.note + "." }));
+        var trows = [
+          ["tilting", b.is_tilting ? "yes" : "no"],
+          ["n (pd bound tested)", String(b.n)],
+          ["pd M", b.pd === null || b.pd === undefined ? "> bound" : String(b.pd)],
+          ["Ext^i(M,M)=0 (1≤i≤n)", b.self_ext_vanishes ? "yes" : "no"],
+          ["# non-iso indec. summands", String(b.num_summands)],
+          ["# vertices (rank K_0)", String(b.num_vertices)]
+        ];
+        div.appendChild(kvTable(trows));
+      }
     } else if (name === "ext" || name === "tor") {
       var isExt = name === "ext";
       div.appendChild(h("p", { text: (isExt ? "Ext to the target module — dim vector "
@@ -2639,6 +2669,7 @@
   });
   [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
    el.projective_dimension, el.injective_dimension, el.decompose, el.almost_split,
+   el.projective_dimension, el.injective_dimension, el.decompose, el.tilting_check,
    el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
    el["ext-top"], el["tor-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
