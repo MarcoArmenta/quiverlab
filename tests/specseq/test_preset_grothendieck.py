@@ -145,3 +145,27 @@ def test_acyclicity_failure_refuses_loudly():
         got = _einf_totals(ss, 2)
         M_over_A = _restrict(M, A)
         assert got == [A.ext(M_over_A, N, n) for n in range(3)]
+
+
+def test_certified_window_guard():
+    # Devil's-advocate fix (2026-08-05): out-of-window abutment reads on a
+    # truncated CE double complex are silently wrong -- they must refuse.
+    import pytest
+    from quiverlab import GF, Quiver
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.specseq.presets import cartan_eilenberg_ss
+
+    A = Quiver([1, 2], {"a": (1, 2)}).algebra(field=GF(5))
+    B = A                                        # degenerate quotient
+    M, N = B.simple(1), A.simple(2)
+    ss = cartan_eilenberg_ss(A, B, M, N, p_len=3, q_len=3)
+    assert ss.certified_window == (0, 2)
+    assert ss.certified_abutment(1) == A.ext(M, N, 1)
+    with pytest.raises(QuiverlabError, match="certified window"):
+        ss.certified_abutment(5)
+    # an uncertified SS refuses the accessor entirely
+    from quiverlab.specseq.presets import radical_filtration_ss
+    from quiverlab.modules.complexes import ChainComplex
+    X = ChainComplex.stalk(A.simple(1), 0)
+    with pytest.raises(QuiverlabError, match="no certified"):
+        radical_filtration_ss(X).certified_abutment(0)

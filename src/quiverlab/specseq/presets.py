@@ -318,4 +318,5 @@ def cartan_eilenberg_ss(A, B, M, N, p_len=6, q_len=6):
                 "too shallow to certify this degree)",
                 hint="raise p_len/q_len, or the instance falls outside the "
                      "admissible-quotient change-of-rings scope")
+    ss.certified_window = (0, max(window - 1, 0))
     return ss

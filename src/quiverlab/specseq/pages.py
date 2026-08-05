@@ -226,6 +226,28 @@ class SpectralSequence:
     def total_homology_dims(self):
         return self.F.total_homology_dims()
 
+    # set by presets that certify a finite abutment window against an external
+    # oracle (devil's-advocate fix, 2026-08-05: E_inf totals of a TRUNCATED
+    # double complex are silently wrong past the certified degrees).
+    certified_window = None
+
+    def certified_abutment(self, n):
+        """The abutment dimension at Ext-degree ``n``, readable ONLY inside the
+        preset-certified window -- out-of-window reads refuse loudly instead of
+        returning a truncation artifact."""
+        from quiverlab.errors import QuiverlabError
+        if self.certified_window is None:
+            raise QuiverlabError(
+                "this spectral sequence carries no certified abutment window; "
+                "read total_homology_dims only with an external certificate")
+        lo, hi = self.certified_window
+        if not (lo <= n <= hi):
+            raise QuiverlabError(
+                f"abutment degree {n} is outside the certified window [{lo}, {hi}] "
+                "-- a truncated double complex is silently wrong out there; "
+                "raise p_len/q_len")
+        return self.total_homology_dims.get(-n, 0)
+
     def einf_page(self):
         """The stabilized page ``E_inf`` (``page(e_infinity_page)``)."""
         return self.page(self.convergence.e_infinity_page)
