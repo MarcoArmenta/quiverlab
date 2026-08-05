@@ -654,6 +654,19 @@ def compute_one(spec):
             # which serves `dimension` = A.dim; same `value` semantics, GUI block
             # shape (value + citations, like global_dimension).
             block = {"value": A.dim, "citations": _citation_pairs(A.citations())}
+        elif name == "ext_algebra":
+            # Yoneda / Ext-algebra + Koszulity (Plan 38). Byte-identical to the
+            # server twin (quiverlab.hpc.spec._dispatch): SAME library block
+            # builder, and citations resolved from `references` the same way.
+            from quiverlab.modules.ext_algebra import ext_algebra_block
+            block = ext_algebra_block(A, top if top is not None else 6)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "recognizers":
+            # Recognizer batch + type detection (Plan 38). Byte-identical to the
+            # server twin: SAME library block builder + `references`->citations.
+            from quiverlab.invariants.recognizers import recognizers_block
+            block = recognizers_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
             # library method returns a frozen result whose .blocks() IS the block
@@ -788,6 +801,11 @@ def python_snippet():
              # `dimension` is a scalar invariant compute_one serves (A.dim) -- it MUST
              # have a snippet entry or python_snippet() KeyErrors when it is requested.
              "dimension": "A.dim",
+             # Plan 38: Koszulity / Ext-algebra + the recognizer batch. Both are
+             # scalar kinds (no %d) so the reproduce snippet never leaves a literal.
+             "ext_algebra": "A.ext_algebra()",
+             "recognizers": ("[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), "
+                             "A.dynkin_type(), A.form_type()]"),
              # HH product surface (Plan 35): same four calls as the server snippet
              # map (quiverlab.hpc.spec._snippet); each needs a range (%d = top).
              "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
@@ -870,7 +888,10 @@ ETA_MODEL = {
                 "tau": 0.1, "tau_minus": 0.1, "ext": 0.2, "tor": 0.2,
                 "decompose": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
-                "projective_dimension": 0.3, "injective_dimension": 0.3},
+                "projective_dimension": 0.3, "injective_dimension": 0.3,
+                # Plan 38: ext_algebra walks a resolution + Yoneda products;
+                # recognizers is cheap structural combinatorics + a reduction system.
+                "ext_algebra": 2.0, "recognizers": 0.1},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

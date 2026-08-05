@@ -656,6 +656,47 @@ def ext_algebra(A, top=6):
                               generators_by_degree, relations_by_degree, ext_quiver)
 
 
+def _hilbert_latex(dims):
+    """LaTeX for the graded Hilbert series P_{E(A)}(t) = sum dim E^n t^n."""
+    terms = []
+    for n, d in enumerate(dims):
+        if d == 0:
+            continue
+        if n == 0:
+            terms.append(str(d))
+        elif n == 1:
+            terms.append("t" if d == 1 else "%d t" % d)
+        else:
+            terms.append(("t^{%d}" % n) if d == 1 else "%d t^{%d}" % (d, n))
+    return r"P_{E(A)}(t) = " + (" + ".join(terms) if terms else "0")
+
+
+def ext_algebra_block(A, top=6):
+    """The no-code ``ext_algebra`` compute block (Plan 38): the three-valued
+    Koszulity verdict plus the graded/Betti data of the Yoneda algebra E(A),
+    computed through degree ``top``. SHARED by both runners (quiverlab.hpc.spec
+    and docs/gui/runner.py) so their blocks are byte-identical; each runner adds
+    ``citations`` from ``references`` (the products/hh_reps precedent)."""
+    Y = ext_algebra(A, top)
+    cdeg = Y.certified_through_degree
+    graded = [int(d) for d in Y.graded_dims_through(cdeg)]
+    obstruction = list(Y.koszul_obstruction) if Y.koszul_obstruction else None
+    return {
+        "top": top,
+        "koszul": Y.koszul,
+        "koszul_reason": Y._koszul_reason,
+        "obstruction": obstruction,
+        "certified_through_degree": cdeg,
+        "graded_dims": graded,
+        "generators_by_degree": {str(d): len(v)
+                                 for d, v in sorted(Y.generators_by_degree.items())},
+        "relations_by_degree": {str(d): len(v)
+                                for d, v in sorted(Y.relations_by_degree.items())},
+        "latex": _hilbert_latex(graded),
+        "references": ["priddy", "froberg_koszul", "polishchuk_positselski"],
+    }
+
+
 def _build_ext_quiver(eng, deg1_generators):
     """Quiver with vertices Q_0 and one arrow i->j per basis element of E^1_{ij}
     (= per minimal degree-1 generator).  The Ext-quiver equals Q for admissible A."""

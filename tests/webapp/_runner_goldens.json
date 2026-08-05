@@ -286,5 +286,85 @@
   },
   "canonical_key": "f6cad1adfec28b38c4e225d504e9e4469bf95d90d230e0238159cfd3c9f0cf1d",
   "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 2}, \"kind\": \"quiver\", \"relations\": [\"x*x*x\"], \"vertices\": [1]}, \"json_guide\": [{\"note\": \"list; dim HH in degree n is dims[n].\", \"object\": \"Hochschild homology dimensions\", \"path\": \"results.hh_homology.dims\"}, {\"note\": \"rank of the coboundary per degree (HH^1's inner derivations).\", \"object\": \"inner-derivation dimensions\", \"path\": \"results.hh_homology.inner_dims\"}, {\"note\": \"list; entry j is class j -- .terms is the labelled term-sum, .vector is the sparse coordinate vector [[index, coeff], ...] over the ordered basis in the matching chain_basis entry. Sibling keys are the other degrees.\", \"object\": \"Hochschild homology classes in degree 0\", \"path\": \"results.hh_homology.basis_classes[\\\"0\\\"]\"}, {\"note\": \"the ordered basis element labels the .vector indices point into.\", \"object\": \"ordered basis of degree 0\", \"path\": \"results.hh_homology.chain_basis[\\\"0\\\"]\"}, {\"note\": \"the (co)boundary whose kernel/quotient gives this degree; .rows is the exact matrix (or elided with a rebuild note past the recorder cap).\", \"object\": \"annihilating differential in degree 0\", \"path\": \"results.hh_homology.differentials[\\\"0\\\"]\"}, {\"note\": \"the Cartan matrix C = (dim e_i A e_j).\", \"object\": \"cartan\", \"path\": \"results.cartan.matrix\"}, {\"note\": \"dim_k A.\", \"object\": \"dimension\", \"path\": \"results.dimension.value\"}], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Hochschild1945\", \"doi\": \"10.2307/1969145\", \"doi_url\": \"https://doi.org/10.2307/1969145\", \"formatted\": \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\", \"key\": \"bar\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x*x'], field=GF(2))\\nA.hochschild_homology(3)\\nA.cartan_matrix()\\nA.dim\", \"results\": {\"cartan\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"latex\": \"\\\\begin{pmatrix} 3 \\\\end{pmatrix}\", \"matrix\": [[3]], \"references\": [\"assem_book\"]}, \"dimension\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"references\": [\"assem_book\"], \"value\": 3}, \"hh_homology\": {\"basis_classes\": {\"0\": [{\"degree\": 0, \"kind\": \"chain\", \"terms\": [[\"1\", [], \"e_1\"]], \"vector\": [[0, \"1\"]]}, {\"degree\": 0, \"kind\": \"chain\", \"terms\": [[\"1\", [], \"x\"]], \"vector\": [[1, \"1\"]]}, {\"degree\": 0, \"kind\": \"chain\", \"terms\": [[\"1\", [], \"x*x\"]], \"vector\": [[2, \"1\"]]}], \"1\": [{\"degree\": 1, \"kind\": \"chain\", \"terms\": [[\"1\", [\"x\"], \"e_1\"]], \"vector\": [[0, \"1\"]]}, {\"degree\": 1, \"kind\": \"chain\", \"terms\": [[\"1\", [\"x\"], \"x\"]], \"vector\": [[2, \"1\"]]}], \"2\": [{\"degree\": 2, \"kind\": \"chain\", \"terms\": [[\"1\", [\"x*x\", \"x*x\"], \"e_1\"]], \"vector\": [[3, \"1\"]]}, {\"degree\": 2, \"kind\": \"chain\", \"terms\": [[\"1\", [\"x*x\", \"x*x\"], \"x\"]], \"vector\": [[7, \"1\"]]}], \"3\": [{\"degree\": 3, \"kind\": \"chain\", \"terms\": [[\"1\", [\"x\", \"x*x\", \"x*x\"], \"e_1\"], [\"1\", [\"x*x\", \"x\", \"x*x\"], \"e_1\"], [\"1\", [\"x*x\", \"x*x\", \"x\"], \"e_1\"]], \"vector\": [[3, \"1\"], [5, \"1\"], [6, \"1\"]]}, {\"degree\": 3, \"kind\": \"chain\", \"terms\": [[\"1\", [\"x\", \"x*x\", \"x\"], \"e_1\"], [\"1\", [\"x\", \"x\", \"x\"], \"x\"]], \"vector\": [[2, \"1\"], [8, \"1\"]]}]}, \"chain_basis\": {\"0\": [\"e_1\", \"x\", \"x*x\"], \"1\": [\"e_1 (x) x\", \"e_1 (x) x*x\", \"x (x) x\", \"x (x) x*x\", \"x*x (x) x\", \"x*x (x) x*x\"], \"2\": [\"e_1 (x) x (x) x\", \"e_1 (x) x (x) x*x\", \"e_1 (x) x*x (x) x\", \"e_1 (x) x*x (x) x*x\", \"x (x) x (x) x\", \"x (x) x (x) x*x\", \"x (x) x*x (x) x\", \"x (x) x*x (x) x*x\", \"x*x (x) x (x) x\", \"x*x (x) x (x) x*x\", \"x*x (x) x*x (x) x\", \"x*x (x) x*x (x) x*x\"], \"3\": [\"e_1 (x) x (x) x (x) x\", \"e_1 (x) x (x) x (x) x*x\", \"e_1 (x) x (x) x*x (x) x\", \"e_1 (x) x (x) x*x (x) x*x\", \"e_1 (x) x*x (x) x (x) x\", \"e_1 (x) x*x (x) x (x) x*x\", \"e_1 (x) x*x (x) x*x (x) x\", \"e_1 (x) x*x (x) x*x (x) x*x\", \"x (x) x (x) x (x) x\", \"x (x) x (x) x (x) x*x\", \"x (x) x (x) x*x (x) x\", \"x (x) x (x) x*x (x) x*x\", \"x (x) x*x (x) x (x) x\", \"x (x) x*x (x) x (x) x*x\", \"x (x) x*x (x) x*x (x) x\", \"x (x) x*x (x) x*x (x) x*x\", \"x*x (x) x (x) x (x) x\", \"x*x (x) x (x) x (x) x*x\", \"x*x (x) x (x) x*x (x) x\", \"x*x (x) x (x) x*x (x) x*x\", \"x*x (x) x*x (x) x (x) x\", \"x*x (x) x*x (x) x (x) x*x\", \"x*x (x) x*x (x) x*x (x) x\", \"x*x (x) x*x (x) x*x (x) x*x\"]}, \"citations\": [[\"Hochschild1945\", \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\"]], \"differentials\": {\"0\": {\"rows\": [], \"shape\": [0, 3]}, \"1\": {\"rows\": [[\"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"0\", \"0\", \"0\"]], \"shape\": [3, 6]}, \"2\": {\"rows\": [[\"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"-1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"2\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"1\", \"1\", \"0\", \"-1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"1\", \"1\", \"0\", \"2\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"2\", \"0\", \"1\", \"1\", \"0\", \"-1\", \"0\", \"0\", \"0\"]], \"shape\": [6, 12]}, \"3\": {\"rows\": [[\"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"-1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"-1\", \"0\", \"0\", \"1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"1\", \"-1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"1\", \"0\", \"-1\", \"0\", \"0\", \"0\", \"-1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"1\", \"0\", \"0\", \"-1\", \"0\", \"0\", \"-1\", \"0\", \"0\", \"1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"-1\", \"0\", \"0\", \"1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"-1\", \"0\", \"1\", \"0\", \"0\", \"0\", \"1\", \"-1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"0\", \"0\", \"-1\", \"1\", \"0\", \"0\", \"0\", \"1\", \"0\", \"-1\", \"0\", \"0\", \"0\", \"-1\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\"], [\"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"0\", \"1\", \"0\", \"0\", \"-1\", \"0\", \"0\", \"-1\", \"0\", \"0\", \"1\", \"0\", \"0\", \"0\"]], \"shape\": [12, 24]}}, \"dims\": [3, 2, 2, 2], \"engine\": \"hanlab engine (F_p fast rank)\", \"inner_dims\": {\"0\": 0, \"1\": 4, \"2\": 6, \"3\": 16}, \"kind\": \"HH_\", \"references\": [\"bar\"], \"top\": 3}}}"
+ },
+ "ext_algebra_exterior_gf7": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ],
+     "y": [
+      1,
+      1
+     ]
+    },
+    "relations": [
+     "x*x",
+     "y*y",
+     "x*y+y*x"
+    ],
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 7
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "ext_algebra:0..4"
+   ]
+  },
+  "canonical_key": "f0a7eaaca939723f997c8077126c05101c6a16837083eab9b577bce109e3e3bc",
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1], \"y\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x*x\", \"y*y\", \"x*y+y*x\"], \"vertices\": [1]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The Priddy PBW / G-quadratic certifier: a quadratic Gr\\u00f6bner basis (all reduction tips length 2) proves the algebra is Koszul (Plan 27).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Priddy1970\", \"doi\": \"10.2307/1995637\", \"doi_url\": \"https://doi.org/10.2307/1995637\", \"formatted\": \"Priddy, Stewart B. (1970). Koszul resolutions. Transactions of the American Mathematical Society 152, 39-60.\", \"key\": \"priddy\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The Hilbert-series Koszulity criterion P(t)*C_A(-t) = I -- quiverlab's Fr\\u00f6berg numeric Koszulity falsifier (Plan 27).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Froberg1999\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Fr\\\"oberg, Ralf (1999). Koszul algebras. Advances in Commutative Ring Theory (Fez, 1997) 205, 337-350.\", \"key\": \"froberg_koszul\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The quadratic-dual conventions (A^! = kQ^op/R^perp) behind quiverlab's Koszul dual and the E(A) = (A^!)^op cross-check (Plan 27).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"PolishchukPositselski2005\", \"doi\": \"10.1090/ulect/037\", \"doi_url\": \"https://doi.org/10.1090/ulect/037\", \"formatted\": \"Polishchuk, Alexander; Positselski, Leonid (2005). Quadratic Algebras. American Mathematical Society 37.\", \"key\": \"polishchuk_positselski\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1), \\\"y\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x', 'y*y', 'x*y+y*x'], field=GF(7))\\nA.ext_algebra(4)\", \"results\": {\"ext_algebra\": {\"certified_through_degree\": 4, \"citations\": [[\"Priddy1970\", \"Priddy, Stewart B. (1970). Koszul resolutions. Transactions of the American Mathematical Society 152, 39-60.\"], [\"Froberg1999\", \"Fr\\\"oberg, Ralf (1999). Koszul algebras. Advances in Commutative Ring Theory (Fez, 1997) 205, 337-350.\"], [\"PolishchukPositselski2005\", \"Polishchuk, Alexander; Positselski, Leonid (2005). Quadratic Algebras. American Mathematical Society 37.\"]], \"generators_by_degree\": {\"1\": 2}, \"graded_dims\": [1, 2, 3, 4, 5], \"koszul\": true, \"koszul_reason\": \"certified: G-quadratic (Priddy PBW)\", \"latex\": \"P_{E(A)}(t) = 1 + 2 t + 3 t^{2} + 4 t^{3} + 5 t^{4}\", \"obstruction\": null, \"references\": [\"priddy\", \"froberg_koszul\", \"polishchuk_positselski\"], \"relations_by_degree\": {\"2\": 1}, \"top\": 4}}}"
+ },
+ "recognizers_gentle_a3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "relations": [
+     "a*b"
+    ],
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 5
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "recognizers"
+   ]
+  },
+  "canonical_key": "b9103cf9ace9a466178419941081ec68c25d9f90b70423206b171fc8bbc2e4ff",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [\"a*b\"], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=['a*b'], field=GF(5))\\n[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), A.dynkin_type(), A.form_type()]\", \"results\": {\"recognizers\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"dynkin_type\": \"A3\", \"flags\": {\"is_basic\": true, \"is_gentle\": true, \"is_hereditary\": false, \"is_nakayama\": true, \"is_radical_square_zero\": true, \"is_selfinjective\": false, \"is_semisimple\": false, \"is_special_biserial\": true, \"is_string\": true, \"is_symmetric\": false}, \"form_type\": \"finite\", \"references\": [\"assem_book\"]}}}"
  }
 }
