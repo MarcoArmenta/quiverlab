@@ -352,6 +352,14 @@ class Module:
         from quiverlab.modules.ar import nakayama_functor_minus
         return nakayama_functor_minus(self)
 
+    def almost_split_sequence(self):
+        """The almost-split (Auslander-Reiten) sequence 0 -> tau M -> E -> M -> 0 for
+        M indecomposable and non-projective (Plan 41 / C3). Self-certified exact +
+        non-split + indecomposable ends; loud refusal for projective/decomposable/
+        undecidable input."""
+        from quiverlab.modules.ar import almost_split_sequence
+        return almost_split_sequence(self)
+
     def is_isomorphic(self, other):
         """True iff self and other are isomorphic right modules (exact certificate)."""
         from quiverlab.modules.hom import is_isomorphic

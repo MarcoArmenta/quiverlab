@@ -336,3 +336,132 @@ def end_action_on_ext1(M, N):
     action = [_ext1_action_matrix(phi, cocycle_mats, coboundary_mats, res, dom)
               for phi in basis]
     return basis, action
+
+
+# --------------------------------------------------------------------------- #
+# Almost-split sequences (Task 5).
+# --------------------------------------------------------------------------- #
+def _rad_end_basis(M):
+    """``(H, rad_coords)``: ``H = hom_space(M, M)`` (the End(M) basis as matrices) and
+    ``rad_coords`` a basis of ``rad End(M)`` as coordinate columns over ``H``. For ``M``
+    indecomposable, End is local and ``rad End = End^{perp}`` w.r.t. the trace form
+    ``tr_M(H_i H_j)`` (Dickson / Cohen--Ivanyos--Wales: ``char 0`` or ``char > dim M`` --
+    the same scope :mod:`quiverlab.modules.decompose` relies on). Refuses loudly outside
+    that char scope."""
+    from quiverlab.modules.hom import hom_space
+    dom = M.domain
+    char = dom.characteristic
+    if not (char == 0 or char > M.dim):
+        raise QuiverlabError(
+            f"almost_split: rad End(M) unreliable in char {char} <= dim M = {M.dim} "
+            "(the trace-form radical over-counts, e.g. on k[x]/(x^p))",
+            hint="run over QQ or a characteristic > dim M (e.g. GF(32003))")
+    H = hom_space(M, M)
+    r = len(H)
+    T = lm.zeros(r, r, dom)
+    for i in range(r):
+        for j in range(r):
+            T[i][j] = _trace(lm.matmul(H[i], H[j], dom), dom)
+    return H, lm.kernel_columns(T, dom)
+
+
+def _joint_kernel(mats, e, dom):
+    """The joint kernel ``cap_r ker(mats[r])`` as coordinate columns (each ``mats[r]`` an
+    ``e x e`` matrix). Empty ``mats`` (rad End = 0) => the whole space is annihilated."""
+    if not mats:
+        return [lm.col(lm.identity(e, dom), j) for j in range(e)] if e else []
+    stacked = lm.vstack(mats)
+    return lm.kernel_columns(stacked, dom)
+
+
+def _combine_matrices(mats, coeffs, rows, cols, dom):
+    """The linear combination ``sum coeffs[j] * mats[j]`` as a ``rows x cols`` matrix."""
+    out = lm.zeros(rows, cols, dom)
+    for c, mat in zip(coeffs, mats):
+        if dom.is_zero(c):
+            continue
+        for i in range(rows):
+            oi, mi = out[i], mat[i]
+            for j in range(cols):
+                oi[j] = dom.add(oi[j], dom.mul(c, mi[j]))
+    return out
+
+
+def _rad_action_matrices(action, rad_coords, e, dom):
+    """The action of each ``rad End(M)`` basis element on ``Ext^1``: the same End-coord
+    combination ``sum_i rc[i] * action[i]`` of the ``action`` matrices."""
+    out = []
+    for rc in rad_coords:
+        Arad = lm.zeros(e, e, dom)
+        for i, c in enumerate(rc):
+            if dom.is_zero(c):
+                continue
+            ai = action[i]
+            for a in range(e):
+                Aa, ra = Arad[a], ai[a]
+                for b in range(e):
+                    Aa[b] = dom.add(Aa[b], dom.mul(c, ra[b]))
+        out.append(Arad)
+    return out
+
+
+def almost_split_sequence(M):
+    r"""The almost-split (Auslander-Reiten) sequence ``0 -> tau M -> E -> M -> 0`` for
+    ``M`` certified-indecomposable and NON-projective.
+
+    Algorithm (ARS IV.1-IV.3): ``End(M)`` is local (Fitting), so ``rad End(M)`` is the
+    trace-form radical (char 0 or char > dim M); it acts on ``Ext^1(M, tau M)`` (Task 4)
+    and the classes annihilated by ``rad End(M)`` form the SOCLE, which is nonzero and
+    (over ``End/rad = k``) 1-dimensional. ANY nonzero socle class ``xi`` gives THE
+    almost-split sequence: reconstruct its cocycle ``f: P_1 -> tau M`` and push out.
+
+    Certification basis: by ARS IV.1-IV.3 a sequence ``0 -> tau M -> E -> M -> 0`` whose
+    class lies in ``soc Ext^1(M, tau M)`` with both ends indecomposable IS almost split.
+    The returned :class:`ShortExactSequence` additionally carries the computational
+    self-certs -- exact (Yoneda ``assert_exact`` + P37 SES), non-split (P37 ``is_split``
+    False), ends indecomposable (Plan 30) -- so nothing rests on trusting the socle pick:
+    a wrong pick splits and is refused loudly.
+
+    Refuses loudly for a projective, decomposable, or undecidable (budget/char) input."""
+    from quiverlab.modules.decompose import is_indecomposable
+    from quiverlab.modules.duality import tau as tau_of
+    from quiverlab.modules.morphism import ModuleHom
+    from quiverlab.modules.ses import ShortExactSequence
+    from quiverlab.modules.yoneda import baer_extension
+    A = M.algebra
+    dom = M.domain
+    if not is_indecomposable(M):                 # raises loudly if undecidable
+        raise QuiverlabError("almost_split: M must be indecomposable")
+    tauM = tau_of(M)
+    if tauM.dim == 0:                            # M indecomposable & tau M = 0 <=> M projective
+        raise QuiverlabError(
+            "almost_split: no AR sequence ends at a projective M (tau M = 0)")
+    basis, action = end_action_on_ext1(M, tauM)
+    e = len(action[0]) if action else 0
+    if e == 0:
+        raise QuiverlabError(
+            "almost_split: Ext^1(M, tau M) = 0 -- no extension to realize (bug: a "
+            "non-projective indecomposable has a nonzero almost-split class)")
+    _H, rad_coords = _rad_end_basis(M)
+    rad_mats = _rad_action_matrices(action, rad_coords, e, dom)
+    socle_cols = _joint_kernel(rad_mats, e, dom)  # cap_r ker(A_rad) = soc Ext^1(M, tau M)
+    if not socle_cols:
+        raise QuiverlabError(
+            "almost_split: empty socle of Ext^1(M, tau M) -- the End(M)-action or the "
+            "class basis is inconsistent")
+    xi = socle_cols[0]                            # any nonzero socle class
+    cocycle_mats, _cob, terms, dmats = _ext1_data(A, M, tauM)
+    width = len(dmats[1][0]) if (len(dmats) > 1 and dmats[1] and dmats[1][0]) else 0
+    f = _combine_matrices(cocycle_mats, xi, tauM.dim, width, dom)
+    seq = baer_extension(M, tauM, f, terms, dmats)   # 0 -> tau M -> E -> M -> 0
+    seq.assert_exact()
+    E = seq.modules[1]
+    ses = ShortExactSequence(ModuleHom(seq.modules[0], E, seq.maps[0], check=False),
+                             ModuleHom(E, seq.modules[2], seq.maps[1], check=False))
+    if ses.is_split():
+        raise QuiverlabError(
+            "almost_split: constructed sequence splits -- the socle class was not the "
+            "almost-split class (bug/convention)")
+    if not (is_indecomposable(seq.modules[0]) and is_indecomposable(M)):
+        raise QuiverlabError("almost_split: an end is decomposable (bug)")
+    return ses
