@@ -8,5 +8,23 @@ Jacobian is gentle (self-certified via P46's is_gentle + P44's finiteness certif
 Punctures, closed surfaces, and self-folded triangles refuse loudly (successor P48.1).
 Float-free (all surface data is exact integers / tuples)."""
 from quiverlab.surfaces.marked import MarkedSurface
+from quiverlab.surfaces.triangulation import (
+    Triangulation,
+    annulus_triangulation,
+    fan_triangulation,
+    hexagon_with_internal_triangle,
+    once_punctured_torus,
+)
+from quiverlab.surfaces.qp import jacobian_of, potential_of, quiver_of
 
-__all__ = ["MarkedSurface"]
+__all__ = [
+    "MarkedSurface",
+    "Triangulation",
+    "fan_triangulation",
+    "annulus_triangulation",
+    "once_punctured_torus",
+    "hexagon_with_internal_triangle",
+    "quiver_of",
+    "potential_of",
+    "jacobian_of",
+]
