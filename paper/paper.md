@@ -1,23 +1,24 @@
 ---
-title: "quiverlab: exact representation theory of quivers with relations in Python"
+title: "QuiverLab: exact representation theory of quivers with relations in Python"
 tags:
   - Python
   - representation theory
   - quivers with relations
   - finite-dimensional algebras
-  - Hochschild cohomology
+  - Hochschild (co)homology
+  - Cup product
   - Gerstenhaber bracket
+  - Cap product
   - Auslander–Reiten theory
-  - exact computation
 authors:
   - name: Marco Armenta
     orcid: 0000-0003-3023-7634
     corresponding: true
-    email: drmarcoarmenta@gmail.com
+    email: marco.armenta@usherbrooke.ca
     affiliation: 1
 affiliations:
   - index: 1
-    name: "Département de mathématiques, Université de Sherbrooke, Sherbrooke, Québec, Canada"
+    name: "Institut quantique, Université de Sherbrooke, Sherbrooke, Québec, Canada"
     ror: 00kybxq39
 date: 4 August 2026
 bibliography: paper.bib
@@ -32,8 +33,8 @@ that the algebra is finite-dimensional, builds an exact multiplication table, an
 computes the working invariants of the field: modules with their Ext and Tor,
 minimal projective and injective resolutions, the Auslander–Reiten translates,
 Krull–Schmidt decomposition into indecomposables, Yoneda Ext-algebras with a
-Koszulity verdict, Hochschild cohomology and homology with their Gerstenhaber
-operations (cup product, cap action, and bracket), cyclic homology, and Cartan and Coxeter data. Every number is exact. The library works over the rationals, over exact
+Koszulity verdict, Hochschild cohomology and homology with their Tamarkin-Tsygan
+calculus (cup product, cap action, and bracket), cyclic homology, and Cartan and Coxeter data. Every number is exact. The library works over the rationals, over exact
 subfields of the complex numbers (algebraic number fields $\mathbb{Q}(\alpha)$), and over every
 finite field `GF(p^n)`, and it fails loudly on any floating-point input rather than
 returning an approximation. It is built for algebraists who need not program: a
