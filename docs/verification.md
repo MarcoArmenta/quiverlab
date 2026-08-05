@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **2938 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **2983 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
 recognizer batteries + Koszulity (`ext_algebra`) exposure — the Plan-32 oracle-class markers + audit gate,
@@ -451,6 +451,7 @@ Plan-35 product surface).
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality |
+| `specseq/` (Plan-42 spectral sequences — `filtered.py`/`double.py` filtered & double complexes, `pages.py` the Weibel-5.4 page engine, `convergence.py` the standing self-certificate, `presets.py` the four presets, `block.py` the `ss_hochschild` no-code block) | 33 | deep | **self-cert** (`d_r∘d_r=0`, `E_{r+1}=H(E_r,d_r)`, `E_∞` totals == total homology on every construction, canonical-rep reproducibility, the radical-SS converges to `H(X)`, the subcomplex-filtration + double-complex anticommutation gates); **cross-engine** (the Hochschild `(b,B)` `E_∞` total == `A.cyclic_homology`, the Cartan–Eilenberg/Grothendieck `E_∞` total == module `A.ext` on several instances incl. a multi-vertex one + NONZERO pins); **literature** (ground-field `HC=[1,0,1,0,…]`, `k[x]/(x²)` HC, the arbitrated Koszul `E_2` degeneration); **`m2`** (the commutative Koszul total-complex `E_∞` totals vs Macaulay2 `Complexes` homology) |
 | `viz/` (draw, tikz) | 18 | fast | exact `int`/`Fraction` layout; TikZ |
 | `qpa/` (GAP/QPA crosscheck) | 158 | 137 qpa + 21 fast | **live GAP/QPA** (HH dims, self-Ext, τ/τ⁻, proj/inj resolutions, inj dim, Plan-31 native trivial-extension construction — left side via `A^op`; Plan-38 `IsSpecialBiserialAlgebra`/`IsGentleAlgebra`; the Plan-37 **hom-glue battery** — `Length(HomOverAlgebra)` vs our `hom_basis` dim, and for a canonical dim-1 hom the kernel/image/cokernel dimension vectors vs QPA `KernelInclusion`/`ImageInclusion`/`CoKernelProjection` over kA₂/kA₃(ab)/`line_abc_cde`; the Plan-39 **complexes battery** — QPA 1.37's Ch.10 `StalkComplex`/`FiniteComplex`/`HomologyOfComplex`/`Shift` vs our `ChainComplex`: stalk homology, our mapping cone `[M→N]` via the equivalent `FiniteComplex` — QPA's `MappingCone` object is not homology-scriptable through libgap, the documented fallback — and `Shift` bookkeeping under QPA's OPPOSITE `−k` convention); script builders + guards run without GAP |
 | `webapp/` (server tier + result cache + offline GUI — non-algebraic glue) | 426 | fast | API / schema / cache canonicalizer (replay-safety rests on exactness) / isolation / artifacts; all math delegated to the library; Plan-28 runner delegation pinned **byte-identical** (frozen goldens + unchanged `canonical_key`) |
@@ -534,16 +535,20 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 774 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 470 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 888 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Literature / theory pins | `-m oracle_literature` | 776 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 481 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 910 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 140 | an independent external system (QPA) recomputes and agrees |
-| Live Macaulay2 | `-m m2` | 10 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1715 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1749 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
-Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
+Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38, and the
+Plan-39 complex layer + the Plan-42 spectral-sequence engine). **Mid-merge-train
+note:** these counts are recounted from a live `pytest --collect-only` on this branch;
+the v0.2.0 orchestrator does the final recount at the train's end (P50), so a later
+plan may shift them. The oracle markers live only on the
 pure-library `engine` / `resolutions_cs` / `hochschild` / `modules` / `invariants` /
-`families` / `batch` / `trace` suites (the `trace` renderer tests import the
+`families` / `batch` / `trace` / `specseq` suites (the `trace` renderer tests import the
 pure-library serializers only, and their `hpc.spec` uses are function-local), so these
 counts do **not** depend on the `[web]`/`[hpc]` extras.
 
@@ -632,6 +637,44 @@ verified precision and listed below as such.
   all. Every trim and omission is recorded per-example in
   `webapp/precomputed/manifest.yaml`; the four tractable examples carry the full
   surface (`tests/webapp/test_curated_reachability.py`).
+- **The Plan-42 spectral-sequence engine — five binding scope facts.**
+  (a) **The Cartan–Eilenberg / Grothendieck change-of-rings preset is scoped to
+  ADMISSIBLE QUOTIENT maps** `kQ/I → kQ/I'` with `I ⊆ I'` (`A`, `B` share the
+  quiver; a `B`-module restricts to `A` by re-reading the arrow actions). A
+  non-quotient pair (`rel(A) ⊄ rel(B)`, or a different quiver) is **refused loudly**
+  before any computation — full-generality change-of-rings for an arbitrary algebra
+  map is out of scope this release. (b) **The Happel one-point-extension LES oracle
+  is DEFERRED to P44** (C7 constructions): one-point extensions `A[M]` change the
+  quiver (a new vertex) and so are unreachable by quotient maps;
+  `families.TrivialExtension` is **not** a substitute (it doubles the algebra via a
+  socle-dual quiver, not a change-of-rings along an algebra map) and is not misused as
+  the CE oracle. (c) **The Grothendieck-SS abutment is a per-instance certificate,
+  not a proven-for-all theorem.** The construction uses a genuine `A`-injective
+  resolution of `N` and the exact restriction `res_A Q_•` of a `B`-projective
+  resolution of `M`, so the column filtration collapses the abutment to
+  `Ext_A^•(M|_A, N)` for the admissible-quotient scope; the preset **cross-checks the
+  `E_∞` totals against `A.ext(M|_A, N)`** over the certified window and **refuses
+  loudly** on any mismatch (a too-shallow `p_len`/`q_len` truncation, or a
+  hypothesis failure) — never a wrong abutment. The active hypothesis GATE is the
+  admissible-quotient scope check (b); the abutment cross-check is the defensive
+  second line. (d) **QPA has NO spectral-sequence surface** — there is no `qpa`
+  oracle for this subsystem (a live sweep finds no filtered/double-complex or
+  spectral-sequence functions); the covering oracles are cross-engine (`HC` / module
+  `Ext`) + the Macaulay2 `E_∞`-totals crosscheck (e). (e) **Macaulay2's
+  `SpectralSequences` package is NOT scriptable under M2 1.26** — it rides the
+  `ChainComplex` type removed in the Complexes-based core (`chainComplex` errors as an
+  undefined symbol under `--script`), so the M2 crosscheck compares the
+  **convention-robust `E_∞` totals** (== total-complex homology, by strong
+  convergence) against M2's `Complexes` homology of the same total complex; the `E_2`
+  page grid is not compared (recorded in the test docstring). (f) **The GUI exposes
+  only `ss_hochschild`** (the `(b,B)` sequence, algebra-only, schema v1); the
+  Cartan–Eilenberg / Grothendieck / radical no-code surfaces need new request fields
+  (a second/third module, an admissible quotient, a filtration choice) and are
+  **DEFERRED to P50 integration** — API + HPC-config accessible this release, the same
+  pattern as P39's GUI deferral. The Koszul degeneration statement is arbitrated, not
+  forced: for a Koszul algebra the radical-filtration SS of the minimal
+  simple-resolution **degenerates at E_2** (the observed provable page — the folklore
+  E_2 collapse, pinned on kA₃ and kA₄).
 - **`TrivialExtension(A)` is now a certified quiver presentation** (Plan 31; was
   a silent wrong `False`, then a loud refusal). For a presented `A` over QQ or
   GF(p), `T(A)` is returned as a genuine `kQ_T/I_T` — the quiver of `A` plus one

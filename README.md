@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-2938_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-2983_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -190,7 +190,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 2938 tests over the
+Every shipped feature is unit tested (the suite is 2983 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -250,6 +250,11 @@ ported and wired in:
   (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
+- **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
+  canonical representatives + a convergence certificate (`E_∞` totals == total
+  homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,
+  radical filtration, Hochschild `(b, B)`); the `(b, B)` SS is clickable via
+  `ss_hochschild`.
 - **Invariants:** the integer **Cartan** matrix, the **Coxeter** matrix and its
   characteristic polynomial (all fields, exact via sympy); **Euler / Tits forms**
   with exact finite/tame/wild definiteness, orientation-blind **Dynkin/Euclidean
