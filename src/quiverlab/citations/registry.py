@@ -259,6 +259,12 @@ REGISTRY: dict = {r.key: r for r in [
        "finite-dimensional A; the repetitive-algebra framework -- the anchor for "
        "the certified double-quiver TrivialExtension presentation (Plan 31).",
        "frobenius", "symmetric"),
+    _r("happel_triangulated", "Happel1988", "foundation",
+       "Triangulated Categories in the Representation Theory of Finite Dimensional Algebras",
+       "The derived-category reference: the Serre functor / AR triangles of "
+       "D^b(mod A) exist iff gl.dim < infinity, tau_{D^b} = nu[-1] -- the ground "
+       "truth for the Plan-43 derived surface.",
+       "derived", "triangulated"),
     _r("schremmer_wpl", "Schremmer2025wpl", "foundation",
        "Weighted projective lines and Hochschild cohomology",
        "HH^* of the canonical algebras (dim HH^2 = t-3, after Happel LNM 1404) "

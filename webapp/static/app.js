@@ -518,8 +518,53 @@ function renderModuleBlocks(out, res) {
       out.appendChild(tauBlock(b, d, kind));
     } else if (kind === "homological_profile") {
       out.appendChild(homologicalProfileBlock(b, d));
+    } else if (kind === "derived_fingerprint") {
+      out.appendChild(derivedFingerprintBlock(b, d));
     }
   }
+}
+
+// The derived fingerprint (Plan 43) as a labelled table + necessary-condition scope.
+// A field captured as an error prints its message; no field is silently dropped.
+function derivedFingerprintBlock(block, d) {
+  const wrap = document.createElement("div");
+  const p = document.createElement("p");
+  p.textContent = d.dfTitle || "Derived fingerprint";
+  wrap.appendChild(p);
+  const fp = block.fingerprint || {};
+  const cell = function (v) {
+    if (v && typeof v === "object" && "error" in v) return "unavailable — " + v.error;
+    if (Array.isArray(v)) return "[" + v.join(", ") + "]";
+    return String(v);
+  };
+  const rows = [
+    ["Coxeter polynomial", fp.coxeter_polynomial],
+    ["det C", fp.cartan_det],
+    ["Cartan Smith factors", fp.cartan_smith],
+    ["dim HH^• (cohomology)", fp.hh_cohomology_dims],
+    ["dim HH_• (homology)", fp.hh_homology_dims],
+    ["dim HC_• (cyclic)", fp.cyclic_dims],
+    ["dim Z(A)", fp.center_dim],
+    ["global dimension", fp.gl_dim],
+  ];
+  const tbl = document.createElement("table");
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = cell(r[1]);
+    tr.appendChild(th);
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+  wrap.appendChild(tbl);
+  const scope = document.createElement("p");
+  scope.className = "hint";
+  scope.textContent = block.scope || (d.dfScope
+    || "a derived-invariant fingerprint; equal values are a necessary condition for derived equivalence, not a proof");
+  wrap.appendChild(scope);
+  return wrap;
 }
 
 // The C6 homological-dimensions family (Plan 40) as a labelled table. Values are

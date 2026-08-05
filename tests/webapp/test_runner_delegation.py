@@ -126,6 +126,16 @@ never hide behind one:
     re-freeze: each regenerated blob was asserted byte-identical to the old one after
     DELETING the ``json_guide`` top-level key, so no pre-existing content moved. The
     ``canonical_key`` is request-derived and UNCHANGED (no new request fields).
+  * 2026-08-05 (``derived_fingerprint_a4`` ADDED, Plan 43): a NEW fixture for the
+    ``derived_fingerprint`` scalar compute kind (schema v1, kA4 = path 1->2->3->4 over
+    GF(5) -- the necessary-condition invariant tuple: Coxeter polynomial + Cartan
+    det/Smith + HH/HC/centre + gl.dim). Pure addition: the eleven existing entries were
+    verified byte-identical BEFORE the new one was appended (the delegation test passed
+    on all eleven unchanged). Both runners share ``derived.block.derived_fingerprint_block``,
+    so the Pyodide twin agrees (``test_derived_fingerprint_p43.test_twin_parity``); the
+    cyclic-homology field is an honest per-field ``{error}`` (the generic (b,B) mixed
+    complex has no CS route and blows up over GF(p) for this dim). ``canonical_key`` is
+    request-derived.
   * 2026-08-05 (``homological_profile_kA2`` ADDED, Plan 40 C6): a NEW fixture for the
     ``homological_profile`` scalar compute kind (kA2 over GF(7) -- global / finitistic
     / dominant / Gorenstein dimensions + Igusa-Todorov phi/psi of the sum of simples).

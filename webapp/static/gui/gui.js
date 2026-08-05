@@ -78,6 +78,7 @@
     // ---- Plan 38: Yoneda Ext-algebra + Koszulity, and the recognizer batch ----
     '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-recognizers"> recognizers + type</label>' +
+    '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -152,6 +153,8 @@
    "coxeter_polynomial", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
+   // Plan 43: derived fingerprint (scalar kind)
+   "derived_fingerprint",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -667,7 +670,7 @@
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
-     "recognizers", "homological_profile"].forEach(function (k) {
+     "recognizers", "homological_profile", "derived_fingerprint"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     var module = null, extTarget = null, torTarget = null;
@@ -2503,6 +2506,31 @@
         + (b.dynkin_type || "not a Dynkin/Euclidean diagram") }));
       div.appendChild(h("p", { text: "Form type: "
         + (b.form_type || "undefined (Cartan not unimodular)") }));
+    } else if (name === "derived_fingerprint") {
+      // Plan 43: the derived-invariant fingerprint tuple + necessary-condition scope.
+      var fp = b.fingerprint || {};
+      var cell = function (v) {
+        if (v && typeof v === "object" && "error" in v) return "unavailable — " + v.error;
+        if (Array.isArray(v)) return "[" + v.join(", ") + "]";
+        return String(v);
+      };
+      var frows = [
+        ["Coxeter polynomial", fp.coxeter_polynomial],
+        ["det C", fp.cartan_det],
+        ["Cartan Smith factors", fp.cartan_smith],
+        ["dim HH^• (cohomology)", fp.hh_cohomology_dims],
+        ["dim HH_• (homology)", fp.hh_homology_dims],
+        ["dim HC_• (cyclic)", fp.cyclic_dims],
+        ["dim Z(A)", fp.center_dim],
+        ["global dimension", fp.gl_dim]
+      ];
+      var ftbl = h("table");
+      frows.forEach(function (r) {
+        ftbl.appendChild(h("tr", {}, h("th", { text: r[0] }), h("td", { text: cell(r[1]) })));
+      });
+      div.appendChild(ftbl);
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: b.scope || "a derived-invariant fingerprint; equal values are a necessary condition for derived equivalence, not a proof" }));
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);

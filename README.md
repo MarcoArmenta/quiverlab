@@ -280,6 +280,12 @@ ported and wired in:
   ν / ν⁻ as named functors, **almost-split sequences** `0 → τM → E → M → 0` with the
   middle term built and certified (exact, non-split, indecomposable ends), irreducible
   maps and `rad(M,N)/rad²`, stable Hom, and **AR-quiver knitting** — complete for a
+- **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
+  chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
+  refusal at infinite global dimension, per Happel), a **tilting-complex verifier**
+  (rigidity + K₀ generation) with `End(T)` recovered as the Rickard derived-equivalent
+  algebra, and a **derived fingerprint** comparing algebras on Coxeter polynomial,
+  Cartan (det + Smith), HH/HC and centre — in necessary-condition language only.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

@@ -707,6 +707,13 @@ def compute_one(spec):
             from quiverlab.invariants.recognizers import recognizers_block
             block = recognizers_block(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "derived_fingerprint":
+            # Derived fingerprint (Plan 43). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (derived.block.derived_fingerprint_block) + `references`->citations.
+            from quiverlab.derived.block import derived_fingerprint_block
+            block = derived_fingerprint_block(A, top if top is not None else 4)
+            block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
             # library method returns a frozen result whose .blocks() IS the block
@@ -847,6 +854,8 @@ def python_snippet():
              "ext_algebra": "A.ext_algebra()",
              "recognizers": ("[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), "
                              "A.dynkin_type(), A.form_type()]"),
+             # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
+             "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
              # map (quiverlab.hpc.spec._snippet); each needs a range (%d = top).
              "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
@@ -939,7 +948,10 @@ ETA_MODEL = {
                 "ext_algebra": 2.0, "recognizers": 0.1,
                 # Plan 42: the (b, B) spectral sequence builds the same exponential
                 # bar (b, B) bicomplex cyclic homology uses, plus the page algebra.
-                "ss_hochschild": 2.0},
+                "ss_hochschild": 2.0,
+                # Plan 43: derived_fingerprint runs Cartan/Coxeter + HH/HC to top=4
+                # (the HH pass dominates; cyclic may fall back or error honestly).
+                "derived_fingerprint": 1.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)
