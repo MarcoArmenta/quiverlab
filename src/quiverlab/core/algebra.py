@@ -454,6 +454,20 @@ class Algebra:
         from quiverlab.modules.homdims import dominant_dimension
         return dominant_dimension(self, bound=bound)
 
+    def gorenstein_dimension(self, bound=32):
+        """Gorenstein data: the injective dimension of the regular module on both
+        sides (Plan 40). A ``GorensteinDimension`` with three-valued
+        ``is_gorenstein`` True/None (never a bare False)."""
+        from quiverlab.modules.homdims import gorenstein_dimension
+        return gorenstein_dimension(self, bound=bound)
+
+    def is_gorenstein(self, bound=32):
+        """True iff both the right and left injective dimensions of the regular module
+        are finite; None when unresolved within ``bound`` (infinity not proven -- never
+        False) (Plan 40)."""
+        from quiverlab.modules.homdims import is_gorenstein
+        return is_gorenstein(self, bound=bound)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""

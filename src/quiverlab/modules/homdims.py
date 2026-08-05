@@ -202,3 +202,51 @@ def dominant_dimension(A, bound=32):
         else:
             return DominantDimension(count, exact=True, infinite=False, _bound=bound)
     return DominantDimension(count, exact=False, infinite=False, _bound=bound)  # bound
+
+
+# ---------------------------------------------------------------------------
+# Gorenstein dimension + is_gorenstein (both-sided injective dimension of the
+# regular module; three-valued True/None -- never a bare False)
+# ---------------------------------------------------------------------------
+def _regular_injective_dimension(A, bound):
+    from quiverlab.modules.injective import injective_dimension
+    return injective_dimension(_regular_module(A), bound=bound)
+
+
+@dataclass
+class GorensteinDimension:
+    """The (Iwanaga-)Gorenstein data of A: the injective dimension of the regular
+    module on the right (``A_A``) and left (``_A A``) sides. ``is_gorenstein`` is
+    three-valued True/None: True iff BOTH sides resolve finite; None when either is a
+    mere lower bound -- the bounded engine never proves an infinite injective
+    dimension, so a bare ``False`` is never emitted (Plan 40 honesty rule)."""
+    right_id: "int | None"
+    left_id: "int | None"
+    is_gorenstein: "bool | None"
+    _bound: int = 32
+
+    def __repr__(self):
+        if self.right_id is not None and self.left_id is not None:
+            return (f"Gorenstein: right inj.dim {self.right_id}, "
+                    f"left inj.dim {self.left_id}")
+        return (f"undecided within depth {self._bound} (an injective dimension did not "
+                "resolve; infinity is not proven)")
+
+
+def gorenstein_dimension(A, bound=32):
+    """A is (Iwanaga-)Gorenstein iff the right AND left injective dimensions of the
+    regular module are both finite. ``is_gorenstein`` is True when both resolve within
+    ``bound``, else None (never a bare False -- see the honesty note) (spec section
+    3.5; Assem-Simson-Skowronski)."""
+    right = _regular_injective_dimension(A, bound)
+    left = _regular_injective_dimension(A.opposite(), bound)
+    both_finite = right is not None and left is not None
+    verdict = True if both_finite else None            # never a bare False
+    return GorensteinDimension(right, left, verdict, _bound=bound)
+
+
+def is_gorenstein(A, bound=32):
+    """Three-valued Gorenstein verdict: True (both injective dimensions finite) or None
+    (an injective dimension did not resolve within ``bound``; infinity is not proven --
+    never False) (Plan 40)."""
+    return gorenstein_dimension(A, bound).is_gorenstein
