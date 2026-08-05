@@ -456,6 +456,24 @@ class Algebra:
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
 
+    def euler_form(self, d, e):
+        """Euler bilinear form <d, e> = d C^{-1} e^T on integer dimension vectors
+        (vertex order); for finite gl.dim, sum (-1)^i dim Ext^i (Plan 38 / C2)."""
+        from quiverlab.invariants.forms import euler_form
+        return euler_form(self, d, e)
+
+    def tits_form(self, d):
+        """Tits quadratic form q(d) = <d, d> of the Euler form (Plan 38 / C2)."""
+        from quiverlab.invariants.forms import tits_form
+        return tits_form(self, d)
+
+    def form_type(self):
+        """'finite' / 'tame' / 'wild' by exact definiteness of the Tits form; a
+        representation-type theorem for hereditary algebras, the signature
+        otherwise (Plan 38 / C2)."""
+        from quiverlab.invariants.forms import form_type
+        return form_type(self)
+
     def loewy_length(self):
         """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
         from quiverlab.invariants.scalar import loewy_length
