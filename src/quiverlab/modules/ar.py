@@ -265,3 +265,74 @@ def hom_factors_through_projective(f):
     sol = lm.solve_columns(lm.cols_to_matrix(proj_cols),
                            lm.cols_to_matrix(fvec), dom)
     return sol is not None
+
+
+# --------------------------------------------------------------------------- #
+# The End(M)-action on Ext^1(M, N) (Task 4).
+# --------------------------------------------------------------------------- #
+def _ext1_data(A, M, N):
+    """``(cocycle_mats, coboundary_mats, terms, dmats)`` for ``Ext^1(M, N)``.
+    ``cocycle_mats[j]`` = ``f_j: P_1 -> N`` (``N.dim x P_1.dim``), the reconstructed class
+    reps over the SAME ambient Hom basis the Ext dims use (``complex_reps`` accessor,
+    no second Ext complex); ``coboundary_mats = { psi . d_1 : psi in Hom(P_0, N) }`` (the
+    ``delta^0`` image)."""
+    from quiverlab.modules.complex_reps import _reconstruct_cocycle, ext_cocycle_data
+    from quiverlab.modules.morphism import hom_basis
+    dom = A.domain
+    terms, dmats, homs, cols_by_deg = ext_cocycle_data(A, M, N, 1)
+    homs1 = homs[1] if len(homs) > 1 else []
+    d1 = dmats[1] if len(dmats) > 1 else []
+    width = len(d1[0]) if (d1 and d1[0]) else 0
+    cocycle_mats = [_reconstruct_cocycle(col, homs1, N.dim, width, dom)
+                    for col in cols_by_deg.get(1, [])]
+    coboundary_mats = [lm.matmul(psi.matrix, d1, dom)
+                       for psi in hom_basis(terms[0].module, N)] if (d1 and d1[0]) else []
+    return cocycle_mats, coboundary_mats, terms, dmats
+
+
+def _ext1_action_matrix(phi, cocycle_mats, coboundary_mats, res, dom):
+    """The ``e x e`` matrix of the pullback action ``[f] |-> [f . phi_1]`` on the
+    ``Ext^1`` basis, ``phi`` an endomorphism of ``M`` and ``phi_1`` its degree-1 lift
+    (Task 1). Column ``j`` = coordinates of ``[f_j . phi_1]`` over the cocycle basis (mod
+    coboundaries). This is the RIGHT End(M)-module structure by precomposition; Task 5's
+    non-split guard arbitrates whether this order carries the almost-split socle."""
+    e = len(cocycle_mats)
+    if e == 0:
+        return lm.zeros(0, 0, dom)
+    phis = lift_endomorphism_along_resolution(phi, res, degrees=1)
+    if len(phis) < 2:                          # M projective => Ext^1 = 0, unreachable here
+        raise QuiverlabError("ar: no degree-1 lift (M has projective dimension 0)")
+    phi1 = phis[1]
+    basis_cols = [_vec(f) for f in cocycle_mats]
+    bnd_cols = [_vec(b) for b in coboundary_mats]
+    B = lm.cols_to_matrix(basis_cols + bnd_cols)
+    out = lm.zeros(e, e, dom)
+    for j, f in enumerate(cocycle_mats):
+        composed = lm.matmul(f, phi1, dom)     # f_j . phi_1 : P_1 -> N (a cocycle)
+        sol = lm.solve_columns(B, lm.cols_to_matrix([_vec(composed)]), dom)
+        if sol is None:
+            raise QuiverlabError(
+                "ar: f.phi_1 is not a cocycle mod coboundaries "
+                "(the lift or the class basis is inconsistent)")
+        for i in range(e):
+            out[i][j] = sol[0][i]              # cocycle-basis part only (drop coboundaries)
+    return out
+
+
+def end_action_on_ext1(M, N):
+    """``(basis, action)`` for the End(M)-action on ``Ext^1(M, N)``.
+
+    ``basis`` is the ``End(M)`` basis (``hom_basis(M, M)``); ``action[i]`` is the
+    ``e x e`` matrix (``e = dim Ext^1(M, N)``) of ``[f] |-> [f . (phi_i)_1]`` -- the
+    left-to-right ("precompose the degree-1 lift") action in the ``ext_reps`` cohomology
+    basis of ``Ext^1(M, N)``. Representation axioms are certified in the battery; whether
+    this order carries the almost-split socle is decided by Task 5's non-split guard."""
+    from quiverlab.modules.morphism import hom_basis
+    A = M.algebra
+    dom = M.domain
+    basis = hom_basis(M, M)
+    cocycle_mats, coboundary_mats, terms, dmats = _ext1_data(A, M, N)
+    res = (terms, dmats)
+    action = [_ext1_action_matrix(phi, cocycle_mats, coboundary_mats, res, dom)
+              for phi in basis]
+    return basis, action
