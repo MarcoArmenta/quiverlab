@@ -213,3 +213,55 @@ def nakayama_functor_minus(M):
     out = dualize(nakayama_functor(dualize(M)))
     out.name = f"nu^-({M.name})"
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Stable Hom (mod projectives) (Task 3).
+# --------------------------------------------------------------------------- #
+def _projective_maps_columns(M, N):
+    """Columns (over the vec of the tgt.dim x src.dim matrix space) spanning
+    P(M,N) = { (compose with cover) . g : g in Hom(M, P(N)) } -- the maps M -> N that
+    factor through the projective cover P(N) ->> N. (Any map factoring through a
+    projective factors through the cover of N.)"""
+    from quiverlab.modules.morphism import hom_basis
+    pi = N.projective_cover_hom()                 # P(N) ->> N  (P37 Task 6)
+    cols = []
+    for g in hom_basis(M, pi.src):                # g: M -> P(N)
+        comp = g.then(pi).matrix                  # M -> N through the projective
+        cols.append(_vec(comp))
+    return cols
+
+
+def stable_hom_dim(M, N):
+    """dim underline{Hom}(M, N) = dim Hom(M,N) - dim P(M,N), where P(M,N) is the
+    subspace of maps that factor through a projective (= through the projective cover
+    of N). Right modules over one fixed algebra/side."""
+    from quiverlab.modules.hom import _assert_comparable
+    from quiverlab.modules.morphism import hom_basis
+    _assert_comparable(M, N, "stable Hom")
+    dom = M.domain
+    homs = hom_basis(M, N)
+    hom_cols = [_vec(f.matrix) for f in homs]
+    proj_cols = _projective_maps_columns(M, N)
+    total = lm.mat_rank(lm.cols_to_matrix(hom_cols), dom) if hom_cols else 0
+    if not proj_cols:
+        return total
+    both = lm.mat_rank(lm.cols_to_matrix(hom_cols + proj_cols), dom)
+    # P(M,N) subset Hom(M,N), so rank(hom_cols + proj_cols) == rank(hom_cols):
+    #   dim P(M,N) = rank(proj_cols); underline dim = total - dim P(M,N).
+    dim_proj = lm.mat_rank(lm.cols_to_matrix(proj_cols), dom)
+    assert both == total, "stable_hom_dim: P(M,N) is not inside Hom(M,N) (bug)"
+    return total - dim_proj
+
+
+def hom_factors_through_projective(f):
+    """True iff the module map ``f`` factors through a projective module -- i.e. ``f``
+    lies in ``P(src, tgt)`` (it factors through the projective cover of ``tgt``)."""
+    dom = f.domain
+    proj_cols = _projective_maps_columns(f.src, f.tgt)
+    fvec = [_vec(f.matrix)]
+    if not proj_cols:
+        return f.is_zero()
+    sol = lm.solve_columns(lm.cols_to_matrix(proj_cols),
+                           lm.cols_to_matrix(fvec), dom)
+    return sol is not None

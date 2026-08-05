@@ -145,6 +145,13 @@ class ModuleHom:
             name=f"coker({self.src.name}->{self.tgt.name})")
         return C, ModuleHom(self.tgt, C, proj_mat, check=False)
 
+    def factors_through_projective(self) -> bool:
+        """True iff ``self`` factors through a projective module (Plan 41 / C3): it lies
+        in ``P(src, tgt)``, the maps that factor through the projective cover of
+        ``tgt``. (A map factors through SOME projective iff it factors through the cover.)"""
+        from quiverlab.modules.ar import hom_factors_through_projective
+        return hom_factors_through_projective(self)
+
     def __repr__(self):
         return f"Hom({self.src.name} -> {self.tgt.name}, rank {self.rank()})"
 
