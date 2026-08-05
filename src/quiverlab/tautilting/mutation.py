@@ -61,6 +61,42 @@ def mutate(pair, k):
         hint="over char <= dim the decompose/is_isomorphic caveat can refuse; run over QQ")
 
 
+def wall_normal(pair_i, pair_j):
+    """The brick dim-vector labelling the exchange edge ``pair_i -- pair_j`` (King wall
+    normal): the primitive non-negative integer vector orthogonal to the ``n-1`` shared
+    g-columns. Exact (sympy nullspace, no floats). Returns a vertex-keyed dict, or None if
+    the pairs are not adjacent."""
+    import sympy
+    verts = list(pair_i.algebra.quiver.vertices)
+    shared = sorted(pair_i.g_key() & pair_j.g_key())
+    if len(shared) != len(verts) - 1:
+        return None
+    if not shared:                                    # n = 1: the wall normal is e_1
+        return {verts[0]: 1}
+    ns = sympy.Matrix([list(c) for c in shared]).nullspace()
+    if len(ns) != 1:
+        return None
+    vec = ns[0]
+    lcm = 1
+    for x in vec:
+        lcm = sympy.ilcm(lcm, sympy.Rational(x).q)
+    ivec = [int(sympy.Rational(x) * lcm) for x in vec]
+    g = 0
+    for x in ivec:
+        g = sympy.igcd(g, x)
+    if g:
+        ivec = [x // g for x in ivec]
+    if sum(ivec) < 0:                                 # brick dim-vectors are non-negative
+        ivec = [-x for x in ivec]
+    return {verts[i]: int(ivec[i]) for i in range(len(verts))}
+
+
+def _brick_label(pair_i, pair_j):
+    """The edge's brick dim-vector (wall normal) + name placeholder. The brick MODULE is
+    identified later by :mod:`quiverlab.tautilting.torsion` (needs the module universe)."""
+    return {"dimvec": wall_normal(pair_i, pair_j), "name": None}
+
+
 def _pair_minus(pair, k):
     """The almost-complete pair (``pair`` with summand ``k`` removed): the remaining module
     summands (tuple) and support (frozenset)."""
@@ -168,7 +204,9 @@ def exchange_graph(A, budget_pairs=512):
             adj[i].add(j)
             adj[j].add(i)
             e = (min(i, j), max(i, j))
-            arrows.setdefault(e, {"brick": None, "brick_name": None})
+            if e not in arrows:
+                lab = _brick_label(pi, pj)
+                arrows[e] = {"brick": lab["dimvec"], "brick_name": lab["name"]}
     n_regular = complete and all(len(adj[i]) == n for i in range(len(records)))
     return ExchangeGraph(records, arrows, adj, is_complete=complete,
                          status=status, n_regular=n_regular)
