@@ -419,6 +419,20 @@ planned together even if delivered in slices.
   finite generation over the even part; support varieties per module.
 - [ ] **BV structure** for symmetric/Frobenius algebras: Connes B is ported
   (`engine/cyclic`); add the Tradler-style BV operator + Δ-bracket compatibility.
+- [ ] **Coxeter automorphism σ_A of the TT calculus** (Marco 2026-08-05,
+  deferred from the v0.2.0 metaplan by his choice): implement the AR-bimodule
+  automorphism of arXiv:2606.15595 on the Plan-35 products surface — matrix of
+  σ on HH_• per degree (−C⁻¹Cᵀ on HH₀, trace basis), computational
+  verification of Thm B (char poly = Coxeter polynomial) and Thm C (identity
+  on HH^•). D₄/A₄ + 8-vertex cospectral-tree oracles carry exact numbers.
+- [ ] **Per-HH-degree "higher Coxeter polynomials"** — literature white space
+  (nobody has defined them; nearest is Ladkani's poset-refined version,
+  arXiv:2110.15329): char polys of σ_A on each HH_i once σ_A exists.
+  Research-grade, no literature oracle — could seed Marco's next paper.
+- [ ] **τ-Hochschild (co)homology** (arXiv:2607.10913): the CLMS theory via
+  the square of the Serre bimodule; natural companion to σ_A. Also: read
+  Chen–Ruan–Yang arXiv:2509.12984 as a candidate external oracle for the
+  Plan-35 TT product structure constants.
 - [ ] **Periodicity detection with certificates**: general "syzygy ≅ shifted syzygy"
   detection on the corner engine (beyond the two wrapped families), exact isomorphism
   as certificate.
