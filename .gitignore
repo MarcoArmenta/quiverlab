@@ -21,3 +21,6 @@ desktop/build/
 .DS_Store
 paper/paper.pdf
 paper/paper.preprint.tex
+
+# agent worktrees + session config -- never commit
+.claude/
