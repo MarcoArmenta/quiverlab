@@ -16,9 +16,9 @@ from quiverlab.hpc import spec
 # sum of the simples is a VALUE, not the char-caveat error entry.
 _A2 = {"kind": "quiver", "vertices": [1, 2], "arrows": {"a": [1, 2]},
        "relations": [], "field": {"kind": "GF", "p": 7}}
-# k[x]/(x^3) over GF(2): computing phi of (+)S_v decomposes Omega S = M_2 (dim 2),
-# and char 2 <= 2, so decompose refuses -- the Igusa-Todorov entry is an honest
-# per-entry error, never a silent omission (the rest of the profile still computes).
+# k[x]/(x^3) over GF(2): SELF-INJECTIVE, so the devil's-advocate theorem guard
+# serves phi = psi = 0 directly (see test_selfinjective_gf2_profile...); the
+# per-entry-error contract now lives on the non-self-injective _RADSQ2_GF2.
 _LOOP3 = {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
           "relations": ["x*x*x"], "field": {"kind": "GF", "p": 2}}
 
@@ -59,14 +59,37 @@ def test_profile_block_shape():
     assert it["module"] == "(+)_v S_v" and it["phi"] == 1 and it["psi"] == 1
 
 
-def test_char_caveat_reports_a_per_entry_error_not_a_crash():
-    # k[x]/(x^3) over GF(2): the whole profile still computes; only the IT entry
-    # degrades to an honest {"error": ...}, never fatal (Plan-30 tau-block precedent).
+def test_char_caveat_reports_a_per_entry_error_not_a_crash(monkeypatch):
+    # Devil's-advocate repoint (2026-08-05): k[x]/(x^3) over GF(2) is
+    # SELF-INJECTIVE, so the theorem guard now serves the CORRECT phi=psi=0
+    # (see the companion test). The per-entry-error CONTRACT -- an IT refusal
+    # degrades to {"error": ...} and never kills the rest of the profile --
+    # is exercised directly: any QuiverlabError from phi must be contained.
+    # (A natural char-caveat fixture exists -- local radsq two loops over
+    # GF(2) -- but its OTHER profile entries walk exponentially growing
+    # syzygies to the depth guards, which is a minutes-long test; the
+    # contract under test is containment, not the arithmetic trigger.)
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.modules import homdims as _hd
+
+    def _refuse(M, budget=512, bound=64):
+        raise QuiverlabError("decompose cannot certify over GF(2) (test)")
+
+    monkeypatch.setattr(_hd, "igusa_todorov_phi", _refuse)
     block = _server(_req(_LOOP3))
     assert block["kind"] == "homological_profile"
     assert "error" in block["igusa_todorov"]
-    assert "phi" not in block["igusa_todorov"]
-    # the self-injective k[x]/(x^3) has an infinite dominant dimension, certified
+    assert block["dominant"]["infinite"] is True     # the rest still computed
+
+
+def test_selfinjective_gf2_profile_reports_theorem_values():
+    # the old fixture, now served CORRECTLY by the self-injective theorem
+    # guard (phi = psi = 0), where it previously degraded to a per-entry
+    # error; the dominant-dimension certificate is unchanged.
+    block = _server(_req(_LOOP3))
+    assert block["igusa_todorov"].get("phi") == 0
+    assert block["igusa_todorov"].get("psi") == 0
+    assert "error" not in block["igusa_todorov"]
     assert block["dominant"]["infinite"] is True and block["dominant"]["value"] is None
 
 

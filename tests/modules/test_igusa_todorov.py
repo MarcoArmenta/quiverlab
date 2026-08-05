@@ -49,8 +49,36 @@ def test_psi_geq_phi_and_projective_additivity():
 def test_char_caveat_refuses_loudly():
     # over GF(2) with dim M >= 2 the decompose trace form is unreliable ->
     # the K0 bookkeeping must inherit the loud refusal, never a silent phi.
-    A = truncated_polynomial(3, field=GF(2))
+    # NOTE (devil's-advocate round 2026-08-05): k[x]/(x^3) no longer works
+    # here -- it is SELF-INJECTIVE, so the theorem guard now returns phi = 0
+    # before decompose is ever consulted (a correct value, not a refusal).
+    # The refusal contract is exercised on a NON-self-injective algebra.
+    from quiverlab import Quiver
     from quiverlab.errors import QuiverlabError
-    M = A.simple(1).syzygy()                            # dim 2 over GF(2): char <= dim
+    # local radical-square-zero on two loops: NOT self-injective (socle dim 2),
+    # P_1 has dim 3 with End(P_1) = A (dim 3 > 1), so decompose must consult
+    # the trace form -- unreliable over GF(2) (char 2 <= 3) -> loud refusal.
+    A = Quiver([1], {"x": (1, 1), "y": (1, 1)}).algebra(
+        relations=["x*x", "x*y", "y*x", "y*y"], field=GF(2))
+    M = A.projective(1)
     with pytest.raises(QuiverlabError):
         igusa_todorov_phi(M)
+
+
+def test_phi_psi_zero_on_complexity_two_selfinjective():
+    # Devil's-advocate oracle (2026-08-05): the exterior algebra Lambda(k^2)
+    # is self-injective of complexity 2 -- its syzygies GROW forever
+    # (dims 3, 5, 7, ...), so without the theorem guard the rank registry
+    # never stabilizes. phi = psi = 0 by the stable-equivalence theorem,
+    # and the call must be instant.
+    from quiverlab import GF, Quiver
+    from quiverlab.modules.homdims import igusa_todorov_phi, igusa_todorov_psi
+
+    A = Quiver([1], {"x": (1, 1), "y": (1, 1)}).algebra(
+        relations=["x*x", "y*y", "x*y+y*x"], field=GF(32003))
+    S = A.simple(1)
+    assert igusa_todorov_phi(S) == 0
+    assert igusa_todorov_psi(S) == 0
+    M = S.tau()   # another non-projective over a self-injective algebra
+    if M.dim:
+        assert igusa_todorov_phi(M) == 0
