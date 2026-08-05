@@ -215,6 +215,11 @@ class Module:
         from quiverlab.modules.morphism import ModuleHom
         return ModuleHom(self, self, lm.identity(self.dim, self.domain), check=False)
 
+    def end_algebra(self):
+        """End_A(M) as a structure-constant Algebra (Plan 37 / C1)."""
+        from quiverlab.modules.endomorphism import end_algebra
+        return end_algebra(self)
+
     def radical(self):
         from quiverlab.modules.radtopsoc import radical as _r
         return _r(self)
