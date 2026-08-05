@@ -458,6 +458,14 @@ class Algebra:
         from quiverlab.modules.ext import global_dimension
         return global_dimension(self)
 
+    def exchange_graph(self, budget_pairs=512):
+        """The support tau-tilting exchange graph (Plan 45 / C4): BFS from ``(A, 0)`` via
+        AIR mutation, n-regular and g-matrix-deduped. Complete iff tau-tilting-finite, else
+        a LOUD budget cap (``.is_complete``, ``.status``) -- the honest semi-decision
+        contract mirroring the AR quiver."""
+        from quiverlab.tautilting.mutation import exchange_graph
+        return exchange_graph(self, budget_pairs=budget_pairs)
+
     def is_tilting_module(self, T, n=1):
         """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
         ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,
