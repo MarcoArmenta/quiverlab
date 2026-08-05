@@ -451,6 +451,8 @@ Plan-35 product surface).
 | `derived/` (Plan-43 C8 **derived-category surface** — `homs.py`: reified hyper-Hom classes `hyper_hom_basis` (a basis of `H^n(Hom^•(X,Y))` as genuine chain maps `X → Y[n]`) + `ChainMap.then`; `tau.py`: the derived AR translate `τ_{D^b} = ν[−1]` / `τ⁻_{D^b}` on perfect complexes with the Happel finite-gl.dim gate; `_corner.py`: the shared corner-transpose `Hom_A(−,A)` (factored out of `duality._presentation_transpose`, imported by both); `tilting.py`: the tilting-complex verifier (rigidity on the exact window + K₀-unimodular generation) + `End(T)` as a structure-constant algebra + `corner_cartan_of_complex` + `two_term_silting_from_presentation`; `fingerprint.py` + `block.py`: the necessary-condition derived fingerprint) | 22 | deep | **self-cert** — `hyper_hom_basis` reifies genuine chain maps (`ChainMap(check=True)` on every coset representative) with count ≡ `hyper_hom_dims`; `τ_{D^b}` output `d∘d=0` (ChainComplex check) and the `τ⁻∘τ` round-trip is a degreewise quasi-iso; `End(T)` self-certified by `from_structure_constants(check=True)`; the tilting rigidity window reported honestly; **cross-engine** — `hyper_hom_basis` count ≡ module `Ext^n` on a projective-resolution source (kA₃/(ab), all vertices), and `τ_{D^b}` homology is concentrated in degree 0 and `≅` the trusted module `τ` over `kA_n`; **literature** — the K₀-action identity `χ(τ_{D^b}X) = c·χ(X)` with `c = −C·C⁻ᵀ` (the conjugate of P38's Coxeter matrix — same char poly, the dim-vector action), the kA₂ APR-tilt `P₁ ⊕ S₁` (tilting, `End(T)` = the reoriented A₂ = A^op, corner-Cartan `[[1,0],[1,1]]` — the theorem-anchored `End(A_A)=A` pin fixes the orientation), the D₄ vs A₄ Coxeter distinction and the 8-vertex cospectral-trees NON-distinction (the honest-scope demonstration); **live QPA** (`tests/qpa/test_derived_qpa.py`) — `τ_{D^b}` homology(0) vs `DTr(M)` (the documented module-level route: QPA's `TauOfComplex` on a `ProjectiveResolution` does not script through libgap — the P39 Ch.10 hazard, confirmed live) |
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 115 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
+| `strings/` (Plan-46 C5 gentle/string subsystem: reduced walks + σ/ε signs + string census + band detection; string/band module materialisation; string-τ by hooks/cohooks; the Avella-Alaminos–Geiss derived invariant; the `strings` block) — `tests/modules/test_strings_*.py`, `tests/invariants/test_ag_invariant.py` | 33 | deep + fast | Butler-Ringel `n(n+1)/2` interval count + Kronecker band existence (`oracle_literature`); string-τ ≡ engine τ + census count ≡ `knit_ar_quiver` vertex count (`oracle_crossengine`); `check_module` on every materialised string/band + permitted/forbidden thread partition of `Q_1` (`oracle_selfcert`); AAG-2008 pins reproduced verbatim (Nakaoka `arXiv:1811.00775` Example 2.15 = `{(3,2),(2,2),(0,3)}`) |
+| `families/brauer.py` (Plan-46 Brauer graph algebra constructor from a ribbon graph + multiplicities) — `tests/families/test_brauer.py` | 10 | deep | `dim = Σ_v m_v·val(v)²` per-instance certificate + `is_symmetric` (`oracle_literature`); Brauer-star ≡ symmetric Nakayama `NakayamaAlgebra(n, mn+1, cyclic=True)` byte-equal Cartan (`oracle_crossengine`) |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality |
@@ -599,6 +601,36 @@ verified precision and listed below as such.
   failure in the dedicated CI job under `QUIVERLAB_REQUIRE_M2=1`.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+- **Gentle / string subsystem (Plan 46):**
+  - For a **string** algebra the Butler–Ringel classification is complete **iff there
+    are no bands** (rep-finite). When bands exist the algebra is rep-infinite and
+    `enumerate_strings` returns a **length-capped sample** (`status="budget"`), never a
+    `status="complete"` list. (The plan's original 2-cycle `kQ/(ab,ba)` "band" example
+    is a self-injective Nakayama algebra — rep-**finite**, no band; any algebra on the
+    2-cycle quiver is Nakayama. The genuine minimal gentle band algebra is the
+    **Kronecker quiver**, band `a·b⁻¹`; both are pinned.)
+  - The **AG invariant is a DERIVED invariant, provably NOT complete** — completeness
+    needs the graded Opper–Plamondon–Schroll geometric data (out of scope). Never
+    claim it separates all derived-equivalence classes. Implemented via Asashiba's
+    blossoming form (Nakaoka `arXiv:1811.00775`), reproducing that paper's Example
+    2.15 verbatim; the convention-free self-cert is that permitted & forbidden threads
+    each partition `Q_1`, with `Σn = 2|Q_0|−|Q_1|` and `Σm = |Q_1|`.
+  - **String-τ is engine-arbitrated.** `string_tau`/`string_tau_minus` compute the
+    Butler–Ringel hook/cohook combinatorics as the primary method but VERIFY the
+    result against the trusted Plan-23/41 engine translate (`Module.tau`) on every
+    call; at a few AR-quiver boundary strings (the translate of a non-injective
+    projective at a source/sink — a structural jump, not a local arm move) the result
+    is completed from the engine translate. It never returns a walk whose module is
+    not `is_isomorphic` to the engine translate, and never a guessed convention.
+  - **QPA has NO string/band enumeration and NO AG surface** — the QPA crosschecks are
+    recognizer-level (`IsGentleAlgebra`/`IsSpecialBiserialAlgebra`) + module-level
+    (`decompose` of a sum of string modules); a standing `IsBoundGlobal` probe FAILS
+    if QPA ever ships one. **SBStrips / String-Applet are not installed and are not
+    oracles here** — the honest oracles are AAG 2008 (literature), our own
+    bar/CS/AR engines (cross-engine), and QPA recognizers.
+  - **Band modules need the eigenvalue in the field** (loud otherwise). The
+    `decompose`-based indecomposability spot-checks carry the `char ≤ dim` caveat, so
+    the string/band batteries run over **QQ / GF(32003)** (`char > dim`).
 - **CRS-2004 Example 2.20 does not reproduce** (Plan 29): the paper states
   `HH¹ = 0` for its Z₅-cycle monomial example, but the validated bar oracle
   robustly gives `dim HH¹ = 1` (an explicit surviving oriented 5-cycle; both

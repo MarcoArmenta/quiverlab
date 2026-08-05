@@ -523,5 +523,45 @@
   },
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3], \"c\": [3, 4]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3, 4]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"The derived-category reference: the Serre functor / AR triangles of D^b(mod A) exist iff gl.dim < infinity, tau_{D^b} = nu[-1] -- the ground truth for the Plan-43 derived surface.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Happel1988\", \"doi\": \"10.1017/CBO9780511629228\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511629228\", \"formatted\": \"Happel, Dieter (1988). Triangulated Categories in the Representation Theory of Finite Dimensional Algebras. Cambridge University Press 119.\", \"key\": \"happel_triangulated\", \"topic\": \"Foundations\"}, {\"annotation\": \"Derived-equivalent algebras (e.g. a Brauer tree and its Brauer star) share Hochschild and cyclic homology -- the derived-invariance oracle.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Rickard1989\", \"doi\": \"10.1112/jlms/s2-39.3.436\", \"doi_url\": \"https://doi.org/10.1112/jlms/s2-39.3.436\", \"formatted\": \"Rickard, Jeremy (1989). Morita theory for derived categories. Journal of the London Mathematical Society. Second Series 39, 436-456.\", \"key\": \"rickard_derived\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and Happel's trace identity -- the spectral-invariant oracle.\", \"arxiv\": \"0805.1018\", \"arxiv_url\": \"https://arxiv.org/abs/0805.1018\", \"bibtex_key\": \"LenzingdlPena2008spectral\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\", \"key\": \"lenzing_delapena_spectral\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3, 4], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3), \\\"c\\\": (3, 4)})\\nA = Q.algebra(relations=[], field=GF(5))\\nfrom quiverlab.derived import derived_fingerprint; derived_fingerprint(A, 4)\", \"results\": {\"derived_fingerprint\": {\"citations\": [[\"Happel1988\", \"Happel, Dieter (1988). Triangulated Categories in the Representation Theory of Finite Dimensional Algebras. Cambridge University Press 119.\"], [\"Rickard1989\", \"Rickard, Jeremy (1989). Morita theory for derived categories. Journal of the London Mathematical Society. Second Series 39, 436-456.\"], [\"LenzingdlPena2008spectral\", \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\"]], \"fingerprint\": {\"cartan_det\": 1, \"cartan_smith\": [1, 1, 1, 1], \"center_dim\": 1, \"coxeter_polynomial\": \"t**4 + t**3 + t**2 + t + 1\", \"cyclic_dims\": {\"error\": \"cyclic homology: bar boundary b_3 pairs 5904900 cells (> max_cells = 4000000)  [hint: the (b, B) bar complex is exponential (dim C_n = m*(m-1)^n); raise max_cells or lower top only if you know what you are doing]\"}, \"gl_dim\": \"gl.dim = 1 (exact)\", \"hh_cohomology_dims\": [1, 0, 0, 0, 0], \"hh_homology_dims\": [4, 0, 0, 0, 0]}, \"kind\": \"derived_fingerprint\", \"latex\": \"\\\\begin{aligned}\\\\text{Coxeter polynomial } p(t) &= t**4 + t**3 + t**2 + t + 1 \\\\\\\\ \\\\det C &= 1 \\\\\\\\ \\\\text{Cartan Smith factors} &= [1, 1, 1, 1] \\\\\\\\ \\\\dim HH^\\\\bullet &= [1, 0, 0, 0, 0] \\\\\\\\ \\\\dim HH_\\\\bullet &= [4, 0, 0, 0, 0] \\\\\\\\ \\\\dim HC_\\\\bullet &= [error] \\\\\\\\ \\\\dim Z(A) &= 1 \\\\\\\\ \\\\text{gl.dim} &: \\\\text{gl.dim = 1 (exact)}\\\\end{aligned}\", \"references\": [\"happel_triangulated\", \"rickard_derived\", \"lenzing_delapena_spectral\"], \"scope\": \"a derived-invariant fingerprint; equal values are a necessary condition for derived equivalence, not a proof\", \"top\": 4}}}",
   "canonical_key": "cc09aeababfbbaa5227b907f5d924750451eee8985967e213322cbaf5302abc1"
+ },
+ "strings_gentle_a3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "relations": [
+     "a*b"
+    ],
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 5
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "strings"
+   ]
+  },
+  "canonical_key": "1b7d7a945c7b085e72bebfc6e0f77d3fed4acb27e85fa3f6d23e774d605a4818",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [\"a*b\"], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.1.0\", \"references\": [{\"annotation\": \"Butler-Ringel: the string/band module classification and the hook/cohook description of the AR translate -- the ground truth for the string subsystem.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ButlerRingel1987\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\", \"key\": \"butler_ringel\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The AG-invariant: a multiset of (n,m) pairs from permitted/forbidden threads; a DERIVED invariant, provably NOT complete.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AvellaAlaminosGeiss2008\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Avella-Alaminos, Diana; Geiss, Christof (). Combinatorial derived invariants for gentle algebras. Journal of Pure and Applied Algebra.\", \"key\": \"avella_geiss\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=['a*b'], field=GF(5))\\nfrom quiverlab.strings import enumerate_strings, find_bands\\nfrom quiverlab.strings.ag import ag_invariant\\nenumerate_strings(A), find_bands(A), ag_invariant(A)\", \"results\": {\"strings\": {\"ag_invariant\": [[4, 2]], \"bands\": {\"exist\": false, \"sample\": []}, \"citations\": [[\"ButlerRingel1987\", \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\"], [\"AvellaAlaminosGeiss2008\", \"Avella-Alaminos, Diana; Geiss, Christof (). Combinatorial derived invariants for gentle algebras. Journal of Pure and Applied Algebra.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"recognizers\": {\"is_gentle\": true, \"is_special_biserial\": true, \"is_string\": true}, \"references\": [\"butler_ringel\", \"avella_geiss\", \"assem_book\"], \"rep_type\": \"finite\", \"strings\": {\"count\": 5, \"max_length\": 8, \"sample\": [\"a^-1\", \"b^-1\", \"e_1\", \"e_2\", \"e_3\"], \"status\": \"complete\"}}}}"
  }
 }

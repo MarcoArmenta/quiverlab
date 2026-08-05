@@ -286,6 +286,24 @@ REGISTRY: dict = {r.key: r for r in [
        "The delooping level dell(A) as an upper bound for the finitistic dimension "
        "-- the deferred Plan-40 Task-F invariant (honest-scope note).",
        "homdim", "finitistic"),
+    # --- Plan 46: C5 gentle / string subsystem ---
+    _r("butler_ringel", "ButlerRingel1987", "algorithm",
+       "Auslander-Reiten sequences for string algebras",
+       "Butler-Ringel: the string/band module classification and the hook/cohook "
+       "description of the AR translate -- the ground truth for the string subsystem.",
+       "modules"),
+    _r("avella_geiss", "AvellaAlaminosGeiss2008", "algorithm",
+       "Combinatorial derived invariants for gentle algebras",
+       "The AG-invariant: a multiset of (n,m) pairs from permitted/forbidden threads; "
+       "a DERIVED invariant, provably NOT complete.", "invariants"),
+    _r("schroll_brauer", "Schroll2018", "family",
+       "Brauer graph algebras (survey)",
+       "The presentation of a Brauer graph algebra from a ribbon graph + multiplicities; "
+       "the dimension and symmetric structure.", "families"),
+    _r("wald_waschbusch", "WaldWaschbusch1985", "foundation",
+       "Tame biserial algebras",
+       "Biserial / special-biserial structure underlying string and Brauer graph "
+       "algebras.", "families"),
 ]}
 
 

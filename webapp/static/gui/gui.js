@@ -79,6 +79,8 @@
     '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-recognizers"> recognizers + type</label>' +
     '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
+    // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
+    '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -155,6 +157,8 @@
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
    // Plan 43: derived fingerprint (scalar kind)
    "derived_fingerprint",
+   // Plan 46: gentle / string subsystem
+   "strings",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -670,7 +674,8 @@
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
-     "recognizers", "homological_profile", "derived_fingerprint"].forEach(function (k) {
+     "recognizers", "homological_profile", "derived_fingerprint",
+     "strings"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     var module = null, extTarget = null, torTarget = null;
@@ -2531,6 +2536,45 @@
       div.appendChild(ftbl);
       div.appendChild(h("p", { "class": "qlgui-hint",
         text: b.scope || "a derived-invariant fingerprint; equal values are a necessary condition for derived equivalence, not a proof" }));
+    } else if (name === "strings") {
+      // Plan 46: recognizer verdicts + string census + bands + rep-type + AG.
+      var rc = b.recognizers || {};
+      var yn = function (v) {
+        if (v && typeof v === "object" && "error" in v) return "not decided — " + v.error;
+        return v === true ? "yes" : "no";
+      };
+      var rul = h("ul");
+      [["is_special_biserial", "special biserial"], ["is_string", "string"],
+       ["is_gentle", "gentle"]].forEach(function (kv) {
+        if (kv[0] in rc) rul.appendChild(h("li", { text: kv[1] + ": " + yn(rc[kv[0]]) }));
+      });
+      div.appendChild(rul);
+      if (b.strings) {
+        div.appendChild(h("p", { text: "String modules: " + b.strings.count
+          + " (" + (b.strings.status === "complete"
+            ? "complete list up to length " + b.strings.max_length
+            : "sample up to length " + b.strings.max_length + "; not a complete list")
+          + ")." }));
+        if (b.strings.sample && b.strings.sample.length)
+          div.appendChild(h("p", { text: "Sample: " + b.strings.sample.join(", ") }));
+      }
+      if (b.bands) {
+        div.appendChild(h("p", { text: b.bands.exist
+          ? "Bands: yes — " + (b.bands.sample || []).join(", ")
+            + " (the algebra is representation-infinite)."
+          : "Bands: none." }));
+      }
+      var RT = { finite: "representation-finite", infinite: "representation-infinite",
+        unknown: "undetermined (budget/length cut)" };
+      div.appendChild(h("p", { text: "Representation type: " + (RT[b.rep_type] || b.rep_type) }));
+      if (b.ag_invariant && b.ag_invariant.length !== undefined) {
+        var pairs = b.ag_invariant.map(function (p) { return "(" + p[0] + ", " + p[1] + ")"; });
+        div.appendChild(h("p", { text: "Avella-Alaminos–Geiss invariant (derived, not "
+          + "complete): { " + pairs.join(", ") + " }" }));
+      } else if (b.ag_invariant && b.ag_invariant.error) {
+        div.appendChild(h("p", { text: "AG invariant: not decided — " + b.ag_invariant.error }));
+      }
+      if (b.note) div.appendChild(h("p", { text: b.note }));
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -2583,7 +2627,7 @@
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
    el.coxeter_polynomial, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
-   el.homological_profile]
+   el.homological_profile, el.strings]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).

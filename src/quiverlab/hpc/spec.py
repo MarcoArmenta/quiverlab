@@ -301,7 +301,7 @@ def resolve_references(keys) -> list:
 def _iter_families():
     for info in ql.families():
         name = info.name
-        if name == "zoo":
+        if name in ("zoo", "BrauerGraphAlgebra"):   # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -1246,6 +1246,14 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block = recognizers_block(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Gentle / string subsystem (Plan 46): an algebra-only scalar kind -- recognizer
+    # verdicts + string census + band presence + honest rep-type + (gentle) AG
+    # invariant. Shared builder (strings.block.strings_block), byte-identical twin.
+    if kind == "strings":
+        from quiverlab.strings.block import strings_block
+        block = strings_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each library
     # method returns a frozen result object whose .blocks() IS the block dict
     # (kind/top/engine/basis/tables/window or hh_dims/matrices/ranks + references);
@@ -1805,6 +1813,11 @@ def _snippet(req: ComputeRequest, A) -> str:
              "derived_fingerprint":
                  lambda it: ("from quiverlab.derived import derived_fingerprint; "
                              f"derived_fingerprint(A, {it.hi if it.hi is not None else 4})"),
+             "strings": lambda it: ("from quiverlab.strings import "
+                                    "enumerate_strings, find_bands\n"
+                                    "from quiverlab.strings.ag import ag_invariant\n"
+                                    "enumerate_strings(A), find_bands(A), "
+                                    "ag_invariant(A)"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",

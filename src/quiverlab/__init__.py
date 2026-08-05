@@ -22,6 +22,7 @@ from quiverlab.families import (  # noqa: E402,F401
     IncidenceAlgebra, QuantumCI, ExteriorAlgebra, PreprojectiveAlgebra,
     TrivialExtension, TensorProduct, zoo, families,
 )
+from quiverlab.families import BrauerGraph, BrauerGraphAlgebra  # noqa: E402,F401
 from quiverlab.citations import bibliography  # noqa: E402,F401
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 from quiverlab.modules.complexes import ChainComplex, ChainMap  # noqa: E402,F401
@@ -45,6 +46,7 @@ __all__ = [
     "NakayamaAlgebra", "PathAlgebra", "TruncatedPathAlgebra", "RadicalSquareZero",
     "IncidenceAlgebra", "QuantumCI", "ExteriorAlgebra", "PreprojectiveAlgebra",
     "TrivialExtension", "TensorProduct", "zoo", "families",
+    "BrauerGraph", "BrauerGraphAlgebra",
     "bibliography",
     "sweep",
     "ChainComplex", "ChainMap",

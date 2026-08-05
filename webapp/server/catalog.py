@@ -30,7 +30,7 @@ def _iter_families():
     raise loudly rather than silently drop it."""
     for info in ql.families():
         name = info.name
-        if name == "zoo":
+        if name in ("zoo", "BrauerGraphAlgebra"):   # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:

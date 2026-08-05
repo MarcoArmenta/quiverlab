@@ -136,6 +136,14 @@ never hide behind one:
     cyclic-homology field is an honest per-field ``{error}`` (the generic (b,B) mixed
     complex has no CS route and blows up over GF(p) for this dim). ``canonical_key`` is
     request-derived.
+  * 2026-08-05 (``strings_gentle_a3`` ADDED, Plan 46 C5): a NEW fixture for the
+    ``strings`` algebra-only scalar compute kind (gentle A3/(ab) over GF(5) -- the
+    recognizer verdicts + string census + band presence + rep-type + AG invariant).
+    Pure addition: the eleven existing entries were verified byte-identical BEFORE the
+    new one was appended (the delegation test passed on all eleven unchanged). Its
+    ``canonical_key`` is request-derived; ``result_json`` was frozen from the server
+    runner, and the Plan-46 cross-runner test (tests/gui/test_strings_runner_twin,
+    tests/webapp/test_strings_block_p46) asserts the Pyodide twin agrees.
   * 2026-08-05 (``homological_profile_kA2`` ADDED, Plan 40 C6): a NEW fixture for the
     ``homological_profile`` scalar compute kind (kA2 over GF(7) -- global / finitistic
     / dominant / Gorenstein dimensions + Igusa-Todorov phi/psi of the sum of simples).

@@ -713,6 +713,12 @@ def compute_one(spec):
             # (derived.block.derived_fingerprint_block) + `references`->citations.
             from quiverlab.derived.block import derived_fingerprint_block
             block = derived_fingerprint_block(A, top if top is not None else 4)
+        elif name == "strings":
+            # Gentle / string subsystem (Plan 46): census + bands + rep-type + AG.
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # library block builder + `references`->citations.
+            from quiverlab.strings.block import strings_block
+            block = strings_block(A)
             block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
@@ -951,7 +957,10 @@ ETA_MODEL = {
                 "ss_hochschild": 2.0,
                 # Plan 43: derived_fingerprint runs Cartan/Coxeter + HH/HC to top=4
                 # (the HH pass dominates; cyclic may fall back or error honestly).
-                "derived_fingerprint": 1.0},
+                "derived_fingerprint": 1.0,
+                # Plan 46: strings = a bounded string/band DFS + AG walk on the
+                # reduction system; a touch heavier than recognizers.
+                "strings": 0.2},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

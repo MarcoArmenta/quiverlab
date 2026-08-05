@@ -286,6 +286,12 @@ ported and wired in:
   (rigidity + K₀ generation) with `End(T)` recovered as the Rickard derived-equivalent
   algebra, and a **derived fingerprint** comparing algebras on Coxeter polynomial,
   Cartan (det + Smith), HH/HC and centre — in necessary-condition language only.
+- **Gentle / string subsystem (C5).** String & band module classification
+  (Butler–Ringel), string-module τ by the hook/cohook combinatorics, the
+  Avella-Alaminos–Geiss derived invariant for gentle algebras (honest: an
+  invariant, not complete), and a `BrauerGraphAlgebra` constructor from a ribbon
+  graph — with the algebra-only `strings` no-code block (census + bands + rep-type
+  + AG).
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`
