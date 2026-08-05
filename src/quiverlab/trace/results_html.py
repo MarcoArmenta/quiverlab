@@ -45,6 +45,7 @@ _HEADINGS = {
     "tau": "AR translate τM",
     "tau_minus": "Inverse AR translate τ⁻M",
     "decompose": "Krull–Schmidt decomposition of M",
+    "almost_split": "Almost-split sequence of M",
     "ext": "Ext",
     "tor": "Tor",
     "projective_resolution": "Projective resolution of M",
@@ -251,6 +252,8 @@ def _block_html(kind, b, ctx=None):
         return _tau_html(kind, b)
     if kind == "decompose":
         return _decompose_html(b)
+    if kind == "almost_split":
+        return _almost_split_html(b)
     if kind in ("ext", "tor"):
         op = "Ext^" if kind == "ext" else "Tor_"
         chunks = []
@@ -426,6 +429,35 @@ def _decompose_html(b):
     if any(s.get("display_only") for s in summands):
         out.append("<p class='ql-note'>display only — entries lie outside the "
                    "integer/fraction input grammar (e.g. GF(p^n) elements).</p>")
+    return out
+
+
+def _almost_split_html(b):
+    """The almost-split sequence 0 → τM → E → M → 0 (Plan 41): τM as a full
+    representation, then E's Krull–Schmidt summands (standard summands named, others
+    with full matrices). An ``exists: false`` block renders the honest refusal."""
+    if b.get("exists") is False:
+        return ["<p>No almost-split sequence: %s</p>"
+                % _esc(b.get("reason", "input not eligible"))]
+    out = []
+    if b.get("latex"):
+        out.append(_math(b["latex"]))
+    out.append("<p>M is indecomposable and non-projective; τM as a full "
+               "representation:</p>")
+    if b.get("tau"):
+        out.extend(_maps_html("τM", b["tau"]))
+    summands = (b.get("middle") or {}).get("summands") or []
+    rows = ["<tr><th>summand</th><th>multiplicity</th><th>dim vector</th></tr>"]
+    for i, s in enumerate(summands):
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+                    % (_esc(_summand_name(s, i + 1)), _num(s.get("multiplicity")),
+                       _esc(_dv(s.get("dim_vector")))))
+    out.append("<p>middle term E — %d Krull–Schmidt summand(s):</p>" % len(summands))
+    out.append('<table class="ql-table">%s</table>' % "".join(rows))
+    for i, s in enumerate(summands):
+        if s.get("standard") or not s.get("maps"):
+            continue
+        out.extend(_maps_html(_summand_name(s, i + 1), s))
     return out
 
 

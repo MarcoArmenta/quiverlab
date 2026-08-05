@@ -128,6 +128,45 @@ function decomposeBlock(block, d) {
   return wrap;
 }
 
+// Plan 41 (C3): the almost-split (Auslander–Reiten) sequence 0 → τM → E → M → 0,
+// with τM as a full representation and E's Krull–Schmidt summands; an honest refusal
+// block for a projective / decomposable / undecidable input.
+function almostSplitBlock(block, d) {
+  const wrap = document.createElement("div");
+  if (block.exists === false) {
+    const pr = document.createElement("p");
+    pr.textContent = (d.modAlmostSplitRefused || "No almost-split sequence")
+      + " — " + (block.reason || "input not eligible") + ".";
+    wrap.appendChild(pr);
+    return wrap;
+  }
+  const p = document.createElement("p");
+  p.textContent = (d.modAlmostSplitSeq || "Almost-split sequence")
+    + ":  0 → τM → E → M → 0";
+  wrap.appendChild(p);
+  appendRepMaps(wrap, "τM", block.tau, d);
+  const p2 = document.createElement("p");
+  p2.textContent = (d.modAlmostSplitMiddle || "middle term E — Krull–Schmidt summands");
+  wrap.appendChild(p2);
+  const summ = (block.middle && block.middle.summands) || [];
+  const tbl = tableWithHeader([d.modSummand || "summand",
+                               d.modMult || "multiplicity",
+                               d.modDimvec || "dim vector"]);
+  summ.forEach(function (s, i) {
+    const tr = document.createElement("tr");
+    tr.appendChild(cellText(summandName(s, i + 1)));
+    tr.appendChild(cellText(String(s.multiplicity)));
+    tr.appendChild(cellText(dvText(s.dim_vector)));
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  summ.forEach(function (s, i) {
+    if (s.standard || !s.maps) return;
+    appendRepMaps(wrap, summandName(s, i + 1), s, d);
+  });
+  return wrap;
+}
+
 // Plan 34 (Marco): rad/top/soc as FULL representations -- the dim VECTOR per object
 // (the redundant total-dim column is gone) plus each arrow's exact action matrix,
 // typeset by renderMath (KaTeX). The LaTeX is built from the block's {dims, maps}.
@@ -473,6 +512,8 @@ function renderModuleBlocks(out, res) {
       out.appendChild(radTopSocBlock(b, d));
     } else if (kind === "decompose") {
       out.appendChild(decomposeBlock(b, d));
+    } else if (kind === "almost_split") {
+      out.appendChild(almostSplitBlock(b, d));
     } else if (kind === "tau" || kind === "tau_minus") {
       out.appendChild(tauBlock(b, d, kind));
     }

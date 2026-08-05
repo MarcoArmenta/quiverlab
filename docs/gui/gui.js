@@ -99,6 +99,7 @@
     '    <label><input type="checkbox" id="qlgui-projective_resolution"> proj.res 0..<select id="qlgui-pr-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-injective_resolution"> inj.res 0..<select id="qlgui-ir-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-decompose"> decompose</label>' +
+    '    <label><input type="checkbox" id="qlgui-almost_split"> almost-split</label>' +
     '    <label><input type="checkbox" id="qlgui-ext"> Ext 0..<select id="qlgui-ext-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-tor"> Tor 0..<select id="qlgui-tor-top"></select></label>' +
     '  </div>' +
@@ -147,7 +148,7 @@
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
    "projective_dimension", "injective_dimension",
    "projective_resolution", "pr-top", "injective_resolution", "ir-top",
-   "decompose", "ext", "ext-top", "tor", "tor-top",
+   "decompose", "almost_split", "ext", "ext-top", "tor", "tor-top",
    "target", "target-mode", "target-side", "target-body", "target-note"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
   [el["hhc-top"], el["hhh-top"], el["pr-top"], el["ir-top"], el["ext-top"],
@@ -291,7 +292,8 @@
   // ---------- Plan 26: no-code module panel ----------
   var MOD_KIND_IDS = ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
     "projective_dimension", "injective_dimension",
-    "projective_resolution", "injective_resolution", "decompose", "ext", "tor"];
+    "projective_resolution", "injective_resolution", "decompose", "almost_split",
+    "ext", "tor"];
 
   // Generic matrix-editor helpers over a module-state {dims, maps} + a side. Used
   // by BOTH the main module panel (S.module) and the second-argument editor
@@ -2327,6 +2329,22 @@
         " indecomposable summand(s):" }));
       div.appendChild(decompTable(b.summands));
       appendSummandMaps(div, b.summands);
+    } else if (name === "almost_split") {
+      // The almost-split (Auslander–Reiten) sequence 0 → τM → E → M → 0 (Plan 41);
+      // an honest refusal for a projective / decomposable / undecidable input.
+      if (b.exists === false) {
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "No almost-split sequence — " + (b.reason || "input not eligible") + "." }));
+      } else {
+        div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
+        div.appendChild(h("p", { text: "M is indecomposable and non-projective; "
+          + "τM (a full representation):" }));
+        appendRepMaps(div, "τ M", b.tau);
+        var asum = (b.middle && b.middle.summands) || [];
+        div.appendChild(h("p", { text: "middle term E — Krull–Schmidt summands:" }));
+        div.appendChild(decompTable(asum));
+        appendSummandMaps(div, asum);
+      }
     } else if (name === "ext" || name === "tor") {
       var isExt = name === "ext";
       div.appendChild(h("p", { text: (isExt ? "Ext to the target module — dim vector "
@@ -2430,7 +2448,7 @@
     x.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
   });
   [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
-   el.projective_dimension, el.injective_dimension, el.decompose,
+   el.projective_dimension, el.injective_dimension, el.decompose, el.almost_split,
    el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
    el["ext-top"], el["tor-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });

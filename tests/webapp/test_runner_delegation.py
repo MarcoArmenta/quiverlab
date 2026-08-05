@@ -104,6 +104,13 @@ never hide behind one:
     on ``rad_top_soc`` blocks ONLY. The ``canonical_key`` is request-derived and
     UNCHANGED (no new request fields). Only ``module_basic`` carries a ``rad_top_soc``
     block; the other six entries are untouched.
+  * 2026-08-05 (``almost_split_a3_s2`` ADDED, Plan 41 -- AR completion): a NEW
+    golden for the ``almost_split`` module compute kind (the almost-split sequence
+    0 -> tau M -> E -> M -> 0 of S_2 over kA3 / GF(5)). Additive: a brand-new entry
+    keyed ``almost_split_a3_s2``; the existing seven entries are untouched and were
+    asserted byte-identical before it was added. The block carries ``tau`` (a full
+    representation), ``middle.summands`` (E's Krull-Schmidt summands via the shared
+    serializer), and ``references``/``citations`` (assem_book + the new ars_book).
   * 2026-07-31 (ALL entries re-freeze, Marco ADDENDUM 2 -- json_guide): the result
     envelope gained ONE additive top-level key, ``json_guide`` -- a per-computation list
     of ``{object, path, note}`` recipes for recovering every computed object from
