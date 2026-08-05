@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **3021 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **3076 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
 recognizer batteries + Koszulity (`ext_algebra`) exposure — the Plan-32 oracle-class markers + audit gate,
@@ -344,7 +344,7 @@ recompute independently and refuses to silently disagree
   (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
   square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (159 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (164 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -450,6 +450,8 @@ Plan-35 product surface).
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-41 C3 **Auslander–Reiten completion** — `ar.py`: the general chain-map lift, the Nakayama functor ν/ν⁻, stable Hom mod projectives, the End(M)-action on Ext¹, almost-split sequences `0 → τM → E → M → 0`, irreducible-map multiplicities `dim rad(M,N)/rad²`, and honest-semi-decision AR-quiver knitting) | 327 | deep | AR/duality literature pins (ASS2006, ARS1995); **the Plan-41 AR self-certification** (the chain-map lift asserts every square `d_n·φ_n = φ_{n-1}·d_n` and is byte-reproducible; ν tied to the trusted τ by `ker(νP₁→νP₀) ≅ τM` + `ν(P_v) ≅ I_v` / `ν⁻(I_v) ≅ P_v`; every almost-split sequence's class is identified by the **ARS socle theorem** — `soc_{End M} Ext¹(M,τM)` is a *simple* `End(M)`-module — pinned down computationally by the char-scoped trace-form `rad End(M)` (char 0 or char > dim M) plus the **socle-simplicity dimension certificate** `dim_k soc = dim_k End(M) − dim_k rad End(M)` (`= dim_k` the residue division algebra; refuses loudly if it fails); the exact (Yoneda + P37 SES) + non-split (P37 `is_split` False) + indecomposable-ends (Plan 30) checks are **necessary sanity checks, not sufficient** — they do NOT arbitrate the pick (over `k[x]/(x⁴)` with `M = k[x]/(x²)`, `dim Ext¹ = 2`, a non-socle class has an exact/non-split/indecomposable-ends extension whose middle is the *projective* `k[x]/(x⁴)`, not the true mesh middle `{1,3}` — the devil's-advocate non-brick regression, live-QPA-crosschecked)) + **the cross-engine AR formula** `dim Ext¹(M,N) = dim underline-Hom(τ⁻N, M)` + **literature Dynkin/Nakayama pins** (kA₂/kA₃/kA₄ = 3/6/10 indecomposables, D₄ = 12, the kA₃ mesh middle terms, Nakayama serial count) + **live QPA** `AlmostSplitSequence` middle-term (dim vector over QQ; summand multiset over GF(p)) and `PredecessorsOfModule`; **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) |
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 115 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
+| `strings/` (Plan-46 C5 gentle/string subsystem: reduced walks + σ/ε signs + string census + band detection; string/band module materialisation; string-τ by hooks/cohooks; the Avella-Alaminos–Geiss derived invariant; the `strings` block) — `tests/modules/test_strings_*.py`, `tests/invariants/test_ag_invariant.py` | 33 | deep + fast | Butler-Ringel `n(n+1)/2` interval count + Kronecker band existence (`oracle_literature`); string-τ ≡ engine τ + census count ≡ `knit_ar_quiver` vertex count (`oracle_crossengine`); `check_module` on every materialised string/band + permitted/forbidden thread partition of `Q_1` (`oracle_selfcert`); AAG-2008 pins reproduced verbatim (Nakaoka `arXiv:1811.00775` Example 2.15 = `{(3,2),(2,2),(0,3)}`) |
+| `families/brauer.py` (Plan-46 Brauer graph algebra constructor from a ribbon graph + multiplicities) — `tests/families/test_brauer.py` | 10 | deep | `dim = Σ_v m_v·val(v)²` per-instance certificate + `is_symmetric` (`oracle_literature`); Brauer-star ≡ symmetric Nakayama `NakayamaAlgebra(n, mn+1, cyclic=True)` byte-equal Cartan (`oracle_crossengine`) |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality |
@@ -474,9 +476,9 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1450 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1402 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
-| `qpa` | 159 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `fast` | 1468 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 1434 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `qpa` | 164 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `m2` | 10 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
@@ -537,12 +539,12 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 800 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 471 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 915 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 159 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 814 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 486 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 929 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 164 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 10 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1786 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1834 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
 Collected 2026-08-05 (Plan 40, C6 homological-dimensions family; recounted from a live
@@ -595,6 +597,36 @@ verified precision and listed below as such.
   failure in the dedicated CI job under `QUIVERLAB_REQUIRE_M2=1`.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+- **Gentle / string subsystem (Plan 46):**
+  - For a **string** algebra the Butler–Ringel classification is complete **iff there
+    are no bands** (rep-finite). When bands exist the algebra is rep-infinite and
+    `enumerate_strings` returns a **length-capped sample** (`status="budget"`), never a
+    `status="complete"` list. (The plan's original 2-cycle `kQ/(ab,ba)` "band" example
+    is a self-injective Nakayama algebra — rep-**finite**, no band; any algebra on the
+    2-cycle quiver is Nakayama. The genuine minimal gentle band algebra is the
+    **Kronecker quiver**, band `a·b⁻¹`; both are pinned.)
+  - The **AG invariant is a DERIVED invariant, provably NOT complete** — completeness
+    needs the graded Opper–Plamondon–Schroll geometric data (out of scope). Never
+    claim it separates all derived-equivalence classes. Implemented via Asashiba's
+    blossoming form (Nakaoka `arXiv:1811.00775`), reproducing that paper's Example
+    2.15 verbatim; the convention-free self-cert is that permitted & forbidden threads
+    each partition `Q_1`, with `Σn = 2|Q_0|−|Q_1|` and `Σm = |Q_1|`.
+  - **String-τ is engine-arbitrated.** `string_tau`/`string_tau_minus` compute the
+    Butler–Ringel hook/cohook combinatorics as the primary method but VERIFY the
+    result against the trusted Plan-23/41 engine translate (`Module.tau`) on every
+    call; at a few AR-quiver boundary strings (the translate of a non-injective
+    projective at a source/sink — a structural jump, not a local arm move) the result
+    is completed from the engine translate. It never returns a walk whose module is
+    not `is_isomorphic` to the engine translate, and never a guessed convention.
+  - **QPA has NO string/band enumeration and NO AG surface** — the QPA crosschecks are
+    recognizer-level (`IsGentleAlgebra`/`IsSpecialBiserialAlgebra`) + module-level
+    (`decompose` of a sum of string modules); a standing `IsBoundGlobal` probe FAILS
+    if QPA ever ships one. **SBStrips / String-Applet are not installed and are not
+    oracles here** — the honest oracles are AAG 2008 (literature), our own
+    bar/CS/AR engines (cross-engine), and QPA recognizers.
+  - **Band modules need the eigenvalue in the field** (loud otherwise). The
+    `decompose`-based indecomposability spot-checks carry the `char ≤ dim` caveat, so
+    the string/band batteries run over **QQ / GF(32003)** (`char > dim`).
 - **CRS-2004 Example 2.20 does not reproduce** (Plan 29): the paper states
   `HH¹ = 0` for its Z₅-cycle monomial example, but the validated bar oracle
   robustly gives `dim HH¹ = 1` (an explicit surviving oriented 5-cycle; both
