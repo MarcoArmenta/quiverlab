@@ -17,6 +17,7 @@ from quiverlab.surfaces.triangulation import (
 )
 from quiverlab.surfaces.qp import jacobian_of, potential_of, quiver_of
 from quiverlab.surfaces.flip import certify_flip_mutation, flip
+from quiverlab.surfaces.block import surface_block
 
 __all__ = [
     "MarkedSurface",
@@ -30,4 +31,5 @@ __all__ = [
     "jacobian_of",
     "flip",
     "certify_flip_mutation",
+    "surface_block",
 ]
