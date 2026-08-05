@@ -328,6 +328,17 @@ class Module:
         from quiverlab.modules.resolution import cosyzygy
         return cosyzygy(self)
 
+    def igusa_todorov_phi(self, budget=512, bound=64):
+        """The Igusa-Todorov function phi(M) (Plan 40). Raises loudly on the decompose
+        char-caveat (char <= dim M over GF(p)); phi = pd for finite proj. dimension."""
+        from quiverlab.modules.homdims import igusa_todorov_phi
+        return igusa_todorov_phi(self, budget=budget, bound=bound)
+
+    def igusa_todorov_psi(self, budget=512, bound=64):
+        """The Igusa-Todorov function psi(M) = phi(M) + fpd(Omega^phi M) (Plan 40)."""
+        from quiverlab.modules.homdims import igusa_todorov_psi
+        return igusa_todorov_psi(self, budget=budget, bound=bound)
+
     # -- duality, transpose, AR translates (Plan 23; Plan 24 sides) -----------
     def dualize(self):
         """D M = Hom_k(M, k). Contravariant, exchanging the two sides over the SAME
