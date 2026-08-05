@@ -87,6 +87,7 @@ def graded_dims_script(A, top: int) -> str:
     gen_list = ",".join(gens)
     ideal = ",".join(rels) if rels else ""
     lines = [
+        'needsPackage "AssociativeAlgebras"',
         f"kk = ZZ/{p}",
         f"F = kk<|{gen_list}|>",
     ]
