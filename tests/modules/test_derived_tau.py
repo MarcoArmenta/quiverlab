@@ -81,3 +81,43 @@ def _chi_vec(Z, verts):
         for i, w in enumerate(verts):
             out[i] += (-1) ** k * dv.get(w, 0)
     return out
+
+
+def test_tau_db_minus_refuses_projective_input_loudly():
+    # Devil's-advocate MEDIUM (2026-08-05): a projective complex fed to
+    # tau_Db_minus previously returned a SILENT wrong answer (stalk) or a
+    # raw IndexError (with differentials). Both must refuse with the
+    # kind-tagged provenance guard.
+    import pytest
+    from quiverlab import GF, Quiver
+    from quiverlab.derived.tau import tau_Db, tau_Db_minus
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.modules.complexes import ChainComplex
+
+    A = Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(
+        relations=["a*b"], field=GF(5))
+    X_stalk = ChainComplex.from_projective_resolution(A.projective(2), length=3)
+    with pytest.raises(QuiverlabError, match="projective|PROJECTIVE"):
+        tau_Db_minus(X_stalk)
+    X_res = ChainComplex.from_projective_resolution(A.simple(2), length=6)
+    with pytest.raises(QuiverlabError, match="projective|PROJECTIVE"):
+        tau_Db_minus(X_res)
+    # the intended round-trip still works (injective-tagged output of tau_Db)
+    Y = tau_Db(ChainComplex.from_projective_resolution(A.simple(1), length=4))
+    tau_Db_minus(Y)     # no raise
+
+
+def test_end_algebra_of_complex_on_the_apr_tilt():
+    # Devil's-advocate LOW (2026-08-05): End-of-complex was only pinned on
+    # the coboundary-free stalk case; the APR tilt exercises multi-term
+    # chain-map composition + homotopy-rep canonicalization.
+    from quiverlab import GF, Quiver
+    from quiverlab.derived.tilting import end_algebra_of_complex
+    from quiverlab.modules.complexes import ChainComplex
+
+    A = Quiver([1, 2], {"a": (1, 2)}).algebra(field=GF(5))
+    T = [ChainComplex.stalk(A.projective(1), 0),
+         ChainComplex.from_projective_resolution(A.simple(1), length=2)]
+    E = end_algebra_of_complex(T)
+    assert E.dim == 3                     # = dim kA2 (Rickard: End ~ A^op)
+    E._validate()                          # associativity + unit, loud

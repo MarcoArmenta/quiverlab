@@ -141,6 +141,10 @@ class ChainComplex:
         prov = getattr(self, "_proj_vertices", None)
         if prov is not None:                    # X[k]_{n+k} = X_n: carry the vertex lists
             Y._proj_vertices = {n + k: list(vs) for n, vs in prov.items()}
+        tagged = getattr(self, "_term_provenance", None)
+        if tagged is not None:
+            Y._term_provenance = (tagged[0],
+                                  {n + k: list(vs) for n, vs in tagged[1].items()})
         return Y
 
     def truncate(self, lo, hi):
@@ -157,6 +161,16 @@ class ChainComplex:
         out = ChainComplex(new_terms, new_dmats, check=False)
         # brutal truncation of a perfect complex stays perfect
         out._perfect = self._perfect
+        # provenance survives, restricted to the window (devil's-advocate LOW)
+        prov = getattr(self, "_proj_vertices", None)
+        if prov is not None:
+            out._proj_vertices = {n: list(vs) for n, vs in prov.items()
+                                  if lo <= n <= hi}
+        tagged = getattr(self, "_term_provenance", None)
+        if tagged is not None:
+            out._term_provenance = (tagged[0], {n: list(vs)
+                                    for n, vs in tagged[1].items()
+                                    if lo <= n <= hi})
         return out
 
     # -- homology ------------------------------------------------------------ #

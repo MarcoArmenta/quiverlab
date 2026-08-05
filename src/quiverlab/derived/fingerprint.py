@@ -46,12 +46,15 @@ def derived_fingerprint(A, top=4):
 
 def compare_fingerprints(fa, fb):
     distinguished = []
+    incomparable = []
     for key in fa:
         va, vb = fa.get(key), fb.get(key)
         if isinstance(va, dict) or isinstance(vb, dict):   # a field errored one side
-            continue                                       # not comparable -> skip
+            incomparable.append(key)                        # surfaced, never silent
+            continue
         if va != vb:
             distinguished.append(key)
     verdict = ("distinguished" if distinguished
                else "not distinguished by these invariants")
-    return {"distinguished_by": distinguished, "verdict": verdict}
+    return {"distinguished_by": distinguished, "verdict": verdict,
+            "incomparable_fields": incomparable}

@@ -48,8 +48,25 @@ def _term_vertices(X, n, kind):
     ``decompose`` + ``identify_standard`` (loud on a wrong summand; char scope
     QQ/GF(32003) for ``decompose``). ``kind`` is ``"projective"`` (nu input) or
     ``"injective"`` (nu^- input)."""
+    # kind-tagged provenance first (devil's-advocate fix, 2026-08-05): the
+    # fast path must never let one kind masquerade as the other.
+    tagged = getattr(X, "_term_provenance", None)
+    if tagged is not None:
+        tkind, tmap = tagged
+        if tkind != kind:
+            raise QuiverlabError(
+                f"this complex's terms are certified {tkind}, not {kind} -- "
+                "tau_Db_minus consumes the INJECTIVE output shape of tau_Db; "
+                "feed a projective complex to tau_Db instead.")
+        if n in tmap:
+            return list(tmap[n])
     prov = getattr(X, "_proj_vertices", None)
     if prov is not None and n in prov:
+        if kind != "projective":
+            raise QuiverlabError(
+                "this complex carries PROJECTIVE term provenance but "
+                f"{kind} terms are required -- tau_Db_minus refuses projective "
+                "input loudly (the inverse translate needs injective terms).")
         return list(prov[n])
     from quiverlab.modules.decompose import decompose
     from quiverlab.modules.hom import identify_standard
@@ -136,7 +153,10 @@ def _apply_nu_perfect(X):
         if d and d[0] and n in terms and (n - 1) in terms:
             dmats[n] = _nu_map(d, vlists[n], vlists[n - 1], A, side)
     out = ChainComplex(terms, dmats, check=True)          # d.d=0 self-cert
-    out._proj_vertices = {n: list(vs) for n, vs in vlists.items()}
+    # nu's OUTPUT terms are INJECTIVES -- tag correctly (devil's-advocate fix;
+    # the old _proj_vertices label here was the masquerade that let a wrong
+    # kind ride the fast path)
+    out._term_provenance = ("injective", {n: list(vs) for n, vs in vlists.items()})
     return out
 
 
@@ -156,6 +176,7 @@ def _apply_nu_inverse_perfect(Y):
             dmats[n] = _nu_inverse_map(g, vlists[n], vlists[n - 1], A, side)
     out = ChainComplex(terms, dmats, check=True)
     out._proj_vertices = {n: list(vs) for n, vs in vlists.items()}
+    out._term_provenance = ("projective", {n: list(vs) for n, vs in vlists.items()})
     return out
 
 
