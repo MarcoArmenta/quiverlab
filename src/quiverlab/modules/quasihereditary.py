@@ -256,3 +256,89 @@ def is_quasi_hereditary(A, order=None):
     else:
         note = "; ".join(f"{i}: {per[i]['note']}" for i in order if per[i]["note"] != "ok")
     return QHReport(ok, order, gld, per, note)
+
+
+# --------------------------------------------------------------------------- #
+# Task D: the characteristic tilting module + Ringel dual.
+# --------------------------------------------------------------------------- #
+def characteristic_tilting(A, order=None):
+    """The Dlab-Ringel characteristic tilting module ``T = (+)_i T(i)`` for ``order``.
+    ``T(i)`` is Ringel's universal extension with ``Delta(i)`` as its bottom Delta-layer:
+    inductively low->high, extend ``Delta(i)`` by the lower ``T(j)`` (``rank(j) < rank(i)``)
+    through ``d_j = dim Ext^1(T(j), Delta(i))`` successive Baer extensions
+    (``0 -> Delta(i) -> T(i) -> (+)_j T(j)^{d_j} -> 0``, pushing the accumulated inclusion
+    forward -- the Bongartz idiom), which kills ``Ext^1(T(j), T(i))``. For ``kA_n`` natural
+    order (``Delta=S``) ``T = (+) I(v) = D(A)``; opposite order (``Delta=P``) ``T = A``.
+    SELF-CERTIFIED: ``Ext^1(T, Nabla(j)) = 0`` for all j AND ``is_tilting_module(T)``; a wrong
+    assembly fails the cert and raises loudly. The two certs inherit the P30/P44 char 0 /
+    char > dim caveat (Delta/Nabla themselves are char-clean)."""
+    from quiverlab.modules.ext import ext_dims
+    from quiverlab.modules.resolution import minimal_resolution
+    from quiverlab.modules.tilting import _ext1_cocycles, is_tilting_module
+    from quiverlab.modules.yoneda import baer_extension
+    dom = A.domain
+    ranks, order = _order_ranks(A, order)
+    deltas = standard_modules(A, order)
+    nablas = costandard_modules(A, order)
+    T = {}                                          # vertex -> T(i)
+    for i in order:                                 # low -> high
+        cur = deltas[i]
+        for j in order:
+            if ranks[j] >= ranks[i]:
+                continue                            # only lower T(j) absorb into T(i)
+            terms_j, dmats_j = minimal_resolution(T[j], 2)
+            xis = _ext1_cocycles(T[j], cur, terms_j, dmats_j)   # basis of Ext^1(T(j), cur)
+            if not xis:
+                continue
+            a_to_cur = lm.identity(cur.dim, dom)    # cur_initial -> cur (grows each Baer step)
+            for xi in xis:                          # universal extension, one class at a time
+                pushed = lm.matmul(a_to_cur, xi, dom)   # P_1(T(j)) -> cur
+                seq = baer_extension(T[j], cur, pushed, terms=terms_j, dmats=dmats_j)
+                iota = seq.maps[0]                  # cur -> E
+                a_to_cur = lm.matmul(iota, a_to_cur, dom)
+                cur = seq.middle
+        T[i] = cur
+    Tmod, _, _ = direct_sum(*[T[i] for i in order])
+    # SELF-CERTIFY the assembly (the arbiter; P37/P44 precedent).
+    for j in order:
+        if ext_dims(A, Tmod, nablas[j], 1)[1] != 0:
+            raise QuiverlabError(
+                f"characteristic_tilting: Ext^1(T, Nabla({j})) != 0 -- the universal "
+                f"extension assembly is wrong for order {order!r}",
+                hint="please report this presentation")
+    rep = is_tilting_module(Tmod)
+    if not rep.is_tilting:
+        raise QuiverlabError(
+            f"characteristic_tilting: T is not tilting (self-certificate failed: {rep.note})",
+            hint="the Delta set or the extension order is inconsistent")
+    Tmod.name = "T (char. tilting)"
+    return Tmod
+
+
+def _sc_opposite(E):
+    """The opposite of a structure-constant Algebra ``E`` (transposed structure constants),
+    for the presentation-less ``End(T)``. ``E^op.T[i][j] = E.T[j][i]``; the unit is
+    preserved. ``check=True`` self-certifies associativity/unit."""
+    from quiverlab.core.algebra import Algebra
+    dom = E.domain
+    m = E.dim
+    Top = [[list(E.T[j][i]) for j in range(m)] for i in range(m)]
+    return Algebra.from_structure_constants(Top, list(E.unit), field=dom, check=True)
+
+
+def ringel_dual(A, order=None):
+    """The Ringel dual ``R(A) = End_A(T)^op`` (``T`` the characteristic tilting module),
+    presented as ``kQ/I`` via P44 ``presented_form`` when char permits (char 0 / char > dim,
+    split blocks); loud degrade to the structure-constant form (a ``_ringel_note``)
+    otherwise -- never a silent wrong dual. By Ringel's theorem ``R(R(A))`` is Morita to
+    ``A`` (equal Cartan invariant factors -- the double-dual oracle)."""
+    from quiverlab.modules.endomorphism import end_algebra
+    T = characteristic_tilting(A, order)
+    R = _sc_opposite(end_algebra(T))                # End_A(T)^op (structure-constant)
+    try:
+        from quiverlab.core.basic import presented_form
+        return presented_form(R)                    # kQ/I (char 0 / char > dim, split blocks)
+    except QuiverlabError as exc:
+        R._ringel_note = ("Ringel dual returned in structure-constant form: presented_form "
+                          f"refused ({exc})")
+        return R
