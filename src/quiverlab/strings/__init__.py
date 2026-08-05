@@ -14,6 +14,7 @@ Public surface (reach via ``import quiverlab`` or ``quiverlab.strings``):
                 ``AGInvariant``.
   - block:      ``strings_block``.
 """
+from quiverlab.strings.ar_strings import string_tau, string_tau_minus
 from quiverlab.strings.modules import band_module, string_module
 from quiverlab.strings.walks import (StringCensus, enumerate_strings, find_bands,
                                      invert, is_valid_walk, letter_source,
@@ -23,4 +24,5 @@ __all__ = [
     "StringCensus", "enumerate_strings", "find_bands", "invert", "is_valid_walk",
     "letter_source", "letter_target", "string_signs",
     "band_module", "string_module",
+    "string_tau", "string_tau_minus",
 ]
