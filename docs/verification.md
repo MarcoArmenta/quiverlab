@@ -358,6 +358,38 @@ out of QPA scope, and raise loudly). Everything below is therefore covered by a
 | **The Koszul verdict itself** (Plan 27 — QPA 1.37 has no `IsKoszul`/`KoszulDual`, confirmed by an exhaustive `NamesGVars()` sweep) | the G-quadratic certifier (Priddy PBW: confluent length-2-tip reduction system ⇒ Koszul) plus the generated-in-degree-1 falsifier and the Fröberg matrix identity `P(t)·C_A(−t)=I`; QPA validates every INPUT to the verdict — graded Ext dims and minimal-generator degrees (`ExtAlgebraGenerators`), quadraticity (`IsQuadraticIdeal`), and the quadratic perp (`QuadraticPerpOfPathAlgebraIdeal`) |
 | Yoneda relations-by-degree (QPA exposes generator counts, not a presentation) | theory battery: `E(k[x]/x²)=k[y]`, `E(k[x]/xⁿ)=k[y,z]/(y²)` (char-independent, pinned over GF(2)/GF(3)/GF(32003)/char 0), hereditary `E=kQ/J²` with `as_algebra()` round-trip, rad²=0 `E=kQ` path counts, quantum CI `dim Eⁿ=n+1` (= the CS chain count), commutative square `E≅A` self-hosting; the monomial Anick chain-count gate; byte-reproducible lift products (Plan-17-style canonicalization) |
 
+### Live Macaulay2 cross-check
+
+`quiverlab.m2.crosscheck` (`src/quiverlab/m2/`) drives **Macaulay2** — a
+genuinely different computer-algebra system — to recompute two things
+independently and refuses to silently disagree (the same
+`CrosscheckReport.assert_agree()` container the QPA bridge uses). It is the
+**fifth oracle class** (`-m m2`), external and independent like `-m qpa`:
+
+- **Single-vertex graded dimensions** of `kQ/I` over `GF(p)` via M2's
+  `AssociativeAlgebras` package — an independent **noncommutative Gröbner (F4)**
+  engine. The script builds `kk<|x,y,…|>/(rels)` and reads
+  `dim_k B_n = numgens source ncBasis(n, B)` for `n = 0..top`; our side is the
+  Hilbert data of the same algebra from its own reduction-system tips
+  (`modules/koszul::_algebra_graded_matrices`). Because M2's Gröbner engine is
+  written and maintained entirely separately from ours, an agreement is a
+  cross-implementation check of the whole tip/normal-form stack.
+- **Commutative Ext dimensions** — for a commutative example
+  `k[x,y]/(relations)` (the presentation must carry the explicit commutator,
+  checked textually and refused loudly otherwise), M2's `freeResolution` of the
+  residue field over `ZZ/p[x,y]/(relations)` gives the graded Betti numbers
+  `rank C_n`, compared against `A.ext_algebra(top).graded_dims_through(top)` —
+  a fully independent homological route.
+
+The transport is a **subprocess**, not an in-process library: each call writes
+the script to a temp file and runs `M2 --script file`, parsing sentinel lines
+`<<QL>> n v` back through exact-integer parsing (no floats cross the boundary).
+Version policy: any Macaulay2 `≥ 1.24` with the bundled `AssociativeAlgebras` +
+`Complexes` packages; the CI job pins the Ubuntu PPA build and fails (never
+skips) when M2 is absent under `QUIVERLAB_REQUIRE_M2=1`. M2 sees **no**
+multi-vertex algebra and **no** Hochschild anything — those requests are refused
+loudly (see [Honest scope](#honest-scope)).
+
 ---
 
 ## Other structural gates
@@ -525,6 +557,14 @@ verified precision and listed below as such.
   silently skipped: the dedicated job makes an absent QPA a hard failure, and the
   frozen-value validation (`test_qpa_reference_validation.py`) runs in every matrix
   cell as the always-on stand-in.
+- **Macaulay2 cannot see multi-vertex algebras or Hochschild anything** (Plan 36) —
+  its `AssociativeAlgebras` package has no quiver / vertex-idempotent type, so the M2
+  bridge is single-vertex `kQ/I` graded dimensions plus commutative-example Ext only;
+  multi-vertex and every Hochschild quantity stay with QPA + the theory oracles. The
+  bridge **refuses those inputs loudly** (multi-vertex and any non-`{graded_dims,
+  commutative_ext}` subject raise `QuiverlabError`), never silently narrows scope. The
+  live M2 bucket (`-m m2`) skips cleanly without a local Macaulay2 and is a hard
+  failure in the dedicated CI job under `QUIVERLAB_REQUIRE_M2=1`.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
 - **CRS-2004 Example 2.20 does not reproduce** (Plan 29): the paper states
