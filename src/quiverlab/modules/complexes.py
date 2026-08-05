@@ -476,3 +476,142 @@ def identity_chain_map(X):
     dom = X.domain
     comps = {n: lm.identity(X.term(n).dim, dom) for n in X.degrees()}
     return ChainMap(X, X, comps, check=True)
+
+
+# --------------------------------------------------------------------------- #
+# Hom total complex (hyper-Hom) for a perfect source.
+#
+# SIGN / INDEX CONVENTION (Weibel, "An Introduction to Homological Algebra",
+# 2.7.4) -- documented verbatim:
+#
+#   Hom^n(X, Y) = (+)_p Hom_A(X_p, Y_{p-n})
+#   (delta f)_p = d^Y_{p-n} . f_p  -  (-1)^n . f_{p-1} . d^X_p              (*)
+#
+# delta: Hom^n -> Hom^{n+1}. The two blocks of (*) land, for a basis element
+# phi in Hom(X_{p0}, Y_{p0-n}), in:
+#   * block p0   of Hom^{n+1}: value  d^Y_{p0-n} . phi   (into Y_{p0-n-1});
+#   * block p0+1 of Hom^{n+1}: value  -(-1)^n . phi . d^X_{p0+1}.
+#
+# HONEST NOTE ON THE SIGN (verified, Plan-39 implementation session): with the
+# alternating coefficient c_n = eps.(-1)^n on the second block, (delta^2 f)_p
+# collects d^Y.d^Y.f_p (=0), f_{p-2}.d^X.d^X (=0), and a single cross term with
+# coefficient c_n + c_{n+1} = eps.(-1)^n + eps.(-1)^{n+1} = 0. This vanishes for
+# BOTH eps = -1 (Weibel) and eps = +1: the two choices give ISOMORPHIC cochain
+# complexes (a degreewise +/-1 rescaling conjugates one to the other), hence the
+# SAME homology dimensions. So the arbiter `test_resolution_hyper_hom_computes_ext`
+# and the delta.delta = 0 self-check below are BOTH sign-independent -- they pin
+# the block indexing and module-map placement, not the sign. The sign is a genuine
+# convention; we take Weibel's eps = -1. (Were the sign ever to matter -- e.g. for
+# a signed representative, not a dimension -- flip eps here once, never per degree.)
+# For a PERFECT X, H^n(Hom^.) computes Hom_{D^b(mod A)}(X, Y[n]) (hyper-Ext); with
+# Y = stalk(N) and X = a projective resolution of M this is Ext^n_A(M, N).
+# --------------------------------------------------------------------------- #
+def _flatten(mat):
+    return [x for row in mat for x in row]
+
+
+def _hom_total_blocks(X, Y, n, dom):
+    """Ordered block basis of ``Hom^n(X, Y) = (+)_p Hom_A(X_p, Y_{p-n})``.
+    Returns ``(blocks, total_dim)``; each block is
+    ``{p, q, homs, offset, count}`` with ``homs`` the ``hom_space`` basis
+    (``Y_q.dim x X_p.dim`` matrices) and ``q = p - n``."""
+    from quiverlab.modules.hom import hom_space
+    blocks, off = [], 0
+    for p in X.degrees():
+        Xp = X.term(p)
+        q = p - n
+        Yq = Y.term(q)
+        if Xp.dim == 0 or Yq.dim == 0:
+            continue
+        H = hom_space(Xp, Yq)
+        if not H:
+            continue
+        blocks.append({"p": p, "q": q, "homs": H, "offset": off, "count": len(H)})
+        off += len(H)
+    return blocks, off
+
+
+def _place_hom(colvec, tgt_by_p, p, A, dom):
+    """Write the coordinates of the module map ``A`` into the ``p``-block of a
+    Hom^{n+1} column, solving against that block's ``hom_space`` basis."""
+    if not A or all(dom.is_zero(x) for row in A for x in row):
+        return
+    entry = tgt_by_p.get(p)
+    if entry is None:
+        raise QuiverlabError(
+            "hyper-Hom: a differential image landed outside the Hom total space "
+            "(block indexing bug)")
+    b, flat = entry
+    coords = lm.solve_columns(flat, lm.cols_to_matrix([_flatten(A)]), dom)
+    if coords is None:
+        raise QuiverlabError(
+            "hyper-Hom: a differential image is not expressible in the target Hom "
+            "block basis (not a module map)")
+    base = b["offset"]
+    for i, c in enumerate(coords[0]):
+        colvec[base + i] = dom.add(colvec[base + i], c)
+
+
+def _delta_total(X, Y, n, dom):
+    """Matrix of ``delta^n : Hom^n -> Hom^{n+1}`` in the ordered block bases
+    (rows = ``dim Hom^{n+1}``, cols = ``dim Hom^n``), by convention (*) above.
+    Returns ``(matrix, dim Hom^n, dim Hom^{n+1})``."""
+    src_blocks, src_dim = _hom_total_blocks(X, Y, n, dom)
+    tgt_blocks, tgt_dim = _hom_total_blocks(X, Y, n + 1, dom)
+    tgt_by_p = {}
+    for b in tgt_blocks:
+        flat = lm.cols_to_matrix([_flatten(h) for h in b["homs"]])
+        tgt_by_p[b["p"]] = (b, flat)
+    neg_sign = dom.neg(dom.one()) if n % 2 == 0 else dom.one()   # -(-1)^n
+    cols = []
+    for b in src_blocks:
+        p0, q0 = b["p"], b["q"]
+        dY = Y._dmats.get(q0)                     # Y_{q0} -> Y_{q0-1}
+        dX = X._dmats.get(p0 + 1)                 # X_{p0+1} -> X_{p0}
+        for phi in b["homs"]:
+            colvec = [dom.zero()] * tgt_dim
+            if dY and dY[0]:
+                _place_hom(colvec, tgt_by_p, p0, lm.matmul(dY, phi, dom), dom)
+            if dX and dX[0]:
+                A2 = lm.matmul(phi, dX, dom)
+                A2 = [[dom.mul(neg_sign, x) for x in row] for row in A2]
+                _place_hom(colvec, tgt_by_p, p0 + 1, A2, dom)
+            cols.append(colvec)
+    mat = lm.cols_to_matrix(cols) if cols else lm.zeros(tgt_dim, 0, dom)
+    return mat, src_dim, tgt_dim
+
+
+def hyper_hom_dims(X, Y, lo, hi):
+    """``{n: dim H^n(Hom^.(X, Y))}`` for ``n`` in ``lo..hi``, using convention (*).
+
+    For ``X`` PERFECT (a bounded complex of projectives) this is
+    ``Hom_{D^b(mod A)}(X, Y[n])`` (hyper-Ext); with ``Y = stalk(N)`` and ``X`` a
+    projective resolution of ``M`` it is ``Ext^n_A(M, N)`` (the pinned arbiter).
+    Raises loudly if ``X`` is not certified perfect (``hyper_ext_dims`` lifts this
+    to any bounded source via a projective model)."""
+    if not X.is_perfect():
+        raise QuiverlabError(
+            "hyper_hom_dims: X must be a perfect complex (a bounded complex of "
+            "projectives). Use hyper_ext_dims(X, Y, ...) for a general source, "
+            "which resolves X to a certified projective model first.")
+    dom = X.domain
+    deltas = {m: _delta_total(X, Y, m, dom) for m in range(lo - 1, hi + 1)}
+    # self-certificate: delta^m . delta^{m-1} == 0. Certifies the block indexing /
+    # module-map placement (a mis-indexed block would leave it nonzero); it is
+    # sign-independent (see the module header note), so it never flags the sign.
+    for m in range(lo, hi + 1):
+        dm, dm1 = deltas[m][0], deltas[m - 1][0]
+        if dm and dm[0] and dm1 and dm1[0]:
+            comp = lm.matmul(dm, dm1, dom)
+            if comp and any(not dom.is_zero(x) for row in comp for x in row):
+                raise QuiverlabError(
+                    "hyper-Hom: delta.delta != 0 -- the Hom total-complex construction "
+                    "is inconsistent (block indexing; see the module header)")
+    out = {}
+    for n in range(lo, hi + 1):
+        cn = deltas[n][1]                          # dim Hom^n
+        rn = lm.mat_rank(deltas[n][0], dom) if (deltas[n][0] and deltas[n][0][0]) else 0
+        rprev = (lm.mat_rank(deltas[n - 1][0], dom)
+                 if (deltas[n - 1][0] and deltas[n - 1][0][0]) else 0)
+        out[n] = cn - rn - rprev
+    return out
