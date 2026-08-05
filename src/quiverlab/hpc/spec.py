@@ -1550,10 +1550,15 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            "latex": r"\underline{\dim}\, M = "
                                     + _dv_latex(M.dimension_vector())}, kind)
     if kind == "rad_top_soc":
+        # "series" is the Loewy (radical) series top-to-bottom (Plan 37): each entry a
+        # str-keyed composition-factor multiplicity dict (M.loewy_layers()), so the
+        # report and both GUIs render the stacked Loewy diagram. Mirrors the Pyodide
+        # runner byte-for-byte.
         return _with_refs({"kind": "rad_top_soc", "side": M.side,
                            "radical": _mod_repr(M.radical()),
                            "top": _mod_repr(M.top()),
-                           "socle": _mod_repr(M.socle())}, kind)
+                           "socle": _mod_repr(M.socle()),
+                           "series": [dict(layer) for layer in M.loewy_layers()]}, kind)
     if kind in ("tau", "tau_minus"):
         # tau of a projective (dually tau^- of an injective) IS zero -- the shared
         # helper says so explicitly; renderers typeset block.latex (mirrors the

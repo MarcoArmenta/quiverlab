@@ -170,6 +170,21 @@ def is_indecomposable_script(algebra, dimvec_list, arrow_matrices) -> str:
         module_decl(algebra, dimvec_list, arrow_matrices, "M")
 
 
+def hom_glue_script(algebra, dvM, arrM, dvN, arrN) -> str:
+    """Bind ``MM``, ``NN`` (graded forms) and ``homs := HomOverAlgebra(MM, NN)`` so the
+    caller reads ``Length(homs)`` (= dim Hom_A(M, N)) and, for the canonical hom
+    ``homs[1]``, kernel/image/cokernel dimension vectors via QPA Ch. 7's
+    ``KernelInclusion`` / ``ImageInclusion`` / ``CoKernelProjection`` (Plan 37 C1
+    hom-glue battery). Each read is its OWN trailing statement -- ``session.run`` evals
+    one statement per line -- so callers append e.g.
+    ``\\nf := homs[1];;\\nDimensionVector(Source(KernelInclusion(f)));``."""
+    base = quiver_and_algebra_script(algebra)
+    base += "\n" + module_decl(algebra, dvM, arrM, "MM")
+    base += "\n" + module_decl(algebra, dvN, arrN, "NN")
+    base += "\nhoms := HomOverAlgebra(MM, NN);;"
+    return base
+
+
 def ext_algebra_generators_script(algebra, top: int) -> str:
     """Bind ``info := ExtAlgebraGenerators(M, top)`` for ``M = (+) SimpleModules(A)``
     (Plan 27 Yoneda-algebra crosscheck). QPA's ``ExtAlgebraGenerators`` returns a

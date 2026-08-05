@@ -94,6 +94,16 @@ never hide behind one:
     deleting ``resolved`` from the ext/tor blocks ONLY, so no pre-existing content
     moved. ``canonical_key`` is request-derived and UNCHANGED. (Only ``module_ext``
     computes ext; no golden computes tor.)
+  * 2026-08-05 (``module_basic`` re-freeze, Plan 37 C1 -- Loewy series): the
+    ``rad_top_soc`` block gained the additive ``series`` key (the Loewy / radical
+    layers top-to-bottom, ``Module.loewy_layers()`` -- a list of str-keyed
+    composition-factor multiplicity dicts, so the report and both GUIs render the
+    stacked Loewy diagram). Gated re-freeze, scoped BY KEY: the regenerated blob was
+    asserted byte-identical to the old one after DELETING the ``series`` key from the
+    ``rad_top_soc`` block, so no pre-existing content moved. ``series`` is a NEW key
+    on ``rad_top_soc`` blocks ONLY. The ``canonical_key`` is request-derived and
+    UNCHANGED (no new request fields). Only ``module_basic`` carries a ``rad_top_soc``
+    block; the other six entries are untouched.
   * 2026-07-31 (ALL entries re-freeze, Marco ADDENDUM 2 -- json_guide): the result
     envelope gained ONE additive top-level key, ``json_guide`` -- a per-computation list
     of ``{object, path, note}`` recipes for recovering every computed object from

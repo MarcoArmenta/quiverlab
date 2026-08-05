@@ -209,6 +209,96 @@ class Module:
             word = tuple(label.split("*"))
             self.action[label] = self._action_of_word(word)
 
+    def identity_hom(self):
+        """The identity homomorphism id_M as a ModuleHom (Plan 37 / C1)."""
+        from quiverlab.modules import linalg_mod as lm
+        from quiverlab.modules.morphism import ModuleHom
+        return ModuleHom(self, self, lm.identity(self.dim, self.domain), check=False)
+
+    def end_algebra(self):
+        """End_A(M) as a structure-constant Algebra (Plan 37 / C1)."""
+        from quiverlab.modules.endomorphism import end_algebra
+        return end_algebra(self)
+
+    # -- covers / envelopes as maps; radical & socle series (Plan 37 / C1) ----
+    def projective_cover_hom(self):
+        """The projective cover ``P(M) ->> M`` as a ModuleHom (epi, superfluous
+        kernel ker ⊆ rad P(M)) (Plan 37)."""
+        from quiverlab.modules.morphism import ModuleHom
+        from quiverlab.modules.resolution import projective_cover
+        Q0, d0, _ = projective_cover(self)
+        return ModuleHom(Q0, self, d0, check=False)
+
+    def injective_envelope_hom(self):
+        """The injective envelope ``M >-> E(M)`` as a ModuleHom (mono, essential:
+        soc E(M) = soc M) (Plan 37)."""
+        from quiverlab.modules.injective import injective_resolution
+        from quiverlab.modules.morphism import ModuleHom
+        res = injective_resolution(self, 1)
+        E0 = res.terms[0]
+        iota = res.differential(0)              # iota: M -> E^0 (dual bases)
+        return ModuleHom(self, E0, iota, check=False)
+
+    def radical_series(self):
+        """The descending radical (lower Loewy) series ``[M, rad M, rad^2 M, ..., 0]``,
+        each term a Module, ending at the zero module (Plan 37)."""
+        series = [self]
+        cur = self
+        while cur.dim > 0:
+            r = cur.radical()
+            if r.dim >= cur.dim:                # f.d.: the radical strictly shrinks
+                break
+            series.append(r)
+            cur = r
+        return series
+
+    def socle_series(self):
+        """The ascending socle (upper Loewy) series ``[0, soc M, soc^2 M, ..., M]``,
+        each term a submodule of M (soc^{k+1}/soc^k = soc(M/soc^k)) (Plan 37)."""
+        from quiverlab.modules import linalg_mod as lm
+        from quiverlab.modules.radtopsoc import submodule
+        from quiverlab.modules.yoneda import _quotient_with_maps
+        dom = self.domain
+        sub_cols = []
+        socs = [submodule(self, [], name=f"soc^0 {self.name}")]
+        k = 0
+        while len(sub_cols) < self.dim:
+            _Q, _proj, lift = _quotient_with_maps(
+                self, sub_cols, dom, name=f"{self.name}/soc^{k}")
+            soc_cols_Q = _socle_columns(_Q, dom)
+            if not soc_cols_Q:                  # a nonzero module has a nonzero socle
+                break
+            lifted = [lm.matvec(lift, c, dom) for c in soc_cols_Q]
+            sub_cols = [list(c) for c in sub_cols] + lifted
+            k += 1
+            socs.append(submodule(self, sub_cols, name=f"soc^{k} {self.name}"))
+        return socs
+
+    def loewy_layers(self):
+        """The Loewy (radical) layers, top to bottom: ``[top(M), top(rad M),
+        top(rad^2 M), ...]`` as str-keyed, vertex-sorted composition-factor
+        multiplicity dicts (Plan 37). This is the public home of the logic
+        ``trace.modules._radical_layers`` used to carry; the report renderers
+        delegate here byte-for-byte."""
+        layers = []
+        cur = self
+        while cur.dim > 0:
+            layers.append(_normalize_dv(cur.top().dimension_vector()))
+            r = cur.radical()
+            if r.dim >= cur.dim:                # radical strictly shrinks for f.d.
+                break
+            cur = r
+        return layers
+
+    def composition_factors(self):
+        """Total composition-factor multiplicities of M as a str-keyed dict
+        (summed Loewy layers) (Plan 37)."""
+        total = {}
+        for layer in self.loewy_layers():
+            for k, v in layer.items():
+                total[k] = total.get(k, 0) + v
+        return total
+
     def radical(self):
         from quiverlab.modules.radtopsoc import radical as _r
         return _r(self)
@@ -298,6 +388,29 @@ def _coerce_matrix(mat, dom):
     as a no-op or, for native non-int/Fraction elements, unchanged."""
     return [[dom.coerce(x) if isinstance(x, (int, Fraction)) else x for x in row]
             for row in mat]
+
+
+def _normalize_dv(dimvec):
+    """A dimension vector as a str-keyed, vertex-sorted dict of ints. Byte-identical
+    to trace.modules._dv, which now delegates the Loewy layers here (Plan 37)."""
+    return {str(v): int(n)
+            for v, n in sorted(dimvec.items(), key=lambda kv: str(kv[0]))}
+
+
+def _socle_columns(Q, dom):
+    """The socle basis columns of a module Q in Q's own coordinates: the intersection
+    over the arrows of ker(action[arrow]) (mirrors radtopsoc.socle, returning the
+    spanning columns rather than the submodule so socle_series can lift them)."""
+    from quiverlab.modules.radtopsoc import _intersect
+    arrows = list(Q.algebra.quiver.arrows)
+    if not arrows:                              # semisimple: soc Q = Q
+        ident = lm.identity(Q.dim, dom)
+        return [lm.col(ident, j) for j in range(Q.dim)]
+    inter = None
+    for a in arrows:
+        ker = lm.kernel_columns(Q.action[a], dom)
+        inter = ker if inter is None else _intersect(inter, ker, dom)
+    return inter or []
 
 
 def _add(A, B, dom):

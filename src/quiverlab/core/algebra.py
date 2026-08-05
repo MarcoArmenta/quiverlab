@@ -407,6 +407,12 @@ class Algebra:
         from quiverlab.modules.hom import hom_dim
         return hom_dim(M, N)
 
+    def hom_basis(self, M, N):
+        """A basis of Hom_A(M, N) as validated ModuleHom objects (Plan 37 / C1).
+        `A.hom(M, N)` is `len(A.hom_basis(M, N))`."""
+        from quiverlab.modules.morphism import hom_basis
+        return hom_basis(M, N)
+
     def ext(self, M, N, n):
         """dim Ext^n_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.ext import ext

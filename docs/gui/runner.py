@@ -450,9 +450,12 @@ def _module_block(name, top):
         return {"kind": name, "side": M.side, "citations": cites, **_mod_view(M),
                 "latex": r"\underline{\dim}\, M = " + _dv_latex(M.dimension_vector())}
     if name == "rad_top_soc":
+        # "series" = the Loewy (radical) series top-to-bottom (Plan 37), byte-identical
+        # to the hpc spec core so the draw page and the report/CLI agree.
         return {"kind": name, "side": M.side, "citations": cites,
                 "radical": _mod_repr(M.radical()), "top": _mod_repr(M.top()),
-                "socle": _mod_repr(M.socle())}
+                "socle": _mod_repr(M.socle()),
+                "series": [dict(layer) for layer in M.loewy_layers()]}
     if name in ("tau", "tau_minus"):
         # The translate ships as a full representation ({dims, maps}) -- mirrors the
         # hpc spec core, so both dispatches carry the AR translate's per-arrow

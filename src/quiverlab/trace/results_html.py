@@ -333,9 +333,26 @@ def _rad_top_soc_html(b):
     if any(v.get("display_only") for _, v in trio):
         out.append("<p class='ql-note'>display only — entries lie outside the "
                    "integer/fraction input grammar (e.g. GF(p^n) elements).</p>")
+    out.extend(_loewy_series_html(b.get("series") or []))
     for label, view in trio:
         out.extend(_maps_html(label, view))
     return out
+
+
+def _loewy_series_html(series):
+    """The Loewy (radical) series as a stacked diagram, one row per layer top to
+    bottom, factors as S_v^m (Plan 37). Empty series => nothing rendered."""
+    if not series:
+        return []
+    rows = []
+    for i, layer in enumerate(series):
+        factors = " ⊕ ".join(
+            ("S_%s" % v if m == 1 else "S_%s^%d" % (v, m))
+            for v, m in sorted(layer.items()) if m)
+        rows.append("<tr><th>layer %d</th><td>%s</td></tr>"
+                    % (i + 1, _esc(factors or "0")))
+    return ["<p class='ql-note'>Loewy (radical) series, top to bottom:</p>",
+            '<table class="ql-loewy">%s</table>' % "".join(rows)]
 
 
 def _tau_html(kind, b):
