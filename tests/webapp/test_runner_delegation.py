@@ -132,7 +132,7 @@ never hide behind one:
     Pure addition: the seven existing entries were verified byte-identical BEFORE the
     new one was appended (the delegation test passed on all seven unchanged). Its
     ``canonical_key`` is request-derived; the ``result_json`` was frozen from the
-    server runner, and the Plan-40 cross-runner test asserts the Pyodide twin agrees."""
+    server runner, and the Plan-40 cross-runner test asserts the Pyodide twin agrees.
   * 2026-08-05 (Plan 42, NEW golden ``ss_hochschild_dualnumbers``): the
     ``ss_hochschild`` compute kind -- the Hochschild ``(b, B)`` spectral-sequence block
     (E_inf page dims + abutment == HC + convergence prose) on ``k[x]/(x^2)`` over
@@ -141,7 +141,7 @@ never hide behind one:
     and the ``canonical_key`` is request-derived (no new request fields -- an
     algebra-only range kind)."""
 import json
-import pathlib
+import pathlib"""
 
 import pytest
 
