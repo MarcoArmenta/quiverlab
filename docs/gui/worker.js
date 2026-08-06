@@ -10,6 +10,7 @@ self.onmessage = function (e) {
   var job = m.cmd === "init" ? init(m.manifest)
           : m.cmd === "run" ? run(m.request, m.factor)
           : m.cmd === "probe" ? probe(m)
+          : m.cmd === "random" ? random(m)
           : m.cmd === "calibrate" ? calibrate()
           : Promise.reject(new Error("unknown cmd " + m.cmd));
   job.catch(function (err) {
@@ -43,6 +44,24 @@ async function probe(m) {
     if (est.ok) data = Object.assign({}, built, { eta: est });
   }
   self.postMessage({ type: "probe", seq: m.seq, data: data });
+}
+
+// "Fill at random" (GitHub #3): draw exact random arrow matrices in-engine
+// (relation-aware rejection sampling). `which` ("module"/"target") is echoed so
+// gui.js fills the right grid; a refusal (char-0/budget) rides the `error` field.
+async function random(m) {
+  var out = JSON.parse(runner.random_module(JSON.stringify(m.request)));
+  if (out.maps) {
+    self.postMessage({ type: "random", which: m.which, maps: out.maps,
+                       seed: out.seed, tries: out.tries });
+  } else if (out.error) {
+    self.postMessage({ type: "random", which: m.which,
+                       error: typeof out.error === "string" ? out.error
+                              : (out.error.type + ": " + out.error.message),
+                       tries: out.tries });
+  } else {
+    self.postMessage({ type: "random", which: m.which, error: "random draw failed" });
+  }
 }
 
 function remainingEta(breakdown, doneCount, factor) {

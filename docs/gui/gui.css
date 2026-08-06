@@ -39,6 +39,13 @@
   background: var(--md-code-bg-color); color: var(--md-default-fg-color--light); }
 #qlgui-status.ok  { color: #2e7d32; }
 #qlgui-status.err { color: #c62828; }
+/* GitHub #2/#3: the relation-preset + random-fill affordances reuse the
+   secondary-button and hint styles; these rules only keep their inline status
+   text vertically centred beside the buttons and give the presets a touch of
+   left spacing from the relations box. */
+#qlgui-rel-status { margin: 0; align-self: center; }
+#qlgui-rel-rad2, #qlgui-rel-comm { margin-left: 4px; }
+#qlgui .qlgui-mrow .qlgui-hint, #qlgui .qlgui-row > .qlgui-hint { align-self: center; }
 #qlgui-results .qlgui-block { border-left: 3px solid var(--md-primary-fg-color);
   padding: 4px 12px; margin: 10px 0; }
 #qlgui-results .qlgui-error { border-left-color: #c62828; color: #c62828; }

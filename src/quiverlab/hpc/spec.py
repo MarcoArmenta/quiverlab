@@ -22,6 +22,7 @@ from __future__ import annotations
 import inspect
 import json
 import logging
+import random
 import re
 import sys
 import time
@@ -1409,6 +1410,91 @@ def _build_module(algebra, mspec, name):
         return builder(v, side=mspec.side)
     dimvec, action = _full_matrices(algebra, mspec)
     return algebra.module(dimvec, action, side=mspec.side, name=name)
+
+
+# --------------------------------------------------------------------------- #
+# Random representations (GitHub #3, Samuel Leblanc). Shared by the webapp
+# /api/gui/random-module route and, byte-identically, by the Pyodide twin
+# docs/gui/runner.py::random_module -- SAME draw order (sorted arrow names,
+# row-major) under random.Random(seed), so both tiers agree for a fixed seed.
+# --------------------------------------------------------------------------- #
+def random_module(algebra, dims, side: str = "right", seed: int = 0,
+                  tries: int = 200, max_total_dim: int | None = _MAX_MODULE_DIM):
+    """Draw a random representation of ``algebra`` with dimension vector ``dims``.
+
+    Randomness is EXACT, never floating point: over GF(p) each entry is uniform in
+    ``0..p-1`` (the prime subfield -- the only field elements the exact-entry
+    grammar can name; for GF(p^n) with n > 1 that is an honest prime-subfield slice
+    of all representations, not the full variety). Over a characteristic-0 field
+    entries are small integers in ``-5..5``.
+
+    With relations the draw is REJECTION-SAMPLED: each candidate is built through
+    the library's checked ``A.module`` and the first that satisfies the relations is
+    returned. This is an honest semi-decision -- it terminates only where the
+    relation locus has positive density over the finite field: on success it
+    returns the module; after ``tries`` failures it returns ``{"error": "budget"}``.
+    Over a characteristic-0 field WITH relations a random point never satisfies the
+    relations exactly, so it refuses up front with ``{"error": "char0"}`` (the
+    issue's own analysis).
+
+    Returns ``{"maps": {arrow: [[int]]}, "seed": seed, "tries": k}`` on success, or
+    ``{"error": ...}``. ``maps`` is keyed and shaped exactly as the no-code module
+    editor's blocks (``dim[target] x dim[source]`` on the side's representation
+    quiver), so it drops straight into ``A.module`` and the grid editor.
+    """
+    if side not in SIDES:
+        raise ComputeError("SchemaError", "random module: side must be 'right' or 'left'")
+    if not isinstance(seed, int) or isinstance(seed, bool):
+        raise ComputeError("SchemaError", "random module: seed must be an integer")
+    if not isinstance(tries, int) or isinstance(tries, bool) or tries < 1:
+        raise ComputeError("SchemaError", "random module: tries must be a positive integer")
+    A = build_algebra(algebra)
+    rep = A if side == "right" else A.opposite()
+    by_str = {str(v): v for v in rep.quiver.vertices}
+    dimvec = {v: 0 for v in rep.quiver.vertices}
+    total = 0
+    for key, nv in (dims or {}).items():
+        if str(key) not in by_str:
+            raise ComputeError("SchemaError",
+                               f"random module: no vertex {key!r} in the algebra")
+        if not isinstance(nv, int) or isinstance(nv, bool) or nv < 0:
+            raise ComputeError("SchemaError",
+                               f"random module: dim[{key!r}] must be a non-negative integer")
+        dimvec[by_str[str(key)]] = nv
+        total += nv
+    if max_total_dim is not None and total > max_total_dim:
+        raise ComputeError("ModuleTooLarge",
+                           f"random module: total dimension {total} exceeds the "
+                           f"{max_total_dim} cap")
+    char = A.domain.characteristic
+    has_rel = bool(A.relations)
+    if has_rel and char == 0:
+        return {"error": "char0"}
+    dims_str = {str(k): int(v) for k, v in (dims or {}).items()}
+    arrow_names = sorted(rep.quiver.arrows)
+
+    def _draw(rng):
+        maps = {}
+        for a in arrow_names:
+            rows = dimvec[rep.quiver.target(a)]
+            cols = dimvec[rep.quiver.source(a)]
+            if char:
+                maps[a] = [[rng.randrange(char) for _ in range(cols)]
+                           for _ in range(rows)]
+            else:
+                maps[a] = [[rng.randint(-5, 5) for _ in range(cols)]
+                           for _ in range(rows)]
+        return maps
+
+    rng = random.Random(seed)
+    for k in range(1, (1 if not has_rel else tries) + 1):
+        maps = _draw(rng)
+        try:
+            _build_module(A, ModuleSpec(dims=dims_str, maps=maps, side=side), "random")
+        except qerr.QuiverlabError:
+            continue                       # relation-violating draw: try again
+        return {"maps": maps, "seed": seed, "tries": k}
+    return {"error": "budget", "tries": tries}
 
 
 def _dv(dimvec) -> dict:

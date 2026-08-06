@@ -9,6 +9,7 @@ pinned by tests/gui/test_interface_freshness.py. quiverlab.engine.* is forbidden
 All public functions take and return JSON STRINGS (postMessage-friendly)."""
 import json
 import os
+import random
 import traceback
 from fractions import Fraction
 
@@ -24,6 +25,9 @@ MAX_DEGREE = 10
 # Depth to which projective dimension is probed before reporting "infinite"
 # (matches the library's injective_dimension(bound=32) default).
 _PD_BOUND = 32
+# Ceiling on a random module's total dimension -- mirrors spec.py::_MAX_MODULE_DIM
+# (the webapp module-block parse cap): each arrow's dense action is n x n cells.
+_MAX_RANDOM_MODULE_DIM = 2048
 
 # Module compute kinds (Plan 26; Plan 30 adds `tor`/`decompose`). `ext`/`tor` also
 # need a second module (`ext_target`/`tor_target`, the latter a LEFT A-module).
@@ -65,6 +69,35 @@ def _field_from_spec(spec):
     raise RequestError("unknown field kind %r (expected 'CC' or 'GF')" % (kind,))
 
 
+def _algebra_from_spec(alg):
+    """Build a quiverlab Algebra from a GUI ``algebra`` block (kind 'quiver').
+    Shared by :func:`run_build` and :func:`random_module`."""
+    kind = alg.get("kind")
+    if kind == "family":
+        raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
+                           "this GUI submits kind 'quiver' only")
+    if kind != "quiver":
+        raise RequestError("unknown algebra kind %r (expected 'quiver')" % (kind,))
+    vertices = alg.get("vertices")
+    if not (isinstance(vertices, list) and vertices
+            and all(isinstance(v, int) for v in vertices)):
+        raise RequestError("algebra.vertices must be a non-empty list of integers")
+    arrows = alg.get("arrows")
+    if not (isinstance(arrows, dict) and all(
+            isinstance(st, list) and len(st) == 2
+            and all(isinstance(x, int) for x in st)
+            for st in arrows.values())):
+        raise RequestError("algebra.arrows must map names to [source, target] pairs")
+    relations = alg.get("relations", [])
+    if not (isinstance(relations, list)
+            and all(isinstance(r, str) for r in relations)):
+        raise RequestError("algebra.relations must be a list of strings")
+    field = _field_from_spec(alg.get("field"))
+    Q = quiverlab.Quiver(vertices=vertices,
+                         arrows={k: (s, t) for k, (s, t) in arrows.items()})
+    return Q.algebra(relations=relations, field=field)
+
+
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
@@ -76,30 +109,8 @@ def run_build(request_json):
             raise RequestError("unsupported schema %r (this GUI speaks schema 1/2)"
                                % (req.get("schema"),))
         alg = req.get("algebra") or {}
-        kind = alg.get("kind")
-        if kind == "family":
-            raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
-                               "this GUI submits kind 'quiver' only")
-        if kind != "quiver":
-            raise RequestError("unknown algebra kind %r (expected 'quiver')" % (kind,))
-        vertices = alg.get("vertices")
-        if not (isinstance(vertices, list) and vertices
-                and all(isinstance(v, int) for v in vertices)):
-            raise RequestError("algebra.vertices must be a non-empty list of integers")
-        arrows = alg.get("arrows")
-        if not (isinstance(arrows, dict) and all(
-                isinstance(st, list) and len(st) == 2
-                and all(isinstance(x, int) for x in st)
-                for st in arrows.values())):
-            raise RequestError("algebra.arrows must map names to [source, target] pairs")
-        relations = alg.get("relations", [])
-        if not (isinstance(relations, list)
-                and all(isinstance(r, str) for r in relations)):
-            raise RequestError("algebra.relations must be a list of strings")
-        field = _field_from_spec(alg.get("field"))
-        Q = quiverlab.Quiver(vertices=vertices,
-                             arrows={k: (s, t) for k, (s, t) in arrows.items()})
-        A = Q.algebra(relations=relations, field=field)
+        A = _algebra_from_spec(alg)
+        vertices, arrows = alg.get("vertices"), alg.get("arrows")
         # Module blocks (Plan 26) ride alongside the algebra; the module itself is
         # built lazily in compute_one, so a relation-violating matrix surfaces as a
         # per-computation error (rendered on the page), never a build crash.
@@ -226,6 +237,82 @@ def _build_module(A, mspec, name):
         raise RequestError("module: no vertex %r in the algebra" % (v,))
     dimvec, action = _full_matrices(A, mspec)
     return A.module(dimvec, action, side=mspec.get("side", "right"), name=name)
+
+
+def _random_module_core(A, dims, side, seed, tries):
+    """Draw a random representation of ``A`` (GitHub #3). Byte-identical twin of
+    ``quiverlab.hpc.spec.random_module``: SAME draw order (sorted arrow names,
+    row-major) under ``random.Random(seed)``, so both tiers agree for a fixed seed.
+    Exact entries only -- GF(p): uniform ``0..p-1`` (the prime subfield, the only
+    field elements the entry grammar can name); char 0: integers ``-5..5``. With
+    relations the draw is rejection-sampled (the first that builds through the
+    library's checked ``A.module`` wins); over char 0 with relations a random point
+    never satisfies them exactly, so it refuses with ``{"error": "char0"}``."""
+    if side not in ("right", "left"):
+        raise RequestError("random module: side must be 'right' or 'left'")
+    if not isinstance(seed, int) or isinstance(seed, bool):
+        raise RequestError("random module: seed must be an integer")
+    if not isinstance(tries, int) or isinstance(tries, bool) or tries < 1:
+        raise RequestError("random module: tries must be a positive integer")
+    rep = A if side == "right" else A.opposite()
+    by_str = {str(v): v for v in rep.quiver.vertices}
+    dimvec = {v: 0 for v in rep.quiver.vertices}
+    total = 0
+    for key, nv in (dims or {}).items():
+        if str(key) not in by_str:
+            raise RequestError("random module: no vertex %r in the algebra" % (key,))
+        if not isinstance(nv, int) or isinstance(nv, bool) or nv < 0:
+            raise RequestError("random module: dim[%r] must be a non-negative integer"
+                               % (key,))
+        dimvec[by_str[str(key)]] = nv
+        total += nv
+    if total > _MAX_RANDOM_MODULE_DIM:
+        raise RequestError("random module: total dimension %d exceeds the %d cap"
+                           % (total, _MAX_RANDOM_MODULE_DIM))
+    char = A.domain.characteristic
+    has_rel = bool(A.relations)
+    if has_rel and char == 0:
+        return {"error": "char0"}
+    dims_str = {str(k): int(v) for k, v in (dims or {}).items()}
+    arrow_names = sorted(rep.quiver.arrows)
+
+    def _draw(rng):
+        maps = {}
+        for a in arrow_names:
+            rows = dimvec[rep.quiver.target(a)]
+            cols = dimvec[rep.quiver.source(a)]
+            if char:
+                maps[a] = [[rng.randrange(char) for _ in range(cols)]
+                           for _ in range(rows)]
+            else:
+                maps[a] = [[rng.randint(-5, 5) for _ in range(cols)]
+                           for _ in range(rows)]
+        return maps
+
+    rng = random.Random(seed)
+    for k in range(1, (1 if not has_rel else tries) + 1):
+        maps = _draw(rng)
+        try:
+            _build_module(A, {"dims": dims_str, "maps": maps, "side": side}, "random")
+        except quiverlab.QuiverlabError:
+            continue                       # relation-violating draw: try again
+        return {"maps": maps, "seed": seed, "tries": k}
+    return {"error": "budget", "tries": tries}
+
+
+def random_module(request_json):
+    """JSON-string entry for the Pyodide worker's ``random`` verb:
+    ``{algebra, dims, side?, seed?, tries?}`` -> ``{maps, seed, tries}`` |
+    ``{error}``. The server tier's twin is POST /api/gui/random-module."""
+    try:
+        req = json.loads(request_json)
+        A = _algebra_from_spec(req.get("algebra") or {})
+        out = _random_module_core(A, req.get("dims") or {},
+                                  req.get("side", "right"),
+                                  req.get("seed", 0), req.get("tries", 200))
+    except Exception as exc:
+        out = _fail(exc)
+    return json.dumps(out)
 
 
 def _tor_target_spec():

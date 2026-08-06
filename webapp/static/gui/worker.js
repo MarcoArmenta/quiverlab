@@ -19,6 +19,7 @@ self.onmessage = function (e) {
   var job = m.cmd === "init" ? init(m.manifest)
           : m.cmd === "run" ? run(m.request)
           : m.cmd === "probe" ? probe(m)
+          : m.cmd === "random" ? random(m)
           : m.cmd === "calibrate" ? calibrate()
           : Promise.reject(new Error("unknown cmd " + m.cmd));
   job.catch(function (err) {
@@ -72,6 +73,27 @@ async function probe(m) {
     ? r.data
     : protocolError(r.status, r.data, "probe failed");
   self.postMessage({ type: "probe", seq: m.seq, data: data });
+}
+
+// "Fill at random" (GitHub #3): POST the algebra + dims, get back exact random
+// arrow matrices (server-side rejection sampling honours the relations). `which`
+// ("module"/"target") is echoed so gui.js fills the right grid; refusals (char-0,
+// budget) and errors ride the same message with an `error` field.
+async function random(m) {
+  var r = await postJSON("/api/gui/random-module", m.request);
+  var d = r.data || {};
+  if (r.status >= 200 && r.status < 300 && d.maps) {
+    self.postMessage({ type: "random", which: m.which, maps: d.maps,
+                       seed: d.seed, tries: d.tries });
+  } else if (d.error) {
+    self.postMessage({ type: "random", which: m.which,
+                       error: typeof d.error === "string" ? d.error : JSON.stringify(d.error),
+                       tries: d.tries });
+  } else {
+    var pe = protocolError(r.status, d, "random draw failed");
+    self.postMessage({ type: "random", which: m.which,
+                       error: pe.error.type + ": " + pe.error.message });
+  }
 }
 
 async function fetchArtifact(jobId, name) {

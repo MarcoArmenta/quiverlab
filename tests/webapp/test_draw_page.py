@@ -42,14 +42,16 @@ def test_gui_js_and_css_are_byte_identical_to_docs_gui():
 
 def test_worker_shim_speaks_the_protocol_verbs():
     src = (ROOT / "webapp" / "static" / "gui" / "worker.js").read_text(encoding="utf-8")
-    # The four inbound commands and the outbound message types gui.js consumes.
-    for token in ('"init"', '"run"', '"probe"', '"calibrate"',
+    # The inbound commands (incl. the GitHub-#3 "random" verb) and the outbound
+    # message types gui.js consumes.
+    for token in ('"init"', '"run"', '"probe"', '"random"', '"calibrate"',
                   '"ready"', '"calibrated"', '"built"', '"result"',
                   '"trace"', '"artifacts"', '"done"', '"fatal"'):
         assert token in src, f"worker shim lost protocol token {token}"
     # Absolute API paths: a worker resolves relative URLs against its own
     # script URL, which would 404 under the /es mount.
     assert '"/api/compute"' in src and '"/api/gui/probe"' in src
+    assert '"/api/gui/random-module"' in src
 
 
 # --------------------------------------------------------------------------- #

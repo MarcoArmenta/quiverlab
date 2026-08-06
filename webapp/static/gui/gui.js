@@ -61,7 +61,13 @@
     '<p class="qlgui-hint">Click empty space: add a vertex. Drag vertex → vertex: add an arrow ' +
     '(onto itself: a loop). Click: select. Double-click an arrow label: rename. Delete key: remove.</p>' +
     '<div class="qlgui-row"><label style="flex:1 1 260px">Relations ' +
-    '<input type="text" id="qlgui-relations" placeholder="e.g. a*b - c, x*x*x"></label></div>' +
+    '<input type="text" id="qlgui-relations" placeholder="e.g. a*b - c, x*x*x"></label>' +
+    // GitHub #2 (Samuel Leblanc): generate the two most-wanted relation sets so a
+    // big quiver need not be typed out by hand. The buttons WRITE into the box above
+    // (still fully editable); the status line reports how many were generated.
+    '  <button id="qlgui-rel-rad2" class="qlgui-secondary" type="button">rad&sup2; = 0</button>' +
+    '  <button id="qlgui-rel-comm" class="qlgui-secondary" type="button">commutativity</button>' +
+    '  <span id="qlgui-rel-status" class="qlgui-hint"></span></div>' +
     '<div class="qlgui-row" id="qlgui-invariants">' +
     '  <label><input type="checkbox" id="qlgui-hhc" checked> HH^0..<select id="qlgui-hhc-top"></select></label>' +
     '  <label><input type="checkbox" id="qlgui-hhh"> HH_0..<select id="qlgui-hhh-top"></select></label>' +
@@ -158,7 +164,8 @@
   var el = {};
   ["search", "search-menu",
    "preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
-   "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top",
+   "rename", "relations", "rel-rad2", "rel-comm", "rel-status",
+   "hhc", "hhc-top", "hhh", "hhh-top",
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
    "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top",
@@ -375,9 +382,14 @@
   function matrixDims(a) { return matrixDimsFor(a, S.module, S.module.side); }
   function syncModuleMaps() { syncMaps(S.module, S.module.side); }
 
+  // Transient "Fill at random" feedback, kept per editor so a panel re-render
+  // (which rebuilds the body) does not wipe the last message (GitHub #3).
+  var randMsg = { module: "", target: "" };
+
   // Render the explicit dims-picker + per-arrow matrix grids for `mstate`/`side`
   // into `bodyEl`. `onEdit` fires on every dim change (rebuild) or cell edit.
-  function renderExplicitBody(bodyEl, mstate, side, onDimChange) {
+  // `which` ("module"/"target") routes the random-fill buttons (GitHub #3).
+  function renderExplicitBody(bodyEl, mstate, side, onDimChange, which) {
     syncDims(mstate); syncMaps(mstate, side);
     var dimRow = h("div", { "class": "qlgui-row" });
     S.vertices.forEach(function (v) {
@@ -389,6 +401,22 @@
       inp.addEventListener("change", onDimChange);
       dimRow.appendChild(h("label", { text: "dim " + v.id + " " }, inp));
     });
+    // "random dims" (GitHub #3): each vertex dim uniform 0..3, never the all-zero
+    // module; pure client-side, then re-render so the grids follow.
+    var rndDims = h("button", { "class": "qlgui-secondary", type: "button",
+      text: dataText("mod-random-dims", "random dims") });
+    rndDims.addEventListener("click", function () {
+      var anyPos = false;
+      S.vertices.forEach(function (v) {
+        var d = Math.floor(Math.random() * 4);
+        mstate.dims[v.id] = d; if (d > 0) anyPos = true;
+      });
+      if (!anyPos && S.vertices.length) {
+        mstate.dims[S.vertices[0].id] = 1 + Math.floor(Math.random() * 3);
+      }
+      randMsg[which] = ""; onDimChange();
+    });
+    dimRow.appendChild(rndDims);
     bodyEl.appendChild(h("div", { "class": "qlgui-mrow" },
       h("span", { "class": "qlgui-mlabel", text: "dimension vector" }), dimRow));
     S.arrows.forEach(function (a) {
@@ -414,6 +442,68 @@
         h("span", { "class": "qlgui-mlabel",
           text: a.name + ": " + a.s + "→" + a.t + "  [" + rows + "×" + cols + "]" }), grid));
     });
+    // "Fill at random" (GitHub #3): exact random arrow matrices from the engine
+    // (relation-aware). The engine draws + validates; gui.js only fills the cells.
+    if (S.arrows.length) {
+      var rndFill = h("button", { "class": "qlgui-secondary", type: "button",
+        text: dataText("mod-random", "Fill at random") });
+      rndFill.addEventListener("click", function () {
+        requestRandomFill(mstate, side, which);
+      });
+      bodyEl.appendChild(h("div", { "class": "qlgui-row" }, rndFill,
+        h("span", { "class": "qlgui-hint", text: randMsg[which] || "" })));
+    }
+  }
+
+  // Ask the engine for a random representation on the current dims + side, and
+  // drop the returned exact matrices straight into `mstate.maps` (GitHub #3).
+  function requestRandomFill(mstate, side, which) {
+    if (S.busy) return;
+    ensureEngine();
+    if (!S.engineReady || !S.worker) {
+      randMsg[which] = dataText("mod-random-wait",
+        "engine still loading — click again in a moment");
+      renderModulePanel();
+      return;
+    }
+    syncDims(mstate); syncMaps(mstate, side);
+    var dims = {};
+    S.vertices.forEach(function (v) { dims[String(v.id)] = stDim(mstate, v.id); });
+    randMsg[which] = "…";
+    renderModulePanel();
+    S.worker.postMessage({ cmd: "random", which: which,
+      request: { algebra: buildRequest().algebra, dims: dims, side: side } });
+  }
+
+  // A "random" worker reply: fill the named editor's matrices, or show the
+  // refusal (char-0 / budget) in its status line.
+  function onRandomFill(m) {
+    var which = m.which === "target" ? "target" : "module";
+    var mstate = which === "target" ? S.target : S.module;
+    if (m.error) {
+      // The engine's structured refusals are the exact codes "char0"/"budget";
+      // anything else is a real validation/build error, shown verbatim.
+      randMsg[which] = m.error === "char0"
+          ? dataText("mod-random-char0",
+              "random fill with relations needs a finite field GF(p)")
+        : m.error === "budget"
+          ? dataText("mod-random-fail",
+              "no random module satisfied the relations after {tries} draws")
+              .replace("{tries}", m.tries)
+        : m.error;
+      renderModulePanel();
+      return;
+    }
+    mstate.maps = {};
+    Object.keys(m.maps || {}).forEach(function (name) {
+      mstate.maps[name] = (m.maps[name] || []).map(function (row) {
+        return row.map(function (x) { return String(x); });
+      });
+    });
+    randMsg[which] = dataText("mod-random-done",
+      "random module found (seed {seed}, {tries} draws)")
+      .replace("{seed}", m.seed).replace("{tries}", m.tries);
+    renderModulePanel(); scheduleProbe();
   }
 
   function fillVertexOptions(sel, current) {
@@ -453,7 +543,7 @@
       } else {
         renderExplicitBody(body, S.module, S.module.side, function () {
           renderModulePanel(); scheduleProbe();
-        });
+        }, "module");
       }
     }
     renderTargetPanel(on);
@@ -502,7 +592,7 @@
     }
     renderExplicitBody(body, S.target, S.target.side, function () {
       renderModulePanel(); scheduleProbe();
-    });
+    }, "target");
   }
 
   function normGrid(g) {        // trim; an empty cell means 0
@@ -870,6 +960,8 @@
     } else if (m.type === "calibrated") {
       S.factor = m.factor;
       scheduleProbe();
+    } else if (m.type === "random") {
+      onRandomFill(m);
     } else if (m.type === "probe") {
       if (m.seq === S.probeSeq && !S.busy) {
         if (m.data.ok) {
@@ -2837,6 +2929,45 @@
     fitTimer = setTimeout(fitMath, 150);
   });
   el.relations.addEventListener("input", scheduleProbe);
+  // ---------- relation presets (GitHub #2) ----------
+  function currentArrowsObj() {
+    var arrows = {};
+    S.arrows.forEach(function (a) { arrows[a.name] = [a.s, a.t]; });
+    return arrows;
+  }
+  function setRelStatus(text) { el["rel-status"].textContent = text || ""; }
+  function applyRelPreset(kind) {
+    if (!S.arrows.length) {
+      setRelStatus(dataText("rel-none", "no relations of this kind for this quiver"));
+      return;
+    }
+    var res = (kind === "rad2") ? qlguiRelRad2(currentArrowsObj())
+                                : qlguiRelCommutativity(currentArrowsObj());
+    if (res.error === "cycle") {
+      setRelStatus(dataText("rel-comm-cycle",
+        "the commutativity preset needs an acyclic quiver — with an oriented "
+        + "cycle the set of parallel paths is infinite"));
+      return;
+    }
+    if (res.error === "cap") {
+      setRelStatus("more than 500 relations — type them or shrink the quiver");
+      return;
+    }
+    if (!res.relations.length) {
+      setRelStatus(dataText("rel-none", "no relations of this kind for this quiver"));
+      return;
+    }
+    el.relations.value = res.relations.join(", ");
+    setRelStatus(dataText("rel-generated", "{n} relations generated — edit freely")
+      .replace("{n}", res.relations.length));
+    scheduleProbe();
+  }
+  el["rel-rad2"].textContent = dataText("rel-rad2", "rad² = 0");
+  el["rel-comm"].textContent = dataText("rel-comm", "commutativity");
+  el["rel-rad2"].title = dataText("rel-rad2-hint", "");
+  el["rel-comm"].title = dataText("rel-comm-hint", "");
+  el["rel-rad2"].addEventListener("click", function () { applyRelPreset("rad2"); });
+  el["rel-comm"].addEventListener("click", function () { applyRelPreset("comm"); });
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
    el.connes_b, el["connes_b-top"],
@@ -2926,6 +3057,77 @@
   el.preset.addEventListener("change", ensureEngine);
   el.relations.addEventListener("focus", ensureEngine);
   el["mod-enable"].addEventListener("change", ensureEngine);   // enabling the module panel is intent
+
+  // ---------- predetermined relations (GitHub #2, Samuel Leblanc) ----------
+  // Pure, DOM-free relation generators over an `arrows` object {name: [src, tgt]},
+  // shared with tests/webapp/test_relations_presets.py (extracted between the
+  // sentinels and run under node, checked against an independent Python oracle).
+  // Path composition is LEFT-TO-RIGHT: "a*b" means first a then b, so it is a
+  // valid path iff target(a) === source(b) (Assem–Simson–Skowroński).
+  // QLGUI-RELGEN-BEGIN
+  function qlguiRelRad2(arrows) {
+    // rad^2 = 0: every length-2 path is a relation. For arrows a: u→v and
+    // b: v→w (v shared; a and b may coincide on a loop) emit "a*b". Deterministic:
+    // the emitted strings are sorted.
+    var names = Object.keys(arrows).sort();
+    var rels = [];
+    for (var i = 0; i < names.length; i++) {
+      for (var j = 0; j < names.length; j++) {
+        var a = names[i], b = names[j];
+        if (arrows[a][1] === arrows[b][0]) rels.push(a + "*" + b);
+      }
+    }
+    rels.sort();
+    return { relations: rels };
+  }
+  function qlguiRelCommutativity(arrows) {
+    // Commutativity: on an ACYCLIC quiver, for each ordered vertex pair (u,w) with
+    // ≥2 directed paths, set them all equal — emit p0 - pk for k ≥ 1 (first-vs-rest;
+    // paths sorted). A cycle (incl. a loop) makes the set of parallel paths infinite
+    // → {error:"cycle"}. Capped at 500 relations → {error:"cap"}.
+    var names = Object.keys(arrows).sort();
+    var verts = {}, out = {};
+    names.forEach(function (a) { verts[arrows[a][0]] = 1; verts[arrows[a][1]] = 1; });
+    var outArrows = {};                          // source vertex -> [arrow names]
+    Object.keys(verts).forEach(function (v) { outArrows[v] = []; });
+    names.forEach(function (a) { outArrows[arrows[a][0]].push(a); });
+    // Cycle detection (DFS colouring); a loop is a length-1 cycle.
+    var color = {};                              // 0=white,1=grey,2=black
+    var cyclic = false;
+    function visit(v) {
+      color[v] = 1;
+      outArrows[v].forEach(function (a) {
+        var w = arrows[a][1];
+        if (color[w] === 1) cyclic = true;
+        else if (!color[w]) visit(w);
+      });
+      color[v] = 2;
+    }
+    Object.keys(verts).forEach(function (v) { if (!color[v]) visit(v); });
+    if (cyclic) return { error: "cycle" };
+    // Enumerate every directed path (acyclic ⇒ finite); bucket by (source,target).
+    var classes = {};                            // "u w" -> [path strings]
+    var nVerts = Object.keys(verts).length;
+    function walk(startV, curV, acc) {
+      if (acc.length && acc.length <= nVerts) {
+        var key = startV + " " + curV;
+        (classes[key] || (classes[key] = [])).push(acc.join("*"));
+      }
+      if (acc.length >= nVerts) return;          // acyclicity bounds path length
+      outArrows[curV].forEach(function (a) {
+        acc.push(a); walk(startV, arrows[a][1], acc); acc.pop();
+      });
+    }
+    Object.keys(verts).forEach(function (v) { walk(v, v, []); });
+    var rels = [];
+    Object.keys(classes).sort().forEach(function (key) {
+      var paths = classes[key].slice().sort();
+      for (var k = 1; k < paths.length; k++) rels.push(paths[0] + " - " + paths[k]);
+    });
+    if (rels.length > 500) return { error: "cap" };
+    return { relations: rels };
+  }
+  // QLGUI-RELGEN-END
 
   // ---------- search-first landing (Marco 2026-08-06) ----------
   // Type what you want to compute; pick a match; a small, pre-validated example
