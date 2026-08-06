@@ -7,15 +7,80 @@
 # unless both are set (non-empty). Put them in a `.env` file in this directory
 # (see .env.example; `docker compose` auto-reads it). Optional secrets (SMTP,
 # QLWEB_ADMIN_TOKEN, ...) are documented in PROVISIONING.md.
+#
+# CLOUD CAPACITY TUNING: the QLWEB_* values below are the cloud profile for the
+# DRAC persistent instance (~16 vCPU / 50 GB RAM / 200 GB /data). They are baked
+# in as compose `environment:` values via `${VAR:-default}` -- the tuned default
+# applies out of the box, and any single knob can be overridden by setting it in
+# `.env` (no compose edit needed). The arithmetic behind every value, and the
+# burst-instance story for campaign-scale work, is in PROVISIONING.md
+# ("Cloud capacity tuning"). The INSTANT tier knobs are DELIBERATELY absent here:
+# instant is the anonymous DoS surface and stays at the library code defaults.
+
+# Shared environment for both compute-bearing services (app + worker). A single
+# YAML anchor keeps the app's tier-routing estimator and the worker's per-job
+# RLIMIT caps reading the SAME config -- config drift between the two tiers would
+# silently mis-route or mis-cap jobs. Aliased (not `<<`-merged) so it stays
+# portable across every compose-go version.
+x-ql-env: &ql_env
+  NUMBA_NUM_THREADS: "2"
+  OMP_NUM_THREADS: "2"
+  QLWEB_DATA_DIR: /data
+  # -- Required production secrets (compose refuses to start if unset). --------
+  QLWEB_IP_HASH_SALT: "${QLWEB_IP_HASH_SALT:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
+  QLWEB_TOKEN_SECRET: "${QLWEB_TOKEN_SECRET:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
+  # -- Worker fleet size. RAM-bound, NOT core-bound: each job child pins every
+  #    math runtime to 1 thread, and the claim queue is a single shared FIFO, so
+  #    the worst case is ALL loops running a big job at once. The hard rule is
+  #    worker_processes x big_job_mem_bytes <= RAM with margin: 2 x 20 GiB = 40 GiB
+  #    of 50 GiB, ~10 GiB left for the OS + app + caddy + SQLite + instant tier.
+  #    Keeping it at 2 (not the code default of cpu-2 = 14) is what makes the big
+  #    memory cap safe AND keeps one loop free to serve the queued tier while a
+  #    big job runs. Only the worker service starts the fleet; inert on the app.
+  QLWEB_WORKER_PROCESSES: "${QLWEB_WORKER_PROCESSES:-2}"
+  # -- Queued (anonymous large) tier: wall 15 min -> 1 h, mem 4 -> 8 GiB. The
+  #    cloud accepts computations past a laptop's patience; 8 GiB gives the deeper
+  #    resolutions the raised thresholds admit room to run (worst case 2 x 8 = 16
+  #    GiB). NOTE: the instant tier reuses job_mem_bytes as ITS RLIMIT_AS ceiling
+  #    (webapp/server/instant.py), but instant jobs are tiny by classification so
+  #    that ceiling never binds -- the instant DoS surface is unchanged.
+  QLWEB_JOB_WALL_SECONDS: "${QLWEB_JOB_WALL_SECONDS:-3600}"
+  QLWEB_JOB_MEM_BYTES: "${QLWEB_JOB_MEM_BYTES:-8589934592}"
+  # -- Big (email-verified HPC) tier: wall 4 h -> 24 h, mem 16 -> 20 GiB. 20 GiB
+  #    is the ceiling the RAM arithmetic allows at fleet size 2 (2 x 20 = 40 GiB).
+  #    A single 40 GiB big job was evaluated and rejected: on the shared FIFO
+  #    queue it would need worker_processes = 1, freezing the queued tier behind a
+  #    24 h big job. Campaigns that genuinely need 40+ GiB / many parallel jobs go
+  #    to the short-lived RAS burst instance (80 vCPU / 300 GB) via quiverlab-hpc
+  #    -- see PROVISIONING.md.
+  QLWEB_BIG_JOB_WALL_SECONDS: "${QLWEB_BIG_JOB_WALL_SECONDS:-86400}"
+  QLWEB_BIG_JOB_MEM_BYTES: "${QLWEB_BIG_JOB_MEM_BYTES:-21474836480}"
+  # -- Tier-routing thresholds (heuristic ops = dim^3 * (deg+1)): raised so the
+  #    cloud accepts what a laptop can't. Order-of-magnitude aligned to the walls
+  #    via the estimator's 500M ops/min hint (1 h ~ 30B ops; 24 h ~ 700B ops).
+  QLWEB_QUEUED_OPS_THRESHOLD: "${QLWEB_QUEUED_OPS_THRESHOLD:-20000000000}"
+  QLWEB_QUEUED_MAX_DEGREE: "${QLWEB_QUEUED_MAX_DEGREE:-30}"
+  QLWEB_BIG_OPS_THRESHOLD: "${QLWEB_BIG_OPS_THRESHOLD:-500000000000}"
+  QLWEB_BIG_MAX_DEGREE: "${QLWEB_BIG_MAX_DEGREE:-60}"
+  # -- Result cache + retention sized for the 200 GB /data volume. cache is an
+  #    ENTRY-count LRU (not a byte budget), so this assumes cached results stay
+  #    small (KB-MB); watch /data and lower it if results run large. Retention
+  #    keeps a year of artifacts for reproducibility.
+  QLWEB_CACHE_MAX_ENTRIES: "${QLWEB_CACHE_MAX_ENTRIES:-10000}"
+  QLWEB_RETENTION_DAYS: "${QLWEB_RETENTION_DAYS:-365}"
+  # -- Backlog + fairness budgets: bigger queues (concurrency is still the fleet
+  #    size, so a deeper backlog only means more waiting, processed 2 at a time)
+  #    and more generous per-identity daily/weekly budgets on the bigger box. The
+  #    per-IP / per-email RUNNING caps stay at 1 (the concurrency + RAM bound).
+  QLWEB_GLOBAL_QUEUE_MAX: "${QLWEB_GLOBAL_QUEUE_MAX:-1000}"
+  QLWEB_BIG_QUEUE_MAX: "${QLWEB_BIG_QUEUE_MAX:-50}"
+  QLWEB_PER_EMAIL_WEEKLY_MAX: "${QLWEB_PER_EMAIL_WEEKLY_MAX:-10}"
+  QLWEB_PER_IP_DAILY_MAX: "${QLWEB_PER_IP_DAILY_MAX:-300}"
+
 services:
   app:
     build: { context: ../.., dockerfile: webapp/deploy/Dockerfile }
-    environment:
-      NUMBA_NUM_THREADS: "2"
-      OMP_NUM_THREADS: "2"
-      QLWEB_DATA_DIR: /data
-      QLWEB_IP_HASH_SALT: "${QLWEB_IP_HASH_SALT:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
-      QLWEB_TOKEN_SECRET: "${QLWEB_TOKEN_SECRET:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
+    environment: *ql_env
     volumes:
       - qldata:/data
     expose: ["8000"]
@@ -31,20 +96,19 @@ services:
   worker:
     build: { context: ../.., dockerfile: webapp/deploy/Dockerfile }
     entrypoint: ["bash", "webapp/deploy/entrypoint-worker.sh"]
-    environment:
-      NUMBA_NUM_THREADS: "2"
-      OMP_NUM_THREADS: "2"
-      QLWEB_DATA_DIR: /data
-      QLWEB_WORKER_PROCESSES: "2"
-      QLWEB_IP_HASH_SALT: "${QLWEB_IP_HASH_SALT:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
-      QLWEB_TOKEN_SECRET: "${QLWEB_TOKEN_SECRET:?set in webapp/deploy/.env -- see .env.example, generate with openssl rand -hex 32}"
+    environment: *ql_env
     volumes:
       - qldata:/data
-    # One anonymous job wall cap (QLWEB_JOB_WALL_SECONDS default 900) + 30s slack.
-    # On stop, run_loop drains the in-flight job within this window; a job still
-    # running when Docker SIGKILLs is requeued at the next startup, so the cut is
-    # recoverable either way.
-    stop_grace_period: 930s
+    # Graceful stop drains the in-flight QUEUED job then exits: this window is the
+    # queued job wall (QLWEB_JOB_WALL_SECONDS default 3600) + 30s slack, kept just
+    # above run_loop.main()'s own join deadline (job wall + 20s) so main reaps its
+    # loops cleanly before Docker SIGKILLs. A big job (24 h wall) is DELIBERATELY
+    # not covered -- a deploy must not block for a day; a big (or any still-running)
+    # job is SIGKILLed here and requeued from `running` -> `pending` at the next
+    # startup (JobStore.requeue_stale_running), so nothing is lost and no running
+    # slot leaks. For an immediate restart use `docker compose kill` + requeue.
+    # If you raise QLWEB_JOB_WALL_SECONDS past 1 h, raise this to match.
+    stop_grace_period: 3630s
     restart: unless-stopped
   caddy:
     image: caddy:2
