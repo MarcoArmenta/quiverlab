@@ -59,6 +59,7 @@ _HEADINGS = {
     "projective_dimension": "Projective dimension of M",
     "injective_dimension": "Injective dimension of M",
     "tilting_check": "Tilting test",
+    "orbit_geometry": "Orbit geometry",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -516,8 +517,57 @@ def _block_html(kind, b, ctx=None):
         tbl = "".join("<tr><th>%s</th><td>%s</td></tr>" % (k, v) for k, v in rows)
         return ["<p>%s</p>" % verdict,
                 '<table class="ql-table">%s</table>' % tbl]
+    if kind == "orbit_geometry":
+        return _orbit_geometry_html(b)
     # An unknown kind still leaves a trace of what was asked for.
     return ["<p class='ql-note'>computed; see the JSON record for its data.</p>"]
+
+
+def _orbit_geometry_html(b):
+    """The orbit_geometry block (Plan 49 / C8): orbit dim + rigidity + honest codim +
+    (hereditary Dynkin) the Kac canonical decomposition."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+    chunks = []
+    if b.get("latex"):
+        chunks.append(_math(b["latex"]))
+    rows = [
+        ("dimension vector d", _esc(_dv(b.get("dim_vector") or {}))),
+        ("dim GL(d) = &sum;<sub>v</sub> d<sub>v</sub><sup>2</sup>", _num(b.get("group_dim"))),
+        ("dim Rep(Q,d) (ambient)", _num(b.get("rep_variety_dim"))),
+        ("dim End<sub>A</sub>(M)", _num(b.get("end_dim"))),
+        ("dim O<sub>M</sub> (orbit)", _num(b.get("orbit_dim"))),
+        ("dim Ext<sup>1</sup>(M,M)", _num(b.get("ext1_self"))),
+    ]
+    tbl = "".join("<tr><th>%s</th><td>%s</td></tr>" % (k, v) for k, v in rows)
+    chunks.append('<table class="ql-table">%s</table>' % tbl)
+    # rigidity verdict + honest codim gloss (hereditary = codim; general = upper bound)
+    rigid = bool(b.get("rigid"))
+    verdict = ("M is rigid: Ext<sup>1</sup>(M,M) = 0, so the orbit O<sub>M</sub> is open (Voigt)."
+               if rigid else
+               "M is not rigid: Ext<sup>1</sup>(M,M) &gt; 0.")
+    if b.get("codim_semantics") == "hereditary":
+        gloss = ("A is hereditary, so dim Ext<sup>1</sup>(M,M) IS the codimension of the "
+                 "orbit closure in Rep(Q,d) (Voigt, Rep smooth).")
+    else:
+        gloss = ("A = kQ/I is not hereditary, so dim Ext<sup>1</sup>(M,M) is only an UPPER "
+                 "BOUND on the codimension (the module variety is cut by the relations).")
+    chunks.append("<p>%s %s</p>" % (verdict, gloss))
+    # the Kac canonical decomposition (hereditary Dynkin) or the honest refusal note
+    cd = b.get("canonical_decomposition")
+    if cd:
+        parts = []
+        for c in cd:
+            raw = c.get("name") or ("(%s)" % ", ".join(str(x) for x in c.get("root", ())))
+            name = _esc(raw)
+            m = c.get("multiplicity", 1)
+            parts.append(name if m == 1 else "%s<sup>%d</sup>" % (name, m))
+        chunks.append("<p>Kac canonical decomposition: d = %s (each component a positive "
+                      "root; the generic module is rigid).</p>" % " &oplus; ".join(parts))
+    elif b.get("canonical_note"):
+        chunks.append("<p class='ql-note'>Canonical decomposition not computed: %s</p>"
+                      % _esc(str(b["canonical_note"])))
+    return chunks
 
 
 def _dictionary_framing_html(theory, dims):

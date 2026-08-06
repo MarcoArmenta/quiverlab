@@ -123,6 +123,39 @@ def canonical_decomposition(algebra, d, *, budget=4096):
     return out
 
 
+def orbit_geometry_block(M):
+    """The shared no-code GUI/report block for the ``orbit_geometry`` module kind
+    (Plan 49 / C8): orbit dim, dim GL(d), dim Rep(Q,d), dim End, the Voigt rigidity
+    verdict with the HONEST codimension semantics (=codim on hereditary, an upper
+    bound on kQ/I), and -- on hereditary Dynkin -- the Kac canonical decomposition.
+    Byte-identical across the HPC runner and the Pyodide twin (both import this ONE
+    function). Orbit dim / rigidity / codim compute for ANY module over ANY kQ/I;
+    the canonical decomposition is the conditional extra (else ``None`` + a note)."""
+    A = M.algebra
+    dv = M.dimension_vector()
+    ext1 = A.ext(M, M, 1)
+    hereditary = A.is_hereditary()
+    block = {
+        "kind": "orbit_geometry", "side": M.side,
+        "dim_vector": {str(v): int(n) for v, n in dv.items()},
+        "group_dim": group_dim(dv),                       # dim GL(d)
+        "rep_variety_dim": representation_variety_dim(A, dv),  # dim Rep(Q,d) (ambient)
+        "end_dim": end_dim(M),                            # dim End_A(M)
+        "orbit_dim": orbit_dimension(M),                  # dim O_M
+        "rigid": ext1 == 0,
+        "ext1_self": ext1,                                # dim Ext^1(M,M) = rigidity_codim
+        "hereditary": hereditary,
+        "codim_semantics": "hereditary" if hereditary else "general",
+        "latex": r"\dim \mathcal{O}_M = \sum_v d_v^2 - \dim_k \operatorname{End}_A(M)",
+    }
+    try:                                                  # Dynkin-only extra
+        block["canonical_decomposition"] = canonical_decomposition(A, dv)
+    except QuiverlabError as e:
+        block["canonical_decomposition"] = None
+        block["canonical_note"] = str(e)
+    return block
+
+
 def _search_canonical(roots, target, ext, budget):
     """DFS for the (unique, over Dynkin) multiset of roots summing to `target`
     whose direct sum is RIGID: for every pair beta, gamma in the chosen support
