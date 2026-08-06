@@ -71,7 +71,15 @@ def _config_from_compose(overrides: dict[str, str] | None = None) -> Config:
 # 1. The compose profile parses through Config and yields the tuned values.
 # --------------------------------------------------------------------------- #
 
-def test_compose_tuning_parses_through_config():
+def test_compose_tuning_parses_through_config(monkeypatch):
+    # Hermetic against an env leak: a QLWEB_* var left in the process environment by
+    # an earlier test must never bleed into this parse. `_config_from_compose` already
+    # resolves the compose file's OWN defaults and never reads os.environ, but clear
+    # any leaked QLWEB_* defensively so this assertion set can never become
+    # order-dependent should that helper ever change.
+    import os
+    for _k in [k for k in os.environ if k.startswith("QLWEB_")]:
+        monkeypatch.delenv(_k, raising=False)
     cfg = _config_from_compose()
     # Queued (anonymous large) tier raised from a laptop-grade cap.
     assert cfg.job_wall_seconds == 3600            # 15 min -> 1 h
