@@ -171,5 +171,17 @@
   "draw.search_placeholder": "Search: what do you want to compute? (e.g. Hochschild, τ-tilting, gentle, resolution)",
   "draw.search_related": "Related environments",
   "draw.search_none": "No matches — try a keyword like Hochschild, resolution, module, surface",
-  "draw.search_load": "small example loaded — computing…"
+  "draw.search_load": "small example loaded — computing…",
+  "draw.rel_rad2": "rad² = 0",
+  "draw.rel_rad2_hint": "generate the radical-square-zero relations: every composition of two arrows is zero",
+  "draw.rel_comm": "commutativity",
+  "draw.rel_comm_hint": "generate commutativity relations: all parallel paths are set equal",
+  "draw.rel_comm_cycle": "the commutativity preset needs an acyclic quiver — with an oriented cycle the set of parallel paths is infinite",
+  "draw.rel_generated": "{n} relations generated — edit freely",
+  "draw.rel_none": "no relations of this kind for this quiver",
+  "draw.mod_random": "Fill at random",
+  "draw.mod_random_dims": "random dims",
+  "draw.mod_random_done": "random module found (seed {seed}, {tries} draws)",
+  "draw.mod_random_fail": "no random module satisfied the relations after {tries} draws — the relations cut a thin locus; try a larger prime p or other dims",
+  "draw.mod_random_char0": "random fill with relations needs a finite field GF(p): over ℚ or ℂ a random point never satisfies the relations exactly"
 }

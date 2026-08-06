@@ -171,5 +171,17 @@
   "draw.search_placeholder": "Recherche : que voulez-vous calculer ? (p. ex. Hochschild, τ-tilting, aimable, résolution)",
   "draw.search_related": "Environnements liés",
   "draw.search_none": "Aucun résultat — essayez un mot-clé comme Hochschild, résolution, module, surface",
-  "draw.search_load": "petit exemple chargé — calcul en cours…"
+  "draw.search_load": "petit exemple chargé — calcul en cours…",
+  "draw.rel_rad2": "rad² = 0",
+  "draw.rel_rad2_hint": "génère les relations de carré du radical nul : toute composition de deux flèches est nulle",
+  "draw.rel_comm": "commutativité",
+  "draw.rel_comm_hint": "génère les relations de commutativité : tous les chemins parallèles sont égalés",
+  "draw.rel_comm_cycle": "la commutativité exige un carquois acyclique — avec un cycle orienté l'ensemble des chemins parallèles est infini",
+  "draw.rel_generated": "{n} relations générées — modifiez-les librement",
+  "draw.rel_none": "aucune relation de ce type pour ce carquois",
+  "draw.mod_random": "Remplir au hasard",
+  "draw.mod_random_dims": "dims au hasard",
+  "draw.mod_random_done": "module aléatoire trouvé (graine {seed}, {tries} tirages)",
+  "draw.mod_random_fail": "aucun module aléatoire ne satisfait les relations après {tries} tirages — les relations découpent un lieu mince ; essayez un premier p plus grand ou d'autres dims",
+  "draw.mod_random_char0": "le remplissage aléatoire avec relations exige un corps fini GF(p) : sur ℚ ou ℂ un point aléatoire ne satisfait jamais les relations exactement"
 }

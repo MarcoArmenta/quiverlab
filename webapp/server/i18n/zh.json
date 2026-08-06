@@ -171,5 +171,17 @@
   "draw.search_placeholder": "搜索：你想计算什么？（例如 Hochschild、τ-倾斜、gentle、分解）",
   "draw.search_related": "相关环境",
   "draw.search_none": "无匹配——请尝试关键词，如 Hochschild、分解、模、曲面",
-  "draw.search_load": "已加载小示例——正在计算…"
+  "draw.search_load": "已加载小示例——正在计算…",
+  "draw.rel_rad2": "rad² = 0",
+  "draw.rel_rad2_hint": "生成根基平方为零的关系：任意两条箭头的复合均为零",
+  "draw.rel_comm": "交换性",
+  "draw.rel_comm_hint": "生成交换性关系：所有平行路径被设为相等",
+  "draw.rel_comm_cycle": "交换性预设要求无环箭图——存在有向环时平行路径的集合是无限的",
+  "draw.rel_generated": "已生成 {n} 个关系——可自由编辑",
+  "draw.rel_none": "此箭图没有这类关系",
+  "draw.mod_random": "随机填充",
+  "draw.mod_random_dims": "随机维数",
+  "draw.mod_random_done": "已找到随机模（种子 {seed}，{tries} 次抽取）",
+  "draw.mod_random_fail": "经过 {tries} 次抽取仍无随机模满足关系——关系定义的轨迹过薄；请尝试更大的素数 p 或其他维数",
+  "draw.mod_random_char0": "带关系的随机填充需要有限域 GF(p)：在 ℚ 或 ℂ 上随机点永远不会精确满足关系"
 }

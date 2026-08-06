@@ -171,5 +171,17 @@
   "draw.search_placeholder": "Buscar: ¿qué quieres calcular? (p. ej. Hochschild, τ-inclinación, gentil, resolución)",
   "draw.search_related": "Entornos relacionados",
   "draw.search_none": "Sin resultados — prueba una palabra clave como Hochschild, resolución, módulo, superficie",
-  "draw.search_load": "ejemplo pequeño cargado — calculando…"
+  "draw.search_load": "ejemplo pequeño cargado — calculando…",
+  "draw.rel_rad2": "rad² = 0",
+  "draw.rel_rad2_hint": "genera las relaciones de radical cuadrado cero: toda composición de dos flechas es cero",
+  "draw.rel_comm": "conmutatividad",
+  "draw.rel_comm_hint": "genera relaciones de conmutatividad: todos los caminos paralelos se igualan",
+  "draw.rel_comm_cycle": "la conmutatividad requiere un carcaj acíclico — con un ciclo orientado el conjunto de caminos paralelos es infinito",
+  "draw.rel_generated": "{n} relaciones generadas — edítalas libremente",
+  "draw.rel_none": "no hay relaciones de este tipo para este carcaj",
+  "draw.mod_random": "Rellenar al azar",
+  "draw.mod_random_dims": "dims al azar",
+  "draw.mod_random_done": "módulo aleatorio encontrado (semilla {seed}, {tries} intentos)",
+  "draw.mod_random_fail": "ningún módulo aleatorio cumplió las relaciones tras {tries} intentos — las relaciones definen un lugar delgado; prueba un primo p mayor u otras dims",
+  "draw.mod_random_char0": "el relleno aleatorio con relaciones requiere un cuerpo finito GF(p): sobre ℚ o ℂ un punto aleatorio nunca cumple las relaciones exactamente"
 }
