@@ -5,6 +5,36 @@ All notable changes to quiverlab are documented here. The format follows
 [Semantic Versioning](https://semver.org) (0.x during battle-testing; 1.0 at JOSS
 acceptance).
 
+## [Unreleased]
+
+### Added
+
+- **French and Chinese** join English and Spanish across the whole webapp/GUI:
+  173-key catalogs `fr.json` / `zh.json`, every page mounted under `/fr` and
+  `/zh`, a four-way header language menu (each language named in itself),
+  localized big-job emails / verify links / job permalinks, and all
+  family-catalog summaries and parameter help in all four languages. The i18n
+  battery now gates key parity, placeholder-freedom, and `{url}`-slot survival
+  for every catalog. (The worked-steps report and the HPC CLI remain
+  English-only, as they were for Spanish.)
+- **Search-first landing on `/draw`**: a search bar at the top of the GUI —
+  type what you want to compute (in any of the four UI languages; the keyword
+  index carries en/es/fr/zh synonyms), pick from the matching environments
+  (related ones listed alongside), and a small curated example loads with the
+  request pre-filled and computes on its own. 22 environments cover the whole
+  compute surface (Hochschild/cyclic/products, invariants and recognizers,
+  Ext-algebra/Koszulity, τ-tilting, gentle strings, module theory incl. AR
+  translates, Krull–Schmidt, Ext/Tor, orbit geometry); every embedded example
+  is live-validated against the real dispatch.
+
+### Fixed
+
+- `derived_fingerprint` killed the whole worked-steps report: the renderer
+  built its HTML chunks but never returned them, so any request containing a
+  `derived_fingerprint` block produced no report at all (the JSON record was
+  fine). One-line fix plus a standing AST gate that every per-kind renderer
+  ends in an explicit `return`.
+
 ## [0.2.0] — 2026-08-05
 
 The *whole of representation theory* release, prepared at the P50 release gate (plans
