@@ -5,6 +5,7 @@ commutative square, and a multi-vertex line algebra."""
 import pytest
 
 from quiverlab import GF, Quiver, linear_path_algebra
+from quiverlab.errors import QuiverlabError
 from quiverlab.fields import QQ
 from quiverlab.modules.hom import hom_space, is_isomorphic
 from quiverlab.modules.recollement import Recollement
@@ -25,6 +26,10 @@ def _square(field=QQ):
 
 def _line5(field=QQ):
     return linear_path_algebra(5, field=field)
+
+
+def _a4(field=QQ):
+    return linear_path_algebra(4, field=field)
 
 
 @lit
@@ -91,11 +96,52 @@ def test_i_adjunctions():
 
 
 @selfcert
-def test_canonical_sequence_exact_at_each_joint():
+@pytest.mark.parametrize("build,S", [(_a3, [2]), (_square, [2, 3]), (_line5, [2, 4]),
+                                     (_a4, [2, 3])])
+def test_canonical_sequences_exact(build, S):
+    # BOTH BBD sequences, through the GENUINE natural maps (built from the actual functor
+    # outputs, ModuleHom-certified as A-maps), across the algebra set + the new kA4 cell:
+    #   counit:  j_! j^* M -> M -> i_* i^* M -> 0   (im(counit) = ker(unit_i), unit_i epi)
+    #   unit:    0 -> i_* i^! M -> M -> j_* j^* M   (mono, im = ker(unit_j))
+    A = build()
+    R = Recollement(A, S)
+    mods = [A.projective(v) for v in A.quiver.vertices]
+    mods += [A.simple(v) for v in A.quiver.vertices]
+    for M in mods:
+        assert R.counit_sequence_exact(M), f"counit seq not exact for {M.name} in {build.__name__}"
+        assert R.unit_sequence_exact(M), f"unit seq not exact for {M.name} in {build.__name__}"
+
+
+@selfcert
+def test_genuine_maps_land_where_hand_formulas_predict():
+    # The genuine natural maps agree with the closed forms the OLD tautology used, but are
+    # now built THROUGH the functors: im(counit_j) = M e A = M(AeA) = ker(unit_i).
+    A = _square()
+    R = Recollement(A, [2, 3])
+    dom = A.domain
+    from quiverlab.modules import linalg_mod as lm
+    for M in [A.projective(v) for v in A.quiver.vertices]:
+        eps, eta = R.counit_j(M), R.unit_i(M)
+        Ie, _e, mono_e = eps.image()
+        Ke, iota_k = eta.kernel()
+        r_im = Ie.dim
+        r_ker = Ke.dim
+        # M(AeA) computed by hand for the arbiter (span, not identity of construction)
+        hand = R._M_AeA_cols(M)
+        assert r_im == r_ker == len(hand)
+        assert eta.is_epi()                            # M ->> i_* i^* M
+
+
+@selfcert
+def test_degenerate_S_refused():
+    # S = ALL vertices (e = 1) and S = EMPTY (e = 0) are degenerate recollements: refuse
+    # loudly naming the idempotent, never a bare IndexError from a 0-vertex algebra build.
     A = _a3()
-    R = Recollement(A, [2])
-    for M in [A.projective(v) for v in (1, 2, 3)]:
-        assert R._counit_sequence_exact(M)         # j_! j^* M -> M -> i_* i^* M -> 0 exact
+    allv = list(A.quiver.vertices)
+    with pytest.raises(QuiverlabError, match="IDENTITY|full idempotent"):
+        Recollement(A, allv)
+    with pytest.raises(QuiverlabError, match="ZERO idempotent|empty"):
+        Recollement(A, [])
 
 
 @selfcert

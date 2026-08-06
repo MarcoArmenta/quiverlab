@@ -31,7 +31,7 @@ from quiverlab.errors import QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.modules import radtopsoc
 from quiverlab.modules.builders import _require_provenance
-from quiverlab.modules.hom import _assert_comparable, hom_space
+from quiverlab.modules.hom import _assert_comparable, hom_space, is_isomorphic
 from quiverlab.modules.morphism import ModuleHom, direct_sum, hom_basis
 
 
@@ -261,55 +261,116 @@ def is_quasi_hereditary(A, order=None):
 # --------------------------------------------------------------------------- #
 # Task D: the characteristic tilting module + Ringel dual.
 # --------------------------------------------------------------------------- #
+def _universal_extension(Mext, cur, dom):
+    """The universal extension ``0 -> cur -> E -> Mext^{d} -> 0`` where
+    ``d = dim Ext^1(Mext, cur)``: ``E`` has ``Ext^1(Mext, E) = 0`` (the connecting map of
+    the sequence surjects ``Ext^1(Mext, Mext^d) ->> Ext^1(Mext, cur)``, so the pullback of
+    a basis of ``Ext^1(Mext, cur)`` splits it off). Built as ``d`` SUCCESSIVE Baer
+    extensions along an ``Ext^1(Mext, cur)`` basis, each pushed forward along the
+    accumulated ``cur -> E_i`` inclusion (the Bongartz idiom, cf. ``bongartz_completion``).
+    Returns ``E`` (or ``cur`` unchanged when ``Ext^1(Mext, cur) = 0``)."""
+    from quiverlab.modules.resolution import minimal_resolution
+    from quiverlab.modules.tilting import _ext1_cocycles
+    from quiverlab.modules.yoneda import baer_extension
+    terms, dmats = minimal_resolution(Mext, 2)
+    xis = _ext1_cocycles(Mext, cur, terms, dmats)   # basis of Ext^1(Mext, cur)
+    if not xis:
+        return cur
+    a_to_cur = lm.identity(cur.dim, dom)            # cur_initial -> cur (grows each Baer step)
+    for xi in xis:                                  # one class at a time, pushed forward
+        pushed = lm.matmul(a_to_cur, xi, dom)       # P_1(Mext) -> cur (current)
+        seq = baer_extension(Mext, cur, pushed, terms=terms, dmats=dmats)
+        iota = seq.maps[0]                          # cur -> E
+        a_to_cur = lm.matmul(iota, a_to_cur, dom)
+        cur = seq.middle
+    return cur
+
+
 def characteristic_tilting(A, order=None):
     """The Dlab-Ringel characteristic tilting module ``T = (+)_i T(i)`` for ``order``.
-    ``T(i)`` is Ringel's universal extension with ``Delta(i)`` as its bottom Delta-layer:
-    inductively low->high, extend ``Delta(i)`` by the lower ``T(j)`` (``rank(j) < rank(i)``)
-    through ``d_j = dim Ext^1(T(j), Delta(i))`` successive Baer extensions
-    (``0 -> Delta(i) -> T(i) -> (+)_j T(j)^{d_j} -> 0``, pushing the accumulated inclusion
-    forward -- the Bongartz idiom), which kills ``Ext^1(T(j), T(i))``. For ``kA_n`` natural
-    order (``Delta=S``) ``T = (+) I(v) = D(A)``; opposite order (``Delta=P``) ``T = A``.
-    SELF-CERTIFIED: ``Ext^1(T, Nabla(j)) = 0`` for all j AND ``is_tilting_module(T)``; a wrong
-    assembly fails the cert and raises loudly. The two certs inherit the P30/P44 char 0 /
-    char > dim caveat (Delta/Nabla themselves are char-clean)."""
-    from quiverlab.modules.ext import ext_dims
-    from quiverlab.modules.resolution import minimal_resolution
-    from quiverlab.modules.tilting import _ext1_cocycles, is_tilting_module
-    from quiverlab.modules.yoneda import baer_extension
+
+    Each indecomposable ``T(i)`` is built by the genuine Ringel iteration starting from
+    ``cur = Delta(i)``: REPEAT -- pick any ``j`` with ``d_j = dim Ext^1(Delta(j), cur) > 0``
+    and replace ``cur`` by the universal extension ``0 -> cur -> new -> Delta(j)^{d_j} -> 0``
+    (which kills ``Ext^1(Delta(j), -)``) -- UNTIL ``Ext^1(Delta(j), cur) = 0`` for ALL ``j``.
+    The limit lies in ``F(Delta)`` (extensions of standards stay Delta-filtered) and in
+    ``F(Nabla) = {X : Ext^1(Delta(j), X) = 0 for all j}``, so it is ``T(i)`` (Dlab-Ringel,
+    Ringel Math. Z. 1991). For ``kA_n`` natural order (``Delta = S``) ``T = (+) I(v) = D(A)``;
+    opposite order (``Delta = P``) ``T = A``.
+
+    TERMINATION (qh algebras): every step strictly increases ``dim cur`` (by ``d_j*dim
+    Delta(j) >= 1``), and by Ringel reciprocity ``(T(i):Delta(j)) = [Nabla(j):L(i)] <=
+    dim Nabla(j)``, so ``dim T(i) <= sum_j dim Nabla(j)*dim Delta(j) =: bound_dim`` -- a
+    finite a-priori ceiling; every intermediate ``cur`` is a sub-filtration of ``T(i)`` so
+    ``dim cur <= bound_dim`` throughout. Exceeding it means the input is not quasi-hereditary
+    for this order (or out of scope): we raise loudly rather than loop forever.
+
+    SELF-CERTIFIED (both sides + the correct degree): ``Ext^1(Delta(j), T) = 0`` AND
+    ``Ext^1(T, Nabla(j)) = 0`` for all ``j`` (``T in F(Delta) cap F(Nabla)``), plus
+    ``is_tilting_module(T, n=gl.dim A)`` -- the classical ``pd <= 1`` default would reject
+    the true ``T = D(A)`` (``pd 2``) on any non-hereditary qh algebra, so we certify against
+    the exact global dimension. ``gl.dim A`` must be exact-finite (Dlab-Ringel: qh => finite);
+    a non-exact bound refuses loudly. The certs inherit the P30/P44 char 0 / char > dim caveat
+    (Delta/Nabla themselves are char-clean)."""
+    from quiverlab.modules.ext import ext_dims, global_dimension
+    from quiverlab.modules.tilting import is_tilting_module
     dom = A.domain
     ranks, order = _order_ranks(A, order)
+    d = global_dimension(A)                          # qh => finite (Dlab-Ringel)
+    if not d.exact:
+        raise QuiverlabError(
+            f"characteristic_tilting needs gl.dim(A) exact-finite (quasi-hereditary): "
+            f"got {d!r}",
+            hint="the algebra is not quasi-hereditary for this order, or gl.dim exceeds "
+                 "the resolution bound")
     deltas = standard_modules(A, order)
     nablas = costandard_modules(A, order)
+    bound_dim = 1 + sum(nablas[j].dim * deltas[j].dim for j in order)   # >= dim T(i)
     T = {}                                          # vertex -> T(i)
-    for i in order:                                 # low -> high
+    for i in order:
         cur = deltas[i]
-        for j in order:
-            if ranks[j] >= ranks[i]:
-                continue                            # only lower T(j) absorb into T(i)
-            terms_j, dmats_j = minimal_resolution(T[j], 2)
-            xis = _ext1_cocycles(T[j], cur, terms_j, dmats_j)   # basis of Ext^1(T(j), cur)
-            if not xis:
-                continue
-            a_to_cur = lm.identity(cur.dim, dom)    # cur_initial -> cur (grows each Baer step)
-            for xi in xis:                          # universal extension, one class at a time
-                pushed = lm.matmul(a_to_cur, xi, dom)   # P_1(T(j)) -> cur
-                seq = baer_extension(T[j], cur, pushed, terms=terms_j, dmats=dmats_j)
-                iota = seq.maps[0]                  # cur -> E
-                a_to_cur = lm.matmul(iota, a_to_cur, dom)
-                cur = seq.middle
+        guard = 0
+        while True:                                 # Ringel iteration: land in F(Nabla)
+            target = None
+            for j in order:
+                if ext_dims(A, deltas[j], cur, 1)[1] > 0:   # Ext^1(Delta(j), cur) != 0
+                    target = j
+                    break
+            if target is None:
+                break                               # Ext^1(Delta(j), cur) = 0 for all j
+            cur = _universal_extension(deltas[target], cur, dom)
+            guard += 1
+            if cur.dim > bound_dim or guard > bound_dim:
+                raise QuiverlabError(
+                    f"characteristic_tilting: the Ringel iteration for T({i}) exceeded the "
+                    f"dim ceiling {bound_dim} (order {order!r}) -- not quasi-hereditary / "
+                    f"out of scope",
+                    hint="check A.is_quasi_hereditary(order) first")
         T[i] = cur
-    Tmod, _, _ = direct_sum(*[T[i] for i in order])
-    # SELF-CERTIFY the assembly (the arbiter; P37/P44 precedent).
+    # basic-ify: keep one representative per iso class (the T(i) are indecomposable and
+    # pairwise non-iso for a qh algebra, but dedup defends against a coincidental repeat).
+    reps = []
+    for i in order:
+        if not any(is_isomorphic(T[i], R) for R in reps):
+            reps.append(T[i])
+    Tmod, _, _ = direct_sum(*reps)
+    # SELF-CERTIFY the assembly on BOTH sides + the gl.dim degree (the arbiter).
     for j in order:
+        if ext_dims(A, deltas[j], Tmod, 1)[1] != 0:
+            raise QuiverlabError(
+                f"characteristic_tilting: Ext^1(Delta({j}), T) != 0 -- T is not in "
+                f"F(Nabla); the Ringel iteration is wrong for order {order!r}",
+                hint="please report this presentation")
         if ext_dims(A, Tmod, nablas[j], 1)[1] != 0:
             raise QuiverlabError(
-                f"characteristic_tilting: Ext^1(T, Nabla({j})) != 0 -- the universal "
-                f"extension assembly is wrong for order {order!r}",
+                f"characteristic_tilting: Ext^1(T, Nabla({j})) != 0 -- T is not in "
+                f"F(Delta); the assembly is wrong for order {order!r}",
                 hint="please report this presentation")
-    rep = is_tilting_module(Tmod)
+    rep = is_tilting_module(Tmod, n=int(d))
     if not rep.is_tilting:
         raise QuiverlabError(
-            f"characteristic_tilting: T is not tilting (self-certificate failed: {rep.note})",
+            f"characteristic_tilting: T is not a {int(d)}-tilting module (self-certificate "
+            f"failed: {rep.note})",
             hint="the Delta set or the extension order is inconsistent")
     Tmod.name = "T (char. tilting)"
     return Tmod

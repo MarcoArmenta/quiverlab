@@ -5,13 +5,13 @@ invariant factors (Smith normal form) as A. Over QQ (decompose/presented_form ch
 char 0). ringel_dual(A) must be PRESENTED for the double-dual (its projectives get built)."""
 import pytest
 
-from quiverlab import linear_path_algebra
+from quiverlab import Quiver, linear_path_algebra
 from quiverlab.fields import QQ
 from quiverlab.modules.ext import ext_dims
 from quiverlab.modules.hom import is_isomorphic
 from quiverlab.modules.morphism import direct_sum
 from quiverlab.modules.quasihereditary import (characteristic_tilting, costandard_modules,
-                                               ringel_dual)
+                                               ringel_dual, standard_modules)
 
 lit = pytest.mark.oracle_literature
 selfcert = pytest.mark.oracle_selfcert
@@ -19,6 +19,14 @@ selfcert = pytest.mark.oracle_selfcert
 
 def _a3():
     return linear_path_algebra(3, field=QQ)
+
+
+def _square():
+    # commutative square 1->2->4, 1->3->4 with ab = cd: a NON-hereditary quasi-hereditary
+    # algebra (gl.dim 2, every Delta simple). The discriminating oracle: the classical
+    # pd<=1 tilting certificate and the single-pass T(j)-extension both got this wrong.
+    Q = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)})
+    return Q.algebra(relations=["a*b-c*d"], field=QQ)
 
 
 @lit
@@ -46,6 +54,37 @@ def test_T_is_tilting_and_ext_perp_nabla():
     N = costandard_modules(A)
     for j in (1, 2, 3):
         assert ext_dims(A, T, N[j], 1)[1] == 0                  # Ext^1(T, Nabla(j)) = 0
+
+
+@lit
+def test_commutative_square_T_is_D_of_A():
+    # THE discriminating non-hereditary oracle (Dlab-Ringel). All Delta(i) are simple, but
+    # T = D(A) has pd 2, so the classical pd<=1 self-cert rejected it and the single-pass
+    # universal extension over T(j) built a module outside F(Nabla). The genuine Ringel
+    # iteration + the gl.dim-degree certificate must land exactly on D(A).
+    A = _square()
+    assert all(standard_modules(A)[v].dim == 1 for v in (1, 2, 3, 4))   # all Delta simple
+    T = characteristic_tilting(A)                                       # natural order
+    DA, _, _ = direct_sum(*[A.injective(v) for v in (1, 2, 3, 4)])       # D(A) = (+) I(v)
+    assert T.dim == 9
+    assert T.dimension_vector() == {1: 4, 2: 2, 3: 2, 4: 1}
+    assert is_isomorphic(T, DA)
+
+
+@selfcert
+def test_commutative_square_T_both_sided_ext_perp():
+    # F(Delta) cap F(Nabla): Ext^1(Delta(j), T) = 0 AND Ext^1(T, Nabla(j)) = 0 for all j,
+    # and T is 2-tilting (pd = gl.dim = 2, not the classical 1).
+    from quiverlab.modules.tilting import is_tilting_module
+    A = _square()
+    T = characteristic_tilting(A)
+    D = standard_modules(A)
+    N = costandard_modules(A)
+    for j in (1, 2, 3, 4):
+        assert ext_dims(A, D[j], T, 1)[1] == 0                          # Ext^1(Delta(j), T) = 0
+        assert ext_dims(A, T, N[j], 1)[1] == 0                          # Ext^1(T, Nabla(j)) = 0
+    rep = is_tilting_module(T, n=2)
+    assert rep.is_tilting is True and rep.pd == 2                       # NOT pd <= 1
 
 
 @lit

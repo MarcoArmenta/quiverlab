@@ -32,7 +32,7 @@ from quiverlab.modules.builders import (_label_vertex_source, _label_vertex_targ
                                         _require_provenance, projective)
 from quiverlab.modules.hom import hom_space
 from quiverlab.modules.module import Module
-from quiverlab.modules.morphism import direct_sum
+from quiverlab.modules.morphism import ModuleHom, direct_sum
 
 
 def _same_span(cols1, cols2, dom):
@@ -63,10 +63,24 @@ class Recollement:
         self.dom = A.domain
         self.S = [v for v in A.quiver.vertices if v in set(S)]   # keep A's vertex order
         self.Sset = set(S)
-        if not self.Sset.issubset(set(A.quiver.vertices)):
+        allv = set(A.quiver.vertices)
+        if not self.Sset.issubset(allv):
             raise QuiverlabError(
                 f"Recollement: S={list(S)!r} has vertices not in the quiver "
                 f"{list(A.quiver.vertices)!r}")
+        if not self.Sset:
+            raise QuiverlabError(
+                "Recollement: S is empty, so e = sum_{v in S} e_v is the ZERO idempotent "
+                "-- the recollement is degenerate (eAe = 0, A/AeA = A, the j-side vanishes)",
+                hint="use e = 0 directly: mod A/AeA = mod A is the whole category, and "
+                     "j^*/j_!/j_* are trivial; pass a proper nonempty vertex subset instead")
+        if self.Sset == allv:
+            raise QuiverlabError(
+                "Recollement: S is ALL vertices, so e = sum_{v in S} e_v is the IDENTITY "
+                "(full) idempotent -- the recollement is degenerate (eAe = A, A/AeA = 0, "
+                "the i-side vanishes)",
+                hint="use e = 1 directly: mod eAe = mod A is the whole category, and j^* "
+                     "is the identity; pass a proper nonempty vertex subset instead")
         # basis-label endpoint vertices + visit classification (path-type, char-clean)
         self._srcv = [_label_vertex_source(A, lab) for lab in A.basis_labels]
         self._tgtv = [_label_vertex_target(A, lab) for lab in A.basis_labels]
@@ -212,17 +226,24 @@ class Recollement:
         return sol[0]
 
     # -- j-side (corner eAe) --------------------------------------------------- #
+    def _me_cols(self, M):
+        """A reduced column basis of ``M e_S = sum_{v in S} M e_v`` inside ``M`` (the
+        underlying space of ``j^* M``). Shared by ``j_upper_star`` and the genuine counit /
+        unit natural maps so their embedding of ``j^* M`` into ``M`` is consistent."""
+        dom = self.dom
+        cols = []
+        for v in self.S:
+            Ev = M.action[f"e_{v}"]
+            cols.extend(lm.col(Ev, j) for j in range(M.dim))
+        return _reduce(cols, dom)
+
     def j_upper_star(self, M):
         """``j^*(M) = M e_S`` with the ``eAe``-action (the corner restriction). Underlying
         space ``sum_{v in S} M e_v``; an ``eAe`` basis element acts by the ``A``-action of
         its embedded ``A``-element restricted to ``M e_S``."""
         A, dom = self.A, self.dom
         eAe = self.eAe
-        cols = []
-        for v in self.S:
-            Ev = M.action[f"e_{v}"]
-            cols.extend(lm.col(Ev, j) for j in range(M.dim))
-        me = _reduce(cols, dom)
+        me = self._me_cols(M)
         r = len(me)
         Bm = lm.cols_to_matrix(me) if me else lm.zeros(M.dim, 0, dom)
         action = {}
@@ -238,10 +259,12 @@ class Recollement:
             action[lab] = lm.cols_to_matrix(outcols) if outcols else lm.zeros(r, r, dom)
         return Module(eAe, r, action, name=f"j^*({M.name})", side="right")
 
-    def j_shriek(self, X):
-        """``j_!(X) = X (x)_{eAe} eA``, a right ``A``-module (induction, left adjoint of
-        ``j^*``). Built as the quotient of the ambient ``X (x)_k eA`` by the balancing
-        ``A``-submodule ``<(x.c) (x) p - x (x) (c.p)>``. Self-cert: ``j^* j_! X ~= X``."""
+    def _jshriek_ambient(self, X):
+        """Shared data for ``j_!(X) = X (x)_{eAe} eA``: the ambient ``(+)^{dim X} eA``, the
+        balancing relations ``Wcols`` (``<(x.c) (x) p - x (x) (c.p)>``, reduced), and the
+        ``eA`` structure. Returns ``None`` for the zero case (``dim X = 0`` or ``eA = 0``).
+        Both ``j_shriek`` and the genuine counit builder use this so the counit is
+        guaranteed consistent with the returned ``j_!(X)``."""
         A, dom = self.A, self.dom
         eAe = self.eAe
         Pmods = [projective(A, v) for v in self.S]
@@ -251,7 +274,7 @@ class Recollement:
         eA_dim = len(eA_idx)
         dX = X.dim
         if dX == 0 or eA_dim == 0:
-            return self._zero_A_module(f"j_!({X.name})")
+            return None
         ambient, _inc, _prj = direct_sum(*([eA_module(A, self.S)] * dX))
         Wcols = []
         for t, clab in enumerate(eAe.basis_labels):
@@ -268,22 +291,31 @@ class Recollement:
                         w[i * eA_dim + b] = dom.sub(w[i * eA_dim + b], cp_ea[b])
                     Wcols.append(w)
         Wcols = _reduce(Wcols, dom)
-        T = radtopsoc.quotient(ambient, Wcols, name=f"j_!({X.name})", side="right")
-        return T
+        return ambient, Wcols, eA_avecs, eA_idx, eA_dim, dX
 
-    def j_star(self, X):
-        """``j_*(X) = Hom_{eAe}(Ae, X)``, a right ``A``-module (coinduction, right adjoint of
-        ``j^*``). ``Ae`` is the right ``eAe``-module of ``A``-paths ending in ``S``; the
-        residual LEFT ``A``-action on ``Ae`` gives the right ``A``-action on the Hom-space.
-        Self-cert: ``j^* j_* X ~= X``."""
+    def j_shriek(self, X):
+        """``j_!(X) = X (x)_{eAe} eA``, a right ``A``-module (induction, left adjoint of
+        ``j^*``). Built as the quotient of the ambient ``X (x)_k eA`` by the balancing
+        ``A``-submodule ``<(x.c) (x) p - x (x) (c.p)>``. Self-cert: ``j^* j_! X ~= X``."""
+        dom = self.dom
+        data = self._jshriek_ambient(X)
+        if data is None:
+            return self._zero_A_module(f"j_!({X.name})")
+        ambient, Wcols = data[0], data[1]
+        return radtopsoc.quotient(ambient, Wcols, name=f"j_!({X.name})", side="right")
+
+    def _ae_module(self):
+        """``Ae`` as a right ``eAe``-module: the ``A``-paths ending in ``S`` with action
+        ``(m . c) = m * iota(c)``. Returns ``(AeMod, ae_idx, ae_avecs, d_ae)`` (``AeMod`` is
+        ``None`` when ``d_ae = 0``). Depends only on ``(A, S)``, not on the argument module,
+        so both ``j_star`` and the genuine unit builder share it consistently."""
         A, dom = self.A, self.dom
         eAe = self.eAe
         ae_idx = [k for k in range(A.dim) if self._tgtv[k] in self.Sset]
         ae_avecs = [A._basis_vec(k) for k in ae_idx]
         d_ae = len(ae_idx)
-        if d_ae == 0 or X.dim == 0:
-            return self._zero_A_module(f"j_*({X.name})")
-        # Ae as a right eAe-module: (m . c) = m * iota(c), expressed in the ae basis.
+        if d_ae == 0:
+            return None, ae_idx, ae_avecs, d_ae
         ae_action = {}
         for lab in eAe.basis_labels:
             c = self._eae_iota[lab]
@@ -293,6 +325,17 @@ class Recollement:
                 cols.append([prod[ae_idx[b]] for b in range(d_ae)])
             ae_action[lab] = lm.cols_to_matrix(cols)
         AeMod = Module(eAe, d_ae, ae_action, name="Ae", side="right")
+        return AeMod, ae_idx, ae_avecs, d_ae
+
+    def j_star(self, X):
+        """``j_*(X) = Hom_{eAe}(Ae, X)``, a right ``A``-module (coinduction, right adjoint of
+        ``j^*``). ``Ae`` is the right ``eAe``-module of ``A``-paths ending in ``S``; the
+        residual LEFT ``A``-action on ``Ae`` gives the right ``A``-action on the Hom-space.
+        Self-cert: ``j^* j_* X ~= X``."""
+        A, dom = self.A, self.dom
+        AeMod, ae_idx, ae_avecs, d_ae = self._ae_module()
+        if d_ae == 0 or X.dim == 0:
+            return self._zero_A_module(f"j_*({X.name})")
         H = hom_space(AeMod, X)                      # X.dim x d_ae matrices
         m = len(H)
         if m == 0:
@@ -335,19 +378,14 @@ class Recollement:
     def i_upper_star(self, M):
         """``i^*(M) = M / M(AeA) = M (x)_A A/AeA`` (left adjoint of ``i_*``): quotient ``M``
         by the submodule ``M . (A e_S A)``; viewed as an ``A/AeA``-module."""
-        A, dom = self.A, self.dom
-        subcols = []
-        for k in self._visit_idx:
-            Ak = M.action[A.basis_labels[k]]
-            subcols.extend(lm.col(Ak, j) for j in range(M.dim))
-        subcols = _reduce(subcols, dom)
+        subcols = self._M_AeA_cols(M)                # M . (A e_S A) (shared with the unit map)
         Q = radtopsoc.quotient(M, subcols, name=f"i^*({M.name})", side="right")
         return self._restrict_to_B(Q, name=f"i^*({M.name})")
 
-    def i_upper_shriek(self, M):
-        """``i^!(M) = Hom_A(A/AeA, M)`` = the largest submodule of ``M`` annihilated by
-        ``A e_S A`` (right adjoint of ``i_*``): ``intersection_g ker(M.action[g])``, viewed
-        as an ``A/AeA``-module."""
+    def _iupper_shriek_cols(self, M):
+        """A column basis of ``i^!(M) = intersection_g ker(M.action[g])`` over paths ``g``
+        visiting ``S`` (the largest submodule annihilated by ``A e_S A``). Shared by
+        ``i_upper_shriek`` and the genuine ``i_* i^! M -> M`` inclusion."""
         A, dom = self.A, self.dom
         inter = None
         for k in self._visit_idx:
@@ -355,6 +393,13 @@ class Recollement:
             inter = ker if inter is None else radtopsoc._intersect(inter, ker, dom)
         if inter is None:                            # no AeA -> whole M annihilated
             inter = [lm.col(lm.identity(M.dim, dom), j) for j in range(M.dim)]
+        return inter
+
+    def i_upper_shriek(self, M):
+        """``i^!(M) = Hom_A(A/AeA, M)`` = the largest submodule of ``M`` annihilated by
+        ``A e_S A`` (right adjoint of ``i_*``): ``intersection_g ker(M.action[g])``, viewed
+        as an ``A/AeA``-module."""
+        inter = self._iupper_shriek_cols(M)
         sub = radtopsoc.submodule(M, inter, name=f"i^!({M.name})", side="right")
         return self._restrict_to_B(sub, name=f"i^!({M.name})")
 
@@ -370,9 +415,10 @@ class Recollement:
         action = {lab: lm.zeros(0, 0, dom) for lab in A.basis_labels}
         return Module(A, 0, action, name=name, side="right")
 
-    # -- certificate helpers (used by the tests) ------------------------------ #
+    # -- shared span helper --------------------------------------------------- #
     def _M_AeA_cols(self, M):
-        """Columns spanning ``M . (A e_S A) = ker(unit M ->> i_* i^* M)``."""
+        """Columns spanning ``M . (A e_S A)`` (the submodule ``i^*`` / the unit quotient by).
+        Shared by ``i_upper_star`` and ``unit_i`` so the quotient bases agree."""
         dom = self.dom
         cols = []
         for k in self._visit_idx:
@@ -380,27 +426,135 @@ class Recollement:
             cols.extend(lm.col(Ak, j) for j in range(M.dim))
         return _reduce(cols, dom)
 
-    def _MeA_cols(self, M):
-        """Columns spanning ``M e A = im(counit j_! j^* M -> M)`` (the A-submodule generated
-        by ``M e_S``)."""
-        A, dom = self.A, self.dom
-        me = []
-        for v in self.S:
-            Ev = M.action[f"e_{v}"]
-            me.extend(lm.col(Ev, j) for j in range(M.dim))
-        me = _reduce(me, dom)
-        gens = []
-        for lab in A.basis_labels:
-            Ab = M.action[lab]
-            for c in me:
-                gens.append(lm.matvec(Ab, c, dom))
-        return _reduce(gens, dom)
+    # -- genuine natural transformations of the recollement (through the functors) -- #
+    # These build the four structural maps as validated ModuleHom objects out of the
+    # ACTUAL functor outputs (check=True re-certifies each is an A-map), so the exactness
+    # certificates below genuinely exercise j_!, j^*, j_*, i_*, i^*, i^! -- unlike the old
+    # tautological span identity, which recomputed both sides from M by hand and could not
+    # catch a functor bug (M e A = M(AeA) always, since M A = M).
+    def counit_j(self, M):
+        """The counit ``epsilon: j_! j^* M -> M`` of the ``(j_!, j^*)`` adjunction as a
+        genuine :class:`ModuleHom`. On the ambient ``X (x)_k eA`` (``X = j^* M``) the counit
+        is ``x_i (x) p_b |-> m_i . p_b`` in ``M`` (``m_i`` = the ``i``-th basis vector of
+        ``j^* M = M e_S`` embedded in ``M``); associativity kills the balancing relations, so
+        it descends to ``Y = j_!(j^* M)``. ``check=True`` re-verifies it is an ``A``-map into
+        the ACTUAL ``Y`` and ``M``."""
+        from quiverlab.modules.yoneda import _quotient_with_maps
+        dom = self.dom
+        X = self.j_upper_star(M)
+        Y = self.j_shriek(X)
+        me = self._me_cols(M)
+        data = self._jshriek_ambient(X)
+        if Y.dim == 0 or data is None:
+            return ModuleHom(Y, M, lm.zeros(M.dim, Y.dim, dom), check=False)
+        ambient, Wcols, eA_avecs, eA_idx, eA_dim, dX = data
+        assert len(me) == X.dim                      # the embedding matches the functor output
+        act = [self._A_action(M, eA_avecs[b]) for b in range(eA_dim)]   # right-mult by p_b
+        Ccols = []
+        for i in range(dX):
+            for b in range(eA_dim):
+                Ccols.append(lm.matvec(act[b], me[i], dom))             # m_i . p_b in M
+        C_amb = lm.cols_to_matrix(Ccols)             # M.dim x ambient.dim
+        for w in Wcols:                              # associativity: the counit descends
+            if any(not dom.is_zero(x) for x in lm.matvec(C_amb, w, dom)):
+                raise QuiverlabError(
+                    "Recollement.counit_j: the counit does not descend to j_! (bug)")
+        _Yq, _proj, lift = _quotient_with_maps(ambient, Wcols, dom, name="j_!")
+        eps = lm.matmul(C_amb, lift, dom)            # M.dim x Y.dim (push through the reps)
+        return ModuleHom(Y, M, eps, check=True)
 
-    def _counit_sequence_exact(self, M):
-        """``j_! j^* M --> M --> i_* i^* M --> 0`` exact at each joint: the second map is the
-        (surjective) quotient by ``M(AeA)``, and ``im(counit) = M e A = M(AeA) = ker`` -- a
-        span identity (both submodules of M coincide)."""
-        return _same_span(self._MeA_cols(M), self._M_AeA_cols(M), self.dom)
+    def unit_i(self, M):
+        """The unit ``eta: M -> i_* i^* M`` of the ``(i^*, i_*)`` adjunction as a genuine
+        :class:`ModuleHom`: the quotient projection ``M ->> M / M(AeA)`` landing in the
+        ACTUAL ``i_* i^* M``. ``check=True`` re-verifies the ``A``-map."""
+        from quiverlab.modules.yoneda import _quotient_with_maps
+        dom = self.dom
+        tgt = self.i_star(self.i_upper_star(M))      # A-module, dim = M.dim - dim M(AeA)
+        subcols = self._M_AeA_cols(M)
+        _Q, proj, _lift = _quotient_with_maps(M, subcols, dom, name=f"eta_i({M.name})")
+        # check only when both endpoints are nonzero (0-dim matmul is shapeless in the checker)
+        return ModuleHom(M, tgt, proj, check=(M.dim > 0 and tgt.dim > 0))
+
+    def counit_i_shriek(self, M):
+        """The counit ``i_* i^! M -> M`` of the ``(i_*, i^!)`` adjunction as a genuine
+        :class:`ModuleHom`: the inclusion of ``i^! M`` (the largest submodule annihilated by
+        ``A e_S A``) into ``M``, landing out of the ACTUAL ``i_* i^! M``. ``check=True``
+        re-verifies the ``A``-map."""
+        dom = self.dom
+        inter = self._iupper_shriek_cols(M)
+        src = self.i_star(self.i_upper_shriek(M))    # A-module, dim = dim i^! M
+        incl = lm.cols_to_matrix(inter) if inter else lm.zeros(M.dim, 0, dom)
+        # check only when both endpoints are nonzero (0-dim matmul is shapeless in the checker)
+        return ModuleHom(src, M, incl, check=(src.dim > 0 and M.dim > 0))
+
+    def unit_j(self, M):
+        """The unit ``eta: M -> j_* j^* M = Hom_{eAe}(Ae, j^* M)`` of the ``(j^*, j_*)``
+        adjunction as a genuine :class:`ModuleHom`: ``m |-> (ae |-> m . ae in M e_S)``,
+        expressed in the SAME ``Hom`` basis ``j_*`` used. ``check=True`` re-verifies the
+        ``A``-map into the ACTUAL ``j_* j^* M``."""
+        A, dom = self.A, self.dom
+        X = self.j_upper_star(M)
+        JX = self.j_star(X)
+        AeMod, ae_idx, ae_avecs, d_ae = self._ae_module()
+        if JX.dim == 0 or X.dim == 0 or d_ae == 0:
+            return ModuleHom(M, JX, lm.zeros(JX.dim, M.dim, dom), check=False)
+        me = self._me_cols(M)
+        Bm = lm.cols_to_matrix(me)                   # M.dim x X.dim (embedding of j^* M)
+        H = hom_space(AeMod, X)                       # SAME basis j_star used
+
+        def flat(mat):
+            return [x for row in mat for x in row]
+
+        basisH = lm.cols_to_matrix([flat(h) for h in H])
+        act = [self._A_action(M, ae_avecs[j]) for j in range(d_ae)]     # right-mult by ae_j
+        ident = lm.identity(M.dim, dom)
+        cols = []
+        for k in range(M.dim):
+            ek = lm.col(ident, k)
+            phicols = []
+            for j in range(d_ae):
+                v = lm.matvec(act[j], ek, dom)       # e_k . ae_j in M (lands in M e_S)
+                sol = lm.solve_columns(Bm, lm.cols_to_matrix([v]), dom)  # express in j^* M
+                if sol is None:
+                    raise QuiverlabError("Recollement.unit_j: m.ae not in M e_S (bug)")
+                phicols.append(sol[0])
+            phi = lm.cols_to_matrix(phicols)         # X.dim x d_ae : the hom Ae -> j^* M
+            solb = lm.solve_columns(basisH, lm.cols_to_matrix([flat(phi)]), dom)
+            if solb is None:
+                raise QuiverlabError(
+                    "Recollement.unit_j: eta(m) not in Hom_{eAe}(Ae, j^* M) (bug)")
+            cols.append(solb[0])
+        return ModuleHom(M, JX, lm.cols_to_matrix(cols), check=True)
+
+    # -- genuine exactness certificates (used by the tests) ------------------- #
+    def counit_sequence_exact(self, M):
+        """The BBD counit sequence ``j_! j^* M -> M -> i_* i^* M -> 0`` is exact: through the
+        GENUINE natural maps ``im(counit_j) = ker(unit_i)`` as submodules of ``M`` AND
+        ``unit_i`` is surjective. (Replaces the old tautological span identity that never
+        invoked the functors.)"""
+        dom = self.dom
+        eps = self.counit_j(M)
+        eta = self.unit_i(M)
+        Ie, _e, mono_e = eps.image()                 # im(counit) >-> M
+        Ke, iota_k = eta.kernel()                    # ker(unit)  >-> M
+        ie = [lm.col(mono_e.matrix, j) for j in range(Ie.dim)]
+        ke = [lm.col(iota_k.matrix, j) for j in range(Ke.dim)]
+        return _same_span(ie, ke, dom) and eta.is_epi()
+
+    def unit_sequence_exact(self, M):
+        """The BBD unit sequence ``0 -> i_* i^! M -> M -> j_* j^* M`` is exact at the first
+        two joints: through the GENUINE natural maps ``i_* i^! M -> M`` is injective AND
+        ``im(i_* i^! M -> M) = ker(M -> j_* j^* M)`` as submodules of ``M``."""
+        dom = self.dom
+        alpha = self.counit_i_shriek(M)              # i_* i^! M >-> M
+        beta = self.unit_j(M)                        # M -> j_* j^* M
+        if not alpha.is_mono():
+            return False
+        Ia, _e, mono_a = alpha.image()
+        Kb, iota_b = beta.kernel()
+        ia = [lm.col(mono_a.matrix, j) for j in range(Ia.dim)]
+        kb = [lm.col(iota_b.matrix, j) for j in range(Kb.dim)]
+        return _same_span(ia, kb, dom)
 
 
 def eA_module(A, S):
