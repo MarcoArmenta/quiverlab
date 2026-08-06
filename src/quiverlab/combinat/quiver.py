@@ -72,6 +72,11 @@ class Quiver:
                     stack.append((nxt, iter(adj[nxt])))
         return True
 
+    def is_connected(self) -> bool:
+        """True iff the underlying undirected graph is connected (Plan 38)."""
+        from quiverlab.invariants.dynkin_type import is_connected
+        return is_connected(self)
+
     def algebra(self, relations=(), field=None, degree_bound=None, trace=None):
         """Build kQ/I over the field (default CC). Monomial presentations route
         through the Plan-01 monomial path; general (non-monomial) relations route

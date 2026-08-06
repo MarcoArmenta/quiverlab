@@ -21,7 +21,7 @@ Presentation rules carried over from the GUI (all Marco, 2026-07-29):
 Float-free: every number is copied from block data (ints / exact strings).
 """
 from quiverlab.trace.render_html import (
-    _dims_table, _esc, _math, _math_inline, matrix_grid)
+    _dims_table, _esc, _math, _math_inline, gloss_max_cells, matrix_grid)
 
 # Human headings per compute kind. A kind missing here still renders (the key is
 # shown verbatim), so a newly added invariant degrades to an honest label rather
@@ -30,6 +30,7 @@ _HEADINGS = {
     "hh_cohomology": "Hochschild cohomology",
     "hh_homology": "Hochschild homology",
     "cyclic_homology": "Cyclic homology",
+    "ss_hochschild": "Hochschild (b,B) spectral sequence",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
     "cap": "Cap product tables",
@@ -38,19 +39,29 @@ _HEADINGS = {
     "cartan": "Cartan matrix",
     "coxeter_polynomial": "Coxeter polynomial",
     "global_dimension": "Global dimension",
+    "homological_profile": "Homological dimensions",
     "center": "Centre",
     "dimension": "Dimension",
+    "ext_algebra": "Yoneda Ext-algebra and Koszulity",
+    "recognizers": "Structural recognizers and type",
+    "derived_fingerprint": "Derived fingerprint",
+    "strings": "Strings and bands",
+    "quasi_hereditary": "Quasi-hereditary structure",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
     "tau_minus": "Inverse AR translate τ⁻M",
     "decompose": "Krull–Schmidt decomposition of M",
+    "almost_split": "Almost-split sequence of M",
     "ext": "Ext",
     "tor": "Tor",
     "projective_resolution": "Projective resolution of M",
     "injective_resolution": "Injective resolution of M",
     "projective_dimension": "Projective dimension of M",
     "injective_dimension": "Injective dimension of M",
+    "tilting_check": "Tilting test",
+    "orbit_geometry": "Orbit geometry",
+    "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -184,6 +195,293 @@ def _resolved_note(kind, b):
     return out
 
 
+_RECOGNIZER_LABELS = {
+    "is_semisimple": "semisimple", "is_radical_square_zero": "radical square zero",
+    "is_hereditary": "hereditary", "is_basic": "basic", "is_nakayama": "Nakayama",
+    "is_special_biserial": "special biserial", "is_string": "string",
+    "is_gentle": "gentle", "is_selfinjective": "self-injective",
+    "is_symmetric": "symmetric",
+}
+_FORM_TYPE_GLOSS = {
+    "finite": "positive definite Tits form (finite representation type when hereditary)",
+    "tame": "positive semidefinite, not definite (tame type when hereditary)",
+    "wild": "indefinite Tits form (wild type when hereditary)",
+}
+
+
+def _ext_algebra_html(b):
+    """The Yoneda Ext-algebra block: the three-valued Koszul verdict, the graded
+    (Betti) dimensions of E(A), and its minimal generators/relations by degree."""
+    koszul, reason = b.get("koszul"), b.get("koszul_reason")
+    obstruction, cdeg = b.get("obstruction"), b.get("certified_through_degree")
+    if koszul is True:
+        verdict = "A is <b>Koszul</b>"
+    elif koszul is False:
+        if obstruction:
+            verdict = ("A is <b>not Koszul</b> — obstruction at degree %s (%s)"
+                       % (_esc(str(obstruction[0])), _esc(str(obstruction[1]))))
+        else:
+            verdict = "A is <b>not Koszul</b>"
+    else:
+        verdict = "Koszulity is <b>undecided</b> through degree %s" % _esc(str(cdeg))
+    if reason and koszul is not False:
+        verdict += " — %s" % _esc(str(reason))
+    out = ["<p>%s. Graded (Betti) data for the Yoneda algebra %s through degree "
+           "%s:</p>" % (verdict,
+                        _math_inline(r"E(A) = \operatorname{Ext}^{*}_{A}(A/J, A/J)"),
+                        _esc(str(cdeg)))]
+    dims = b.get("graded_dims") or []
+    if dims:
+        out.append(_dims_table("dim E^n", dims))
+    if b.get("latex"):
+        out.append(_math(b["latex"]))
+    gens, rels = b.get("generators_by_degree") or {}, b.get("relations_by_degree") or {}
+
+    def _by_degree(d):
+        if not d:
+            return "none"
+        return ", ".join("degree %s: %s" % (_esc(k), _esc(str(v)))
+                         for k, v in sorted(d.items(), key=lambda kv: int(kv[0])))
+    out.append("<p>Minimal generators of E(A): %s. Minimal relations: %s.</p>"
+               % (_by_degree(gens), _by_degree(rels)))
+    return out
+
+
+def _tau_tilting_html(b):
+    """The C4 tau-tilting block (Plan 45): the support tau-tilting pairs (label +
+    g-matrix + support), the brick-labelled Hasse edges, the AIR four-way counts +
+    maximal-green-sequence count, and the wall-and-chamber fan (chambers + walls),
+    with the honest complete-iff-tau-tilting-finite status."""
+    n = b.get("n")
+    out = ["<p>Support τ-tilting pairs (M, P) of A, their g-matrices and the mutation "
+           "exchange graph (Adachi–Iyama–Reiten). Each pair is a maximal cone of the "
+           "g-vector fan; each exchange edge crosses a wall labelled by a brick "
+           "(King θ-stability). The BFS from (A, 0) is complete iff A is "
+           "τ-tilting-finite.</p>"]
+    if not b.get("complete"):
+        out.append("<p class='ql-note'>The exchange graph did not close "
+                   "(status: <b>%s</b>) — A is τ-tilting-infinite or the pair budget was "
+                   "hit. %d pairs were found before the cap; the fan, the four-way counts "
+                   "and the green-sequence count are omitted (a partial value would "
+                   "mislead).</p>" % (_esc(str(b.get("status"))), b.get("num_pairs", 0)))
+    counts = b.get("counts")
+    if counts:
+        out.append("<p>The AIR four-way count identity holds on this run: "
+                   "#support τ-tilting pairs = #functorially-finite torsion classes = "
+                   "#2-term silting = #semibricks = <b>%d = %d = %d = %d</b>.</p>"
+                   % (counts.get("pairs"), counts.get("torsion"),
+                      counts.get("silting"), counts.get("semibricks")))
+    if b.get("green_count") is not None:
+        out.append("<p>Maximal green sequences (directed maximal chains "
+                   "(A,0) → (0,A) of left mutations): <b>%d</b>.</p>"
+                   % b["green_count"])
+    # pairs table
+    rows = ["<tr><th>id</th><th>pair (M, P)</th><th>support</th>"
+            "<th>g-matrix (columns = g-vectors)</th></tr>"]
+    for p in (b.get("pairs") or []):
+        gm = "; ".join("(" + ", ".join(str(p["g_matrix"][r][c])
+                                       for r in range(len(p["g_matrix"])))
+                       + ")" for c in range(len(p["g_matrix"][0]) if p["g_matrix"] else 0))
+        star = " (initial)" if p.get("is_initial") else ""
+        rows.append("<tr><td>%d</td><td>%s%s</td><td>%s</td><td>%s</td></tr>"
+                    % (p["id"], _esc(str(p["label"])), star,
+                       _esc(str(p.get("support") or [])), _esc(gm)))
+    out.append("<table class='ql-tt-pairs'>%s</table>" % "".join(rows))
+    # Hasse edges
+    hasse = b.get("hasse") or []
+    if hasse:
+        lis = []
+        for e in hasse:
+            bd = e.get("brick_dimvec")
+            bstr = (" — brick " + _dv(bd)) if bd else ""
+            lis.append("<li>%d → %d%s</li>" % (e["from"], e["to"], _esc(bstr)))
+        out.append("<p>Hasse quiver (downward = left mutation, from (A,0) to (0,A)):</p>")
+        out.append("<ul class='ql-tt-hasse'>%s</ul>" % "".join(lis))
+    # the fan (chambers + walls)
+    fan = b.get("fan")
+    if fan and fan.get("chambers"):
+        out.append("<p>Wall-and-chamber fan (n = %s%s): one chamber per pair (the "
+                   "g-vector cone), one wall per exchange edge (normal = the brick "
+                   "dim-vector). Exact rational; the GUI draws it live.</p>"
+                   % (_esc(str(fan.get("n"))),
+                      ", L1/octahedron projection" if fan.get("projection") == "L1"
+                      else ""))
+        wl = []
+        for w in (fan.get("walls") or []):
+            bd = w.get("brick_dimvec")
+            wl.append("<li>wall between chambers %s — normal (brick dim-vector) %s</li>"
+                      % (_esc(str(w.get("between"))),
+                         _dv(bd) if bd else "?"))
+        if wl:
+            out.append("<ul class='ql-tt-walls'>%s</ul>" % "".join(wl))
+    return out
+
+
+def _recognizers_html(b):
+    """The recognizer batch + type block: each flag as yes/no (or an honest
+    per-flag 'not decided' when it refused), the Dynkin/Euclidean type and the
+    finite/tame/wild form type."""
+    flags = b.get("flags") or {}
+    lis = []
+    for key in ("is_semisimple", "is_radical_square_zero", "is_hereditary",
+                "is_basic", "is_nakayama", "is_special_biserial", "is_string",
+                "is_gentle", "is_selfinjective", "is_symmetric"):
+        if key not in flags:
+            continue
+        v = flags[key]
+        label = _esc(_RECOGNIZER_LABELS.get(key, key))
+        if isinstance(v, dict) and "error" in v:
+            lis.append("<li>%s: not decided — %s</li>" % (label, _esc(str(v["error"]))))
+        elif v is True:
+            lis.append("<li>%s: <b>yes</b></li>" % label)
+        else:
+            lis.append("<li>%s: no</li>" % label)
+    out = ["<ul class='ql-flags'>%s</ul>" % "".join(lis)] if lis else []
+    dt = b.get("dynkin_type")
+    out.append("<p>Underlying diagram type: <b>%s</b>.</p>" % _esc(str(dt)) if dt
+               else "<p>Underlying diagram type: not a Dynkin/Euclidean diagram.</p>")
+    ft = b.get("form_type")
+    if ft:
+        out.append("<p>Form type: <b>%s</b> — %s.</p>"
+                   % (_esc(ft), _esc(_FORM_TYPE_GLOSS.get(ft, ""))))
+    else:
+        out.append("<p>Form type: undefined (the Cartan matrix is not unimodular, "
+                   "so the Euler/Tits form has no integral matrix here).</p>")
+    return out
+
+
+def _quasi_hereditary_html(b):
+    """The quasi-hereditary structure block (Plan 47): the verdict + the order (with the
+    honest order-dependence note), the per-index brick / Delta-filtration certificates, and
+    the standard-module dim-vectors table."""
+    out = []
+    verdict = "yes" if b.get("is_quasi_hereditary") else "no"
+    order = ", ".join(str(v) for v in (b.get("order") or []))
+    out.append("<p>Quasi-hereditary in this order: <b>%s</b>. Order (lowest to highest): "
+               "%s.</p>" % (verdict, _esc(order)))
+    if b.get("order_note"):
+        out.append("<p><em>%s.</em></p>" % _esc(str(b["order_note"])))
+    gl = b.get("gl_dim") or {}
+    if gl:
+        gtxt = ("%s (exact)" % gl.get("value") if gl.get("exact")
+                else ">= %s (certified lower bound)" % gl.get("value"))
+        out.append("<p>Global dimension: <b>%s</b> (quasi-heredity requires it finite).</p>"
+                   % _esc(gtxt))
+    if not b.get("is_quasi_hereditary") and b.get("note"):
+        out.append("<p>Failing clause: %s.</p>" % _esc(str(b["note"])))
+    # per-index certificates
+    per = b.get("per_index") or {}
+    if per:
+        rows = []
+        for v in (b.get("order") or list(per)):
+            info = per.get(str(v)) or per.get(v) or {}
+            brick = "yes" if info.get("brick") else "no"
+            filt = "yes" if info.get("delta_filters_P") else "no"
+            rows.append("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                        % (_esc(str(v)), brick, filt))
+        out.append("<table class='ql-qh'><thead><tr><th>i</th>"
+                   "<th>End &Delta;(i)=k</th><th>P(i) &Delta;-filtered</th></tr></thead>"
+                   "<tbody>%s</tbody></table>" % "".join(rows))
+    # standard-module dim vectors
+    sd = b.get("standard_dims") or {}
+    if sd:
+        rows = []
+        for v in (b.get("order") or list(sd)):
+            info = sd.get(str(v)) or sd.get(v) or {}
+            dv = info.get("dimvec") or {}
+            dvtxt = ", ".join("%s:%s" % (w, n) for w, n in dv.items())
+            rows.append("<tr><th>&Delta;(%s)</th><td>%s</td><td>%s</td></tr>"
+                        % (_esc(str(v)), _esc(str(info.get("dim"))), _esc(dvtxt)))
+        out.append("<table class='ql-qh-delta'><thead><tr><th>standard</th><th>dim</th>"
+                   "<th>dim vector</th></tr></thead><tbody>%s</tbody></table>"
+                   % "".join(rows))
+    return out
+
+
+def _derived_fingerprint_html(b):
+    """The derived fingerprint: the invariant tuple rendered as a table, plus the
+    binding necessary-condition scope line. A field captured as an error prints its
+    message; no field is silently dropped."""
+    fp = b.get("fingerprint") or {}
+
+    def _cell(val):
+        if isinstance(val, dict) and "error" in val:
+            return "unavailable — %s" % _esc(str(val["error"]))
+        if isinstance(val, list):
+            return _esc("[" + ", ".join(str(x) for x in val) + "]")
+        return _esc(str(val))
+
+    rows = [
+        ("Coxeter polynomial", fp.get("coxeter_polynomial")),
+        ("det C", fp.get("cartan_det")),
+        ("Cartan Smith factors", fp.get("cartan_smith")),
+        ("dim HH^• (cohomology)", fp.get("hh_cohomology_dims")),
+        ("dim HH_• (homology)", fp.get("hh_homology_dims")),
+        ("dim HC_• (cyclic)", fp.get("cyclic_dims")),
+        ("dim Z(A)", fp.get("center_dim")),
+        ("global dimension", fp.get("gl_dim")),
+    ]
+    body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(k), _cell(v))
+                   for k, v in rows)
+    out = ["<table class='ql-fingerprint'><tbody>%s</tbody></table>" % body]
+    out.append("<p><em>%s.</em></p>" % _esc(
+        b.get("scope", "a derived-invariant fingerprint; equal values are a "
+                       "necessary condition for derived equivalence, not a proof")))
+def _strings_html(b):
+    """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
+    census + band presence + honest rep-type + (gentle) AG invariant."""
+    rc = b.get("recognizers") or {}
+    out = []
+    lis = []
+    for key, label in (("is_special_biserial", "special biserial"),
+                       ("is_string", "string"), ("is_gentle", "gentle")):
+        if key not in rc:
+            continue
+        v = rc[key]
+        if isinstance(v, dict) and "error" in v:
+            lis.append("<li>%s: not decided — %s</li>" % (label, _esc(str(v["error"]))))
+        elif v is True:
+            lis.append("<li>%s: <b>yes</b></li>" % label)
+        else:
+            lis.append("<li>%s: no</li>" % label)
+    if lis:
+        out.append("<ul class='ql-flags'>%s</ul>" % "".join(lis))
+    s = b.get("strings")
+    if s:
+        if s.get("status") == "complete":
+            out.append("<p>String modules: <b>%s</b> (a complete list up to length %s — "
+                       "all indecomposable string modules).</p>"
+                       % (_num(s.get("count")), _num(s.get("max_length"))))
+        else:
+            out.append("<p>String modules: <b>%s</b> (a length-capped sample up to length "
+                       "%s; not claimed complete — the algebra has bands).</p>"
+                       % (_num(s.get("count")), _num(s.get("max_length"))))
+        if s.get("sample"):
+            out.append("<p>Sample walks: %s.</p>"
+                       % _esc(", ".join(str(x) for x in s["sample"])))
+    bands = b.get("bands")
+    if bands:
+        if bands.get("exist"):
+            out.append("<p>Bands: <b>yes</b> — %s (the algebra is representation-infinite)."
+                       "</p>" % _esc(", ".join(str(x) for x in bands.get("sample", []))))
+        else:
+            out.append("<p>Bands: none.</p>")
+    rt = {"finite": "representation-finite", "infinite": "representation-infinite",
+          "unknown": "undetermined (budget/length cut)"}
+    out.append("<p>Representation type: <b>%s</b>.</p>"
+               % _esc(rt.get(b.get("rep_type"), str(b.get("rep_type")))))
+    ag = b.get("ag_invariant")
+    if isinstance(ag, list):
+        pairs = ", ".join("(%s, %s)" % (p[0], p[1]) for p in ag)
+        out.append("<p>Avella-Alaminos–Geiss invariant (a DERIVED invariant, honestly "
+                   "NOT complete): {%s}.</p>" % _esc(pairs))
+    elif isinstance(ag, dict) and "error" in ag:
+        out.append("<p>AG invariant: not decided — %s.</p>" % _esc(str(ag["error"])))
+    if b.get("note"):
+        out.append("<p>%s.</p>" % _esc(str(b["note"])))
+    return out
+
+
 def _block_html(kind, b, ctx=None):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
@@ -231,6 +529,18 @@ def _block_html(kind, b, ctx=None):
                           "JSON.</i></p>")
             chunks.extend(secs)
         return chunks
+    if kind == "ss_hochschild":
+        # The Hochschild (b, B) spectral sequence (Plan 42): the abutment table
+        # (E_inf totals == HC_n), the netPage E_inf grid, and the convergence prose.
+        if b.get("error"):
+            return ["<p>%s</p>" % gloss_max_cells(_esc(str(b["error"])))]
+        chunks = [_dims_table("dim E_inf total (= HC_n)", b.get("abutment") or [])]
+        grid = (b.get("grid") or "").replace("```", "").strip()
+        if grid:
+            chunks.append("<pre class=\"ql-ss-grid\">%s</pre>" % _esc(grid))
+        if b.get("prose"):
+            chunks.append("<p>%s</p>" % _esc(str(b["prose"])))
+        return chunks
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]
@@ -239,10 +549,24 @@ def _block_html(kind, b, ctx=None):
         return [_math(r"\chi(t) = " + b["latex"])] if b.get("latex") else []
     if kind == "global_dimension":
         return ["<p>%s</p>" % _esc(str(b.get("text", "")))]
+    if kind == "homological_profile":
+        return _homological_profile_html(b)
     if kind == "center":
         return [_math(r"\dim Z(A) = %s" % _num(b.get("dim")))]
     if kind == "dimension":
         return [_math(r"\dim_k A = %s" % _num(b.get("value")))]
+    if kind == "ext_algebra":
+        return _ext_algebra_html(b)
+    if kind == "tau_tilting":
+        return _tau_tilting_html(b)
+    if kind == "recognizers":
+        return _recognizers_html(b)
+    if kind == "derived_fingerprint":
+        return _derived_fingerprint_html(b)
+    if kind == "strings":
+        return _strings_html(b)
+    if kind == "quasi_hereditary":
+        return _quasi_hereditary_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":
@@ -251,6 +575,8 @@ def _block_html(kind, b, ctx=None):
         return _tau_html(kind, b)
     if kind == "decompose":
         return _decompose_html(b)
+    if kind == "almost_split":
+        return _almost_split_html(b)
     if kind in ("ext", "tor"):
         op = "Ext^" if kind == "ext" else "Tor_"
         chunks = []
@@ -296,8 +622,76 @@ def _block_html(kind, b, ctx=None):
         if b.get("note"):
             chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
         return chunks
+    if kind == "tilting_check":
+        if b.get("error"):
+            return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+        verdict = ("M is a tilting module."
+                   if b.get("is_tilting")
+                   else "M is not a tilting module: %s." % _esc(str(b.get("note", ""))))
+        pd = b.get("pd")
+        rows = [
+            ("tilting", "yes" if b.get("is_tilting") else "no"),
+            ("n (pd bound tested)", _num(b.get("n"))),
+            ("pd M", _num(pd) if pd is not None else "&gt; bound"),
+            ("Ext<sup>i</sup>(M,M)=0 (1&#8804;i&#8804;n)",
+             "yes" if b.get("self_ext_vanishes") else "no"),
+            ("# non-iso indec. summands", _num(b.get("num_summands"))),
+            ("# vertices (rank K<sub>0</sub>)", _num(b.get("num_vertices"))),
+        ]
+        tbl = "".join("<tr><th>%s</th><td>%s</td></tr>" % (k, v) for k, v in rows)
+        return ["<p>%s</p>" % verdict,
+                '<table class="ql-table">%s</table>' % tbl]
+    if kind == "orbit_geometry":
+        return _orbit_geometry_html(b)
     # An unknown kind still leaves a trace of what was asked for.
     return ["<p class='ql-note'>computed; see the JSON record for its data.</p>"]
+
+
+def _orbit_geometry_html(b):
+    """The orbit_geometry block (Plan 49 / C8): orbit dim + rigidity + honest codim +
+    (hereditary Dynkin) the Kac canonical decomposition."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+    chunks = []
+    if b.get("latex"):
+        chunks.append(_math(b["latex"]))
+    rows = [
+        ("dimension vector d", _esc(_dv(b.get("dim_vector") or {}))),
+        ("dim GL(d) = &sum;<sub>v</sub> d<sub>v</sub><sup>2</sup>", _num(b.get("group_dim"))),
+        ("dim Rep(Q,d) (ambient)", _num(b.get("rep_variety_dim"))),
+        ("dim End<sub>A</sub>(M)", _num(b.get("end_dim"))),
+        ("dim O<sub>M</sub> (orbit)", _num(b.get("orbit_dim"))),
+        ("dim Ext<sup>1</sup>(M,M)", _num(b.get("ext1_self"))),
+    ]
+    tbl = "".join("<tr><th>%s</th><td>%s</td></tr>" % (k, v) for k, v in rows)
+    chunks.append('<table class="ql-table">%s</table>' % tbl)
+    # rigidity verdict + honest codim gloss (hereditary = codim; general = upper bound)
+    rigid = bool(b.get("rigid"))
+    verdict = ("M is rigid: Ext<sup>1</sup>(M,M) = 0, so the orbit O<sub>M</sub> is open (Voigt)."
+               if rigid else
+               "M is not rigid: Ext<sup>1</sup>(M,M) &gt; 0.")
+    if b.get("codim_semantics") == "hereditary":
+        gloss = ("A is hereditary, so dim Ext<sup>1</sup>(M,M) IS the codimension of the "
+                 "orbit closure in Rep(Q,d) (Voigt, Rep smooth).")
+    else:
+        gloss = ("A = kQ/I is not hereditary, so dim Ext<sup>1</sup>(M,M) is only an UPPER "
+                 "BOUND on the codimension (the module variety is cut by the relations).")
+    chunks.append("<p>%s %s</p>" % (verdict, gloss))
+    # the Kac canonical decomposition (hereditary Dynkin) or the honest refusal note
+    cd = b.get("canonical_decomposition")
+    if cd:
+        parts = []
+        for c in cd:
+            raw = c.get("name") or ("(%s)" % ", ".join(str(x) for x in c.get("root", ())))
+            name = _esc(raw)
+            m = c.get("multiplicity", 1)
+            parts.append(name if m == 1 else "%s<sup>%d</sup>" % (name, m))
+        chunks.append("<p>Kac canonical decomposition: d = %s (each component a positive "
+                      "root; the generic module is rigid).</p>" % " &oplus; ".join(parts))
+    elif b.get("canonical_note"):
+        chunks.append("<p class='ql-note'>Canonical decomposition not computed: %s</p>"
+                      % _esc(str(b["canonical_note"])))
+    return chunks
 
 
 def _dictionary_framing_html(theory, dims):
@@ -333,9 +727,26 @@ def _rad_top_soc_html(b):
     if any(v.get("display_only") for _, v in trio):
         out.append("<p class='ql-note'>display only — entries lie outside the "
                    "integer/fraction input grammar (e.g. GF(p^n) elements).</p>")
+    out.extend(_loewy_series_html(b.get("series") or []))
     for label, view in trio:
         out.extend(_maps_html(label, view))
     return out
+
+
+def _loewy_series_html(series):
+    """The Loewy (radical) series as a stacked diagram, one row per layer top to
+    bottom, factors as S_v^m (Plan 37). Empty series => nothing rendered."""
+    if not series:
+        return []
+    rows = []
+    for i, layer in enumerate(series):
+        factors = " ⊕ ".join(
+            ("S_%s" % v if m == 1 else "S_%s^%d" % (v, m))
+            for v, m in sorted(layer.items()) if m)
+        rows.append("<tr><th>layer %d</th><td>%s</td></tr>"
+                    % (i + 1, _esc(factors or "0")))
+    return ["<p class='ql-note'>Loewy (radical) series, top to bottom:</p>",
+            '<table class="ql-loewy">%s</table>' % "".join(rows)]
 
 
 def _tau_html(kind, b):
@@ -409,6 +820,64 @@ def _decompose_html(b):
     if any(s.get("display_only") for s in summands):
         out.append("<p class='ql-note'>display only — entries lie outside the "
                    "integer/fraction input grammar (e.g. GF(p^n) elements).</p>")
+    return out
+
+
+def _findim_text(f):
+    if f.get("exact"):
+        return "findim = %s  (%s)" % (_num(f.get("lower")), f.get("note", ""))
+    if f.get("upper") is not None:
+        return "findim in [%s, %s]  (%s)" % (
+            _num(f.get("lower")), _num(f.get("upper")), f.get("note", ""))
+    return "findim >= %s  (%s)" % (_num(f.get("lower")), f.get("note", ""))
+
+
+def _homological_profile_html(b):
+    """The C6 homological-dimensions family (Plan 40) as a labelled table -- each row
+    its own honest marker (exact value / certified bound / infinity / undecided /
+    per-entry error), never a bare number the engine did not resolve."""
+    it = b.get("igusa_todorov") or {}
+    if it.get("error"):
+        it_text = "not computed: %s" % it["error"]
+    else:
+        it_text = "of %s: φ = %s, ψ = %s" % (
+            it.get("module", ""), _num(it.get("phi")), _num(it.get("psi")))
+    rows = [
+        ("Global dimension", (b.get("global_dimension") or {}).get("text", "")),
+        ("Finitistic dimension", _findim_text(b.get("finitistic") or {})),
+        ("Dominant dimension", (b.get("dominant") or {}).get("text", "")),
+        ("Gorenstein", (b.get("gorenstein") or {}).get("text", "")),
+        ("Igusa–Todorov φ/ψ", it_text),
+    ]
+    body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(lab), _esc(str(val)))
+                   for lab, val in rows)
+    return ['<table class="ql-table">%s</table>' % body]
+def _almost_split_html(b):
+    """The almost-split sequence 0 → τM → E → M → 0 (Plan 41): τM as a full
+    representation, then E's Krull–Schmidt summands (standard summands named, others
+    with full matrices). An ``exists: false`` block renders the honest refusal."""
+    if b.get("exists") is False:
+        return ["<p>No almost-split sequence: %s</p>"
+                % _esc(b.get("reason", "input not eligible"))]
+    out = []
+    if b.get("latex"):
+        out.append(_math(b["latex"]))
+    out.append("<p>M is indecomposable and non-projective; τM as a full "
+               "representation:</p>")
+    if b.get("tau"):
+        out.extend(_maps_html("τM", b["tau"]))
+    summands = (b.get("middle") or {}).get("summands") or []
+    rows = ["<tr><th>summand</th><th>multiplicity</th><th>dim vector</th></tr>"]
+    for i, s in enumerate(summands):
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+                    % (_esc(_summand_name(s, i + 1)), _num(s.get("multiplicity")),
+                       _esc(_dv(s.get("dim_vector")))))
+    out.append("<p>middle term E — %d Krull–Schmidt summand(s):</p>" % len(summands))
+    out.append('<table class="ql-table">%s</table>' % "".join(rows))
+    for i, s in enumerate(summands):
+        if s.get("standard") or not s.get("maps"):
+            continue
+        out.extend(_maps_html(_summand_name(s, i + 1), s))
     return out
 
 

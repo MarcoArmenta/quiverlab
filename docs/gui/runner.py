@@ -30,7 +30,8 @@ _PD_BOUND = 32
 _MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
-    "projective_dimension", "injective_dimension", "decompose",
+    "projective_dimension", "injective_dimension", "decompose", "almost_split",
+    "tilting_check", "orbit_geometry",
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
@@ -115,6 +116,13 @@ def run_build(request_json):
 def _parse_compute(spec):
     name, _, rng = spec.partition(":")
     top = None
+    # tau_tilting carries a PAIR BUDGET, not a degree range (Plan 45): 'tau_tilting' or
+    # 'tau_tilting:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "tau_tilting":
+        if rng and not rng.isdigit():
+            raise RequestError("tau_tilting budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tau_tilting", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -279,6 +287,10 @@ _MOD_REFS = {
     "injective_resolution": ["minimal_resolution", "assem_book"],
     "injective_dimension": ["minimal_resolution", "assem_book"],
     "decompose": ["assem_book"],
+    "almost_split": ["assem_book", "ars_book"],
+    "tilting_check": ["bongartz_tilting", "assem_book"],
+    "orbit_geometry": ["voigt_rigidity", "kac_canonical",
+                       "schofield_general_reps", "derksen_weyman_canonical"],
 }
 
 
@@ -450,9 +462,12 @@ def _module_block(name, top):
         return {"kind": name, "side": M.side, "citations": cites, **_mod_view(M),
                 "latex": r"\underline{\dim}\, M = " + _dv_latex(M.dimension_vector())}
     if name == "rad_top_soc":
+        # "series" = the Loewy (radical) series top-to-bottom (Plan 37), byte-identical
+        # to the hpc spec core so the draw page and the report/CLI agree.
         return {"kind": name, "side": M.side, "citations": cites,
                 "radical": _mod_repr(M.radical()), "top": _mod_repr(M.top()),
-                "socle": _mod_repr(M.socle())}
+                "socle": _mod_repr(M.socle()),
+                "series": [dict(layer) for layer in M.loewy_layers()]}
     if name in ("tau", "tau_minus"):
         # The translate ships as a full representation ({dims, maps}) -- mirrors the
         # hpc spec core, so both dispatches carry the AR translate's per-arrow
@@ -475,6 +490,24 @@ def _module_block(name, top):
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return {"kind": name, "side": M.side, "summands": summands,
                 "iso_classes": len(summands), "citations": cites}
+    if name == "almost_split":
+        # The almost-split sequence 0 -> tau M -> E -> M -> 0 for M indecomposable
+        # non-projective (Plan 41). Byte-identical block shape to quiverlab.hpc.spec's
+        # almost_split branch (tau = full repr; E's summands via the shared serializer;
+        # honest exists:false refusal for projective/decomposable/undecidable input).
+        from quiverlab.modules.decompose import decompose
+        try:
+            ses = M.almost_split_sequence()
+        except quiverlab.QuiverlabError as exc:
+            return {"kind": name, "exists": False, "reason": str(exc),
+                    "references": list(keys), "citations": cites}
+        return {"kind": name, "exists": True, "side": M.side,
+                "tau": _mod_repr(ses.L),
+                "middle": {"summands": [_summand_view(s, m)
+                                        for (s, m) in decompose(ses.M)]},
+                "M": _mod_view(M), "indecomposable": True,
+                "latex": r"0 \to \tau M \to E \to M \to 0",
+                "references": list(keys), "citations": cites}
     if name == "ext":
         if top is None:
             raise RequestError("ext needs a range, e.g. 'ext:0..4'")
@@ -539,6 +572,35 @@ def _module_block(name, top):
         return {"kind": name, "value": idim, "finite": idim is not None, "citations": cites,
                 "bound": _PD_BOUND, "latex": _homdim_latex("id", idim),
                 **({} if idim is not None else {"note": _HOMDIM_UNRESOLVED})}
+    if name == "tilting_check":
+        # The candidate T is the request's module M (schema-2, no second module). top = the
+        # optional degree n, default 1. A decompose char-caveat becomes an honest per-block
+        # error (mirrors the hpc spec runner byte-for-byte on the math subkeys).
+        from quiverlab.errors import QuiverlabError
+        from quiverlab.modules.tilting import is_tilting_module
+        try:
+            rep = is_tilting_module(M, n=(top if top is not None else 1))
+        except QuiverlabError as exc:
+            return {"kind": name, "error": str(exc),
+                    "references": list(keys), "citations": cites}
+        return {"kind": name, "is_tilting": rep.is_tilting, "n": rep.n, "pd": rep.pd,
+                "self_ext_vanishes": rep.self_ext_vanishes,
+                "num_summands": rep.num_summands, "num_vertices": rep.num_vertices,
+                "note": rep.note, "references": list(keys), "citations": cites}
+    if name == "orbit_geometry":
+        # Byte-identical to quiverlab.hpc.spec's orbit_geometry branch: the shared
+        # library builder + _with_refs's references(list)+citations(pairs). Orbit
+        # dim / rigidity / codim for ANY module; the Kac canonical decomposition is
+        # the hereditary-Dynkin extra. A char-scope QuiverlabError becomes an honest
+        # per-block error (never fatal).
+        from quiverlab.invariants.geometry import orbit_geometry_block
+        try:
+            block = orbit_geometry_block(M)
+        except quiverlab.QuiverlabError as exc:
+            block = {"kind": name, "error": str(exc)}
+        block["references"] = list(keys)
+        block["citations"] = cites
+        return block
     raise RequestError("unknown module invariant %r" % (name,))
 
 
@@ -629,6 +691,15 @@ def compute_one(spec):
                      "engine": table.engine, "references": keys,
                      "citations": _citation_pairs(keys)}
             block.update(reps)
+        elif name == "ss_hochschild":
+            # Hochschild (b, B) spectral sequence (Plan 42). Range kind on the algebra
+            # block; byte-identical to the server twin (quiverlab.hpc.spec._dispatch) --
+            # SAME shared builder (specseq.block.specseq_block) + references->citations.
+            if top is None:
+                raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+            from quiverlab.specseq.block import specseq_block
+            block = specseq_block(A, top)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             m = A.cartan_matrix()
             block = {"matrix": m, "latex": _latex_matrix(m),
@@ -642,6 +713,15 @@ def compute_one(spec):
             g = A.global_dimension()
             block = {"text": str(g), "exact": g.exact, "value": g.value,
                      "citations": _citation_pairs(A.citations())}
+        elif name == "homological_profile":
+            # The C6 homological-dimension family (Plan 40). ONE shared library
+            # builder (modules.homdims.homological_profile) drives this Pyodide twin
+            # and the server (quiverlab.hpc.spec._dispatch), byte-identical by
+            # construction; we only add the resolved citation pairs from `references`
+            # (the cross-runner contract asserts key-for-key equality with the server).
+            from quiverlab.modules.homdims import homological_profile
+            block = homological_profile(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "center":
             dim_z, basis = A.center()
             # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
@@ -654,6 +734,41 @@ def compute_one(spec):
             # which serves `dimension` = A.dim; same `value` semantics, GUI block
             # shape (value + citations, like global_dimension).
             block = {"value": A.dim, "citations": _citation_pairs(A.citations())}
+        elif name == "ext_algebra":
+            # Yoneda / Ext-algebra + Koszulity (Plan 38). Byte-identical to the
+            # server twin (quiverlab.hpc.spec._dispatch): SAME library block
+            # builder, and citations resolved from `references` the same way.
+            from quiverlab.modules.ext_algebra import ext_algebra_block
+            block = ext_algebra_block(A, top if top is not None else 6)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "recognizers":
+            # Recognizer batch + type detection (Plan 38). Byte-identical to the
+            # server twin: SAME library block builder + `references`->citations.
+            from quiverlab.invariants.recognizers import recognizers_block
+            block = recognizers_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "derived_fingerprint":
+            # Derived fingerprint (Plan 43). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (derived.block.derived_fingerprint_block) + `references`->citations.
+            from quiverlab.derived.block import derived_fingerprint_block
+            block = derived_fingerprint_block(A, top if top is not None else 4)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "strings":
+            # Gentle / string subsystem (Plan 46): census + bands + rep-type + AG.
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # library block builder + `references`->citations.
+            from quiverlab.strings.block import strings_block
+            block = strings_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "quasi_hereditary":
+            # Quasi-hereditary structure (Plan 47): an algebra-scalar kind (schema v1).
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # library block builder (modules.quasihereditary.quasi_hereditary_block,
+            # natural order + order-dependence note) + `references`->citations.
+            from quiverlab.modules.quasihereditary import quasi_hereditary_block
+            block = quasi_hereditary_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
             # library method returns a frozen result whose .blocks() IS the block
@@ -667,6 +782,14 @@ def compute_one(spec):
                       "bracket": A.gerstenhaber_brackets,
                       "connes_b": A.connes_differentials}[name]
             block = method(top).blocks()
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "tau_tilting":
+            # C4 tau-tilting engine (Plan 45): algebra-level, budget (not degree). SAME
+            # shared library builder (tautilting.block.tau_tilting_block) + references ->
+            # citations as the server twin (quiverlab.hpc.spec._dispatch), so the
+            # cross-runner contract holds byte-for-byte. Honest budget cap block.
+            from quiverlab.tautilting.block import tau_tilting_block
+            block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
@@ -783,22 +906,35 @@ def python_snippet():
     calls = {"hh_cohomology": "A.hochschild_cohomology(%d)",
              "hh_homology": "A.hochschild_homology(%d)",
              "cyclic_homology": "A.cyclic_homology(%d)",
+             "ss_hochschild": "A.hochschild_bB_ss(%d)",
              "cartan": "A.cartan_matrix()", "coxeter_polynomial": "A.coxeter_polynomial()",
              "global_dimension": "A.global_dimension()", "center": "A.center()",
              # `dimension` is a scalar invariant compute_one serves (A.dim) -- it MUST
              # have a snippet entry or python_snippet() KeyErrors when it is requested.
              "dimension": "A.dim",
+             # Plan 38: Koszulity / Ext-algebra + the recognizer batch. Both are
+             # scalar kinds (no %d) so the reproduce snippet never leaves a literal.
+             "ext_algebra": "A.ext_algebra()",
+             "recognizers": ("[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), "
+                             "A.dynkin_type(), A.form_type()]"),
+             # Quasi-hereditary structure (Plan 47): a scalar kind, no %d.
+             "quasi_hereditary": "A.is_quasi_hereditary()",
+             # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
+             "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
              # map (quiverlab.hpc.spec._snippet); each needs a range (%d = top).
              "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
              "bracket": "A.gerstenhaber_brackets(%d)",
              "connes_b": "A.connes_differentials(%d)",
+             # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
+             "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
              "ext": "[A.ext(M, N, i) for i in range(%d + 1)]",
              "tor": "tor_dims(A, M, N, %d)  # from quiverlab.modules.tor",
              "decompose": "M.decompose()",
+             "almost_split": "M.almost_split_sequence()",
              "projective_resolution": "M.projective_resolution(%d).dimension_vectors()",
              "injective_resolution": "M.injective_resolution(%d).dimension_vectors()",
              "projective_dimension": "M.projective_resolution(%d).pd()" % _PD_BOUND,
@@ -864,13 +1000,41 @@ ETA_MODEL = {
     "fast": {"alpha": 5.3447e-07, "p": 1.1},
     "scalars": {"cartan": 0.01, "coxeter_polynomial": 0.2,
                 "center": 0.05, "global_dimension": 0.5,
+                # Plan 40: the C6 family aggregates gl.dim + finitistic + dominant +
+                # Gorenstein + Igusa-Todorov (several resolutions), so a bit heavier.
+                "homological_profile": 2.0,
                 # module kinds (Plan 26): cheap dim-vector reads up to
                 # resolution/dimension probes that build syzygies to depth.
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,
                 "tau": 0.1, "tau_minus": 0.1, "ext": 0.2, "tor": 0.2,
-                "decompose": 0.3,
+                "decompose": 0.3, "almost_split": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
-                "projective_dimension": 0.3, "injective_dimension": 0.3},
+                "projective_dimension": 0.3, "injective_dimension": 0.3,
+                # Plan 44 / 49: single-module homological probes (tilting_check =
+                # self-Ext vanishing + summand count; orbit_geometry = Voigt
+                # rigidity + Kac canonical decomposition). Same cost class as the
+                # other module resolutions/probes -- WITHOUT these keys they fell
+                # through to the 0.1 default and were silently under-estimated.
+                "tilting_check": 0.3, "orbit_geometry": 0.3,
+                # Plan 38: ext_algebra walks a resolution + Yoneda products;
+                # recognizers is cheap structural combinatorics + a reduction system.
+                "ext_algebra": 2.0, "recognizers": 0.1,
+                # Plan 42: the (b, B) spectral sequence builds the same exponential
+                # bar (b, B) bicomplex cyclic homology uses, plus the page algebra.
+                "ss_hochschild": 2.0,
+                # Plan 43: derived_fingerprint runs Cartan/Coxeter + HH/HC to top=4
+                # (the HH pass dominates; cyclic may fall back or error honestly).
+                "derived_fingerprint": 1.0,
+                # Plan 46: strings = a bounded string/band DFS + AG walk on the
+                # reduction system; a touch heavier than recognizers.
+                "strings": 0.2,
+                # Plan 47: quasi_hereditary builds Delta/Nabla + a gl.dim check +
+                # the greedy Delta-peel of each P(v); a few small resolutions.
+                "quasi_hereditary": 0.5,
+                # Plan 45: the C4 tau-tilting engine BFSes the exchange graph via the
+                # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
+                # heavier than the string DFS, budget-capped honestly.
+                "tau_tilting": 2.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

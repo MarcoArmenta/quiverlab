@@ -11,11 +11,19 @@
       data-mod-summand="{{ t('mod.summand') }}" data-mod-mult="{{ t('mod.multiplicity') }}"
       data-mod-dimvec="{{ t('mod.dim_vector') }}"
       data-mod-decomp-heading="{{ t('mod.decompose_heading') }}"
+      data-mod-tilting-yes="{{ t('mod.tilting_yes') }}"
+      data-mod-tilting-no="{{ t('mod.tilting_no') }}"
+      data-mod-tilting-row="{{ t('mod.tilting_row') }}"
+      data-mod-tilting-n="{{ t('mod.tilting_n') }}"
+      data-mod-tilting-self-ext="{{ t('mod.tilting_selfext') }}"
+      data-mod-tilting-summands="{{ t('mod.tilting_summands') }}"
+      data-mod-tilting-vertices="{{ t('mod.tilting_vertices') }}"
       data-mod-indecomposable="{{ t('mod.indecomposable') }}"
       data-mod-tau-additive="{{ t('mod.tau_additive') }}"
       data-mod-display-only="{{ t('mod.display_only') }}"
       data-mod-stale="{{ t('mod.stale_recompute') }}"
       data-mod-rad-top-soc="{{ t('mod.rad_top_soc') }}"
+      data-mod-loewy-series="{{ t('mod.loewy_series') }}"
       data-mod-arrows-zero="{{ t('mod.arrows_zero') }}"
       data-mod-arrows-acting-zero="{{ t('mod.arrows_acting_zero') }}"
       data-mod-differentials-proj="{{ t('mod.differentials_proj') }}"
@@ -24,7 +32,25 @@
       data-mod-matrix-too-large="{{ t('mod.matrix_too_large') }}"
       data-mod-tau-target-ext="{{ t('mod.tau_target_ext') }}"
       data-mod-tau-target-tor="{{ t('mod.tau_target_tor') }}"
-      data-mod-tau-unavailable="{{ t('mod.tau_unavailable') }}">
+      data-mod-tau-unavailable="{{ t('mod.tau_unavailable') }}"
+      data-og-dim-vec="{{ t('mod.orbit_dim_vec') }}"
+      data-og-group-dim="{{ t('mod.orbit_group_dim') }}"
+      data-og-rep-dim="{{ t('mod.orbit_rep_dim') }}"
+      data-og-end-dim="{{ t('mod.orbit_end_dim') }}"
+      data-og-orbit-dim="{{ t('mod.orbit_orbit_dim') }}"
+      data-og-ext1="{{ t('mod.orbit_ext1') }}"
+      data-og-rigid="{{ t('mod.orbit_rigid') }}"
+      data-og-not-rigid="{{ t('mod.orbit_not_rigid') }}"
+      data-og-codim-hered="{{ t('mod.orbit_codim_hered') }}"
+      data-og-codim-general="{{ t('mod.orbit_codim_general') }}"
+      data-og-canonical="{{ t('mod.orbit_canonical') }}"
+      data-og-canonical-none="{{ t('mod.orbit_canonical_none') }}"
+      data-hp-title="{{ t('block.homprofile.title') }}"
+      data-hp-gldim="{{ t('block.homprofile.gldim') }}"
+      data-hp-findim="{{ t('block.homprofile.findim') }}"
+      data-hp-domdim="{{ t('block.homprofile.domdim') }}"
+      data-hp-goren="{{ t('block.homprofile.gorenstein') }}"
+      data-hp-igusa="{{ t('block.homprofile.igusa') }}">
   <label for="family">{{ t("form.family") }}</label>
   <select id="family" name="family">
     {% for f in catalog.families %}<option value="{{ f.name }}">{{ f.name }}</option>{% endfor %}
@@ -46,10 +72,16 @@
   <label><input type="checkbox" name="compute" value="bracket:0..2"> {{ t("inv.bracket") }}</label>
   <label><input type="checkbox" name="compute" value="connes_b:0..2"> {{ t("inv.connes_b") }}</label>
   <label><input type="checkbox" name="compute" value="cyclic_homology:0..6"> {{ t("inv.cyclic_homology") }}</label>
+  <label><input type="checkbox" name="compute" value="ss_hochschild:0..4"> {{ t("inv.ss_hochschild") }}</label>
   <label><input type="checkbox" name="compute" value="coxeter_polynomial"> {{ t("inv.coxeter") }}</label>
   <label><input type="checkbox" name="compute" value="cartan"> {{ t("inv.cartan") }}</label>
   <label><input type="checkbox" name="compute" value="global_dimension"> {{ t("inv.gldim") }}</label>
+  <label><input type="checkbox" name="compute" value="homological_profile"> {{ t("inv.homological_profile") }}</label>
   <label><input type="checkbox" name="compute" value="center"> {{ t("inv.center") }}</label>
+  <label><input type="checkbox" name="compute" value="ext_algebra:0..6"> {{ t("inv.ext_algebra") }}</label>
+  <label><input type="checkbox" name="compute" value="recognizers"> {{ t("inv.recognizers") }}</label>
+  <label><input type="checkbox" name="compute" value="strings"> {{ t("inv.strings") }}</label>
+  <label><input type="checkbox" name="compute" value="quasi_hereditary"> {{ t("inv.quasi_hereditary") }}</label>
   <label><input type="checkbox" name="pdf" value="1"> {{ t("form.pdf") }}</label>
   <button type="submit">{{ t("form.compute") }}</button>
 </form>

@@ -407,10 +407,24 @@ class Algebra:
         from quiverlab.modules.hom import hom_dim
         return hom_dim(M, N)
 
+    def hom_basis(self, M, N):
+        """A basis of Hom_A(M, N) as validated ModuleHom objects (Plan 37 / C1).
+        `A.hom(M, N)` is `len(A.hom_basis(M, N))`."""
+        from quiverlab.modules.morphism import hom_basis
+        return hom_basis(M, N)
+
     def ext(self, M, N, n):
         """dim Ext^n_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.ext import ext
         return ext(self, M, N, n)
+
+    def ar_quiver(self, budget_modules=256, budget_dim=4096):
+        """The Auslander-Reiten quiver, knitted from the projectives via almost-split
+        sequences (Plan 41 / C3). Returns an ``ARQuiver``; complete iff rep-finite,
+        else a LOUD budget cap (``.is_complete``, ``.status``)."""
+        from quiverlab.modules.ar import knit_ar_quiver
+        return knit_ar_quiver(self, budget_modules=budget_modules,
+                              budget_dim=budget_dim)
 
     def ext_algebra(self, top=6):
         """The Yoneda / Ext-algebra E(A) = Ext^*_A(A/J, A/J) as a graded
@@ -418,6 +432,16 @@ class Algebra:
         (or complete through gl.dim when finite); a YonedaPresentation (Plan 27)."""
         from quiverlab.modules.ext_algebra import ext_algebra
         return ext_algebra(self, top)
+
+    def chain_complex(self, terms, dmats, check=True):
+        """A bounded chain complex of A-modules (Plan 39): ``terms`` is
+        ``{degree: Module}`` and ``dmats`` is ``{n: d_n}`` with
+        ``d_n: terms[n] -> terms[n-1]`` (rows=target, the homological convention).
+        Returns a :class:`~quiverlab.modules.complexes.ChainComplex`; homology,
+        shift/truncate, mapping cones and hyper-Ext follow from it (validated
+        ``d.d = 0`` at construction unless ``check=False``)."""
+        from quiverlab.modules.complexes import ChainComplex
+        return ChainComplex(terms, dmats, check=check)
 
     def crosscheck(self, what="hochschild", *args, **kwargs):
         """Independently recompute an invariant via the optional QPA backend and
@@ -434,11 +458,110 @@ class Algebra:
         from quiverlab.modules.ext import global_dimension
         return global_dimension(self)
 
+    def exchange_graph(self, budget_pairs=512):
+        """The support tau-tilting exchange graph (Plan 45 / C4): BFS from ``(A, 0)`` via
+        AIR mutation, n-regular and g-matrix-deduped. Complete iff tau-tilting-finite, else
+        a LOUD budget cap (``.is_complete``, ``.status``) -- the honest semi-decision
+        contract mirroring the AR quiver."""
+        from quiverlab.tautilting.mutation import exchange_graph
+        return exchange_graph(self, budget_pairs=budget_pairs)
+
+    def is_tilting_module(self, T, n=1):
+        """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
+        ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,
+        Ext^i(T,T)=0 (1<=i<=n), and the Bongartz count criterion for n=1. The summand
+        count inherits the ``decompose`` char caveat (char 0 or char > dim)."""
+        from quiverlab.modules.tilting import is_tilting_module
+        return is_tilting_module(T, n=n)
+
+    def bongartz_completion(self, T):
+        """The Bongartz complement middle term ``E`` of a partial tilting module ``T``
+        (pd<=1, Ext^1(T,T)=0): ``is_tilting_module(direct_sum(T, E))`` is True (Plan 44)."""
+        from quiverlab.modules.tilting import bongartz_completion
+        return bongartz_completion(T)
+
+    # -- quasi-hereditary structure + recollements (Plan 47) ------------------
+    def standard_modules(self, order=None):
+        """The standard modules ``Delta(i)`` for the given vertex ``order`` (dict
+        vertex -> Delta(i); ``order=None`` = natural order) (Plan 47)."""
+        from quiverlab.modules.quasihereditary import standard_modules
+        return standard_modules(self, order)
+
+    def costandard_modules(self, order=None):
+        """The costandard modules ``Nabla(i) = D(Delta_{A^op}(i))`` (Plan 47)."""
+        from quiverlab.modules.quasihereditary import costandard_modules
+        return costandard_modules(self, order)
+
+    def is_quasi_hereditary(self, order=None):
+        """A :class:`~quiverlab.modules.quasihereditary.QHReport` for whether ``A`` is
+        quasi-hereditary in the given ``order`` (Dlab-Ringel; ORDER-DEPENDENT). Char-clean
+        (Plan 47)."""
+        from quiverlab.modules.quasihereditary import is_quasi_hereditary
+        return is_quasi_hereditary(self, order)
+
+    def characteristic_tilting(self, order=None):
+        """The characteristic tilting module ``T = (+) T(i)`` (Ringel, self-certified). The
+        tilting summand count inherits the char 0 / char > dim caveat (Plan 47)."""
+        from quiverlab.modules.quasihereditary import characteristic_tilting
+        return characteristic_tilting(self, order)
+
+    def ringel_dual(self, order=None):
+        """The Ringel dual ``R(A) = End_A(T)^op``, presented as ``kQ/I`` (char 0 / char >
+        dim) or loud-degraded to structure-constant form (Plan 47)."""
+        from quiverlab.modules.quasihereditary import ringel_dual
+        return ringel_dual(self, order)
+
+    def recollement(self, vertices):
+        """The recollement ``(mod A/AeA, mod A, mod eAe)`` at ``e = sum_{v in vertices}
+        e_v`` (Plan 47): a :class:`~quiverlab.modules.recollement.Recollement`."""
+        from quiverlab.modules.recollement import Recollement
+        return Recollement(self, vertices)
+
+    def corner_algebra(self, vertices):
+        """The corner algebra ``eAe`` (NOT the subquiver algebra) at ``vertices`` (Plan 47)."""
+        from quiverlab.modules.recollement import Recollement
+        return Recollement(self, vertices).eAe
+
+    def quotient_by_idempotent(self, vertices):
+        """The quotient ``A / A e_S A`` at ``S = vertices`` (Plan 47)."""
+        from quiverlab.modules.recollement import Recollement
+        return Recollement(self, vertices).quotient
+
     def is_selfinjective(self):
         """True iff every indecomposable projective is injective (self-injective =
         Frobenius for a f.d. algebra); exact over any field (spec §3.5)."""
         from quiverlab.modules.ext import is_selfinjective
         return is_selfinjective(self)
+
+    def dominant_dimension(self, bound=32):
+        """Dominant dimension: the count of leading projective terms in a minimal
+        injective coresolution of the regular module, ``infinite`` iff self-injective
+        (Plan 40). A ``DominantDimension``: exact value, certified lower bound, or a
+        certified infinity -- never a bare number the engine did not resolve."""
+        from quiverlab.modules.homdims import dominant_dimension
+        return dominant_dimension(self, bound=bound)
+
+    def gorenstein_dimension(self, bound=32):
+        """Gorenstein data: the injective dimension of the regular module on both
+        sides (Plan 40). A ``GorensteinDimension`` with three-valued
+        ``is_gorenstein`` True/None (never a bare False)."""
+        from quiverlab.modules.homdims import gorenstein_dimension
+        return gorenstein_dimension(self, bound=bound)
+
+    def is_gorenstein(self, bound=32):
+        """True iff both the right and left injective dimensions of the regular module
+        are finite; None when unresolved within ``bound`` (infinity not proven -- never
+        False) (Plan 40)."""
+        from quiverlab.modules.homdims import is_gorenstein
+        return is_gorenstein(self, bound=bound)
+
+    def finitistic_dimension_bounds(self, bound=32):
+        """Finitistic dimension findim A, bracketed honestly (Plan 40): a rigorous
+        lower bound (a finite pd actually found) and an upper bound = gl.dim when
+        finite (findim = gl.dim), else None (no folklore number). A
+        ``FinitisticBounds``."""
+        from quiverlab.modules.homdims import finitistic_dimension_bounds
+        return finitistic_dimension_bounds(self, bound=bound)
 
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
@@ -455,6 +578,153 @@ class Algebra:
         """Characteristic polynomial of the Coxeter matrix, as an exact sympy Poly."""
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
+
+    def euler_form(self, d, e):
+        """Euler bilinear form <d, e> = d C^{-1} e^T on integer dimension vectors
+        (vertex order); for finite gl.dim, sum (-1)^i dim Ext^i (Plan 38 / C2)."""
+        from quiverlab.invariants.forms import euler_form
+        return euler_form(self, d, e)
+
+    def tits_form(self, d):
+        """Tits quadratic form q(d) = <d, d> of the Euler form (Plan 38 / C2)."""
+        from quiverlab.invariants.forms import tits_form
+        return tits_form(self, d)
+
+    def form_type(self):
+        """'finite' / 'tame' / 'wild' by exact definiteness of the Tits form; a
+        representation-type theorem for hereditary algebras, the signature
+        otherwise (Plan 38 / C2)."""
+        from quiverlab.invariants.forms import form_type
+        return form_type(self)
+
+    def dynkin_type(self):
+        """Orientation-blind Dynkin / Euclidean type of the underlying quiver:
+        ("A"|"D"|"E"|"~A"|"~D"|"~E", n) or None (Plan 38 / C2). Loud if this
+        algebra has no quiver presentation."""
+        if self.quiver is None:
+            from quiverlab.errors import QuiverlabError
+            raise QuiverlabError(
+                "dynkin_type needs the quiver presentation",
+                hint="build the algebra via Quiver.algebra(...); structure-constant "
+                     "algebras carry no quiver")
+        from quiverlab.invariants.dynkin_type import dynkin_type
+        return dynkin_type(self.quiver)
+
+    def positive_roots(self):
+        """Positive roots of the Tits form (= dimension vectors of the
+        indecomposables, Gabriel) for a hereditary Dynkin algebra; loud on
+        affine/wild/non-hereditary input (Plan 38 / C2)."""
+        from quiverlab.invariants.roots import positive_roots
+        return positive_roots(self)
+
+    # -- geometry of representations (Plan 49 / C8) ---------------------------
+    def orbit_dimension(self, M):
+        """dim of the GL(d)-orbit of the module M in Rep(Q, d):
+        dim O_M = sum_v d_v^2 - dim_k End_A(M) (Plan 49 / C8). Exact over every
+        Domain."""
+        from quiverlab.invariants.geometry import orbit_dimension
+        return orbit_dimension(M)
+
+    def is_rigid(self, M):
+        """Voigt: M is rigid iff Ext^1_A(M, M) = 0 (=> the orbit O_M is open in
+        the module variety) (Plan 49 / C8)."""
+        from quiverlab.invariants.geometry import is_rigid
+        return is_rigid(M)
+
+    def rigidity_codim(self, M):
+        """dim Ext^1_A(M, M): the codimension of the orbit closure in Rep(Q, d)
+        on HEREDITARY A (Voigt), an UPPER BOUND on general kQ/I (Plan 49 / C8)."""
+        from quiverlab.invariants.geometry import rigidity_codim
+        return rigidity_codim(M)
+
+    def canonical_decomposition(self, d, *, budget=4096):
+        """The Kac canonical decomposition of the dimension vector d over a
+        HEREDITARY DYNKIN algebra: d = sum m_i * beta_i into positive roots whose
+        generic module is rigid (Plan 49 / C8). Loud off scope (Euclidean/wild
+        deferred, non-hereditary refused)."""
+        from quiverlab.invariants.geometry import canonical_decomposition
+        return canonical_decomposition(self, d, budget=budget)
+
+    def degeneration_order(self, d, *, budget=256):
+        """The degeneration (= hom) order poset of all iso-classes of dimension
+        vector d, for a representation-FINITE algebra (Plan 49 / C8). Returns a
+        DegenerationPoset; complete iff rep-finite, else a loud status (never a
+        silent partial poset)."""
+        from quiverlab.modules.degeneration import degeneration_order
+        return degeneration_order(self, d, budget=budget)
+
+    # -- recognizers (Plan 38 / C2) -------------------------------------------
+    def is_semisimple(self):
+        """True iff A is semisimple (Loewy length 1)."""
+        from quiverlab.invariants.recognizers import is_semisimple
+        return is_semisimple(self)
+
+    def is_radical_square_zero(self):
+        """True iff rad^2 A = 0 (Loewy length <= 2)."""
+        from quiverlab.invariants.recognizers import is_radical_square_zero
+        return is_radical_square_zero(self)
+
+    def is_hereditary(self):
+        """True iff A is hereditary: a path algebra kQ with Q acyclic and no
+        relations (gl.dim <= 1)."""
+        from quiverlab.invariants.recognizers import is_hereditary
+        return is_hereditary(self)
+
+    def is_basic(self):
+        """True for every kQ/I presentation (basic algebra); loud on
+        presentation-less input."""
+        from quiverlab.invariants.recognizers import is_basic
+        return is_basic(self)
+
+    def primitive_idempotents(self):
+        """A complete set of orthogonal primitive idempotents of this algebra (coordinate
+        vectors summing to the unit) via the exact Wedderburn/trace-form route (Plan 44 /
+        C7). Char 0 or char > dim only, else a loud QuiverlabError."""
+        from quiverlab.core.basic import primitive_idempotents
+        return primitive_idempotents(self)
+
+    def basic_algebra(self):
+        """The basic algebra ``eAe`` (one primitive idempotent per iso class),
+        Morita-equivalent to this algebra, as a structure-constant Algebra (Plan 44)."""
+        from quiverlab.core.basic import basic_algebra
+        return basic_algebra(self)
+
+    def gabriel_quiver(self):
+        """The Gabriel (Ext) quiver of this algebra (vertices = iso classes of primitive
+        idempotents, arrows off ``rad/rad^2`` of the basic algebra) (Plan 44)."""
+        from quiverlab.core.basic import gabriel_quiver
+        return gabriel_quiver(self)
+
+    def presented_form(self):
+        """A genuine ``kQ/I`` presentation of the basic algebra, recovered from the
+        structure constants and certified per instance (dim + multiplicativity), so
+        ``End(M)`` / ``End(T)`` read back as ``kQ/I`` (Plan 44 / C7). Loud refusal off
+        char-scope or on a non-split division-algebra block."""
+        from quiverlab.core.basic import presented_form
+        return presented_form(self)
+
+    def is_nakayama(self):
+        """True iff the quiver is a union of linear A_n and single oriented
+        cycles (every vertex in/out-degree <= 1)."""
+        from quiverlab.invariants.recognizers import is_nakayama
+        return is_nakayama(self)
+
+    def is_special_biserial(self):
+        """True iff A is special biserial (ASS: <= 2 arrows in/out per vertex +
+        the one-continuation condition)."""
+        from quiverlab.invariants.recognizers import is_special_biserial
+        return is_special_biserial(self)
+
+    def is_string(self):
+        """True iff A is a string algebra (special biserial + monomial ideal)."""
+        from quiverlab.invariants.recognizers import is_string
+        return is_string(self)
+
+    def is_gentle(self):
+        """True iff A is a gentle algebra (string + length-2 ideal + dual
+        one-relation condition)."""
+        from quiverlab.invariants.recognizers import is_gentle
+        return is_gentle(self)
 
     def loewy_length(self):
         """Loewy length = nilpotency index of rad A (exact, any field) (spec §3.5)."""
@@ -604,6 +874,16 @@ class Algebra:
         Domain via the generic mixed complex — no engine choice to make."""
         from quiverlab.hochschild.products import connes_b_tables
         return connes_b_tables(self, top, max_cells=max_cells)
+
+    def hochschild_bB_ss(self, top, max_cells=4_000_000):
+        """The Hochschild ``(b, B)`` spectral sequence (Plan 42): the first-quadrant
+        ``(b, B)`` bicomplex whose total complex computes cyclic homology, returned
+        as a pre-certified :class:`~quiverlab.specseq.pages.SpectralSequence`
+        (``E_inf`` totals == ``HC_*(A)``). The exponential bar basis is guarded by
+        ``max_cells`` (loud ``DepthLimitError`` up front). Works over any exact
+        Domain."""
+        from quiverlab.specseq.presets import hochschild_bB_ss
+        return hochschild_bB_ss(self, top, max_cells=max_cells)
 
     def nakayama_automorphism(self):
         """Nakayama automorphism nu as a matrix (columns = images) in the

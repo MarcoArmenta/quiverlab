@@ -170,6 +170,21 @@ def is_indecomposable_script(algebra, dimvec_list, arrow_matrices) -> str:
         module_decl(algebra, dimvec_list, arrow_matrices, "M")
 
 
+def hom_glue_script(algebra, dvM, arrM, dvN, arrN) -> str:
+    """Bind ``MM``, ``NN`` (graded forms) and ``homs := HomOverAlgebra(MM, NN)`` so the
+    caller reads ``Length(homs)`` (= dim Hom_A(M, N)) and, for the canonical hom
+    ``homs[1]``, kernel/image/cokernel dimension vectors via QPA Ch. 7's
+    ``KernelInclusion`` / ``ImageInclusion`` / ``CoKernelProjection`` (Plan 37 C1
+    hom-glue battery). Each read is its OWN trailing statement -- ``session.run`` evals
+    one statement per line -- so callers append e.g.
+    ``\\nf := homs[1];;\\nDimensionVector(Source(KernelInclusion(f)));``."""
+    base = quiver_and_algebra_script(algebra)
+    base += "\n" + module_decl(algebra, dvM, arrM, "MM")
+    base += "\n" + module_decl(algebra, dvN, arrN, "NN")
+    base += "\nhoms := HomOverAlgebra(MM, NN);;"
+    return base
+
+
 def ext_algebra_generators_script(algebra, top: int) -> str:
     """Bind ``info := ExtAlgebraGenerators(M, top)`` for ``M = (+) SimpleModules(A)``
     (Plan 27 Yoneda-algebra crosscheck). QPA's ``ExtAlgebraGenerators`` returns a
@@ -232,6 +247,32 @@ def trivial_extension_script(algebra) -> str:
     QPA (QPA labels its dual arrows differently, so compare counts, not names)."""
     return quiver_and_algebra_script(algebra) + \
         "\nTE := TrivialExtensionOfQuiverAlgebra(A);;"
+
+
+def almost_split_sequence_script(algebra, dimvec_list, arrow_matrices) -> str:
+    """Bind the module ``M`` (graded form) plus ``ass := AlmostSplitSequence(M)`` and its
+    middle term ``mid := Range(ass[1])`` -- the middle of ``0 -> DTr M -> mid -> M -> 0``
+    (Plan 41). The caller reads each on its OWN trailing statement (``session.run`` evals
+    one statement per line): ``DimensionVector(mid);`` (works over QQ) and, over a FINITE
+    field where QPA's ``DecomposeModule`` is defined,
+    ``List(DecomposeModule(mid), DimensionVector);``. NOTE ``mid`` (not ``E`` -- ``E`` is
+    the GAP root-of-unity builtin); ``M`` must be indecomposable non-projective."""
+    base = quiver_and_algebra_script(algebra)
+    base += "\n" + module_decl(algebra, dimvec_list, arrow_matrices, "M")
+    base += "\nass := AlmostSplitSequence(M);;\nmid := Range(ass[1]);;"
+    return base
+
+
+def predecessors_script(algebra, dimvec_list, arrow_matrices, n: int) -> str:
+    """Bind ``M`` (graded form) plus ``pred := PredecessorsOfModule(M, n)`` (Plan 41).
+    ``pred[1]`` is the list of predecessor LEVELS (``pred[1][1] = [M]``, ``pred[1][2]`` =
+    the immediate predecessors = the middle summands of the almost-split sequence ending
+    at ``M``, ...); the caller reads e.g. ``List(pred[1][2], DimensionVector);``. QPA's
+    ``PredecessorsOfModule`` needs a FINITE field, so this crosscheck runs over GF(p)."""
+    base = quiver_and_algebra_script(algebra)
+    base += "\n" + module_decl(algebra, dimvec_list, arrow_matrices, "M")
+    base += f"\npred := PredecessorsOfModule(M, {n});;"
+    return base
 
 
 def symmetric_predicates_script(algebra) -> str:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quiverlab"
-version = "0.1.0"
+version = "0.2.0"
 description = "Exact representation theory of quivers with relations, for algebraists: modules and AR theory, resolutions, Ext-algebras, Hochschild and cyclic (co)homology, invariants"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -96,6 +96,7 @@ markers = [
     "fast: quick tests; run on every CI matrix cell (OS x Python)",
     "deep: heavy engine/resolution/Chouhy-Solotar suites; one Linux cell (~19 min)",
     "qpa: requires the [qpa] extra (passagemath-gap + QPA); the CI QPA job only",
+    "m2: requires a local Macaulay2 binary; the CI M2 job only. Doubles as the fifth oracle class (external M2 recomputes and agrees).",
     "slow: individually long tests; opt-in via -m slow",
     # --- Oracle-class markers (Plan 32) -------------------------------------
     # ORTHOGONAL to the fast/deep/qpa runtime buckets above: they classify HOW

@@ -6,6 +6,8 @@ four-way oracle taxonomy (Plan 32).
 For each oracle-class marker expression the page states a count; this test shells
 out `pytest --collect-only -m <expr>` and requires the live number to match. A
 stale table (a plan that adds a battery but forgets to bump the count) fails here.
+Since Plan 36 the taxonomy is five-way: the fifth class is the live-Macaulay2
+bucket marker `m2` (external system, like `qpa`).
 
 Mechanism = OUT-OF-PROCESS collection, exactly like test_markers.py: it is proven
 robust in this repo, inherits the installed extras, and stays well under 30 s. The
@@ -33,12 +35,15 @@ VENV = sys.executable
 PAGE = ROOT / "docs" / "verification.md"
 
 # The canonical marker expressions the page MUST document, one row each.
+# Plan 36 adds `m2` as the fifth oracle class (live Macaulay2); it folds into the
+# union exactly as `qpa` does.
 CANON = (
     "oracle_literature",
     "oracle_crossengine",
     "oracle_selfcert",
     "qpa",
-    "oracle_literature or oracle_crossengine or oracle_selfcert or qpa",
+    "m2",
+    "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2",
 )
 
 
@@ -107,8 +112,8 @@ def test_union_is_bounded_by_the_parts():
     """Sanity: the union count is at least each part and at most their sum
     (classes overlap on purpose, so it is usually strictly less than the sum)."""
     page = _page_counts()
-    parts = [page[e] for e in CANON[:4]]
-    union = page[CANON[4]]
+    parts = [page[e] for e in CANON[:5]]
+    union = page[CANON[5]]
     assert union >= max(parts), (union, parts)
     assert union <= sum(parts), (union, parts)
 
@@ -120,11 +125,15 @@ def test_no_oracle_markers_in_extras_gated_dirs():
     float-gate CI job ([dev]-only) would see different numbers than a full
     checkout (the 2026-07-27 shakeout; same lesson as the bank-battery
     collection guard). Those directories are contract & infrastructure by the
-    Plan-32 ruling; their cross-checks stay unmarked."""
+    Plan-32 ruling; their cross-checks stay unmarked.
+
+    tests/m2 is added (Plan 36): its bucket marker `m2` IS the fifth oracle
+    class, so -- exactly like tests/qpa -- it must NEVER carry an orthogonal
+    oracle_* mark (double-marking would double-count it against the union)."""
     import re
     root = pathlib.Path(__file__).resolve().parent.parent
     offenders = []
-    for d in ("webapp", "gui", "hpc"):
+    for d in ("webapp", "gui", "hpc", "m2"):
         for f in (root / d).rglob("test_*.py"):
             src = f.read_text(encoding="utf-8")
             if re.search(r"pytest\.mark\.oracle_(literature|crossengine|selfcert)", src):

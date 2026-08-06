@@ -89,6 +89,21 @@ REGISTRY: dict = {r.key: r for r in [
        "Cyclic homology",
        "Connes' B-operator and the SBI sequence -- quiverlab's cyclic homology.",
        "cyclic"),
+    _r("weibel_homological", "Weibel1994", "foundation",
+       "An Introduction to Homological Algebra",
+       "The section-5.4 spectral-sequence page formulas and the strong-convergence "
+       "theorem -- quiverlab's spectral-sequence engine (Plan 42).",
+       "spectral", "resolution"),
+    _r("barakat_homalg", "BarakatLangeHegermann2011", "algorithm",
+       "Spectral filtrations via generalized morphisms",
+       "The Grothendieck spectral sequence over general module categories (the homalg "
+       "framing) -- quiverlab's Grothendieck / Cartan-Eilenberg change-of-rings preset.",
+       "spectral"),
+    _r("cartan_eilenberg", "CartanEilenberg1956", "foundation",
+       "Homological Algebra",
+       "The change-of-rings spectral sequence -- quiverlab's Cartan-Eilenberg preset "
+       "(Plan 42).",
+       "spectral"),
     _r("cup", "Gerstenhaber1963", "algorithm",
        "Cup product on Hochschild cohomology",
        "The associative cup product on HH^* (Gerstenhaber-algebra structure).",
@@ -128,6 +143,11 @@ REGISTRY: dict = {r.key: r for r in [
     _r("assem_book", "ASS2006", "foundation",
        "Elements of the Representation Theory of Associative Algebras",
        "The standard reference for bound quivers and the representation theory quiverlab implements.",
+       "book"),
+    _r("ars_book", "ARS1995", "foundation",
+       "Representation Theory of Artin Algebras",
+       "The Auslander-Reiten theory reference: almost-split sequences, irreducible "
+       "maps, the AR quiver, and the Nakayama functor -- the ground truth for Plan 41.",
        "book"),
     _r("han_conjecture", "Han2006", "foundation",
        "Han's conjecture",
@@ -239,11 +259,148 @@ REGISTRY: dict = {r.key: r for r in [
        "finite-dimensional A; the repetitive-algebra framework -- the anchor for "
        "the certified double-quiver TrivialExtension presentation (Plan 31).",
        "frobenius", "symmetric"),
+    _r("happel_triangulated", "Happel1988", "foundation",
+       "Triangulated Categories in the Representation Theory of Finite Dimensional Algebras",
+       "The derived-category reference: the Serre functor / AR triangles of "
+       "D^b(mod A) exist iff gl.dim < infinity, tau_{D^b} = nu[-1] -- the ground "
+       "truth for the Plan-43 derived surface.",
+       "derived", "triangulated"),
     _r("schremmer_wpl", "Schremmer2025wpl", "foundation",
        "Weighted projective lines and Hochschild cohomology",
        "HH^* of the canonical algebras (dim HH^2 = t-3, after Happel LNM 1404) "
        "-- the canonical-algebra Hochschild oracle.",
        "hochschild", "oracle"),
+    # --- Plan 40: C6 homological-dimensions family ---
+    _r("igusa_todorov", "IgusaTodorov2005", "algorithm",
+       "On the finitistic global dimension conjecture for Artin algebras",
+       "The Igusa-Todorov functions phi/psi on the finite K0 + syzygy operator "
+       "(phi = pd for finite projective dimension) -- quiverlab's Plan-40 IT engine.",
+       "homdim", "finitistic"),
+    _r("barrios_mata", "BarriosMataRama2020", "family",
+       "The Igusa-Todorov phi function for truncated path algebras",
+       "Closed forms for the phi/psi-dimension of truncated path algebras kQ/J^k "
+       "(via kQ/J^2) -- the Plan-40 Igusa-Todorov literature oracle.",
+       "homdim", "oracle"),
+    _r("gelinas_delooping", "Gelinas2022", "foundation",
+       "The depth, the delooping level and the finitistic dimension",
+       "The delooping level dell(A) as an upper bound for the finitistic dimension "
+       "-- the deferred Plan-40 Task-F invariant (honest-scope note).",
+       "homdim", "finitistic"),
+    # --- Plan 46: C5 gentle / string subsystem ---
+    _r("butler_ringel", "ButlerRingel1987", "algorithm",
+       "Auslander-Reiten sequences for string algebras",
+       "Butler-Ringel: the string/band module classification and the hook/cohook "
+       "description of the AR translate -- the ground truth for the string subsystem.",
+       "modules"),
+    _r("avella_geiss", "AvellaAlaminosGeiss2008", "algorithm",
+       "Combinatorial derived invariants for gentle algebras",
+       "The AG-invariant: a multiset of (n,m) pairs from permitted/forbidden threads; "
+       "a DERIVED invariant, provably NOT complete.", "invariants"),
+    _r("schroll_brauer", "Schroll2018", "family",
+       "Brauer graph algebras (survey)",
+       "The presentation of a Brauer graph algebra from a ribbon graph + multiplicities; "
+       "the dimension and symmetric structure.", "families"),
+    _r("wald_waschbusch", "WaldWaschbusch1985", "foundation",
+       "Tame biserial algebras",
+       "Biserial / special-biserial structure underlying string and Brauer graph "
+       "algebras.", "families"),
+    _r("bongartz_tilting", "Bongartz1981", "foundation",
+       "Tilted algebras",
+       "Bongartz's count criterion for tilting modules (# non-iso indecomposable "
+       "summands = # vertices, given pd<=1 and self-Ext vanishing) and the Bongartz "
+       "completion of a partial tilting module (Plan 44 / C7).",
+       "tilting"),
+    _r("derksen_weyman_zelevinsky", "DWZ2008", "family",
+       "Quivers with potentials and their representations I",
+       "The Jacobian algebra kQ/(cyclic derivatives) of a quiver with potential (Q, W) "
+       "-- quiverlab's JacobianAlgebra constructor (Plan 44 / C7).",
+       "family", "jacobian"),
+    _r("labardini", "LabardiniFragoso2009", "family",
+       "Quivers with potentials associated to triangulated surfaces",
+       "Surface quivers with potentials whose Jacobian algebras are finite-dimensional "
+       "(the framework for the Plan-44 Jacobian constructor; surface QPs land in P48).",
+       "family", "jacobian"),
+    _r("fomin_shapiro_thurston", "FominShapiroThurston2008", "foundation",
+       "Cluster algebras and triangulated surfaces I",
+       "The arc/triangulation combinatorics: the ideal-arc count n=6g-6+3(b+p)+Sum k_i, "
+       "the admissibility exclusion list, and flip<->mutation -- the ground truth for the "
+       "Plan-48 surface subsystem.",
+       "families", "surfaces"),
+    _r("fomin_zelevinsky_ca1", "FominZelevinsky2002", "foundation",
+       "Cluster algebras I: Foundations",
+       "The skew-symmetric matrix mutation mu_k that surface flip is certified against "
+       "(Plan 48).",
+       "families", "surfaces"),
+    _r("abcp", "ABCP2010", "family",
+       "Gentle algebras arising from surface triangulations",
+       "For an unpunctured surface with boundary the Jacobian Jac(Q(T),W(T)) is a GENTLE "
+       "algebra -- the Plan-48 v1 certifiability theorem (with Labardini 2009).",
+       "families", "surfaces"),
+    _r("hughes_waschbusche", "HughesWaschbusch1983", "family",
+       "Trivial extensions of tilted algebras",
+       "The repetitive algebra hat(A) and its connecting D(A) bimodule -- the source of "
+       "quiverlab's finite repetitive-algebra slices (Plan 44 / C7).",
+       "family", "repetitive"),
+    _r("kac_canonical", "Kac1980", "foundation",
+       "Infinite root systems, representations of graphs and invariant theory",
+       "Kac's roots, Schur roots, and the canonical decomposition of a dimension "
+       "vector -- the ground truth for Plan 49's canonical_decomposition.", "geometry"),
+    _r("schofield_general_reps", "Schofield1992", "foundation",
+       "General representations of quivers",
+       "Schofield's generic hom/ext and the general-representation identities "
+       "hom - ext = <a,b> underlying the canonical decomposition.", "geometry"),
+    _r("derksen_weyman_canonical", "DerksenWeyman2002", "foundation",
+       "On the canonical decomposition of quiver representations",
+       "The Derksen-Weyman recursive algorithm for the canonical decomposition "
+       "(Plan 49 ships the Dynkin case; Euclidean/wild is the named deferral).", "geometry"),
+    _r("zwara_degenerations", "Zwara2000", "foundation",
+       "Degenerations of finite-dimensional modules are given by extensions",
+       "Zwara: the degeneration order equals the extension order for Artin algebras "
+       "-- half of Plan 49's degeneration_order theorem.", "geometry"),
+    _r("bongartz_degenerations", "Bongartz1996", "foundation",
+       "On degenerations and extensions of finite dimensional modules",
+       "Bongartz: degeneration = hom order for representation-finite algebras -- the "
+       "computable form Plan 49's degeneration_order uses.", "geometry"),
+    _r("voigt_rigidity", "Voigt1977", "foundation",
+       "Induzierte Darstellungen ... (Voigt's lemma)",
+       "Voigt's lemma: Ext^1(M,M) = 0 => the orbit of M is open (rigid => open orbit); "
+       "the codim = dim Ext^1(M,M) equality on hereditary algebras.", "geometry"),
+    # --- Plan 47: quasi-hereditary algebras + recollements ---
+    _r("dlab_ringel", "DlabRingel1989", "foundation",
+       "Quasi-hereditary algebras",
+       "The definition of quasi-hereditary algebras, standard modules Delta(i), and the "
+       "quasi-heredity test used in Plan 47; qh => finite gl.dim.",
+       "quasihereditary"),
+    _r("ringel_dual", "Ringel1991", "foundation",
+       "Good filtrations and the characteristic tilting module",
+       "The characteristic tilting module and the Ringel dual R(A) = End_A(T)^op "
+       "(Plan 47).",
+       "quasihereditary", "tilting"),
+    _r("cps", "CPS1988", "foundation",
+       "Finite-dimensional algebras and highest weight categories",
+       "Highest weight categories and the idempotent recollement (eAe, A/AeA) of "
+       "Plan 47.",
+       "quasihereditary", "recollement"),
+    _r("bbd", "BBD1982", "foundation",
+       "Faisceaux pervers",
+       "The origin of recollement and the six-functor formalism (Plan 47).",
+       "recollement"),
+    _r("air_tau_tilting", "AIR2014", "foundation",
+       "tau-tilting theory",
+       "Adachi-Iyama-Reiten: support tau-tilting pairs, mutation, the exchange graph, "
+       "g-vectors, and the bijection with functorially finite torsion classes -- the "
+       "ground truth for the Plan-45 / C4 tau-tilting engine.",
+       "tau-tilting"),
+    _r("demonet_iyama_jasso", "DIJ2019", "foundation",
+       "tau-tilting finite algebras, bricks, and g-vectors",
+       "DIJ: tau-tilting-finiteness <=> finite g-fan <=> finitely many bricks; the "
+       "counting identities and the wall-and-chamber / g-vector fan (Plan 45 / C4).",
+       "tau-tilting"),
+    _r("king_stability", "King1994", "foundation",
+       "Moduli of representations of finite-dimensional algebras",
+       "King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the "
+       "Plan-45 / C4 engine draws.",
+       "tau-tilting", "stability"),
 ]}
 
 

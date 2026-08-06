@@ -70,7 +70,8 @@ SIDES = ("right", "left")
 MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
-    "projective_dimension", "injective_dimension", "decompose",
+    "projective_dimension", "injective_dimension", "decompose", "almost_split",
+    "tilting_check", "orbit_geometry",
 })
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
@@ -104,6 +105,10 @@ _MOD_REFS = {
     "injective_resolution": ["minimal_resolution", "assem_book"],
     "injective_dimension": ["minimal_resolution", "assem_book"],
     "decompose": ["assem_book"],
+    "almost_split": ["assem_book", "ars_book"],
+    "tilting_check": ["bongartz_tilting", "assem_book"],
+    "orbit_geometry": ["voigt_rigidity", "kac_canonical",
+                       "schofield_general_reps", "derksen_weyman_canonical"],
 }
 
 
@@ -230,6 +235,14 @@ _RANGE = re.compile(r"^(?P<kind>[a-z_]+)(?::(?P<lo>\d+)\.\.(?P<hi>\d+))?$")
 def parse_compute_item(s: str) -> ComputeItem:
     if not isinstance(s, str):
         raise SpecError(f"compute item {s!r} must be a string")
+    # tau_tilting carries a PAIR BUDGET, not a degree range: 'tau_tilting' or
+    # 'tau_tilting:512' (Plan 45). hi = the budget (None => default). This bypasses the
+    # 'name:0..N' degree grammar (the budget is not a homological degree).
+    if s == "tau_tilting" or s.startswith("tau_tilting:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -300,7 +313,7 @@ def resolve_references(keys) -> list:
 def _iter_families():
     for info in ql.families():
         name = info.name
-        if name == "zoo":
+        if name in ("zoo", "BrauerGraphAlgebra"):   # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -1167,6 +1180,32 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
                  "citations": _citation_pairs(keys)}
         block.update(reps)
         return block, None
+    # Hochschild (b, B) spectral sequence (Plan 42): an algebra-only range kind. The
+    # shared builder (specseq.block.specseq_block) is byte-identical to the Pyodide
+    # twin (docs/gui/runner.py); the loud DepthLimit guard is caught INSIDE the
+    # builder into {"error": ...}, so a big bar basis is an honest block, not a 500.
+    if kind == "ss_hochschild":
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..4'")
+        from quiverlab.specseq.block import specseq_block
+        block = specseq_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # C4 tau-tilting engine (Plan 45): an ALGEBRA-level kind (like hh_*), NOT a module
+    # kind. It carries a PAIR BUDGET, not a degree range: the spec grammar accepts
+    # 'tau_tilting' (default budget 512) or 'tau_tilting:512' (a bare positive int); the
+    # 'name:0..N' degree-range form is REJECTED at parse time (the budget is not a
+    # homological degree -- see parse_compute_item). Both runners share tautilting.block, so the
+    # blocks are byte-identical; the exchange-graph BFS is complete iff tau-tilting-finite,
+    # else an honest status='budget' block (never a 500). No hh_trace (its own tables).
+    if kind == "tau_tilting":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.block import tau_tilting_block
+        block = tau_tilting_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -1187,6 +1226,15 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         keys = ["assem_book"]
         return {"text": str(g), "exact": bool(g.exact), "value": g.value,
                 "references": keys, "citations": _citation_pairs(keys)}, None
+    if kind == "homological_profile":
+        # The C6 homological-dimension family (Plan 40): one shared library builder
+        # (modules.homdims.homological_profile) drives BOTH this runner and the
+        # Pyodide twin (docs/gui/runner.py), byte-identical by construction; here we
+        # only add the resolved citation pairs from the block's `references`.
+        from quiverlab.modules.homdims import homological_profile
+        block = homological_profile(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     if kind == "center":
         dim_z, basis = A.center()
         keys = ["bar"]                     # Z(A) = HH^0(A) -- Hochschild's paper
@@ -1196,6 +1244,49 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         keys = ["assem_book"]
         return {"value": A.dim, "references": keys,
                 "citations": _citation_pairs(keys)}, None
+    # Yoneda / Ext-algebra + Koszulity (Plan 38): a scalar kind on the algebra
+    # block; the optional range gives the degree through which E(A) is computed
+    # (default 6), read like the other range kinds. Both runners share the block
+    # builder (modules.ext_algebra.ext_algebra_block), so they are byte-identical.
+    if kind == "ext_algebra":
+        top = item.hi if item.hi is not None else 6
+        from quiverlab.modules.ext_algebra import ext_algebra_block
+        block = ext_algebra_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Derived fingerprint (Plan 43): a scalar kind on the algebra block (schema v1).
+    # The optional range gives the top HH/HC degree (default 4). Both runners share
+    # derived.block.derived_fingerprint_block, so the blocks are byte-identical; the
+    # two-algebra compare panel is deferred to P50 (needs a second-algebra field).
+    if kind == "derived_fingerprint":
+        top = item.hi if item.hi is not None else 4
+        from quiverlab.derived.block import derived_fingerprint_block
+        block = derived_fingerprint_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Recognizer batch + type detection (Plan 38): a pure scalar kind on the
+    # algebra block; per-flag honest errors, never a silent False.
+    if kind == "recognizers":
+        from quiverlab.invariants.recognizers import recognizers_block
+        block = recognizers_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Quasi-hereditary structure (Plan 47): an algebra-scalar kind (schema v1, NO module
+    # block -- the recognizers/ext_algebra precedent). Reports the NATURAL vertex order with
+    # the honest order-dependence note; shared block builder drives both runners.
+    if kind == "quasi_hereditary":
+        from quiverlab.modules.quasihereditary import quasi_hereditary_block
+        block = quasi_hereditary_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Gentle / string subsystem (Plan 46): an algebra-only scalar kind -- recognizer
+    # verdicts + string census + band presence + honest rep-type + (gentle) AG
+    # invariant. Shared builder (strings.block.strings_block), byte-identical twin.
+    if kind == "strings":
+        from quiverlab.strings.block import strings_block
+        block = strings_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each library
     # method returns a frozen result object whose .blocks() IS the block dict
     # (kind/top/engine/basis/tables/window or hh_dims/matrices/ranks + references);
@@ -1550,10 +1641,15 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            "latex": r"\underline{\dim}\, M = "
                                     + _dv_latex(M.dimension_vector())}, kind)
     if kind == "rad_top_soc":
+        # "series" is the Loewy (radical) series top-to-bottom (Plan 37): each entry a
+        # str-keyed composition-factor multiplicity dict (M.loewy_layers()), so the
+        # report and both GUIs render the stacked Loewy diagram. Mirrors the Pyodide
+        # runner byte-for-byte.
         return _with_refs({"kind": "rad_top_soc", "side": M.side,
                            "radical": _mod_repr(M.radical()),
                            "top": _mod_repr(M.top()),
-                           "socle": _mod_repr(M.socle())}, kind)
+                           "socle": _mod_repr(M.socle()),
+                           "series": [dict(layer) for layer in M.loewy_layers()]}, kind)
     if kind in ("tau", "tau_minus"):
         # tau of a projective (dually tau^- of an injective) IS zero -- the shared
         # helper says so explicitly; renderers typeset block.latex (mirrors the
@@ -1579,6 +1675,26 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return _with_refs({"kind": "decompose", "side": M.side,
                            "summands": summands, "iso_classes": len(summands)}, kind)
+    if kind == "almost_split":
+        # The almost-split (Auslander-Reiten) sequence 0 -> tau M -> E -> M -> 0 for M
+        # indecomposable non-projective (Plan 41). tau M ships as a full representation;
+        # E's Krull-Schmidt summands go through the SAME summand serializer as decompose
+        # (standard summands NAMED, others full matrices). A projective / decomposable /
+        # undecidable input is caught into an honest refusal block -- a clean typed
+        # result, never a 500.
+        from quiverlab.modules.decompose import decompose
+        try:
+            ses = M.almost_split_sequence()
+        except qerr.QuiverlabError as exc:
+            return _with_refs({"kind": "almost_split", "exists": False,
+                               "reason": str(exc)}, kind)
+        block = {"kind": "almost_split", "exists": True, "side": M.side,
+                 "tau": _mod_repr(ses.L),
+                 "middle": {"summands": [_summand_view(s, m)
+                                         for (s, m) in decompose(ses.M)]},
+                 "M": _mod_view(M), "indecomposable": True,
+                 "latex": r"0 \to \tau M \to E \to M \to 0"}
+        return _with_refs(block, kind)
     if kind == "ext":
         top = item.hi
         if top is None:
@@ -1654,6 +1770,33 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            "latex": _homdim_latex("id", idim),
                            **({} if idim is not None
                               else {"note": _HOMDIM_UNRESOLVED})}, kind)
+    if kind == "tilting_check":
+        # The candidate T is the request's module M (schema-2, no second module). n = the
+        # optional degree (item.hi), default 1 (classical tilting). The summand count leans
+        # on decompose -- a char-caveat QuiverlabError becomes an honest per-block error
+        # (the Plan-30 tau-block precedent), never a 500.
+        from quiverlab.modules.tilting import is_tilting_module
+        n = item.hi if item.hi is not None else 1
+        try:
+            rep = is_tilting_module(M, n=n)
+        except qerr.QuiverlabError as exc:
+            return _with_refs({"kind": "tilting_check", "error": str(exc)}, kind)
+        return _with_refs({"kind": "tilting_check", "is_tilting": rep.is_tilting,
+                           "n": rep.n, "pd": rep.pd,
+                           "self_ext_vanishes": rep.self_ext_vanishes,
+                           "num_summands": rep.num_summands,
+                           "num_vertices": rep.num_vertices, "note": rep.note}, kind)
+    if kind == "orbit_geometry":
+        # Orbit dim + Voigt rigidity + honest codim for ANY module over ANY kQ/I;
+        # the Kac canonical decomposition is the conditional extra (hereditary
+        # Dynkin). A char-scope edge in end_dim/ext becomes an honest per-block
+        # error (the Plan-30 precedent), never a 500.
+        from quiverlab.invariants.geometry import orbit_geometry_block
+        try:
+            block = orbit_geometry_block(M)
+        except qerr.QuiverlabError as exc:
+            return _with_refs({"kind": "orbit_geometry", "error": str(exc)}, kind)
+        return _with_refs(block, kind)
     raise ComputeError("SchemaError", f"unsupported module computation {kind!r}")
 
 
@@ -1713,15 +1856,36 @@ def _snippet(req: ComputeRequest, A) -> str:
     _snip = {"hh_cohomology": lambda it: f"A.hochschild_cohomology({it.hi})",
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
              "cyclic_homology": lambda it: f"A.cyclic_homology({it.hi})",
+             "ss_hochschild": lambda it: f"A.hochschild_bB_ss({it.hi})",
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",
+             "homological_profile": lambda it: ("A.global_dimension(), "
+                 "A.finitistic_dimension_bounds(), A.dominant_dimension(), "
+                 "A.gorenstein_dimension()"),
              "center": lambda it: "A.center()",
              "dimension": lambda it: "A.dim",
+             "ext_algebra":
+                 lambda it: f"A.ext_algebra({it.hi if it.hi is not None else 6})",
+             "recognizers": lambda it: ("[A.is_semisimple(), A.is_hereditary(), "
+                                        "A.is_gentle(), A.dynkin_type(), "
+                                        "A.form_type()]"),
+             "quasi_hereditary": lambda it: "A.is_quasi_hereditary()",
+             "derived_fingerprint":
+                 lambda it: ("from quiverlab.derived import derived_fingerprint; "
+                             f"derived_fingerprint(A, {it.hi if it.hi is not None else 4})"),
+             "strings": lambda it: ("from quiverlab.strings import "
+                                    "enumerate_strings, find_bands\n"
+                                    "from quiverlab.strings.ag import ag_invariant\n"
+                                    "enumerate_strings(A), find_bands(A), "
+                                    "ag_invariant(A)"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
              "connes_b": lambda it: f"A.connes_differentials({it.hi})",
+             "tau_tilting":
+                 lambda it: ("A.exchange_graph(budget_pairs="
+                             f"{it.hi if it.hi is not None else 512})"),
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
              "tau": lambda it: "M.tau()",
@@ -1731,6 +1895,7 @@ def _snippet(req: ComputeRequest, A) -> str:
                                 f"tor_dims(A, M, N, {it.hi})"),
              "decompose": lambda it: ("from quiverlab.modules.decompose import "
                                       "decompose\ndecompose(M)"),
+             "almost_split": lambda it: "M.almost_split_sequence()",
              "projective_resolution":
                  lambda it: f"M.projective_resolution({it.hi}).dimension_vectors()",
              "injective_resolution":

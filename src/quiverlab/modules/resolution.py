@@ -97,6 +97,42 @@ def projective_cover(M):
     return Q0, d0, gens
 
 
+def _syzygy_of_cover(cur_mod, cur_map, dom, name):
+    """``(Omega, ker_cols)``: ``Omega`` = the submodule ``ker(cur_map) <= cur_mod`` and
+    ``ker_cols`` its basis columns (which double as the inclusion ``Omega -> cur_mod``).
+    Empty ``ker_cols`` (``cur_map`` injective / ``cur_mod`` the zero module) yields the
+    zero submodule ``submodule(cur_mod, [])``.
+
+    This is exactly the syzygy step ``minimal_resolution`` already ran inline; extracted
+    so the public ``syzygy`` and the resolution loop share ONE implementation (byte
+    stable -- the loop's ``(terms, dmats)`` are unchanged)."""
+    if cur_map and cur_map[0]:
+        ker_cols = lm.kernel_columns(cur_map, dom)
+    elif cur_mod.dim:                                      # empty map, whole module is ker
+        ker_cols = [lm.col(lm.identity(cur_mod.dim, dom), j) for j in range(cur_mod.dim)]
+    else:
+        ker_cols = []
+    return submodule(cur_mod, ker_cols, name=name), ker_cols
+
+
+def syzygy(M):
+    """``Omega M = ker(projective_cover(M) -> M)`` as a submodule of ``Q0``. Minimality of
+    the cover => ``Omega M`` has no projective summands. ``Omega`` of a projective (or of
+    the zero module) is the zero module."""
+    Q0, d0, _ = projective_cover(M)
+    Omega, _ = _syzygy_of_cover(Q0, d0, M.domain, f"Omega({M.name})")
+    return Omega
+
+
+def cosyzygy(M):
+    """``Omega^{-1} M`` via the dual route: ``D(Omega(D M))``. Cosyzygy of an injective
+    (or the zero module) is the zero module (dualizes ``Omega`` of a projective)."""
+    from quiverlab.modules.duality import dualize
+    out = dualize(syzygy(dualize(M)))
+    out.name = f"Omega^-1({M.name})"
+    return out
+
+
 def minimal_resolution(M, length, max_term_dim=200000):
     terms, dmats = [], []
     Q0, d0, _ = projective_cover(M)
@@ -104,15 +140,13 @@ def minimal_resolution(M, length, max_term_dim=200000):
     dmats.append(d0)
     cur_mod, cur_map = Q0, d0            # cur_map : cur_mod -> (previous)
     for n in range(1, length + 1):
-        # syzygy Omega_n = ker(cur_map) as a submodule of cur_mod
-        ker_cols = lm.kernel_columns(cur_map, M.domain) if cur_map and cur_map[0] else \
-            ([lm.col(lm.identity(cur_mod.dim, M.domain), j) for j in range(cur_mod.dim)]
-             if cur_mod.dim else [])
+        # syzygy Omega_n = ker(cur_map) as a submodule of cur_mod (the n == 1 step is
+        # literally syzygy(M): projective_cover(M) + kernel_columns + submodule).
+        Omega, ker_cols = _syzygy_of_cover(cur_mod, cur_map, M.domain, f"Omega_{n}")
         if not ker_cols:
             terms.append(_term_data(None))
             dmats.append(lm.zeros(cur_mod.dim, 0, M.domain))
             break
-        Omega = submodule(cur_mod, ker_cols, name=f"Omega_{n}")
         if Omega.dim > max_term_dim:
             raise DepthLimitError(
                 f"module resolution: syzygy dim {Omega.dim} exceeds max_term_dim="

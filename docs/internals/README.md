@@ -71,6 +71,22 @@ by running the code.
   trace-event taxonomy, the recorder and its elision guards, and how a verbose
   computation renders a LaTeX→PDF (or self-contained no-JS HTML) worked-steps
   document whose dimensions are *derived* from the recorded ranks. Landed with Plan 07.
+- **13 — Spectral sequences.** The double-complex / filtered-complex engine, the exact
+  Weibel §5.4 pages with byte-reproducible representatives, the standing convergence
+  certificate (`E_∞` equals total homology), and the four presets — Hochschild `(b, B)`,
+  the radical filtration, and the Cartan–Eilenberg / Grothendieck change-of-rings sequence
+  (with Cartan–Eilenberg realized as the `U = B` case). Landed with Plan 42.
+- **14 — The derived-category surface.** Reified hyper-Hom classes, the derived AR
+  translate `τ_{D^b} = ν[−1]` as termwise Nakayama with the Happel finite-gl.dim guard, the
+  tilting-complex verifier with `End(T)` as the Rickard derived-equivalent algebra, and the
+  necessary-condition fingerprint (what it is, and why it is never a decider). Landed with
+  Plan 43.
+- **15 — The τ-tilting engine.** g-vectors, the uniform 2-term silting mutation arbiter,
+  the exchange-graph BFS with its honest complete-iff-τ-tilting-finite budget contract, the
+  wall-and-chamber fan, and the iso-class brick labelling. Landed with Plan 45.
+- **16 — Marked surfaces to gentle algebras.** Marked-surface data and the FST arc count,
+  triangulation → quiver → potential → gentle Jacobian, flip ≡ Fomin–Zelevinsky matrix
+  mutation, and the unpunctured v1 scope. Landed with Plan 48.
 
 ## Honest coverage statement
 

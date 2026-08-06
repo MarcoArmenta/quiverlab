@@ -9,6 +9,7 @@ Plan 08 Task 2: auto-assign CI buckets by test location so the suite can be spli
 across the GitHub Actions matrix. Explicit bucket markers on a test win.
 Buckets (exactly one per test; disjoint + exhaustive, enforced by the partition test):
   qpa  -- needs the [qpa] extra (passagemath-gap + QPA); CI QPA job only.
+  m2   -- needs a local Macaulay2 binary; CI M2 job only (Plan 36).
   deep -- heavy engine / resolution / module / families / batch suites; one Linux leg.
   fast -- everything else; runs on every OS x Python matrix cell.
 Orthogonal sub-tag:
@@ -46,11 +47,11 @@ def _quiet_traces(request):
 # --- Plan 08 Task 2 (ADD) --------------------------------------------------
 # Top-level dirs (relative to tests/) whose tests are heavy -> the deep leg.
 # (resolutions_cs is the Chouhy-Solotar suite; there is NO tests/chouhy_solotar dir.)
-_DEEP_DIRS = ("engine", "resolutions_cs", "modules", "families", "batch")
+_DEEP_DIRS = ("engine", "resolutions_cs", "modules", "families", "batch", "specseq")
 # Individually heavy files that may live outside the deep dirs.
 _DEEP_FILES = ("test_complete.py", "test_deepen.py", "test_properties.py",
                "test_acceptance.py", "test_cs_", "test_bardzell", "test_minimal")
-_BUCKETS = {"fast", "deep", "qpa"}
+_BUCKETS = {"fast", "deep", "qpa", "m2"}
 
 
 def _bucket(nodeid: str) -> str:
@@ -60,6 +61,8 @@ def _bucket(nodeid: str) -> str:
     fname = parts[-1].split("::")[0]
     if top == "qpa":
         return "qpa"
+    if top == "m2":
+        return "m2"
     if top in _DEEP_DIRS or any(fname.startswith(f) or fname == f for f in _DEEP_FILES):
         return "deep"
     return "fast"

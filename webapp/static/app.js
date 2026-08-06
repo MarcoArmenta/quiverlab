@@ -128,6 +128,148 @@ function decomposeBlock(block, d) {
   return wrap;
 }
 
+// Plan 41 (C3): the almost-split (Auslander–Reiten) sequence 0 → τM → E → M → 0,
+// with τM as a full representation and E's Krull–Schmidt summands; an honest refusal
+// block for a projective / decomposable / undecidable input.
+function almostSplitBlock(block, d) {
+  const wrap = document.createElement("div");
+  if (block.exists === false) {
+    const pr = document.createElement("p");
+    pr.textContent = (d.modAlmostSplitRefused || "No almost-split sequence")
+      + " — " + (block.reason || "input not eligible") + ".";
+    wrap.appendChild(pr);
+    return wrap;
+  }
+  const p = document.createElement("p");
+  p.textContent = (d.modAlmostSplitSeq || "Almost-split sequence")
+    + ":  0 → τM → E → M → 0";
+  wrap.appendChild(p);
+  appendRepMaps(wrap, "τM", block.tau, d);
+  const p2 = document.createElement("p");
+  p2.textContent = (d.modAlmostSplitMiddle || "middle term E — Krull–Schmidt summands");
+  wrap.appendChild(p2);
+  const summ = (block.middle && block.middle.summands) || [];
+  const tbl = tableWithHeader([d.modSummand || "summand",
+                               d.modMult || "multiplicity",
+                               d.modDimvec || "dim vector"]);
+  summ.forEach(function (s, i) {
+    const tr = document.createElement("tr");
+    tr.appendChild(cellText(summandName(s, i + 1)));
+    tr.appendChild(cellText(String(s.multiplicity)));
+    tr.appendChild(cellText(dvText(s.dim_vector)));
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  summ.forEach(function (s, i) {
+    if (s.standard || !s.maps) return;
+    appendRepMaps(wrap, summandName(s, i + 1), s, d);
+  });
+  return wrap;
+}
+
+// Plan 44 (C7): the tilting_check verdict as a small key/value table + a one-line
+// verdict sentence. Labels are i18n via the form dataset (fallback English).
+function tiltingBlock(block, d) {
+  const wrap = document.createElement("div");
+  if (block.error) {
+    const e = document.createElement("p");
+    e.className = "error";
+    e.textContent = block.error;
+    wrap.appendChild(e);
+    return wrap;
+  }
+  const p = document.createElement("p");
+  p.textContent = block.is_tilting
+    ? (d.modTiltingYes || "M is a tilting module.")
+    : (d.modTiltingNo || "M is not a tilting module") + ": " + block.note + ".";
+  wrap.appendChild(p);
+  const rows = [
+    [d.modTiltingRow || "tilting", block.is_tilting ? "yes" : "no"],
+    [d.modTiltingN || "n (pd bound tested)", String(block.n)],
+    ["pd M", (block.pd === null || block.pd === undefined) ? "> bound" : String(block.pd)],
+    [d.modTiltingSelfExt || "Ext^i(M,M)=0 (1≤i≤n)",
+     block.self_ext_vanishes ? "yes" : "no"],
+    [d.modTiltingSummands || "# non-iso indec. summands", String(block.num_summands)],
+    [d.modTiltingVertices || "# vertices (rank K_0)", String(block.num_vertices)]
+  ];
+  const tbl = document.createElement("table");
+  rows.forEach(function (r) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = r[1];
+    tr.appendChild(th); tr.appendChild(td);
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  return wrap;
+}
+
+// Plan 49 (C8): orbit geometry -- orbit dim + Voigt rigidity + HONEST codim +
+// (hereditary Dynkin) the Kac canonical decomposition. Labels i18n via the form
+// dataset (fallback English).
+function orbitGeometryBlock(block, d) {
+  const wrap = document.createElement("div");
+  if (block.error) {
+    const e = document.createElement("p");
+    e.className = "error";
+    e.textContent = block.error;
+    wrap.appendChild(e);
+    return wrap;
+  }
+  const dvText = function (dv) {
+    return "{" + Object.keys(dv || {}).map(function (k) { return k + ": " + dv[k]; }).join(", ") + "}";
+  };
+  const rows = [
+    [d.ogDimVec || "dimension vector d", dvText(block.dim_vector)],
+    [d.ogGroupDim || "dim GL(d) = Σ d_v²", String(block.group_dim)],
+    [d.ogRepDim || "dim Rep(Q,d) (ambient)", String(block.rep_variety_dim)],
+    [d.ogEndDim || "dim End_A(M)", String(block.end_dim)],
+    [d.ogOrbitDim || "dim O_M (orbit)", String(block.orbit_dim)],
+    [d.ogExt1 || "dim Ext¹(M,M)", String(block.ext1_self)]
+  ];
+  const tbl = document.createElement("table");
+  rows.forEach(function (r) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = r[1];
+    tr.appendChild(th); tr.appendChild(td);
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  const verdict = block.rigid
+    ? (d.ogRigid || "M is rigid: Ext¹(M,M) = 0, so the orbit O_M is open (Voigt).")
+    : (d.ogNotRigid || "M is not rigid: Ext¹(M,M) > 0.");
+  const gloss = block.codim_semantics === "hereditary"
+    ? (d.ogCodimHered || " A is hereditary, so dim Ext¹(M,M) IS the codimension of the "
+        + "orbit closure in Rep(Q,d) (Voigt; Rep smooth).")
+    : (d.ogCodimGeneral || " A = kQ/I is not hereditary, so dim Ext¹(M,M) is only an "
+        + "UPPER BOUND on the codimension (the module variety is cut by the relations).");
+  const pv = document.createElement("p");
+  pv.textContent = verdict + gloss;
+  wrap.appendChild(pv);
+  if (block.canonical_decomposition && block.canonical_decomposition.length) {
+    const parts = block.canonical_decomposition.map(function (c) {
+      const nm = c.name || ("(" + (c.root || []).join(", ") + ")");
+      return c.multiplicity === 1 ? nm : nm + "^" + c.multiplicity;
+    });
+    const pc = document.createElement("p");
+    pc.textContent = (d.ogCanonical || "Kac canonical decomposition") + ": d = "
+      + parts.join(" ⊕ ") + " (each component a positive root; the generic module is rigid).";
+    wrap.appendChild(pc);
+  } else if (block.canonical_note) {
+    const pn = document.createElement("p");
+    pn.className = "hint";
+    pn.textContent = (d.ogCanonicalNone || "Canonical decomposition not computed") + ": "
+      + block.canonical_note;
+    wrap.appendChild(pn);
+  }
+  return wrap;
+}
+
 // Plan 34 (Marco): rad/top/soc as FULL representations -- the dim VECTOR per object
 // (the redundant total-dim column is gone) plus each arrow's exact action matrix,
 // typeset by renderMath (KaTeX). The LaTeX is built from the block's {dims, maps}.
@@ -280,10 +422,37 @@ function radTopSocBlock(block, d) {
     tbl.appendChild(tr);
   }
   wrap.appendChild(tbl);
+  if (block.series && block.series.length) {   // the Loewy (radical) series (Plan 37)
+    const p2 = document.createElement("p");
+    p2.textContent = d.modLoewySeries || "Loewy (radical) series, top to bottom:";
+    wrap.appendChild(p2);
+    wrap.appendChild(loewySeriesTable(block.series));
+  }
   for (const pair of trio) {
     appendRepMaps(wrap, pair[0], pair[1], d);
   }
   return wrap;
+}
+
+// A Loewy layer as S_v ⊕ S_w^m; the series as a layer|factors table (Plan 37).
+function loewyFactors(layer) {
+  const parts = [];
+  for (const v of Object.keys(layer).sort()) {
+    const m = layer[v];
+    if (m) parts.push(m === 1 ? "S_" + v : "S_" + v + "^" + m);
+  }
+  return parts.length ? parts.join(" ⊕ ") : "0";
+}
+
+function loewySeriesTable(series) {
+  const tbl = tableWithHeader(["layer", "factors"]);
+  series.forEach((layer, i) => {
+    const tr = document.createElement("tr");
+    tr.appendChild(cellText(String(i + 1)));
+    tr.appendChild(cellText(loewyFactors(layer)));
+    tbl.appendChild(tr);
+  });
+  return tbl;
 }
 
 // One arrow-matrix line per arrow that acts NON-trivially; the zero arrows are
@@ -446,10 +615,103 @@ function renderModuleBlocks(out, res) {
       out.appendChild(radTopSocBlock(b, d));
     } else if (kind === "decompose") {
       out.appendChild(decomposeBlock(b, d));
+    } else if (kind === "almost_split") {
+      out.appendChild(almostSplitBlock(b, d));
+    } else if (kind === "tilting_check") {
+      out.appendChild(tiltingBlock(b, d));
+    } else if (kind === "orbit_geometry") {
+      out.appendChild(orbitGeometryBlock(b, d));
     } else if (kind === "tau" || kind === "tau_minus") {
       out.appendChild(tauBlock(b, d, kind));
+    } else if (kind === "homological_profile") {
+      out.appendChild(homologicalProfileBlock(b, d));
+    } else if (kind === "derived_fingerprint") {
+      out.appendChild(derivedFingerprintBlock(b, d));
     }
   }
+}
+
+// The derived fingerprint (Plan 43) as a labelled table + necessary-condition scope.
+// A field captured as an error prints its message; no field is silently dropped.
+function derivedFingerprintBlock(block, d) {
+  const wrap = document.createElement("div");
+  const p = document.createElement("p");
+  p.textContent = d.dfTitle || "Derived fingerprint";
+  wrap.appendChild(p);
+  const fp = block.fingerprint || {};
+  const cell = function (v) {
+    if (v && typeof v === "object" && "error" in v) return "unavailable — " + v.error;
+    if (Array.isArray(v)) return "[" + v.join(", ") + "]";
+    return String(v);
+  };
+  const rows = [
+    ["Coxeter polynomial", fp.coxeter_polynomial],
+    ["det C", fp.cartan_det],
+    ["Cartan Smith factors", fp.cartan_smith],
+    ["dim HH^• (cohomology)", fp.hh_cohomology_dims],
+    ["dim HH_• (homology)", fp.hh_homology_dims],
+    ["dim HC_• (cyclic)", fp.cyclic_dims],
+    ["dim Z(A)", fp.center_dim],
+    ["global dimension", fp.gl_dim],
+  ];
+  const tbl = document.createElement("table");
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = cell(r[1]);
+    tr.appendChild(th);
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+  wrap.appendChild(tbl);
+  const scope = document.createElement("p");
+  scope.className = "hint";
+  scope.textContent = block.scope || (d.dfScope
+    || "a derived-invariant fingerprint; equal values are a necessary condition for derived equivalence, not a proof");
+  wrap.appendChild(scope);
+  return wrap;
+}
+
+// The C6 homological-dimensions family (Plan 40) as a labelled table. Values are
+// the block's own honest text fields (exact value / certified bound / infinity /
+// undecided / per-entry error); labels are i18n via the form dataset.
+function homProfileFindim(f) {
+  if (f.exact) return "findim = " + f.lower + "  (" + f.note + ")";
+  if (f.upper !== null && f.upper !== undefined)
+    return "findim ∈ [" + f.lower + ", " + f.upper + "]  (" + f.note + ")";
+  return "findim ≥ " + f.lower + "  (" + f.note + ")";
+}
+
+function homologicalProfileBlock(block, d) {
+  const wrap = document.createElement("div");
+  const p = document.createElement("p");
+  p.textContent = d.hpTitle || "Homological dimensions";
+  wrap.appendChild(p);
+  const rows = [
+    [d.hpGldim || "Global dimension", block.global_dimension.text],
+    [d.hpFindim || "Finitistic dimension", homProfileFindim(block.finitistic)],
+    [d.hpDomdim || "Dominant dimension", block.dominant.text],
+    [d.hpGoren || "Gorenstein", block.gorenstein.text],
+  ];
+  const it = block.igusa_todorov;
+  rows.push([(d.hpIgusa || "Igusa–Todorov φ/ψ"),
+             it.error ? ("not computed: " + it.error)
+                      : ("of " + it.module + ": φ = " + it.phi + ", ψ = " + it.psi)]);
+  const tbl = document.createElement("table");
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = r[1];
+    tr.appendChild(th);
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+  }
+  wrap.appendChild(tbl);
+  return wrap;
 }
 
 // Render a compute result into `out` using DOM nodes (server strings via

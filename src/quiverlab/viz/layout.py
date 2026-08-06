@@ -157,3 +157,46 @@ def layout(quiver, relations=()):
         relations=tuple(repr(r) if not isinstance(r, str) else r for r in relations),
         columns=tuple(columns),
     )
+
+
+def poset_layout(nodes, covers):
+    """Rank a finite poset given as (nodes, cover-pairs) and place each node in the
+    plane, in EXACT coordinates (Plan 49 / C8). Returns ``{node: (x, y)}`` with
+
+      * ``y`` = the node's RANK: the length of the longest chain of covers up from
+        a minimum (an ``int``; every minimum is rank 0). On a GRADED poset -- the
+        kind the degeneration order of a rep-finite algebra produces -- every cover
+        (lo, hi) then satisfies ``rank(hi) == rank(lo) + 1``.
+      * ``x`` = an exact ``Fraction`` spreading the nodes of each rank symmetrically
+        about 0 (the same idiom as ``layout``).
+
+    Deliberately generic (nodes + cover pairs only): the P45 exchange lattice
+    renders through the same twin. No floats."""
+    from collections import deque
+
+    nodes = list(nodes)
+    up = {v: [] for v in nodes}          # v -> nodes that cover v (v is below them)
+    indeg = {v: 0 for v in nodes}
+    for lo, hi in covers:
+        up[lo].append(hi)
+        indeg[hi] += 1
+    rank = {v: 0 for v in nodes}
+    remaining = dict(indeg)
+    queue = deque(v for v in nodes if indeg[v] == 0)
+    while queue:                          # longest-path relaxation in topo order
+        v = queue.popleft()
+        for w in up[v]:
+            if rank[v] + 1 > rank[w]:
+                rank[w] = rank[v] + 1
+            remaining[w] -= 1
+            if remaining[w] == 0:
+                queue.append(w)
+    by_rank = {}
+    for v in nodes:
+        by_rank.setdefault(rank[v], []).append(v)
+    pos = {}
+    for r, members in by_rank.items():
+        k = len(members)
+        for i, v in enumerate(members):
+            pos[v] = (Fraction(k - 1, 2) - i, r)
+    return pos

@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-2772_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-3506_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -70,6 +70,28 @@ QuiverLab computes with finite-dimensional algebras `kQ/I` over the complex numb
 finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhaber
 brackets, the first full Chouhy–Solotar resolution, module Ext, and Cartan/Coxeter
 invariants. Floats fail loudly by design.
+
+### v0.2.0 coverage scorecard (C1–C8)
+
+The [`ROADMAP.md`](docs/plans/ROADMAP.md) coverage program C1–C8 is delivered in
+v0.2.0. Nothing here over-claims: where a computation is a semi-decision, a
+verifier, or scope-limited, the surface says so and refuses loudly outside it.
+
+| Coverage phase | Delivered by | Honest scope |
+|---|---|---|
+| **C1** Categorical glue (Hom bases, Krull–Schmidt) | P37 + P30 (Krull–Schmidt splitter, pre-v0.2.0) | char-p decomposition refuses loudly past the exact-locality budget |
+| **C2** Forms, roots, structural recognition | P38 | per-flag honest recognizers (never a silent `False`); Dynkin/Euclidean detection is hereditary |
+| **C3** Auslander–Reiten theory completed | P41 | AR-knitting semi-decides rep-finiteness — budget-capped, loud when uncertified |
+| **C4** τ-tilting engine + live fan | P45 | brick labels iso-class-certified with loud refusal; enumeration complete iff τ-tilting-finite (budget-capped); fan drawn for n = 2, 3 |
+| **C5** Gentle / string subsystem | P46, P48 | AAG is an invariant, not a complete classifier; surfaces are unpunctured-with-boundary v1 (P48 refuses punctured/closed/self-folded) |
+| **C6** Homological-dimensions family | P40 | certified value or honest bound, never a bare number; `is_gorenstein` three-valued |
+| **C7** Tilting & new-algebra constructions | P44 | verifiers, not deciders (`tilting_check`); Gabriel-quiver recovery refuses loudly |
+| **C8** Geometry, derived fingerprints, complexes | P39, P42, P43, P49 | canonical decomposition Dynkin-hereditary-only; derived fingerprint is a *necessary-condition* comparison (a verifier, not a decider); Voigt codimension is an upper bound on `kQ/I` |
+
+Two v0.2.0 plans sit beside the C-program: **P36** adds Macaulay2 as a fifth
+external oracle class, and **P47** delivers quasi-hereditary algebras and
+recollements. Every row's oracles and honest-scope notes are on the
+[verification page](https://marcoarmenta.github.io/quiverlab/verification/).
 
 ## Get QuiverLab
 
@@ -190,10 +212,10 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 2772 tests over the
+Every shipped feature is unit tested (the suite is 3506 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
-of oracle** — surfaced since Plan 32 as four orthogonal, runnable marker classes
-(`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa`), audited
+of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
+(`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
 against live collection:
 
 - **Theory and literature, on constructed examples.** We build many algebras the
@@ -210,7 +232,9 @@ against live collection:
   wherever the GAP package **QPA** implements a feature we recompute with it and
   demand equality (`A.crosscheck(...)`). QPA does not implement everything
   quiverlab does; the docs page names exactly where it is used and which theory
-  oracle stands in where it cannot.
+  oracle stands in where it cannot. And a live **Macaulay2** bridge recomputes nc
+  graded dimensions and commutative Ext data (single-vertex scope; `-m m2`) — a
+  genuinely different computer-algebra system as a second external oracle.
 
 Exactness is enforced structurally: an AST gate bans every float from `src/`, and
 the entire deep suite runs twice in CI — once on the numba kernels, once on the
@@ -248,10 +272,19 @@ ported and wired in:
   (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
+- **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
+  canonical representatives + a convergence certificate (`E_∞` totals == total
+  homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,
+  radical filtration, Hochschild `(b, B)`); the `(b, B)` SS is clickable via
+  `ss_hochschild`.
 - **Invariants:** the integer **Cartan** matrix, the **Coxeter** matrix and its
-  characteristic polynomial (all fields, exact via sympy); and, over GF(p), the
-  **Nakayama** automorphism with the **Frobenius** and **symmetric** tests
-  (loud `FieldError` off a prime field).
+  characteristic polynomial (all fields, exact via sympy); **Euler / Tits forms**
+  with exact finite/tame/wild definiteness, orientation-blind **Dynkin/Euclidean
+  type detection**, **positive-root** enumeration for Dynkin type, and the
+  **structural recognizers** (`is_semisimple` … `is_gentle`, with a live QPA
+  crosscheck); **Koszulity** and the Yoneda Ext-algebra clickable in the no-code
+  GUI; and, over GF(p), the **Nakayama** automorphism with the **Frobenius** and
+  **symmetric** tests (loud `FieldError` off a prime field).
 - **Modules, scalar invariants, and the exact spectral layer.** Right A-modules
   with exact **Ext**, **Hom**, and minimal **projective resolutions**; the scalar
   invariants **Loewy length**, **center**, and **complexity** (GF(p); the last a
@@ -259,6 +292,56 @@ ported and wired in:
   inputs); and the
   exact **spectral radius** / **Mahler measure** of the Coxeter polynomial as
   sympy algebraic numbers — no floats, ever.
+- **Homological dimensions (C6).** Public **syzygy/cosyzygy** operators,
+  **finitistic / dominant / Gorenstein dimensions**, the **Igusa–Todorov φ/ψ**
+  functions, and **Ω/τ-periodicity certificates** — the C6 homological-dimensions
+  family, each result carrying the `GlobalDimension`-style certified-value-or-honest-bound
+  honesty (never a bare number when unresolved, `is_gorenstein` three-valued
+  True/None), and clickable end-to-end via the no-code `homological_profile`.
+- **Auslander–Reiten theory.** The AR translates τ / τ⁻ and the Nakayama functor
+  ν / ν⁻ as named functors, **almost-split sequences** `0 → τM → E → M → 0` with the
+  middle term built and certified (exact, non-split, indecomposable ends), irreducible
+  maps and `rad(M,N)/rad²`, stable Hom, and **AR-quiver knitting** — complete for a
+- **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
+  chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
+  refusal at infinite global dimension, per Happel), a **tilting-complex verifier**
+  (rigidity + K₀ generation) with `End(T)` recovered as the Rickard derived-equivalent
+  algebra, and a **derived fingerprint** comparing algebras on Coxeter polynomial,
+  Cartan (det + Smith), HH/HC and centre — in necessary-condition language only.
+- **Gentle / string subsystem (C5).** String & band module classification
+  (Butler–Ringel), string-module τ by the hook/cohook combinatorics, the
+  Avella-Alaminos–Geiss derived invariant for gentle algebras (honest: an
+  invariant, not complete), and a `BrauerGraphAlgebra` constructor from a ribbon
+  graph — with the algebra-only `strings` no-code block (census + bands + rep-type
+  + AG).
+- **Tilting and constructions (C7).** tilting/cotilting + Bongartz completion,
+  minimal add(M)-approximations, one-point extensions, repetitive slices,
+  Jacobian algebras from a potential, and Gabriel-quiver recovery of any
+  structural oracle) or refuses loudly; `tilting_check` is clickable in the no-code GUI.
+- **Marked surfaces → gentle algebras (Plan 48).** Marked surfaces → ideal
+  triangulations → gentle Jacobian algebras (Fomin–Shapiro–Thurston / Labardini /
+  ABCP), with flip ↔ cluster mutation certified per instance — draw or pick a surface
+  and get the algebra, a no-code *input* method absent from QPA (unpunctured-with-boundary
+  v1; punctures/closed/self-folded refuse loudly).
+- **Geometry of representations (C8, Kac/Voigt).** Orbit dimensions in the
+  representation variety (`dim O_M = Σ d_v² − dim End(M)`), Voigt rigidity with an
+  honest codimension (`= dim Ext¹(M,M)` on hereditary, an upper bound on `kQ/I`), the
+  Kac canonical decomposition of a dimension vector (hereditary Dynkin, rigidity-
+  certified per instance), and the Zwara–Bongartz degeneration / hom-order poset for
+  representation-finite algebras — with `orbit_geometry` clickable in the no-code GUI.
+- **Quasi-hereditary algebras and recollements.** Standard/costandard modules
+  Δ(i)/∇(i), a quasi-heredity test (Dlab–Ringel, order-dependent), good-filtration
+  multiplicities + BGG reciprocity, the characteristic tilting module and its Ringel
+  dual, and recollements from an idempotent (the corner `eAe`, the quotient `A/AeA`,
+  and the six functors) — each certified per instance or refusing loudly;
+  `quasi_hereditary` is clickable in the no-code GUI. **White space in QPA.**
+- **τ-tilting engine (C4, Adachi–Iyama–Reiten).** Support τ-tilting pairs via
+  mutation, the exchange graph + torsion-class lattice with brick labels, 2-term
+  silting, King θ-stability, maximal green sequences, and the AIR four-way count
+  identity (`#sτ-tilt = #f.f. torsion = #2-term silting = #semibricks = Catalan(n+1)`
+  for `kA_n`) — every enumeration budget-capped with the honest
+  complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
+  drawn no-code in the browser for n = 2, 3** — the C4 flagship.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

@@ -209,6 +209,96 @@ class Module:
             word = tuple(label.split("*"))
             self.action[label] = self._action_of_word(word)
 
+    def identity_hom(self):
+        """The identity homomorphism id_M as a ModuleHom (Plan 37 / C1)."""
+        from quiverlab.modules import linalg_mod as lm
+        from quiverlab.modules.morphism import ModuleHom
+        return ModuleHom(self, self, lm.identity(self.dim, self.domain), check=False)
+
+    def end_algebra(self):
+        """End_A(M) as a structure-constant Algebra (Plan 37 / C1)."""
+        from quiverlab.modules.endomorphism import end_algebra
+        return end_algebra(self)
+
+    # -- covers / envelopes as maps; radical & socle series (Plan 37 / C1) ----
+    def projective_cover_hom(self):
+        """The projective cover ``P(M) ->> M`` as a ModuleHom (epi, superfluous
+        kernel ker ⊆ rad P(M)) (Plan 37)."""
+        from quiverlab.modules.morphism import ModuleHom
+        from quiverlab.modules.resolution import projective_cover
+        Q0, d0, _ = projective_cover(self)
+        return ModuleHom(Q0, self, d0, check=False)
+
+    def injective_envelope_hom(self):
+        """The injective envelope ``M >-> E(M)`` as a ModuleHom (mono, essential:
+        soc E(M) = soc M) (Plan 37)."""
+        from quiverlab.modules.injective import injective_resolution
+        from quiverlab.modules.morphism import ModuleHom
+        res = injective_resolution(self, 1)
+        E0 = res.terms[0]
+        iota = res.differential(0)              # iota: M -> E^0 (dual bases)
+        return ModuleHom(self, E0, iota, check=False)
+
+    def radical_series(self):
+        """The descending radical (lower Loewy) series ``[M, rad M, rad^2 M, ..., 0]``,
+        each term a Module, ending at the zero module (Plan 37)."""
+        series = [self]
+        cur = self
+        while cur.dim > 0:
+            r = cur.radical()
+            if r.dim >= cur.dim:                # f.d.: the radical strictly shrinks
+                break
+            series.append(r)
+            cur = r
+        return series
+
+    def socle_series(self):
+        """The ascending socle (upper Loewy) series ``[0, soc M, soc^2 M, ..., M]``,
+        each term a submodule of M (soc^{k+1}/soc^k = soc(M/soc^k)) (Plan 37)."""
+        from quiverlab.modules import linalg_mod as lm
+        from quiverlab.modules.radtopsoc import submodule
+        from quiverlab.modules.yoneda import _quotient_with_maps
+        dom = self.domain
+        sub_cols = []
+        socs = [submodule(self, [], name=f"soc^0 {self.name}")]
+        k = 0
+        while len(sub_cols) < self.dim:
+            _Q, _proj, lift = _quotient_with_maps(
+                self, sub_cols, dom, name=f"{self.name}/soc^{k}")
+            soc_cols_Q = _socle_columns(_Q, dom)
+            if not soc_cols_Q:                  # a nonzero module has a nonzero socle
+                break
+            lifted = [lm.matvec(lift, c, dom) for c in soc_cols_Q]
+            sub_cols = [list(c) for c in sub_cols] + lifted
+            k += 1
+            socs.append(submodule(self, sub_cols, name=f"soc^{k} {self.name}"))
+        return socs
+
+    def loewy_layers(self):
+        """The Loewy (radical) layers, top to bottom: ``[top(M), top(rad M),
+        top(rad^2 M), ...]`` as str-keyed, vertex-sorted composition-factor
+        multiplicity dicts (Plan 37). This is the public home of the logic
+        ``trace.modules._radical_layers`` used to carry; the report renderers
+        delegate here byte-for-byte."""
+        layers = []
+        cur = self
+        while cur.dim > 0:
+            layers.append(_normalize_dv(cur.top().dimension_vector()))
+            r = cur.radical()
+            if r.dim >= cur.dim:                # radical strictly shrinks for f.d.
+                break
+            cur = r
+        return layers
+
+    def composition_factors(self):
+        """Total composition-factor multiplicities of M as a str-keyed dict
+        (summed Loewy layers) (Plan 37)."""
+        total = {}
+        for layer in self.loewy_layers():
+            for k, v in layer.items():
+                total[k] = total.get(k, 0) + v
+        return total
+
     def radical(self):
         from quiverlab.modules.radtopsoc import radical as _r
         return _r(self)
@@ -225,6 +315,41 @@ class Module:
         from quiverlab.modules.resolution import minimal_resolution, ProjectiveResolution
         terms, dmats = minimal_resolution(self, length, max_term_dim=max_term_dim)
         return ProjectiveResolution(self, terms, dmats)
+
+    def syzygy(self):
+        """The syzygy Omega M = ker(projective cover -> M), a submodule of the cover
+        with no projective summands (Plan 40). Omega of a projective is zero."""
+        from quiverlab.modules.resolution import syzygy
+        return syzygy(self)
+
+    def cosyzygy(self):
+        """The cosyzygy Omega^{-1} M = D(Omega(D M)), the injective-side dual (Plan 40).
+        Cosyzygy of an injective is zero."""
+        from quiverlab.modules.resolution import cosyzygy
+        return cosyzygy(self)
+
+    def igusa_todorov_phi(self, budget=512, bound=64):
+        """The Igusa-Todorov function phi(M) (Plan 40). Raises loudly on the decompose
+        char-caveat (char <= dim M over GF(p)); phi = pd for finite proj. dimension."""
+        from quiverlab.modules.homdims import igusa_todorov_phi
+        return igusa_todorov_phi(self, budget=budget, bound=bound)
+
+    def igusa_todorov_psi(self, budget=512, bound=64):
+        """The Igusa-Todorov function psi(M) = phi(M) + fpd(Omega^phi M) (Plan 40)."""
+        from quiverlab.modules.homdims import igusa_todorov_psi
+        return igusa_todorov_psi(self, budget=budget, bound=bound)
+
+    def omega_periodicity(self, max_period=12, bound=64):
+        """The least period k with Omega^k M ~ M (is_isomorphic-certified), or None
+        (finite pd, or not periodic within max_period) (Plan 40)."""
+        from quiverlab.modules.homdims import omega_periodicity
+        return omega_periodicity(self, max_period=max_period, bound=bound)
+
+    def tau_periodicity(self, max_period=12):
+        """The least period k with tau^k M ~ M (is_isomorphic-certified), or None
+        (tau-orbit terminates, or not periodic within max_period) (Plan 40)."""
+        from quiverlab.modules.homdims import tau_periodicity
+        return tau_periodicity(self, max_period=max_period)
 
     # -- duality, transpose, AR translates (Plan 23; Plan 24 sides) -----------
     def dualize(self):
@@ -249,6 +374,37 @@ class Module:
         """inverse AR translate tau^- M = Tr(D M). tau^-(injective) = 0."""
         from quiverlab.modules.duality import tau_minus
         return tau_minus(self)
+
+    def is_tau_rigid(self):
+        """True iff M is tau-rigid: ``Hom_A(M, tau M) = 0`` (Plan 45 / C4)."""
+        from quiverlab.tautilting.rigid import is_tau_rigid
+        return is_tau_rigid(self)
+
+    def g_vector(self):
+        """The g-vector ``g^M = [P_0] - [P_1]`` of the minimal projective presentation, a
+        vertex-keyed dict in ``K_0(proj A) = Z^{Q_0}`` (Plan 45 / C4)."""
+        from quiverlab.tautilting.rigid import g_vector
+        return g_vector(self)
+
+    def nakayama(self):
+        """The Nakayama functor value nu M = D Hom_A(M, A) (Plan 41 / C3). nu(P_v) = I_v;
+        ker(nu P_1 -> nu P_0) = tau M ties it to the trusted AR translate."""
+        from quiverlab.modules.ar import nakayama_functor
+        return nakayama_functor(self)
+
+    def nakayama_minus(self):
+        """The inverse Nakayama functor nu^- M = Hom_A(DA, M) (Plan 41 / C3).
+        nu^-(I_v) = P_v."""
+        from quiverlab.modules.ar import nakayama_functor_minus
+        return nakayama_functor_minus(self)
+
+    def almost_split_sequence(self):
+        """The almost-split (Auslander-Reiten) sequence 0 -> tau M -> E -> M -> 0 for
+        M indecomposable and non-projective (Plan 41 / C3). Self-certified exact +
+        non-split + indecomposable ends; loud refusal for projective/decomposable/
+        undecidable input."""
+        from quiverlab.modules.ar import almost_split_sequence
+        return almost_split_sequence(self)
 
     def is_isomorphic(self, other):
         """True iff self and other are isomorphic right modules (exact certificate)."""
@@ -298,6 +454,29 @@ def _coerce_matrix(mat, dom):
     as a no-op or, for native non-int/Fraction elements, unchanged."""
     return [[dom.coerce(x) if isinstance(x, (int, Fraction)) else x for x in row]
             for row in mat]
+
+
+def _normalize_dv(dimvec):
+    """A dimension vector as a str-keyed, vertex-sorted dict of ints. Byte-identical
+    to trace.modules._dv, which now delegates the Loewy layers here (Plan 37)."""
+    return {str(v): int(n)
+            for v, n in sorted(dimvec.items(), key=lambda kv: str(kv[0]))}
+
+
+def _socle_columns(Q, dom):
+    """The socle basis columns of a module Q in Q's own coordinates: the intersection
+    over the arrows of ker(action[arrow]) (mirrors radtopsoc.socle, returning the
+    spanning columns rather than the submodule so socle_series can lift them)."""
+    from quiverlab.modules.radtopsoc import _intersect
+    arrows = list(Q.algebra.quiver.arrows)
+    if not arrows:                              # semisimple: soc Q = Q
+        ident = lm.identity(Q.dim, dom)
+        return [lm.col(ident, j) for j in range(Q.dim)]
+    inter = None
+    for a in arrows:
+        ker = lm.kernel_columns(Q.action[a], dom)
+        inter = ker if inter is None else _intersect(inter, ker, dom)
+    return inter or []
 
 
 def _add(A, B, dom):

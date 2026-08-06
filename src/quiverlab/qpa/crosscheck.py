@@ -150,6 +150,92 @@ def crosscheck_tau(algebra, M, minus: bool = False) -> ModuleCrosscheckReport:
     return ModuleCrosscheckReport(what, ours_dv, qpa_dv, ours_dv == qpa_dv and iso, iso)
 
 
+def crosscheck_tau_complex(algebra, M) -> ModuleCrosscheckReport:
+    """The derived AR translate ``tau_Db`` (Plan 43) vs QPA. Build ``X`` = the minimal
+    projective resolution of ``M`` as a perfect complex, apply ``tau_Db``; for a
+    non-projective indecomposable interval module over ``kA_n`` its homology is
+    concentrated in degree 0 and isomorphic to the module ``tau M`` (verified in
+    ``tests/modules/test_derived_tau.py``), which QPA computes as ``DTr(M)``.
+
+    DOCUMENTED FALLBACK (P39 Ch.10 complex-scripting hazard, confirmed live 2026-08-05):
+    QPA's ``TauOfComplex(ProjectiveResolution(M))`` raises inside libgap
+    (``no method found for DirectSumInclusions``), so the complex object cannot be
+    scripted; we compare against the module-level ``DTr(M)`` instead -- a genuine
+    cross-engine oracle (our DERIVED-category ``tau_Db`` of the resolution vs QPA's
+    MODULE AR translate), never a silent skip. Compares the concentration + the
+    degree-0 homology's dimension vector AND its isomorphism class (via
+    ``IsomorphicModules``)."""
+    session.require_gap()
+    from quiverlab.derived.tau import tau_Db
+    from quiverlab.modules.complexes import ChainComplex
+    length = max(4, len(list(algebra.quiver.vertices)) + 2)
+    X = ChainComplex.from_projective_resolution(M, length=length)
+    T = tau_Db(X)
+    hd = T.homology_dims()
+    concentrated = all(d == 0 for k, d in hd.items() if k != 0)
+    H0 = T.homology(0)
+    ours = _dv_list(algebra, H0)
+    dvM, arrM = _graded(algebra, M)
+    base = scripts.quiver_and_algebra_script(algebra)
+    base += "\n" + scripts.module_decl(algebra, dvM, arrM, "M")
+    qpa = _read_int_list(session.run(base + "\nt := DTr(M);;\nDimensionVector(t);"))
+    # isomorphism class: emit H0 as a QPA module, compare to DTr(M)
+    dvT, arrT = _graded(algebra, H0)
+    iso_script = base + "\n" + scripts.module_decl(algebra, dvT, arrT, "H0")
+    iso = bool(session.run(iso_script + "\nt := DTr(M);;\nIsomorphicModules(H0, t);"))
+    agree = concentrated and ours == qpa and iso
+    return ModuleCrosscheckReport("tau_complex", ours, qpa, agree, iso)
+
+
+def crosscheck_almost_split(algebra, M) -> ModuleCrosscheckReport:
+    """Almost-split sequence middle term vs QPA ``AlmostSplitSequence(M)`` (Plan 41).
+    Compares the middle-term DIMENSION VECTOR always (works over QQ), and -- over a FINITE
+    field, where QPA's ``DecomposeModule`` is defined -- the order-independent multiset of
+    summand dimension vectors (via the Plan-30 ``_flat_dimvec_multiset``). ``M`` must be
+    indecomposable non-projective (a projective end has no almost-split sequence)."""
+    session.require_gap()
+    ses = M.almost_split_sequence()
+    mid = ses.M
+    ours_dv = _dv_list(algebra, mid)
+    dvM, arrM = _graded(algebra, M)
+    base = scripts.almost_split_sequence_script(algebra, dvM, arrM)
+    qpa_dv = _read_int_list(session.run(base + "\nDimensionVector(mid);"))
+    if algebra.domain.characteristic != 0:                # finite field: also compare summands
+        ours_ms = _flat_dimvec_multiset(
+            algebra, [(_dv_list(algebra, s), m) for s, m in mid.decompose()])
+        qpa_ms = sorted(tuple(_read_int_list(row)) for row in
+                        session.run(base + "\nList(DecomposeModule(mid), DimensionVector);"))
+        ours = {"dimvec": ours_dv, "summands": ours_ms}
+        qpa = {"dimvec": qpa_dv, "summands": qpa_ms}
+        return ModuleCrosscheckReport("almost_split", ours, qpa, ours == qpa)
+    return ModuleCrosscheckReport("almost_split", {"dimvec": ours_dv},
+                                  {"dimvec": qpa_dv}, ours_dv == qpa_dv)
+
+
+def crosscheck_predecessors(algebra, M) -> ModuleCrosscheckReport:
+    """Immediate AR predecessors of ``M`` vs QPA ``PredecessorsOfModule(M, 1)`` (Plan 41).
+    The immediate predecessors are exactly the middle summands of the almost-split
+    sequence ``0 -> tau M -> E -> M -> 0``; we compare the order-independent multiset of
+    their dimension vectors. FINITE FIELD ONLY (QPA's ``PredecessorsOfModule`` requires
+    it). ``M`` indecomposable non-projective."""
+    session.require_gap()
+    if algebra.domain.characteristic == 0:
+        raise QuiverlabError(
+            "crosscheck_predecessors needs a finite field (QPA PredecessorsOfModule "
+            "refuses over QQ)", hint="run over a prime GF(p)")
+    ses = M.almost_split_sequence()
+    ours = _flat_dimvec_multiset(
+        algebra, [(_dv_list(algebra, s), m) for s, m in ses.M.decompose()])
+    dvM, arrM = _graded(algebra, M)
+    # PredecessorsOfModule(M, 2): pred[1] is the level list -- pred[1][1] = [M],
+    # pred[1][2] = the IMMEDIATE predecessors (= the middle summands). (n=1 returns a
+    # degenerate structure that is not level-indexable; n=2 is the smallest that is.)
+    base = scripts.predecessors_script(algebra, dvM, arrM, 2)
+    qpa = sorted(tuple(_read_int_list(row)) for row in
+                 session.run(base + "\nList(pred[1][2], DimensionVector);"))
+    return ModuleCrosscheckReport("predecessors", ours, qpa, ours == qpa)
+
+
 def crosscheck_proj_resolution(algebra, M, top: int) -> ModuleCrosscheckReport:
     """Projective resolution term dimension vectors vs QPA ProjectiveResolution."""
     session.require_gap()
@@ -199,6 +285,59 @@ def crosscheck_inj_dimension(algebra, M, bound: int) -> ModuleCrosscheckReport:
 
 
 # ---------------------------------------------------------------------------
+# Plan 40: homological-dimension family crosschecks. QPA exposes
+# GlobalDimensionOfAlgebra / DominantDimensionOfAlgebra / GorensteinDimensionOfAlgebra
+# (all bound-parametrised, returning an int or GAP `infinity`); it exposes NO
+# Igusa-Todorov surface (a live NamesGVars() probe finds none -- test_homdims_qpa),
+# so phi/psi have no QPA oracle (the Task-B literature battery covers them). The
+# verbs are inlined here, like crosscheck_inj_dimension, over quiver_and_algebra_script.
+# ---------------------------------------------------------------------------
+def _qpa_dim_or_none(val):
+    """A QPA homological dimension as ``int`` or ``None`` -- GAP ``infinity`` / ``false``
+    (dimension beyond the bound, i.e. our infinite / unresolved marker) both map to
+    ``None``, mirroring crosscheck_inj_dimension."""
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def crosscheck_global_dimension(algebra, bound: int = 20) -> CrosscheckReport:
+    """gl.dim vs QPA ``GlobalDimensionOfAlgebra(A, n)`` (int, or ``infinity`` -> None).
+    Our unresolved/infinite verdict (not exact) maps to ``None`` on both sides."""
+    session.require_gap()
+    g = algebra.global_dimension()
+    ours = g.value if g.exact else None
+    base = scripts.quiver_and_algebra_script(algebra)
+    qpa = _qpa_dim_or_none(session.run(base + f"\nGlobalDimensionOfAlgebra(A, {bound});"))
+    return CrosscheckReport("global_dimension", ours, qpa, ours == qpa)
+
+
+def crosscheck_dominant_dimension(algebra, bound: int = 20) -> CrosscheckReport:
+    """Dominant dimension vs QPA ``DominantDimensionOfAlgebra(A, n)`` (int, or
+    ``infinity`` -> None). Our ``infinite`` verdict (self-injective) maps to ``None``."""
+    session.require_gap()
+    dd = algebra.dominant_dimension()
+    ours = None if dd.infinite else dd.value
+    base = scripts.quiver_and_algebra_script(algebra)
+    qpa = _qpa_dim_or_none(session.run(base + f"\nDominantDimensionOfAlgebra(A, {bound});"))
+    return CrosscheckReport("dominant_dimension", ours, qpa, ours == qpa)
+
+
+def crosscheck_gorenstein(algebra, bound: int = 20) -> CrosscheckReport:
+    """Gorenstein dimension vs QPA ``GorensteinDimensionOfAlgebra(A, n)`` (int, or
+    ``infinity`` -> None). Ours = ``max(right inj.dim, left inj.dim)`` when Gorenstein
+    (``is_gorenstein`` True), else ``None`` (the bounded engine did not prove finiteness
+    -- QPA likewise returns ``infinity``)."""
+    session.require_gap()
+    gd = algebra.gorenstein_dimension()
+    ours = (max(gd.right_id, gd.left_id) if gd.is_gorenstein else None)
+    base = scripts.quiver_and_algebra_script(algebra)
+    qpa = _qpa_dim_or_none(session.run(base + f"\nGorensteinDimensionOfAlgebra(A, {bound});"))
+    return CrosscheckReport("gorenstein", ours, qpa, ours == qpa)
+
+
+# ---------------------------------------------------------------------------
 # Plan 30: Krull-Schmidt decomposition crosschecks (finite fields only -- QPA's
 # DecomposeModule requires GF(p))
 # ---------------------------------------------------------------------------
@@ -240,6 +379,43 @@ def crosscheck_indecomposable(algebra, M) -> ModuleCrosscheckReport:
     base = scripts.is_indecomposable_script(algebra, dvM, arrM)
     qpa = bool(session.run(base + "\nIsIndecomposableModule(M);"))
     return ModuleCrosscheckReport("indecomposable", ours, qpa, ours == qpa)
+
+
+# ---------------------------------------------------------------------------
+# Plan 37: C1 categorical glue -- Hom dims (+ kernel/image/cokernel dim-vectors
+# where QPA exposes them: KernelInclusion / ImageInclusion / CoKernelProjection)
+# ---------------------------------------------------------------------------
+def crosscheck_hom_glue(algebra, M, N) -> ModuleCrosscheckReport:
+    """``dim Hom_A(M, N)`` (our ``hom_basis``) vs QPA ``Length(HomOverAlgebra(M, N))``,
+    and -- whenever ``dim Hom = 1`` (the nonzero hom is then unique up to a scalar, so
+    its kernel/image/cokernel dimension vectors are well-defined invariants both bases
+    agree on) -- the kernel/image/cokernel dimension vectors of that canonical hom vs
+    QPA's ``KernelInclusion`` / ``ImageInclusion`` / ``CoKernelProjection`` (QPA Ch. 7).
+    ``ours`` / ``qpa`` are dicts keyed ``hom_dim`` (always) and, when comparable,
+    ``kernel`` / ``image`` / ``cokernel`` (dimension vectors in quiver-vertex order)."""
+    session.require_gap()
+    ours_hom = algebra.hom(M, N)
+    dvM, arrM = _graded(algebra, M)
+    dvN, arrN = _graded(algebra, N)
+    base = scripts.hom_glue_script(algebra, dvM, arrM, dvN, arrN)
+    qpa_hom = int(session.run(base + "\nLength(homs);"))
+    ours = {"hom_dim": ours_hom}
+    qpa = {"hom_dim": qpa_hom}
+    if ours_hom == 1 and qpa_hom == 1:
+        f = algebra.hom_basis(M, N)[0]
+        K, _ = f.kernel()
+        I, _, _ = f.image()
+        C, _ = f.cokernel()
+        ours["kernel"] = _dv_list(algebra, K)
+        ours["image"] = _dv_list(algebra, I)
+        ours["cokernel"] = _dv_list(algebra, C)
+        qpa["kernel"] = _read_int_list(session.run(
+            base + "\nf := homs[1];;\nDimensionVector(Source(KernelInclusion(f)));"))
+        qpa["image"] = _read_int_list(session.run(
+            base + "\nf := homs[1];;\nDimensionVector(Source(ImageInclusion(f)));"))
+        qpa["cokernel"] = _read_int_list(session.run(
+            base + "\nf := homs[1];;\nDimensionVector(Range(CoKernelProjection(f)));"))
+    return ModuleCrosscheckReport("hom_glue", ours, qpa, ours == qpa)
 
 
 # ---------------------------------------------------------------------------
@@ -347,6 +523,12 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_tau(algebra, *args, minus=False, **kwargs)
     if what == "tau_minus":
         return crosscheck_tau(algebra, *args, minus=True, **kwargs)
+    if what == "tau_complex":
+        return crosscheck_tau_complex(algebra, *args, **kwargs)
+    if what == "almost_split":
+        return crosscheck_almost_split(algebra, *args, **kwargs)
+    if what == "predecessors":
+        return crosscheck_predecessors(algebra, *args, **kwargs)
     if what == "proj_resolution":
         return crosscheck_proj_resolution(algebra, *args, **kwargs)
     if what == "inj_resolution":
@@ -357,6 +539,8 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_decompose(algebra, *args, **kwargs)
     if what == "indecomposable":
         return crosscheck_indecomposable(algebra, *args, **kwargs)
+    if what == "hom_glue":
+        return crosscheck_hom_glue(algebra, *args, **kwargs)
     if what == "ext_algebra_dims":
         return crosscheck_ext_algebra_dims(algebra, *args, **kwargs)
     if what == "ext_generator_degrees":
@@ -371,6 +555,8 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     raise QuiverlabError(f"unknown cross-check {what!r}",
                          hint='use "hochschild", "module_ext", "symmetric", '
                               '"trivial_extension", "tau", "tau_minus", '
+                              '"tau_complex", '
+                              '"almost_split", "predecessors", '
                               '"proj_resolution", "inj_resolution", '
                               '"inj_dimension", "decompose", "indecomposable", '
                               '"ext_algebra_dims", "ext_generator_degrees", '

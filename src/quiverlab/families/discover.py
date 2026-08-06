@@ -6,7 +6,8 @@ from dataclasses import dataclass
 class FamilyInfo:
     name: str
     signature: str
-    route: str          # "monomial" | "general" | "structure-constant" | "iterator"
+    # "monomial" | "general" | "structure-constant" | "iterator" | "surface"
+    route: str
     citations: tuple
     summary: str
 
@@ -40,12 +41,36 @@ CATALOG = (
                "general", ("assem_book", "skowronski_yamagata",
                            "happel_trivial_extension", "cmrs_split"),
                "Trivial extension A |x D(A) (symmetric)."),
+    FamilyInfo("OnePointExtension", "OnePointExtension(A, M)",
+               "general", ("assem_book", "happel_question"),
+               "One-point extension A[M] = [[k, M], [0, A]] (new source vertex)."),
+    FamilyInfo("repetitive_slice", "repetitive_slice(A, copies)",
+               "general", ("hughes_waschbusche", "happel_trivial_extension",
+                           "assem_book"),
+               "Finite slice of the repetitive algebra hat(A) (copies of A + D(A))."),
+    FamilyInfo("JacobianAlgebra", "JacobianAlgebra(Q, W)",
+               "general", ("derksen_weyman_zelevinsky", "labardini", "assem_book"),
+               "Jacobian algebra kQ/(cyclic derivatives) of a quiver with potential."),
     FamilyInfo("TensorProduct", "TensorProduct(A, B)",
                "structure-constant", ("tensor_product", "hodge"),
                "Tensor product A (x)_k B."),
+    FamilyInfo("BrauerGraphAlgebra", "BrauerGraphAlgebra(BrauerGraph, multiplicities)",
+               "general", ("schroll_brauer", "wald_waschbusch", "assem_book"),
+               "Symmetric special-biserial algebra of a ribbon graph with vertex "
+               "multiplicities (dim = sum_v m_v*val(v)^2). Non-scalar constructor: "
+               "not offered by the scalar form-builder."),
     FamilyInfo("zoo", "zoo(dim_max=12)",
                "iterator", ("han_conjecture", "chouhy_solotar"),
                "Iterator over the curated exact zoo of open (Han-conjecture) algebras."),
+    FamilyInfo("fan_triangulation", "fan_triangulation(marked)",
+               "surface", ("fomin_shapiro_thurston", "abcp", "labardini"),
+               "Fan triangulation of a disc with `marked` boundary points (type A_{marked-3})."),
+    FamilyInfo("annulus_triangulation", "annulus_triangulation(n, m)",
+               "surface", ("fomin_shapiro_thurston", "abcp", "labardini"),
+               "Band triangulation of the annulus C(n, m) (affine A~ shape)."),
+    FamilyInfo("jacobian_of", "jacobian_of(Triangulation, field=...)",
+               "surface", ("fomin_shapiro_thurston", "abcp", "derksen_weyman_zelevinsky"),
+               "Gentle Jacobian algebra of an ideal triangulation (unpunctured, boundary)."),
 )
 
 

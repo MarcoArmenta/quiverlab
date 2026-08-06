@@ -94,13 +94,105 @@ never hide behind one:
     deleting ``resolved`` from the ext/tor blocks ONLY, so no pre-existing content
     moved. ``canonical_key`` is request-derived and UNCHANGED. (Only ``module_ext``
     computes ext; no golden computes tor.)
+  * 2026-08-05 (``module_basic`` re-freeze, Plan 37 C1 -- Loewy series): the
+    ``rad_top_soc`` block gained the additive ``series`` key (the Loewy / radical
+    layers top-to-bottom, ``Module.loewy_layers()`` -- a list of str-keyed
+    composition-factor multiplicity dicts, so the report and both GUIs render the
+    stacked Loewy diagram). Gated re-freeze, scoped BY KEY: the regenerated blob was
+    asserted byte-identical to the old one after DELETING the ``series`` key from the
+    ``rad_top_soc`` block, so no pre-existing content moved. ``series`` is a NEW key
+    on ``rad_top_soc`` blocks ONLY. The ``canonical_key`` is request-derived and
+    UNCHANGED (no new request fields). Only ``module_basic`` carries a ``rad_top_soc``
+    block; the other six entries are untouched.
+  * 2026-08-05 (``ext_algebra_exterior_gf7`` + ``recognizers_gentle_a3`` ADDED,
+    Plan 38): the two new algebra-block compute kinds ``ext_algebra`` (Yoneda
+    Ext-algebra + three-valued Koszulity, on the Koszul poster child
+    k<x,y>/(x^2, y^2, x*y+y*x) over GF(7)) and ``recognizers`` (the eight
+    structural recognizers + Dynkin/Euclidean type + form type, on gentle A3 over
+    GF(5)). Both are schema v1 (they act on the algebra block, no new request
+    block), so the existing seven entries are UNTOUCHED (verified byte-identical
+    on re-dump before appending). ``canonical_key`` is request-derived.
+  * 2026-08-05 (``almost_split_a3_s2`` ADDED, Plan 41 -- AR completion): a NEW
+    golden for the ``almost_split`` module compute kind (the almost-split sequence
+    0 -> tau M -> E -> M -> 0 of S_2 over kA3 / GF(5)). Additive: a brand-new entry
+    keyed ``almost_split_a3_s2``; the existing seven entries are untouched and were
+    asserted byte-identical before it was added. The block carries ``tau`` (a full
+    representation), ``middle.summands`` (E's Krull-Schmidt summands via the shared
+    serializer), and ``references``/``citations`` (assem_book + the new ars_book).
   * 2026-07-31 (ALL entries re-freeze, Marco ADDENDUM 2 -- json_guide): the result
     envelope gained ONE additive top-level key, ``json_guide`` -- a per-computation list
     of ``{object, path, note}`` recipes for recovering every computed object from
     result.json (``quiverlab.trace.json_guide.build_json_guide``, self-validating). Gated
     re-freeze: each regenerated blob was asserted byte-identical to the old one after
     DELETING the ``json_guide`` top-level key, so no pre-existing content moved. The
-    ``canonical_key`` is request-derived and UNCHANGED (no new request fields)."""
+    ``canonical_key`` is request-derived and UNCHANGED (no new request fields).
+  * 2026-08-05 (``derived_fingerprint_a4`` ADDED, Plan 43): a NEW fixture for the
+    ``derived_fingerprint`` scalar compute kind (schema v1, kA4 = path 1->2->3->4 over
+    GF(5) -- the necessary-condition invariant tuple: Coxeter polynomial + Cartan
+    det/Smith + HH/HC/centre + gl.dim). Pure addition: the eleven existing entries were
+    verified byte-identical BEFORE the new one was appended (the delegation test passed
+    on all eleven unchanged). Both runners share ``derived.block.derived_fingerprint_block``,
+    so the Pyodide twin agrees (``test_derived_fingerprint_p43.test_twin_parity``); the
+    cyclic-homology field is an honest per-field ``{error}`` (the generic (b,B) mixed
+    complex has no CS route and blows up over GF(p) for this dim). ``canonical_key`` is
+    request-derived.
+  * 2026-08-05 (``strings_gentle_a3`` ADDED, Plan 46 C5): a NEW fixture for the
+    ``strings`` algebra-only scalar compute kind (gentle A3/(ab) over GF(5) -- the
+    recognizer verdicts + string census + band presence + rep-type + AG invariant).
+    Pure addition: the eleven existing entries were verified byte-identical BEFORE the
+    new one was appended (the delegation test passed on all eleven unchanged). Its
+    ``canonical_key`` is request-derived; ``result_json`` was frozen from the server
+    runner, and the Plan-46 cross-runner test (tests/gui/test_strings_runner_twin,
+    tests/webapp/test_strings_block_p46) asserts the Pyodide twin agrees.
+  * 2026-08-05 (``homological_profile_kA2`` ADDED, Plan 40 C6): a NEW fixture for the
+    ``homological_profile`` scalar compute kind (kA2 over GF(7) -- global / finitistic
+    / dominant / Gorenstein dimensions + Igusa-Todorov phi/psi of the sum of simples).
+    Pure addition: the seven existing entries were verified byte-identical BEFORE the
+    new one was appended (the delegation test passed on all seven unchanged). Its
+    ``canonical_key`` is request-derived; the ``result_json`` was frozen from the
+    server runner, and the Plan-40 cross-runner test asserts the Pyodide twin agrees.
+  * 2026-08-05 (Plan 42, NEW golden ``ss_hochschild_dualnumbers``): the
+    ``ss_hochschild`` compute kind -- the Hochschild ``(b, B)`` spectral-sequence block
+    (E_inf page dims + abutment == HC + convergence prose) on ``k[x]/(x^2)`` over
+    GF(5), schema v1. A pure ADDITION (a new golden key); every pre-existing entry is
+    byte-identical (the parametrized byte-identity + canonical-key tests confirm it),
+    and the ``canonical_key`` is request-derived (no new request fields -- an
+    algebra-only range kind).
+  * 2026-08-05 (``module_tilting_check_kA2`` ADDED, Plan 44 C7): a NEW fixture for the
+    ``tilting_check`` module compute kind (kA2 over GF(5), module = the projective P1 --
+    NOT tilting: one indecomposable summand for two vertices). Pure addition: every
+    pre-existing entry was verified byte-identical BEFORE the new one was appended (the
+    delegation test passed on all of them unchanged). Its ``canonical_key`` is
+    request-derived; the ``result_json`` was frozen from the server runner, and the
+    Plan-44 cross-runner tests assert the Pyodide twin agrees on the math subkeys.
+  * 2026-08-05 (``orbit_geometry_kA3_s2`` ADDED, Plan 49 C8): a NEW fixture for the
+    ``orbit_geometry`` module compute kind (kA3 over GF(32003), module = the simple
+    S_2). Reports orbit dim + Voigt rigidity + honest codim + (hereditary Dynkin) the
+    Kac canonical decomposition. Pure addition: every pre-existing entry was verified
+    byte-identical BEFORE the new one was appended (the delegation test passed on all
+    of them unchanged). Its ``canonical_key`` is request-derived; the ``result_json``
+    was frozen from the server runner, and the Plan-49 cross-runner tests
+    (``tests/webapp/test_orbit_geometry_p49.py`` / ``tests/gui/``) assert the Pyodide
+    twin is byte-identical via the shared ``orbit_geometry_block`` builder.
+  * 2026-08-05 (``orbit_geometry_kA3_s2`` re-freeze, P49 devil's-advocate round):
+    the ``orbit_geometry`` block gained the additive ``canonical_of`` key (=
+    "dimension_vector" -- the canonical decomposition names the GENERIC module
+    of d, not M; Marco's name-the-object rule). Gated re-freeze: the regenerated
+    blob is byte-identical to the old one after deleting ``canonical_of``.
+  * 2026-08-05 (``tau_tilting_kA2`` ADDED, Plan 45 C4): a NEW fixture for the
+    ``tau_tilting`` ALGEBRA-level compute kind (kA2 over GF(7), budget 512 -- the full
+    run: 5 support τ-tilting pairs, complete, the n=2 fan with 5 chambers, the four-way
+    counts all 5). Pure addition: every pre-existing entry was verified byte-identical
+    BEFORE the new one was appended (the delegation test passed on all 15 unchanged). Its
+    ``canonical_key`` is request-derived (the budget rides in the ``compute`` string, no
+    new request field); the ``result_json`` was frozen from the server runner, and the
+    Plan-45 cross-runner test asserts the Pyodide twin agrees byte-for-byte.
+  * 2026-08-05 (ALL 18 result_json re-frozen, v0.2.0 bump at the P50 gate): the
+    embedded ``quiverlab_version`` moved 0.1.0 -> 0.2.0. Gated re-freeze: every
+    regenerated blob is byte-identical to its predecessor after mapping the
+    version string back (asserted for all 18 before writing). ``canonical_key``
+    values are UNCHANGED -- they are pinned against the frozen ``_V`` constant
+    below, deliberately decoupled from the live version."""
 import json
 import pathlib
 

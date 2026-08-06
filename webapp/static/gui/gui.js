@@ -68,10 +68,24 @@
     '  <label><input type="checkbox" id="qlgui-connes_b"> Connes B 0..<input type="number" id="qlgui-connes_b-top" value="2" min="0"></label>' +
     // Plan-35 follow-up: cyclic homology HC_0..HC_n (default 6), right after Connes B.
     '  <label><input type="checkbox" id="qlgui-cyclic_homology"> cyclic homology 0..<input type="number" id="qlgui-cyclic_homology-top" value="6" min="0"></label>' +
+    // Plan-42: the Hochschild (b, B) spectral sequence (abutting to HC), right after cyclic homology.
+    '  <label><input type="checkbox" id="qlgui-ss_hochschild"> (b,B) spectral sequence 0..<input type="number" id="qlgui-ss_hochschild-top" value="4" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
+    '  <label><input type="checkbox" id="qlgui-homological_profile"> homological dimensions</label>' +
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
+    // ---- Plan 38: Yoneda Ext-algebra + Koszulity, and the recognizer batch ----
+    '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
+    '  <label><input type="checkbox" id="qlgui-recognizers"> recognizers + type</label>' +
+    '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
+    // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
+    '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
+    // ---- Plan 47: quasi-hereditary structure (natural order) ----
+    '  <label><input type="checkbox" id="qlgui-quasi_hereditary"> quasi-hereditary (Δ/∇, natural order)</label>' +
+    // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
+    '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
+    '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -99,6 +113,9 @@
     '    <label><input type="checkbox" id="qlgui-projective_resolution"> proj.res 0..<select id="qlgui-pr-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-injective_resolution"> inj.res 0..<select id="qlgui-ir-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-decompose"> decompose</label>' +
+    '    <label><input type="checkbox" id="qlgui-almost_split"> almost-split</label>' +
+    '    <label><input type="checkbox" id="qlgui-tilting_check"> tilting?</label>' +
+    '    <label><input type="checkbox" id="qlgui-orbit_geometry"> orbit geometry</label>' +
     '    <label><input type="checkbox" id="qlgui-ext"> Ext 0..<select id="qlgui-ext-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-tor"> Tor 0..<select id="qlgui-tor-top"></select></label>' +
     '  </div>' +
@@ -139,15 +156,29 @@
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top",
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
-   "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top", "cartan",
-   "coxeter_polynomial", "global_dimension", "center", "trace", "compute",
+   "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top",
+   // Plan 42: the Hochschild (b, B) spectral sequence + its degree picker
+   "ss_hochschild", "ss_hochschild-top", "cartan",
+   "coxeter_polynomial", "global_dimension", "center",
+   // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
+   "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
+   // Plan 43: derived fingerprint (scalar kind)
+   "derived_fingerprint",
+   // Plan 46: gentle / string subsystem
+   "strings",
+   // Plan 47: quasi-hereditary structure (scalar kind)
+   "quasi_hereditary",
+   // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
+   "tau_tilting", "tau_tilting-budget",
+   "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
    "module", "mod-enable", "mod-mode", "mod-side", "mod-body", "mod-kinds",
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
    "projective_dimension", "injective_dimension",
    "projective_resolution", "pr-top", "injective_resolution", "ir-top",
-   "decompose", "ext", "ext-top", "tor", "tor-top",
+   "decompose", "almost_split", "ext", "ext-top", "tor", "tor-top",
+   "decompose", "tilting_check", "orbit_geometry", "ext", "ext-top", "tor", "tor-top",
    "target", "target-mode", "target-side", "target-body", "target-note"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
   [el["hhc-top"], el["hhh-top"], el["pr-top"], el["ir-top"], el["ext-top"],
@@ -291,7 +322,9 @@
   // ---------- Plan 26: no-code module panel ----------
   var MOD_KIND_IDS = ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
     "projective_dimension", "injective_dimension",
-    "projective_resolution", "injective_resolution", "decompose", "ext", "tor"];
+    "projective_resolution", "injective_resolution", "decompose", "almost_split",
+    "projective_resolution", "injective_resolution", "decompose", "tilting_check",
+    "orbit_geometry", "ext", "tor"];
 
   // Generic matrix-editor helpers over a module-state {dims, maps} + a side. Used
   // by BOTH the main module panel (S.module) and the second-argument editor
@@ -648,14 +681,26 @@
     if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
     if (el.cyclic_homology.checked)
       compute.push("cyclic_homology:0.." + el["cyclic_homology-top"].value);
-    ["cartan", "coxeter_polynomial", "global_dimension", "center"].forEach(function (k) {
+    // Plan 42: the (b, B) spectral sequence, right after cyclic homology.
+    if (el.ss_hochschild.checked)
+      compute.push("ss_hochschild:0.." + el["ss_hochschild-top"].value);
+    if (el.ext_algebra.checked)
+      compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
+    ["cartan", "coxeter_polynomial", "global_dimension", "center",
+     "recognizers", "homological_profile", "derived_fingerprint",
+     "strings", "quasi_hereditary"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
+    // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
+    // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
+    if (el.tau_tilting.checked)
+      compute.push("tau_tilting:" + el["tau_tilting-budget"].value);
     var module = null, extTarget = null, torTarget = null;
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
       ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
-       "projective_dimension", "injective_dimension", "decompose"].forEach(function (k) {
+       "projective_dimension", "injective_dimension", "decompose",
+       "tilting_check", "orbit_geometry"].forEach(function (k) {
         if (el[k].checked) compute.push(k);
       });
       if (el.projective_resolution.checked)
@@ -1031,6 +1076,52 @@
       return v && v.display_only === true;
     });
   }
+  function kvTable(rows) {                  // label | value (Plan 44 tilting_check)
+    var tbl = h("table", {});
+    rows.forEach(function (p) {
+      var r = h("tr");
+      r.appendChild(h("th", { text: p[0] }));
+      r.appendChild(h("td", { text: p[1] }));
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
+  function renderOrbitGeometry(div, b) {      // Plan 49 / C8: orbit geometry block
+    if (b.error) { div.appendChild(h("p", { "class": "qlgui-error", text: b.error })); return; }
+    var dvText2 = function (dv) {
+      return "{" + Object.keys(dv || {}).map(function (k) { return k + ": " + dv[k]; }).join(", ") + "}";
+    };
+    div.appendChild(kvTable([
+      ["dimension vector d", dvText2(b.dim_vector)],
+      ["dim GL(d) = Σ d_v²", String(b.group_dim)],
+      ["dim Rep(Q,d) (ambient)", String(b.rep_variety_dim)],
+      ["dim End_A(M)", String(b.end_dim)],
+      ["dim O_M (orbit)", String(b.orbit_dim)],
+      ["dim Ext¹(M,M)", String(b.ext1_self)]
+    ]));
+    // rigidity verdict + HONEST codim gloss (hereditary = codim; general = upper bound)
+    var verdict = b.rigid
+      ? "M is rigid: Ext¹(M,M) = 0, so the orbit O_M is open (Voigt)."
+      : "M is not rigid: Ext¹(M,M) > 0.";
+    var gloss = b.codim_semantics === "hereditary"
+      ? " A is hereditary, so dim Ext¹(M,M) IS the codimension of the orbit closure in "
+        + "Rep(Q,d) (Voigt; Rep smooth)."
+      : " A = kQ/I is not hereditary, so dim Ext¹(M,M) is only an UPPER BOUND on the "
+        + "codimension (the module variety is cut by the relations).";
+    div.appendChild(h("p", { text: verdict + gloss }));
+    // the Kac canonical decomposition (hereditary Dynkin) or the honest refusal note
+    if (b.canonical_decomposition && b.canonical_decomposition.length) {
+      var parts = b.canonical_decomposition.map(function (c) {
+        var nm = c.name || ("(" + (c.root || []).join(", ") + ")");
+        return c.multiplicity === 1 ? nm : nm + "^" + c.multiplicity;
+      });
+      div.appendChild(h("p", { text: "Kac canonical decomposition: d = " + parts.join(" ⊕ ")
+        + " (each component a positive root; the generic module is rigid)." }));
+    } else if (b.canonical_note) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Canonical decomposition not computed: " + b.canonical_note }));
+    }
+  }
   function repDimTable(pairs) {             // label | dim vector (NO total-dim column)
     var head = h("tr");
     ["", "dim vector"].forEach(function (t) { head.appendChild(h("th", { text: t })); });
@@ -1039,6 +1130,26 @@
       var r = h("tr");
       r.appendChild(h("th", { text: p[0] }));
       r.appendChild(h("td", { text: dvText(p[1].dims) }));
+      tbl.appendChild(r);
+    });
+    return tbl;
+  }
+  function loewyFactors(layer) {           // a Loewy layer as S_v ⊕ S_w^m (Plan 37)
+    var parts = [];
+    Object.keys(layer).sort().forEach(function (v) {
+      var m = layer[v];
+      if (m) parts.push(m === 1 ? "S_" + v : "S_" + v + "^" + m);
+    });
+    return parts.length ? parts.join(" ⊕ ") : "0";
+  }
+  function loewySeriesTable(series) {       // layer | factors, top to bottom
+    var head = h("tr");
+    ["layer", "factors"].forEach(function (t) { head.appendChild(h("th", { text: t })); });
+    var tbl = h("table", {}, head);
+    series.forEach(function (layer, i) {
+      var r = h("tr");
+      r.appendChild(h("td", { text: String(i + 1) }));
+      r.appendChild(h("td", { text: loewyFactors(layer) }));
       tbl.appendChild(r);
     });
     return tbl;
@@ -2208,6 +2319,140 @@
     div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
 
+  function homProfileFinitistic(f) {
+    if (f.exact) return "findim = " + f.lower + "  (" + f.note + ")";
+    if (f.upper != null) return "findim in [" + f.lower + ", " + f.upper + "]  (" + f.note + ")";
+    return "findim ≥ " + f.lower + "  (" + f.note + ")";
+  }
+
+  function renderHomologicalProfile(div, b) {
+    // The C6 homological-dimensions family (Plan 40) as a labelled list. Each row is
+    // its own honest marker (exact value / certified bound / infinity / undecided /
+    // per-entry error), never a bare number the engine did not resolve.
+    div.appendChild(h("p", {}, h("b", { text: "Homological dimensions" })));
+    var rows = [
+      ["global dimension", b.global_dimension.text],
+      ["finitistic dimension", homProfileFinitistic(b.finitistic)],
+      ["dominant dimension", b.dominant.text],
+      ["Gorenstein", b.gorenstein.text]
+    ];
+    var it = b.igusa_todorov;
+    if (it.error) {
+      rows.push(["Igusa–Todorov φ/ψ of ⊕ S_v", "not computed: " + it.error]);
+    } else {
+      rows.push(["Igusa–Todorov of " + it.module,
+                 "φ = " + it.phi + ",  ψ = " + it.psi]);
+    }
+    var tbl = h("table", { "class": "qlgui-table" });
+    rows.forEach(function (r) {
+      var tr = h("tr");
+      tr.appendChild(h("th", { text: r[0] }));
+      tr.appendChild(h("td", { text: r[1] }));
+      tbl.appendChild(tr);
+    });
+    div.appendChild(tbl);
+  }
+
+  // ---- Plan 45: the C4 tau-tilting block + the LIVE wall-and-chamber SVG ----
+  function renderTauTilting(div, b) {
+    div.appendChild(h("p", { text: "Support τ-tilting pairs (Adachi–Iyama–"
+      + "Reiten): each is a maximal cone of the g-vector fan; each mutation crosses a wall "
+      + "labelled by a brick (King θ-stability). n = " + b.n + "." }));
+    if (!b.complete) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "The exchange graph did not close (status: " + b.status + ") — A is "
+          + "τ-tilting-infinite or the pair budget was hit. " + b.num_pairs
+          + " pairs were found; the fan and counts are omitted (a partial value would "
+          + "mislead)." }));
+    }
+    if (b.counts) {
+      div.appendChild(h("p", { text: "AIR four-way identity: #pairs = #torsion classes = "
+        + "#2-term silting = #semibricks = " + b.counts.pairs + " = " + b.counts.torsion
+        + " = " + b.counts.silting + " = " + b.counts.semibricks + "." }));
+    }
+    if (b.green_count != null)
+      div.appendChild(h("p", { text: "Maximal green sequences: " + b.green_count + "." }));
+    // pairs table
+    var tbl = h("table", { "class": "qlgui-table" });
+    var hr = h("tr");
+    ["id", "pair (M, P)", "support", "g-matrix (columns = g-vectors)"].forEach(
+      function (t) { hr.appendChild(h("th", { text: t })); });
+    tbl.appendChild(hr);
+    (b.pairs || []).forEach(function (p) {
+      var tr = h("tr");
+      tr.appendChild(h("td", { text: String(p.id) }));
+      tr.appendChild(h("td", { text: p.label + (p.is_initial ? " (initial)" : "") }));
+      tr.appendChild(h("td", { text: JSON.stringify(p.support) }));
+      var gm = [];
+      var G = p.g_matrix || [];
+      var nc = G[0] ? G[0].length : 0;
+      for (var c = 0; c < nc; c++) {
+        var col = [];
+        for (var r = 0; r < G.length; r++) col.push(G[r][c]);
+        gm.push("(" + col.join(", ") + ")");
+      }
+      tr.appendChild(h("td", { text: gm.join("; ") }));
+      tbl.appendChild(tr);
+    });
+    div.appendChild(tbl);
+    // Hasse edges
+    if (b.hasse && b.hasse.length) {
+      div.appendChild(h("p", { text: "Hasse quiver (downward = left mutation):" }));
+      var ul = h("ul");
+      b.hasse.forEach(function (e) {
+        var bd = e.brick_dimvec ? " — brick " + dvText(e.brick_dimvec) : "";
+        ul.appendChild(h("li", { text: e.from + " → " + e.to + bd }));
+      });
+      div.appendChild(ul);
+    }
+    // the LIVE wall-and-chamber fan
+    if (b.fan && b.fan.chambers && b.fan.chambers.length)
+      renderWallAndChamber(div, b.fan);
+  }
+
+  function renderWallAndChamber(div, fan) {
+    // Exact fractions -> pixels happens HERE (the JS renderer is float-exempt); the
+    // exact geometry never left Python. n=2 draws the g-vector rays from the origin;
+    // n=3 draws the server-pre-projected octahedron-net rays.
+    var fs = h("fieldset", { "class": "qlgui-fieldset" });
+    fs.appendChild(h("legend", { text: "Wall-and-chamber fan"
+      + (fan.projection === "L1" ? " (L1/octahedron projection)" : "") }));
+    var W = 360, C = W / 2, R = 150;
+    var svg = sv("svg", { viewBox: "0 0 " + W + " " + W, width: String(W), height: String(W) });
+    svg.appendChild(sv("line", { x1: "0", y1: String(C), x2: String(W), y2: String(C),
+      stroke: "#ccc" }));
+    svg.appendChild(sv("line", { x1: String(C), y1: "0", x2: String(C), y2: String(W),
+      stroke: "#ccc" }));
+    var colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+                  "#8c564b", "#e377c2", "#17becf"];
+    var toXY = function (fx, fy) {                 // exact string "p/q" -> pixel float
+      return [C + evalFrac(fx) * R, C - evalFrac(fy) * R];
+    };
+    (fan.chambers || []).forEach(function (ch, i) {
+      var rays = (fan.n === 3 && ch.net2d) ? ch.net2d : ch.rays;
+      var col = colors[i % colors.length];
+      (rays || []).forEach(function (ray) {
+        if (!ray) return;
+        var p = toXY(ray[0], ray[1]);
+        svg.appendChild(sv("line", { x1: String(C), y1: String(C),
+          x2: String(p[0]), y2: String(p[1]), stroke: col, "stroke-width": "2" }));
+      });
+      if (ch.is_initial && rays && rays[0]) {
+        var q = toXY(rays[0][0], rays[0][1]);
+        svg.appendChild(sv("circle", { cx: String(q[0]), cy: String(q[1]), r: "3",
+          fill: col }));
+      }
+    });
+    fs.appendChild(svg);
+    div.appendChild(fs);
+  }
+
+  function evalFrac(s) {                            // "p/q" or "p" -> Number (renderer-only)
+    s = String(s);
+    var i = s.indexOf("/");
+    return i < 0 ? parseFloat(s) : parseFloat(s.slice(0, i)) / parseFloat(s.slice(i + 1));
+  }
+
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
     var div = h("div", { "class": "qlgui-block" });
@@ -2257,6 +2502,26 @@
       if (b.basis_classes)
         div.appendChild(h("p", {}, h("b", { text: "Explicit representatives by degree:" })));
       appendCyclicReps(div, b);
+    } else if (name === "ss_hochschild") {
+      // Plan 42: the Hochschild (b, B) spectral sequence. Abutment table (E_inf
+      // totals == HC_n), the netPage E_inf grid, and the convergence prose. A loud
+      // DepthLimit guard is reported as an honest error line, never a crash.
+      if (b.error) {
+        div.appendChild(h("p", { text: b.error }));
+      } else {
+        var shead = h("tr"), srow = h("tr");
+        shead.appendChild(h("th", { text: "n" }));
+        srow.appendChild(h("th", { text: "dim E_inf total (= HC_n)" }));
+        (b.abutment || []).forEach(function (d, n) {
+          shead.appendChild(h("td", { text: String(n) }));
+          srow.appendChild(h("td", { text: String(d) }));
+        });
+        div.appendChild(h("p", { text: "Hochschild (b,B) spectral sequence" }));
+        div.appendChild(h("table", {}, shead, srow));
+        if (b.grid)
+          div.appendChild(h("pre", { text: b.grid.replace(/```/g, "").trim() }));
+        if (b.prose) div.appendChild(h("p", { text: b.prose }));
+      }
     } else if (name === "cartan") {
       div.appendChild(h("p", { text: "Cartan matrix:" }));
       div.appendChild(matrixGrid(b.matrix));
@@ -2264,6 +2529,8 @@
       div.appendChild(h("p", { "class": "arithmatex", text: "\\[ \\chi(t) = " + b.latex + " \\]" }));
     } else if (name === "global_dimension") {
       div.appendChild(h("p", { text: b.text }));
+    } else if (name === "homological_profile") {
+      renderHomologicalProfile(div, b);
     } else if (name === "center") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
     } else if (name === "tau" || name === "tau_minus") {
@@ -2296,6 +2563,10 @@
         }
         var trio = [["rad M", b.radical], ["top M", b.top], ["soc M", b.socle]];
         div.appendChild(repDimTable(trio));
+        if (b.series && b.series.length) {   // the Loewy (radical) series (Plan 37)
+          div.appendChild(h("p", { text: "Loewy (radical) series, top to bottom:" }));
+          div.appendChild(loewySeriesTable(b.series));
+        }
         trio.forEach(function (p) { appendRepMaps(div, p[0], p[1]); });
       }
     } else if (name === "decompose") {
@@ -2303,6 +2574,38 @@
         " indecomposable summand(s):" }));
       div.appendChild(decompTable(b.summands));
       appendSummandMaps(div, b.summands);
+    } else if (name === "almost_split") {
+      // The almost-split (Auslander–Reiten) sequence 0 → τM → E → M → 0 (Plan 41);
+      // an honest refusal for a projective / decomposable / undecidable input.
+      if (b.exists === false) {
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "No almost-split sequence — " + (b.reason || "input not eligible") + "." }));
+      } else {
+        div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
+        div.appendChild(h("p", { text: "M is indecomposable and non-projective; "
+          + "τM (a full representation):" }));
+        appendRepMaps(div, "τ M", b.tau);
+        var asum = (b.middle && b.middle.summands) || [];
+        div.appendChild(h("p", { text: "middle term E — Krull–Schmidt summands:" }));
+        div.appendChild(decompTable(asum));
+        appendSummandMaps(div, asum);
+      }
+    } else if (name === "tilting_check") {
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: b.is_tilting
+          ? "M is a tilting module." : "M is not a tilting module: " + b.note + "." }));
+        var trows = [
+          ["tilting", b.is_tilting ? "yes" : "no"],
+          ["n (pd bound tested)", String(b.n)],
+          ["pd M", b.pd === null || b.pd === undefined ? "> bound" : String(b.pd)],
+          ["Ext^i(M,M)=0 (1≤i≤n)", b.self_ext_vanishes ? "yes" : "no"],
+          ["# non-iso indec. summands", String(b.num_summands)],
+          ["# vertices (rank K_0)", String(b.num_vertices)]
+        ];
+        div.appendChild(kvTable(trows));
+      }
     } else if (name === "ext" || name === "tor") {
       var isExt = name === "ext";
       div.appendChild(h("p", { text: (isExt ? "Ext to the target module — dim vector "
@@ -2346,6 +2649,153 @@
         (d == null ? "∞ (beyond the probed length)" : String(d)) }));
       appendTermBasis(div, b, proj);
       appendDifferentials(div, b, proj);
+    } else if (name === "ext_algebra") {
+      // Plan 38: the three-valued Koszul verdict + graded (Betti) data of E(A).
+      var kv;
+      if (b.koszul === true) kv = "A is Koszul" + (b.koszul_reason ? " — " + b.koszul_reason : "");
+      else if (b.koszul === false) kv = b.obstruction
+        ? "A is not Koszul — obstruction at degree " + b.obstruction[0] + " (" + b.obstruction[1] + ")"
+        : "A is not Koszul";
+      else kv = "Koszulity undecided through degree " + b.certified_through_degree
+        + (b.koszul_reason ? " — " + b.koszul_reason : "");
+      div.appendChild(h("p", { text: kv + "." }));
+      div.appendChild(degreeTable("dim E^n", b.graded_dims || []));
+      if (b.latex)
+        div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
+      var byDeg = function (d) {
+        d = d || {};
+        var ks = Object.keys(d).sort(function (a, c) { return (+a) - (+c); });
+        return ks.length ? ks.map(function (k) { return "degree " + k + ": " + d[k]; }).join(", ") : "none";
+      };
+      div.appendChild(h("p", { text: "Minimal generators of E(A): " + byDeg(b.generators_by_degree)
+        + "; minimal relations: " + byDeg(b.relations_by_degree) + "." }));
+    } else if (name === "recognizers") {
+      // Plan 38: the recognizer flags + Dynkin/Euclidean type + form type.
+      var RLBL = { is_semisimple: "semisimple", is_radical_square_zero: "radical square zero",
+        is_hereditary: "hereditary", is_basic: "basic", is_nakayama: "Nakayama",
+        is_special_biserial: "special biserial", is_string: "string", is_gentle: "gentle",
+        is_selfinjective: "self-injective", is_symmetric: "symmetric" };
+      var RORD = ["is_semisimple", "is_radical_square_zero", "is_hereditary", "is_basic",
+        "is_nakayama", "is_special_biserial", "is_string", "is_gentle",
+        "is_selfinjective", "is_symmetric"];
+      var ul = h("ul");
+      RORD.forEach(function (k) {
+        if (!b.flags || !(k in b.flags)) return;
+        var v = b.flags[k], txt;
+        if (v && typeof v === "object" && "error" in v) txt = RLBL[k] + ": not decided — " + v.error;
+        else txt = RLBL[k] + ": " + (v === true ? "yes" : "no");
+        ul.appendChild(h("li", { text: txt }));
+      });
+      div.appendChild(ul);
+      div.appendChild(h("p", { text: "Diagram type: "
+        + (b.dynkin_type || "not a Dynkin/Euclidean diagram") }));
+      div.appendChild(h("p", { text: "Form type: "
+        + (b.form_type || "undefined (Cartan not unimodular)") }));
+    } else if (name === "derived_fingerprint") {
+      // Plan 43: the derived-invariant fingerprint tuple + necessary-condition scope.
+      var fp = b.fingerprint || {};
+      var cell = function (v) {
+        if (v && typeof v === "object" && "error" in v) return "unavailable — " + v.error;
+        if (Array.isArray(v)) return "[" + v.join(", ") + "]";
+        return String(v);
+      };
+      var frows = [
+        ["Coxeter polynomial", fp.coxeter_polynomial],
+        ["det C", fp.cartan_det],
+        ["Cartan Smith factors", fp.cartan_smith],
+        ["dim HH^• (cohomology)", fp.hh_cohomology_dims],
+        ["dim HH_• (homology)", fp.hh_homology_dims],
+        ["dim HC_• (cyclic)", fp.cyclic_dims],
+        ["dim Z(A)", fp.center_dim],
+        ["global dimension", fp.gl_dim]
+      ];
+      var ftbl = h("table");
+      frows.forEach(function (r) {
+        ftbl.appendChild(h("tr", {}, h("th", { text: r[0] }), h("td", { text: cell(r[1]) })));
+      });
+      div.appendChild(ftbl);
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: b.scope || "a derived-invariant fingerprint; equal values are a necessary condition for derived equivalence, not a proof" }));
+    } else if (name === "strings") {
+      // Plan 46: recognizer verdicts + string census + bands + rep-type + AG.
+      var rc = b.recognizers || {};
+      var yn = function (v) {
+        if (v && typeof v === "object" && "error" in v) return "not decided — " + v.error;
+        return v === true ? "yes" : "no";
+      };
+      var rul = h("ul");
+      [["is_special_biserial", "special biserial"], ["is_string", "string"],
+       ["is_gentle", "gentle"]].forEach(function (kv) {
+        if (kv[0] in rc) rul.appendChild(h("li", { text: kv[1] + ": " + yn(rc[kv[0]]) }));
+      });
+      div.appendChild(rul);
+      if (b.strings) {
+        div.appendChild(h("p", { text: "String modules: " + b.strings.count
+          + " (" + (b.strings.status === "complete"
+            ? "complete list up to length " + b.strings.max_length
+            : "sample up to length " + b.strings.max_length + "; not a complete list")
+          + ")." }));
+        if (b.strings.sample && b.strings.sample.length)
+          div.appendChild(h("p", { text: "Sample: " + b.strings.sample.join(", ") }));
+      }
+      if (b.bands) {
+        div.appendChild(h("p", { text: b.bands.exist
+          ? "Bands: yes — " + (b.bands.sample || []).join(", ")
+            + " (the algebra is representation-infinite)."
+          : "Bands: none." }));
+      }
+      var RT = { finite: "representation-finite", infinite: "representation-infinite",
+        unknown: "undetermined (budget/length cut)" };
+      div.appendChild(h("p", { text: "Representation type: " + (RT[b.rep_type] || b.rep_type) }));
+      if (b.ag_invariant && b.ag_invariant.length !== undefined) {
+        var pairs = b.ag_invariant.map(function (p) { return "(" + p[0] + ", " + p[1] + ")"; });
+        div.appendChild(h("p", { text: "Avella-Alaminos–Geiss invariant (derived, not "
+          + "complete): { " + pairs.join(", ") + " }" }));
+      } else if (b.ag_invariant && b.ag_invariant.error) {
+        div.appendChild(h("p", { text: "AG invariant: not decided — " + b.ag_invariant.error }));
+      }
+      if (b.note) div.appendChild(h("p", { text: b.note }));
+    } else if (name === "orbit_geometry") {
+      renderOrbitGeometry(div, b);
+    } else if (name === "quasi_hereditary") {
+      // Plan 47: the quasi-heredity verdict + order-dependence note + per-index
+      // certificates (End Δ(i)=k, P(i) Δ-filtered) + the standard-module dim vectors.
+      div.appendChild(h("p", { text: "Quasi-hereditary in this order: "
+        + (b.is_quasi_hereditary ? "yes" : "no") + ". Order (lowest to highest): "
+        + (b.order || []).join(", ") + "." }));
+      if (b.order_note) div.appendChild(h("p", { "class": "qlgui-hint", text: b.order_note }));
+      if (b.gl_dim) div.appendChild(h("p", { text: "Global dimension: "
+        + (b.gl_dim.exact ? b.gl_dim.value + " (exact)"
+           : "≥ " + b.gl_dim.value + " (certified lower bound)")
+        + " (quasi-heredity requires it finite)." }));
+      if (!b.is_quasi_hereditary && b.note)
+        div.appendChild(h("p", { text: "Failing clause: " + b.note }));
+      if (b.per_index) {
+        var qtbl = h("table");
+        qtbl.appendChild(h("tr", {}, h("th", { text: "i" }), h("th", { text: "End Δ(i)=k" }),
+          h("th", { text: "P(i) Δ-filtered" })));
+        (b.order || Object.keys(b.per_index)).forEach(function (v) {
+          var info = b.per_index[v] || {};
+          qtbl.appendChild(h("tr", {}, h("th", { text: String(v) }),
+            h("td", { text: info.brick ? "yes" : "no" }),
+            h("td", { text: info.delta_filters_P ? "yes" : "no" })));
+        });
+        div.appendChild(qtbl);
+      }
+      if (b.standard_dims) {
+        var stbl = h("table");
+        stbl.appendChild(h("tr", {}, h("th", { text: "standard" }), h("th", { text: "dim" }),
+          h("th", { text: "dim vector" })));
+        (b.order || Object.keys(b.standard_dims)).forEach(function (v) {
+          var info = b.standard_dims[v] || {}, dv = info.dimvec || {};
+          var dvtxt = Object.keys(dv).map(function (w) { return w + ":" + dv[w]; }).join(", ");
+          stbl.appendChild(h("tr", {}, h("th", { text: "Δ(" + v + ")" }),
+            h("td", { text: String(info.dim) }), h("td", { text: dvtxt })));
+        });
+        div.appendChild(stbl);
+      }
+    } else if (name === "tau_tilting") {
+      renderTauTilting(div, b);
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -2394,8 +2844,11 @@
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
    el.connes_b, el["connes_b-top"],
-   el.cyclic_homology, el["cyclic_homology-top"], el.cartan,
-   el.coxeter_polynomial, el.global_dimension, el.center]
+   el.cyclic_homology, el["cyclic_homology-top"],
+   el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
+   el.coxeter_polynomial, el.global_dimension, el.center,
+   el.ext_algebra, el["ext_algebra-top"], el.recognizers,
+   el.homological_profile, el.strings, el.quasi_hereditary]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -2406,7 +2859,9 @@
     x.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
   });
   [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
-   el.projective_dimension, el.injective_dimension, el.decompose,
+   el.projective_dimension, el.injective_dimension, el.decompose, el.almost_split,
+   el.projective_dimension, el.injective_dimension, el.decompose, el.tilting_check,
+   el.orbit_geometry,
    el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
    el["ext-top"], el["tor-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });

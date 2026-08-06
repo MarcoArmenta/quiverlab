@@ -1,8 +1,9 @@
-"""The CI buckets fast/deep/qpa are a PARTITION of the collected suite: pairwise
-disjoint and exhaustive; slow implies deep; no unknown-marker warnings (Task 2).
+"""The CI buckets fast/deep/qpa/m2 are a PARTITION of the collected suite: pairwise
+disjoint and exhaustive; slow implies deep; no unknown-marker warnings (Task 2;
+m2 added by Plan 36).
 
 Marked `deep` so it runs once on the deep leg, not on all 12 fast matrix cells
-(it shells out four collections)."""
+(it shells out five collections)."""
 import pathlib
 import subprocess
 import sys
@@ -30,13 +31,17 @@ def _ids(expr):
 
 def test_buckets_partition_the_suite():
     everything = _ids("")
-    fast, deep, qpa = _ids("fast"), _ids("deep"), _ids("qpa")
+    fast, deep, qpa, m2 = _ids("fast"), _ids("deep"), _ids("qpa"), _ids("m2")
     # pairwise disjoint
     assert not (fast & deep), sorted(fast & deep)[:5]
     assert not (fast & qpa), sorted(fast & qpa)[:5]
+    assert not (fast & m2), sorted(fast & m2)[:5]
     assert not (deep & qpa), sorted(deep & qpa)[:5]
+    assert not (deep & m2), sorted(deep & m2)[:5]
+    assert not (qpa & m2), sorted(qpa & m2)[:5]
     # exhaustive
-    assert fast | deep | qpa == everything, sorted(everything - (fast | deep | qpa))[:5]
+    assert fast | deep | qpa | m2 == everything, \
+        sorted(everything - (fast | deep | qpa | m2))[:5]
 
 
 def test_slow_is_a_subset_of_deep():

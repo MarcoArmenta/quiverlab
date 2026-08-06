@@ -60,6 +60,12 @@ def _max_degree(req: ComputeRequest) -> int:
     hi = 0
     for raw in req.compute:
         item = parse_compute_item(raw)
+        # tau_tilting's `hi` is a PAIR BUDGET, not a homological degree (Plan 45) -- it
+        # must not drive the degree-based tier classification (a budget of 512 is not a
+        # degree-512 request), so it is excluded here. The engine sizes tau_tilting on the
+        # algebra dimension (sizing_dim), like the HH kinds.
+        if item.kind == "tau_tilting":
+            continue
         if item.hi is not None:
             hi = max(hi, item.hi)
     return hi
