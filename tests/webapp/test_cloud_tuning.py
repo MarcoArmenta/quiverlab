@@ -337,7 +337,8 @@ def test_docker_compose_config_validates_and_interpolates():
            "QLWEB_TOKEN_SECRET": "b" * 64}
     r = subprocess.run(
         ["docker", "compose", "-f", "docker-compose.yml", "config"],
-        cwd=DEPLOY, env=env, capture_output=True, text=True, timeout=120)
+        cwd=DEPLOY, env=env, capture_output=True, text=True,
+        encoding="utf-8", timeout=120)
     assert r.returncode == 0, f"docker compose config failed:\n{r.stderr}"
     out = r.stdout
     # The tuned defaults render into the interpolated output.
