@@ -164,7 +164,15 @@ never hide behind one:
     pre-existing entry was verified byte-identical BEFORE the new one was appended (the
     delegation test passed on all of them unchanged). Its ``canonical_key`` is
     request-derived; the ``result_json`` was frozen from the server runner, and the
-    Plan-44 cross-runner tests assert the Pyodide twin agrees on the math subkeys."""
+    Plan-44 cross-runner tests assert the Pyodide twin agrees on the math subkeys.
+  * 2026-08-05 (``tau_tilting_kA2`` ADDED, Plan 45 C4): a NEW fixture for the
+    ``tau_tilting`` ALGEBRA-level compute kind (kA2 over GF(7), budget 512 -- the full
+    run: 5 support τ-tilting pairs, complete, the n=2 fan with 5 chambers, the four-way
+    counts all 5). Pure addition: every pre-existing entry was verified byte-identical
+    BEFORE the new one was appended (the delegation test passed on all 15 unchanged). Its
+    ``canonical_key`` is request-derived (the budget rides in the ``compute`` string, no
+    new request field); the ``result_json`` was frozen from the server runner, and the
+    Plan-45 cross-runner test asserts the Pyodide twin agrees byte-for-byte."""
 import json
 import pathlib
 

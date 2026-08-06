@@ -899,6 +899,8 @@ def python_snippet():
              "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
              "bracket": "A.gerstenhaber_brackets(%d)",
              "connes_b": "A.connes_differentials(%d)",
+             # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
+             "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -992,7 +994,11 @@ ETA_MODEL = {
                 "derived_fingerprint": 1.0,
                 # Plan 46: strings = a bounded string/band DFS + AG walk on the
                 # reduction system; a touch heavier than recognizers.
-                "strings": 0.2},
+                "strings": 0.2,
+                # Plan 45: the C4 tau-tilting engine BFSes the exchange graph via the
+                # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
+                # heavier than the string DFS, budget-capped honestly.
+                "tau_tilting": 2.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

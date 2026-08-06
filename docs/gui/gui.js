@@ -81,6 +81,9 @@
     '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
+    // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
+    '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
+    '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -160,6 +163,8 @@
    "derived_fingerprint",
    // Plan 46: gentle / string subsystem
    "strings",
+   // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
+   "tau_tilting", "tau_tilting-budget",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -681,6 +686,10 @@
      "strings"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
+    // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
+    // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
+    if (el.tau_tilting.checked)
+      compute.push("tau_tilting:" + el["tau_tilting-budget"].value);
     var module = null, extTarget = null, torTarget = null;
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
@@ -2303,6 +2312,106 @@
     div.appendChild(tbl);
   }
 
+  // ---- Plan 45: the C4 tau-tilting block + the LIVE wall-and-chamber SVG ----
+  function renderTauTilting(div, b) {
+    div.appendChild(h("p", { text: "Support τ-tilting pairs (Adachi–Iyama–"
+      + "Reiten): each is a maximal cone of the g-vector fan; each mutation crosses a wall "
+      + "labelled by a brick (King θ-stability). n = " + b.n + "." }));
+    if (!b.complete) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "The exchange graph did not close (status: " + b.status + ") — A is "
+          + "τ-tilting-infinite or the pair budget was hit. " + b.num_pairs
+          + " pairs were found; the fan and counts are omitted (a partial value would "
+          + "mislead)." }));
+    }
+    if (b.counts) {
+      div.appendChild(h("p", { text: "AIR four-way identity: #pairs = #torsion classes = "
+        + "#2-term silting = #semibricks = " + b.counts.pairs + " = " + b.counts.torsion
+        + " = " + b.counts.silting + " = " + b.counts.semibricks + "." }));
+    }
+    if (b.green_count != null)
+      div.appendChild(h("p", { text: "Maximal green sequences: " + b.green_count + "." }));
+    // pairs table
+    var tbl = h("table", { "class": "qlgui-table" });
+    var hr = h("tr");
+    ["id", "pair (M, P)", "support", "g-matrix (columns = g-vectors)"].forEach(
+      function (t) { hr.appendChild(h("th", { text: t })); });
+    tbl.appendChild(hr);
+    (b.pairs || []).forEach(function (p) {
+      var tr = h("tr");
+      tr.appendChild(h("td", { text: String(p.id) }));
+      tr.appendChild(h("td", { text: p.label + (p.is_initial ? " (initial)" : "") }));
+      tr.appendChild(h("td", { text: JSON.stringify(p.support) }));
+      var gm = [];
+      var G = p.g_matrix || [];
+      var nc = G[0] ? G[0].length : 0;
+      for (var c = 0; c < nc; c++) {
+        var col = [];
+        for (var r = 0; r < G.length; r++) col.push(G[r][c]);
+        gm.push("(" + col.join(", ") + ")");
+      }
+      tr.appendChild(h("td", { text: gm.join("; ") }));
+      tbl.appendChild(tr);
+    });
+    div.appendChild(tbl);
+    // Hasse edges
+    if (b.hasse && b.hasse.length) {
+      div.appendChild(h("p", { text: "Hasse quiver (downward = left mutation):" }));
+      var ul = h("ul");
+      b.hasse.forEach(function (e) {
+        var bd = e.brick_dimvec ? " — brick " + dvText(e.brick_dimvec) : "";
+        ul.appendChild(h("li", { text: e.from + " → " + e.to + bd }));
+      });
+      div.appendChild(ul);
+    }
+    // the LIVE wall-and-chamber fan
+    if (b.fan && b.fan.chambers && b.fan.chambers.length)
+      renderWallAndChamber(div, b.fan);
+  }
+
+  function renderWallAndChamber(div, fan) {
+    // Exact fractions -> pixels happens HERE (the JS renderer is float-exempt); the
+    // exact geometry never left Python. n=2 draws the g-vector rays from the origin;
+    // n=3 draws the server-pre-projected octahedron-net rays.
+    var fs = h("fieldset", { "class": "qlgui-fieldset" });
+    fs.appendChild(h("legend", { text: "Wall-and-chamber fan"
+      + (fan.projection === "L1" ? " (L1/octahedron projection)" : "") }));
+    var W = 360, C = W / 2, R = 150;
+    var svg = sv("svg", { viewBox: "0 0 " + W + " " + W, width: String(W), height: String(W) });
+    svg.appendChild(sv("line", { x1: "0", y1: String(C), x2: String(W), y2: String(C),
+      stroke: "#ccc" }));
+    svg.appendChild(sv("line", { x1: String(C), y1: "0", x2: String(C), y2: String(W),
+      stroke: "#ccc" }));
+    var colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+                  "#8c564b", "#e377c2", "#17becf"];
+    var toXY = function (fx, fy) {                 // exact string "p/q" -> pixel float
+      return [C + evalFrac(fx) * R, C - evalFrac(fy) * R];
+    };
+    (fan.chambers || []).forEach(function (ch, i) {
+      var rays = (fan.n === 3 && ch.net2d) ? ch.net2d : ch.rays;
+      var col = colors[i % colors.length];
+      (rays || []).forEach(function (ray) {
+        if (!ray) return;
+        var p = toXY(ray[0], ray[1]);
+        svg.appendChild(sv("line", { x1: String(C), y1: String(C),
+          x2: String(p[0]), y2: String(p[1]), stroke: col, "stroke-width": "2" }));
+      });
+      if (ch.is_initial && rays && rays[0]) {
+        var q = toXY(rays[0][0], rays[0][1]);
+        svg.appendChild(sv("circle", { cx: String(q[0]), cy: String(q[1]), r: "3",
+          fill: col }));
+      }
+    });
+    fs.appendChild(svg);
+    div.appendChild(fs);
+  }
+
+  function evalFrac(s) {                            // "p/q" or "p" -> Number (renderer-only)
+    s = String(s);
+    var i = s.indexOf("/");
+    return i < 0 ? parseFloat(s) : parseFloat(s.slice(0, i)) / parseFloat(s.slice(i + 1));
+  }
+
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
     var div = h("div", { "class": "qlgui-block" });
@@ -2605,6 +2714,8 @@
         div.appendChild(h("p", { text: "AG invariant: not decided — " + b.ag_invariant.error }));
       }
       if (b.note) div.appendChild(h("p", { text: b.note }));
+    } else if (name === "tau_tilting") {
+      renderTauTilting(div, b);
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
