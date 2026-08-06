@@ -72,6 +72,28 @@ def test_every_chamber_g_matrix_is_unimodular():
 
 
 @selfcert
+def test_n3_l1_unfolding_is_a_sane_rendering():
+    # The n=3 L1/octahedron unfolding is a RENDERING, not a certified 3D tiling (see the
+    # verification page honest-scope). This is the CHEAP sanity check the critic asked for:
+    # every chamber's projected net is a nondegenerate 2D triangle (exact area != 0, no
+    # floats) and the net count equals the chamber count. It does NOT certify that the
+    # projected faces tile the octahedron net without gaps/overlaps -- only per-chamber
+    # unimodularity (test_every_chamber_g_matrix_is_unimodular) is claimed at n=3.
+    def area2(net):
+        (x0, y0), (x1, y1), (x2, y2) = [(Fraction(p[0]), Fraction(p[1])) for p in net]
+        return (x1 - x0) * (y2 - y0) - (x2 - x0) * (y1 - y0)
+
+    A = linear_path_algebra(3, field=QQ)                 # kA3, n = 3
+    fan = wall_and_chamber_fan(A)
+    assert fan["complete"] and fan["n"] == 3 and fan.get("projection") == "L1"
+    nets = [ch["net2d"] for ch in fan["chambers"]]
+    assert len(nets) == len(fan["chambers"])             # one net per chamber
+    for net in nets:
+        assert len(net) == 3                             # a triangle per chamber
+        assert area2(net) != 0                           # nondegenerate (exact, no floats)
+
+
+@selfcert
 def test_king_semistable_definition():
     # over kA2 with theta = (1, -1): the simple S_1 (dim (1,0)) is NOT semistable
     # (theta.dim S_1 = 1 != 0); the module P_1 = [1,2] (dim (1,1)) has theta.dim = 0 and

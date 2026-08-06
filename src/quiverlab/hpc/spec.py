@@ -1193,8 +1193,10 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # C4 tau-tilting engine (Plan 45): an ALGEBRA-level kind (like hh_*), NOT a module
-    # kind. The optional range gives the pair budget (default 512), read like the other
-    # range kinds -- 'tau_tilting:0..512'. Both runners share tautilting.block, so the
+    # kind. It carries a PAIR BUDGET, not a degree range: the spec grammar accepts
+    # 'tau_tilting' (default budget 512) or 'tau_tilting:512' (a bare positive int); the
+    # 'name:0..N' degree-range form is REJECTED at parse time (the budget is not a
+    # homological degree -- see parse_compute_item). Both runners share tautilting.block, so the
     # blocks are byte-identical; the exchange-graph BFS is complete iff tau-tilting-finite,
     # else an honest status='budget' block (never a 500). No hh_trace (its own tables).
     if kind == "tau_tilting":

@@ -122,27 +122,95 @@ def hasse_orientation(eg):
 # --------------------------------------------------------------------------- #
 # bricks + semibricks
 # --------------------------------------------------------------------------- #
-def _brick_module(A, dimvec, universe):
-    """A brick (``end_dim == 1``) with the given dim-vector, found in ``universe``, or
-    None. (For the tested tau-tilting-finite algebras every brick is a pair summand.)"""
+# The wall/edge brick is identified by ISO-CLASS, not by dim-vector. The dim-vector of a
+# wall (its King normal) does NOT determine the brick on a non-thin algebra: kZ2/rad^2 has
+# two non-isomorphic bricks P1, P2 both of dim-vector (1,1), on OPPOSITE King-stability rays
+# of the same hyperplane. A first-dim-vector-match label would collapse them (bricks() would
+# undercount, and two genuinely distinct semibricks {P1}, {P2} would merge -- breaking the
+# AIR four-way identity #pairs = #semibricks). We disambiguate by torsion-class membership.
+def _bricks_with_dimvec(A, dimvec, universe):
+    """Every brick (``end_dim == 1``) in ``universe`` whose dim-vector equals ``dimvec`` (a
+    vertex-keyed dict), in universe order. Usually a singleton -- but a NON-THIN algebra
+    carries several non-isomorphic bricks of one dim-vector, so the wall label is NOT
+    determined by the dim-vector alone."""
     if dimvec is None:
-        return None
+        return []
     target = {v: int(dimvec.get(v, 0)) for v in A.quiver.vertices}
-    for X in universe:
-        if X.dimension_vector() == target and end_dim(X) == 1:
-            return X
-    return None
+    return [X for X in universe if X.dimension_vector() == target and end_dim(X) == 1]
+
+
+def _edge_brick(A, pair_i, pair_j, dimvec, universe):
+    """The brick MODULE labelling the exchange cover between adjacent pairs ``pair_i`` and
+    ``pair_j`` (wall normal ``dimvec``), identified by ISO-CLASS -- not merely by dim-vector.
+
+    A single universe brick of that dim-vector IS the label (the thin case -- kA_n, Kronecker,
+    every algebra whose bricks have distinct dim-vectors; byte-identical to the old
+    first-match). When several NON-isomorphic bricks share the wall normal, disambiguate by
+    the DIRRT brick labelling: the cover ``T > T'`` (T the larger torsion class) is labelled
+    by the unique brick ``B`` with ``B in Gen(M_bigger)`` and ``B not in Gen(M_smaller)``.
+    The wall normal alone cannot tell P1 from P2 -- their King-stability rays are the two
+    opposite halves of the same hyperplane -- but exactly one of them FLIPS its torsion-class
+    membership across THIS wall. LOUD ``QuiverlabError`` if the membership does not single out
+    exactly one candidate (never a silent wrong wall label / count)."""
+    cands = _bricks_with_dimvec(A, dimvec, universe)
+    if len(cands) <= 1:
+        return cands[0] if cands else None
+    si, sj = _gen_size(pair_i), _gen_size(pair_j)
+    if si == sj:
+        from quiverlab.errors import QuiverlabError
+        raise QuiverlabError(
+            "brick labelling: adjacent pairs have equal torsion-class size, but a mutation "
+            "cover must be a strict inclusion (report the algebra + edge)")
+    big, small = (pair_i, pair_j) if si > sj else (pair_j, pair_i)
+    Mbig, Msmall = _module_of(big), _module_of(small)
+    hits = [B for B in cands if _in_gen(Mbig, B) and not _in_gen(Msmall, B)]
+    if len(hits) == 1:
+        return hits[0]
+    from quiverlab.errors import QuiverlabError
+    raise QuiverlabError(
+        "brick labelling: %d non-isomorphic bricks share the wall normal %s and "
+        "torsion-class membership matched %d of them -- refusing to guess the wall label"
+        % (len(cands), _dvtuple(cands[0].dimension_vector()), len(hits)),
+        hint="report the algebra + edge; the DIRRT brick label is ambiguous here")
+
+
+def _dedup_iso(mods):
+    """``mods`` deduped by iso-class (dim-vector prefilter, then ``is_isomorphic``)."""
+    out = []
+    for B in mods:
+        if not any(C.dim == B.dim and C.dimension_vector() == B.dimension_vector()
+                   and is_isomorphic(C, B) for C in out):
+            out.append(B)
+    return out
+
+
+def _same_iso_multiset(s1, s2):
+    """True iff the two brick lists are equal as MULTISETS of iso-classes (dim-vector
+    prefilter, then ``is_isomorphic`` within a bucket) -- the semibrick equality that keeps
+    ``{P1}`` and ``{P2}`` distinct though their dim-vector fingerprints coincide."""
+    if len(s1) != len(s2):
+        return False
+    rem = list(s2)
+    for B in s1:
+        for k, C in enumerate(rem):
+            if (C.dim == B.dim and C.dimension_vector() == B.dimension_vector()
+                    and is_isomorphic(C, B)):
+                rem.pop(k)
+                break
+        else:
+            return False
+    return not rem
 
 
 def _brick_of_edge(pair_i, pair_j):
     """The brick labelling the cover between two adjacent pairs: ``{"module": B|None,
-    "dimvec": {...}, "name": str|None}``. ``B`` is the brick (``end_dim == 1``) with the
-    wall-normal dim-vector, found in the module universe."""
+    "dimvec": {...}, "name": str|None}``. ``B`` is identified by iso-class via
+    :func:`_edge_brick` (disambiguated by torsion-class membership on non-thin algebras)."""
     from quiverlab.modules.hom import identify_standard
     from quiverlab.tautilting.mutation import wall_normal
     A = pair_i.algebra
     dv = wall_normal(pair_i, pair_j)
-    B = _brick_module(A, dv, _torsion_universe(A))
+    B = _edge_brick(A, pair_i, pair_j, dv, _torsion_universe(A))
     name = None
     if B is not None:
         std = identify_standard(B)
@@ -154,14 +222,16 @@ def _brick_of_edge(pair_i, pair_j):
 
 def bricks(A, budget=512):
     """The bricks labelling the exchange edges of ``A`` (each ``end_dim == 1``), deduped by
-    ``is_isomorphic``."""
+    ``is_isomorphic``. Each edge's brick is identified by ISO-CLASS (:func:`_edge_brick`), so
+    two non-isomorphic bricks of the same dim-vector (e.g. kZ2/rad^2's P1, P2) are counted
+    SEPARATELY -- never collapsed to a first dim-vector match."""
     from quiverlab.tautilting.mutation import exchange_graph
     eg = exchange_graph(A, budget_pairs=budget)
     universe = _torsion_universe(A, budget=budget)
     out = []
     for (i, j) in eg.arrows:
         dv = eg.arrows[(i, j)]["brick"]
-        B = _brick_module(A, dv, universe)
+        B = _edge_brick(A, eg.vertices[i]["pair"], eg.vertices[j]["pair"], dv, universe)
         if B is None:
             continue
         if not any(X.dim == B.dim and X.dimension_vector() == B.dimension_vector()
@@ -172,9 +242,11 @@ def bricks(A, budget=512):
 
 def semibricks(A, budget=512):
     """The semibricks of ``A``: for each pair, the set of bricks labelling the edges going
-    DOWN out of it (the Asai labelling), deduped. ``#semibricks == #pairs`` in the finite
-    case (the four-way identity). Each returned semibrick is a list of pairwise
-    Hom-orthogonal bricks."""
+    DOWN out of it (the Asai labelling), deduped by ISO-CLASS. ``#semibricks == #pairs`` in
+    the finite case (the four-way identity) -- which REQUIRES the iso-class dedup: two
+    semibricks differing only by a same-dim-vector brick (kZ2/rad^2's ``{P1}`` vs ``{P2}``)
+    are DISTINCT, though their dim-vector fingerprints coincide. Each returned semibrick is a
+    list of pairwise Hom-orthogonal bricks."""
     from quiverlab.tautilting.mutation import exchange_graph
     eg = exchange_graph(A, budget_pairs=budget)
     universe = _torsion_universe(A, budget=budget)
@@ -183,12 +255,12 @@ def semibricks(A, budget=512):
     for (i, j), d in orient.items():
         a, b = (i, j) if d == "down" else (j, i)      # a -> b downward
         dv = eg.arrows[(i, j)]["brick"]
-        B = _brick_module(A, dv, universe)
+        B = _edge_brick(A, eg.vertices[i]["pair"], eg.vertices[j]["pair"], dv, universe)
         if B is not None:
             down[a].append(B)
-    seen = {}
+    result = []
     for i in range(len(eg.vertices)):
-        key = frozenset(_dvtuple(B.dimension_vector()) for B in down[i])
-        if key not in seen:
-            seen[key] = down[i]
-    return list(seen.values())
+        sb = _dedup_iso(down[i])
+        if not any(_same_iso_multiset(sb, prev) for prev in result):
+            result.append(sb)
+    return result
