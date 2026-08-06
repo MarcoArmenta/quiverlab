@@ -29,7 +29,7 @@ from webapp.server import cache
 from webapp.server.config import Config
 from webapp.server.runner import run_spec, RunError
 from webapp.server.schema import ComputeRequest
-from webapp.server.store import Job, JobStore
+from webapp.server.store import CANCEL_ERROR, Job, JobStore
 
 _log = logging.getLogger("quiverlab_web.worker")
 
@@ -215,6 +215,23 @@ def run_one_job(store: JobStore, cfg: Config, job: Job, mailer=None) -> None:
         while p.is_alive() and (deadline is None or time.monotonic() < deadline):
             p.join(1)
             _drain_progress(store, job.id, progress_path)
+            # Offline GUI "cancel the running job" (webapp/server/offline.py): a
+            # signal row asks us to end this job now. Kill the child promptly and
+            # mark the job failed HERE -- returning skips the normal done/failed
+            # tail below, so the child's late result can never overwrite the
+            # cancellation. Inert on the deployed server: nothing writes the signal
+            # there (the cancel endpoint is offline-only), so this is never true.
+            if store.cancel_requested(job.id):
+                p.terminate()
+                p.join(10)
+                if p.is_alive():             # terminate ignored -- escalate to SIGKILL
+                    p.kill()
+                    p.join()
+                store.clear_cancel_request(job.id)
+                store.mark_failed(job.id, CANCEL_ERROR)
+                marked = True
+                _notify_if_big(store, cfg, job, "failed", mailer)
+                return
         if p.is_alive():
             p.terminate()
             p.join(10)

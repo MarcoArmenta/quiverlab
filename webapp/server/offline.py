@@ -24,9 +24,13 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from webapp.server.app import create_app
+from fastapi import Request
+from fastapi.responses import JSONResponse
+
+from webapp.server.app import client_ip, create_app
 from webapp.server.config import Config
 from webapp.server.estimator import human_bytes
+from webapp.server.security import hash_ip
 from webapp.server.store import JobStore
 
 _log = logging.getLogger("quiverlab_web.offline")
@@ -185,6 +189,38 @@ def runtime_caps(cfg: Config, resources: dict) -> dict:
 
 
 # --------------------------------------------------------------------------- #
+# Local-only "cancel the running job" endpoint
+# --------------------------------------------------------------------------- #
+
+def register_offline_cancel(app, cfg: Config, store: JobStore) -> None:
+    """Register ``POST /api/cancel-running`` -- OFFLINE ONLY.
+
+    This is deliberately registered HERE, not in ``webapp.server.app.create_app``,
+    so the deployed server never even has the route: a deployed request to this
+    path is a 404 (the ability does not exist), NOT a 403. Cancelling another
+    user's shared-service job is not a feature we want to reason about; on the
+    user's own laptop, ending your own overnight job to start a new one is.
+
+    The path is ``/api/cancel-running`` (NOT ``/api/jobs/cancel-running``): the
+    latter would match the deployed GET ``/api/jobs/{job_id}`` route pattern and a
+    deployed POST would return 405, not the required clean 404. A top-level path
+    collides with nothing, so the deployed server truly has no such route.
+
+    It cancels THE CALLER'S active (pending or running) job -- keyed on the same
+    salted-IP hash the rest of the app uses. Idempotent: with nothing of the
+    caller's pending/running it is a 200 no-op (``cancelled: false``), NOT a 409 --
+    "nothing to cancel" is a benign success for the client's cancel-then-retry
+    flow, not a conflict. On a hit it returns the cancelled job id so the client
+    can poll it to a terminal state before recomputing."""
+    @app.post("/api/cancel-running")
+    def cancel_running(request: Request):
+        iph = hash_ip(client_ip(request), cfg.ip_hash_salt)
+        jid = store.request_cancel_for_ip(iph, _now_iso())
+        return JSONResponse(status_code=200,
+                            content={"cancelled": jid is not None, "job_id": jid})
+
+
+# --------------------------------------------------------------------------- #
 # App factory (testable without a live server) + the blocking serve entrypoint
 # --------------------------------------------------------------------------- #
 
@@ -199,6 +235,11 @@ def create_offline_app(data_dir=None, *, env=None, mailer=None):
     cfg = build_offline_config(data_dir, resources, env=env)
     seeded = seed_first_run(cfg, find_seed_db())
     app = create_app(cfg, mailer=mailer)
+    # The local-only cancel route: added to THIS app instance only, so the deployed
+    # create_app never carries it (a deployed request 404s). create_app already
+    # init'd the schema on cfg.db_path; a fresh JobStore over the same DB is safe
+    # (per-op WAL connections).
+    register_offline_cancel(app, cfg, JobStore(cfg.db_path))
     app.state.offline = True
     app.state.resources = resources
     app.state.caps = runtime_caps(cfg, resources)
