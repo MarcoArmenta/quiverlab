@@ -3459,11 +3459,11 @@
     Object.keys(verts).forEach(function (v) { if (!color[v]) visit(v); });
     if (cyclic) return { error: "cycle" };
     // Enumerate every directed path (acyclic ⇒ finite); bucket by (source,target).
-    var classes = {};                            // "u w" -> [path strings]
+    var classes = {};                            // "u\x00w" -> [path strings]
     var nVerts = Object.keys(verts).length;
     function walk(startV, curV, acc) {
       if (acc.length && acc.length <= nVerts) {
-        var key = startV + " " + curV;
+        var key = startV + "\x00" + curV;
         (classes[key] || (classes[key] = [])).push(acc.join("*"));
       }
       if (acc.length >= nVerts) return;          // acyclicity bounds path length
