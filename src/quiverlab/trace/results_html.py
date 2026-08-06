@@ -427,6 +427,9 @@ def _derived_fingerprint_html(b):
     out.append("<p><em>%s.</em></p>" % _esc(
         b.get("scope", "a derived-invariant fingerprint; equal values are a "
                        "necessary condition for derived equivalence, not a proof")))
+    return out
+
+
 def _strings_html(b):
     """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
     census + band presence + honest rep-type + (gentle) AG invariant."""
