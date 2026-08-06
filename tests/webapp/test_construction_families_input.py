@@ -27,7 +27,8 @@ import tempfile
 import pydantic
 import pytest
 
-from quiverlab.hpc.spec import SpecError, build_algebra, parse_request
+from quiverlab.hpc.spec import (SpecError, _snippet, _synthetic_reproduce_lines,
+                                build_algebra, parse_request)
 from webapp.server.cache import canonical_key
 from webapp.server.catalog import build_catalog
 from webapp.server.runner import RunError, run_spec
@@ -71,11 +72,16 @@ def _pyo(body, item):
 
 
 def _canon(block):
-    """The block's MATH content, provenance dropped, canonical JSON. The server (raw
-    Python, int dict-keys) and the Pyodide twin (already crossed JSON, so string keys)
-    compare EQUAL when the mathematics agrees -- the ``*_runner_twin`` idiom."""
-    math = {k: v for k, v in block.items() if k not in ("references", "citations")}
-    return json.dumps(json.loads(json.dumps(math, default=str)), sort_keys=True)
+    """The FULL block as canonical JSON, INCLUDING provenance (``references`` +
+    ``citations``). The server (raw Python, int dict-keys) and the Pyodide twin
+    (already crossed JSON, so string keys) compare EQUAL when they agree -- the
+    ``*_runner_twin`` idiom.
+
+    Provenance is compared too (the earlier citation-stripping workaround is gone):
+    the twin's algebra-scalar blocks (cartan, dimension, ...) must carry the SAME
+    per-invariant citation keys as the server, NOT the accumulating ``A.citations()``
+    bar-resolution key -- this is the regression gate for the twin citation fix."""
+    return json.dumps(json.loads(json.dumps(block, default=str)), sort_keys=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -125,6 +131,53 @@ def test_family_builds_and_computes_end_to_end(name):
     # catalog prefill test, restated here per-family as an explicit contract)
     A = build_algebra({"kind": "family", "family": name, "params": params, "field": _GF5})
     assert A.dim == dim, (name, A.dim)
+
+
+# --------------------------------------------------------------------------- #
+# (1b) the "Copy Python" reproduce snippet each family serves is REAL runnable code.
+#      Regression: ``ql.OppositeAlgebra``/``ql.CornerAlgebra``/``ql.MarkedSurface``
+#      are not exports (AttributeError), and ``ql.OnePointExtension`` /
+#      ``ql.BrauerGraphAlgebra`` were called with the FLATTENED catalog params
+#      (TypeError). Exec the emitted snippet and check the produced dim.
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("name", sorted(_FAMILIES))
+def test_family_reproduce_snippet_execs_to_same_dim(name):
+    params, dim = _FAMILIES[name]
+    body = _family_body(name, params, ["dimension"])   # harmless compute line
+    snip = _snippet(parse_request(body), build_algebra(body["algebra"]))
+    # the crashing generic ``ql.<Family>(field=..., **flattened)`` form is gone
+    assert f"ql.{name}(field=" not in snip, (name, "still emits the crashing form", snip)
+    ns: dict = {}
+    exec(snip, ns)                                     # noqa: S102 -- must be runnable
+    assert ns.get("A") is not None and ns["A"].dim == dim, (name, snip)
+
+
+@pytest.mark.parametrize("name", sorted(_FAMILIES))
+def test_family_reproduce_snippet_twin_is_byte_identical(name):
+    # The Pyodide twin (docs/gui/runner.py) emits the SAME construction lines, so a
+    # user copies identical runnable code on either tier (CC / GF / QQ field refs).
+    params, _ = _FAMILIES[name]
+    gui = _pyodide_runner()
+    for ref in ("ql.GF(5)", "ql.CC", "QQ"):
+        assert (_synthetic_reproduce_lines(name, params, ref)
+                == gui._synthetic_reproduce_lines(name, params, ref)), (name, ref)
+
+
+@pytest.mark.parametrize("name", sorted(_FAMILIES))
+def test_family_reproduce_twin_python_snippet_execs(name):
+    # Exercise the twin's restructured python_snippet family branch end to end (it
+    # never BUILDS a family, but the reproduce string must still be runnable).
+    params, dim = _FAMILIES[name]
+    gui = _pyodide_runner()
+    saved = gui._state.get("request")
+    try:
+        gui._state["request"] = _family_body(name, params, ["dimension"])
+        snip = gui.python_snippet()
+        ns: dict = {}
+        exec(snip, ns)                                 # noqa: S102 -- must be runnable
+        assert ns["A"].dim == dim, (name, snip)
+    finally:
+        gui._state["request"] = saved
 
 
 # --------------------------------------------------------------------------- #
@@ -282,3 +335,38 @@ def test_absent_potential_keeps_canonical_key_byte_stable(name):
     body, pre = _PRECHANGE_KEYS[name]
     key = canonical_key(ComputeRequest.model_validate(body).model_dump(by_alias=True), _V)
     assert key == pre, f"cache key for {name!r} drifted -- absent potential must serialize away"
+
+
+# --------------------------------------------------------------------------- #
+# (7) twin citation parity: the algebra-scalar blocks the Pyodide twin emits carry
+#     the SAME per-invariant citation keys as the server. Regression: the twin used
+#     the accumulating ``A.citations()`` (the HH bar-resolution key -> Hochschild
+#     1945) for cartan/dimension/coxeter_polynomial/global_dimension, while the
+#     server (quiverlab.hpc.spec._dispatch) emits the per-invariant key (ASS2006,
+#     ...). ``_canon`` now compares citations, so these are FULL-block gates.
+# --------------------------------------------------------------------------- #
+_SCALAR_KINDS = ["cartan", "coxeter_polynomial", "global_dimension", "center", "dimension"]
+
+
+def _scalar_body(kind):
+    return {"schema": 2,
+            "algebra": {"kind": "quiver", "vertices": [1, 2], "arrows": {"a": [1, 2]},
+                        "relations": [], "field": _GF5},
+            "compute": [kind], "artifacts": {"pdf": False, "tikz": False}}
+
+
+@pytest.mark.parametrize("kind", _SCALAR_KINDS)
+def test_scalar_block_citations_twin_byte_agrees(kind):
+    body = _scalar_body(kind)
+    # full block (math + references + citations) is byte-identical across the runners
+    assert _canon(_server(body, kind)) == _canon(_pyo(body, kind)), kind
+
+
+def test_cartan_and_dimension_cite_ass2006_not_hochschild():
+    # The exact bug: the twin's cartan/dimension carried the accumulating HH
+    # bar-resolution key (Hochschild 1945) instead of ASS2006 (Marco's report-example).
+    for kind in ("cartan", "dimension"):
+        block = _pyo(_scalar_body(kind), kind)
+        keys = [c[0] for c in block.get("citations", [])]
+        assert keys == ["ASS2006"], (kind, keys)
+        assert block.get("references") == ["assem_book"], (kind, block.get("references"))

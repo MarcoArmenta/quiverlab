@@ -2096,6 +2096,59 @@ def _module_construction(mspec, varname, A) -> list:
     return lines
 
 
+def _synthetic_reproduce_lines(family, params, field_ref) -> list:
+    """Runnable construction lines for one P44/P46/P48 construction family, mirroring
+    ``_build_synthetic`` EXACTLY (the emitted script builds a byte-identical algebra).
+    ``field_ref`` is a source expression for the field ('ql.CC', 'ql.GF(5)' or 'QQ');
+    the caller has already emitted ``import quiverlab as ql`` and, for QQ, its import.
+
+    These five families' real constructors take Algebra / Module / BrauerGraph /
+    Triangulation arguments, so the old ``ql.<Family>(field=..., **params)`` form
+    crashed (``ql.OppositeAlgebra`` is not an export; ``ql.OnePointExtension`` /
+    ``ql.BrauerGraphAlgebra`` reject the flattened params). This emits the real calls.
+    Kept byte-for-byte identical to the Pyodide twin (docs/gui/runner.py)."""
+    if family == "OppositeAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                "A = A.opposite()"]
+    if family == "CornerAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"A = A.corner_algebra({list(params.get('vertices', []))!r})"]
+    if family == "OnePointExtension":
+        kind = params.get("module_kind", "simple")
+        # M0 (not M) so a request module block named M is never clobbered.
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"M0 = A.{kind}({params.get('module_vertex')!r})",
+                "A = ql.OnePointExtension(A, M0)"]
+    if family == "MarkedSurface":
+        preset = params.get("preset")
+        if preset == "annulus_C22":
+            return ["from quiverlab.surfaces import annulus_triangulation, jacobian_of",
+                    "T = annulus_triangulation(2, 2)",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        if preset == "hexagon_internal":
+            return ["from quiverlab.surfaces import "
+                    "hexagon_with_internal_triangle, jacobian_of",
+                    "T = hexagon_with_internal_triangle()",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        return ["from quiverlab.surfaces import fan_triangulation, jacobian_of",
+                "T = fan_triangulation(6)",       # disc fan -> gentle A3
+                f"A = jacobian_of(T, field={field_ref})"]
+    if family == "BrauerGraphAlgebra":
+        # Reconstruct the un-flattened BrauerGraph args (the cosmetic ribbon end-tags
+        # are synthesized exactly as _build_brauer does, so the graph is identical).
+        edges = tuple((e[0], e[1]) for e in params.get("edges", []))
+        cyclic = {vtx: tuple((int(k), f"{vtx}:{pos}") for pos, k in enumerate(idxs))
+                  for vtx, idxs in params.get("cyclic_order", [])}
+        mult = {vtx: int(m) for vtx, m in params.get("multiplicities", [])}
+        return ["from quiverlab.families.brauer import "
+                "BrauerGraph, BrauerGraphAlgebra",
+                f"G = BrauerGraph(edges={edges!r}, cyclic_order={cyclic!r})",
+                f"A = BrauerGraphAlgebra(G, {mult!r}, field={field_ref})"]
+    # No short-script form: an honest comment, never crashing code (the algebra is
+    # still reachable through the webapp `family` block).
+    return [f"# built via the webapp family {family!r}; see docs"]
+
+
 def _snippet(req: ComputeRequest, A) -> str:
     f = req.algebra.field
     if f.kind == "CC":
@@ -2125,9 +2178,20 @@ def _snippet(req: ComputeRequest, A) -> str:
                      f"A = Q.algebra(relations={list(req.algebra.relations)!r}, "
                      f"field={field_expr})"]
     else:
-        params = "".join(f", {k}={v!r}" for k, v in req.algebra.params.items())
-        lines = ["import quiverlab as ql",
-                 f"A = ql.{req.algebra.family}(field=ql.{field_expr}{params})"]
+        # A source expression for the field: 'ql.CC' / 'ql.GF(q)' as before, and 'QQ'
+        # (not the nonexistent 'ql.QQ') with its own import. For CC/GF this is
+        # byte-identical to the old 'ql.{field_expr}', so the family goldens stand.
+        field_ref = ("ql.CC" if f.kind == "CC"
+                     else "QQ" if f.kind == "QQ" else f"ql.{field_expr}")
+        head = ["import quiverlab as ql"]
+        if f.kind == "QQ":
+            head.append("from quiverlab.fields import QQ")
+        if req.algebra.family in _SYNTHETIC_FAMILY_PARAMS:
+            lines = head + _synthetic_reproduce_lines(
+                req.algebra.family, req.algebra.params, field_ref)
+        else:
+            params = "".join(f", {k}={v!r}" for k, v in req.algebra.params.items())
+            lines = head + [f"A = ql.{req.algebra.family}(field={field_ref}{params})"]
     if req.module is not None:
         lines += _module_construction(req.module, "M", A)
     if req.ext_target is not None:

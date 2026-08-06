@@ -107,7 +107,7 @@ algebra:
     x: [1, 1]             # arrow name -> [source, target]
   relations: ["x*x*x"]    # opaque relation strings (k[x]/(x^3) here)
   field:
-    kind: GF              # "GF" (finite field) or "CC"
+    kind: GF              # "GF" (finite field), "CC" (complex), or "QQ" (rationals)
     p: 2                  # the prime (GF only)
     n: 1                  # GF(p^n); 1 for a prime field
 compute:                  # each item is "kind" or "kind:lo..hi"

@@ -811,18 +811,26 @@ def compute_one(spec):
             block = specseq_block(A, top)
             block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
+            # PER-INVARIANT citation keys, matching the server twin
+            # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
+            # that set ACCUMULATES the HH bar-resolution key across a run, so the
+            # Cartan matrix was citing Hochschild 1945 instead of ASS2006 (the same
+            # bug the server fixed for its report; Marco's report-example.pdf).
             m = A.cartan_matrix()
+            keys = ["assem_book"]
             block = {"matrix": m, "latex": _latex_matrix(m),
-                     "citations": _citation_pairs(A.citations())}
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "coxeter_polynomial":
             import sympy
             p = A.coxeter_polynomial()
+            keys = ["lenzing_delapena_spectral", "assem_book"]
             block = {"latex": sympy.latex(p.as_expr()), "text": str(p.as_expr()),
-                     "citations": _citation_pairs(A.citations())}
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "global_dimension":
             g = A.global_dimension()
-            block = {"text": str(g), "exact": g.exact, "value": g.value,
-                     "citations": _citation_pairs(A.citations())}
+            keys = ["assem_book"]
+            block = {"text": str(g), "exact": bool(g.exact), "value": g.value,
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "homological_profile":
             # The C6 homological-dimension family (Plan 40). ONE shared library
             # builder (modules.homdims.homological_profile) drives this Pyodide twin
@@ -835,15 +843,21 @@ def compute_one(spec):
         elif name == "center":
             dim_z, basis = A.center()
             # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
-            # JSON-serializable; ship them as exact strings.
+            # JSON-serializable; ship them as exact strings. Per-invariant citation
+            # keys matching the server twin (Z(A) = HH^0(A), Hochschild's paper);
+            # not A.citations() (see the cartan note).
+            keys = ["bar"]
             block = {"dim": dim_z,
                      "basis": [[str(x) for x in row] for row in basis],
-                     "citations": _citation_pairs(A.citations())}
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "dimension":
             # Parity with the server/HPC runner (quiverlab.hpc.spec._dispatch),
             # which serves `dimension` = A.dim; same `value` semantics, GUI block
-            # shape (value + citations, like global_dimension).
-            block = {"value": A.dim, "citations": _citation_pairs(A.citations())}
+            # shape (value + references + citations). Per-invariant keys, not
+            # A.citations() (which cited Hochschild 1945 here -- see the cartan note).
+            keys = ["assem_book"]
+            block = {"value": A.dim, "references": keys,
+                     "citations": _citation_pairs(keys)}
         elif name == "ext_algebra":
             # Yoneda / Ext-algebra + Koszulity (Plan 38). Byte-identical to the
             # server twin (quiverlab.hpc.spec._dispatch): SAME library block
@@ -985,6 +999,62 @@ def tikz():
     return "" if _state["algebra"] is None else _state["algebra"].tikz()
 
 
+# The P44/P46/P48 construction families whose real constructors take
+# Algebra / Module / BrauerGraph / Triangulation arguments (so the generic
+# ql.<Family>(field=..., **params) reproduce form crashes). Kept in sync (by name)
+# with quiverlab.hpc.spec._SYNTHETIC_FAMILY_PARAMS and webapp/server/catalog.py.
+_SYNTHETIC_FAMILY_NAMES = frozenset({
+    "BrauerGraphAlgebra", "OnePointExtension", "CornerAlgebra",
+    "OppositeAlgebra", "MarkedSurface"})
+
+
+def _synthetic_reproduce_lines(family, params, field_ref):
+    """Runnable construction lines for one P44/P46/P48 construction family, mirroring
+    ``quiverlab.hpc.spec._build_synthetic`` EXACTLY (the emitted script builds a
+    byte-identical algebra). ``field_ref`` is a source expression for the field
+    ('ql.CC', 'ql.GF(5)' or 'QQ'); the caller has already emitted ``import quiverlab
+    as ql`` and, for QQ, its import. BYTE-FOR-BYTE identical to the server twin
+    (quiverlab.hpc.spec._synthetic_reproduce_lines)."""
+    if family == "OppositeAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                "A = A.opposite()"]
+    if family == "CornerAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"A = A.corner_algebra({list(params.get('vertices', []))!r})"]
+    if family == "OnePointExtension":
+        kind = params.get("module_kind", "simple")
+        # M0 (not M) so a request module block named M is never clobbered.
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"M0 = A.{kind}({params.get('module_vertex')!r})",
+                "A = ql.OnePointExtension(A, M0)"]
+    if family == "MarkedSurface":
+        preset = params.get("preset")
+        if preset == "annulus_C22":
+            return ["from quiverlab.surfaces import annulus_triangulation, jacobian_of",
+                    "T = annulus_triangulation(2, 2)",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        if preset == "hexagon_internal":
+            return ["from quiverlab.surfaces import "
+                    "hexagon_with_internal_triangle, jacobian_of",
+                    "T = hexagon_with_internal_triangle()",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        return ["from quiverlab.surfaces import fan_triangulation, jacobian_of",
+                "T = fan_triangulation(6)",       # disc fan -> gentle A3
+                f"A = jacobian_of(T, field={field_ref})"]
+    if family == "BrauerGraphAlgebra":
+        # Reconstruct the un-flattened BrauerGraph args (the cosmetic ribbon end-tags
+        # are synthesized exactly as _build_brauer does, so the graph is identical).
+        edges = tuple((e[0], e[1]) for e in params.get("edges", []))
+        cyclic = {vtx: tuple((int(k), f"{vtx}:{pos}") for pos, k in enumerate(idxs))
+                  for vtx, idxs in params.get("cyclic_order", [])}
+        mult = {vtx: int(m) for vtx, m in params.get("multiplicities", [])}
+        return ["from quiverlab.families.brauer import "
+                "BrauerGraph, BrauerGraphAlgebra",
+                f"G = BrauerGraph(edges={edges!r}, cyclic_order={cyclic!r})",
+                f"A = BrauerGraphAlgebra(G, {mult!r}, field={field_ref})"]
+    return [f"# built via the webapp family {family!r}; see docs"]
+
+
 def python_snippet():
     """Copy-paste reproduction of the GUI computation (the GUI-to-library bridge)."""
     req = _state["request"]
@@ -1002,24 +1072,42 @@ def python_snippet():
     # QQ is not a top-level export, so it needs its own import line.
     header = ("from quiverlab import Quiver\nfrom quiverlab.fields import QQ"
               if field_name == "QQ" else "from quiverlab import Quiver, %s" % field_name)
-    arrows = ", ".join('"%s": (%d, %d)' % (k, s, t)
-                       for k, (s, t) in alg["arrows"].items())
-    q_line = "Q = Quiver(vertices=%r, arrows={%s})" % (alg["vertices"], arrows)
-    potential = alg.get("potential")
-    if isinstance(potential, str) and potential.strip():
-        lines = [header,
-                 "from quiverlab import Potential, JacobianAlgebra",
-                 "from quiverlab.combinat.relations import _split_terms, _parse_term",
-                 "", q_line,
-                 "W = Potential(Q, [_parse_term(t, Q) for t in _split_terms(%r)])"
-                 % potential,
-                 "A = JacobianAlgebra(Q, W, field=%s)" % field_expr,
-                 "print(A.dim)"]
+    if alg.get("kind") == "family":
+        # A `family` block (server tier -- the twin refuses to BUILD it, but the
+        # reproduce string mirrors quiverlab.hpc.spec._snippet's family branch so the
+        # cross-runner snippet contract holds). Real constructors, never a crashing
+        # ql.<Family>(field=..., **params) form for the five construction families.
+        field_ref = ("ql.CC" if f["kind"] == "CC"
+                     else "QQ" if f["kind"] == "QQ" else "ql.%s" % field_expr)
+        head = ["import quiverlab as ql"]
+        if f["kind"] == "QQ":
+            head.append("from quiverlab.fields import QQ")
+        family, params = alg.get("family"), alg.get("params", {})
+        if family in _SYNTHETIC_FAMILY_NAMES:
+            lines = head + _synthetic_reproduce_lines(family, params, field_ref)
+        else:
+            ptxt = "".join(", %s=%r" % (k, v) for k, v in params.items())
+            lines = head + ["A = ql.%s(field=%s%s)" % (family, field_ref, ptxt)]
+        lines.append("print(A.dim)")
     else:
-        lines = [header, "", q_line,
-                 "A = Q.algebra(relations=%r, field=%s)"
-                 % (list(alg.get("relations", [])), field_expr),
-                 "print(A.dim)"]
+        arrows = ", ".join('"%s": (%d, %d)' % (k, s, t)
+                           for k, (s, t) in alg["arrows"].items())
+        q_line = "Q = Quiver(vertices=%r, arrows={%s})" % (alg["vertices"], arrows)
+        potential = alg.get("potential")
+        if isinstance(potential, str) and potential.strip():
+            lines = [header,
+                     "from quiverlab import Potential, JacobianAlgebra",
+                     "from quiverlab.combinat.relations import _split_terms, _parse_term",
+                     "", q_line,
+                     "W = Potential(Q, [_parse_term(t, Q) for t in _split_terms(%r)])"
+                     % potential,
+                     "A = JacobianAlgebra(Q, W, field=%s)" % field_expr,
+                     "print(A.dim)"]
+        else:
+            lines = [header, "", q_line,
+                     "A = Q.algebra(relations=%r, field=%s)"
+                     % (list(alg.get("relations", [])), field_expr),
+                     "print(A.dim)"]
     if req.get("module"):
         lines += _module_snippet_lines(req["module"], "M")
     if req.get("ext_target"):
