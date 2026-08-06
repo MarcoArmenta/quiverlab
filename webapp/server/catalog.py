@@ -249,19 +249,125 @@ def _merge_meta(name: str, params: list[dict]) -> dict:
         if "help" in m:
             p["help"] = m["help"]
         p["required"] = p["default"] is None and m.get("example") is not None
-    out = {"name": name, "params": params, "fields": ["CC", "GF"]}
+    out = {"name": name, "params": params, "fields": list(_FIELD_OPTIONS)}
     if "summary" in meta:
         out["summary"] = meta["summary"]
     return out
+
+
+# The exact input fields every family accepts (Plan: ℚ joins CC / GF -- the library
+# computes over QQ already, so build_algebra takes it everywhere CC is taken).
+_FIELD_OPTIONS = ("CC", "GF", "QQ")
+
+
+# --------------------------------------------------------------------------- #
+# Construction families (P44/P46/P48): the Brauer-graph algebra, one-point
+# extension, corner algebra eAe, opposite algebra, and marked-surface presets.
+# Their real library constructors take Algebra / Module / BrauerGraph /
+# Triangulation arguments, so they are NOT introspected as scalar forms (they are
+# skipped in _NON_FORM_FAMILIES / not exported as families at all). Instead they
+# carry FLATTENED, catalog-expressible params (type strings / lists / ints) --
+# fully specified here -- that quiverlab.hpc.spec._build_synthetic reassembles into
+# the real call. Every example below is VERIFIED to build via build_algebra
+# (tests/webapp/test_catalog.py::test_every_family_prefill_builds gates all of them).
+# --------------------------------------------------------------------------- #
+_SYNTHETIC_FAMILIES: dict[str, dict] = {
+    "BrauerGraphAlgebra": {
+        "summary": {"en": "Brauer graph algebra of a ribbon graph with vertex multiplicities — a symmetric special biserial algebra.",
+                    "es": "Álgebra de grafo de Brauer de un grafo con cintas y multiplicidades en los vértices — un álgebra simétrica especial biserial.",
+                    "fr": "Algèbre de graphe de Brauer d'un graphe rubané à multiplicités aux sommets — une algèbre symétrique spéciale bisérielle.",
+                    "zh": "带状图（含顶点重数）的 Brauer 图代数——一个对称的特殊双列代数。"},
+        "params": [
+            {"name": "edges", "kind": "str", "default": None, "example": [[0, 1], [1, 2]], "required": True,
+             "help": {"en": "edges as endpoint pairs [u, v] (0-indexed graph vertices); edge k is the k-th pair",
+                      "es": "aristas como pares de extremos [u, v] (vértices del grafo, base 0); la arista k es el k-ésimo par",
+                      "fr": "arêtes sous forme de paires d'extrémités [u, v] (sommets du graphe, indexés à partir de 0) ; l'arête k est la k-ième paire",
+                      "zh": "以端点对 [u, v] 给出的边（图顶点从 0 开始编号）；第 k 条边为第 k 个对"}},
+            {"name": "cyclic_order", "kind": "str", "default": None, "example": [[0, [0]], [1, [0, 1]], [2, [1]]], "required": True,
+             "help": {"en": "ribbon (cyclic) order at each vertex as [vertex, [edge_index, ...]] — the edges around that vertex, anticlockwise",
+                      "es": "orden de cinta (cíclico) en cada vértice como [vértice, [índice_de_arista, ...]] — las aristas alrededor del vértice, en sentido antihorario",
+                      "fr": "ordre rubané (cyclique) en chaque sommet sous la forme [sommet, [indice_arête, ...]] — les arêtes autour du sommet, dans le sens antihoraire",
+                      "zh": "每个顶点处的带状（循环）次序，形如 [顶点, [边索引, ...]]——即该顶点周围的边，按逆时针排列"}},
+            {"name": "multiplicities", "kind": "str", "default": None, "example": [[0, 1], [1, 1], [2, 1]], "required": True,
+             "help": {"en": "vertex multiplicity m_v ≥ 1 as [vertex, m] pairs (dimension = Σ_v m_v·val(v)²)",
+                      "es": "multiplicidad m_v ≥ 1 de cada vértice como pares [vértice, m] (dimensión = Σ_v m_v·val(v)²)",
+                      "fr": "multiplicité m_v ≥ 1 de chaque sommet sous forme de paires [sommet, m] (dimension = Σ_v m_v·val(v)²)",
+                      "zh": "每个顶点的重数 m_v ≥ 1，以 [顶点, m] 对给出（维数 = Σ_v m_v·val(v)²）"}},
+        ],
+    },
+    "OnePointExtension": {
+        "summary": {"en": "One-point extension A[M] of a path algebra by a built-in module M (adds a new source vertex).",
+                    "es": "Extensión de un punto A[M] de un álgebra de caminos por un módulo predefinido M (añade un nuevo vértice fuente).",
+                    "fr": "Extension en un point A[M] d'une algèbre de chemins par un module prédéfini M (ajoute un nouveau sommet source).",
+                    "zh": "路代数由内置模 M 作的一点扩张 A[M]（新增一个源顶点）。"},
+        "params": [
+            {"name": "base", "kind": "str", "default": None, "example": "A2", "required": True, "help": _TYPE_STRING_HELP},
+            {"name": "module_kind", "kind": "str", "default": "simple", "required": False,
+             "help": {"en": "the module M: simple, projective, or injective at a vertex",
+                      "es": "el módulo M: simple, proyectivo o inyectivo en un vértice",
+                      "fr": "le module M : simple, projectif ou injectif en un sommet",
+                      "zh": "模 M：某顶点处的单模、投射模或内射模"}},
+            {"name": "module_vertex", "kind": "int", "default": None, "example": 1, "required": True,
+             "help": {"en": "the vertex the module M sits at",
+                      "es": "el vértice en el que se sitúa el módulo M",
+                      "fr": "le sommet où se situe le module M",
+                      "zh": "模 M 所在的顶点"}},
+        ],
+    },
+    "CornerAlgebra": {
+        "summary": {"en": "Corner algebra eAe of a path algebra at a set of vertices (the idempotent e = Σ e_v).",
+                    "es": "Álgebra esquina eAe de un álgebra de caminos en un conjunto de vértices (el idempotente e = Σ e_v).",
+                    "fr": "Algèbre coin eAe d'une algèbre de chemins en un ensemble de sommets (l'idempotent e = Σ e_v).",
+                    "zh": "路代数在一组顶点处的角代数 eAe（幂等元 e = Σ e_v）。"},
+        "params": [
+            {"name": "base", "kind": "str", "default": None, "example": "A3", "required": True, "help": _TYPE_STRING_HELP},
+            {"name": "vertices", "kind": "str", "default": None, "example": [1, 2], "required": True,
+             "help": {"en": "the idempotent's vertices as a list, e.g. [1, 2] — eAe with e = e_1 + e_2",
+                      "es": "los vértices del idempotente como lista, p. ej. [1, 2] — eAe con e = e_1 + e_2",
+                      "fr": "les sommets de l'idempotent sous forme de liste, p. ex. [1, 2] — eAe avec e = e_1 + e_2",
+                      "zh": "幂等元的顶点列表，例如 [1, 2]——eAe，其中 e = e_1 + e_2"}},
+        ],
+    },
+    "OppositeAlgebra": {
+        "summary": {"en": "Opposite algebra A^op of a path algebra (arrows reversed).",
+                    "es": "Álgebra opuesta A^op de un álgebra de caminos (flechas invertidas).",
+                    "fr": "Algèbre opposée A^op d'une algèbre de chemins (flèches inversées).",
+                    "zh": "路代数的反代数 A^op（箭头反向）。"},
+        "params": [
+            {"name": "base", "kind": "str", "default": None, "example": "A3", "required": True, "help": _TYPE_STRING_HELP},
+        ],
+    },
+    "MarkedSurface": {
+        "summary": {"en": "Gentle Jacobian algebra of a triangulated marked surface (choose a built-in preset).",
+                    "es": "Álgebra jacobiana gentil de una superficie marcada triangulada (elige un preajuste).",
+                    "fr": "Algèbre jacobienne aimable d'une surface marquée triangulée (choisissez un préréglage).",
+                    "zh": "三角剖分标记曲面的 gentle 雅可比代数（选择一个内置预设）。"},
+        "params": [
+            {"name": "preset", "kind": "str", "default": None, "example": "disc_fan_A3", "required": True,
+             "help": {"en": "surface preset: disc_fan_A3 (disc fan → gentle A3), annulus_C22 (annulus C(2,2)), or hexagon_internal (hexagon with an internal triangle)",
+                      "es": "preajuste de superficie: disc_fan_A3 (abanico del disco → A3 gentil), annulus_C22 (anillo C(2,2)) o hexagon_internal (hexágono con un triángulo interno)",
+                      "fr": "préréglage de surface : disc_fan_A3 (éventail du disque → A3 aimable), annulus_C22 (anneau C(2,2)) ou hexagon_internal (hexagone avec un triangle interne)",
+                      "zh": "曲面预设：disc_fan_A3（圆盘扇形 → gentle A3）、annulus_C22（环面 C(2,2)）或 hexagon_internal（含内部三角形的六边形）"}},
+        ],
+    },
+}
+
+
+def _synthetic_entry(name: str) -> dict:
+    meta = _SYNTHETIC_FAMILIES[name]
+    return {"name": name, "params": [dict(p) for p in meta["params"]],
+            "fields": list(_FIELD_OPTIONS), "summary": meta["summary"]}
 
 
 @lru_cache(maxsize=1)
 def build_catalog() -> dict:
     families = [_merge_meta(name, _params_of(builder))
                 for name, builder in _iter_families()]
+    families += [_synthetic_entry(name) for name in _SYNTHETIC_FAMILIES]
     return {
         "families": sorted(families, key=lambda f: f["name"]),
-        "fields": {"CC": {"needs": []}, "GF": {"needs": ["p"], "optional": ["n"]}},
+        "fields": {"CC": {"needs": []}, "GF": {"needs": ["p"], "optional": ["n"]},
+                   "QQ": {"needs": []}},
     }
 
 

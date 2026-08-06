@@ -27,6 +27,10 @@ _VALID = [
                               "relations": ["x*x*x"], "field": _GF2},
      "compute": ["dimension_vector"], "artifacts": {"pdf": False, "tikz": False},
      "module": {"dims": {"1": 2}, "maps": {"x": [[0, 0], [1, 0]]}}},
+    # QQ (the rational field) is now an accepted exact input field alongside CC/GF.
+    {"schema": 1, "algebra": {"kind": "quiver", "vertices": [1, 2], "arrows": {"a": [1, 2]},
+                              "relations": [], "field": {"kind": "QQ"}},
+     "compute": ["cartan"], "artifacts": {"pdf": False, "tikz": False}},
 ]
 
 # Requests both validators must REJECT.
@@ -39,9 +43,9 @@ _INVALID = [
     {"schema": 1, "algebra": {"kind": "quiver", "vertices": [], "arrows": {},
                               "relations": [], "field": _GF2},
      "compute": ["cartan"], "artifacts": {}},
-    # unknown field kind
+    # unknown field kind (QQ is now valid; RR -- the reals -- is not an exact field)
     {"schema": 1, "algebra": {"kind": "quiver", "vertices": [1], "arrows": {},
-                              "relations": [], "field": {"kind": "QQ"}},
+                              "relations": [], "field": {"kind": "RR"}},
      "compute": ["cartan"], "artifacts": {}},
     # module block on schema 1
     {"schema": 1, "algebra": {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},

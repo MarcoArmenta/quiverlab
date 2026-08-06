@@ -61,12 +61,17 @@ def _field_from_spec(spec):
     kind = spec.get("kind") if isinstance(spec, dict) else None
     if kind == "CC":
         return quiverlab.CC
+    if kind == "QQ":
+        # QQ (the rational field) is an exact input field alongside CC/GF; not a
+        # top-level export, so import it from quiverlab.fields.
+        from quiverlab.fields import QQ
+        return QQ
     if kind == "GF":
         p, n = spec.get("p"), spec.get("n", 1)
         if not (isinstance(p, int) and isinstance(n, int) and p >= 2 and n >= 1):
             raise RequestError("field GF needs integers p >= 2 and n >= 1")
         return quiverlab.GF(p ** n)   # FieldError (p not prime, ...) surfaces verbatim
-    raise RequestError("unknown field kind %r (expected 'CC' or 'GF')" % (kind,))
+    raise RequestError("unknown field kind %r (expected 'CC', 'GF' or 'QQ')" % (kind,))
 
 
 def _algebra_from_spec(alg):
@@ -92,9 +97,27 @@ def _algebra_from_spec(alg):
     if not (isinstance(relations, list)
             and all(isinstance(r, str) for r in relations)):
         raise RequestError("algebra.relations must be a list of strings")
+    potential = alg.get("potential")
+    if potential is not None and not isinstance(potential, str):
+        raise RequestError("algebra.potential must be a string (a k-linear sum of "
+                           "oriented cycles, e.g. 'a*b*c - d*e*f')")
     field = _field_from_spec(alg.get("field"))
     Q = quiverlab.Quiver(vertices=vertices,
                          arrows={k: (s, t) for k, (s, t) in arrows.items()})
+    if isinstance(potential, str) and potential.strip():
+        # A potential routes through the P44 Jacobian kQ/(d_a W); its relations ARE
+        # the cyclic derivatives, so explicit relations are then forbidden. Terms are
+        # parsed with the shared relation-term parser (loud RelationError on an
+        # unknown arrow / non-composable factor); Potential certifies each is a cycle.
+        if relations:
+            raise RequestError(
+                "a 'potential' and explicit 'relations' cannot both be given: the "
+                "Jacobian algebra's relations ARE the cyclic derivatives of the "
+                "potential (leave 'relations' empty when a 'potential' is set)")
+        from quiverlab.combinat.relations import _parse_term, _split_terms
+        terms = [_parse_term(t, Q) for t in _split_terms(potential)]
+        W = quiverlab.Potential(Q, terms)
+        return quiverlab.JacobianAlgebra(Q, W, field=field)
     return Q.algebra(relations=relations, field=field)
 
 
@@ -971,19 +994,32 @@ def python_snippet():
     f = alg["field"]
     if f["kind"] == "CC":
         field_name, field_expr = "CC", "CC"
+    elif f["kind"] == "QQ":
+        field_name, field_expr = "QQ", "QQ"
     else:
         q = f["p"] ** f.get("n", 1)
         field_name, field_expr = "GF", "GF(%d)" % q
+    # QQ is not a top-level export, so it needs its own import line.
+    header = ("from quiverlab import Quiver\nfrom quiverlab.fields import QQ"
+              if field_name == "QQ" else "from quiverlab import Quiver, %s" % field_name)
     arrows = ", ".join('"%s": (%d, %d)' % (k, s, t)
                        for k, (s, t) in alg["arrows"].items())
-    lines = [
-        "from quiverlab import Quiver, %s" % field_name,
-        "",
-        "Q = Quiver(vertices=%r, arrows={%s})" % (alg["vertices"], arrows),
-        "A = Q.algebra(relations=%r, field=%s)" % (list(alg.get("relations", [])),
-                                                   field_expr),
-        "print(A.dim)",
-    ]
+    q_line = "Q = Quiver(vertices=%r, arrows={%s})" % (alg["vertices"], arrows)
+    potential = alg.get("potential")
+    if isinstance(potential, str) and potential.strip():
+        lines = [header,
+                 "from quiverlab import Potential, JacobianAlgebra",
+                 "from quiverlab.combinat.relations import _split_terms, _parse_term",
+                 "", q_line,
+                 "W = Potential(Q, [_parse_term(t, Q) for t in _split_terms(%r)])"
+                 % potential,
+                 "A = JacobianAlgebra(Q, W, field=%s)" % field_expr,
+                 "print(A.dim)"]
+    else:
+        lines = [header, "", q_line,
+                 "A = Q.algebra(relations=%r, field=%s)"
+                 % (list(alg.get("relations", [])), field_expr),
+                 "print(A.dim)"]
     if req.get("module"):
         lines += _module_snippet_lines(req["module"], "M")
     if req.get("ext_target"):

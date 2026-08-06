@@ -24,7 +24,10 @@ class SchemaError(ValueError):
 
 
 class FieldSpec(BaseModel):
-    kind: Literal["CC", "GF"]
+    # ``QQ`` (the rational field) joins ``CC`` / ``GF`` as an exact input field: the
+    # library computes over QQ already, so every invariant that runs over CC runs
+    # over QQ (see quiverlab.hpc.spec._field). ``p``/``n`` stay GF-only.
+    kind: Literal["CC", "GF", "QQ"]
     p: int | None = None
     n: int = 1
 
@@ -74,6 +77,12 @@ class QuiverAlgebraSpec(BaseModel):
     vertices: list[int]
     arrows: dict[str, tuple[int, int]]
     relations: list[str] = Field(default_factory=list)
+    # An OPTIONAL potential W (a k-linear sum of oriented cycles in the relation
+    # grammar, e.g. "a*b*c - d*e*f"). When present the algebra is the P44 Jacobian
+    # kQ/(d_a W); its relations ARE the cyclic derivatives, so explicit ``relations``
+    # are then forbidden (the model_validator below). Absent (None) it serializes
+    # away in ComputeRequest.model_dump, keeping every existing request's cache key.
+    potential: str | None = None
     field: FieldSpec
 
     @field_validator("vertices")
@@ -82,6 +91,15 @@ class QuiverAlgebraSpec(BaseModel):
         if not v:
             raise SchemaError("algebra.vertices must be a non-empty list of integers")
         return v
+
+    @model_validator(mode="after")
+    def _potential_excludes_relations(self):
+        if self.potential is not None and self.potential.strip() and self.relations:
+            raise SchemaError(
+                "a 'potential' and explicit 'relations' cannot both be given: the "
+                "Jacobian algebra's relations ARE the cyclic derivatives of the "
+                "potential (leave 'relations' empty when a 'potential' is set)")
+        return self
 
 
 # Discriminated union: pydantic routes on `kind`, so a validation error names
@@ -293,6 +311,13 @@ class ComputeRequest(BaseModel):
         for k in ("module", "ext_target", "tor_target"):
             if d.get(k) is None:
                 d.pop(k, None)
+        # An ABSENT quiver potential must serialize away too, so every existing
+        # quiver/family request keeps its byte-identical Plan-25 cache key (only a
+        # genuine potential-carrying request keys differently). Nested under
+        # ``algebra``; a family algebra block has no ``potential`` key at all.
+        alg = d.get("algebra")
+        if isinstance(alg, dict) and not alg.get("potential"):
+            alg.pop("potential", None)
         return d
 
 
