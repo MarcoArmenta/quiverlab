@@ -39,7 +39,8 @@ _MODULE_KINDS = frozenset({
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
-          "module": None, "ext_target": None, "tor_target": None}
+          "module": None, "ext_target": None, "tor_target": None,
+          "algebra_b": None}
 
 
 class RequestError(Exception):
@@ -124,7 +125,7 @@ def _algebra_from_spec(alg):
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
-                  module=None, ext_target=None, tor_target=None)
+                  module=None, ext_target=None, tor_target=None, algebra_b=None)
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
@@ -137,9 +138,13 @@ def run_build(request_json):
         # Module blocks (Plan 26) ride alongside the algebra; the module itself is
         # built lazily in compute_one, so a relation-violating matrix surfaces as a
         # per-computation error (rendered on the page), never a build crash.
+        # wave 2: the SECOND algebra for derived_compare rides alongside the request
+        # (spec dict, built lazily in compute_one -- a bad B surfaces as a per-
+        # computation error, like the module blocks, never a build crash).
         _state.update(algebra=A, request=req, module=req.get("module"),
                       ext_target=req.get("ext_target"),
-                      tor_target=req.get("tor_target"))
+                      tor_target=req.get("tor_target"),
+                      algebra_b=req.get("algebra_b"))
         out = {"ok": True, "dim": A.dim, "n_vertices": len(vertices),
                "n_arrows": len(arrows), "algebra": repr(A).splitlines()[0]}
     except Exception as exc:
@@ -157,6 +162,13 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
+    # 'ar_quiver:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "ar_quiver":
+        if rng and not rng.isdigit():
+            raise RequestError("ar_quiver budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "ar_quiver", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -810,6 +822,23 @@ def compute_one(spec):
             from quiverlab.specseq.block import specseq_block
             block = specseq_block(A, top)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "radical_filtration_ss":
+            # Radical-filtration (associated-graded) spectral sequence (P42 preset,
+            # wave 2). Range kind on the algebra block; byte-identical to the server
+            # twin (quiverlab.hpc.spec._dispatch) -- SAME shared builder
+            # (specseq.block.radical_filtration_ss_block) + references->citations.
+            if top is None:
+                raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+            from quiverlab.specseq.block import radical_filtration_ss_block
+            block = radical_filtration_ss_block(A, top)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "ar_quiver":
+            # AR quiver (P41, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.ar.ar_quiver_block) + references->citations.
+            from quiverlab.modules.ar import ar_quiver_block
+            block = ar_quiver_block(A, budget=top if top is not None else 512)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -877,6 +906,20 @@ def compute_one(spec):
             # (derived.block.derived_fingerprint_block) + `references`->citations.
             from quiverlab.derived.block import derived_fingerprint_block
             block = derived_fingerprint_block(A, top if top is not None else 4)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "derived_compare":
+            # Two-algebra derived-fingerprint comparison (P43, wave 2): needs the SECOND
+            # algebra B, carried in _state["algebra_b"] (built lazily here, like the
+            # module blocks). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (derived.block.derived_compare_block) + references->citations.
+            spec_b = _state.get("algebra_b")
+            if spec_b is None:
+                raise RequestError("derived_compare needs a second algebra 'algebra_b' "
+                                   "(the B in the derived-fingerprint comparison)")
+            B = _algebra_from_spec(spec_b)
+            from quiverlab.derived.block import derived_compare_block
+            block = derived_compare_block(A, B, top if top is not None else 4)
             block["citations"] = _citation_pairs(block["references"])
         elif name == "strings":
             # Gentle / string subsystem (Plan 46): census + bands + rep-type + AG.

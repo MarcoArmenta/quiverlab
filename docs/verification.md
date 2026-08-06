@@ -552,10 +552,10 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 882 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 528 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1083 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 1084 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 189 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2121 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2122 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Counts as of the P43 merge (the derived-category surface); sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the

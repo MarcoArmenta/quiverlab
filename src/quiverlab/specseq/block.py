@@ -74,3 +74,91 @@ def _trim_grid(page, top):
         lines.append(" ".join(row))
     lines.append("      " + " ".join(f"p={p}".rjust(w) for p in ps))
     return "```\n" + "\n".join(lines) + "\n```"
+
+
+# --------------------------------------------------------------------------- #
+# radical_filtration_ss: the associated-graded / radical-filtration spectral
+# sequence as an ALGEBRA-only no-code block (wave 2). It runs the P42
+# ``radical_filtration_ss`` preset on the minimal projective resolution of the
+# direct sum of all simple modules -- the canonical, vertex-symmetric algebra
+# object whose radical filtration encodes the Koszul staircase -- to length
+# ``top``. Same shared-builder discipline as ``specseq_block`` (byte-identical
+# server / Pyodide twins); ``references`` present in BOTH the success and error
+# shapes so the ``block["citations"] = _citation_pairs(...)`` wiring is uniform.
+# --------------------------------------------------------------------------- #
+
+_RADICAL_REFS = ["weibel_homological", "priddy", "froberg_koszul"]
+
+
+def radical_filtration_ss_block(A, top, budget_dim=200000):
+    """The ``radical_filtration_ss`` block for algebra ``A`` reported over the
+    resolution-length window ``0..top``: the ``E_inf`` page support, the netPage
+    grid, the abutment (= the homology of the resolution complex per degree), the
+    degeneration data and the convergence prose -- mirroring :func:`specseq_block`.
+
+    The object filtered is the minimal projective resolution ``Q_top -> ... -> Q_0``
+    of ``(+)_v S_v`` (the direct sum of the simple modules), so the sequence is an
+    algebra invariant that needs no module input. A presentation-less algebra (no
+    quiver / no simple modules) or a resolution that blows up is reported as
+    ``{"kind": "radical_filtration_ss", "error": ...}`` -- the ``specseq_block``
+    honesty precedent, never a crash.
+
+    Truncation-boundary trim (mirrors :func:`specseq_block`): the resolution is
+    built ONE degree deeper (``top + 1``) so that ``d_{top+1}`` fills in ``H_top``.
+    Without the deeper term the degree-``top`` homology is the top syzygy
+    ``Omega^{top}`` -- for infinite global dimension that is a truncation artifact
+    that GROWS with the cutoff (e.g. ``k[x]/(x^2)`` grows a trailing ``1`` at
+    whatever ``top`` the user picks), NOT an invariant. The boundary degree
+    ``top + 1`` (whose homology is now the artifact) is trimmed from the reported
+    ``0..top`` window; the standing self-certificate still runs on the FULL
+    ``top + 1`` construction, so convergence stays coherent. A finite-global-
+    dimension resolution terminates before the boundary, so its reported values
+    are identical to the untrimmed ones."""
+    from quiverlab.errors import DepthLimitError, QuiverlabError
+    from quiverlab.modules.complexes import ChainComplex
+    from quiverlab.modules.morphism import direct_sum
+    from quiverlab.specseq.presets import radical_filtration_ss
+    refs = list(_RADICAL_REFS)
+    if getattr(A, "quiver", None) is None:
+        return {"kind": "radical_filtration_ss", "top": top,
+                "error": "radical_filtration_ss needs a quiver-presented algebra "
+                         "(no simple modules for a structure-constant algebra)",
+                "references": refs}
+    try:
+        simples = [A.simple(v) for v in A.quiver.vertices]
+        M = direct_sum(*simples)[0] if len(simples) > 1 else simples[0]
+        # build to top+1 so d_{top+1} pins H_top; degree top+1 is trimmed below.
+        X = ChainComplex.from_projective_resolution(M, top + 1)
+        ss = radical_filtration_ss(X)
+    except (DepthLimitError, QuiverlabError) as exc:
+        return {"kind": "radical_filtration_ss", "top": top, "error": str(exc),
+                "references": refs}
+    conv = ss.convergence
+    Einf = ss.page(conv.e_infinity_page)
+    # Report only the certified window 0..top; the boundary degree top+1 (a
+    # truncation artifact) is dropped from the grid, the E_inf support and the
+    # abutment -- the self-cert already ran on the full construction.
+    einf = [[p, q, Einf.dim(p, q)] for (p, q) in Einf.spots if p + q <= top]
+    abutment = [int(conv.abutment.get(n, 0)) for n in range(top + 1)]
+    if conv.degenerates_at == 1:
+        deg = "it degenerates at E_1 (E_1 = E_inf; the filtration is trivial)"
+    elif conv.degenerates_at is not None:
+        deg = (f"it degenerates at E_{conv.degenerates_at} "
+               "(all higher differentials vanish)")
+    else:
+        deg = (f"it stabilizes at the E_{conv.e_infinity_page} page "
+               "(the bounded-filtration bound)")
+    abut_str = ", ".join(f"H_{n}={abutment[n]}" for n in range(top + 1))
+    prose = ("The radical-filtration (associated-graded) spectral sequence of the "
+             "minimal projective resolution of the sum of the simple modules "
+             f"converges to its homology over the reported window 0..{top} "
+             f"({abut_str}); {deg}.")
+    return {"kind": "radical_filtration_ss", "top": top,
+            "resolved": "minimal projective resolution of (+)_v S(v)",
+            "einf": einf,
+            "grid": _trim_grid(Einf, top),
+            "abutment": abutment,
+            "degenerates_at": conv.degenerates_at,
+            "collapse": conv.collapse(),
+            "prose": prose,
+            "references": refs}

@@ -240,6 +240,7 @@ class ComputeRequest(BaseModel):
     module: ModuleSpec | None = None          # v2 (Plan 26)
     ext_target: ModuleSpec | None = None      # v2: the N in Ext^n(M, N), a RIGHT A-module
     tor_target: ModuleSpec | None = None      # v2 (Plan 30): the N in Tor^A_n(M, N)
+    algebra_b: AlgebraSpec | None = None      # wave 2: the SECOND algebra for derived_compare
 
     @model_validator(mode="before")
     @classmethod
@@ -300,15 +301,29 @@ class ComputeRequest(BaseModel):
             raise SchemaError("Tor's second module 'tor_target' must be a LEFT "
                               "A-module (side='left'); Tor^A_n(M, N) pairs a right M "
                               "with a left N")
+        # wave 2: derived_compare needs a second algebra; every other request must NOT
+        # carry one (it is dropped from the canonical form below when absent). Both
+        # directions are guarded, mirroring the ext/tor twin-checks above: a spurious
+        # algebra_b on a non-derived_compare request would otherwise be ACCEPTED and
+        # land in the canonical form, forging a DIFFERENT cache key for an identical
+        # computation (Plan 25). Reject it loudly instead.
+        if "derived_compare" in kinds and self.algebra_b is None:
+            raise SchemaError("derived_compare needs a second algebra 'algebra_b' (the "
+                              "B in the derived-fingerprint comparison of A and B)")
+        if self.algebra_b is not None and "derived_compare" not in kinds:
+            raise SchemaError("a second algebra 'algebra_b' is only used by "
+                              "derived_compare; drop it, or add a 'derived_compare' "
+                              "compute kind")
         return self
 
     def model_dump(self, *args, **kwargs):
-        """Drop ``module``/``ext_target``/``tor_target`` when absent so a non-module
-        request canonicalizes byte-identically to the pre-Plan-26 shape (the cache
-        key of every existing family/quiver request -- and every Plan-26 ext request
-        -- is unchanged; only genuine Tor requests carry the extra block)."""
+        """Drop ``module``/``ext_target``/``tor_target``/``algebra_b`` when absent so a
+        non-module, single-algebra request canonicalizes byte-identically to the
+        pre-Plan-26 / pre-wave-2 shape (the cache key of every existing family/quiver
+        request -- and every Plan-26 ext request -- is unchanged; only genuine Tor and
+        derived_compare requests carry the extra blocks)."""
         d = super().model_dump(*args, **kwargs)
-        for k in ("module", "ext_target", "tor_target"):
+        for k in ("module", "ext_target", "tor_target", "algebra_b"):
             if d.get(k) is None:
                 d.pop(k, None)
         # An ABSENT quiver potential must serialize away too, so every existing
@@ -340,6 +355,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
+    # 'ar_quiver:512'. The budget is not a homological degree, so it skips the
+    # 'name:0..N' grammar -- server and GUI/hpc agree on this special form.
+    if s == "ar_quiver" or s.startswith("ar_quiver:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"ar_quiver budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SchemaError(f"unparseable compute item {s!r}")

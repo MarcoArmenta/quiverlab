@@ -60,11 +60,19 @@ def _max_degree(req: ComputeRequest) -> int:
     hi = 0
     for raw in req.compute:
         item = parse_compute_item(raw)
-        # tau_tilting's `hi` is a PAIR BUDGET, not a homological degree (Plan 45) -- it
-        # must not drive the degree-based tier classification (a budget of 512 is not a
-        # degree-512 request), so it is excluded here. The engine sizes tau_tilting on the
-        # algebra dimension (sizing_dim), like the HH kinds.
-        if item.kind == "tau_tilting":
+        # tau_tilting's `hi` is a PAIR BUDGET, not a homological degree (Plan 45), and
+        # ar_quiver's `hi` is a MODULE BUDGET (wave 2) -- neither is a degree, so a budget
+        # of 512 must not drive the degree-based tier classification. Both are excluded
+        # here and sized on the algebra dimension (sizing_dim), like the HH kinds.
+        #
+        # KNOWN LIMITATION (inherited from the tau_tilting precedent, NOT introduced
+        # here -- estimator redesign is out of scope, other owners): because the budget
+        # is dropped and sizing_dim keys only off the algebra dimension, a
+        # representation-INFINITE algebra of small dimension paired with a large
+        # ar_quiver/tau_tilting budget can be mislabelled "instant" even though the knit
+        # may run long before it hits the budget cap. The wall-clock/memory caps still
+        # bound it once running; a budget-aware sizing heuristic is the open backlog fix.
+        if item.kind in ("tau_tilting", "ar_quiver"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)
@@ -81,16 +89,34 @@ def _module_dim(mspec) -> int:
     return sum(int(n) for n in mspec.dims.values())
 
 
+def _algebra_b_dim(req: ComputeRequest) -> int:
+    """The dimension of the SECOND algebra for ``derived_compare`` (wave 2), so a big
+    B over a small A still sizes the job off the instant tier (derived_compare
+    fingerprints BOTH algebras). Built DEFENSIVELY: an unbuildable B returns 0 here
+    (its real error surfaces later in the runner as a clean 4xx), never raising inside
+    the classifier -- app.py's ``classify(sizing_dim(...))`` is not wrapped."""
+    spec = req.algebra_b
+    if spec is None:
+        return 0
+    try:
+        from quiverlab.hpc.spec import build_algebra
+        return int(build_algebra(spec.model_dump()).dim)
+    except Exception:
+        return 0
+
+
 def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     """Effective dimension for tier classification. Module resolutions, Ext and Tor
     scale with the MODULE dimension, so a big module -- INCLUDING the Tor second
     module ``tor_target`` -- must size the job even over a small algebra, otherwise
     it would be mis-classified as instant and let an oversized Tor target drive a
-    multi-GB dense-matrix allocation in the sync tier. Falls back to the algebra
-    dimension when there is no explicit module, so every existing family/quiver
-    request classifies exactly as before (Plan 26/30)."""
+    multi-GB dense-matrix allocation in the sync tier. ``derived_compare`` likewise
+    fingerprints a SECOND algebra ``algebra_b``, so its dimension sizes the job too.
+    Falls back to the algebra dimension when there is no explicit module / second
+    algebra, so every existing family/quiver request classifies exactly as before
+    (Plan 26/30 + wave 2)."""
     return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
-               _module_dim(req.tor_target))
+               _module_dim(req.tor_target), _algebra_b_dim(req))
 
 
 # Heuristic throughput used to turn the op estimate into a human "minutes"

@@ -711,3 +711,73 @@ def knit_ar_quiver(A, budget_modules=256, budget_dim=4096):
     vertices = [{"name": _std_name(identify_standard(m)),
                  "dimvec": m.dimension_vector(), "module": m} for m in discovered]
     return ARQuiver(vertices, arrows, tau_orbits, is_complete, status, note=note)
+
+
+# --------------------------------------------------------------------------- #
+# ar_quiver: the no-code ALGEBRA block (wave 2). Serialises the ARQuiver into a
+# JSON-safe payload for the shared server / Pyodide runners (byte-identical
+# twins), with the honest semi-decision contract carried through:
+#   * status == "complete"    -> full, trustworthy vertices + arrows + tau-orbits;
+#   * status == "budget"      -> PARTIAL data, clearly labelled (is_complete False,
+#                                arrows omitted -- a partial arrow set undercounts);
+#   * status in {"unsupported","error"} -> no vertex data; the library's LOUD note
+#                                surfaced as an ``error`` field (self-injective, ...).
+# ``references`` is present in every shape so the caller's
+# ``block["citations"] = _citation_pairs(...)`` wiring is uniform.
+# --------------------------------------------------------------------------- #
+
+_AR_REFS = ["ars_book", "assem_book"]
+
+
+def ar_quiver_block(A, budget=512):
+    """The ``ar_quiver`` block for algebra ``A``: the Auslander-Reiten quiver knitted
+    from the projectives (P41), budget-capped at ``budget`` indecomposables. The block
+    lists the indecomposables (name + dimension vector), the irreducible-map arrows with
+    multiplicities, the tau-orbits and the completeness status -- an HONEST semi-decision:
+    complete iff representation-finite, else a labelled partial ``status="budget"``; a
+    self-injective input is refused via the library's loud note in an ``error`` field.
+
+    Serialised JSON-safely: the ``Module`` objects on the ARQuiver vertices are dropped
+    (only the name + dimension vector survive); arrow tuple-keys become explicit
+    ``{"from", "to", "mult"}`` records. Shared by both runners (byte-identical twins)."""
+    ar = A.ar_quiver(budget_modules=budget)
+    block = {
+        "kind": "ar_quiver",
+        "status": ar.status,
+        "complete": bool(ar.is_complete),
+        "budget": int(budget),
+        "num_vertices": len(ar.vertices),
+        "num_arrows": len(ar.arrows),
+        "references": list(_AR_REFS),
+    }
+    # A refusal (self-injective or an uncertifiable module) carries no reliable quiver:
+    # surface the library's loud note as an honest error field, no vertex data.
+    if ar.status in ("unsupported", "error"):
+        block["error"] = ar.note or ("the AR knitter refused this algebra "
+                                      "(status=%s)" % ar.status)
+        block["vertices"] = []
+        block["arrows"] = []
+        block["tau_orbits"] = []
+        return block
+    if ar.note:
+        block["note"] = ar.note
+    block["vertices"] = [
+        {"id": i, "name": v["name"],
+         "dimvec": {str(w): int(n) for w, n in sorted(v["dimvec"].items(),
+                                                      key=lambda kv: str(kv[0]))}}
+        for i, v in enumerate(ar.vertices)]
+    # Arrow multiplicities are trustworthy only on a COMPLETE knit (a partial discovered
+    # set undercounts rad/rad^2), so a budget-capped quiver ships its partial vertices
+    # but an EMPTY arrow set, clearly labelled partial by ``complete=False``.
+    if ar.is_complete:
+        block["arrows"] = [
+            {"from": int(i), "to": int(j), "mult": int(m)}
+            for (i, j), m in sorted(ar.arrows.items())]
+        block["tau_orbits"] = [[int(x) for x in orbit] for orbit in ar.tau_orbits]
+    else:
+        block["arrows"] = []
+        block["tau_orbits"] = [[int(x) for x in orbit] for orbit in ar.tau_orbits]
+        block["partial_note"] = ("budget cap reached: the indecomposables shown are a "
+                                  "prefix of the AR quiver; arrows are omitted (a partial "
+                                  "set undercounts irreducible-map multiplicities)")
+    return block
