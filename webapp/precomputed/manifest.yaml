@@ -70,3 +70,52 @@ examples:
   # products: cup/cap/bracket/connes_b:0..4 -- the FULL HH top (hereditary path
   # algebra, HH concentrated in low degree, no cochain blow-up).
   - stored: examples/kronecker-regular
+
+  # ---- v0.2.0 flagship kinds (P50 curation) -- request-form entries, computed
+  # at image build by container/seed_cache.py (each verified to compute in
+  # seconds by tests/release/test_v020_integration.py's cross-tier smoke). ----
+
+  # kA3 over GF(7): the v0.2.0 algebra-level tour -- structure recognizers
+  # (Dynkin type + gentle/string flags), the C6 homological profile, the Yoneda
+  # Ext-algebra with Koszulity, the derived fingerprint (invariants, never a
+  # decider), quasi-heredity in the natural order, gentle strings/bands + AG
+  # invariant, and the full tau-tilting exchange graph (14 pairs, Catalan(4))
+  # with the n=3 fan rendering.
+  - schema: 2
+    algebra:
+      kind: quiver
+      vertices: [1, 2, 3]
+      arrows: {a: [1, 2], b: [2, 3]}
+      relations: []
+      field: {kind: GF, p: 7, n: 1}
+    compute: [recognizers, homological_profile, ext_algebra:0..3,
+              derived_fingerprint, quasi_hereditary, strings, tau_tilting:512]
+
+  # Dual numbers k[x]/(x^2) over GF(7): the ss_hochschild SUCCESS path -- the
+  # (b, B) double-complex spectral sequence with printed pages/differentials and
+  # the standing E_inf == H(Tot) convergence certificate (kA3 would honest-refuse
+  # at max_cells; dim 2 computes instantly).
+  - schema: 2
+    algebra:
+      kind: quiver
+      vertices: [1]
+      arrows: {x: [1, 1]}
+      relations: ["x*x"]
+      field: {kind: GF, p: 7, n: 1}
+    compute: [ss_hochschild:0..3]
+
+  # The P48 annulus C(2,2) gentle Jacobian (presentation derived LIVE from
+  # quiverlab.surfaces.annulus_triangulation(2,2) + jacobian_of, dim 8, no
+  # internal triangles => no relations; recognizers certifies is_gentle and
+  # type ~A3 tame): the surfaces->gentle flagship, plus the C8 orbit-geometry
+  # and module probes on the simple S(2).
+  - schema: 2
+    algebra:
+      kind: quiver
+      vertices: [1, 2, 3, 4]
+      arrows: {m1: [2, 1], m2: [2, 3], m3: [4, 1], m4: [4, 3]}
+      relations: []
+      field: {kind: GF, p: 7, n: 1}
+    module: {builtin: {kind: simple, vertex: 2}}
+    compute: [recognizers, strings, dimension_vector, orbit_geometry,
+              tilting_check, almost_split]
