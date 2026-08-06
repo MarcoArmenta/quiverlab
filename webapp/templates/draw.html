@@ -10,7 +10,11 @@
   <p>{{ t("draw.blurb") }}</p>
   {# The canvas app (vendored docs/gui/gui.js) mounts itself into #qlgui and
      talks to /gui/worker.js -- the server-backed twin of the Pyodide worker. #}
-  <div id="qlgui">
+  <div id="qlgui"
+       data-search-placeholder="{{ t('draw.search_placeholder') }}"
+       data-search-related="{{ t('draw.search_related') }}"
+       data-search-none="{{ t('draw.search_none') }}"
+       data-search-load="{{ t('draw.search_load') }}">
     <noscript><p><strong>The interactive canvas needs JavaScript.</strong></p></noscript>
     <p>Loading the canvas…</p>
   </div>

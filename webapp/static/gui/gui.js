@@ -42,6 +42,10 @@
 
   // ---------- static shell ----------
   root.innerHTML =
+    '<div class="qlgui-search-wrap">' +
+    '  <input type="text" id="qlgui-search" autocomplete="off" spellcheck="false">' +
+    '  <div id="qlgui-search-menu" class="qlgui-search-menu" style="display:none"></div>' +
+    '</div>' +
     '<div class="qlgui-row">' +
     '  <label>Preset <select id="qlgui-preset"><option value="">— build your own —</option></select></label>' +
     '  <label>Field <select id="qlgui-field"><option value="CC">CC</option><option value="GF">GF(p^n)</option></select></label>' +
@@ -152,7 +156,8 @@
     '<div id="qlgui-results"></div>';
 
   var el = {};
-  ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
+  ["search", "search-menu",
+   "preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top",
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
@@ -643,21 +648,7 @@
       });
       el.preset.addEventListener("change", function () {
         if (el.preset.value === "") return;
-        var p = presets[parseInt(el.preset.value, 10)];
-        S.vertices = p.vertices.map(function (id, i) {
-          var angle = 2 * Math.PI * i / p.vertices.length - Math.PI / 2;
-          var rad = p.vertices.length === 1 ? 0 : 110;
-          return { id: id, x: 400 + rad * Math.cos(angle), y: 185 + rad * Math.sin(angle) };
-        });
-        S.nextId = Math.max.apply(null, p.vertices.concat([0])) + 1;
-        S.arrows = Object.keys(p.arrows).map(function (name) {
-          return { name: name, s: p.arrows[name][0], t: p.arrows[name][1] };
-        });
-        el.relations.value = p.relations.join(", ");
-        el.field.value = p.field.kind === "CC" ? "CC" : "GF";
-        el.field.dispatchEvent(new Event("change"));
-        if (p.field.kind === "GF") { el.p.value = p.field.p; el.n.value = p.field.n || 1; }
-        S.selected = null; el.results.innerHTML = ""; render();
+        loadQuiver(presets[parseInt(el.preset.value, 10)]);
       });
     }).catch(function () { /* presets are a convenience; the editor still works */ });
 
@@ -2812,8 +2803,11 @@
   }
 
   // ---------- buttons ----------
-  el.compute.addEventListener("click", function () {
-    if (S.busy || !S.engineReady) return;
+  // The compute run body, shared by the Compute button and the search-bar
+  // auto-run. Returns true once a run was actually dispatched (engine ready, a
+  // quiver present, not already busy), so the search auto-run can poll for it.
+  function runCompute() {
+    if (S.busy || !S.engineReady || !S.vertices.length) return false;
     el.results.innerHTML = "";
     S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "", traceJson: "" };
     el.print.disabled = el.tikz.disabled = el.json.disabled = el.snippet.disabled = true;
@@ -2823,7 +2817,9 @@
     setStatus("computing…");
     startTicker();
     S.worker.postMessage({ cmd: "run", request: buildRequest(), factor: S.factor });
-  });
+    return true;
+  }
+  el.compute.addEventListener("click", function () { runCompute(); });
   el.cancel.addEventListener("click", function () {
     if (!S.busy) return;
     stopTicker();
@@ -2930,4 +2926,262 @@
   el.preset.addEventListener("change", ensureEngine);
   el.relations.addEventListener("focus", ensureEngine);
   el["mod-enable"].addEventListener("change", ensureEngine);   // enabling the module panel is intent
+
+  // ---------- search-first landing (Marco 2026-08-06) ----------
+  // Type what you want to compute; pick a match; a small, pre-validated example
+  // (quiver + field + compute request, module/target when the kind needs one)
+  // loads into the editor and auto-runs. Keywords carry EN/ES/FR/ZH synonyms so
+  // search works in every UI language even though these labels are English.
+  // QLGUI-SEARCH-INDEX-BEGIN
+  var SEARCH_INDEX =
+  [
+    {"id": "hh_cohomology", "title": "Hochschild cohomology HH•", "category": "hochschild", "keywords": ["hochschild", "cohomology", "cohomología", "cohomologie", "上同调", "HH", "hh"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["hh_cohomology:0..4"]}},
+    {"id": "hh_homology", "title": "Hochschild homology HH_•", "category": "hochschild", "keywords": ["hochschild", "homology", "homología", "homologie", "同调", "HH"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["hh_homology:0..4"]}},
+    {"id": "cyclic_homology", "title": "Cyclic homology HC_•", "category": "hochschild", "keywords": ["cyclic", "cíclica", "cyclique", "循环同调", "HC", "connes"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cyclic_homology:0..4"]}},
+    {"id": "connes_b", "title": "Connes differential B", "category": "hochschild", "keywords": ["connes", "differential", "diferencial", "différentielle", "B", "微分"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["connes_b:0..3"]}},
+    {"id": "products", "title": "HH products: cup, cap, bracket", "category": "hochschild", "keywords": ["cup", "cap", "bracket", "gerstenhaber", "producto", "produit", "杯", "帽", "括号", "product"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cup:0..2", "cap:0..2", "bracket:0..2"]}},
+    {"id": "ss_hochschild", "title": "Hochschild (b,B) spectral sequence", "category": "hochschild", "keywords": ["spectral", "sequence", "espectral", "spectrale", "谱序列", "ss", "b,B", "abutment"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ss_hochschild:0..3"]}},
+    {"id": "cartan_coxeter", "title": "Cartan matrix & Coxeter polynomial", "category": "invariants", "keywords": ["cartan", "coxeter", "matrix", "matriz", "matrice", "polynomial", "polinomio", "polynôme", "卡坦", "矩阵", "多项式"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cartan", "coxeter_polynomial"]}},
+    {"id": "homological_profile", "title": "Homological dimensions & global dimension", "category": "invariants", "keywords": ["homological", "dimension", "global", "gldim", "dimensión", "dimension", "同调维数", "全局维数", "findim", "gorenstein", "igusa", "todorov"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["homological_profile", "global_dimension"]}},
+    {"id": "center", "title": "Center of the algebra Z(A)", "category": "invariants", "keywords": ["center", "centre", "centro", "中心", "Z(A)", "zentrum"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["center"]}},
+    {"id": "recognizers", "title": "Recognizers & Dynkin type", "category": "invariants", "keywords": ["recognizers", "type", "dynkin", "tipo", "reconocedores", "reconnaisseurs", "hereditary", "nakayama", "识别", "类型", "gentle", "string"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers"]}},
+    {"id": "ext_algebra", "title": "Ext-algebra & Koszulity", "category": "invariants", "keywords": ["ext", "koszul", "yoneda", "ext-algebra", "koszulity", "代数", "koszulidad", "koszulité"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ext_algebra:0..3"]}},
+    {"id": "derived_fingerprint", "title": "Derived fingerprint", "category": "derived", "keywords": ["derived", "fingerprint", "derivada", "dérivée", "导出", "invariant", "huella", "empreinte"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["derived_fingerprint"]}},
+    {"id": "quasi_hereditary", "title": "Quasi-hereditary structure (Δ/∇)", "category": "invariants", "keywords": ["quasi-hereditary", "standard", "costandard", "delta", "nabla", "bgg", "cuasi-hereditaria", "quasi-héréditaire", "准遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["quasi_hereditary"]}},
+    {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
+    {"id": "tau_tilting", "title": "τ-tilting: pairs, exchange graph, fan", "category": "tau-tilting", "keywords": ["tau-tilting", "tilting", "mutation", "torsion", "silting", "g-vector", "wall", "stability", "chamber", "inclinación", "basculement", "mutación", "倾斜", "突变", "brick", "semibrick", "fan"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["tau_tilting:512"]}},
+    {"id": "module_basics", "title": "Module: dimension vector, rad/top/soc", "category": "modules", "keywords": ["module", "dimension vector", "radical", "top", "socle", "zócalo", "socle", "módulo", "module", "模块", "维数向量", "loewy"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["dimension_vector", "rad_top_soc"]}},
+    {"id": "resolutions", "title": "Projective & injective resolutions", "category": "modules", "keywords": ["resolution", "projective", "injective", "resolución", "résolution", "proyectiva", "inyectiva", "projective", "injective", "分解", "投影", "内射", "pd", "id"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["projective_resolution:0..6", "injective_resolution:0..6", "projective_dimension", "injective_dimension"]}},
+    {"id": "ext_tor", "title": "Ext & Tor between modules", "category": "modules", "keywords": ["ext", "tor", "extension", "extensión", "扩张", "torsion", "扭积", "yoneda"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}, "tor_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "left"}, "compute": ["ext:0..3", "tor:0..3"]}},
+    {"id": "ar_theory", "title": "Auslander–Reiten: τ, τ⁻, almost-split", "category": "ar", "keywords": ["auslander", "reiten", "tau", "translate", "almost-split", "irreducible", "traslación", "translation", "转变", "几乎分裂", "ar-quiver"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["tau", "tau_minus", "almost_split"]}},
+    {"id": "decompose", "title": "Krull–Schmidt decomposition", "category": "modules", "keywords": ["decompose", "krull-schmidt", "indecomposable", "descomponer", "décomposer", "indescomponible", "分解", "不可分"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"dims": {"1": 1, "2": 1, "3": 0}, "maps": {"a": [[0]], "b": []}, "side": "right"}, "compute": ["decompose"]}},
+    {"id": "orbit_geometry", "title": "Representation-variety orbit geometry", "category": "geometry", "keywords": ["orbit", "geometry", "variety", "voigt", "rigid", "degeneration", "kac", "órbita", "orbite", "geometría", "géométrie", "轨道", "几何", "rigidity"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["orbit_geometry"]}},
+    {"id": "tilting_check", "title": "Tilting-module check", "category": "tau-tilting", "keywords": ["tilting", "bongartz", "cotilting", "inclinación", "basculant", "倾斜模块"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "projective", "vertex": 1}, "side": "right"}, "compute": ["tilting_check"]}}
+  ];
+  // QLGUI-SEARCH-INDEX-END
+
+  // i18n strings arrive as data-* on #qlgui (server-injected); English fallback.
+  function dataText(key, fallback) {
+    var v = root.getAttribute("data-" + key);
+    return (v == null || v === "") ? fallback : v;
+  }
+  // case- AND diacritic-insensitive (NFD, strip combining marks); CJK unaffected.
+  function searchNorm(x) {
+    return String(x).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function searchMatch(query) {
+    var q = searchNorm((query || "").trim());
+    if (!q) return { direct: [], related: [] };
+    var direct = SEARCH_INDEX.filter(function (e) {
+      if (searchNorm(e.title).indexOf(q) >= 0) return true;
+      return e.keywords.some(function (k) { return searchNorm(k).indexOf(q) >= 0; });
+    });
+    var cats = {}, directId = {};
+    direct.forEach(function (e) { cats[e.category] = 1; directId[e.id] = 1; });
+    var related = SEARCH_INDEX.filter(function (e) {
+      return !directId[e.id] && cats[e.category];
+    });
+    return { direct: direct, related: related };
+  }
+  function searchItemEl(e) {
+    var item = h("div", { "class": "qlgui-search-item", "data-id": e.id });
+    item.appendChild(h("span", { "class": "qlgui-search-title", text: e.title }));
+    item.addEventListener("mousedown", function (ev) {
+      ev.preventDefault();               // pick before the input blur closes us
+      pickExample(e);
+    });
+    return item;
+  }
+  function renderSearchMenu() {
+    var menu = el["search-menu"];
+    menu.innerHTML = "";
+    if (!el.search.value.trim()) { menu.style.display = "none"; return; }
+    var m = searchMatch(el.search.value);
+    if (!m.direct.length && !m.related.length) {
+      menu.appendChild(h("div", { "class": "qlgui-search-none",
+        text: dataText("search-none", "No matches \u2014 try Hochschild, resolution, module, surface") }));
+      menu.style.display = ""; return;
+    }
+    m.direct.forEach(function (e) { menu.appendChild(searchItemEl(e)); });
+    if (m.related.length) {
+      menu.appendChild(h("div", { "class": "qlgui-search-head",
+        text: dataText("search-related", "Related environments") }));
+      m.related.forEach(function (e) { menu.appendChild(searchItemEl(e)); });
+    }
+    menu.style.display = "";
+  }
+  function pickExample(e) {
+    el["search-menu"].style.display = "none";
+    el.search.value = e.title;
+    loadExample(e);
+  }
+
+  // Load a quiver spec {vertices, arrows, relations, field} into the editor.
+  // Shared by the preset dropdown and the search loader (circle auto-layout).
+  function loadQuiver(p) {
+    S.vertices = p.vertices.map(function (id, i) {
+      var angle = 2 * Math.PI * i / p.vertices.length - Math.PI / 2;
+      var rad = p.vertices.length === 1 ? 0 : 110;
+      return { id: id, x: 400 + rad * Math.cos(angle), y: 185 + rad * Math.sin(angle) };
+    });
+    S.nextId = Math.max.apply(null, p.vertices.concat([0])) + 1;
+    S.arrows = Object.keys(p.arrows).map(function (name) {
+      return { name: name, s: p.arrows[name][0], t: p.arrows[name][1] };
+    });
+    el.relations.value = (p.relations || []).join(", ");
+    el.field.value = p.field.kind === "CC" ? "CC" : "GF";
+    el.field.dispatchEvent(new Event("change"));
+    if (p.field.kind === "GF") { el.p.value = p.field.p; el.n.value = p.field.n || 1; }
+    S.selected = null; el.results.innerHTML = ""; render();
+  }
+
+  // kind -> its GUI controls: cb = checkbox id, top = range/budget input id,
+  // budget = single-int (tau_tilting) vs a 0..hi range, mod = needs the module panel.
+  var KIND_CTRL = {
+    hh_cohomology: { cb: "hhc", top: "hhc-top" },
+    hh_homology: { cb: "hhh", top: "hhh-top" },
+    cup: { cb: "cup", top: "cup-top" },
+    cap: { cb: "cap", top: "cap-top" },
+    bracket: { cb: "bracket", top: "bracket-top" },
+    connes_b: { cb: "connes_b", top: "connes_b-top" },
+    cyclic_homology: { cb: "cyclic_homology", top: "cyclic_homology-top" },
+    ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
+    ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
+    cartan: { cb: "cartan" },
+    coxeter_polynomial: { cb: "coxeter_polynomial" },
+    global_dimension: { cb: "global_dimension" },
+    center: { cb: "center" },
+    recognizers: { cb: "recognizers" },
+    homological_profile: { cb: "homological_profile" },
+    derived_fingerprint: { cb: "derived_fingerprint" },
+    strings: { cb: "strings" },
+    quasi_hereditary: { cb: "quasi_hereditary" },
+    tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
+    dimension_vector: { cb: "dimension_vector", mod: true },
+    rad_top_soc: { cb: "rad_top_soc", mod: true },
+    tau: { cb: "tau", mod: true },
+    tau_minus: { cb: "tau_minus", mod: true },
+    projective_dimension: { cb: "projective_dimension", mod: true },
+    injective_dimension: { cb: "injective_dimension", mod: true },
+    projective_resolution: { cb: "projective_resolution", top: "pr-top", mod: true },
+    injective_resolution: { cb: "injective_resolution", top: "ir-top", mod: true },
+    decompose: { cb: "decompose", mod: true },
+    almost_split: { cb: "almost_split", mod: true },
+    tilting_check: { cb: "tilting_check", mod: true },
+    orbit_geometry: { cb: "orbit_geometry", mod: true },
+    ext: { cb: "ext", top: "ext-top", mod: true },
+    tor: { cb: "tor", top: "tor-top", mod: true }
+  };
+  function topValueOf(item, isBudget) {
+    var i = item.indexOf(":");
+    if (i < 0) return null;
+    var rest = item.slice(i + 1);
+    if (isBudget) return parseInt(rest, 10);
+    var dd = rest.indexOf("..");
+    return parseInt(dd < 0 ? rest : rest.slice(dd + 2), 10);
+  }
+  function copyDims(dst, src) {
+    Object.keys(src || {}).forEach(function (k) { dst[k] = src[k]; });
+  }
+  function copyMaps(dst, src) {
+    Object.keys(src || {}).forEach(function (name) {
+      dst[name] = src[name].map(function (row) {
+        return row.map(function (x) { return String(x); });
+      });
+    });
+  }
+  // Populate the main module panel (S.module + its DOM controls) from a spec:
+  // either { builtin: { kind, vertex }, side } or { dims, maps, side }.
+  function setModuleFromSpec(mspec) {
+    el["mod-enable"].checked = true;
+    S.module.enabled = true;
+    var side = (mspec && mspec.side) || "right";
+    el["mod-side"].value = side; S.module.side = side;
+    if (mspec && mspec.builtin) {
+      el["mod-mode"].value = mspec.builtin.kind;
+      S.module.vertex = mspec.builtin.vertex;
+    } else if (mspec && mspec.dims) {
+      el["mod-mode"].value = "explicit";
+      S.module.dims = {}; copyDims(S.module.dims, mspec.dims);
+      S.module.maps = {}; copyMaps(S.module.maps, mspec.maps);
+    }
+  }
+  // Populate the second-argument (Ext/Tor N) editor from a spec, same shapes.
+  function setTargetFromSpec(tspec) {
+    var side = (tspec && tspec.side) || "right";
+    el["target-side"].value = side; S.target.side = side;
+    if (tspec && tspec.builtin) {
+      el["target-mode"].value = tspec.builtin.kind;
+      S.target.vertex = tspec.builtin.vertex;
+    } else if (tspec && tspec.dims) {
+      el["target-mode"].value = "explicit";
+      S.target.dims = {}; copyDims(S.target.dims, tspec.dims);
+      S.target.maps = {}; copyMaps(S.target.maps, tspec.maps);
+    }
+  }
+  function clearAllKinds() {
+    Object.keys(KIND_CTRL).forEach(function (k) {
+      var c = KIND_CTRL[k];
+      if (el[c.cb]) el[c.cb].checked = false;
+    });
+  }
+  // Set every checkbox / range / module control an example needs, unchecking the
+  // rest first, then render() so the panels VISIBLY reflect the loaded example.
+  function applyExample(ex) {
+    clearAllKinds();
+    if (ex.module || ex.ext_target || ex.tor_target) {
+      setModuleFromSpec(ex.module || ex.ext_target || ex.tor_target);
+    } else {
+      el["mod-enable"].checked = false; S.module.enabled = false;
+    }
+    (ex.compute || []).forEach(function (raw) {
+      var kind = raw.split(":")[0], c = KIND_CTRL[kind];
+      if (!c || !el[c.cb]) return;
+      el[c.cb].checked = true;
+      if (c.top && el[c.top]) {
+        var v = topValueOf(raw, c.budget);
+        if (v != null && !isNaN(v)) el[c.top].value = String(v);
+      }
+    });
+    if (ex.ext_target) setTargetFromSpec(ex.ext_target);
+    else if (ex.tor_target) setTargetFromSpec(ex.tor_target);
+    render();                                    // refresh canvas + module panel
+  }
+  function loadExample(entry) {
+    var ex = entry.example;
+    loadQuiver(ex);
+    applyExample(ex);
+    ensureEngine();
+    // Auto-run once the (lazily loaded) engine is ready; give up silently after
+    // ~60 s, leaving the loaded example in place for a manual Compute.
+    setStatus(dataText("search-load", "small example loaded \u2014 computing\u2026"));
+    var waited = 0;
+    (function poll() {
+      if (runCompute()) return;
+      waited += 200;
+      if (waited > 60000) return;
+      setTimeout(poll, 200);
+    })();
+  }
+
+  el.search.placeholder = dataText("search-placeholder",
+    "Search: what do you want to compute? (e.g. Hochschild, \u03c4-tilting, gentle, resolution)");
+  el.search.addEventListener("input", renderSearchMenu);
+  el.search.addEventListener("focus", function () {
+    ensureEngine();                              // typing intent warms the engine
+    if (el.search.value.trim()) renderSearchMenu();
+  });
+  el.search.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") {
+      var m = searchMatch(el.search.value), first = m.direct[0] || m.related[0];
+      if (first) { ev.preventDefault(); pickExample(first); }
+    } else if (ev.key === "Escape") {
+      el["search-menu"].style.display = "none";
+    }
+  });
+  document.addEventListener("click", function (ev) {
+    if (!el.search.contains(ev.target) && !el["search-menu"].contains(ev.target)) {
+      el["search-menu"].style.display = "none";
+    }
+  });
 })();

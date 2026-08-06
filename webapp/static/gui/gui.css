@@ -104,3 +104,28 @@
 #qlgui .qlgui-mgrid { display: inline-grid; gap: 3px; }
 #qlgui .qlgui-mgrid input[type="text"] { width: 3.2em; text-align: center; }
 #qlgui-mod-kinds label { display: inline-flex; align-items: center; gap: 3px; }
+/* Search-first landing (Marco 2026-08-06): a full-width search box above the
+   editor with an absolutely-positioned results menu. Type an environment, pick
+   it, a small validated example loads and auto-runs. Namespaced under #qlgui,
+   theme-aware via the same --md-* variables. */
+#qlgui .qlgui-search-wrap { position: relative; margin: 2px 0 10px; }
+#qlgui-search { width: 100%; box-sizing: border-box; font-size: .82rem;
+  padding: 8px 12px; border-radius: 6px;
+  border: 1px solid var(--md-primary-fg-color); }
+#qlgui-search::placeholder { color: var(--md-default-fg-color--light); opacity: .8; }
+#qlgui .qlgui-search-menu { position: absolute; z-index: 20; left: 0; right: 0;
+  top: calc(100% + 3px); max-height: 340px; overflow-y: auto;
+  background: var(--md-default-bg-color);
+  border: 1px solid var(--md-default-fg-color--lighter); border-radius: 6px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .18); }
+#qlgui .qlgui-search-item { padding: 7px 12px; cursor: pointer;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest); }
+#qlgui .qlgui-search-item:last-child { border-bottom: none; }
+#qlgui .qlgui-search-item:hover { background: var(--md-code-bg-color); }
+#qlgui .qlgui-search-title { font-size: .76rem; color: var(--md-default-fg-color); }
+#qlgui .qlgui-search-head { padding: 5px 12px; font-size: .62rem;
+  text-transform: uppercase; letter-spacing: .04em;
+  color: var(--md-default-fg-color--light); background: var(--md-code-bg-color);
+  border-top: 1px solid var(--md-default-fg-color--lightest); }
+#qlgui .qlgui-search-none { padding: 8px 12px; font-size: .7rem;
+  color: var(--md-default-fg-color--light); }
