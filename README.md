@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-3215_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-3259_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -190,7 +190,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 3215 tests over the
+Every shipped feature is unit tested (the suite is 3259 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -296,6 +296,12 @@ ported and wired in:
   minimal add(M)-approximations, one-point extensions, repetitive slices,
   Jacobian algebras from a potential, and Gabriel-quiver recovery of any
   structural oracle) or refuses loudly; `tilting_check` is clickable in the no-code GUI.
+- **Quasi-hereditary algebras and recollements.** Standard/costandard modules
+  Δ(i)/∇(i), a quasi-heredity test (Dlab–Ringel, order-dependent), good-filtration
+  multiplicities + BGG reciprocity, the characteristic tilting module and its Ringel
+  dual, and recollements from an idempotent (the corner `eAe`, the quotient `A/AeA`,
+  and the six functors) — each certified per instance or refusing loudly;
+  `quasi_hereditary` is clickable in the no-code GUI. **White space in QPA.**
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

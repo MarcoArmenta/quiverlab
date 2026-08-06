@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **3215 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **3259 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
 recognizer batteries + Koszulity (`ext_algebra`) exposure — the Plan-32 oracle-class markers + audit gate,
@@ -455,6 +455,7 @@ Plan-35 product surface).
 | `families/brauer.py` (Plan-46 Brauer graph algebra constructor from a ribbon graph + multiplicities) — `tests/families/test_brauer.py` | 10 | deep | `dim = Σ_v m_v·val(v)²` per-instance certificate + `is_symmetric` (`oracle_literature`); Brauer-star ≡ symmetric Nakayama `NakayamaAlgebra(n, mn+1, cyclic=True)` byte-equal Cartan (`oracle_crossengine`) |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-40 C6 homological-dimensions family — `homdims.py`: public `syzygy`/`cosyzygy` (byte-stable extraction from `minimal_resolution`), the Igusa–Todorov φ/ψ on the finite K₀, dominant + Gorenstein dimensions, Ω/τ-periodicity certificates, and finitistic-dimension bounds; the Plan-44 C7 slice — `approximations.py` minimal left/right add(M)-approximations and `tilting.py` `is_tilting_module`/`is_cotilting_module` + self-certified `bongartz_completion`) | 341 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) + **the Plan-40 homological-dimensions oracles**: `oracle_selfcert` — the φ=ψ=pd identity for finite projective dimension, the Ω/τ-periodicity `is_isomorphic` certificates, and the decompose char-caveat propagation; `oracle_literature` — the Barrios–Mata truncated self-injective φ=ψ=0 closed form + projective additivity, the hereditary/self-injective dominant & Gorenstein values, and the cyclic-Nakayama period-from-Kupisch pins; `qpa` (`tests/qpa/test_homdims_qpa.py`) — live `GlobalDimensionOfAlgebra` / `DominantDimensionOfAlgebra` / `GorensteinDimensionOfAlgebra` agreement over kA₂ / kA₃(ab) / `line_abc_cde` / k[x]/(x³) (int or GAP `infinity`↔our infinite/unresolved marker) |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`; the Plan-44 C7 constructions — `one_point.py` `OnePointExtension`, `repetitive.py` `repetitive_slice`, `jacobian.py` `Potential`/`JacobianAlgebra`/`cyclic_derivative`, and the Task-C Gabriel-recovery battery `test_gabriel_recovery.py` over `core/basic.py`) | 187 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins; **the Plan-44 construction oracles** — `oracle_literature`: the one-point Cartan block `[[1, dim-vector M],[0,C_A]]` + `pd(S_ω)=pd_A(M)+1`, `repetitive_slice` `copies=1==A` + the `dim==(2·copies−1)·dim A` slice certificate, the hand-derived Jacobian triangle `dim=6`, and the `M₂(k)→k` / `kA₂` Gabriel round-trip; `oracle_crossengine`: `Jac(3-cycle, abc) ≅ cyclic Nakayama kZ₃/J²` (dim + Cartan) and `presented_form(End(⊕P_v)) ` recovers `kA₃` (tied to P37 `regular_corner_dims`); `oracle_selfcert`: complete-orthogonal primitive idempotents + the per-instance dimension/multiplicativity recovery certificate, the cyclic-derivative identities, and the loud char/split + `NotFiniteDimensionalError` refusals |
+| `modules/quasihereditary.py` + `modules/recollement.py` (Plan-47 C-series: standard/costandard modules Δ(i)/∇(i), the quasi-heredity test `QHReport`, good-filtration multiplicities + BGG reciprocity, the characteristic tilting module + Ringel dual; `Recollement(A,S)` — the corner algebra `eAe`, the quotient `A/AeA`, and the six functors) — `tests/modules/test_quasihereditary_*.py`, `tests/modules/test_recollement.py` | 35 | deep | **`oracle_literature`** — Dlab–Ringel: `kA_n` natural-order Δ(i)=S_i / ∇(i)=[1..i], opposite-order Δ(i)=P(i); `kA_n` quasi-hereditary for BOTH orders; `k[x]/(x²)` NOT quasi-hereditary (loud note); Ringel: T = D(A) (natural) / T = A (opposite); the double-Ringel-dual Cartan Smith-form identity; the **`eAe`-vs-subquiver trap** (`kA₃`, S={1,3} → `eAe = kA₂` dim 3, NOT the subquiver `k×k` dim 2) + the worked `kA₃`, S={2} recollement. **`oracle_crossengine`** — BGG reciprocity `(P(i):Δ(j)) = [∇(j):S(i)]` across both orders. **`oracle_selfcert`** — top Δ(i)=S_i + [Δ(i):S(i)]=1 + socle ∇(i)=S_i; the greedy Δ-peel certificate (loud `certified=False` when no filtration); `Ext¹(T,∇)=0` AND `is_tilting_module(T)` (the characteristic-tilting arbiter); the six-functor **adjunction dim identities** `dim Hom_A(j_!X,M)=dim Hom_{eAe}(X,j^*M)` etc., the canonical exact sequence `j_!j^*M → M → i_*i^*M → 0` at each joint, and the counit isos `j^*j_!≅id`/`j^*j_*≅id` — all simultaneously over `kA₃`, the commutative square, and `kA₅`; a `GF(2)` cell in each battery (Δ/∇/qh/recollement are char-clean). **QPA white space** — QPA has NO quasi-hereditary / recollement surface, so there is no `qpa` row here (stated in Honest scope) |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality |
@@ -481,8 +482,8 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1489 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1533 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `fast` | 1498 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 1568 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 182 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `m2` | 11 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
@@ -544,13 +545,13 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 833 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 505 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 988 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Literature / theory pins | `-m oracle_literature` | 844 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 506 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1011 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 182 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1947 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
-Counts as of the P43 merge (the derived-category surface); sibling plans in the v0.2.0
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1982 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+Counts as of the P47 merge (quasi-hereditary structure + recollements); sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
 Collected 2026-08-05 (Plan 40, C6 homological-dimensions family; recounted from a live
@@ -947,6 +948,26 @@ verified precision and listed below as such.
   surface — `TiltingModule(T, n)` (a `false`/`[true, …]` verdict, not the stored
   `IsTiltingModule` PROPERTY) and `MinimalRight/LeftAddMApproximation` — so, contrary to
   test_tilting_qpa.py`).
+- **Quasi-hereditary structure + recollements are QPA white space** (Plan 47). QPA has
+  no quasi-hereditary / recollement surface at all, so the oracle class here is theory
+  pins (Dlab–Ringel, Ringel, CPS) + internal self-certificates — there is no `qpa`
+  agreement row, by construction (a `tests/qpa` battery would be an honest skip; none
+  ships).
+- **Quasi-heredity is order-dependent** (Plan 47). `is_quasi_hereditary(order)` and the
+  standard/costandard modules depend on the chosen vertex order; the GUI/report
+  `quasi_hereditary` block reports the NATURAL vertex order only, stated in-block.
+- **The characteristic tilting summand count and PRESENTED Ringel duals inherit the
+  char 0 / char > dim caveat** (Plan 47). `characteristic_tilting`'s `is_tilting_module`
+  self-cert uses the P30 `decompose` summand count, and `ringel_dual`'s `presented_form`
+  uses the P44 trace-form basic-ization — both rigorous only over char 0 or char > dim,
+  refusing loudly off scope. Everything else — Δ/∇ construction, the quasi-heredity test,
+  the Δ-filtration multiplicities, and the entire `Recollement` (corner structure
+  constants, `A/AeA`, six functors, adjunction dims) — is char-clean pure linear algebra,
+  proved by a `GF(2)` cell in each battery.
+- **Stratifications beyond the quasi-hereditary case are a named successor** (Plan 47).
+  This plan ships the quasi-hereditary highest-weight toolkit; general standardly
+  stratified / properly stratified algebras and good-filtration *dimensions* past the
+  directed oracles are not shipped.
 
 ---
 
