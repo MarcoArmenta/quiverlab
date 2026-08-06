@@ -65,6 +65,10 @@ def tikz_hasse(poset, label=_summand_math):
                      % (i, _coord(x), _coord(y), label(v)))
     for lo, hi in poset.covers:
         lines.append(r"  \draw (n%s) -- (n%s);" % (lo, hi))
+    lines.append(r"\end{tikzpicture}")
+    return "\n".join(lines) + "\n"
+
+
 def tikz_fan(fan):
     """The wall-and-chamber fan (Plan 45) as TikZ: for n=2 the g-vector rays drawn from
     the origin (exact coordinates, integer or {p/q}); for n=3 the L1/octahedron net
