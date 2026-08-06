@@ -582,11 +582,12 @@ def _module_block(name, top):
         try:
             rep = is_tilting_module(M, n=(top if top is not None else 1))
         except QuiverlabError as exc:
-            return {"kind": name, "error": str(exc), "citations": cites}
+            return {"kind": name, "error": str(exc),
+                    "references": list(keys), "citations": cites}
         return {"kind": name, "is_tilting": rep.is_tilting, "n": rep.n, "pd": rep.pd,
                 "self_ext_vanishes": rep.self_ext_vanishes,
                 "num_summands": rep.num_summands, "num_vertices": rep.num_vertices,
-                "note": rep.note, "citations": cites}
+                "note": rep.note, "references": list(keys), "citations": cites}
     if name == "orbit_geometry":
         # Byte-identical to quiverlab.hpc.spec's orbit_geometry branch: the shared
         # library builder + _with_refs's references(list)+citations(pairs). Orbit
@@ -1010,6 +1011,12 @@ ETA_MODEL = {
                 "decompose": 0.3, "almost_split": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
                 "projective_dimension": 0.3, "injective_dimension": 0.3,
+                # Plan 44 / 49: single-module homological probes (tilting_check =
+                # self-Ext vanishing + summand count; orbit_geometry = Voigt
+                # rigidity + Kac canonical decomposition). Same cost class as the
+                # other module resolutions/probes -- WITHOUT these keys they fell
+                # through to the 0.1 default and were silently under-estimated.
+                "tilting_check": 0.3, "orbit_geometry": 0.3,
                 # Plan 38: ext_algebra walks a resolution + Yoneda products;
                 # recognizers is cheap structural combinatorics + a reduction system.
                 "ext_algebra": 2.0, "recognizers": 0.1,
