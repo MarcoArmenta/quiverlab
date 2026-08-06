@@ -12,6 +12,7 @@ import smtplib
 import ssl
 from email.message import EmailMessage
 
+from webapp.server.i18n import PREFIXES as _PREFIXES
 from webapp.server.i18n import t as _t
 
 
@@ -46,8 +47,8 @@ def notify_completion(cfg, job, status: str, mailer=None) -> None:
         return
     send = mailer or smtp_mailer(cfg)
     lang = getattr(job, "lang", "en") or "en"
-    # Localise the permalink: a Spanish job links to the /es/job/<id> page.
-    prefix = "/es" if lang == "es" else ""
+    # Localise the permalink: each language links its own prefixed job page.
+    prefix = _PREFIXES.get(lang, "")
     url = cfg.public_base_url.rstrip("/") + prefix + "/job/" + job.id
     if status == "done":
         subject = _t("mail.done_subject", lang)

@@ -25,6 +25,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from ulid import ULID
 
 from webapp.server.app import _now_iso, client_ip
+from webapp.server.i18n import MOUNTS as _MOUNTS
+from webapp.server.i18n import lang_links as _lang_links
 from webapp.server.i18n import t as _t
 from webapp.server.limits import check_feedback_allowed
 from webapp.server.security import hash_ip, valid_ulid
@@ -32,8 +34,8 @@ from webapp.server.security import hash_ip, valid_ulid
 _TEMPLATES = Jinja2Templates(
     directory=str(Path(__file__).resolve().parent.parent / "templates"))
 
-# (url prefix, language) -- the page is mounted twice, same handler.
-_LANGS = (("", "en"), ("/es", "es"))
+# (url prefix, language) -- the page is mounted once per language, same handler.
+_LANGS = _MOUNTS
 GITHUB_ISSUES_URL = "https://github.com/MarcoArmenta/quiverlab/issues"
 
 
@@ -158,6 +160,6 @@ def _mount_page(app, cfg, prefix: str, lang: str) -> None:
             request, "feedback.html",
             {"lang": lang, "prefix": prefix,
              "t": (lambda k: _t(k, lang)),
-             "other_url": ("/feedback" if lang == "es" else "/es/feedback"),
+             "lang_links": _lang_links("/feedback", lang),
              "docs_url": cfg.docs_url,
              "job_ref": job_ref, "github": GITHUB_ISSUES_URL})

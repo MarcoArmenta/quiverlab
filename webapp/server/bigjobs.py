@@ -29,6 +29,10 @@ from pydantic import field_validator
 from webapp.server import cache
 from webapp.server.app import _build_or_error, _cached_body, _error_response, _now_iso
 from webapp.server.estimator import classify, sizing_dim
+from webapp.server.i18n import LANGS as _KNOWN_LANGS
+from webapp.server.i18n import MOUNTS as _MOUNTS
+from webapp.server.i18n import PREFIXES as _PREFIXES
+from webapp.server.i18n import lang_links as _lang_links
 from webapp.server.i18n import t as _t
 from webapp.server.mail import smtp_mailer
 from webapp.server.runner import RunError
@@ -40,8 +44,8 @@ _log = logging.getLogger("quiverlab_web.bigjobs")
 _TEMPLATES = Jinja2Templates(
     directory=str(Path(__file__).resolve().parent.parent / "templates"))
 
-# (url prefix, language) -- the verify page is mounted twice, same handler.
-_LANGS = (("", "en"), ("/es", "es"))
+# (url prefix, language) -- the verify page is mounted once per language.
+_LANGS = _MOUNTS
 
 # The i18n catalogs carry no ``mail.send_failed`` key (checked in both en.json and
 # es.json), so a neutral English literal is used rather than inventing a Spanish
@@ -81,7 +85,7 @@ class BigJobRequest(ComputeRequest):
     @field_validator("lang")
     @classmethod
     def _known_lang(cls, v: str) -> str:
-        return v if v in ("en", "es") else "en"
+        return v if v in _KNOWN_LANGS else "en"
 
 
 # --------------------------------------------------------------------------- #
@@ -227,7 +231,7 @@ def register_big_jobs(app, cfg, store, mailer=None) -> None:
         payload = {"pid": pid, "sh": _spec_hash(spec),
                    "exp": _now() + cfg.big_token_ttl_seconds}
         token = sign_token(cfg.token_secret, payload)
-        prefix = "/es" if req.lang == "es" else ""
+        prefix = _PREFIXES.get(req.lang, "")
         url = cfg.public_base_url.rstrip("/") + prefix + "/verify/" + token
         send = mailer or smtp_mailer(cfg)
         try:
@@ -273,7 +277,7 @@ def _mount_verify(app, cfg, store, prefix: str, lang: str) -> None:
                     mem_bytes=cfg.big_job_mem_bytes, lang=data.get("lang", "en"))
         ctx = {"lang": lang, "prefix": prefix,
                "t": (lambda k: _t(k, lang)), "docs_url": cfg.docs_url,
-               "other_url": (("/es" if lang == "en" else "") + "/verify/" + token),
+               "lang_links": _lang_links("/verify/" + token, lang),
                "job_id": job_id}
         return _TEMPLATES.TemplateResponse(request, "verify.html", ctx,
                                            status_code=(200 if job_id else 410))

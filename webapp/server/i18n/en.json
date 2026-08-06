@@ -1,7 +1,6 @@
 {
   "nav.about": "About",
   "nav.feedback": "Feedback",
-  "lang.other": "Español",
   "index.h1": "Compute with quivers, exactly",
   "index.intro": "Pick a family, a field, and invariants. No install needed. For heavier work, run pip install quiverlab.",
   "form.family": "Family",
@@ -168,5 +167,9 @@
   "mod.tau_unavailable": "is unavailable",
   "nav.draw": "Draw a quiver",
   "draw.title": "Draw a quiver and compute",
-  "draw.blurb": "Click the canvas to add vertices, drag between vertices to add arrows, type relations, pick a field, choose what to compute. Everything is computed exactly by this app's own engine."
+  "draw.blurb": "Click the canvas to add vertices, drag between vertices to add arrows, type relations, pick a field, choose what to compute. Everything is computed exactly by this app's own engine.",
+  "draw.search_placeholder": "Search: what do you want to compute? (e.g. Hochschild, τ-tilting, gentle, resolution)",
+  "draw.search_related": "Related environments",
+  "draw.search_none": "No matches — try a keyword like Hochschild, resolution, module, surface",
+  "draw.search_load": "small example loaded — computing…"
 }

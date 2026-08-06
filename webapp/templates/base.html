@@ -39,7 +39,8 @@
     <a href="{{ prefix }}/literature">{{ t("nav.literature") }}</a> ·
     <a href="{{ prefix }}/feedback">{{ t("nav.feedback") }}</a>
     {% if docs_url %}· <a href="{{ docs_url }}">{{ t("nav.docs") }}</a>{% endif %} ·
-    <a href="{{ other_url }}">{{ t("lang.other") }}</a>
+    {% for code, name, url in lang_links %}{% if not loop.first %}· {% endif %}<a href="{{ url }}" lang="{{ code }}" hreflang="{{ code }}">{{ name }}</a>
+    {% endfor %}
   </header>
   <main>{% block body %}{% endblock %}</main>
   <footer>

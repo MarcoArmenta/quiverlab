@@ -1,7 +1,6 @@
 {
   "nav.about": "Acerca de",
   "nav.feedback": "Comentarios",
-  "lang.other": "English",
   "index.h1": "Calcula con carcajes y relaciones, de forma exacta",
   "index.intro": "Elige una familia, un cuerpo e invariantes. No requiere instalación. Para cálculos más pesados, usa pip install quiverlab.",
   "form.family": "Familia",
@@ -168,5 +167,9 @@
   "mod.tau_unavailable": "no está disponible",
   "nav.draw": "Dibuja un carcaj",
   "draw.title": "Dibuja un carcaj y calcula",
-  "draw.blurb": "Haz clic en el lienzo para añadir vértices, arrastra entre vértices para añadir flechas, escribe relaciones, elige un cuerpo y qué calcular. Todo se calcula de forma exacta con el propio motor de esta aplicación."
+  "draw.blurb": "Haz clic en el lienzo para añadir vértices, arrastra entre vértices para añadir flechas, escribe relaciones, elige un cuerpo y qué calcular. Todo se calcula de forma exacta con el propio motor de esta aplicación.",
+  "draw.search_placeholder": "Buscar: ¿qué quieres calcular? (p. ej. Hochschild, τ-inclinación, gentil, resolución)",
+  "draw.search_related": "Entornos relacionados",
+  "draw.search_none": "Sin resultados — prueba una palabra clave como Hochschild, resolución, módulo, superficie",
+  "draw.search_load": "ejemplo pequeño cargado — calculando…"
 }

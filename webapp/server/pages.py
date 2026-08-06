@@ -23,6 +23,8 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from webapp.server.catalog import build_catalog
+from webapp.server.i18n import MOUNTS as _MOUNTS
+from webapp.server.i18n import lang_links as _lang_links
 from webapp.server.i18n import t as _t
 from webapp.server.references import grouped_bibliography
 from webapp.server.security import sanitize_error_string, valid_ulid
@@ -43,15 +45,8 @@ _CONTENT_TYPES = {
 }
 _ALLOWED = frozenset(_CONTENT_TYPES)
 
-# (url prefix, language) -- the two mount points every page gets.
-_LANGS = (("", "en"), ("/es", "es"))
-
-
-def _other_url(path: str) -> str:
-    """The same page under the other language prefix (for the header toggle)."""
-    if path == "/es" or path.startswith("/es/"):
-        return path[3:] or "/"
-    return "/es" + ("" if path == "/" else path)
+# (url prefix, language) -- one mount point per catalog language.
+_LANGS = _MOUNTS
 
 
 def _ctx(request: Request, cfg, lang: str, prefix: str, **extra) -> dict:
@@ -64,7 +59,7 @@ def _ctx(request: Request, cfg, lang: str, prefix: str, **extra) -> dict:
     state = request.app.state
     return {"lang": lang, "prefix": prefix,
             "t": (lambda k: _t(k, lang)),
-            "other_url": _other_url(request.url.path),
+            "lang_links": _lang_links(request.url.path, lang),
             "docs_url": cfg.docs_url,                # "" ⇒ no Docs link (base.html)
             "big_max_cells": cfg.big_ops_threshold,  # big.reject {maxcells}
             "big_jobs_enabled": cfg.big_jobs_enabled,

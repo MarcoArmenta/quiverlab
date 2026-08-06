@@ -782,10 +782,12 @@ function renderParamFields() {
   const box = document.getElementById("param-fields");
   const summary = document.getElementById("family-summary");
   if (!box || !CATALOG) return;
-  const lang = (form.dataset.lang === "es") ? "es" : "en";
+  const lang = ["en", "es", "fr", "zh"].includes(form.dataset.lang)
+    ? form.dataset.lang : "en";
   const fam = CATALOG.families.find((f) => f.name === form.elements.family.value);
   box.textContent = "";
-  if (summary) summary.textContent = (fam && fam.summary) ? (fam.summary[lang] || "") : "";
+  if (summary) summary.textContent =
+    (fam && fam.summary) ? (fam.summary[lang] || fam.summary.en || "") : "";
   if (!fam) return;
   for (const p of fam.params) {
     const row = document.createElement("div");
@@ -805,10 +807,11 @@ function renderParamFields() {
       input.value = paramPrefill(p);
     }
     row.appendChild(input);
-    if (p.help && p.help[lang]) {
+    const helpText = p.help && (p.help[lang] || p.help.en);
+    if (helpText) {
       const help = document.createElement("div");
       help.className = "param-help";
-      help.textContent = p.help[lang];
+      help.textContent = helpText;
       row.appendChild(help);
     }
     box.appendChild(row);

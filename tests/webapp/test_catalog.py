@@ -50,11 +50,12 @@ def _prefill_params(fam: dict) -> dict:
     return out
 
 
-def test_every_family_has_bilingual_summary_and_param_help():
+def test_every_family_has_summary_and_param_help_in_every_language():
+    from webapp.server.i18n import LANGS
     for fam in build_catalog()["families"]:
-        assert set(fam.get("summary", {})) == {"en", "es"}, fam["name"]
+        assert set(fam.get("summary", {})) == set(LANGS), fam["name"]
         for p in fam["params"]:
-            assert set(p.get("help", {})) == {"en", "es"}, (fam["name"], p["name"])
+            assert set(p.get("help", {})) == set(LANGS), (fam["name"], p["name"])
 
 
 def test_every_family_prefill_builds():
