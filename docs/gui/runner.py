@@ -117,6 +117,13 @@ def run_build(request_json):
 def _parse_compute(spec):
     name, _, rng = spec.partition(":")
     top = None
+    # tau_tilting carries a PAIR BUDGET, not a degree range (Plan 45): 'tau_tilting' or
+    # 'tau_tilting:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "tau_tilting":
+        if rng and not rng.isdigit():
+            raise RequestError("tau_tilting budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tau_tilting", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -750,6 +757,14 @@ def compute_one(spec):
                       "bracket": A.gerstenhaber_brackets,
                       "connes_b": A.connes_differentials}[name]
             block = method(top).blocks()
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "tau_tilting":
+            # C4 tau-tilting engine (Plan 45): algebra-level, budget (not degree). SAME
+            # shared library builder (tautilting.block.tau_tilting_block) + references ->
+            # citations as the server twin (quiverlab.hpc.spec._dispatch), so the
+            # cross-runner contract holds byte-for-byte. Honest budget cap block.
+            from quiverlab.tautilting.block import tau_tilting_block
+            block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))

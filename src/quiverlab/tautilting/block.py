@@ -5,12 +5,9 @@ budget-capped with the honest complete-iff contract. Consumed by all three tiers
 the Pyodide runner, the GUI) and the worked-steps report."""
 from __future__ import annotations
 
+# Citation KEYS (registry names); each runner resolves them to (key, formatted) pairs via
+# its own _citation_pairs, exactly as every other algebra-level block does.
 _CITATIONS = ["air_tau_tilting", "demonet_iyama_jasso", "king_stability"]
-_REFERENCES = [
-    "Adachi-Iyama-Reiten, tau-tilting theory, Compos. Math. 150 (2014) 415-452.",
-    "Demonet-Iyama-Jasso, tau-tilting finite algebras, bricks and g-vectors, IMRN 2019.",
-    "King, Moduli of representations of finite-dimensional algebras, Q. J. Math. 45 (1994).",
-]
 
 
 def tau_tilting_block(A, budget=512):
@@ -32,8 +29,7 @@ def tau_tilting_block(A, budget=512):
         "complete": eg.is_complete,
         "status": eg.status,
         "num_pairs": len(eg.vertices),
-        "references": list(_REFERENCES),
-        "citations": list(_CITATIONS),
+        "references": list(_CITATIONS),        # citation KEYS; each runner adds "citations"
     }
     block["pairs"] = [
         {"id": i, "g_matrix": rec["g_matrix"], "label": rec["label"],

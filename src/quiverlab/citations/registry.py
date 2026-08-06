@@ -325,6 +325,22 @@ REGISTRY: dict = {r.key: r for r in [
        "The repetitive algebra hat(A) and its connecting D(A) bimodule -- the source of "
        "quiverlab's finite repetitive-algebra slices (Plan 44 / C7).",
        "family", "repetitive"),
+    _r("air_tau_tilting", "AIR2014", "foundation",
+       "tau-tilting theory",
+       "Adachi-Iyama-Reiten: support tau-tilting pairs, mutation, the exchange graph, "
+       "g-vectors, and the bijection with functorially finite torsion classes -- the "
+       "ground truth for the Plan-45 / C4 tau-tilting engine.",
+       "tau-tilting"),
+    _r("demonet_iyama_jasso", "DIJ2019", "foundation",
+       "tau-tilting finite algebras, bricks, and g-vectors",
+       "DIJ: tau-tilting-finiteness <=> finite g-fan <=> finitely many bricks; the "
+       "counting identities and the wall-and-chamber / g-vector fan (Plan 45 / C4).",
+       "tau-tilting"),
+    _r("king_stability", "King1994", "foundation",
+       "Moduli of representations of finite-dimensional algebras",
+       "King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the "
+       "Plan-45 / C4 engine draws.",
+       "tau-tilting", "stability"),
 ]}
 
 

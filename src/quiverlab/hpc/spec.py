@@ -234,6 +234,14 @@ _RANGE = re.compile(r"^(?P<kind>[a-z_]+)(?::(?P<lo>\d+)\.\.(?P<hi>\d+))?$")
 def parse_compute_item(s: str) -> ComputeItem:
     if not isinstance(s, str):
         raise SpecError(f"compute item {s!r} must be a string")
+    # tau_tilting carries a PAIR BUDGET, not a degree range: 'tau_tilting' or
+    # 'tau_tilting:512' (Plan 45). hi = the budget (None => default). This bypasses the
+    # 'name:0..N' degree grammar (the budget is not a homological degree).
+    if s == "tau_tilting" or s.startswith("tau_tilting:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -1184,6 +1192,17 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block = specseq_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # C4 tau-tilting engine (Plan 45): an ALGEBRA-level kind (like hh_*), NOT a module
+    # kind. The optional range gives the pair budget (default 512), read like the other
+    # range kinds -- 'tau_tilting:0..512'. Both runners share tautilting.block, so the
+    # blocks are byte-identical; the exchange-graph BFS is complete iff tau-tilting-finite,
+    # else an honest status='budget' block (never a 500). No hh_trace (its own tables).
+    if kind == "tau_tilting":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.block import tau_tilting_block
+        block = tau_tilting_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -1841,6 +1860,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
              "connes_b": lambda it: f"A.connes_differentials({it.hi})",
+             "tau_tilting":
+                 lambda it: ("A.exchange_graph(budget_pairs="
+                             f"{it.hi if it.hi is not None else 512})"),
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
              "tau": lambda it: "M.tau()",
