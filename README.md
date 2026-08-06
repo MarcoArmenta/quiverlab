@@ -307,6 +307,12 @@ ported and wired in:
   Kac canonical decomposition of a dimension vector (hereditary Dynkin, rigidity-
   certified per instance), and the Zwara–Bongartz degeneration / hom-order poset for
   representation-finite algebras — with `orbit_geometry` clickable in the no-code GUI.
+- **Quasi-hereditary algebras and recollements.** Standard/costandard modules
+  Δ(i)/∇(i), a quasi-heredity test (Dlab–Ringel, order-dependent), good-filtration
+  multiplicities + BGG reciprocity, the characteristic tilting module and its Ringel
+  dual, and recollements from an idempotent (the corner `eAe`, the quotient `A/AeA`,
+  and the six functors) — each certified per instance or refusing loudly;
+  `quasi_hereditary` is clickable in the no-code GUI. **White space in QPA.**
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

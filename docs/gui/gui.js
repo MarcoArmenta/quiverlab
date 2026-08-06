@@ -81,6 +81,8 @@
     '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
+    // ---- Plan 47: quasi-hereditary structure (natural order) ----
+    '  <label><input type="checkbox" id="qlgui-quasi_hereditary"> quasi-hereditary (Δ/∇, natural order)</label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -161,6 +163,8 @@
    "derived_fingerprint",
    // Plan 46: gentle / string subsystem
    "strings",
+   // Plan 47: quasi-hereditary structure (scalar kind)
+   "quasi_hereditary",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -679,7 +683,7 @@
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
      "recognizers", "homological_profile", "derived_fingerprint",
-     "strings"].forEach(function (k) {
+     "strings", "quasi_hereditary"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     var module = null, extTarget = null, torTarget = null;
@@ -2644,6 +2648,43 @@
       if (b.note) div.appendChild(h("p", { text: b.note }));
     } else if (name === "orbit_geometry") {
       renderOrbitGeometry(div, b);
+    } else if (name === "quasi_hereditary") {
+      // Plan 47: the quasi-heredity verdict + order-dependence note + per-index
+      // certificates (End Δ(i)=k, P(i) Δ-filtered) + the standard-module dim vectors.
+      div.appendChild(h("p", { text: "Quasi-hereditary in this order: "
+        + (b.is_quasi_hereditary ? "yes" : "no") + ". Order (lowest to highest): "
+        + (b.order || []).join(", ") + "." }));
+      if (b.order_note) div.appendChild(h("p", { "class": "qlgui-hint", text: b.order_note }));
+      if (b.gl_dim) div.appendChild(h("p", { text: "Global dimension: "
+        + (b.gl_dim.exact ? b.gl_dim.value + " (exact)"
+           : "≥ " + b.gl_dim.value + " (certified lower bound)")
+        + " (quasi-heredity requires it finite)." }));
+      if (!b.is_quasi_hereditary && b.note)
+        div.appendChild(h("p", { text: "Failing clause: " + b.note }));
+      if (b.per_index) {
+        var qtbl = h("table");
+        qtbl.appendChild(h("tr", {}, h("th", { text: "i" }), h("th", { text: "End Δ(i)=k" }),
+          h("th", { text: "P(i) Δ-filtered" })));
+        (b.order || Object.keys(b.per_index)).forEach(function (v) {
+          var info = b.per_index[v] || {};
+          qtbl.appendChild(h("tr", {}, h("th", { text: String(v) }),
+            h("td", { text: info.brick ? "yes" : "no" }),
+            h("td", { text: info.delta_filters_P ? "yes" : "no" })));
+        });
+        div.appendChild(qtbl);
+      }
+      if (b.standard_dims) {
+        var stbl = h("table");
+        stbl.appendChild(h("tr", {}, h("th", { text: "standard" }), h("th", { text: "dim" }),
+          h("th", { text: "dim vector" })));
+        (b.order || Object.keys(b.standard_dims)).forEach(function (v) {
+          var info = b.standard_dims[v] || {}, dv = info.dimvec || {};
+          var dvtxt = Object.keys(dv).map(function (w) { return w + ":" + dv[w]; }).join(", ");
+          stbl.appendChild(h("tr", {}, h("th", { text: "Δ(" + v + ")" }),
+            h("td", { text: String(info.dim) }), h("td", { text: dvtxt })));
+        });
+        div.appendChild(stbl);
+      }
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -2696,7 +2737,7 @@
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
    el.coxeter_polynomial, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
-   el.homological_profile, el.strings]
+   el.homological_profile, el.strings, el.quasi_hereditary]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).

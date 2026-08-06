@@ -365,6 +365,26 @@ REGISTRY: dict = {r.key: r for r in [
        "Induzierte Darstellungen ... (Voigt's lemma)",
        "Voigt's lemma: Ext^1(M,M) = 0 => the orbit of M is open (rigid => open orbit); "
        "the codim = dim Ext^1(M,M) equality on hereditary algebras.", "geometry"),
+    # --- Plan 47: quasi-hereditary algebras + recollements ---
+    _r("dlab_ringel", "DlabRingel1989", "foundation",
+       "Quasi-hereditary algebras",
+       "The definition of quasi-hereditary algebras, standard modules Delta(i), and the "
+       "quasi-heredity test used in Plan 47; qh => finite gl.dim.",
+       "quasihereditary"),
+    _r("ringel_dual", "Ringel1991", "foundation",
+       "Good filtrations and the characteristic tilting module",
+       "The characteristic tilting module and the Ringel dual R(A) = End_A(T)^op "
+       "(Plan 47).",
+       "quasihereditary", "tilting"),
+    _r("cps", "CPS1988", "foundation",
+       "Finite-dimensional algebras and highest weight categories",
+       "Highest weight categories and the idempotent recollement (eAe, A/AeA) of "
+       "Plan 47.",
+       "quasihereditary", "recollement"),
+    _r("bbd", "BBD1982", "foundation",
+       "Faisceaux pervers",
+       "The origin of recollement and the six-functor formalism (Plan 47).",
+       "recollement"),
 ]}
 
 

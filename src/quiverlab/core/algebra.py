@@ -472,6 +472,53 @@ class Algebra:
         from quiverlab.modules.tilting import bongartz_completion
         return bongartz_completion(T)
 
+    # -- quasi-hereditary structure + recollements (Plan 47) ------------------
+    def standard_modules(self, order=None):
+        """The standard modules ``Delta(i)`` for the given vertex ``order`` (dict
+        vertex -> Delta(i); ``order=None`` = natural order) (Plan 47)."""
+        from quiverlab.modules.quasihereditary import standard_modules
+        return standard_modules(self, order)
+
+    def costandard_modules(self, order=None):
+        """The costandard modules ``Nabla(i) = D(Delta_{A^op}(i))`` (Plan 47)."""
+        from quiverlab.modules.quasihereditary import costandard_modules
+        return costandard_modules(self, order)
+
+    def is_quasi_hereditary(self, order=None):
+        """A :class:`~quiverlab.modules.quasihereditary.QHReport` for whether ``A`` is
+        quasi-hereditary in the given ``order`` (Dlab-Ringel; ORDER-DEPENDENT). Char-clean
+        (Plan 47)."""
+        from quiverlab.modules.quasihereditary import is_quasi_hereditary
+        return is_quasi_hereditary(self, order)
+
+    def characteristic_tilting(self, order=None):
+        """The characteristic tilting module ``T = (+) T(i)`` (Ringel, self-certified). The
+        tilting summand count inherits the char 0 / char > dim caveat (Plan 47)."""
+        from quiverlab.modules.quasihereditary import characteristic_tilting
+        return characteristic_tilting(self, order)
+
+    def ringel_dual(self, order=None):
+        """The Ringel dual ``R(A) = End_A(T)^op``, presented as ``kQ/I`` (char 0 / char >
+        dim) or loud-degraded to structure-constant form (Plan 47)."""
+        from quiverlab.modules.quasihereditary import ringel_dual
+        return ringel_dual(self, order)
+
+    def recollement(self, vertices):
+        """The recollement ``(mod A/AeA, mod A, mod eAe)`` at ``e = sum_{v in vertices}
+        e_v`` (Plan 47): a :class:`~quiverlab.modules.recollement.Recollement`."""
+        from quiverlab.modules.recollement import Recollement
+        return Recollement(self, vertices)
+
+    def corner_algebra(self, vertices):
+        """The corner algebra ``eAe`` (NOT the subquiver algebra) at ``vertices`` (Plan 47)."""
+        from quiverlab.modules.recollement import Recollement
+        return Recollement(self, vertices).eAe
+
+    def quotient_by_idempotent(self, vertices):
+        """The quotient ``A / A e_S A`` at ``S = vertices`` (Plan 47)."""
+        from quiverlab.modules.recollement import Recollement
+        return Recollement(self, vertices).quotient
+
     def is_selfinjective(self):
         """True iff every indecomposable projective is injective (self-injective =
         Frobenius for a f.d. algebra); exact over any field (spec §3.5)."""

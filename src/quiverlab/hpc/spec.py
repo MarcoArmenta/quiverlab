@@ -1251,6 +1251,14 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block = recognizers_block(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Quasi-hereditary structure (Plan 47): an algebra-scalar kind (schema v1, NO module
+    # block -- the recognizers/ext_algebra precedent). Reports the NATURAL vertex order with
+    # the honest order-dependence note; shared block builder drives both runners.
+    if kind == "quasi_hereditary":
+        from quiverlab.modules.quasihereditary import quasi_hereditary_block
+        block = quasi_hereditary_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Gentle / string subsystem (Plan 46): an algebra-only scalar kind -- recognizer
     # verdicts + string census + band presence + honest rep-type + (gentle) AG
     # invariant. Shared builder (strings.block.strings_block), byte-identical twin.
@@ -1842,6 +1850,7 @@ def _snippet(req: ComputeRequest, A) -> str:
              "recognizers": lambda it: ("[A.is_semisimple(), A.is_hereditary(), "
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),
+             "quasi_hereditary": lambda it: "A.is_quasi_hereditary()",
              "derived_fingerprint":
                  lambda it: ("from quiverlab.derived import derived_fingerprint; "
                              f"derived_fingerprint(A, {it.hi if it.hi is not None else 4})"),
