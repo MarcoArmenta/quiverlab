@@ -48,7 +48,7 @@
     '</div>' +
     '<div class="qlgui-row">' +
     '  <label>Preset <select id="qlgui-preset"><option value="">— build your own —</option></select></label>' +
-    '  <label>Field <select id="qlgui-field"><option value="CC">CC</option><option value="GF">GF(p^n)</option></select></label>' +
+    '  <label>Field <select id="qlgui-field"><option value="CC">CC</option><option value="GF">GF(p^n)</option><option value="QQ">QQ</option></select></label>' +
     '  <label id="qlgui-p-wrap" style="display:none">p <input type="number" id="qlgui-p" value="2" min="2"></label>' +
     '  <label id="qlgui-n-wrap" style="display:none">n <input type="number" id="qlgui-n" value="1" min="1"></label>' +
     '  <button id="qlgui-clear" class="qlgui-secondary" type="button">Clear</button>' +
@@ -68,6 +68,15 @@
     '  <button id="qlgui-rel-rad2" class="qlgui-secondary" type="button">rad&sup2; = 0</button>' +
     '  <button id="qlgui-rel-comm" class="qlgui-secondary" type="button">commutativity</button>' +
     '  <span id="qlgui-rel-status" class="qlgui-hint"></span></div>' +
+    // GitHub #3 / Plan-44 (Marco 2026-08-06): a potential W turns the drawn quiver
+    // into its Jacobian algebra kQ/(cyclic derivatives of W). It is MUTUALLY
+    // EXCLUSIVE with explicit relations (the server 4xx is the authority; the box
+    // greys the other input as a hint). Absent unless typed -> the request keeps
+    // its byte-identical Plan-25 cache key.
+    '<div class="qlgui-row"><label style="flex:1 1 260px">' +
+    '<span id="qlgui-potential-label">Potential W (optional)</span> ' +
+    '<input type="text" id="qlgui-potential"></label>' +
+    '  <span id="qlgui-potential-hint" class="qlgui-hint"></span></div>' +
     // Layout C (Marco 2026-08-06): this flat grid is the HIDDEN source of truth --
     // every real checkbox/degree input still lives here (so buildRequest() and the
     // el-map are untouched, and the compute order / Plan-25 cache keys are preserved
@@ -85,6 +94,8 @@
     '  <label><input type="checkbox" id="qlgui-cyclic_homology"> cyclic homology 0..<input type="number" id="qlgui-cyclic_homology-top" value="6" min="0"></label>' +
     // Plan-42: the Hochschild (b, B) spectral sequence (abutting to HC), right after cyclic homology.
     '  <label><input type="checkbox" id="qlgui-ss_hochschild"> (b,B) spectral sequence 0..<input type="number" id="qlgui-ss_hochschild-top" value="4" min="0"></label>' +
+    // Plan-42: the radical-filtration spectral sequence, beside the (b,B) one.
+    '  <label><input type="checkbox" id="qlgui-radical_filtration_ss"> radical-filtration SS 0..<input type="number" id="qlgui-radical_filtration_ss-top" value="4" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
@@ -94,6 +105,10 @@
     '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-recognizers"> recognizers + type</label>' +
     '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
+    // Plan-43: derived comparison of THIS algebra with a second algebra B.
+    '  <label><input type="checkbox" id="qlgui-derived_compare"> derived compare (with B)</label>' +
+    // Plan-41: AR-quiver knitting (algebra-level; honest semi-decision + budget).
+    '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
     // ---- Plan 47: quasi-hereditary structure (natural order) ----
@@ -152,6 +167,22 @@
     '    <p class="qlgui-hint" id="qlgui-target-note"></p>' +
     '  </fieldset>' +
     '</fieldset>' +
+    // Plan-43: the second algebra B for `derived_compare`. Shown only when that
+    // kind is selected. v1 no-code scope: B is a Dynkin path algebra (type string)
+    // or a preset quiver -- NEVER a second canvas (the named successor). Always a
+    // quiver/family block over A's field, so the comparison is like-for-like.
+    '<fieldset id="qlgui-algb" class="qlgui-fieldset" style="display:none">' +
+    '  <legend id="qlgui-algb-legend">Compare with algebra B</legend>' +
+    '  <div class="qlgui-row">' +
+    '    <label><span id="qlgui-algb-mode-label">source</span> ' +
+    '<select id="qlgui-algb-mode"><option value="type"></option><option value="preset"></option></select></label>' +
+    '    <label id="qlgui-algb-type-wrap"><span id="qlgui-algb-type-label">type</span> ' +
+    '<input type="text" id="qlgui-algb-type" value="A2" placeholder="A3, D4, E6"></label>' +
+    '    <label id="qlgui-algb-preset-wrap" style="display:none"><span id="qlgui-algb-preset-label">preset</span> ' +
+    '<select id="qlgui-algb-preset"></select></label>' +
+    '  </div>' +
+    '  <p class="qlgui-hint" id="qlgui-algb-hint"></p>' +
+    '</fieldset>' +
     '<div id="qlgui-eta" class="qlgui-hint"></div>' +
     '<div class="qlgui-row">' +
     '  <button id="qlgui-compute" type="button" disabled>Compute</button>' +
@@ -170,12 +201,22 @@
   ["search", "search-menu",
    "preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
    "rename", "relations", "rel-rad2", "rel-comm", "rel-status",
+   // GitHub #3 / Plan-44: potential -> Jacobian algebra
+   "potential", "potential-label", "potential-hint",
    "hhc", "hhc-top", "hhh", "hhh-top",
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
    "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top",
    // Plan 42: the Hochschild (b, B) spectral sequence + its degree picker
-   "ss_hochschild", "ss_hochschild-top", "cartan",
+   "ss_hochschild", "ss_hochschild-top",
+   // Plan 42: the radical-filtration spectral sequence + its degree picker
+   "radical_filtration_ss", "radical_filtration_ss-top",
+   // Plan 41: AR-quiver knitting (algebra-level, budget) ; Plan 43: derived compare + algebra B
+   "ar_quiver", "ar_quiver-budget", "derived_compare",
+   "algb", "algb-legend", "algb-mode", "algb-mode-label",
+   "algb-type", "algb-type-wrap", "algb-type-label",
+   "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
+   "cartan",
    "coxeter_polynomial", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
@@ -731,16 +772,52 @@
     if (typeof syncModule === "function") { syncModule(); pickRefresh(); }
   });
   el.field.addEventListener("change", function () {
-    var gf = el.field.value === "GF";
+    var gf = el.field.value === "GF";   // p/n only for GF; CC and QQ hide them
     el["p-wrap"].style.display = gf ? "" : "none";
     el["n-wrap"].style.display = gf ? "" : "none";
+  });
+
+  // ---------- potential (GitHub #3 / Plan-44) ----------
+  el["potential-label"].textContent = dataText("potential-label", "Potential W (optional)");
+  el.potential.placeholder = dataText("potential-ph", "a*b*c - d*e*f  (builds the Jacobian algebra)");
+  // A hint only -- the server 4xx is the authority. When one box is used the
+  // other is greyed with a note; the relation-preset buttons never touch the
+  // potential box (they write el.relations, wired elsewhere).
+  function syncRelPotConflict() {
+    var pot = (el.potential.value || "").trim();
+    var rel = (el.relations.value || "").trim();
+    var note = dataText("potential-conflict",
+      "a potential and explicit relations are mutually exclusive");
+    el.relations.style.opacity = pot ? "0.5" : "";
+    el.potential.style.opacity = (rel && !pot) ? "0.5" : "";
+    el["potential-hint"].textContent = (pot && rel) ? note : "";
+  }
+  el.potential.addEventListener("input", syncRelPotConflict);
+  el.relations.addEventListener("input", syncRelPotConflict);
+
+  // ---------- algebra B for derived_compare (Plan-43) ----------
+  el["algb-legend"].textContent = dataText("algb-legend", "Compare with algebra B");
+  el["algb-mode-label"].textContent = dataText("algb-mode-label", "source");
+  el["algb-type-label"].textContent = dataText("algb-type-label", "type");
+  el["algb-preset-label"].textContent = dataText("algb-preset-label", "preset");
+  el["algb-hint"].textContent = dataText("algb-hint",
+    "B is compared by its derived invariants; a Dynkin type builds a path algebra, "
+    + "or pick a preset quiver. Both are taken over the field chosen above.");
+  el["algb-mode"].options[0].text = dataText("algb-type-label", "Dynkin type");
+  el["algb-mode"].options[1].text = dataText("algb-preset-label", "preset");
+  el["algb-mode"].addEventListener("change", function () {
+    var preset = el["algb-mode"].value === "preset";
+    el["algb-type-wrap"].style.display = preset ? "none" : "";
+    el["algb-preset-wrap"].style.display = preset ? "" : "none";
   });
 
   // ---------- presets ----------
   fetch("gui/presets.json").then(function (r) { return r.ok ? r.json() : []; })
     .then(function (presets) {
+      S.presets = presets;                       // reused by algebra-B (Plan-43)
       presets.forEach(function (p, i) {
         el.preset.appendChild(h("option", { value: String(i), text: p.label }));
+        el["algb-preset"].appendChild(h("option", { value: String(i), text: p.label }));
       });
       el.preset.addEventListener("change", function () {
         if (el.preset.value === "") return;
@@ -754,8 +831,7 @@
     S.arrows.forEach(function (a) { arrows[a.name] = [a.s, a.t]; });
     var relations = el.relations.value.split(",")
       .map(function (s) { return s.trim(); }).filter(Boolean);
-    var field = el.field.value === "CC" ? { kind: "CC" }
-      : { kind: "GF", p: parseInt(el.p.value, 10) || 0, n: parseInt(el.n.value, 10) || 1 };
+    var field = currentField();
     var compute = [];
     if (el.hhc.checked) compute.push("hh_cohomology:0.." + el["hhc-top"].value);
     if (el.hhh.checked) compute.push("hh_homology:0.." + el["hhh-top"].value);
@@ -771,6 +847,9 @@
     // Plan 42: the (b, B) spectral sequence, right after cyclic homology.
     if (el.ss_hochschild.checked)
       compute.push("ss_hochschild:0.." + el["ss_hochschild-top"].value);
+    // Plan 42: the radical-filtration spectral sequence, beside the (b,B) one.
+    if (el.radical_filtration_ss.checked)
+      compute.push("radical_filtration_ss:0.." + el["radical_filtration_ss-top"].value);
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
@@ -782,6 +861,12 @@
     // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
     if (el.tau_tilting.checked)
       compute.push("tau_tilting:" + el["tau_tilting-budget"].value);
+    // Plan 41: AR-quiver knitting carries a BUDGET (max indecomposables), not a
+    // degree -- the single-int form both runners parse (like tau_tilting).
+    if (el.ar_quiver.checked)
+      compute.push("ar_quiver:" + el["ar_quiver-budget"].value);
+    // Plan 43: derived_compare is algebra-level and needs a second algebra B.
+    if (el.derived_compare.checked) compute.push("derived_compare");
     var module = null, extTarget = null, torTarget = null;
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
@@ -813,10 +898,49 @@
                            arrows: arrows, relations: relations, field: field },
                 compute: compute,
                 artifacts: { pdf: el.trace.checked, tikz: true } };
+    // GitHub #3 / Plan-44: a non-empty potential routes the quiver through the
+    // Jacobian-algebra constructor. Only attached when typed, so a request with
+    // no potential keeps its byte-identical cache key. The server refuses a
+    // potential ALONGSIDE explicit relations (4xx) -- that stays the authority.
+    var pot = (el.potential.value || "").trim();
+    if (pot) req.algebra.potential = pot;
     if (module) req.module = module;
     if (extTarget) req.ext_target = extTarget;
     if (torTarget) req.tor_target = torTarget;
+    // Plan-43: derived_compare's second algebra. Only attached with the kind,
+    // so an ordinary request never carries algebra_b (cache-key discipline).
+    if (el.derived_compare.checked) {
+      var algb = buildAlgebraB();
+      if (algb) req.algebra_b = algb;
+    }
     return req;
+  }
+
+  // The field spec from the picker: CC, GF(p^n), or QQ (Plan-19 exact rationals).
+  function currentField() {
+    if (el.field.value === "CC") return { kind: "CC" };
+    if (el.field.value === "QQ") return { kind: "QQ" };
+    return { kind: "GF", p: parseInt(el.p.value, 10) || 0,
+             n: parseInt(el.n.value, 10) || 1 };
+  }
+
+  // algebra B for derived_compare, over A's field so the fingerprints compare
+  // like-for-like. A quiver block (preset) works on every tier; a Dynkin type
+  // builds a PathAlgebra family block (the deployed server + families surface).
+  function buildAlgebraB() {
+    var field = currentField();
+    if (el["algb-mode"].value === "preset") {
+      var p = (S.presets || [])[parseInt(el["algb-preset"].value, 10)];
+      if (!p) return null;
+      var arrows = {};
+      Object.keys(p.arrows).forEach(function (k) { arrows[k] = p.arrows[k].slice(); });
+      return { kind: "quiver", vertices: p.vertices.slice(),
+               arrows: arrows, relations: (p.relations || []).slice(), field: field };
+    }
+    var t = (el["algb-type"].value || "").trim();
+    if (!t) return null;
+    return { kind: "family", family: "PathAlgebra",
+             params: { type_or_quiver: t }, field: field };
   }
 
   // Hand-rolled YAML emitter for the exported cluster config. MIRRORS
@@ -2965,6 +3089,98 @@
       }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
+    } else if (name === "radical_filtration_ss") {
+      // Plan 42: the radical-filtration spectral sequence — same honest shape as
+      // ss_hochschild (abutment table over the certified window + grid + prose).
+      if (b.error) {
+        div.appendChild(h("p", { text: b.error }));
+      } else {
+        var rshead = h("tr"), rsrow = h("tr");
+        rshead.appendChild(h("th", { text: "n" }));
+        rsrow.appendChild(h("th", { text: "dim E_inf total" }));
+        (b.abutment || []).forEach(function (d, n) {
+          rshead.appendChild(h("td", { text: String(n) }));
+          rsrow.appendChild(h("td", { text: String(d) }));
+        });
+        div.appendChild(h("p", { text: "Radical-filtration spectral sequence" }));
+        div.appendChild(h("table", {}, rshead, rsrow));
+        if (b.grid)
+          div.appendChild(h("pre", { text: String(b.grid).replace(/```/g, "").trim() }));
+        if (b.prose) div.appendChild(h("p", { text: b.prose }));
+      }
+    } else if (name === "ar_quiver") {
+      // Plan 41: the AR quiver. Completeness/budget status FIRST (an honest
+      // semi-decision), then indecomposables, irreducible maps, and τ-orbits.
+      var arDone = b.complete === true;
+      div.appendChild(h("p", { "class": arDone ? "" : "qlgui-error",
+        text: arDone
+          ? "Complete AR quiver: " + b.num_vertices + " indecomposable(s), "
+            + b.num_arrows + " irreducible map(s)."
+          : (b.status === "unsupported" || b.status === "error")
+            ? "Not computed — " + (b.error || "input not eligible") + "."
+            : "Partial (budget " + b.budget + " reached — the algebra is likely "
+              + "representation-infinite; this is NOT the full AR quiver)." }));
+      if ((b.vertices || []).length) {
+        var avh = h("tr");
+        avh.appendChild(h("th", { text: "indecomposable" }));
+        avh.appendChild(h("th", { text: "dim vector" }));
+        var avt = h("table", {}, avh);
+        b.vertices.forEach(function (v) {
+          var dv = v.dimvec || {};
+          var dvtxt = Object.keys(dv).map(function (w) { return w + ":" + dv[w]; }).join(", ");
+          avt.appendChild(h("tr", {}, h("th", { text: v.name || ("M" + v.id) }),
+            h("td", { text: dvtxt })));
+        });
+        div.appendChild(avt);
+      }
+      if ((b.arrows || []).length) {
+        div.appendChild(h("p", { text: "Irreducible maps: " + b.arrows.map(function (a) {
+          return a.from + "→" + a.to + (a.mult > 1 ? " (×" + a.mult + ")" : "");
+        }).join(", ") }));
+      }
+      if ((b.tau_orbits || []).length) {
+        div.appendChild(h("p", { text: "τ-orbits: " + b.tau_orbits.map(function (o) {
+          return "{" + o.join(", ") + "}"; }).join("  ") }));
+      }
+    } else if (name === "derived_compare") {
+      // Plan 43: the two fingerprints side by side + the honest verdict. Equal
+      // rows are a NECESSARY condition for derived equivalence, never a proof.
+      var dcCell = function (v) {
+        if (v && typeof v === "object" && "error" in v) return "unavailable — " + v.error;
+        if (Array.isArray(v)) return "[" + v.join(", ") + "]";
+        return String(v);
+      };
+      var fa = b.fingerprint_a || {}, fb = b.fingerprint_b || {};
+      var dcRows = [
+        ["Coxeter polynomial", "coxeter_polynomial"], ["det C", "cartan_det"],
+        ["Cartan Smith factors", "cartan_smith"], ["dim HH^•", "hh_cohomology_dims"],
+        ["dim HH_•", "hh_homology_dims"], ["dim HC_•", "cyclic_dims"],
+        ["dim Z(A)", "center_dim"], ["global dimension", "gl_dim"]
+      ];
+      var dch = h("tr");
+      dch.appendChild(h("th", { text: "invariant" }));
+      dch.appendChild(h("th", { text: "A" }));
+      dch.appendChild(h("th", { text: "B" }));
+      var dct = h("table", {}, dch);
+      dcRows.forEach(function (r) {
+        var differ = dcCell(fa[r[1]]) !== dcCell(fb[r[1]]);
+        var tr = h("tr", {}, h("th", { text: r[0] }),
+          h("td", { text: dcCell(fa[r[1]]) }), h("td", { text: dcCell(fb[r[1]]) }));
+        if (differ) tr.style.fontWeight = "600";
+        dct.appendChild(tr);
+      });
+      div.appendChild(dct);
+      div.appendChild(h("p", { text: b.verdict_text
+        || (b.verdict === "distinguished"
+              ? "Distinguished by " + (b.distinguished_by || []).join(", ")
+                + " — A and B are NOT derived equivalent."
+              : "Not distinguished by these invariants (a necessary condition only, "
+                + "never a proof of derived equivalence).") }));
+      if ((b.incomparable_fields || []).length)
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "Incomparable (errored on one/both sides): "
+            + b.incomparable_fields.join(", ") + "." }));
+      if (b.scope) div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -3140,12 +3356,12 @@
   var THEMES =
   [
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
-    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild"]},
+    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "tau_tilting"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
-    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check"]}
+    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver"]}
   ];
   // QLGUI-THEMES-END
 
@@ -3196,11 +3412,17 @@
     if (el.module) el.module.style.display = want ? "" : "none";
   }
 
+  // Plan-43: the algebra-B panel is visible exactly when derived_compare is on.
+  function syncAlgebraB() {
+    if (el.algb) el.algb.style.display = kindChecked("derived_compare") ? "" : "none";
+  }
+
   function setKind(kind, on, intent) {
     var c = KIND_CTRL[kind];
     if (!c || !el[c.cb]) return;
     el[c.cb].checked = !!on;
     syncModule();
+    syncAlgebraB();
     if (intent) ensureEngine();
     pickRefresh();
     scheduleProbe();
@@ -3355,7 +3577,10 @@
       nav.appendChild(btn);
       var group = h("div", { "class": "qlpick-group" });
       group.setAttribute("data-theme", t.id);
-      var moduleTheme = t.kinds.every(isModuleKind);
+      // SOME (not every): module_ar now also holds ar_quiver, an algebra-level
+      // kind -- the note still describes the genuine module kinds in the theme,
+      // and ar_quiver (no `mod` flag) never forces the module panel open.
+      var moduleTheme = t.kinds.some(isModuleKind);
       if (moduleTheme) {
         group.appendChild(h("p", { "class": "qlpick-modnote",
           text: pkTxt("modules-note", "opens the module editor below") }));
@@ -3391,6 +3616,7 @@
     S.onProbe = renderCost;
     pickShowTheme(pickState.theme);
     syncModule();
+    syncAlgebraB();
     pickRefresh();
     renderCost(null);
     window.QLGUI.pickRefresh = pickRefresh;
@@ -3584,7 +3810,8 @@
       return { name: name, s: p.arrows[name][0], t: p.arrows[name][1] };
     });
     el.relations.value = (p.relations || []).join(", ");
-    el.field.value = p.field.kind === "CC" ? "CC" : "GF";
+    el.field.value = (p.field.kind === "GF") ? "GF"
+      : (p.field.kind === "QQ") ? "QQ" : "CC";
     el.field.dispatchEvent(new Event("change"));
     if (p.field.kind === "GF") { el.p.value = p.field.p; el.n.value = p.field.n || 1; }
     S.selected = null; el.results.innerHTML = ""; render();
@@ -3601,6 +3828,9 @@
     connes_b: { cb: "connes_b", top: "connes_b-top" },
     cyclic_homology: { cb: "cyclic_homology", top: "cyclic_homology-top" },
     ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
+    radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },
+    ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
+    derived_compare: { cb: "derived_compare" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },
     coxeter_polynomial: { cb: "coxeter_polynomial" },

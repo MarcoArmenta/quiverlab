@@ -190,7 +190,7 @@
   "cancel_running.none": "aucun calcul en cours — nouvelle tentative…",
   "cancel_running.failed": "échec de l'annulation — réessayez",
   "pick.theme.hochschild": "Cohomologie de Hochschild et produits",
-  "pick.theme.cyclic": "Homologie cyclique et suite spectrale",
+  "pick.theme.cyclic": "Homologie cyclique et suites spectrales",
   "pick.theme.invariants": "Invariants d'anneau et numériques",
   "pick.theme.structure": "Reconnaissance et structure",
   "pick.theme.module_basic": "Modules — bases",
@@ -241,5 +241,17 @@
   "pick.budget": "budget",
   "pick.modules_note": "ouvre l'éditeur de modules ci-dessous",
   "pick.add": "ajouter",
-  "pick.remove": "retirer"
+  "pick.remove": "retirer",
+  "pick.kind.radical_filtration_ss": "Suite spectrale de la filtration radicale",
+  "pick.kind.ar_quiver": "Carquois d'Auslander–Reiten",
+  "pick.kind.derived_compare": "Comparaison dérivée (avec B)",
+  "draw.potential_label": "Potentiel W (facultatif)",
+  "draw.potential_ph": "a*b*c - d*e*f  (construit l'algèbre jacobienne)",
+  "draw.potential_conflict": "un potentiel et des relations explicites sont mutuellement exclusifs",
+  "draw.algb_legend": "Comparer avec l'algèbre B",
+  "draw.algb_mode_label": "source",
+  "draw.algb_type_label": "type de Dynkin",
+  "draw.algb_preset_label": "préréglage",
+  "draw.algb_hint": "B est comparée par ses invariants dérivés ; un type de Dynkin construit une algèbre de chemins, ou choisissez un carquois prédéfini. Les deux sont pris sur le corps choisi ci-dessus.",
+  "form.field_ph": "CC, GF(5) ou QQ"
 }

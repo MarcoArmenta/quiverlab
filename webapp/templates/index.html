@@ -62,7 +62,7 @@
      parameter MEANS (bilingual) -- never a raw JSON box (Marco 2026-07-28). #}
   <div id="param-fields"></div>
   <label for="field">{{ t("form.field") }}</label>
-  <input id="field" name="field" value="GF(2)" placeholder="CC or GF(5)">
+  <input id="field" name="field" value="GF(2)" placeholder="{{ t('form.field_ph') }}">
   <label>{{ t("form.invariants") }}</label>
   <label><input type="checkbox" name="compute" value="hh_cohomology:0..6" checked> {{ t("inv.hh_cohomology") }}</label>
   <label><input type="checkbox" name="compute" value="hh_homology:0..6"> {{ t("inv.hh_homology") }}</label>

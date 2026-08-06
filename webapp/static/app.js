@@ -853,9 +853,11 @@ initParamForm();
 function readComputeBody() {
   const fd = new FormData(form);
   const fieldRaw = fd.get("field").trim();
-  const field = fieldRaw === "CC"
-    ? {kind: "CC"}
-    : {kind: "GF", p: parseInt(fieldRaw.replace(/[^0-9]/g, ""), 10), n: 1};
+  // Exact fields the library accepts: CC (complex), QQ (rationals), GF(p^n).
+  // A bare "CC"/"QQ" is that field; anything else is read as GF(p).
+  const SCALAR_FIELDS = {CC: {kind: "CC"}, QQ: {kind: "QQ"}};
+  const field = SCALAR_FIELDS[fieldRaw]
+    || {kind: "GF", p: parseInt(fieldRaw.replace(/[^0-9]/g, ""), 10), n: 1};
   return {
     schema: 1,
     algebra: {kind: "family", family: fd.get("family"),

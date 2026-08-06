@@ -32,6 +32,8 @@ ALL_KINDS = {
     "projective_dimension", "injective_dimension", "projective_resolution",
     "injective_resolution", "decompose", "almost_split", "tilting_check",
     "orbit_geometry", "ext", "tor",
+    # Wave-2 surface expansion (2026-08-06): the three new compute kinds.
+    "radical_filtration_ss", "ar_quiver", "derived_compare",
 }
 
 
@@ -63,8 +65,12 @@ def test_marco_taxonomy_pins():
     # Marco: cup, cap, bracket belong to Hochschild (not the cyclic block).
     for k in ("hh_cohomology", "hh_homology", "cup", "cap", "bracket"):
         assert k in by_id["hochschild"], k
-    # Marco: keep the rest in cyclic.
-    assert set(by_id["cyclic"]) == {"cyclic_homology", "connes_b", "ss_hochschild"}
+    # Marco: keep the rest in cyclic; the radical-filtration SS joins it (wave 2).
+    assert set(by_id["cyclic"]) == {
+        "cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"}
+    # ar_quiver is algebra-level but sits in the AR theme; derived_compare in structure.
+    assert "ar_quiver" in by_id["module_ar"]
+    assert "derived_compare" in by_id["structure"]
 
 
 def test_every_theme_and_kind_label_is_translated_in_all_langs():
@@ -92,3 +98,54 @@ def test_draw_page_carries_picker_attrs_in_every_language(lang, tmp_path):
         assert attr in html, f"{attr} absent under {prefix}/draw"
     # the localized value actually rendered (not the raw key)
     assert "pick.theme.hochschild" not in html
+
+
+# --------------------------------------------------------------------------- #
+# Wave-2 surface expansion (2026-08-06): QQ field, potential -> Jacobian, the
+# three new kinds + the algebra-B input for derived_compare.
+# --------------------------------------------------------------------------- #
+APP_JS = ROOT / "webapp" / "static" / "app.js"
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_draw_page_carries_wave2_attrs_in_every_language(lang, tmp_path):
+    prefix = "" if lang == "en" else "/" + lang
+    html = _client(tmp_path).get(prefix + "/draw").text
+    for attr in ("data-pick-kind-radical_filtration_ss", "data-pick-kind-ar_quiver",
+                 "data-pick-kind-derived_compare", "data-potential-label",
+                 "data-potential-ph", "data-algb-legend", "data-algb-hint"):
+        assert attr in html, f"{attr} absent under {prefix}/draw"
+    # localized, not the raw key
+    for key in ("pick.kind.ar_quiver", "draw.algb_legend", "draw.potential_label"):
+        assert key not in html
+
+
+def test_new_kinds_labelled_in_all_catalogs():
+    for lang in LANGS:
+        cat = catalog(lang)
+        for key in ("pick.kind.radical_filtration_ss", "pick.kind.ar_quiver",
+                    "pick.kind.derived_compare", "draw.potential_label",
+                    "draw.potential_ph", "draw.potential_conflict", "draw.algb_legend",
+                    "draw.algb_mode_label", "draw.algb_type_label",
+                    "draw.algb_preset_label", "draw.algb_hint", "form.field_ph"):
+            assert key in cat and cat[key].strip(), f"{lang} missing {key}"
+
+
+def test_gui_js_wires_qq_potential_and_algebra_b():
+    src = GUI_JS.read_text(encoding="utf-8")
+    # QQ is a first-class field option and currentField() emits it.
+    assert '<option value="QQ">' in src
+    assert 'kind: "QQ"' in src
+    # potential -> algebra.potential, only when non-empty
+    assert "req.algebra.potential = pot" in src
+    # derived_compare's second algebra
+    assert "req.algebra_b = algb" in src and "function buildAlgebraB" in src
+
+
+def test_app_js_accepts_qq_field_not_only_cc_gf():
+    # readComputeBody must recognise QQ, not coerce every non-CC field to GF.
+    src = APP_JS.read_text(encoding="utf-8")
+    m = re.search(r"function readComputeBody\(\)\s*\{(.*?)\n\}", src, re.S)
+    assert m, "readComputeBody not found"
+    body = m.group(1)
+    assert "QQ" in body, "readComputeBody still hardcodes only the CC/GF pair"

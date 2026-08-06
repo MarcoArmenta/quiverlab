@@ -241,5 +241,17 @@
   "pick.budget": "预算",
   "pick.modules_note": "在下方打开模编辑器",
   "pick.add": "添加",
-  "pick.remove": "移除"
+  "pick.remove": "移除",
+  "pick.kind.radical_filtration_ss": "根基滤链谱序列",
+  "pick.kind.ar_quiver": "Auslander–Reiten 箭图",
+  "pick.kind.derived_compare": "导出比较（与 B）",
+  "draw.potential_label": "势 W（可选）",
+  "draw.potential_ph": "a*b*c - d*e*f （构造 Jacobi 代数）",
+  "draw.potential_conflict": "势与显式关系互斥",
+  "draw.algb_legend": "与代数 B 比较",
+  "draw.algb_mode_label": "来源",
+  "draw.algb_type_label": "Dynkin 型",
+  "draw.algb_preset_label": "预设",
+  "draw.algb_hint": "B 通过其导出不变量进行比较；Dynkin 型构造路代数，或选择一个预设箭图。两者都取在上方所选的域上。",
+  "form.field_ph": "CC、GF(5) 或 QQ"
 }

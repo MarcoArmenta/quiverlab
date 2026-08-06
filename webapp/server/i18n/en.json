@@ -190,7 +190,7 @@
   "cancel_running.none": "no running job — retrying…",
   "cancel_running.failed": "could not cancel — try again",
   "pick.theme.hochschild": "Hochschild cohomology & products",
-  "pick.theme.cyclic": "Cyclic homology & spectral sequence",
+  "pick.theme.cyclic": "Cyclic homology & spectral sequences",
   "pick.theme.invariants": "Ring & numerical invariants",
   "pick.theme.structure": "Recognition & structure",
   "pick.theme.module_basic": "Modules — basics",
@@ -241,5 +241,17 @@
   "pick.budget": "budget",
   "pick.modules_note": "opens the module editor below",
   "pick.add": "add",
-  "pick.remove": "remove"
+  "pick.remove": "remove",
+  "pick.kind.radical_filtration_ss": "Radical-filtration spectral sequence",
+  "pick.kind.ar_quiver": "Auslander–Reiten quiver",
+  "pick.kind.derived_compare": "Derived comparison (with B)",
+  "draw.potential_label": "Potential W (optional)",
+  "draw.potential_ph": "a*b*c - d*e*f  (builds the Jacobian algebra)",
+  "draw.potential_conflict": "a potential and explicit relations are mutually exclusive",
+  "draw.algb_legend": "Compare with algebra B",
+  "draw.algb_mode_label": "source",
+  "draw.algb_type_label": "Dynkin type",
+  "draw.algb_preset_label": "preset",
+  "draw.algb_hint": "B is compared by its derived invariants; a Dynkin type builds a path algebra, or pick a preset quiver. Both are taken over the field chosen above.",
+  "form.field_ph": "CC, GF(5), or QQ"
 }

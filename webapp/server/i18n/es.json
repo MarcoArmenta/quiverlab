@@ -190,7 +190,7 @@
   "cancel_running.none": "no hay ningún trabajo en ejecución — reintentando…",
   "cancel_running.failed": "no se pudo cancelar — inténtalo de nuevo",
   "pick.theme.hochschild": "Cohomología de Hochschild y productos",
-  "pick.theme.cyclic": "Homología cíclica y sucesión espectral",
+  "pick.theme.cyclic": "Homología cíclica y sucesiones espectrales",
   "pick.theme.invariants": "Invariantes de anillo y numéricos",
   "pick.theme.structure": "Reconocimiento y estructura",
   "pick.theme.module_basic": "Módulos — básicos",
@@ -241,5 +241,17 @@
   "pick.budget": "presupuesto",
   "pick.modules_note": "abre el editor de módulos abajo",
   "pick.add": "añadir",
-  "pick.remove": "quitar"
+  "pick.remove": "quitar",
+  "pick.kind.radical_filtration_ss": "Sucesión espectral de la filtración radical",
+  "pick.kind.ar_quiver": "Carcaj de Auslander–Reiten",
+  "pick.kind.derived_compare": "Comparación derivada (con B)",
+  "draw.potential_label": "Potencial W (opcional)",
+  "draw.potential_ph": "a*b*c - d*e*f  (construye el álgebra jacobiana)",
+  "draw.potential_conflict": "un potencial y las relaciones explícitas son mutuamente excluyentes",
+  "draw.algb_legend": "Comparar con el álgebra B",
+  "draw.algb_mode_label": "fuente",
+  "draw.algb_type_label": "tipo de Dynkin",
+  "draw.algb_preset_label": "predefinido",
+  "draw.algb_hint": "B se compara por sus invariantes derivados; un tipo de Dynkin construye un álgebra de caminos, o elige un carcaj predefinido. Ambos se toman sobre el cuerpo elegido arriba.",
+  "form.field_ph": "CC, GF(5) o QQ"
 }
