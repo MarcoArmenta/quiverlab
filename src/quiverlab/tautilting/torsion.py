@@ -12,6 +12,8 @@ char-0 base; the GF(p^n) proper-division-ring caveat is honest-scope). Batteries
 QQ. Float-free; the wall normals are exact integer vectors (:func:`mutation.wall_normal`)."""
 from __future__ import annotations
 
+import weakref
+
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.modules.hom import end_dim, is_isomorphic
 from quiverlab.modules.morphism import direct_sum
@@ -20,16 +22,18 @@ from quiverlab.modules.morphism import direct_sum
 # --------------------------------------------------------------------------- #
 # the module universe (indecomposable tau-rigid summands across the exchange graph)
 # --------------------------------------------------------------------------- #
-_UNIVERSE_CACHE = {}
+# Keyed by the algebra OBJECT (WeakKeyDictionary), NOT id(A): an id can be recycled after
+# a GC'd algebra, which would hand a stale universe to a DIFFERENT algebra. The weak key
+# is identity-based and drops with the algebra, so there is no cross-instance bleed.
+_UNIVERSE_CACHE: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
 
 
 def _torsion_universe(A, budget=512):
     """The indecomposable modules appearing as summands across every support tau-tilting
     pair of ``A`` (a sufficient universe to fingerprint the torsion classes -- AIR: the
     Ext-projectives of a class generate it). Deduped by ``is_isomorphic``; cached per
-    algebra. Raises loudly (via the BFS) if ``A`` is tau-tilting-infinite."""
-    key = id(A)
-    cached = _UNIVERSE_CACHE.get(key)
+    algebra (weak-keyed). Raises loudly (via the BFS) if ``A`` is tau-tilting-infinite."""
+    cached = _UNIVERSE_CACHE.get(A)
     if cached is not None:
         return cached
     from quiverlab.tautilting.mutation import exchange_graph
@@ -45,7 +49,7 @@ def _torsion_universe(A, budget=512):
             if not any(U.dim == M.dim and U.dimension_vector() == M.dimension_vector()
                        and is_isomorphic(U, M) for U in uni):
                 uni.append(M)
-    _UNIVERSE_CACHE[key] = uni
+    _UNIVERSE_CACHE[A] = uni
     return uni
 
 

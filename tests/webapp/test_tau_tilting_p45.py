@@ -54,6 +54,16 @@ def test_twin_parity():
             == json.dumps(twin, sort_keys=True, default=str))
 
 
+def test_estimator_budget_is_not_a_degree():
+    # the tau_tilting budget (512) must NOT be read as homological degree 512 by the tier
+    # classifier -- otherwise the flagship live demo would misroute / be rejected through
+    # /api/compute. _max_degree must ignore the tau_tilting budget.
+    from webapp.server.estimator import _max_degree
+    from webapp.server.schema import ComputeRequest
+    req = ComputeRequest.model_validate(_kA2_request(512))
+    assert _max_degree(req) == 0
+
+
 def test_wild_budget_status(tmp_path):
     # 2-Kronecker with a small budget -> status "budget", complete False, no crash.
     from quiverlab.hpc.spec import parse_request, run

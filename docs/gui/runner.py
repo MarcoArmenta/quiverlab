@@ -737,6 +737,7 @@ def compute_one(spec):
             # (derived.block.derived_fingerprint_block) + `references`->citations.
             from quiverlab.derived.block import derived_fingerprint_block
             block = derived_fingerprint_block(A, top if top is not None else 4)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "strings":
             # Gentle / string subsystem (Plan 46): census + bands + rep-type + AG.
             # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
