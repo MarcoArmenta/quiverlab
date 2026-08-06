@@ -17,6 +17,13 @@ Data-driven: the ONE canonical kinds list lives at the top; every check
 introspects the real dispatch tables / pick-lists / i18n dicts / source, so there
 is no hand-maintained duplicate list to drift.
 
+SCOPE NOTE (renderer surface). The complete interactive renderer is ``gui.js``
+(the /draw canvas + desktop app, the twin copies audited here). The server-page
+``webapp/static/app.js`` structured-renders only a SUBSET of algebra kinds and
+falls back to a raw-JSON dump for the rest (hh/cartan predate v0.2.0 there too)
+-- a pre-existing presentation model, recorded here as a DELIBERATE v0.2.0 scope
+decision, not audited: upgrading app.js block-by-block is a post-release item.
+
 SCOPE NOTE. "Compute kinds" here are the entries of a request's ``compute`` list.
 The P44 (constructions) and P48 (marked-surface) presets the metaplan also
 mentions are algebra-CONSTRUCTION inputs (they build an ``algebra`` block -- the
@@ -90,8 +97,13 @@ def test_canonical_list_is_wellformed():
 # --------------------------------------------------------------------------- #
 @pytest.mark.parametrize("kind", V020_MODULE_KINDS)
 def test_module_kind_in_dispatch_tables(kind):
-    # Module kinds are gated by REAL frozenset tables on both tiers -- assert
-    # membership directly (no regex).
+    # Module kinds are gated by REAL frozenset tables on ALL THREE tiers -- assert
+    # membership directly (no regex). The schema table is the ROUTING gate: a kind
+    # absent there validates without a module block and only fails downstream
+    # (that exact drift shipped for orbit_geometry until the P50 audit).
+    from webapp.server import schema as wschema
+    assert kind in wschema.MODULE_KINDS, \
+        f"{kind} missing from webapp.server.schema.MODULE_KINDS"
     assert kind in spec.MODULE_KINDS, \
         f"{kind} missing from quiverlab.hpc.spec.MODULE_KINDS"
     pyo = _pyodide_runner()
@@ -99,10 +111,22 @@ def test_module_kind_in_dispatch_tables(kind):
         f"{kind} missing from docs/gui/runner.py _MODULE_KINDS"
 
 
+def test_module_kind_tables_three_way_equal():
+    """The three MODULE_KINDS gates (webapp schema routing, wheel spec runner,
+    Pyodide twin) must be the SAME SET -- not merely supersets of the v0.2.0
+    list. Any drift means one tier routes/serves a kind another refuses."""
+    from webapp.server import schema as wschema
+    pyo = _pyodide_runner()
+    assert set(wschema.MODULE_KINDS) == set(spec.MODULE_KINDS) == set(pyo._MODULE_KINDS)
+
+
 @pytest.mark.parametrize("kind", V020_ALGEBRA_KINDS)
-def test_algebra_kind_dispatched_in_both_runners(kind):
+def test_algebra_kind_literal_in_both_dispatch_sources(kind):
     # Algebra kinds have no frozenset table -- the dispatch is a ``if kind == ...``
-    # branch chain, so scan the ACTUAL dispatch function bodies for the literal.
+    # branch chain. This scans the ACTUAL dispatch function bodies for the quoted
+    # literal: a MENTION check (a lingering comment could satisfy it), kept as a
+    # cheap tripwire. The PROOF of live dispatch is the end-to-end smoke below,
+    # which runs every kind through both runners.
     server_src = inspect.getsource(spec._dispatch)
     pyo_src = inspect.getsource(_pyodide_runner().compute_one)
     assert ('"%s"' % kind) in server_src, \
@@ -225,11 +249,11 @@ _KA3_GF7 = {"kind": "quiver", "vertices": [1, 2, 3],
             "field": {"kind": "GF", "p": 7, "n": 1}}
 _SIMPLE_S2 = {"builtin": {"kind": "simple", "vertex": 2}}   # neither proj nor inj in kA3
 
-# Non-math provenance keys: both tiers resolve citations from the SAME references,
-# but the server keeps the raw ``references`` list on some blocks and the Pyodide
-# twin does not (e.g. tilting_check) -- neither is mathematics, so both are dropped
-# before the cross-tier equality check.
-_PROVENANCE = ("references", "citations")
+# Provenance keys are COMPARED like everything else: both tiers must resolve the
+# same references and citations (the P50 devil's-advocate round fixed the one
+# divergence -- the twin's tilting_check lacked ``references``). Nothing is
+# dropped; drift here is a real cross-tier inconsistency.
+_PROVENANCE = ()
 
 # Compute item per algebra kind (range/budget kinds get a small argument).
 _ALG_ITEMS = {
@@ -302,6 +326,24 @@ def test_smoke_algebra_kind_cross_tier(kind):
     assert p["ok"], p
     assert _math_canon(block) == _math_canon(p["block"]), \
         f"{kind} server/Pyodide math disagree"
+
+
+def test_smoke_ss_hochschild_success_path_cross_tier():
+    """kA3 exercises only ss_hochschild's honest-refusal branch (max_cells). The
+    SUCCESS path must also run end-to-end cross-tier: on the dual numbers
+    k[x]/(x^2) (dim 2) the (b, B) bicomplex is tiny and the block computes."""
+    dual = {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+            "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}}
+    item = "ss_hochschild:0..3"
+    body = {"schema": 2, "algebra": dual, "compute": [item]}
+    res = _server_result(body)
+    assert "error" not in res and "ss_hochschild" in res["results"]
+    block = res["results"]["ss_hochschild"]
+    assert not isinstance(block.get("error"), str), \
+        f"success-path smoke unexpectedly refused: {block.get('error')}"
+    p = _pyodide_result(body, item)
+    assert p["ok"], p
+    assert _math_canon(block) == _math_canon(p["block"])
 
 
 @pytest.mark.parametrize("kind", V020_MODULE_KINDS)

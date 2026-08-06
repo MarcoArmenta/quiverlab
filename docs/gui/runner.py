@@ -582,11 +582,12 @@ def _module_block(name, top):
         try:
             rep = is_tilting_module(M, n=(top if top is not None else 1))
         except QuiverlabError as exc:
-            return {"kind": name, "error": str(exc), "citations": cites}
+            return {"kind": name, "error": str(exc),
+                    "references": list(keys), "citations": cites}
         return {"kind": name, "is_tilting": rep.is_tilting, "n": rep.n, "pd": rep.pd,
                 "self_ext_vanishes": rep.self_ext_vanishes,
                 "num_summands": rep.num_summands, "num_vertices": rep.num_vertices,
-                "note": rep.note, "citations": cites}
+                "note": rep.note, "references": list(keys), "citations": cites}
     if name == "orbit_geometry":
         # Byte-identical to quiverlab.hpc.spec's orbit_geometry branch: the shared
         # library builder + _with_refs's references(list)+citations(pairs). Orbit

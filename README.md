@@ -79,7 +79,7 @@ verifier, or scope-limited, the surface says so and refuses loudly outside it.
 
 | Coverage phase | Delivered by | Honest scope |
 |---|---|---|
-| **C1** Categorical glue (Hom bases, Krull–Schmidt) | P37 | char-p decomposition refuses loudly past the exact-locality budget |
+| **C1** Categorical glue (Hom bases, Krull–Schmidt) | P37 + P30 (Krull–Schmidt splitter, pre-v0.2.0) | char-p decomposition refuses loudly past the exact-locality budget |
 | **C2** Forms, roots, structural recognition | P38 | per-flag honest recognizers (never a silent `False`); Dynkin/Euclidean detection is hereditary |
 | **C3** Auslander–Reiten theory completed | P41 | AR-knitting semi-decides rep-finiteness — budget-capped, loud when uncertified |
 | **C4** τ-tilting engine + live fan | P45 | brick labels iso-class-certified with loud refusal; enumeration complete iff τ-tilting-finite (budget-capped); fan drawn for n = 2, 3 |
