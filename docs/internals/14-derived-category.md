@@ -51,8 +51,9 @@ the kernel. A self-cert closes the loop: the reified class count must equal
 `τ_{D^b} = ν[−1]` where `ν = D Hom_A(−, A)` is the Nakayama functor, applied **termwise** on
 a perfect (projective) complex: each projective term `⊕P_v` maps to
 `ν(⊕P_v) = D Hom_A(⊕P_v, A) = D(⊕Ae_v) = ⊕I_v`, each differential to its `ν`-image via the
-shared **corner-transpose** (`_corner.py::corner_transpose`, factored out of
-`duality._presentation_transpose`), and the whole complex is then shifted by `−1`.
+shared **corner-transpose** (`_corner.py::corner_transpose` — the one shared
+implementation, which `duality._presentation_transpose` delegates to), and the whole
+complex is then shifted by `−1`.
 `tau_Db_minus` is the inverse, `ν^{-1}[+1]`, on a perfect complex of injectives (the output
 shape of `tau_Db`); the round-trip `tau_Db_minus(tau_Db(X))` is certified a quasi-iso.
 

@@ -58,8 +58,9 @@ in the docstrings and pinned by the oracle tests, not recomputed inside `mutate`
 
 `exchange_graph(A, budget_pairs=512)` is a breadth-first search from `initial_pair(A) =
 (A_A, ∅)`, deduping discovered pairs by `g_key()`. It mutates every pair at every position
-`k`. The `ExchangeGraph` result carries the pair records, the oriented `arrows` (each
-labelled by the wall brick), the adjacency, `is_complete`, `status`, and `n_regular`. The
+`k`. The `ExchangeGraph` result carries the pair records, the undirected `arrows`
+(edges `(i, j)`, `i < j`, each labelled by the wall brick; orientation is the separate
+`hasse_orientation` step), the adjacency, `is_complete`, `status`, and `n_regular`. The
 contract is exact:
 
 - It closes as `status="complete"`, `is_complete=True`, and `n_regular` (every pair has
