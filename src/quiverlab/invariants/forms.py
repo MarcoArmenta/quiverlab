@@ -2,7 +2,7 @@
 (Plan 38 / C2). All exact: sympy Rational off the integer Cartan matrix.
 
 The Euler form matrix is E = C^{-1} (with cartan_matrix's convention
-C[i][j] = dim e_i A e_j = #paths i->j), so <d, e> = d E e^T; for finite
+``C[i][j]`` = dim e_i A e_j = #paths i->j), so <d, e> = d E e^T; for finite
 global dimension <dim M, dim N> = sum (-1)^i dim Ext^i(M, N). On a
 hereditary path algebra this is exactly the arrow formula
 <d, e> = sum_v d_v e_v - sum_{a: s->t} d_s e_t (E = I - N, N the arrow
