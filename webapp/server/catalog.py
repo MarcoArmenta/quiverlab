@@ -27,6 +27,10 @@ class CatalogError(ValueError):
 _NON_FORM_FAMILIES = frozenset({
     "BrauerGraphAlgebra",   # P46: graph-structured input, preset-surfaced
     "zoo", "OnePointExtension", "repetitive_slice", "JacobianAlgebra",
+    # P48 surfaces: take Triangulation/MarkedSurface/int args (not scalar bool/int/str
+    # forms) -- surfaced as drawable presets, the produced gentle algebra flows through
+    # every existing compute kind.
+    "fan_triangulation", "annulus_triangulation", "jacobian_of",
 })
 
 

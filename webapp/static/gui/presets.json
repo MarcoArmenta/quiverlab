@@ -117,5 +117,88 @@
   "field": {
    "kind": "CC"
   }
+ },
+ {
+  "label": "Surface: disc fan A3 (CC)",
+  "vertices": [
+   1,
+   2,
+   3
+  ],
+  "arrows": {
+   "m1": [
+    1,
+    2
+   ],
+   "m2": [
+    2,
+    3
+   ]
+  },
+  "relations": [],
+  "field": {
+   "kind": "CC"
+  }
+ },
+ {
+  "label": "Surface: annulus C(2,2) affine A~3 (CC)",
+  "vertices": [
+   1,
+   2,
+   3,
+   4
+  ],
+  "arrows": {
+   "m1": [
+    2,
+    1
+   ],
+   "m2": [
+    2,
+    3
+   ],
+   "m3": [
+    4,
+    1
+   ],
+   "m4": [
+    4,
+    3
+   ]
+  },
+  "relations": [],
+  "field": {
+   "kind": "CC"
+  }
+ },
+ {
+  "label": "Surface: hexagon w/ internal triangle -> 3-cycle gentle (CC)",
+  "vertices": [
+   1,
+   2,
+   3
+  ],
+  "arrows": {
+   "m1": [
+    1,
+    3
+   ],
+   "m2": [
+    2,
+    1
+   ],
+   "m3": [
+    3,
+    2
+   ]
+  },
+  "relations": [
+   "m3*m2",
+   "m1*m3",
+   "m2*m1"
+  ],
+  "field": {
+   "kind": "CC"
+  }
  }
 ]

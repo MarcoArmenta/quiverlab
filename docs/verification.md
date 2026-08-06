@@ -5,8 +5,9 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **3215 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
-2026-08-05, after Plans 21–33, the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
+The suite is **3285 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+2026-08-05, after Plans 21–33, the Plan-48 marked-surface subsystem (marked surfaces →
+ideal triangulations → gentle Jacobian algebras; +70 tests), the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
 recognizer batteries + Koszulity (`ext_algebra`) exposure — the Plan-32 oracle-class markers + audit gate,
 Marco's report-completeness pass, Marco's Cayley product-table render wave, the
@@ -344,7 +345,7 @@ recompute independently and refuses to silently disagree
   (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
   square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (182 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (187 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -453,6 +454,7 @@ Plan-35 product surface).
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `strings/` (Plan-46 C5 gentle/string subsystem: reduced walks + σ/ε signs + string census + band detection; string/band module materialisation; string-τ by hooks/cohooks; the Avella-Alaminos–Geiss derived invariant; the `strings` block) — `tests/modules/test_strings_*.py`, `tests/invariants/test_ag_invariant.py` | 33 | deep + fast | Butler-Ringel `n(n+1)/2` interval count + Kronecker band existence (`oracle_literature`); string-τ ≡ engine τ + census count ≡ `knit_ar_quiver` vertex count (`oracle_crossengine`); `check_module` on every materialised string/band + permitted/forbidden thread partition of `Q_1` (`oracle_selfcert`); AAG-2008 pins reproduced verbatim (Nakaoka `arXiv:1811.00775` Example 2.15 = `{(3,2),(2,2),(0,3)}`) |
 | `families/brauer.py` (Plan-46 Brauer graph algebra constructor from a ribbon graph + multiplicities) — `tests/families/test_brauer.py` | 10 | deep | `dim = Σ_v m_v·val(v)²` per-instance certificate + `is_symmetric` (`oracle_literature`); Brauer-star ≡ symmetric Nakayama `NakayamaAlgebra(n, mn+1, cyclic=True)` byte-equal Cartan (`oracle_crossengine`) |
+| `surfaces/` (Plan-48 marked surfaces → ideal triangulations → gentle Jacobian algebras — `marked.py` `MarkedSurface`, `triangulation.py` `Triangulation` + fan/annulus/hexagon/once-punctured-torus, `qp.py` `quiver_of`/`potential_of`/`jacobian_of`, `flip.py` `flip`/`certify_flip_mutation`, `block.py` `surface_block`) — `tests/families/test_surfaces_*.py`, `tests/invariants/test_surfaces_arccount.py`, `tests/qpa/test_surfaces_qpa.py` | 70 | deep + fast + qpa | **`oracle_literature`**: the derived FST arc count `n = 6g−6+3(b+p)+Σkᵢ` on disc(n+3)→Aₙ / annulus(n,m)→n+m / once-punctured-torus→3, the FST admissibility exclusion list (monogon/digon/triangle, spheres with ≤3 punctures, once-punctured monogon), the hexagon-internal-triangle Jacobian `dim 6` (P44's pin), the disc-fan `kAₙ`, and the small annulus `C(2,1)` acyclic affine-`Ã₂`; **`oracle_crossengine`** (the P44+P46+P48 cross-subsystem tie): the disc-fan-`Aₙ` **orientation arbiter** (`quiver_of(fan((n+3))) = 1→2→…→n` exactly), `is_gentle(jacobian_of(T))` True across the disc/annulus/hexagon zoo (ABCP/LFS), flip ≡ Fomin–Zelevinsky matrix mutation on **every** interior arc, and `surface_block` AG invariant ≡ `strings.ag.ag_invariant`; **`oracle_selfcert`**: the two side-counting identities `3t=2n+c` / `p−n+t=χ`, the arc-adjacency + arc-count self-cert on every constructor (interior arcs in 2 triangles, boundary segments in 1), the self-folded refusal, and flip involution + `μₖ∘μₖ=id`; **`qpa`** (`tests/qpa/test_surfaces_qpa.py`): `IsGentleAlgebra`/`IsSpecialBiserialAlgebra` parity on the surface Jacobians + the standing `IsBoundGlobal` guard that FAILS if QPA ever ships a surface/triangulation constructor |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-40 C6 homological-dimensions family — `homdims.py`: public `syzygy`/`cosyzygy` (byte-stable extraction from `minimal_resolution`), the Igusa–Todorov φ/ψ on the finite K₀, dominant + Gorenstein dimensions, Ω/τ-periodicity certificates, and finitistic-dimension bounds; the Plan-44 C7 slice — `approximations.py` minimal left/right add(M)-approximations and `tilting.py` `is_tilting_module`/`is_cotilting_module` + self-certified `bongartz_completion`) | 341 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) + **the Plan-40 homological-dimensions oracles**: `oracle_selfcert` — the φ=ψ=pd identity for finite projective dimension, the Ω/τ-periodicity `is_isomorphic` certificates, and the decompose char-caveat propagation; `oracle_literature` — the Barrios–Mata truncated self-injective φ=ψ=0 closed form + projective additivity, the hereditary/self-injective dominant & Gorenstein values, and the cyclic-Nakayama period-from-Kupisch pins; `qpa` (`tests/qpa/test_homdims_qpa.py`) — live `GlobalDimensionOfAlgebra` / `DominantDimensionOfAlgebra` / `GorensteinDimensionOfAlgebra` agreement over kA₂ / kA₃(ab) / `line_abc_cde` / k[x]/(x³) (int or GAP `infinity`↔our infinite/unresolved marker) |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`; the Plan-44 C7 constructions — `one_point.py` `OnePointExtension`, `repetitive.py` `repetitive_slice`, `jacobian.py` `Potential`/`JacobianAlgebra`/`cyclic_derivative`, and the Task-C Gabriel-recovery battery `test_gabriel_recovery.py` over `core/basic.py`) | 187 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins; **the Plan-44 construction oracles** — `oracle_literature`: the one-point Cartan block `[[1, dim-vector M],[0,C_A]]` + `pd(S_ω)=pd_A(M)+1`, `repetitive_slice` `copies=1==A` + the `dim==(2·copies−1)·dim A` slice certificate, the hand-derived Jacobian triangle `dim=6`, and the `M₂(k)→k` / `kA₂` Gabriel round-trip; `oracle_crossengine`: `Jac(3-cycle, abc) ≅ cyclic Nakayama kZ₃/J²` (dim + Cartan) and `presented_form(End(⊕P_v)) ` recovers `kA₃` (tied to P37 `regular_corner_dims`); `oracle_selfcert`: complete-orthogonal primitive idempotents + the per-instance dimension/multiplicativity recovery certificate, the cyclic-derivative identities, and the loud char/split + `NotFiniteDimensionalError` refusals |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
@@ -481,9 +483,9 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1489 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1533 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
-| `qpa` | 182 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `fast` | 1504 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 1583 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `qpa` | 187 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `m2` | 11 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
 
@@ -544,12 +546,12 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 833 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 505 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 988 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 182 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 854 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 522 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1013 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 187 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 1947 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2015 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Counts as of the P43 merge (the derived-category surface); sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
@@ -634,6 +636,40 @@ verified precision and listed below as such.
   - **Band modules need the eigenvalue in the field** (loud otherwise). The
     `decompose`-based indecomposability spot-checks carry the `char ≤ dim` caveat, so
     the string/band batteries run over **QQ / GF(32003)** (`char > dim`).
+- **Marked-surface subsystem (Plan 48):**
+  - **v1 = UNPUNCTURED surfaces with non-empty boundary only.** This is the ABCP/LFS
+    regime where every arc-adjacency is clean, there are no self-folded triangles, and
+    `Jac(Q(T),W(T))` is gentle (hence finite, certified three ways: the FST arc count,
+    P44's finiteness certificate, P46's `is_gentle`). Punctured surfaces, closed
+    surfaces, and self-folded configurations **refuse loudly** (`quiver_of`/`jacobian_of`
+    name the successor P48.1: puncture potentials + self-folded triangles + the
+    once-punctured-torus / Markov quiver). The **once-punctured torus is the pinned
+    loud-refusal oracle** — it constructs as a valid `Triangulation` but `quiver_of`
+    refuses it.
+  - **Flip ↔ mutation is certified at the QUIVER level** — `certify_flip_mutation`
+    compares `quiver_of(flip(T,a))` against the exact Fomin–Zelevinsky skew-symmetric
+    matrix mutation `μₐ` on every interior arc. Full DWZ **potential** right-equivalence
+    under mutation is a named successor, **not attempted**; for the gentle v1 scope the
+    quiver-level certificate plus `is_gentle` on both sides is the shipped guarantee.
+  - **The angle→arrow orientation is ARBITRATED, not assumed.** The disc oracle fixes it:
+    the fan of the `(n+3)`-gon must give the linear `Aₙ` quiver `1→2→…→n`. The naive
+    anticlockwise reading `sᵢ→sᵢ₊₁` gave the reversed chain `n→…→1`, so v1 ships the
+    flipped convention `sᵢ₊₁→sᵢ` (documented in `qp.py`). The annulus orientation is
+    doubly-guarded: the P44 finiteness certificate would refuse a fully-oriented cycle
+    (the affine `Ã` quiver is acyclic).
+  - **The AG invariant is a DERIVED invariant, NOT complete** (inherited from P46, above)
+    — `surface_block` carries it only when `is_gentle` is True; never claim completeness.
+  - **QPA has NO surface / triangulation / marked-surface constructor** (`IsBoundGlobal`
+    sweep), so the QPA crosschecks are at the resulting **gentle-algebra** level
+    (`IsGentleAlgebra`/`IsSpecialBiserialAlgebra`), mirroring P46, with a standing guard
+    that FAILS if QPA ever ships one — a no-code surface *input* method is white space
+    even in QPA.
+  - **The free-form draw-a-surface canvas is deferred** (named successor). Surfaces are an
+    **input method**, not a new compute kind: v1 ships three build-time presets (disc fan
+    `A₃`, annulus `C(2,2)`, hexagon-with-internal-triangle) and catalogs the surface
+    constructors (skipped in the webapp scalar form, the `zoo`/non-scalar precedent); the
+    produced gentle algebra flows through **every** existing compute kind (hh, resolutions,
+    modules, products, …).
 - **CRS-2004 Example 2.20 does not reproduce** (Plan 29): the paper states
   `HH¹ = 0` for its Z₅-cycle monomial example, but the validated bar oracle
   robustly gives `dim HH¹ = 1` (an explicit surviving oriented 5-cycle; both

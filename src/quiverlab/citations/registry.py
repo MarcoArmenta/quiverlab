@@ -320,6 +320,22 @@ REGISTRY: dict = {r.key: r for r in [
        "Surface quivers with potentials whose Jacobian algebras are finite-dimensional "
        "(the framework for the Plan-44 Jacobian constructor; surface QPs land in P48).",
        "family", "jacobian"),
+    _r("fomin_shapiro_thurston", "FominShapiroThurston2008", "foundation",
+       "Cluster algebras and triangulated surfaces I",
+       "The arc/triangulation combinatorics: the ideal-arc count n=6g-6+3(b+p)+Sum k_i, "
+       "the admissibility exclusion list, and flip<->mutation -- the ground truth for the "
+       "Plan-48 surface subsystem.",
+       "families", "surfaces"),
+    _r("fomin_zelevinsky_ca1", "FominZelevinsky2002", "foundation",
+       "Cluster algebras I: Foundations",
+       "The skew-symmetric matrix mutation mu_k that surface flip is certified against "
+       "(Plan 48).",
+       "families", "surfaces"),
+    _r("abcp", "ABCP2010", "family",
+       "Gentle algebras arising from surface triangulations",
+       "For an unpunctured surface with boundary the Jacobian Jac(Q(T),W(T)) is a GENTLE "
+       "algebra -- the Plan-48 v1 certifiability theorem (with Labardini 2009).",
+       "families", "surfaces"),
     _r("hughes_waschbusche", "HughesWaschbusch1983", "family",
        "Trivial extensions of tilted algebras",
        "The repetitive algebra hat(A) and its connecting D(A) bimodule -- the source of "
