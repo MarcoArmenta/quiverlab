@@ -494,10 +494,27 @@ _FP_ROWS = (
 )
 
 
+def _incomparable_note(fields, fa, fb):
+    """Word the incomparable-fields note by HONESTLY counting the side(s) on which
+    each field could not be computed -- a field can error on A only, B only, or BOTH
+    (``compare_fingerprints`` collects all three into ``incomparable_fields``), so
+    the flat 'errored on one side' phrasing was wrong for the both-sides case. Each
+    field is annotated with where it failed: ``coxeter_polynomial (A and B)``."""
+    parts = []
+    for key in fields:
+        sides = [s for s, fp in (("A", fa), ("B", fb))
+                 if isinstance(fp.get(key), dict)]
+        where = " and ".join(sides) if sides else "?"
+        parts.append("%s (%s)" % (key, where))
+    return ("<p class='ql-note'>Incomparable — a field could not be computed on the "
+            "annotated algebra(s): %s.</p>" % _esc(", ".join(parts)))
+
+
 def _derived_compare_html(b):
     """The derived_compare block (wave 2): the derived fingerprints of A and B side by
     side, the honest verdict (never an equivalence claim), and the incomparable fields
-    (a field that errored on one side). A captured error prints its message per cell."""
+    (each annotated with the side(s) it errored on). A captured error prints its
+    message per cell."""
     fa = b.get("fingerprint_a") or {}
     fb = b.get("fingerprint_b") or {}
     body = "".join(
@@ -509,8 +526,7 @@ def _derived_compare_html(b):
     verdict = b.get("verdict_text") or b.get("verdict") or ""
     out.append("<p><b>Verdict:</b> %s.</p>" % _esc(str(verdict)))
     if b.get("incomparable_fields"):
-        out.append("<p class='ql-note'>Incomparable (errored on one side): %s.</p>"
-                   % _esc(", ".join(b["incomparable_fields"])))
+        out.append(_incomparable_note(b["incomparable_fields"], fa, fb))
     out.append("<p><em>%s.</em></p>" % _esc(
         b.get("scope", "equal fingerprints are a necessary condition for derived "
                        "equivalence, not a proof")))
@@ -522,6 +538,10 @@ def _radical_filtration_ss_html(b):
     homology of the resolution complex per degree), the E_inf netPage grid, and the
     convergence prose -- the ss_hochschild presentation, on the associated-graded SS of
     the minimal resolution of the sum of the simple modules."""
+    # Defensive-only (the established ss_hochschild style): `results_section` catches
+    # any block carrying an `error` field and renders the generic "not computed — …"
+    # path BEFORE this per-kind renderer, so a refusal never reaches here in practice.
+    # Kept total so the renderer is safe if a caller ever dispatches it directly.
     if b.get("error"):
         return ["<p class='ql-note'>%s</p>" % gloss_max_cells(_esc(str(b["error"])))]
     chunks = [_dims_table("dim E_inf total (= H_n of the complex)", b.get("abutment") or [])]
@@ -538,6 +558,10 @@ def _ar_quiver_html(b):
     indecomposables (name + dimension vector), the irreducible-map arrows with
     multiplicities and the tau-orbits. An honest budget cap ships a partial list; a
     self-injective / uncertifiable refusal is the library's loud message."""
+    # Defensive-only (the established ss_hochschild style): `results_section` catches
+    # any block carrying an `error` field and renders the generic "not computed — …"
+    # path BEFORE this per-kind renderer (see test_ar_quiver_self_injective_renders),
+    # so a refusal never reaches here in practice. Kept so the renderer stays total.
     if b.get("error"):
         return ["<p class='ql-note'>AR quiver not knitted: %s</p>" % _esc(str(b["error"]))]
     chunks = []

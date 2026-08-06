@@ -58,6 +58,40 @@ def test_koszul_degeneration_kA4():
     assert ss.convergence.abutment == X.homology_dims()
 
 
+def test_block_infinite_gldim_cutoff_independence():
+    """Regression (devil's-advocate 2026-08-06): ``radical_filtration_ss_block``
+    reported the degree-``top`` homology as an abutment value, but for INFINITE
+    global dimension that is the top syzygy ``Omega^top`` -- a truncation artifact
+    that GROWS with the cutoff (``k[x]/(x^2)`` sprouts a trailing ``1`` at whatever
+    ``top`` the user picks), NOT an invariant. The block now builds one degree
+    deeper and trims the boundary, so the reported window is cutoff-INDEPENDENT.
+
+    Pin (oracle_selfcert -- a cutoff-independence certificate): the shared window
+    agrees across two cutoffs, at the honest values ``H_0 = dim (+)_v S_v`` and
+    ``H_{>0} = 0`` (a projective resolution is exact in positive degrees); a
+    finite-gl.dim algebra is byte-unchanged by the trim."""
+    from quiverlab.specseq.block import radical_filtration_ss_block
+
+    # k[x]/(x^2): one vertex, self-injective, INFINITE global dimension. Its minimal
+    # resolution of S_1 is periodic (mult-by-x, rank 1), so ker d_top = x.P (dim 1)
+    # was leaking as a phantom H_top before the deepen-and-trim fix.
+    kxx = Quiver([1], {"x": (1, 1)}).algebra(relations=["x*x"], field=GF(5))
+    b3 = radical_filtration_ss_block(kxx, 3)
+    b5 = radical_filtration_ss_block(kxx, 5)
+    assert b3["abutment"][:4] == b5["abutment"][:4]     # cutoff-independent window
+    assert b3["abutment"] == [1, 0, 0, 0]               # H_0 = dim S_1 = 1, rest 0
+    assert b5["abutment"] == [1, 0, 0, 0, 0, 0]         # trailing artifact gone
+
+    # a FINITE-gl.dim algebra (kA3, gl.dim 2): the resolution terminates before the
+    # boundary, so trimming changes nothing -- H_0 = dim(S_1 (+) S_2 (+) S_3) = 3.
+    kA3 = linear_path_algebra(3, field=GF(32003))
+    c3 = radical_filtration_ss_block(kA3, 3)
+    c4 = radical_filtration_ss_block(kA3, 4)
+    assert c3["abutment"] == [3, 0, 0, 0]
+    assert c4["abutment"] == [3, 0, 0, 0, 0]
+    assert c3["abutment"][:4] == c4["abutment"][:4]     # unchanged + cutoff-independent
+
+
 def test_nonzero_higher_differential_rank_identity():
     # Devil's-advocate regression (2026-08-05): the standing self-certificate
     # computes E_inf subquotients DIRECTLY and never exercises _dr_matrix, so

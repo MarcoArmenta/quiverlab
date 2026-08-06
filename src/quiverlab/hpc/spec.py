@@ -659,11 +659,17 @@ def parse_request(data) -> ComputeRequest:
                         "Tor^A_n(M, N), a LEFT A-module)")
     # wave 2: the OPTIONAL second algebra for derived_compare. Absent for every other
     # request (serialized away by the schema's model_dump), so canonical keys and the
-    # runner-delegation goldens are byte-unchanged. derived_compare REQUIRES it.
+    # runner-delegation goldens are byte-unchanged. derived_compare REQUIRES it, and
+    # NOTHING ELSE may carry it: a spurious algebra_b would otherwise be accepted and
+    # pollute the canonical form, forging a different cache key for the same
+    # computation (Plan 25). Both directions guarded, the schema-layer twin of this.
     algebra_b = _parse_algebra(data["algebra_b"]) if data.get("algebra_b") is not None else None
     if "derived_compare" in kinds and algebra_b is None:
         raise SpecError("derived_compare needs a second algebra 'algebra_b' (the B in "
                         "the derived-fingerprint comparison of A and B)")
+    if algebra_b is not None and "derived_compare" not in kinds:
+        raise SpecError("a second algebra 'algebra_b' is only used by derived_compare; "
+                        "drop it, or add a 'derived_compare' compute kind")
 
     return ComputeRequest(schema_version=schema_version, algebra=algebra,
                           compute=list(compute), artifacts=artifacts,

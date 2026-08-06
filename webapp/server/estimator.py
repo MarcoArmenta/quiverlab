@@ -64,6 +64,14 @@ def _max_degree(req: ComputeRequest) -> int:
         # ar_quiver's `hi` is a MODULE BUDGET (wave 2) -- neither is a degree, so a budget
         # of 512 must not drive the degree-based tier classification. Both are excluded
         # here and sized on the algebra dimension (sizing_dim), like the HH kinds.
+        #
+        # KNOWN LIMITATION (inherited from the tau_tilting precedent, NOT introduced
+        # here -- estimator redesign is out of scope, other owners): because the budget
+        # is dropped and sizing_dim keys only off the algebra dimension, a
+        # representation-INFINITE algebra of small dimension paired with a large
+        # ar_quiver/tau_tilting budget can be mislabelled "instant" even though the knit
+        # may run long before it hits the budget cap. The wall-clock/memory caps still
+        # bound it once running; a budget-aware sizing heuristic is the open backlog fix.
         if item.kind in ("tau_tilting", "ar_quiver"):
             continue
         if item.hi is not None:

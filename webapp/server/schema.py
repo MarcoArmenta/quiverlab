@@ -284,10 +284,18 @@ class ComputeRequest(BaseModel):
                               "A-module (side='left'); Tor^A_n(M, N) pairs a right M "
                               "with a left N")
         # wave 2: derived_compare needs a second algebra; every other request must NOT
-        # carry one (it is dropped from the canonical form below when absent).
+        # carry one (it is dropped from the canonical form below when absent). Both
+        # directions are guarded, mirroring the ext/tor twin-checks above: a spurious
+        # algebra_b on a non-derived_compare request would otherwise be ACCEPTED and
+        # land in the canonical form, forging a DIFFERENT cache key for an identical
+        # computation (Plan 25). Reject it loudly instead.
         if "derived_compare" in kinds and self.algebra_b is None:
             raise SchemaError("derived_compare needs a second algebra 'algebra_b' (the "
                               "B in the derived-fingerprint comparison of A and B)")
+        if self.algebra_b is not None and "derived_compare" not in kinds:
+            raise SchemaError("a second algebra 'algebra_b' is only used by "
+                              "derived_compare; drop it, or add a 'derived_compare' "
+                              "compute kind")
         return self
 
     def model_dump(self, *args, **kwargs):
