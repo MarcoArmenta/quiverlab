@@ -325,6 +325,30 @@ REGISTRY: dict = {r.key: r for r in [
        "The repetitive algebra hat(A) and its connecting D(A) bimodule -- the source of "
        "quiverlab's finite repetitive-algebra slices (Plan 44 / C7).",
        "family", "repetitive"),
+    _r("kac_canonical", "Kac1980", "foundation",
+       "Infinite root systems, representations of graphs and invariant theory",
+       "Kac's roots, Schur roots, and the canonical decomposition of a dimension "
+       "vector -- the ground truth for Plan 49's canonical_decomposition.", "geometry"),
+    _r("schofield_general_reps", "Schofield1992", "foundation",
+       "General representations of quivers",
+       "Schofield's generic hom/ext and the general-representation identities "
+       "hom - ext = <a,b> underlying the canonical decomposition.", "geometry"),
+    _r("derksen_weyman_canonical", "DerksenWeyman2002", "foundation",
+       "On the canonical decomposition of quiver representations",
+       "The Derksen-Weyman recursive algorithm for the canonical decomposition "
+       "(Plan 49 ships the Dynkin case; Euclidean/wild is the named deferral).", "geometry"),
+    _r("zwara_degenerations", "Zwara2000", "foundation",
+       "Degenerations of finite-dimensional modules are given by extensions",
+       "Zwara: the degeneration order equals the extension order for Artin algebras "
+       "-- half of Plan 49's degeneration_order theorem.", "geometry"),
+    _r("bongartz_degenerations", "Bongartz1996", "foundation",
+       "On degenerations and extensions of finite dimensional modules",
+       "Bongartz: degeneration = hom order for representation-finite algebras -- the "
+       "computable form Plan 49's degeneration_order uses.", "geometry"),
+    _r("voigt_rigidity", "Voigt1977", "foundation",
+       "Induzierte Darstellungen ... (Voigt's lemma)",
+       "Voigt's lemma: Ext^1(M,M) = 0 => the orbit of M is open (rigid => open orbit); "
+       "the codim = dim Ext^1(M,M) equality on hereditary algebras.", "geometry"),
 ]}
 
 
