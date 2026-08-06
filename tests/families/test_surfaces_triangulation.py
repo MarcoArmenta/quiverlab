@@ -44,3 +44,18 @@ def test_self_folded_refused():
     S = MarkedSurface(0, (4,), 0)
     with pytest.raises(QuiverlabError):
         Triangulation(S, triangles=((1, 1, "b0_0"),))        # arc 1 twice in one triangle
+
+
+def test_boundary_topology_guard_rejects_disc_shaped_list_on_annulus():
+    # Devil's-advocate fold (2026-08-05): count checks alone accepted a
+    # disc-shaped triangle list on a 2-boundary surface; the per-component
+    # boundary-segment guard must refuse it loudly.
+    import pytest
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.surfaces import MarkedSurface, Triangulation
+
+    S = MarkedSurface(0, (2, 1), 0)                # annulus, arcs = 3, tris = 3
+    # a triangle list using ONLY b0_* segments (disc-like topology)
+    tris = ((1, 2, "b0_0"), (2, 3, "b0_1"), (3, 1, "b0_2"))
+    with pytest.raises(QuiverlabError, match="boundary"):
+        Triangulation(S, tris)

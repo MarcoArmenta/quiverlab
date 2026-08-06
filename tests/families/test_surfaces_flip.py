@@ -49,3 +49,29 @@ def test_flip_of_boundary_segment_refused():
     T = fan_triangulation(6)
     with pytest.raises(QuiverlabError):
         flip(T, "b0_0")                                  # boundary segment: not flippable
+
+
+def test_c11_kronecker_and_doubled_arrow_flip_certifies():
+    # Devil's-advocate fold (2026-08-05): the C(1,1) annulus yields the
+    # Kronecker quiver (two PARALLEL arrows), and flipping either arc
+    # exercises the doubled-arrow branch of the Fomin-Zelevinsky matrix
+    # mutation (B = [[0,-2],[2,0]]). Previously code-correct but untested.
+    from quiverlab.surfaces import annulus_triangulation, quiver_of
+    from quiverlab.surfaces.flip import certify_flip_mutation
+
+    T = annulus_triangulation(1, 1)
+    Q = quiver_of(T)
+    assert len(Q.vertices) == 2 and len(Q.arrows) == 2
+    st = {(Q.source(a), Q.target(a)) for a in Q.arrows}
+    assert len(st) == 1                      # parallel, same direction
+    for arc in T.arcs():
+        assert certify_flip_mutation(T, arc)
+
+
+def test_hexagon_flip_certifies_with_potential_present():
+    from quiverlab.surfaces import hexagon_with_internal_triangle
+    from quiverlab.surfaces.flip import certify_flip_mutation
+
+    T = hexagon_with_internal_triangle()
+    for arc in T.arcs():
+        assert certify_flip_mutation(T, arc)

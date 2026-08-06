@@ -7,6 +7,7 @@ strip and re-gluing -- gives an ACYCLIC quiver), the hexagon-with-internal-trian
 the once-punctured torus. Float-free (all combinatorics are integers/strings)."""
 from __future__ import annotations
 
+import re
 from collections import Counter
 from dataclasses import dataclass
 
@@ -57,6 +58,27 @@ class Triangulation:
             raise QuiverlabError(
                 f"Triangulation: {len(self.triangles)} triangles but surface has "
                 f"{self.surface.triangle_count()}", hint="arc-count self-cert failed")
+        # boundary-component guard (devil's-advocate fold, 2026-08-05): the
+        # count checks above are necessary but NOT sufficient -- a disc-shaped
+        # triangle list on an annulus surface passed them. Every boundary
+        # component i must contribute exactly k_i segments b{i}_*.
+        segs = {side for tri in self.triangles for side in tri
+                if not _is_arc(side)}
+        per = Counter()
+        for side in segs:
+            m = re.match(r"b(\d+)_", str(side))
+            if not m:
+                raise QuiverlabError(
+                    f"Triangulation: boundary segment {side!r} does not name its "
+                    "component (expected b<i>_<j>)")
+            per[int(m.group(1))] += 1
+        want_per = {i: k for i, k in enumerate(self.surface.boundary_marked)}
+        if dict(per) != {i: k for i, k in want_per.items() if k}:
+            raise QuiverlabError(
+                f"Triangulation: boundary segments per component {dict(per)} do not "
+                f"match the surface's marked points {want_per}",
+                hint="the triangle list has the wrong boundary topology for this "
+                     "surface (e.g. a disc-shaped list on an annulus)")
 
     def arcs(self) -> tuple:
         """The interior-arc ids, sorted ascending."""

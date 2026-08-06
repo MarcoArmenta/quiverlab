@@ -53,7 +53,7 @@ def _raw_arrows(T):
 def _reduce_two_cycles(edges):
     """Cancel oriented 2-cycles pairwise: while both (a,b) and (b,a) occur, drop one of
     each. Returns the surviving multiset of directed edges (FST reduced quiver). For an
-    unpunctured surface with boundary this fires only on the minimal double-arc annulus."""
+    in v1's unpunctured-with-boundary scope 2-cycles provably cannot arise (they need self-folded triangles) -- this is a defensive no-op kept for the P48.1 punctured successor; C(1,1) yields PARALLEL arrows, not a 2-cycle."""
     cnt = Counter(edges)
     for (a, b) in list(cnt):
         if a < b:                                         # handle each unordered pair once
