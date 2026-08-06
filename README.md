@@ -313,6 +313,13 @@ ported and wired in:
   dual, and recollements from an idempotent (the corner `eAe`, the quotient `A/AeA`,
   and the six functors) — each certified per instance or refusing loudly;
   `quasi_hereditary` is clickable in the no-code GUI. **White space in QPA.**
+- **τ-tilting engine (C4, Adachi–Iyama–Reiten).** Support τ-tilting pairs via
+  mutation, the exchange graph + torsion-class lattice with brick labels, 2-term
+  silting, King θ-stability, maximal green sequences, and the AIR four-way count
+  identity (`#sτ-tilt = #f.f. torsion = #2-term silting = #semibricks = Catalan(n+1)`
+  for `kA_n`) — every enumeration budget-capped with the honest
+  complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
+  drawn no-code in the browser for n = 2, 3** — the C4 flagship.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

@@ -61,6 +61,7 @@ _HEADINGS = {
     "injective_dimension": "Injective dimension of M",
     "tilting_check": "Tilting test",
     "orbit_geometry": "Orbit geometry",
+    "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -243,6 +244,76 @@ def _ext_algebra_html(b):
                          for k, v in sorted(d.items(), key=lambda kv: int(kv[0])))
     out.append("<p>Minimal generators of E(A): %s. Minimal relations: %s.</p>"
                % (_by_degree(gens), _by_degree(rels)))
+    return out
+
+
+def _tau_tilting_html(b):
+    """The C4 tau-tilting block (Plan 45): the support tau-tilting pairs (label +
+    g-matrix + support), the brick-labelled Hasse edges, the AIR four-way counts +
+    maximal-green-sequence count, and the wall-and-chamber fan (chambers + walls),
+    with the honest complete-iff-tau-tilting-finite status."""
+    n = b.get("n")
+    out = ["<p>Support τ-tilting pairs (M, P) of A, their g-matrices and the mutation "
+           "exchange graph (Adachi–Iyama–Reiten). Each pair is a maximal cone of the "
+           "g-vector fan; each exchange edge crosses a wall labelled by a brick "
+           "(King θ-stability). The BFS from (A, 0) is complete iff A is "
+           "τ-tilting-finite.</p>"]
+    if not b.get("complete"):
+        out.append("<p class='ql-note'>The exchange graph did not close "
+                   "(status: <b>%s</b>) — A is τ-tilting-infinite or the pair budget was "
+                   "hit. %d pairs were found before the cap; the fan, the four-way counts "
+                   "and the green-sequence count are omitted (a partial value would "
+                   "mislead).</p>" % (_esc(str(b.get("status"))), b.get("num_pairs", 0)))
+    counts = b.get("counts")
+    if counts:
+        out.append("<p>The AIR four-way count identity holds on this run: "
+                   "#support τ-tilting pairs = #functorially-finite torsion classes = "
+                   "#2-term silting = #semibricks = <b>%d = %d = %d = %d</b>.</p>"
+                   % (counts.get("pairs"), counts.get("torsion"),
+                      counts.get("silting"), counts.get("semibricks")))
+    if b.get("green_count") is not None:
+        out.append("<p>Maximal green sequences (directed maximal chains "
+                   "(A,0) → (0,A) of left mutations): <b>%d</b>.</p>"
+                   % b["green_count"])
+    # pairs table
+    rows = ["<tr><th>id</th><th>pair (M, P)</th><th>support</th>"
+            "<th>g-matrix (columns = g-vectors)</th></tr>"]
+    for p in (b.get("pairs") or []):
+        gm = "; ".join("(" + ", ".join(str(p["g_matrix"][r][c])
+                                       for r in range(len(p["g_matrix"])))
+                       + ")" for c in range(len(p["g_matrix"][0]) if p["g_matrix"] else 0))
+        star = " (initial)" if p.get("is_initial") else ""
+        rows.append("<tr><td>%d</td><td>%s%s</td><td>%s</td><td>%s</td></tr>"
+                    % (p["id"], _esc(str(p["label"])), star,
+                       _esc(str(p.get("support") or [])), _esc(gm)))
+    out.append("<table class='ql-tt-pairs'>%s</table>" % "".join(rows))
+    # Hasse edges
+    hasse = b.get("hasse") or []
+    if hasse:
+        lis = []
+        for e in hasse:
+            bd = e.get("brick_dimvec")
+            bstr = (" — brick " + _dv(bd)) if bd else ""
+            lis.append("<li>%d → %d%s</li>" % (e["from"], e["to"], _esc(bstr)))
+        out.append("<p>Hasse quiver (downward = left mutation, from (A,0) to (0,A)):</p>")
+        out.append("<ul class='ql-tt-hasse'>%s</ul>" % "".join(lis))
+    # the fan (chambers + walls)
+    fan = b.get("fan")
+    if fan and fan.get("chambers"):
+        out.append("<p>Wall-and-chamber fan (n = %s%s): one chamber per pair (the "
+                   "g-vector cone), one wall per exchange edge (normal = the brick "
+                   "dim-vector). Exact rational; the GUI draws it live.</p>"
+                   % (_esc(str(fan.get("n"))),
+                      ", L1/octahedron projection" if fan.get("projection") == "L1"
+                      else ""))
+        wl = []
+        for w in (fan.get("walls") or []):
+            bd = w.get("brick_dimvec")
+            wl.append("<li>wall between chambers %s — normal (brick dim-vector) %s</li>"
+                      % (_esc(str(w.get("between"))),
+                         _dv(bd) if bd else "?"))
+        if wl:
+            out.append("<ul class='ql-tt-walls'>%s</ul>" % "".join(wl))
     return out
 
 
@@ -486,6 +557,8 @@ def _block_html(kind, b, ctx=None):
         return [_math(r"\dim_k A = %s" % _num(b.get("value")))]
     if kind == "ext_algebra":
         return _ext_algebra_html(b)
+    if kind == "tau_tilting":
+        return _tau_tilting_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
     if kind == "derived_fingerprint":

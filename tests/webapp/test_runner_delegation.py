@@ -173,12 +173,20 @@ never hide behind one:
     of them unchanged). Its ``canonical_key`` is request-derived; the ``result_json``
     was frozen from the server runner, and the Plan-49 cross-runner tests
     (``tests/webapp/test_orbit_geometry_p49.py`` / ``tests/gui/``) assert the Pyodide
-    twin is byte-identical via the shared ``orbit_geometry_block`` builder.  * 2026-08-05 (``orbit_geometry_kA3_s2`` re-freeze, P49 devil's-advocate round):
+    twin is byte-identical via the shared ``orbit_geometry_block`` builder.
+  * 2026-08-05 (``orbit_geometry_kA3_s2`` re-freeze, P49 devil's-advocate round):
     the ``orbit_geometry`` block gained the additive ``canonical_of`` key (=
     "dimension_vector" -- the canonical decomposition names the GENERIC module
     of d, not M; Marco's name-the-object rule). Gated re-freeze: the regenerated
     blob is byte-identical to the old one after deleting ``canonical_of``.
-"""
+  * 2026-08-05 (``tau_tilting_kA2`` ADDED, Plan 45 C4): a NEW fixture for the
+    ``tau_tilting`` ALGEBRA-level compute kind (kA2 over GF(7), budget 512 -- the full
+    run: 5 support τ-tilting pairs, complete, the n=2 fan with 5 chambers, the four-way
+    counts all 5). Pure addition: every pre-existing entry was verified byte-identical
+    BEFORE the new one was appended (the delegation test passed on all 15 unchanged). Its
+    ``canonical_key`` is request-derived (the budget rides in the ``compute`` string, no
+    new request field); the ``result_json`` was frozen from the server runner, and the
+    Plan-45 cross-runner test asserts the Pyodide twin agrees byte-for-byte."""
 import json
 import pathlib
 

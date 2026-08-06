@@ -308,6 +308,14 @@ _RANGE = re.compile(r"^(?P<kind>[a-z_]+)(?::(?P<lo>\d+)\.\.(?P<hi>\d+))?$")
 
 
 def parse_compute_item(s: str) -> ComputeItem:
+    # tau_tilting carries a PAIR BUDGET, not a degree range (Plan 45): 'tau_tilting' or
+    # 'tau_tilting:512'. The budget is not a homological degree, so it skips the
+    # 'name:0..N' degree grammar -- server and GUI/hpc agree on this special form.
+    if s == "tau_tilting" or s.startswith("tau_tilting:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SchemaError(f"unparseable compute item {s!r}")

@@ -375,6 +375,17 @@ class Module:
         from quiverlab.modules.duality import tau_minus
         return tau_minus(self)
 
+    def is_tau_rigid(self):
+        """True iff M is tau-rigid: ``Hom_A(M, tau M) = 0`` (Plan 45 / C4)."""
+        from quiverlab.tautilting.rigid import is_tau_rigid
+        return is_tau_rigid(self)
+
+    def g_vector(self):
+        """The g-vector ``g^M = [P_0] - [P_1]`` of the minimal projective presentation, a
+        vertex-keyed dict in ``K_0(proj A) = Z^{Q_0}`` (Plan 45 / C4)."""
+        from quiverlab.tautilting.rigid import g_vector
+        return g_vector(self)
+
     def nakayama(self):
         """The Nakayama functor value nu M = D Hom_A(M, A) (Plan 41 / C3). nu(P_v) = I_v;
         ker(nu P_1 -> nu P_0) = tau M ties it to the trusted AR translate."""

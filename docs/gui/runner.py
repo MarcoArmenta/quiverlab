@@ -117,6 +117,13 @@ def run_build(request_json):
 def _parse_compute(spec):
     name, _, rng = spec.partition(":")
     top = None
+    # tau_tilting carries a PAIR BUDGET, not a degree range (Plan 45): 'tau_tilting' or
+    # 'tau_tilting:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "tau_tilting":
+        if rng and not rng.isdigit():
+            raise RequestError("tau_tilting budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tau_tilting", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -776,6 +783,14 @@ def compute_one(spec):
                       "connes_b": A.connes_differentials}[name]
             block = method(top).blocks()
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "tau_tilting":
+            # C4 tau-tilting engine (Plan 45): algebra-level, budget (not degree). SAME
+            # shared library builder (tautilting.block.tau_tilting_block) + references ->
+            # citations as the server twin (quiverlab.hpc.spec._dispatch), so the
+            # cross-runner contract holds byte-for-byte. Honest budget cap block.
+            from quiverlab.tautilting.block import tau_tilting_block
+            block = tau_tilting_block(A, budget=top if top is not None else 512)
+            block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
         _state["results"].append(dict(block, invariant=spec))
@@ -911,6 +926,8 @@ def python_snippet():
              "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
              "bracket": "A.gerstenhaber_brackets(%d)",
              "connes_b": "A.connes_differentials(%d)",
+             # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
+             "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1007,7 +1024,11 @@ ETA_MODEL = {
                 "strings": 0.2,
                 # Plan 47: quasi_hereditary builds Delta/Nabla + a gl.dim check +
                 # the greedy Delta-peel of each P(v); a few small resolutions.
-                "quasi_hereditary": 0.5},
+                "quasi_hereditary": 0.5,
+                # Plan 45: the C4 tau-tilting engine BFSes the exchange graph via the
+                # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
+                # heavier than the string DFS, budget-capped honestly.
+                "tau_tilting": 2.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)
