@@ -71,6 +71,28 @@ finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhabe
 brackets, the first full Chouhy–Solotar resolution, module Ext, and Cartan/Coxeter
 invariants. Floats fail loudly by design.
 
+### v0.2.0 coverage scorecard (C1–C8)
+
+The [`ROADMAP.md`](docs/plans/ROADMAP.md) coverage program C1–C8 is delivered in
+v0.2.0. Nothing here over-claims: where a computation is a semi-decision, a
+verifier, or scope-limited, the surface says so and refuses loudly outside it.
+
+| Coverage phase | Delivered by | Honest scope |
+|---|---|---|
+| **C1** Categorical glue (Hom bases, Krull–Schmidt) | P37 | char-p decomposition refuses loudly past the exact-locality budget |
+| **C2** Forms, roots, structural recognition | P38 | per-flag honest recognizers (never a silent `False`); Dynkin/Euclidean detection is hereditary |
+| **C3** Auslander–Reiten theory completed | P41 | AR-knitting semi-decides rep-finiteness — budget-capped, loud when uncertified |
+| **C4** τ-tilting engine + live fan | P45 | brick labels iso-class-certified with loud refusal; enumeration complete iff τ-tilting-finite (budget-capped); fan drawn for n = 2, 3 |
+| **C5** Gentle / string subsystem | P46, P48 | AAG is an invariant, not a complete classifier; surfaces are unpunctured-with-boundary v1 (P48 refuses punctured/closed/self-folded) |
+| **C6** Homological-dimensions family | P40 | certified value or honest bound, never a bare number; `is_gorenstein` three-valued |
+| **C7** Tilting & new-algebra constructions | P44 | verifiers, not deciders (`tilting_check`); Gabriel-quiver recovery refuses loudly |
+| **C8** Geometry, derived fingerprints, complexes | P39, P42, P43, P49 | canonical decomposition Dynkin-hereditary-only; derived fingerprint is a *necessary-condition* comparison (a verifier, not a decider); Voigt codimension is an upper bound on `kQ/I` |
+
+Two v0.2.0 plans sit beside the C-program: **P36** adds Macaulay2 as a fifth
+external oracle class, and **P47** delivers quasi-hereditary algebras and
+recollements. Every row's oracles and honest-scope notes are on the
+[verification page](https://marcoarmenta.github.io/quiverlab/verification/).
+
 ## Get QuiverLab
 
 Most users want one of these, in this order:
