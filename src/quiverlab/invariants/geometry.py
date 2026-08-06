@@ -152,6 +152,16 @@ def orbit_geometry_block(M):
     }
     try:                                                  # Dynkin-only extra
         block["canonical_decomposition"] = canonical_decomposition(A, dv)
+        # devil's-advocate honesty fold (2026-08-05, Marco's name-the-object
+        # rule): the canonical decomposition belongs to the DIMENSION VECTOR
+        # (the generic/open-orbit module of d), which is M itself iff M is
+        # rigid -- never imply "M decomposes as ..." when it is not.
+        block["canonical_of"] = "dimension_vector"
+        if not block.get("rigid", False):
+            block["canonical_note"] = (
+                "the canonical decomposition describes the GENERIC module of "
+                "M's dimension vector (the open orbit), not M itself -- M is "
+                "not rigid, so its own Krull-Schmidt decomposition differs")
     except QuiverlabError as e:
         block["canonical_decomposition"] = None
         block["canonical_note"] = str(e)

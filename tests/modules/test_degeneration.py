@@ -110,3 +110,32 @@ def test_representation_infinite_refused():
     A = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=QQ)
     P = degeneration_order(A, {1: 2, 2: 2}, budget=40)
     assert P.is_complete is False and P.status in ("budget", "error", "unsupported")
+
+
+def test_rep_infinite_non_hereditary_refuses_fast_and_loud():
+    # Devil's-advocate HIGH (2026-08-05): k<x,y>/rad^2 (dim 3, non-hereditary,
+    # non-self-injective, rep-infinite) previously drove the knit into the
+    # default budget_dim=4096 -- a silent multi-minute hang. The target-derived
+    # dimension cap must make it refuse loudly in well under a second.
+    import time
+    from quiverlab import GF, Quiver
+    from quiverlab.modules.degeneration import degeneration_order
+
+    A = Quiver([1], {"x": (1, 1), "y": (1, 1)}).algebra(
+        relations=["x*x", "y*y", "x*y", "y*x"], field=GF(32003))
+    t0 = time.time()
+    P = degeneration_order(A, {1: 1}, budget=30)
+    assert time.time() - t0 < 5.0
+    assert P.is_complete is False and P.status in ("budget", "unsupported")
+
+
+def test_dynkin_retry_still_serves_small_d_needing_big_modules():
+    # the cap must NOT break Dynkin cases whose knit needs modules larger
+    # than sum(d): kA4 with d = e_1 + e_4 (sum 2; kA4 has dim-4 indecs).
+    from quiverlab import Quiver
+    from quiverlab.modules.degeneration import degeneration_order
+
+    A = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (2, 3), "c": (3, 4)}).algebra()
+    P = degeneration_order(A, {1: 1, 2: 0, 3: 0, 4: 1})
+    assert P.is_complete is True
+    assert len(P.vertices) == 1                   # only S1 (+) S4

@@ -104,11 +104,31 @@ def degeneration_order(algebra, d, *, budget=256, budget_dim=4096):
         hereditary = False
     if hereditary and algebra.form_type() != "finite":
         return DegenerationPoset(
-            [], [], is_complete=False, status="budget",
+            [], [], is_complete=False, status="unsupported",
             note=f"hereditary of {algebra.dynkin_type()} type: representation-infinite "
                  "(infinitely many indecomposables) -- no finite degeneration poset "
-                 "for a fixed dimension vector")
-    ar = algebra.ar_quiver(budget_modules=budget, budget_dim=budget_dim)
+                 "for a fixed dimension vector; raising the budget cannot help")
+    # devil's-advocate fix (2026-08-05): the guard above covers ONLY hereditary
+    # input; a non-hereditary non-self-injective rep-infinite algebra (e.g.
+    # k<x,y>/rad^2, dim 3) drove the knit into the default budget_dim=4096 --
+    # a silent multi-minute hang. Cap the knit's DIMENSION by the target: no
+    # indecomposable of a d-dimensional iso-class can exceed dim(d), so the
+    # knit never needs modules past sum(d) -- any incompleteness at that cap
+    # is refused loudly below, never retried at 4096.
+    dim_cap = min(budget_dim, sum(target) + 1)
+    ar = algebra.ar_quiver(budget_modules=budget, budget_dim=dim_cap)
+    if not ar.is_complete and hereditary and algebra.form_type() == "finite":
+        # Dynkin hereditary is PROVABLY rep-finite: the full-budget knit
+        # terminates, and its indecomposables may legitimately exceed sum(d)
+        # (they are discarded by the class enumeration below).
+        ar = algebra.ar_quiver(budget_modules=budget, budget_dim=budget_dim)
+    if not ar.is_complete and ar.status != "unsupported":
+        return DegenerationPoset(
+            [], [], is_complete=False, status="budget",
+            note=f"knit incomplete at the target-derived dimension cap {dim_cap} "
+                 "and the algebra is not certified representation-finite -- "
+                 "refusing rather than driving an unbounded knit; pass an "
+                 "explicit budget_dim to raise the cap deliberately")
     if not ar.is_complete:
         return DegenerationPoset([], [], is_complete=False, status=ar.status,
                                  note="not representation-finite / knit did not close")
