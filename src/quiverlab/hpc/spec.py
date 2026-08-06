@@ -224,6 +224,7 @@ class ComputeRequest:
     tor_target: ModuleSpec | None    # Plan 30: the N in Tor^A_n(M, N), a left module
     hpc: HpcConfig | None
     raw_algebra: dict            # verbatim echo for the result envelope
+    algebra_b: Any = None        # wave 2: the SECOND algebra for derived_compare (opt.)
 
 
 # --------------------------------------------------------------------------- #
@@ -244,6 +245,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
+    # 'ar_quiver:512'. The budget caps the knitted indecomposable universe -- not a
+    # homological degree -- so it bypasses the 'name:0..N' grammar (like tau_tilting).
+    if s == "ar_quiver" or s.startswith("ar_quiver:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -648,12 +657,19 @@ def parse_request(data) -> ComputeRequest:
     if "tor" in kinds and tor_target is None:
         raise SpecError("Tor needs a second module 'tor_target' (the N in "
                         "Tor^A_n(M, N), a LEFT A-module)")
+    # wave 2: the OPTIONAL second algebra for derived_compare. Absent for every other
+    # request (serialized away by the schema's model_dump), so canonical keys and the
+    # runner-delegation goldens are byte-unchanged. derived_compare REQUIRES it.
+    algebra_b = _parse_algebra(data["algebra_b"]) if data.get("algebra_b") is not None else None
+    if "derived_compare" in kinds and algebra_b is None:
+        raise SpecError("derived_compare needs a second algebra 'algebra_b' (the B in "
+                        "the derived-fingerprint comparison of A and B)")
 
     return ComputeRequest(schema_version=schema_version, algebra=algebra,
                           compute=list(compute), artifacts=artifacts,
                           module=module, ext_target=ext_target,
                           tor_target=tor_target, hpc=hpc,
-                          raw_algebra=data["algebra"])
+                          raw_algebra=data["algebra"], algebra_b=algebra_b)
 
 
 # --------------------------------------------------------------------------- #
@@ -769,6 +785,12 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
 
             N = _target(req.ext_target, "ext")
             T = _target(req.tor_target, "tor")
+            # wave 2: the second algebra for derived_compare, built only when that kind
+            # is requested (parse_request already required algebra_b for it).
+            B = (build_algebra(req.algebra_b)
+                 if (req.algebra_b is not None
+                     and any(it.kind == "derived_compare" for it in items))
+                 else None)
             results: dict = {}
             per_kind: dict = {}
             for i, item in enumerate(items):
@@ -789,7 +811,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                         results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
                         per_kind[item.kind] = _item_resources(t_item)
                         continue
-                    block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps)
+                    block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps, B)
                     results[item.kind] = block
                     per_kind[item.kind] = _item_resources(t_item)
                     if hh is not None:
@@ -1125,7 +1147,7 @@ def _dispatch_deepen(A, item: ComputeItem, hpc: HpcConfig, progress_cb) -> dict:
 # Per-invariant dispatch (block shapes mirror docs/gui/runner.py::compute_one)
 # --------------------------------------------------------------------------- #
 
-def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
+def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     kind = item.kind
     if kind in ("hh_cohomology", "hh_homology"):
         top = item.hi
@@ -1194,6 +1216,20 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block = specseq_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Radical-filtration (associated-graded) spectral sequence (P42 preset, wave 2): an
+    # algebra-only range kind. The shared builder runs the preset on the minimal
+    # projective resolution of (+)_v S_v to length `hi`; a refusal is caught INSIDE the
+    # builder into {"error": ...} (the specseq_block precedent), never a 500. Byte-
+    # identical Pyodide twin (docs/gui/runner.py). No hh_trace (its own tables).
+    if kind == "radical_filtration_ss":
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..4'")
+        from quiverlab.specseq.block import radical_filtration_ss_block
+        block = radical_filtration_ss_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # C4 tau-tilting engine (Plan 45): an ALGEBRA-level kind (like hh_*), NOT a module
     # kind. It carries a PAIR BUDGET, not a degree range: the spec grammar accepts
     # 'tau_tilting' (default budget 512) or 'tau_tilting:512' (a bare positive int); the
@@ -1205,6 +1241,17 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         budget = item.hi if item.hi is not None else 512
         from quiverlab.tautilting.block import tau_tilting_block
         block = tau_tilting_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # AR quiver (P41, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
+    # degree range ('ar_quiver' / 'ar_quiver:512', parsed like tau_tilting). Honest
+    # semi-decision -- complete iff rep-finite, else status='budget' (partial, labelled)
+    # or the self-injective/uncertifiable refusal in an `error` field, never a 500.
+    # Both runners share ar.ar_quiver_block, so the blocks are byte-identical.
+    if kind == "ar_quiver":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.modules.ar import ar_quiver_block
+        block = ar_quiver_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
@@ -1263,6 +1310,20 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         top = item.hi if item.hi is not None else 4
         from quiverlab.derived.block import derived_fingerprint_block
         block = derived_fingerprint_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Derived-fingerprint COMPARISON of two algebras (P43 compare_fingerprints, wave 2):
+    # a scalar kind needing the second algebra B (parse_request required algebra_b, and
+    # run() built it into B). The verdict is HONEST -- "distinguished by <field>" /
+    # "not distinguished by these invariants" -- NEVER an equivalence claim. Both runners
+    # share derived.block.derived_compare_block, so the blocks are byte-identical.
+    if kind == "derived_compare":
+        top = item.hi if item.hi is not None else 4
+        if B is None:                       # defensive: parse_request already guards this
+            raise ComputeError("SchemaError",
+                               "derived_compare needs a second algebra 'algebra_b'")
+        from quiverlab.derived.block import derived_compare_block
+        block = derived_compare_block(A, B, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Recognizer batch + type detection (Plan 38): a pure scalar kind on the
@@ -1943,6 +2004,23 @@ def _snippet(req: ComputeRequest, A) -> str:
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
              "cyclic_homology": lambda it: f"A.cyclic_homology({it.hi})",
              "ss_hochschild": lambda it: f"A.hochschild_bB_ss({it.hi})",
+             "radical_filtration_ss":
+                 lambda it: ("from quiverlab.modules.complexes import ChainComplex\n"
+                             "from quiverlab.modules.morphism import direct_sum\n"
+                             "from quiverlab.specseq import radical_filtration_ss\n"
+                             "S = direct_sum(*[A.simple(v) for v in A.quiver.vertices])[0]\n"
+                             "X = ChainComplex.from_projective_resolution(S, "
+                             f"{it.hi})\nradical_filtration_ss(X)"),
+             "ar_quiver":
+                 lambda it: ("A.ar_quiver(budget_modules="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "derived_compare":
+                 lambda it: ("from quiverlab.derived import compare_fingerprints, "
+                             "derived_fingerprint\n"
+                             "# build the second algebra B the same way as A\n"
+                             "compare_fingerprints(derived_fingerprint(A, "
+                             f"{it.hi if it.hi is not None else 4}), "
+                             f"derived_fingerprint(B, {it.hi if it.hi is not None else 4}))"),
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",

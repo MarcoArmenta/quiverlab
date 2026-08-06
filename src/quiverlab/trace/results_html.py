@@ -31,6 +31,9 @@ _HEADINGS = {
     "hh_homology": "Hochschild homology",
     "cyclic_homology": "Cyclic homology",
     "ss_hochschild": "Hochschild (b,B) spectral sequence",
+    "radical_filtration_ss": "Radical-filtration spectral sequence",
+    "ar_quiver": "Auslander–Reiten quiver",
+    "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
     "cap": "Cap product tables",
@@ -395,6 +398,44 @@ def _quasi_hereditary_html(b):
         out.append("<table class='ql-qh-delta'><thead><tr><th>standard</th><th>dim</th>"
                    "<th>dim vector</th></tr></thead><tbody>%s</tbody></table>"
                    % "".join(rows))
+    # wave 2 enrichment (present only when quasi-hereditary): the characteristic
+    # tilting module (summand dims) and the Ringel dual (dimension + Cartan matrix).
+    ct = b.get("characteristic_tilting")
+    if isinstance(ct, dict):
+        if ct.get("error"):
+            out.append("<p class='ql-note'>Characteristic tilting module: unavailable — "
+                       "%s</p>" % _esc(str(ct["error"])))
+        else:
+            line = ("Characteristic tilting module T: dim %s, dim vector %s."
+                    % (_num(ct.get("dim")), _esc(_dv(ct.get("dimvec") or {}))))
+            summ = ct.get("summands")
+            if summ:
+                parts = []
+                for s in summ:
+                    m = s.get("mult", 1)
+                    d = "%s" % _dv(s.get("dimvec") or {})
+                    parts.append(d if m == 1 else "%s (&times;%s)" % (d, _num(m)))
+                line += " Indecomposable summands (dim vectors): %s." % "; ".join(
+                    _esc(p) for p in parts)
+            elif ct.get("summands_error"):
+                line += (" Summand split unavailable — %s."
+                         % _esc(str(ct["summands_error"])))
+            out.append("<p>%s</p>" % line)
+    rd = b.get("ringel_dual")
+    if isinstance(rd, dict):
+        if rd.get("error"):
+            out.append("<p class='ql-note'>Ringel dual R(A): unavailable — %s</p>"
+                       % _esc(str(rd["error"])))
+        else:
+            out.append("<p>Ringel dual R(A) = End<sub>A</sub>(T)<sup>op</sup>: "
+                       "dim %s.</p>" % _num(rd.get("dim")))
+            if rd.get("cartan"):
+                out.append(matrix_grid(rd["cartan"], label="C_{R(A)}"))
+            elif rd.get("cartan_error"):
+                out.append("<p class='ql-note'>Ringel dual Cartan matrix unavailable — "
+                           "%s</p>" % _esc(str(rd["cartan_error"])))
+            if rd.get("note"):
+                out.append("<p class='ql-note'>%s</p>" % _esc(str(rd["note"])))
     return out
 
 
@@ -428,6 +469,108 @@ def _derived_fingerprint_html(b):
         b.get("scope", "a derived-invariant fingerprint; equal values are a "
                        "necessary condition for derived equivalence, not a proof")))
     return out
+
+
+def _fp_cell(val):
+    """One fingerprint value as an HTML cell: a captured error prints its message, a
+    list prints ``[a, b, ...]``, everything else prints verbatim (escaped)."""
+    if isinstance(val, dict) and "error" in val:
+        return "unavailable — %s" % _esc(str(val["error"]))
+    if isinstance(val, list):
+        return _esc("[" + ", ".join(str(x) for x in val) + "]")
+    return _esc(str(val))
+
+
+# The fingerprint fields, in the order both fingerprint renderers show them.
+_FP_ROWS = (
+    ("Coxeter polynomial", "coxeter_polynomial"),
+    ("det C", "cartan_det"),
+    ("Cartan Smith factors", "cartan_smith"),
+    ("dim HH^• (cohomology)", "hh_cohomology_dims"),
+    ("dim HH_• (homology)", "hh_homology_dims"),
+    ("dim HC_• (cyclic)", "cyclic_dims"),
+    ("dim Z(A)", "center_dim"),
+    ("global dimension", "gl_dim"),
+)
+
+
+def _derived_compare_html(b):
+    """The derived_compare block (wave 2): the derived fingerprints of A and B side by
+    side, the honest verdict (never an equivalence claim), and the incomparable fields
+    (a field that errored on one side). A captured error prints its message per cell."""
+    fa = b.get("fingerprint_a") or {}
+    fb = b.get("fingerprint_b") or {}
+    body = "".join(
+        "<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+        % (_esc(label), _fp_cell(fa.get(key)), _fp_cell(fb.get(key)))
+        for label, key in _FP_ROWS)
+    out = ["<table class='ql-fingerprint'><thead><tr><th>invariant</th><th>A</th>"
+           "<th>B</th></tr></thead><tbody>%s</tbody></table>" % body]
+    verdict = b.get("verdict_text") or b.get("verdict") or ""
+    out.append("<p><b>Verdict:</b> %s.</p>" % _esc(str(verdict)))
+    if b.get("incomparable_fields"):
+        out.append("<p class='ql-note'>Incomparable (errored on one side): %s.</p>"
+                   % _esc(", ".join(b["incomparable_fields"])))
+    out.append("<p><em>%s.</em></p>" % _esc(
+        b.get("scope", "equal fingerprints are a necessary condition for derived "
+                       "equivalence, not a proof")))
+    return out
+
+
+def _radical_filtration_ss_html(b):
+    """The radical-filtration spectral-sequence block (wave 2): the abutment table (the
+    homology of the resolution complex per degree), the E_inf netPage grid, and the
+    convergence prose -- the ss_hochschild presentation, on the associated-graded SS of
+    the minimal resolution of the sum of the simple modules."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % gloss_max_cells(_esc(str(b["error"])))]
+    chunks = [_dims_table("dim E_inf total (= H_n of the complex)", b.get("abutment") or [])]
+    grid = (b.get("grid") or "").replace("```", "").strip()
+    if grid:
+        chunks.append("<pre class=\"ql-ss-grid\">%s</pre>" % _esc(grid))
+    if b.get("prose"):
+        chunks.append("<p>%s</p>" % _esc(str(b["prose"])))
+    return chunks
+
+
+def _ar_quiver_html(b):
+    """The Auslander–Reiten quiver block (wave 2): the completeness status, the
+    indecomposables (name + dimension vector), the irreducible-map arrows with
+    multiplicities and the tau-orbits. An honest budget cap ships a partial list; a
+    self-injective / uncertifiable refusal is the library's loud message."""
+    if b.get("error"):
+        return ["<p class='ql-note'>AR quiver not knitted: %s</p>" % _esc(str(b["error"]))]
+    chunks = []
+    status = b.get("status", "?")
+    if b.get("complete"):
+        chunks.append("<p>The algebra is representation-finite: the AR quiver has "
+                      "%s indecomposables and %s irreducible-map arrows.</p>"
+                      % (_num(b.get("num_vertices")), _num(b.get("num_arrows"))))
+    else:
+        chunks.append("<p class='ql-note'>Incomplete (status: %s) — %s</p>"
+                      % (_esc(status), _esc(str(b.get("partial_note")
+                         or "the knit did not close within the budget"))))
+    verts = b.get("vertices") or []
+    if verts:
+        rows = "".join(
+            "<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+            % (_num(v.get("id")), _esc(str(v.get("name") or "—")), _esc(_dv(v.get("dimvec") or {})))
+            for v in verts)
+        chunks.append("<table class='ql-table'><thead><tr><th>id</th><th>module</th>"
+                      "<th>dim vector</th></tr></thead><tbody>%s</tbody></table>" % rows)
+    arrows = b.get("arrows") or []
+    if arrows:
+        parts = []
+        for a in arrows:
+            m = a.get("mult", 1)
+            label = "%s &rarr; %s" % (_num(a.get("from")), _num(a.get("to")))
+            parts.append(label if m == 1 else "%s (&times;%s)" % (label, _num(m)))
+        chunks.append("<p>Irreducible maps: %s.</p>" % "; ".join(parts))
+    orbits = b.get("tau_orbits") or []
+    if orbits:
+        otxt = "; ".join("{" + ", ".join(_num(x) for x in orbit) + "}" for orbit in orbits)
+        chunks.append("<p>&tau;-orbits: %s.</p>" % otxt)
+    return chunks
 
 
 def _strings_html(b):
@@ -544,6 +687,10 @@ def _block_html(kind, b, ctx=None):
         if b.get("prose"):
             chunks.append("<p>%s</p>" % _esc(str(b["prose"])))
         return chunks
+    if kind == "radical_filtration_ss":
+        return _radical_filtration_ss_html(b)
+    if kind == "ar_quiver":
+        return _ar_quiver_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]
@@ -566,6 +713,8 @@ def _block_html(kind, b, ctx=None):
         return _recognizers_html(b)
     if kind == "derived_fingerprint":
         return _derived_fingerprint_html(b)
+    if kind == "derived_compare":
+        return _derived_compare_html(b)
     if kind == "strings":
         return _strings_html(b)
     if kind == "quasi_hereditary":
@@ -694,6 +843,42 @@ def _orbit_geometry_html(b):
     elif b.get("canonical_note"):
         chunks.append("<p class='ql-note'>Canonical decomposition not computed: %s</p>"
                       % _esc(str(b["canonical_note"])))
+    # wave 2 enrichment: the P49 degeneration (= hom) order of M's dimension vector,
+    # present only when it is informative (a genuine multi-class poset) or an honest
+    # library refusal. Absent (byte-identical) for a unique module of that dim vector.
+    deg = b.get("degeneration_order")
+    if isinstance(deg, dict):
+        if not deg.get("complete"):
+            chunks.append("<p class='ql-note'>Degeneration order not computed "
+                          "(status: %s) — %s</p>"
+                          % (_esc(str(deg.get("status", "?"))),
+                             _esc(str(deg.get("note", "")))))
+        else:
+            rows = []
+            for v in deg.get("vertices", []):
+                summ = " &oplus; ".join(
+                    (s.get("name") or _dv(s.get("dimvec") or {}))
+                    if s.get("mult", 1) == 1
+                    else "%s(&times;%s)" % (s.get("name") or "?", s.get("mult"))
+                    for s in v.get("summands", []))
+                marks = []
+                if v.get("is_generic"):
+                    marks.append("generic")
+                if deg.get("m_index") == v.get("index"):
+                    marks.append("= M")
+                tag = (" (%s)" % ", ".join(marks)) if marks else ""
+                rows.append("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                            % (_num(v.get("index")), _esc(summ + tag),
+                               _num(v.get("orbit_dim"))))
+            chunks.append("<p>Degeneration (hom) order of the iso-classes of dimension "
+                          "vector d (a &le;<sub>deg</sub> b means a degenerates from b):</p>")
+            chunks.append("<table class='ql-table'><thead><tr><th>class</th>"
+                          "<th>module</th><th>dim O</th></tr></thead><tbody>%s"
+                          "</tbody></table>" % "".join(rows))
+            covers = deg.get("covers") or []
+            if covers:
+                ctxt = "; ".join("%s &lt; %s" % (_num(a), _num(bb)) for a, bb in covers)
+                chunks.append("<p>Hasse covers: %s.</p>" % ctxt)
     return chunks
 
 
