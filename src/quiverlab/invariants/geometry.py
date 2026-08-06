@@ -106,15 +106,17 @@ def canonical_decomposition(algebra, d, *, budget=4096):
                              "budget", hint="raise `budget`")
     # per-instance certificate: the direct sum of the chosen indecomposables is
     # RIGID (Kac). Build G explicitly and demand Ext^1(G, G) == 0 -- an independent
-    # oracle on top of the search's pairwise-ext bookkeeping.
+    # oracle on top of the search's pairwise-ext bookkeeping. (The zero vector
+    # decomposes as the empty sum -- the zero module, trivially rigid.)
     mods = []
     for root, mult in best:
         mods.extend([mod_of[root]] * mult)
-    G = direct_sum(*mods)[0] if len(mods) > 1 else mods[0]
-    if algebra.ext(G, G, 1) != 0:
-        raise QuiverlabError(
-            "canonical_decomposition: rigidity certificate FAILED "
-            f"(Ext^1(G, G) != 0 for the assembled generic module of {dvec})")
+    if mods:
+        G = direct_sum(*mods)[0] if len(mods) > 1 else mods[0]
+        if algebra.ext(G, G, 1) != 0:
+            raise QuiverlabError(
+                "canonical_decomposition: rigidity certificate FAILED "
+                f"(Ext^1(G, G) != 0 for the assembled generic module of {dvec})")
     out = []
     for root, mult in sorted(best):
         std = identify_standard(mod_of[root])
