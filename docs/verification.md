@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **3285 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **3288 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Plan-48 marked-surface subsystem (marked surfaces →
 ideal triangulations → gentle Jacobian algebras; +70 tests), the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
@@ -484,7 +484,7 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 | Bucket | Tests | Runs where |
 |---|---:|---|
 | `fast` | 1504 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1583 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `deep` | 1586 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 187 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `m2` | 11 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
 | `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
