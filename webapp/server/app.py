@@ -17,7 +17,7 @@ from webapp.server import cache
 from webapp.server.catalog import build_catalog
 from webapp.server.config import Config, assert_production_secrets, get_config
 from webapp.server.estimator import classify, sizing_dim
-from webapp.server.instant import InstantRateLimiter, run_with_timeout
+from webapp.server.instant import InstantBusy, InstantRateLimiter, run_with_timeout
 from webapp.server.limits import check_can_queue
 from webapp.server.runner import RunError, build_algebra
 from webapp.server.schema import ComputeRequest
@@ -213,6 +213,15 @@ def create_app(cfg: Config | None = None, mailer=None, *,
                                 "Please slow down, or run locally: pip install quiverlab")})
             try:
                 result = run_with_timeout(req, cfg)   # built algebra NOT retained
+            except InstantBusy:
+                # Process-wide instant-concurrency ceiling saturated: refuse
+                # gracefully (503 "busy, try again"), never a 500 and never a
+                # silent queue. Same JSON shape as the other instant refusals.
+                return JSONResponse(status_code=503, content={
+                    "error_type": "Busy",
+                    "message": ("the instant tier is at capacity right now; please "
+                                "retry in a few seconds, or run locally: "
+                                "pip install quiverlab")})
             except RunError as exc:
                 return _error_response(exc.error_type, exc.message)
             if result is not None:

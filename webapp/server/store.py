@@ -189,19 +189,33 @@ class JobStore:
             row = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
         return self._row_to_job(row) if row else None
 
-    def claim_next(self) -> Job | None:
+    def claim_next(self, exclude_tiers: tuple[str, ...] | None = None) -> Job | None:
         """Atomically claim the oldest pending job, flipping it to `running`.
 
         The read-then-update runs inside a single `BEGIN IMMEDIATE` transaction,
         which takes SQLite's write lock up front, so two concurrent workers can
         never select and claim the same row. Returns the claimed `Job`, or None
-        when no job is pending."""
+        when no eligible job is pending.
+
+        `exclude_tiers` filters the candidate rows by an added `tier NOT IN (...)`
+        WHERE clause (parameterised), so a caller can reserve a worker loop for the
+        instant/queued tier by excluding `('big',)`. It is a pure narrowing of the
+        eligible set: the FIFO order (`ORDER BY created_at`) and the BEGIN IMMEDIATE
+        atomicity are unchanged, and the oldest ELIGIBLE row is still the one
+        claimed. `None`/empty means claim any tier -- byte-identical to before."""
         conn = self._conn()
         try:
             conn.execute("BEGIN IMMEDIATE")
-            row = conn.execute(
-                "SELECT id FROM jobs WHERE status='pending' "
-                "ORDER BY created_at LIMIT 1").fetchone()
+            if exclude_tiers:
+                placeholders = ",".join("?" for _ in exclude_tiers)
+                row = conn.execute(
+                    f"SELECT id FROM jobs WHERE status='pending' "
+                    f"AND tier NOT IN ({placeholders}) "
+                    "ORDER BY created_at LIMIT 1", tuple(exclude_tiers)).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT id FROM jobs WHERE status='pending' "
+                    "ORDER BY created_at LIMIT 1").fetchone()
             if row is None:
                 conn.execute("COMMIT")
                 return None

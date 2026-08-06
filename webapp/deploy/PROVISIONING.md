@@ -83,24 +83,37 @@ anonymous, unauthenticated DoS surface, so widening it is off the table.
 ### The RAM arithmetic (the one hard rule)
 
 Each job runs in a `spawn` child that pins every math runtime to **one thread**,
-and the queue is a **single shared FIFO** (`JobStore.claim_next`, oldest-first,
-no per-tier priority). So the worst case is **every worker running a big job at
-once**, and the binding constraint is
+and the queue is a **single shared FIFO** (`JobStore.claim_next`, oldest-first).
+The conservative binding constraint — the one that holds **even if you override
+the tier reservation below** — is that every worker could be running a big job at
+once:
 
 ```
 QLWEB_WORKER_PROCESSES  ×  QLWEB_BIG_JOB_MEM_BYTES   ≤   RAM − headroom
 ```
 
 where `QLWEB_BIG_JOB_MEM_BYTES` is the per-job `RLIMIT_AS` the worker enforces
-(hard on Linux). Budgeting **~10 GB of the 50 GB** for the OS, the FastAPI app
+(hard on Linux). Budgeting **~18 GB of the 50 GB** for the OS, the FastAPI app
 process, Caddy, the SQLite/WAL page cache, and the app-tier instant children
-leaves **~40 GB** for the worker fleet:
+leaves **~32 GB** for the worker fleet:
 
 ```
-2 workers × 20 GiB (big)  = 40 GiB   ≤ 40 GiB usable      ✔ (worst case, all big)
-2 workers ×  8 GiB (queued)= 16 GiB                        ✔
-1 big (20 GiB) + 1 queued (8 GiB) = 28 GiB                 ✔
+2 workers × 16 GiB (big)   = 32 GiB   ≤ 32 GiB usable     ✔ (conservative all-big)
+2 workers ×  8 GiB (queued) = 16 GiB                       ✔
+1 big (16 GiB) + 1 queued (8 GiB) = 24 GiB                 ✔ (the realistic case)
 ```
+
+**Tier-aware claiming makes the realistic worst case smaller than the
+conservative bound.** The fleet is not blind FIFO: when it has **≥ 2 loops, loop
+0 refuses the `big` tier** (`claim_next(exclude_tiers=('big',))`, in
+`webapp/worker/run_loop.py`). So **at most one big job runs at a time**
+(`fleet − 1 = 1 × 16 GiB`) and **one loop is always free to serve
+instant/queued** work — a run of verified-email big jobs can never freeze the
+anonymous queue. The realistic resident worst case is therefore
+`1 big (16 GiB) + 1 queued (8 GiB) + up to QLWEB_INSTANT_GLOBAL_MAX instant
+children` — comfortably inside the ~18 GB headroom, since instant computes are
+tiny by classification (a fresh instant child's real resident footprint is well
+under 1 GiB even though its `RLIMIT_AS` ceiling reuses the 8 GiB queued value).
 
 `RLIMIT_AS` caps **virtual** address space, and numba/LLVM reserve large virtual
 regions up front, so real resident memory sits well under these ceilings — the
@@ -111,16 +124,17 @@ resident). That conservatism is the margin.
 
 | Knob | Code default | Cloud profile | Rationale |
 |---|---|---|---|
-| `QLWEB_WORKER_PROCESSES` | `cpu−2` (≈14 here) | **2** | RAM-bound, not core-bound. 2 × 20 GiB big = 40 GiB fits; keeping a second loop free means a big job never fully starves the queued tier. |
+| `QLWEB_WORKER_PROCESSES` | `cpu−2` (≈14 here) | **2** | RAM-bound, not core-bound. 2 × 16 GiB big = 32 GiB fits (~18 GiB headroom); the tier-aware fleet keeps loop 0 free for instant/queued, so a big job never starves the anonymous tier. |
+| `QLWEB_INSTANT_GLOBAL_MAX` | 0 (unlimited) | **8** | Process-wide ceiling on concurrent instant children — a **protection**, not a widening of the instant classifier. Bounds the aggregate the per-IP rate gate can't see; over the ceiling the instant tier returns a graceful 503. |
 | `QLWEB_JOB_WALL_SECONDS` (queued) | 900 (15 min) | **3600 (1 h)** | The cloud accepts computations past a laptop's patience. |
 | `QLWEB_JOB_MEM_BYTES` (queued) | 4 GiB | **8 GiB** | Deeper resolutions the raised thresholds admit need room. Also the **instant** child ceiling (see below); harmless, instant jobs are tiny. |
 | `QLWEB_BIG_JOB_WALL_SECONDS` | 14400 (4 h) | **86400 (24 h)** | Email-verified HPC jobs get a full day (48 h available via `.env` if wanted). |
-| `QLWEB_BIG_JOB_MEM_BYTES` | 16 GiB | **20 GiB** | Largest the RAM rule allows at fleet size 2 (see below on 40 GiB). |
+| `QLWEB_BIG_JOB_MEM_BYTES` | 16 GiB | **16 GiB** (== default) | Kept at the code default so the conservative all-big worst case is 2 × 16 = 32 GiB of 50 (~18 GiB headroom); see below on why not 40 GiB. |
 | `QLWEB_QUEUED_OPS_THRESHOLD` | 5e8 | **2e10** | Order-of-magnitude aligned to a 1 h wall via the estimator's 500M ops/min hint (~30e9 ops in 1 h). |
 | `QLWEB_QUEUED_MAX_DEGREE` | 20 | **30** | Deeper resolutions. |
 | `QLWEB_BIG_OPS_THRESHOLD` | 5e10 | **5e11** | Aligned to a 24 h wall (~700e9 ops). |
 | `QLWEB_BIG_MAX_DEGREE` | 40 | **60** | Deeper campaigns. |
-| `QLWEB_CACHE_MAX_ENTRIES` | 1000 | **10000** | 200 GB volume; the cache is an entry-count LRU — see the byte caveat below. |
+| `QLWEB_CACHE_MAX_ENTRIES` | 1000 | **3500** | Entry-count LRU. 3500 × the 32 MiB result ceiling ≈ 117 GB worst case, under 60% of the 200 GB volume — see the byte caveat below. |
 | `QLWEB_RETENTION_DAYS` | 90 | **365** | A year of artifacts for reproducibility on the 200 GB volume. |
 | `QLWEB_GLOBAL_QUEUE_MAX` | 200 | **1000** | Deeper backlog; concurrency is still the fleet size (jobs drain 2 at a time). |
 | `QLWEB_BIG_QUEUE_MAX` | 20 | **50** | Deeper big backlog. |
@@ -137,14 +151,17 @@ are what we widened.
 ### Why not a single 40 GiB big job?
 
 A 40 GiB big cap was evaluated. On the shared FIFO queue it forces
-`QLWEB_WORKER_PROCESSES = 1` (1 × 40 GiB = 40 GiB), which means a 24 h big job
-would **freeze the anonymous queued tier for up to a day** — the second loop that
-normally keeps serving queued work while a big job runs would not exist. That
-breaks the tier philosophy (email gates the *cost* of computing, never a queued
-user's access). So the profile keeps 20 GiB at fleet size 2. If you knowingly
-want to dedicate the whole box to one huge run, the `.env` "single-huge-job
-campaign profile" (`QLWEB_WORKER_PROCESSES=1`, `QLWEB_BIG_JOB_MEM_BYTES=40 GiB`)
-is documented — but the right home for campaign-scale work is the burst instance.
+`QLWEB_WORKER_PROCESSES = 1` (1 × 40 GiB = 40 GiB), which drops the tier-aware
+reservation entirely (a 1-loop fleet claims **any** tier, big included), so a 24 h
+big job would **freeze the anonymous queued tier for up to a day** — the second
+loop that normally keeps serving queued work while a big job runs would not exist.
+That breaks the tier philosophy (email gates the *cost* of computing, never a
+queued user's access). So the profile keeps **16 GiB at fleet size 2**, where loop
+0 stays reserved for instant/queued. If you knowingly want to dedicate the whole
+box to one huge run, the `.env` "single-huge-job campaign profile"
+(`QLWEB_WORKER_PROCESSES=1`, `QLWEB_BIG_JOB_MEM_BYTES=40 GiB`) is documented — but
+the right home for campaign-scale work is the burst instance + `quiverlab-hpc`,
+which also gives you checkpoint/resume the website worker does not have.
 
 ### Burst instance for campaign-scale work
 
@@ -165,7 +182,7 @@ handles the 40+ GiB / many-parallel campaigns.
 - **The Plan-35 `dim ≥ 220` product examples** (`nakayama-kz20-deep`,
   `nakayama-kz24-deep`): the bar/TT `to_engine` step alone is ~290 s and the
   degree-2 cochain basis is ~10.5M cells (over `max_cells`), so a `cup`/`cap`
-  probe does not finish even in a 24 h / 20 GiB big slot (a direct 25-min kZ20
+  probe does not finish even in a 24 h / 16 GiB big slot (a direct 25-min kZ20
   `cup:0..2` timed out — evidence in `webapp/precomputed/manifest.yaml`). These
   carry no products by design; they are a burst-instance / offline-`quiverlab-hpc`
   job, not a website job.
@@ -173,23 +190,41 @@ handles the 40+ GiB / many-parallel campaigns.
   `Λ(kⁿ≥4)` depth, and `decompose` past ~`dim 50` are the standing deferred
   cluster (see the verification page honest-scope section) — the box makes them
   *more* reachable but does not change their asymptotics.
-- The **result cache is an entry-count LRU, not a byte budget**: 10000 entries is
-  safe only while cached results stay small (KB–MB, which curated examples are).
-  Worst case per entry ≈ `QLWEB_RESULT_MAX_BYTES` (32 MB) plus the trace HTML, so
-  watch `df -h /data` and lower `QLWEB_CACHE_MAX_ENTRIES` / `QLWEB_RETENTION_DAYS`
-  if the volume fills.
+- The **result cache is an entry-count LRU, not a byte budget**: the 3500-entry
+  cap is chosen so the worst case — every entry at the full result ceiling
+  `QLWEB_RESULT_MAX_BYTES` (32 MiB) — is `3500 × 32 MiB ≈ 117 GB`, under **60% of
+  the 200 GB volume**, leaving room for unpinned in-flight artifacts and the
+  SQLite DB. Real cached results are far smaller (KB–MB, which curated examples
+  are). Still, watch `df -h /data` and lower `QLWEB_CACHE_MAX_ENTRIES` /
+  `QLWEB_RETENTION_DAYS` if the volume fills.
 
 ### Graceful stop with the longer walls
 
 `stop_grace_period` is **3630s** = the queued wall (3600) + 30s slack, kept just
 above `run_loop.main()`'s own join deadline (queued wall + 20s) so `main` reaps
-its loops cleanly before Docker's SIGKILL. A **big job (24 h) is not covered** —
-a deploy must not block for a day. Any job still running at the cut (a big job, or
-a queued job that outlives the grace) is SIGKILLed and **requeued** from
-`running` → `pending` at the next startup (`JobStore.requeue_stale_running`), so
-nothing is lost and no running slot leaks. For an immediate restart use
-`docker compose kill` and let the startup requeue recover the in-flight job. If
-you raise `QLWEB_JOB_WALL_SECONDS` past 1 h, raise `stop_grace_period` to match.
+its loops cleanly before Docker's SIGKILL.
+
+**A deploy can wait up to ~1 h.** With this grace, `docker compose stop`/`up -d`
+(a redeploy) will **block for as long as the in-flight queued job takes to drain**,
+up to the full 1 h wall. To skip the wait, use **`docker compose kill`** (the fast
+path): it SIGKILLs immediately, and the startup requeue on the next boot recovers
+the interrupted job.
+
+**A requeued job re-runs FROM SCRATCH.** A **big job (24 h) is deliberately not
+covered** by the grace — a deploy must not block for a day. Any job still running
+at the cut (a big job, or a queued job that outlives the grace) is SIGKILLed and
+**requeued** from `running` → `pending` at the next startup
+(`JobStore.requeue_stale_running`), so no result is silently dropped and no running
+slot leaks. **But the webapp worker has no checkpoint/resume**: the requeued job
+starts over at degree 0 and recomputes everything. Concretely, **deploy during
+hour 23 of a 24 h big job and all 23 h of work is thrown away and recomputed from
+zero.** This is why campaign-scale / long-running work belongs on **`quiverlab-hpc`
+on the burst instance** (Plan 28), which *does* checkpoint (exit 75 = clean
+checkpoint stop, `sbatch` requeues from the checkpoint) — not on the website. Time
+deploys away from a big job's window, or accept the restart.
+
+If you raise `QLWEB_JOB_WALL_SECONDS` past 1 h, raise `stop_grace_period` to match
+(and expect the drain wait to grow with it).
 
 ## Result cache (Plan 25)
 
@@ -310,15 +345,16 @@ Set, in the `app` and `worker` `environment:` blocks:
 - `QLWEB_BIG_JOB_WALL_SECONDS`, `QLWEB_BIG_JOB_MEM_BYTES`,
   `QLWEB_PER_EMAIL_WEEKLY_MAX`, `QLWEB_BIG_QUEUE_MAX` — the library **code**
   defaults are 4 h / 16 GB / 5 / 20, but the shipped cloud profile in
-  `docker-compose.yml` raises them to **24 h / 20 GiB / 10 / 50** (see
-  "Cloud capacity tuning" above for the arithmetic and how to override).
+  `docker-compose.yml` raises the wall/backlog/weekly to **24 h / 10 / 50** while
+  keeping big memory at **16 GiB** (see "Cloud capacity tuning" above for the
+  arithmetic and how to override).
 - `QLWEB_DOCS_URL` — optional; when set, a "Docs" link appears in the nav.
 
 Emails are used only for verification + a completion notice, hashed for
 rate-limiting, deleted right after the completion email, and never shown in the
 admin feedback view.
 
-**Campaign-scale / burst tier.** Jobs that exceed even the 24 h / 20 GiB big
+**Campaign-scale / burst tier.** Jobs that exceed even the 24 h / 16 GiB big
 slot belong on a short-lived RAS *compute* instance (**80 vCPU / 300 GB**,
 1-month wall-time), driven **today** by the in-wheel `quiverlab-hpc` batch CLI
 (Plan 28) — see "Cloud capacity tuning → Burst instance" above. Fully *automatic*

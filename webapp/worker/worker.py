@@ -268,9 +268,17 @@ def run_one_job(store: JobStore, cfg: Config, job: Job, mailer=None) -> None:
         raise
 
 
-def worker_tick(store: JobStore, cfg: Config, mailer=None) -> bool:
-    """Claim one pending job and run it; return whether work was done."""
-    job = store.claim_next()
+def worker_tick(store: JobStore, cfg: Config, mailer=None,
+                exclude_tiers: tuple[str, ...] | None = None) -> bool:
+    """Claim one pending job and run it; return whether work was done.
+
+    `exclude_tiers` is forwarded verbatim to `JobStore.claim_next`: the fleet
+    (see `webapp/worker/run_loop.py`) passes `('big',)` on loop 0 when the fleet
+    has >= 2 loops, so at least one loop always stays free for the instant/queued
+    tier and a run of big jobs can never freeze the anonymous queue. `None` (the
+    default, and every direct caller here + the offline single loop) claims any
+    tier -- byte-identical to the previous behaviour."""
+    job = store.claim_next(exclude_tiers=exclude_tiers)
     if job is None:
         return False
     run_one_job(store, cfg, job, mailer=mailer)
