@@ -1010,6 +1010,12 @@ ETA_MODEL = {
                 "decompose": 0.3, "almost_split": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
                 "projective_dimension": 0.3, "injective_dimension": 0.3,
+                # Plan 44 / 49: single-module homological probes (tilting_check =
+                # self-Ext vanishing + summand count; orbit_geometry = Voigt
+                # rigidity + Kac canonical decomposition). Same cost class as the
+                # other module resolutions/probes -- WITHOUT these keys they fell
+                # through to the 0.1 default and were silently under-estimated.
+                "tilting_check": 0.3, "orbit_geometry": 0.3,
                 # Plan 38: ext_algebra walks a resolution + Yoneda products;
                 # recognizers is cheap structural combinatorics + a reduction system.
                 "ext_algebra": 2.0, "recognizers": 0.1,
