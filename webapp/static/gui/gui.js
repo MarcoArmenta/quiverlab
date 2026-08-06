@@ -68,7 +68,12 @@
     '  <button id="qlgui-rel-rad2" class="qlgui-secondary" type="button">rad&sup2; = 0</button>' +
     '  <button id="qlgui-rel-comm" class="qlgui-secondary" type="button">commutativity</button>' +
     '  <span id="qlgui-rel-status" class="qlgui-hint"></span></div>' +
-    '<div class="qlgui-row" id="qlgui-invariants">' +
+    // Layout C (Marco 2026-08-06): this flat grid is the HIDDEN source of truth --
+    // every real checkbox/degree input still lives here (so buildRequest() and the
+    // el-map are untouched, and the compute order / Plan-25 cache keys are preserved
+    // by construction). The picker built below RELOCATES these very nodes into
+    // themed rows; nothing is duplicated into a parallel state object.
+    '<div class="qlgui-row qlpick-src" id="qlgui-invariants">' +
     '  <label><input type="checkbox" id="qlgui-hhc" checked> HH^0..<select id="qlgui-hhc-top"></select></label>' +
     '  <label><input type="checkbox" id="qlgui-hhh"> HH_0..<select id="qlgui-hhh-top"></select></label>' +
     // ---- Plan 35: HH product surface (cup / cap / bracket / connes_b) ----
@@ -100,7 +105,7 @@
     '</div>' +
     // ---- Plan 26: no-code module panel ----
     '<fieldset id="qlgui-module" class="qlgui-fieldset">' +
-    '  <legend><label><input type="checkbox" id="qlgui-mod-enable"> Module (no code)</label></legend>' +
+    '  <legend><label><input type="checkbox" id="qlgui-mod-enable" class="qlpick-src"> Module M (no code)</label></legend>' +
     '  <div class="qlgui-row">' +
     '    <label>build <select id="qlgui-mod-mode">' +
     '      <option value="explicit">explicit (dims + matrices)</option>' +
@@ -113,7 +118,7 @@
     '    </select></label>' +
     '  </div>' +
     '  <div id="qlgui-mod-body"></div>' +
-    '  <div class="qlgui-row" id="qlgui-mod-kinds">' +
+    '  <div class="qlgui-row qlpick-src" id="qlgui-mod-kinds">' +
     '    <label><input type="checkbox" id="qlgui-dimension_vector" checked> dim vector</label>' +
     '    <label><input type="checkbox" id="qlgui-rad_top_soc"> rad/top/soc</label>' +
     '    <label><input type="checkbox" id="qlgui-tau"> τ</label>' +
@@ -723,6 +728,7 @@
     el["target-mode"].value = "explicit"; el["target-side"].value = "right";
     el.ext.checked = false; el.tor.checked = false;
     el.relations.value = ""; el.results.innerHTML = ""; render();
+    if (typeof syncModule === "function") { syncModule(); pickRefresh(); }
   });
   el.field.addEventListener("change", function () {
     var gf = el.field.value === "GF";
@@ -971,6 +977,9 @@
           if (m.data.detail) console.error(m.data.detail);
           setEta(m.data.error.type + ": " + m.data.error.message, true);
         }
+        // Layout C: feed the SAME real probe (dim + wait bucket) to the cart's
+        // colour-coded cost dot -- never a heuristic (Marco + the critic).
+        if (S.onProbe) S.onProbe(m.data);
       }
     } else if (m.type === "built") {
       if (m.data.ok) {
@@ -1008,6 +1017,83 @@
     var div = h("div", { "class": "qlgui-block qlgui-error",
       text: res.error.type + ": " + res.error.message });
     el.results.appendChild(div);
+    // Offline desktop app only (Marco): when the failure is the "you already have
+    // a job running" rate-limit, offer to cancel that running job locally and
+    // retry. Never on the deployed cloud server -- the cancel endpoint 404s there
+    // and data-offline is "false", so the button is not even rendered.
+    var msg = (res.error && res.error.message) || "";
+    if (offlineApp() && /already have a job running/i.test(msg)) {
+      appendCancelRunning();
+    }
+  }
+
+  // ---- offline-only "cancel the running job" control (Feature 2) ----
+  function offlineApp() {
+    var ds = document.body && document.body.dataset;
+    return !!ds && ds.offline === "true";
+  }
+  // A localised string from a <body data-*> attribute (base.html sets these via
+  // t()); falls back to English while the catalog keys are still being added --
+  // until then t() emits the raw "cancel_running.*" key, treated here as missing.
+  function cancelMsg(camel, fallback) {
+    var ds = document.body && document.body.dataset;
+    var v = ds ? ds[camel] : null;
+    if (!v || v.indexOf("cancel_running.") === 0) return fallback;
+    return v;
+  }
+  function appendCancelRunning() {
+    var wrap = h("div", { "class": "qlgui-block qlgui-cancel-running" });
+    var btn = h("button", { "class": "qlgui-secondary", type: "button",
+      text: cancelMsg("cancelRunningLabel", "Cancel the running job") });
+    var note = h("span", { "class": "qlgui-hint" });
+    wrap.appendChild(btn);
+    wrap.appendChild(note);
+    el.results.appendChild(wrap);
+    btn.addEventListener("click", function () {
+      btn.disabled = true;
+      note.textContent = " " + cancelMsg("cancelRunningProgress", "cancelling…");
+      fetch("/api/cancel-running", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; });
+      }).then(function (data) {
+        if (data && data.cancelled && data.job_id) {
+          // Wait for the worker to finalise the killed job (its status leaves
+          // 'running') before recomputing, else the retry is rate-limited again.
+          note.textContent = " " + cancelMsg("cancelRunningDone", "cancelled — retrying…");
+          waitTerminalThenRetry(data.job_id, 30);
+        } else {
+          // Nothing was running (idempotent no-op): the slot is already free.
+          note.textContent = " " + cancelMsg("cancelRunningNone", "no running job — retrying…");
+          runCompute();
+        }
+      }).catch(function (err) {
+        console.error("cancel-running failed:", err);
+        btn.disabled = false;
+        note.textContent = " " + cancelMsg("cancelRunningError", "could not cancel — try again");
+      });
+    });
+  }
+  // Poll the cancelled job until it is terminal (failed/done/error) or vanishes,
+  // then recompute. Bounded so a stuck worker cannot hang the UI -- on exhaustion
+  // we retry anyway (worst case: the rate-limit error simply re-appears).
+  function waitTerminalThenRetry(jobId, tries) {
+    fetch("/api/jobs/" + jobId).then(function (r) {
+      if (r.status === 404) return null;         // vanished -> terminal
+      return r.json();
+    }).then(function (job) {
+      var s = job && job.status;
+      if (!job || s === "failed" || s === "error" || s === "done" || tries <= 0) {
+        runCompute();
+        return;
+      }
+      setTimeout(function () { waitTerminalThenRetry(jobId, tries - 1); }, 500);
+    }).catch(function () {
+      if (tries <= 0) { runCompute(); return; }
+      setTimeout(function () { waitTerminalThenRetry(jobId, tries - 1); }, 500);
+    });
   }
 
   function citesLine(block) {
@@ -3043,6 +3129,273 @@
     download("quiverlab-config.yaml", text, "text/yaml");
   });
 
+  // ==================================================================
+  // Layout C: two-pane theme picker + "to compute" cart (Marco 2026-08-06).
+  // A VIEW over the real (now-hidden) checkbox grid. Every toggle drives the
+  // ORIGINAL el[...] input and every inline degree/budget control is the REAL
+  // node, relocated into its row -- so buildRequest(), the compute order and the
+  // Plan-25 cache keys are untouched by construction (no parallel state object).
+  // ==================================================================
+  // QLGUI-THEMES-BEGIN
+  var THEMES =
+  [
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
+    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild"]},
+    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "center"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "tau_tilting"]},
+    {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
+    {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
+    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check"]}
+  ];
+  // QLGUI-THEMES-END
+
+  var pickState = { theme: "hochschild" };
+  var pickKW = {};                 // kind -> multilingual keyword blob
+  var pickRows = {};               // kind -> row element
+  var pickGroups = {};             // theme id -> group element
+  var pickNav = {};                // theme id -> nav button
+  var pickCartChips = null, pickCartEmpty = null, pickCartCost = null;
+
+  function pkName(kind) { return dataText("pick-kind-" + kind, kind); }
+  function pkTheme(id) { return dataText("pick-theme-" + id, id); }
+  function pkTxt(key, fb) { return dataText("pick-" + key, fb); }
+  function isModuleKind(kind) { var c = KIND_CTRL[kind]; return !!(c && c.mod); }
+  function kindChecked(kind) {
+    var c = KIND_CTRL[kind]; return !!(c && el[c.cb] && el[c.cb].checked);
+  }
+
+  function buildKW() {
+    // kind -> keywords, harvested from the shipped multilingual SEARCH_INDEX so
+    // the filter matches en/es/fr/zh terms (the critic's regression fix).
+    SEARCH_INDEX.forEach(function (e) {
+      (e.example.compute || []).forEach(function (spec) {
+        var k = spec.split(":")[0];
+        pickKW[k] = (pickKW[k] || []).concat(e.keywords || []);
+      });
+    });
+  }
+
+  function activeModuleKindCount() {
+    var n = 0;
+    THEMES.forEach(function (t) {
+      t.kinds.forEach(function (k) { if (isModuleKind(k) && kindChecked(k)) n++; });
+    });
+    return n;
+  }
+
+  // Auto-manage mod-enable + the module editor's visibility from the picker's
+  // module-kind selection (the critic's mandatory coupling). Never dispatches a
+  // synthetic change (that would defeat the lazy engine load); ensureEngine is
+  // called separately, only on a real user gesture.
+  function syncModule() {
+    var want = activeModuleKindCount() > 0;
+    if (el["mod-enable"].checked !== want) {
+      el["mod-enable"].checked = want;
+      renderModulePanel();
+    }
+    if (el.module) el.module.style.display = want ? "" : "none";
+  }
+
+  function setKind(kind, on, intent) {
+    var c = KIND_CTRL[kind];
+    if (!c || !el[c.cb]) return;
+    el[c.cb].checked = !!on;
+    syncModule();
+    if (intent) ensureEngine();
+    pickRefresh();
+    scheduleProbe();
+  }
+
+  // ---- cart cost dot, bound to the REAL probe bucket (never a heuristic) ----
+  var COST_CLASS = { seconds: "fast", minute: "fast", minutes: "medium",
+                     long: "heavy", cap: "heavy" };
+  function renderCost(data) {
+    if (!pickCartCost) return;
+    var lab = pickCartCost.querySelector(".qlcart-lab");
+    if (!data) {
+      pickCartCost.setAttribute("data-cost", "");
+      lab.textContent = pkTxt("cost-estimating", "estimating…");
+      return;
+    }
+    if (!data.ok) {
+      pickCartCost.setAttribute("data-cost", "error");
+      lab.textContent = pkTxt("cost-error", "check the quiver");
+      return;
+    }
+    var b = data.eta ? data.eta.bucket : null;
+    var cls = COST_CLASS[b] || "medium";
+    pickCartCost.setAttribute("data-cost", cls);
+    var txt = cls === "fast" ? pkTxt("cost-fast", "fast")
+            : cls === "heavy" ? pkTxt("cost-heavy", "could be long — Cancel anytime")
+            : pkTxt("cost-medium", "a little while");
+    lab.textContent = "dim " + data.dim + " · " + txt;
+  }
+
+  function pickRefresh() {
+    // nav counts
+    THEMES.forEach(function (t) {
+      var badge = pickNav[t.id] && pickNav[t.id].querySelector(".qlpick-count");
+      if (!badge) return;
+      var n = 0;
+      t.kinds.forEach(function (k) { if (kindChecked(k)) n++; });
+      badge.textContent = String(n);
+      badge.setAttribute("data-n", String(n));
+    });
+    // row toggles + inline-control visibility (state may have changed via search)
+    Object.keys(pickRows).forEach(function (k) {
+      var row = pickRows[k], on = kindChecked(k);
+      var tg = row.querySelector(".qlpick-toggle");
+      if (tg) { tg.setAttribute("aria-checked", on ? "true" : "false");
+                tg.textContent = on ? "✓" : ""; }
+      var ctrl = row.querySelector(".qlpick-rowctrl");
+      if (ctrl) ctrl.style.display = (on && ctrl.getAttribute("data-has") === "1")
+                                     ? "" : "none";
+    });
+    // chips
+    var box = pickCartChips; box.innerHTML = "";
+    var any = false;
+    THEMES.forEach(function (t) {
+      t.kinds.forEach(function (k) {
+        if (!kindChecked(k)) return;
+        any = true;
+        var chip = h("span", { "class": "qlcart-chip", text: pkName(k) });
+        var x = h("button", { "class": "qlcart-x", type: "button",
+          "aria-label": pkTxt("remove", "remove") + " " + pkName(k), text: "×" });
+        x.addEventListener("click", function () { setKind(k, false, true); });
+        chip.appendChild(x);
+        box.appendChild(chip);
+      });
+    });
+    pickCartEmpty.style.display = any ? "none" : "";
+  }
+
+  function pickShowTheme(id) {
+    pickState.theme = id;
+    Object.keys(pickGroups).forEach(function (g) {
+      pickGroups[g].style.display = (g === id) ? "" : "none";
+    });
+    Object.keys(pickNav).forEach(function (g) {
+      pickNav[g].setAttribute("aria-pressed", g === id ? "true" : "false");
+    });
+  }
+
+  function pickApplyFilter(q) {
+    q = searchNorm((q || "").trim());
+    if (!q) {                                    // no filter: single active theme
+      Object.keys(pickRows).forEach(function (k) { pickRows[k].style.display = ""; });
+      pickShowTheme(pickState.theme);
+      return;
+    }
+    var groupHit = {};
+    THEMES.forEach(function (t) {
+      t.kinds.forEach(function (k) {
+        var hay = searchNorm(pkName(k) + " " + k + " " + (pickKW[k] || []).join(" "));
+        var hit = hay.indexOf(q) >= 0;
+        pickRows[k].style.display = hit ? "" : "none";
+        if (hit) groupHit[t.id] = 1;
+      });
+    });
+    Object.keys(pickGroups).forEach(function (g) {
+      pickGroups[g].style.display = groupHit[g] ? "" : "none";
+    });
+    Object.keys(pickNav).forEach(function (g) {
+      pickNav[g].setAttribute("aria-pressed", "false");
+    });
+  }
+
+  function buildRow(kind) {
+    var c = KIND_CTRL[kind];
+    var row = h("div", { "class": "qlpick-row" });
+    row.setAttribute("data-kind", kind);
+    var tg = h("button", { "class": "qlpick-toggle", type: "button",
+      role: "checkbox", "aria-checked": "false",
+      "aria-label": pkTxt("add", "add") + " " + pkName(kind), text: "" });
+    var main = h("div", { "class": "qlpick-rowmain" },
+      h("span", { "class": "qlpick-rowname", text: pkName(kind) }));
+    var ctrl = h("span", { "class": "qlpick-rowctrl" });
+    ctrl.setAttribute("data-has", "0");
+    if (c && c.top && el[c.top]) {               // relocate the REAL degree/budget node
+      ctrl.setAttribute("data-has", "1");
+      ctrl.appendChild(h("span", { text: c.budget ? pkTxt("budget", "budget")
+                                                   : pkTxt("degrees", "degrees 0–") }));
+      ctrl.appendChild(el[c.top]);
+    }
+    ctrl.style.display = "none";
+    function toggle() { setKind(kind, !kindChecked(kind), true); }
+    tg.addEventListener("click", toggle);
+    main.querySelector(".qlpick-rowname").addEventListener("click", toggle);
+    row.appendChild(tg); row.appendChild(main); row.appendChild(ctrl);
+    pickRows[kind] = row;
+    return row;
+  }
+
+  function initPicker() {
+    buildKW();
+    var invGrid = document.getElementById("qlgui-invariants");
+    // ---- picker shell ----
+    var picker = h("div", { id: "qlgui-picker" });
+    var fwrap = h("div", { "class": "qlpick-filterwrap" });
+    var filter = h("input", { id: "qlgui-picker-filter", type: "text",
+      autocomplete: "off", spellcheck: "false",
+      "aria-label": pkTxt("filter", "Filter…") });
+    filter.placeholder = pkTxt("filter", "Filter…");
+    fwrap.appendChild(filter);
+    var body = h("div", { "class": "qlpick-body" });
+    var nav = h("nav", { "class": "qlpick-nav", "aria-label": "computation themes" });
+    var rowsWrap = h("div", { "class": "qlpick-rows" });
+    THEMES.forEach(function (t) {
+      var btn = h("button", { "class": "qlpick-navitem", type: "button",
+        "aria-pressed": "false" },
+        h("span", { text: pkTheme(t.id) }),
+        h("span", { "class": "qlpick-count", "data-n": "0", text: "0" }));
+      btn.addEventListener("click", function () {
+        filter.value = ""; pickApplyFilter(""); pickShowTheme(t.id);
+      });
+      pickNav[t.id] = btn;
+      nav.appendChild(btn);
+      var group = h("div", { "class": "qlpick-group" });
+      group.setAttribute("data-theme", t.id);
+      var moduleTheme = t.kinds.every(isModuleKind);
+      if (moduleTheme) {
+        group.appendChild(h("p", { "class": "qlpick-modnote",
+          text: pkTxt("modules-note", "opens the module editor below") }));
+      }
+      t.kinds.forEach(function (k) { group.appendChild(buildRow(k)); });
+      pickGroups[t.id] = group;
+      rowsWrap.appendChild(group);
+    });
+    body.appendChild(nav); body.appendChild(rowsWrap);
+    picker.appendChild(fwrap); picker.appendChild(body);
+    invGrid.parentNode.insertBefore(picker, invGrid);
+
+    filter.addEventListener("input", function () { pickApplyFilter(filter.value); });
+
+    // ---- cart ----
+    var cart = h("div", { id: "qlgui-cart" });
+    var head = h("div", { "class": "qlcart-head" });
+    head.appendChild(h("span", { "class": "qlcart-title",
+      text: pkTxt("cart-title", "To compute") }));
+    pickCartCost = h("span", { "class": "qlcart-cost", "data-cost": "" });
+    pickCartCost.appendChild(h("span", { "class": "qlcart-dot" }));
+    pickCartCost.appendChild(h("span", { "class": "qlcart-lab" }));
+    head.appendChild(pickCartCost);
+    pickCartChips = h("div", { "class": "qlcart-chips" });
+    pickCartEmpty = h("span", { "class": "qlcart-empty",
+      text: pkTxt("cart-empty", "Nothing chosen yet — pick from a theme.") });
+    pickCartChips.appendChild(pickCartEmpty);
+    var opts = h("div", { "class": "qlcart-opts" });
+    if (el.trace && el.trace.parentNode) opts.appendChild(el.trace.parentNode); // relocate the report toggle
+    cart.appendChild(head); cart.appendChild(pickCartChips); cart.appendChild(opts);
+    el.eta.parentNode.insertBefore(cart, el.eta);
+
+    S.onProbe = renderCost;
+    pickShowTheme(pickState.theme);
+    syncModule();
+    pickRefresh();
+    renderCost(null);
+    window.QLGUI.pickRefresh = pickRefresh;
+  }
+
   window.QLGUI = { S: S, buildRequest: buildRequest, configYaml: configYaml };
   render();
   // Engine loads on FIRST INTENT (whole-branch review decision): pure readers
@@ -3348,6 +3701,7 @@
     if (ex.ext_target) setTargetFromSpec(ex.ext_target);
     else if (ex.tor_target) setTargetFromSpec(ex.tor_target);
     render();                                    // refresh canvas + module panel
+    if (typeof syncModule === "function") { syncModule(); pickRefresh(); }
   }
   function loadExample(entry) {
     var ex = entry.example;
@@ -3386,4 +3740,6 @@
       el["search-menu"].style.display = "none";
     }
   });
+
+  initPicker();
 })();

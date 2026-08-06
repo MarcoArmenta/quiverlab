@@ -136,3 +136,90 @@
   border-top: 1px solid var(--md-default-fg-color--lightest); }
 #qlgui .qlgui-search-none { padding: 8px 12px; font-size: .7rem;
   color: var(--md-default-fg-color--light); }
+/* Layout C — two-pane theme picker + "to compute" cart (Marco 2026-08-06).
+   Replaces the flat checkbox grid; the real inputs are relocated into the rows
+   so buildRequest() is untouched. Namespaced, --md-* driven (theme-aware);
+   only the cost colours + active-nav accent need explicit slate overrides. */
+#qlgui-picker { border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px; margin: 10px 0; overflow: hidden;
+  background: var(--md-default-bg-color); }
+#qlgui .qlpick-filterwrap { padding: 8px 10px;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest); }
+#qlgui-picker-filter { width: 100%; box-sizing: border-box; font-size: .74rem;
+  padding: 6px 10px; border-radius: 5px; }
+#qlgui .qlpick-body { display: flex; align-items: stretch; }
+#qlgui .qlpick-nav { flex: 0 0 auto; display: flex; flex-direction: column;
+  min-width: 12.5em; border-right: 1px solid var(--md-default-fg-color--lightest);
+  background: var(--md-code-bg-color); padding: 6px; gap: 2px; }
+#qlgui .qlpick-navitem { text-align: left; font-size: .72rem; border-radius: 5px;
+  border: 1px solid transparent; background: transparent;
+  color: var(--md-default-fg-color); padding: 6px 9px; cursor: pointer;
+  display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+#qlgui .qlpick-navitem:hover { background: var(--md-default-bg-color); }
+#qlgui .qlpick-navitem[aria-pressed="true"] {
+  background: var(--md-default-bg-color);
+  border-color: var(--md-primary-fg-color);
+  color: var(--md-primary-fg-color); font-weight: 600; }
+#qlgui .qlpick-count { font-size: .6rem; min-width: 1.4em; text-align: center;
+  border-radius: 999px; padding: 0 5px;
+  background: var(--md-primary-fg-color); color: var(--md-primary-bg-color); }
+#qlgui .qlpick-count[data-n="0"] { display: none; }
+#qlgui .qlpick-rows { flex: 1 1 auto; padding: 6px; display: flex;
+  flex-direction: column; gap: 2px; }
+#qlgui .qlpick-row { display: flex; align-items: center; gap: 9px;
+  padding: 6px 8px; border-radius: 6px; }
+#qlgui .qlpick-row:hover { background: var(--md-code-bg-color); }
+#qlgui .qlpick-toggle { flex: 0 0 auto; width: 1.35em; height: 1.35em;
+  border-radius: 5px; border: 1.5px solid var(--md-default-fg-color--lighter);
+  background: var(--md-default-bg-color); cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: .8rem; line-height: 1; color: var(--md-primary-bg-color); }
+#qlgui .qlpick-toggle[aria-checked="true"] {
+  background: var(--md-primary-fg-color);
+  border-color: var(--md-primary-fg-color); }
+#qlgui .qlpick-rowmain { flex: 1 1 auto; display: flex; flex-direction: column; }
+#qlgui .qlpick-rowname { font-size: .74rem; color: var(--md-default-fg-color);
+  cursor: pointer; }
+#qlgui .qlpick-rowctrl { flex: 0 0 auto; display: flex; align-items: center;
+  gap: 4px; font-size: .66rem; color: var(--md-default-fg-color--light); }
+#qlgui .qlpick-src { display: none !important; }
+#qlgui .qlpick-modnote { font-size: .62rem; padding: 4px 8px;
+  color: var(--md-default-fg-color--light); font-style: italic; }
+/* the "to compute" cart */
+#qlgui-cart { border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 8px; padding: 8px 10px; margin: 10px 0; }
+#qlgui .qlcart-head { display: flex; align-items: center; gap: 10px;
+  flex-wrap: wrap; margin-bottom: 6px; }
+#qlgui .qlcart-title { font-size: .7rem; font-weight: 600;
+  color: var(--md-default-fg-color); }
+#qlgui .qlcart-cost { display: inline-flex; align-items: center; gap: 5px;
+  font-size: .64rem; color: var(--md-default-fg-color--light); }
+#qlgui .qlcart-dot { width: .7em; height: .7em; border-radius: 50%;
+  background: var(--md-default-fg-color--lighter); flex: 0 0 auto; }
+#qlgui .qlcart-cost[data-cost="fast"] .qlcart-dot { background: #2e7d32; }
+#qlgui .qlcart-cost[data-cost="medium"] .qlcart-dot { background: #f9a825; }
+#qlgui .qlcart-cost[data-cost="heavy"] .qlcart-dot,
+#qlgui .qlcart-cost[data-cost="error"] .qlcart-dot { background: #e53935; }
+#qlgui .qlcart-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+#qlgui .qlcart-empty { font-size: .66rem; color: var(--md-default-fg-color--light); }
+#qlgui .qlcart-chip { display: inline-flex; align-items: center; gap: 5px;
+  font-size: .66rem; padding: 3px 4px 3px 9px; border-radius: 999px;
+  background: var(--md-code-bg-color);
+  border: 1px solid var(--md-default-fg-color--lightest);
+  color: var(--md-default-fg-color); }
+#qlgui .qlcart-x { border: none; background: transparent; cursor: pointer;
+  font-size: .8rem; line-height: 1; padding: 0 3px; border-radius: 50%;
+  color: var(--md-default-fg-color--light); }
+#qlgui .qlcart-x:hover { color: #e53935; }
+#qlgui .qlcart-opts { margin-top: 6px; font-size: .68rem; }
+#qlgui .qlcart-opts label { font-size: .68rem; }
+@media (max-width: 720px) {
+  #qlgui .qlpick-body { flex-direction: column; }
+  #qlgui .qlpick-nav { flex-direction: row; flex-wrap: wrap; min-width: 0;
+    border-right: none; border-bottom: 1px solid var(--md-default-fg-color--lightest); }
+  #qlgui .qlpick-navitem { flex: 1 1 auto; }
+}
+[data-md-color-scheme="slate"] #qlgui .qlcart-cost[data-cost="fast"] .qlcart-dot { background: #81c784; }
+[data-md-color-scheme="slate"] #qlgui .qlcart-cost[data-cost="medium"] .qlcart-dot { background: #ffd54f; }
+[data-md-color-scheme="slate"] #qlgui .qlcart-cost[data-cost="heavy"] .qlcart-dot,
+[data-md-color-scheme="slate"] #qlgui .qlcart-cost[data-cost="error"] .qlcart-dot { background: #ef5350; }
