@@ -986,11 +986,13 @@ verified precision and listed below as such.
   **honest per-field `{error}`** when the generic `(b,B)` mixed complex blows up
   (no CS route for cyclic homology off GF(p), so a ≥4-vertex algebra over CC/QQ hits
   the `max_cells` guard) — captured, never crashed, and skipped in the comparison.
-- **The two-algebra derived-compare panel is DEFERRED to P50** (Plan 43). The
-  single-algebra `derived_fingerprint` scalar kind ships now on all three tiers
-  (schema v1, both runners byte-identical); the side-by-side compare panel needs a
-  second-algebra request field (a schema change) and rides P50 — the same
-  GUI-deferral discipline as the P39 complex layer.
+- **The two-algebra derived-compare panel is DEFERRED to a post-v0.2.0 successor**
+  (Plan 43). The single-algebra `derived_fingerprint` scalar kind ships now on all
+  three tiers (schema v1, both runners byte-identical), and `compare_fingerprints`
+  exists at the library level; the side-by-side compare panel needs a second-algebra
+  request field (a schema change) and is not built in the v0.2.0 release gate (P50 =
+  integration + docs) — the same GUI-deferral discipline as the P39 complex layer.
+  See the [v0.2.0 GUI-deferral ledger](#v020-gui-deferral-ledger).
 - **Basic-ization / Gabriel recovery is char-scoped and split-only** (Plan 44 C7).
   `primitive_idempotents`/`basic_algebra`/`gabriel_quiver`/`presented_form` rest on the
 - **`repetitive_slice` ships certified FINITE slices only** (Plan 44 C7). The full
@@ -1070,6 +1072,54 @@ verified precision and listed below as such.
   / n=2 fan-tiling + n=3 per-chamber-unimodular unfolding-sanity / King certificates
   (self-cert), and the pair↔`Gen(M)` + fan-normal cross-checks (cross-engine). The external cross-checks NAMED (not run live) are the
   Demonet–Iyama–Jasso tables and Iyama's `fd-applet`; neither is wired as a live oracle.
+
+### v0.2.0 GUI-deferral ledger
+
+v0.2.0 ships the whole C1–C8 mathematics, but a handful of no-code GUI *surfaces*
+(and one whole research axis) are deliberately held back to named successors — the
+mathematics is reachable now via the library / HPC-config tiers, only the point-and-click
+front is deferred. This is the same discipline as the P39 complex layer: every plan ships
+a no-code story, and the rest is a named successor, never a silent gap. Each entry names
+its plan-doc pointer, and the last entry mirrors the metaplan §8 backlog ledger exactly.
+
+- **Spectral-sequence GUI presets beyond `ss_hochschild`** (Plan 42;
+  `docs/plans/2026-08-05-plan-42-spectral-sequences.md`). The engine ships all four
+  presets as a library surface — `hochschild_bB_ss`, `radical_filtration_ss`,
+  `cartan_eilenberg_ss`, and the `grothendieck_double_complex` builder it wraps — and the
+  only no-code compute kind is `ss_hochschild` (the `(b, B)` sequence, algebra-only,
+  schema v1). The Cartan–Eilenberg / Grothendieck / radical presets are **API +
+  HPC-config accessible** this release; their no-code GUI needs new request fields (a
+  second module/algebra plus a preset selector — a schema change) and is deferred to a
+  post-release successor. Independently, the *general* Grothendieck sequence (an arbitrary
+  `(B, A)`-bimodule via Eilenberg–Watts) is deferred even at the library level: only the
+  `U = B` change-of-rings / Cartan–Eilenberg specialization is implemented, and
+  `grothendieck_double_complex` refuses `U is not B` loudly.
+- **The two-algebra derived-compare panel** (Plan 43;
+  `docs/plans/2026-08-05-plan-43-derived-category.md`). The single-algebra
+  `derived_fingerprint` scalar kind ships now on all three tiers, and
+  `compare_fingerprints` exists at the library level; the side-by-side compare panel needs
+  a second-algebra request field (a schema change) and is not built in the v0.2.0 release
+  gate (P50 = integration + docs) — deferred to a post-release successor.
+- **The free-form draw-a-surface canvas, plus punctures / self-folded triangles and DWZ
+  potential right-equivalence** (Plan 48 → successor **P48.1**;
+  `docs/plans/2026-08-05-plan-48-surfaces.md`). Surfaces are a no-code *input* method: v1
+  ships three build-time presets (disc fan `A₃`, annulus `C(2,2)`, hexagon-with-internal-
+  triangle) and the produced gentle algebra flows through every existing compute kind. The
+  free-form "draw a surface, triangulate on the canvas" flagship is deferred. On the
+  mathematics side, punctured surfaces, closed surfaces, and self-folded triangles refuse
+  loudly (P48.1 = puncture potentials + self-folded triangles + the once-punctured-torus /
+  Markov quiver), and `certify_flip_mutation` certifies flip ↔ mutation at the quiver
+  (Fomin–Zelevinsky skew-symmetric matrix) level only — full DWZ potential
+  right-equivalence under mutation is also P48.1.
+- **σ_A / τ-Hochschild machinery** (deferred by Marco's explicit choice, not by
+  feasibility, to `docs/plans/DEEPER-ENGINES-BACKLOG.md` Tier 2; see the metaplan §8
+  ledger). The classical Coxeter matrix / polynomial itself ships (Plan 38, exact
+  Cartan-derived), but the Tamarkin–Tsygan-calculus automorphism σ_A of
+  arXiv:2606.15595 (its per-degree matrix on `HH_•`, the Thm B/C verification), the
+  per-HH-degree "higher Coxeter polynomials" (literature white space — nobody has defined
+  them), and τ-Hochschild (co)homology of arXiv:2607.10913 are all held for a future
+  release; Chen–Ruan–Yang arXiv:2509.12984 is recorded there as a candidate external
+  oracle pending a human read.
 
 ---
 

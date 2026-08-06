@@ -76,6 +76,10 @@ nav:
       - internals/10-modules.md
       - internals/11-families-citations.md
       - internals/12-viz-trace.md
+      - internals/13-spectral-sequences.md
+      - internals/14-derived-category.md
+      - internals/15-tau-tilting.md
+      - internals/16-surfaces.md
   - Verification: verification.md
   - Run anywhere:
       - hpc.md               # Plan 28: HPC batch container (5 steps + resume + sweeps)
