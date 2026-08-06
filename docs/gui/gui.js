@@ -110,6 +110,7 @@
     '    <label><input type="checkbox" id="qlgui-decompose"> decompose</label>' +
     '    <label><input type="checkbox" id="qlgui-almost_split"> almost-split</label>' +
     '    <label><input type="checkbox" id="qlgui-tilting_check"> tilting?</label>' +
+    '    <label><input type="checkbox" id="qlgui-orbit_geometry"> orbit geometry</label>' +
     '    <label><input type="checkbox" id="qlgui-ext"> Ext 0..<select id="qlgui-ext-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-tor"> Tor 0..<select id="qlgui-tor-top"></select></label>' +
     '  </div>' +
@@ -168,7 +169,7 @@
    "projective_dimension", "injective_dimension",
    "projective_resolution", "pr-top", "injective_resolution", "ir-top",
    "decompose", "almost_split", "ext", "ext-top", "tor", "tor-top",
-   "decompose", "tilting_check", "ext", "ext-top", "tor", "tor-top",
+   "decompose", "tilting_check", "orbit_geometry", "ext", "ext-top", "tor", "tor-top",
    "target", "target-mode", "target-side", "target-body", "target-note"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
   [el["hhc-top"], el["hhh-top"], el["pr-top"], el["ir-top"], el["ext-top"],
@@ -314,7 +315,7 @@
     "projective_dimension", "injective_dimension",
     "projective_resolution", "injective_resolution", "decompose", "almost_split",
     "projective_resolution", "injective_resolution", "decompose", "tilting_check",
-    "ext", "tor"];
+    "orbit_geometry", "ext", "tor"];
 
   // Generic matrix-editor helpers over a module-state {dims, maps} + a side. Used
   // by BOTH the main module panel (S.module) and the second-argument editor
@@ -686,7 +687,7 @@
       module = moduleSpec();
       ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
        "projective_dimension", "injective_dimension", "decompose",
-       "tilting_check"].forEach(function (k) {
+       "tilting_check", "orbit_geometry"].forEach(function (k) {
         if (el[k].checked) compute.push(k);
       });
       if (el.projective_resolution.checked)
@@ -1071,6 +1072,42 @@
       tbl.appendChild(r);
     });
     return tbl;
+  }
+  function renderOrbitGeometry(div, b) {      // Plan 49 / C8: orbit geometry block
+    if (b.error) { div.appendChild(h("p", { "class": "qlgui-error", text: b.error })); return; }
+    var dvText2 = function (dv) {
+      return "{" + Object.keys(dv || {}).map(function (k) { return k + ": " + dv[k]; }).join(", ") + "}";
+    };
+    div.appendChild(kvTable([
+      ["dimension vector d", dvText2(b.dim_vector)],
+      ["dim GL(d) = Σ d_v²", String(b.group_dim)],
+      ["dim Rep(Q,d) (ambient)", String(b.rep_variety_dim)],
+      ["dim End_A(M)", String(b.end_dim)],
+      ["dim O_M (orbit)", String(b.orbit_dim)],
+      ["dim Ext¹(M,M)", String(b.ext1_self)]
+    ]));
+    // rigidity verdict + HONEST codim gloss (hereditary = codim; general = upper bound)
+    var verdict = b.rigid
+      ? "M is rigid: Ext¹(M,M) = 0, so the orbit O_M is open (Voigt)."
+      : "M is not rigid: Ext¹(M,M) > 0.";
+    var gloss = b.codim_semantics === "hereditary"
+      ? " A is hereditary, so dim Ext¹(M,M) IS the codimension of the orbit closure in "
+        + "Rep(Q,d) (Voigt; Rep smooth)."
+      : " A = kQ/I is not hereditary, so dim Ext¹(M,M) is only an UPPER BOUND on the "
+        + "codimension (the module variety is cut by the relations).";
+    div.appendChild(h("p", { text: verdict + gloss }));
+    // the Kac canonical decomposition (hereditary Dynkin) or the honest refusal note
+    if (b.canonical_decomposition && b.canonical_decomposition.length) {
+      var parts = b.canonical_decomposition.map(function (c) {
+        var nm = c.name || ("(" + (c.root || []).join(", ") + ")");
+        return c.multiplicity === 1 ? nm : nm + "^" + c.multiplicity;
+      });
+      div.appendChild(h("p", { text: "Kac canonical decomposition: d = " + parts.join(" ⊕ ")
+        + " (each component a positive root; the generic module is rigid)." }));
+    } else if (b.canonical_note) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Canonical decomposition not computed: " + b.canonical_note }));
+    }
   }
   function repDimTable(pairs) {             // label | dim vector (NO total-dim column)
     var head = h("tr");
@@ -2605,6 +2642,8 @@
         div.appendChild(h("p", { text: "AG invariant: not decided — " + b.ag_invariant.error }));
       }
       if (b.note) div.appendChild(h("p", { text: b.note }));
+    } else if (name === "orbit_geometry") {
+      renderOrbitGeometry(div, b);
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -2670,6 +2709,7 @@
   [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
    el.projective_dimension, el.injective_dimension, el.decompose, el.almost_split,
    el.projective_dimension, el.injective_dimension, el.decompose, el.tilting_check,
+   el.orbit_geometry,
    el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
    el["ext-top"], el["tor-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });

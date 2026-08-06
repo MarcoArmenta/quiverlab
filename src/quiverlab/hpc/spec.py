@@ -72,7 +72,7 @@ MODULE_KINDS = frozenset({
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
     "projective_dimension", "injective_dimension", "decompose",
-    "tilting_check",
+    "tilting_check", "orbit_geometry",
 })
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
@@ -108,6 +108,8 @@ _MOD_REFS = {
     "decompose": ["assem_book"],
     "almost_split": ["assem_book", "ars_book"],
     "tilting_check": ["bongartz_tilting", "assem_book"],
+    "orbit_geometry": ["voigt_rigidity", "kac_canonical",
+                       "schofield_general_reps", "derksen_weyman_canonical"],
 }
 
 
@@ -1756,6 +1758,17 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
                            "self_ext_vanishes": rep.self_ext_vanishes,
                            "num_summands": rep.num_summands,
                            "num_vertices": rep.num_vertices, "note": rep.note}, kind)
+    if kind == "orbit_geometry":
+        # Orbit dim + Voigt rigidity + honest codim for ANY module over ANY kQ/I;
+        # the Kac canonical decomposition is the conditional extra (hereditary
+        # Dynkin). A char-scope edge in end_dim/ext becomes an honest per-block
+        # error (the Plan-30 precedent), never a 500.
+        from quiverlab.invariants.geometry import orbit_geometry_block
+        try:
+            block = orbit_geometry_block(M)
+        except qerr.QuiverlabError as exc:
+            return _with_refs({"kind": "orbit_geometry", "error": str(exc)}, kind)
+        return _with_refs(block, kind)
     raise ComputeError("SchemaError", f"unsupported module computation {kind!r}")
 
 

@@ -164,7 +164,21 @@ never hide behind one:
     pre-existing entry was verified byte-identical BEFORE the new one was appended (the
     delegation test passed on all of them unchanged). Its ``canonical_key`` is
     request-derived; the ``result_json`` was frozen from the server runner, and the
-    Plan-44 cross-runner tests assert the Pyodide twin agrees on the math subkeys."""
+    Plan-44 cross-runner tests assert the Pyodide twin agrees on the math subkeys.
+  * 2026-08-05 (``orbit_geometry_kA3_s2`` ADDED, Plan 49 C8): a NEW fixture for the
+    ``orbit_geometry`` module compute kind (kA3 over GF(32003), module = the simple
+    S_2). Reports orbit dim + Voigt rigidity + honest codim + (hereditary Dynkin) the
+    Kac canonical decomposition. Pure addition: every pre-existing entry was verified
+    byte-identical BEFORE the new one was appended (the delegation test passed on all
+    of them unchanged). Its ``canonical_key`` is request-derived; the ``result_json``
+    was frozen from the server runner, and the Plan-49 cross-runner tests
+    (``tests/webapp/test_orbit_geometry_p49.py`` / ``tests/gui/``) assert the Pyodide
+    twin is byte-identical via the shared ``orbit_geometry_block`` builder.  * 2026-08-05 (``orbit_geometry_kA3_s2`` re-freeze, P49 devil's-advocate round):
+    the ``orbit_geometry`` block gained the additive ``canonical_of`` key (=
+    "dimension_vector" -- the canonical decomposition names the GENERIC module
+    of d, not M; Marco's name-the-object rule). Gated re-freeze: the regenerated
+    blob is byte-identical to the old one after deleting ``canonical_of``.
+"""
 import json
 import pathlib
 

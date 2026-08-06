@@ -164,6 +164,9 @@ function almostSplitBlock(block, d) {
     if (s.standard || !s.maps) return;
     appendRepMaps(wrap, summandName(s, i + 1), s, d);
   });
+  return wrap;
+}
+
 // Plan 44 (C7): the tilting_check verdict as a small key/value table + a one-line
 // verdict sentence. Labels are i18n via the form dataset (fallback English).
 function tiltingBlock(block, d) {
@@ -200,6 +203,70 @@ function tiltingBlock(block, d) {
     tbl.appendChild(tr);
   });
   wrap.appendChild(tbl);
+  return wrap;
+}
+
+// Plan 49 (C8): orbit geometry -- orbit dim + Voigt rigidity + HONEST codim +
+// (hereditary Dynkin) the Kac canonical decomposition. Labels i18n via the form
+// dataset (fallback English).
+function orbitGeometryBlock(block, d) {
+  const wrap = document.createElement("div");
+  if (block.error) {
+    const e = document.createElement("p");
+    e.className = "error";
+    e.textContent = block.error;
+    wrap.appendChild(e);
+    return wrap;
+  }
+  const dvText = function (dv) {
+    return "{" + Object.keys(dv || {}).map(function (k) { return k + ": " + dv[k]; }).join(", ") + "}";
+  };
+  const rows = [
+    [d.ogDimVec || "dimension vector d", dvText(block.dim_vector)],
+    [d.ogGroupDim || "dim GL(d) = Σ d_v²", String(block.group_dim)],
+    [d.ogRepDim || "dim Rep(Q,d) (ambient)", String(block.rep_variety_dim)],
+    [d.ogEndDim || "dim End_A(M)", String(block.end_dim)],
+    [d.ogOrbitDim || "dim O_M (orbit)", String(block.orbit_dim)],
+    [d.ogExt1 || "dim Ext¹(M,M)", String(block.ext1_self)]
+  ];
+  const tbl = document.createElement("table");
+  rows.forEach(function (r) {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.textContent = r[0];
+    const td = document.createElement("td");
+    td.textContent = r[1];
+    tr.appendChild(th); tr.appendChild(td);
+    tbl.appendChild(tr);
+  });
+  wrap.appendChild(tbl);
+  const verdict = block.rigid
+    ? (d.ogRigid || "M is rigid: Ext¹(M,M) = 0, so the orbit O_M is open (Voigt).")
+    : (d.ogNotRigid || "M is not rigid: Ext¹(M,M) > 0.");
+  const gloss = block.codim_semantics === "hereditary"
+    ? (d.ogCodimHered || " A is hereditary, so dim Ext¹(M,M) IS the codimension of the "
+        + "orbit closure in Rep(Q,d) (Voigt; Rep smooth).")
+    : (d.ogCodimGeneral || " A = kQ/I is not hereditary, so dim Ext¹(M,M) is only an "
+        + "UPPER BOUND on the codimension (the module variety is cut by the relations).");
+  const pv = document.createElement("p");
+  pv.textContent = verdict + gloss;
+  wrap.appendChild(pv);
+  if (block.canonical_decomposition && block.canonical_decomposition.length) {
+    const parts = block.canonical_decomposition.map(function (c) {
+      const nm = c.name || ("(" + (c.root || []).join(", ") + ")");
+      return c.multiplicity === 1 ? nm : nm + "^" + c.multiplicity;
+    });
+    const pc = document.createElement("p");
+    pc.textContent = (d.ogCanonical || "Kac canonical decomposition") + ": d = "
+      + parts.join(" ⊕ ") + " (each component a positive root; the generic module is rigid).";
+    wrap.appendChild(pc);
+  } else if (block.canonical_note) {
+    const pn = document.createElement("p");
+    pn.className = "hint";
+    pn.textContent = (d.ogCanonicalNone || "Canonical decomposition not computed") + ": "
+      + block.canonical_note;
+    wrap.appendChild(pn);
+  }
   return wrap;
 }
 
@@ -552,6 +619,8 @@ function renderModuleBlocks(out, res) {
       out.appendChild(almostSplitBlock(b, d));
     } else if (kind === "tilting_check") {
       out.appendChild(tiltingBlock(b, d));
+    } else if (kind === "orbit_geometry") {
+      out.appendChild(orbitGeometryBlock(b, d));
     } else if (kind === "tau" || kind === "tau_minus") {
       out.appendChild(tauBlock(b, d, kind));
     } else if (kind === "homological_profile") {

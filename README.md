@@ -301,6 +301,12 @@ ported and wired in:
   ABCP), with flip ↔ cluster mutation certified per instance — draw or pick a surface
   and get the algebra, a no-code *input* method absent from QPA (unpunctured-with-boundary
   v1; punctures/closed/self-folded refuse loudly).
+- **Geometry of representations (C8, Kac/Voigt).** Orbit dimensions in the
+  representation variety (`dim O_M = Σ d_v² − dim End(M)`), Voigt rigidity with an
+  honest codimension (`= dim Ext¹(M,M)` on hereditary, an upper bound on `kQ/I`), the
+  Kac canonical decomposition of a dimension vector (hereditary Dynkin, rigidity-
+  certified per instance), and the Zwara–Bongartz degeneration / hom-order poset for
+  representation-finite algebras — with `orbit_geometry` clickable in the no-code GUI.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

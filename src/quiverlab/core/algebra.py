@@ -562,6 +562,42 @@ class Algebra:
         from quiverlab.invariants.roots import positive_roots
         return positive_roots(self)
 
+    # -- geometry of representations (Plan 49 / C8) ---------------------------
+    def orbit_dimension(self, M):
+        """dim of the GL(d)-orbit of the module M in Rep(Q, d):
+        dim O_M = sum_v d_v^2 - dim_k End_A(M) (Plan 49 / C8). Exact over every
+        Domain."""
+        from quiverlab.invariants.geometry import orbit_dimension
+        return orbit_dimension(M)
+
+    def is_rigid(self, M):
+        """Voigt: M is rigid iff Ext^1_A(M, M) = 0 (=> the orbit O_M is open in
+        the module variety) (Plan 49 / C8)."""
+        from quiverlab.invariants.geometry import is_rigid
+        return is_rigid(M)
+
+    def rigidity_codim(self, M):
+        """dim Ext^1_A(M, M): the codimension of the orbit closure in Rep(Q, d)
+        on HEREDITARY A (Voigt), an UPPER BOUND on general kQ/I (Plan 49 / C8)."""
+        from quiverlab.invariants.geometry import rigidity_codim
+        return rigidity_codim(M)
+
+    def canonical_decomposition(self, d, *, budget=4096):
+        """The Kac canonical decomposition of the dimension vector d over a
+        HEREDITARY DYNKIN algebra: d = sum m_i * beta_i into positive roots whose
+        generic module is rigid (Plan 49 / C8). Loud off scope (Euclidean/wild
+        deferred, non-hereditary refused)."""
+        from quiverlab.invariants.geometry import canonical_decomposition
+        return canonical_decomposition(self, d, budget=budget)
+
+    def degeneration_order(self, d, *, budget=256):
+        """The degeneration (= hom) order poset of all iso-classes of dimension
+        vector d, for a representation-FINITE algebra (Plan 49 / C8). Returns a
+        DegenerationPoset; complete iff rep-finite, else a loud status (never a
+        silent partial poset)."""
+        from quiverlab.modules.degeneration import degeneration_order
+        return degeneration_order(self, d, budget=budget)
+
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
         """True iff A is semisimple (Loewy length 1)."""

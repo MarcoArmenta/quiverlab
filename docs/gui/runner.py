@@ -32,7 +32,7 @@ _MODULE_KINDS = frozenset({
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
     "projective_dimension", "injective_dimension", "decompose",
-    "tilting_check",
+    "tilting_check", "orbit_geometry",
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
@@ -283,6 +283,8 @@ _MOD_REFS = {
     "decompose": ["assem_book"],
     "almost_split": ["assem_book", "ars_book"],
     "tilting_check": ["bongartz_tilting", "assem_book"],
+    "orbit_geometry": ["voigt_rigidity", "kac_canonical",
+                       "schofield_general_reps", "derksen_weyman_canonical"],
 }
 
 
@@ -578,6 +580,20 @@ def _module_block(name, top):
                 "self_ext_vanishes": rep.self_ext_vanishes,
                 "num_summands": rep.num_summands, "num_vertices": rep.num_vertices,
                 "note": rep.note, "citations": cites}
+    if name == "orbit_geometry":
+        # Byte-identical to quiverlab.hpc.spec's orbit_geometry branch: the shared
+        # library builder + _with_refs's references(list)+citations(pairs). Orbit
+        # dim / rigidity / codim for ANY module; the Kac canonical decomposition is
+        # the hereditary-Dynkin extra. A char-scope QuiverlabError becomes an honest
+        # per-block error (never fatal).
+        from quiverlab.invariants.geometry import orbit_geometry_block
+        try:
+            block = orbit_geometry_block(M)
+        except quiverlab.QuiverlabError as exc:
+            block = {"kind": name, "error": str(exc)}
+        block["references"] = list(keys)
+        block["citations"] = cites
+        return block
     raise RequestError("unknown module invariant %r" % (name,))
 
 
