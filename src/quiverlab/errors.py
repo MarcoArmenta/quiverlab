@@ -35,6 +35,11 @@ class CitationError(QuiverlabError):
     """A citation key is unknown, or the bibliography is inconsistent."""
 
 
+class CocycleError(QuiverlabError):
+    """A construction that needs a (co)cycle was given a non-cocycle (e.g. the
+    homotopy lifting ψ_η needs δη = 0)."""
+
+
 class QpaUnavailableError(QuiverlabError):
     """The optional [qpa] GAP backend is not available (not installed, wrong
     platform, or QPA failed to load). The pure-Python core does not need it."""
