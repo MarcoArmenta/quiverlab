@@ -220,6 +220,7 @@
   "pick.kind.coxeter_polynomial": "Polinomio de Coxeter",
   "pick.kind.global_dimension": "Dimensión global",
   "pick.kind.homological_profile": "Dimensiones homológicas",
+  "pick.kind.fractional_cy": "Calabi–Yau fraccionario",
   "pick.kind.center": "Centro Z(A)",
   "pick.kind.recognizers": "Reconocedores y tipo de Dynkin",
   "pick.kind.ext_algebra": "Ext-álgebra y koszulidad",

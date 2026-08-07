@@ -220,6 +220,7 @@
   "pick.kind.coxeter_polynomial": "Coxeter 多项式",
   "pick.kind.global_dimension": "整体维数",
   "pick.kind.homological_profile": "同调维数",
+  "pick.kind.fractional_cy": "分数 Calabi–Yau",
   "pick.kind.center": "中心 Z(A)",
   "pick.kind.recognizers": "识别器与 Dynkin 类型",
   "pick.kind.ext_algebra": "Ext 代数与 Koszul 性",
