@@ -1395,6 +1395,11 @@
         + "integer entries mod p and computes their exact rank by Gaussian "
         + "elimination mod p; every dimension follows by rank-nullity \u2014 nothing "
         + "numerical, no floating point.";
+    if (low.indexOf("homotopy lifting") !== -1)
+      return s + " \u2014 the Gerstenhaber bracket assembled from Negron\u2013"
+        + "Witherspoon / Volkov homotopy liftings on the Chouhy\u2013Solotar diagonal: "
+        + "a finite per-degree exact linear solve (canonical), no bar object, any exact "
+        + "field, past the bar window.";
     if (low.indexOf("chouhy") !== -1 || low.indexOf("solotar") !== -1)
       return s + " \u2014 the Chouhy\u2013Solotar projective bimodule resolution built "
         + "from the admissible presentation, certified per instance "
@@ -2637,6 +2642,10 @@
     if (name === "bracket" && b.window != null) {
       div.appendChild(h("p", { "class": "qlgui-hint",
         text: "served to degree window " + b.window + " (bar-transport bound)" }));
+    } else if (name === "bracket") {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "served natively on the Chouhy–Solotar resolution (homotopy "
+          + "liftings; any exact field, past the bar window)" }));
     }
     div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }

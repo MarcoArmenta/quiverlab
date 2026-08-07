@@ -27,6 +27,7 @@
   "block.bracket.title": "Tablas de corchetes de Gerstenhaber",
   "block.connes_b.title": "Diferenciales de Connes",
   "block.bracket.window": "calculado hasta la ventana de grado {n} (cota del transporte bar)",
+  "block.bracket.native": "calculado de forma nativa en la resolución de Chouhy–Solotar (levantamientos de homotopía; cualquier cuerpo exacto, más allá de la ventana bar)",
   "block.products.zero": "todos los productos se anulan en este par de grados",
   "inv.ext_algebra": "Álgebra de Ext / Koszulidad 0..N",
   "inv.recognizers": "Reconocedores + tipo Dynkin/euclidiano",

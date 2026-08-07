@@ -20,6 +20,12 @@ identity battery (Gerstenhaber/cup-associativity/cap-Leibniz/Connes-B^2=0), plus
 the literature pins in tests/hochschild/test_products_literature.py. The
 verification page (Task 13) records this honest-scope entry.
 
+Plan 51 (2026-08-07) extends the Gerstenhaber bracket to a CS-native route
+(homotopy liftings, any exact field, past the bar window) but does NOT change the
+QPA scope: QPA 1.37 still exposes no Hochschild product/bracket surface, so this
+probe stays an honest skip (it FAILS if QPA ever adds one). The bracket's covering
+oracles are the in-window native == transported anchor + the identity batteries.
+
 qpa-marked: skips locally, mandatory under QUIVERLAB_REQUIRE_QPA=1.
 """
 import pytest
