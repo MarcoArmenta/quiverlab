@@ -528,6 +528,110 @@ def tau_periodicity(M, max_period=12):
 
 
 # ---------------------------------------------------------------------------
+# Lat-Igusa-Todorov finitistic certificate (Plan 53 / R23c; Bravo-Lanzilotta-
+# Mendoza-Vivero arXiv:2002.07866). FOUR decidable families each emit a proof-
+# carrying certified finite findim upper bound; "no known decision procedure in
+# general" (NOT undecidable) elsewhere. This is what flips Plan 40's honest None.
+# ---------------------------------------------------------------------------
+@dataclass
+class LITCertificate:
+    """A Lat-Igusa-Todorov finitistic certificate (Plan 53). ``findim_upper`` is a
+    CERTIFIED finite ``findim`` upper bound from a decidable LIT family, or an honest
+    ``None`` (no known decision procedure in general). ``family`` names the decidable
+    family; ``proof`` is the proof-carrying justification (the theorem + the numbers)."""
+    findim_upper: "int | None"
+    family: "str | None"
+    proof: str
+
+    def __repr__(self):
+        if self.family is not None:
+            return f"findim(A) <= {self.findim_upper}  [{self.family}: {self.proof}]"
+        return ("no known decision procedure for a finite findim bound here "
+                "(A is not in a shipped LIT-decidable family)")
+
+
+def _lit_family4_bound(psi_D_of_V, n, known_findim=None):
+    """The LIT family-4 (finite one-sided ``id(A_A)``) proof-carrying bound
+    ``findim(A) <= psi_D(V) + n + 1`` (Bravo-Lanzilotta-Mendoza-Vivero 2002.07866;
+    R23c). DEMOTED machinery: family 4 fires only when families 1-3 fail yet
+    ``id(A_A) < infinity`` -- i.e. ``id(A_A)`` finite while ``id(_AA)`` infinite -- and
+    the bounded engine NEVER proves an injective dimension infinite, so this precondition
+    is not decidably reachable with shipped tools. Hence this combinator is NOT wired into
+    :func:`lit_finitistic_certificate` (which returns ``None`` there); it ships + is
+    unit-covered on constructed ``(D, n)`` data.
+
+    ``psi_D_of_V`` = the generalised Igusa-Todorov function ``psi_D`` evaluated on the
+    generators ``V`` of the subcategory ``D`` (# PIN: the exact ``psi_D``/``V`` are pinned
+    from 2002.07866 -- transcribed as inputs here, not recomputed, pending the
+    Asashiba-type transcription successor); ``n`` = the LIT datum. The ``+ n + 1``
+    constant is the record's; ARBITRATION safety gate (the Plan 40 rule -- never a bound
+    below a KNOWN exact findim): if ``known_findim`` is given and the bound would
+    undershoot it, RAISE loudly (a mis-transcribed constant is a bug, never clamped)."""
+    bound = int(psi_D_of_V) + int(n) + 1
+    if known_findim is not None and bound < known_findim:
+        raise QuiverlabError(
+            f"LIT family-4 bound {bound} < a known exact findim {known_findim}: the "
+            f"psi_D(V) + n + 1 constant is mis-transcribed for this datum",
+            hint="the record's + n + 1 must never undershoot the family-1/2 exact "
+                 "values; re-check the 2002.07866 statement, do not clamp")
+    return bound
+
+
+def lit_finitistic_certificate(A, bound=32):
+    """A Lat-Igusa-Todorov finitistic certificate for ``A`` (Plan 53 / R23c;
+    Bravo-Lanzilotta-Mendoza-Vivero arXiv:2002.07866): tries the FOUR decidable families
+    1->2->3->4 and returns the FIRST that applies (the sharpest is usually earliest).
+
+    1. **Self-injective** (``is_selfinjective``) -- ``D = mod A``, ``n = 0``; only
+       projectives have finite pd, so ``findim(A) = 0``.
+    2. **Iwanaga-Gorenstein** (``gorenstein_dimension`` both-sided finite) -- ``D =
+       Gproj(A)``; ``findim(A) = id(A_A) = id(_AA)`` = the Gorenstein dimension
+       ``max(right_id, left_id)`` (for finite gl.dim this equals ``gl.dim``).
+    3. **Finite phidim** (rep-finite, :func:`phi_dim` exact) -- the chain gives
+       ``findim(A) <= phidim(A)``, a certified finite bound.
+    4. **Finite one-sided id(A_A)** -- DEMOTED: not decidably reachable (the bounded
+       engine never proves an injective dimension infinite, so the "one-sided-finite,
+       not Gorenstein" precondition is not certifiable); the ``psi_D(V) + n + 1``
+       machinery ships as :func:`_lit_family4_bound` but is NOT wired here.
+
+    Returns a :class:`LITCertificate` with a finite ``findim_upper`` + ``family`` label +
+    ``proof``, or ``findim_upper=None``/``family=None`` ("no known decision procedure in
+    general" -- NOT undecidable). The family-3 :func:`phi_dim` probe degrades quietly if
+    it cannot be certified (char caveat / knit error) -- an uncertifiable phidim is not a
+    family-3 certificate."""
+    from quiverlab.modules.ext import is_selfinjective
+    # Family 1: self-injective => findim = 0.
+    if A.quiver is not None and is_selfinjective(A):
+        return LITCertificate(
+            0, "self-injective",
+            proof="self-injective (D = mod A, n = 0): only projectives have finite "
+                  "projective dimension, so findim(A) = 0 (2002.07866)")
+    # Family 2: Iwanaga-Gorenstein => findim = id(A_A) = id(_AA) = Gorenstein dimension.
+    gd = gorenstein_dimension(A, bound=bound)
+    if gd.is_gorenstein:                    # both-sided injective dimension finite
+        fd = max(gd.right_id, gd.left_id)
+        return LITCertificate(
+            fd, "gorenstein",
+            proof=f"Iwanaga-Gorenstein (D = Gproj A): findim(A) = id(A_A) = id(_AA) = "
+                  f"{fd}, the Gorenstein dimension (2002.07866)")
+    # Family 3: finite phidim (rep-finite) => findim <= phidim (the standing chain).
+    try:
+        pd = phi_dim(A)
+    except QuiverlabError:
+        pd = None                            # uncertifiable phidim is not a certificate
+    if pd is not None and pd.exact:
+        return LITCertificate(
+            pd.value, "finite-phidim",
+            proof=f"finite phi-dimension: findim(A) <= phidim(A) = {pd.value} (the "
+                  f"chain findim <= phidim; Fernandes-Lanzilotta-Mendoza 1304.0754)")
+    # Family 4: not decidably reachable (see _lit_family4_bound). Honest degrade.
+    return LITCertificate(
+        None, None,
+        proof="no known decision procedure for a finite findim bound here (A is not "
+              "in a shipped LIT-decidable family)")
+
+
+# ---------------------------------------------------------------------------
 # Finitistic-dimension bounds (rigorous lower; gl.dim upper when finite, honest
 # degrade otherwise)
 # ---------------------------------------------------------------------------
@@ -622,6 +726,19 @@ def finitistic_dimension_bounds(A, bound=32):
         assert upper >= lower, "finitistic lower bound exceeded gl.dim (bug)"
         return FinitisticBounds(lower, upper, exact=True,
                                 note="gl.dim exact and finite => findim = gl.dim")
+    # gl.dim not exact-finite: consult the LIT certificate BEFORE the honest degrade
+    # (Plan 53 / R23c). A decidable LIT family (self-injective / Iwanaga-Gorenstein /
+    # finite-phidim) supplies a CERTIFIED finite upper exactly where Plan 40 degraded to
+    # None; `exact` stays False (the exact=True flag is reserved for the gl.dim=findim
+    # collapse -- Plan 40's test pins it), and the mandatory upper >= lower gate holds.
+    cert = lit_finitistic_certificate(A, bound=bound)
+    if cert.findim_upper is not None:
+        if cert.findim_upper < lower:
+            raise QuiverlabError(
+                "finitistic upper bound < lower bound: the LIT certificate is "
+                "mis-implemented for this presentation")
+        return FinitisticBounds(lower, cert.findim_upper, exact=False,
+                                note=f"LIT [{cert.family}]: {cert.proof}")
     upper = _igusa_todorov_finitistic_upper(A, bound)   # int or None (None here)
     if upper is not None and upper < lower:
         raise QuiverlabError(                           # the mandated sanity gate

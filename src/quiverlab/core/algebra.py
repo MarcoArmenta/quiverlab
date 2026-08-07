@@ -585,6 +585,14 @@ class Algebra:
         from quiverlab.modules.homdims import phi_spectrum
         return phi_spectrum(self, **kw)
 
+    def finitistic_certificate(self, bound=32):
+        """A Lat-Igusa-Todorov finitistic certificate (Plan 53 / R23c): a proof-carrying
+        certified finite ``findim`` upper bound from a decidable LIT family (self-injective
+        / Iwanaga-Gorenstein / finite-phidim), or an honest ``None`` (no known decision
+        procedure in general). A :class:`~quiverlab.modules.homdims.LITCertificate`."""
+        from quiverlab.modules.homdims import lit_finitistic_certificate
+        return lit_finitistic_certificate(self, bound=bound)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
