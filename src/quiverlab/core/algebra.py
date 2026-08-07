@@ -181,6 +181,21 @@ class Algebra:
                 "bar-basis accelerator is hard-wired to the regular bimodule M = A)",
                 hint="use engine='bar' (any field) or engine='cs' (presented)")
 
+    def _relative_route(self, side, top, max_cells, coefficients, relative_to):
+        """Relative HH over B (Plan 52): only B = kQ_0 (``relative_to="vertices"``)
+        in v1, via the E-relative reduced bar complex; any other B is refused
+        loudly. Returns an HHTable (references/coefficients stamped by the caller)."""
+        if relative_to != "vertices":
+            raise QuiverlabError(
+                f"relative HH over B is implemented only for B = kQ_0 in v1 "
+                f"(got relative_to={relative_to!r})",
+                hint='pass relative_to="vertices" for the separable vertex subalgebra; '
+                     "a general / non-separable subalgebra B is the recorded follow-up")
+        from quiverlab.hochschild.relative import (relative_cohomology_dims,
+                                                   relative_homology_dims)
+        fn = relative_cohomology_dims if side == "coh" else relative_homology_dims
+        return fn(self, top, coefficients=coefficients, max_cells=max_cells)
+
     # -- citations ------------------------------------------------------------
     def _engine_citations(self):
         # HH^*/HH_* dimensions are produced by the (normalized/fast-rank) bar complex,
@@ -250,7 +265,8 @@ class Algebra:
         return fn(self, top, max_cells=max_cells, trace=rec, coefficients=coefficients)
 
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
-                              auto_cs=False, coefficients=None, verbose=None, trace=None):
+                              auto_cs=False, coefficients=None, relative_to=None,
+                              verbose=None, trace=None):
         """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
         bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise),
         'cs' (Chouhy-Solotar, any admissible presentation over any field). Set
@@ -273,6 +289,12 @@ class Algebra:
             raise QuiverlabError(f"unknown engine {engine!r}",
                                  hint="choose 'auto', 'bar', 'fast', or 'cs'")
         self._check_coefficients(engine, coefficients)
+        if relative_to is not None:
+            table = self._relative_route("coh", top, max_cells, coefficients, relative_to)
+            table.references = self.citations()
+            if coefficients is not None:
+                table.coefficients = coefficients.describe()
+            return table
         want = resolve_verbose(verbose, quiverlab.verbose)
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
@@ -327,9 +349,11 @@ class Algebra:
         return table
 
     def hochschild_homology(self, top, max_cells=4_000_000, engine="auto",
-                            auto_cs=False, coefficients=None, verbose=None, trace=None):
+                            auto_cs=False, coefficients=None, relative_to=None,
+                            verbose=None, trace=None):
         """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology
-        (including 'cs', auto_cs, coefficients, verbose, and the trace event sink)."""
+        (including 'cs', auto_cs, coefficients, relative_to, verbose, and the trace
+        event sink)."""
         import quiverlab
         from quiverlab.hochschild.bar import hochschild_homology_dims
         from quiverlab.hochschild.table import HHTable
@@ -340,6 +364,12 @@ class Algebra:
             raise QuiverlabError(f"unknown engine {engine!r}",
                                  hint="choose 'auto', 'bar', 'fast', or 'cs'")
         self._check_coefficients(engine, coefficients)
+        if relative_to is not None:
+            table = self._relative_route("hom", top, max_cells, coefficients, relative_to)
+            table.references = self.citations()
+            if coefficients is not None:
+                table.coefficients = coefficients.describe()
+            return table
         want = resolve_verbose(verbose, quiverlab.verbose)
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
