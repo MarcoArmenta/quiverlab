@@ -17,6 +17,22 @@ def _require_admissible(rs):
                                  hint="Groebner completion did not certify confluence / a finite basis")
 
 
+def _require_cs_coefficients(A, coefficients):
+    """Plan 52: CS coefficient collapse needs a quiver presentation (its reduction
+    system); a presentation-less structure-constant algebra is refused loudly (bar
+    still serves the same coefficient). A coefficient must be built over A."""
+    if coefficients is None:
+        return
+    from quiverlab.errors import QuiverlabError
+    if A.quiver is None:
+        raise QuiverlabError(
+            "the Chouhy-Solotar coefficient route needs a quiver presentation; this "
+            "algebra has none", hint="use engine='bar' (presentation-free) for coefficients")
+    if getattr(coefficients, "algebra", None) is not A:
+        raise QuiverlabError("the coefficient bimodule was built over a different algebra",
+                             hint="build the coefficient with the SAME algebra")
+
+
 def _corners(res, n):
     """The degree-n generators' (source, target) vertices, one pair per generator.
 
@@ -68,13 +84,15 @@ def _emit_homology_trace(trace, res, dom, top, bmats, ranks):
                               ranks[i], dom))
 
 
-def cs_cohomology_dims(A, top, max_cells=4_000_000, trace=None):
+def cs_cohomology_dims(A, top, max_cells=4_000_000, trace=None, coefficients=None):
     from quiverlab.fields.linalg import rank
     from quiverlab.hochschild.table import HHTable
     from quiverlab.resolutions_cs.build import reduction_system_of
     from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+    _require_cs_coefficients(A, coefficients)
     rs = reduction_system_of(A); _require_admissible(rs)
-    res = ChouhySolotarResolution(A, rs, max_degree=top + 1, max_cells=max_cells)
+    res = ChouhySolotarResolution(A, rs, max_degree=top + 1, max_cells=max_cells,
+                                  coefficients=coefficients)
     res.assert_dd_zero(upto=top + 1, side="coh"); res.assert_order_condition(upto=top + 1)
     dom = A.domain
     # Retain the differential matrices only when tracing (so trace=None stays memory-O(1)
@@ -88,13 +106,15 @@ def cs_cohomology_dims(A, top, max_cells=4_000_000, trace=None):
     return HHTable(dims, "HH^", repr(A).splitlines()[0], engine="Chouhy-Solotar")
 
 
-def cs_homology_dims(A, top, max_cells=4_000_000, trace=None):
+def cs_homology_dims(A, top, max_cells=4_000_000, trace=None, coefficients=None):
     from quiverlab.fields.linalg import rank
     from quiverlab.hochschild.table import HHTable
     from quiverlab.resolutions_cs.build import reduction_system_of
     from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+    _require_cs_coefficients(A, coefficients)
     rs = reduction_system_of(A); _require_admissible(rs)
-    res = ChouhySolotarResolution(A, rs, max_degree=top + 1, max_cells=max_cells)
+    res = ChouhySolotarResolution(A, rs, max_degree=top + 1, max_cells=max_cells,
+                                  coefficients=coefficients)
     res.assert_dd_zero(upto=top + 1, side="hom"); res.assert_order_condition(upto=top + 1)
     dom = A.domain
     # rk[i] = rank(b_{i+1}) = rank(matrix(i+1, "hom")); b_0 = 0 (no map out of C_0).

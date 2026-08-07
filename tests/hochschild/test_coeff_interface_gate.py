@@ -6,12 +6,12 @@ import quiverlab as ql
 from quiverlab.hochschild import bar, table
 
 
-def test_hh_signatures_have_no_coefficients_yet():
+def test_hh_signatures_carry_coefficients():
+    # Updated in Task 3 (the coefficients= kwarg landed); relative_to lands in Task 7.
     for name in ("hochschild_cohomology", "hochschild_homology"):
         params = inspect.signature(getattr(ql.Algebra, name)).parameters
         assert {"top", "max_cells", "engine", "auto_cs", "verbose", "trace"} <= set(params)
-        assert "coefficients" not in params          # this task adds it (Task 3)
-        assert "relative_to" not in params           # Task 7 adds it
+        assert "coefficients" in params              # Task 3 added it
 
 
 def test_hhtable_attribute_set_frozen():
