@@ -768,7 +768,9 @@
     el["mod-side"].value = "right";
     el["target-mode"].value = "explicit"; el["target-side"].value = "right";
     el.ext.checked = false; el.tor.checked = false;
-    el.relations.value = ""; el.results.innerHTML = ""; render();
+    el.relations.value = ""; el.potential.value = "";
+    el.results.innerHTML = ""; render();
+    if (typeof syncRelPotConflict === "function") syncRelPotConflict();
     if (typeof syncModule === "function") { syncModule(); pickRefresh(); }
   });
   el.field.addEventListener("change", function () {
@@ -924,23 +926,73 @@
              n: parseInt(el.n.value, 10) || 1 };
   }
 
+  // QLGUI-DYNKIN-BEGIN
+  // Synthesise the QUIVER of a Dynkin type client-side, so algebra B is a plain
+  // `quiver` block that computes on EVERY tier (the public Pyodide docs GUI, the
+  // server-backed desktop app, and the deployed server) -- a `family` block only
+  // runs where the library builder is reachable, which the browser Pyodide runner
+  // is NOT. Orientation matches quiverlab.PathAlgebra EXACTLY (verified from the
+  // library): vertices 1..n; arrows named "e"+src+tgt (single digit, n<=8):
+  //   A_n (n>=1): a linear chain i -> i+1, i = 1..n-1.
+  //   D_n (n>=4): the chain i -> i+1, i = 1..n-2, plus a fork (n-2) -> n.
+  //   E_n (n in 6,7,8): the chain i -> i+1, i = 1..n-2, plus a leg 3 -> n.
+  // Returns {vertices:[...ints], arrows:{name:[src,tgt]}} or null for anything
+  // unsupported (so the caller can show an honest "supported types" message).
+  function dynkinQuiver(type) {
+    var m = /^([ADE])\s*([0-9]+)$/.exec(String(type || "").trim().toUpperCase());
+    if (!m) return null;
+    var letter = m[1], n = parseInt(m[2], 10);
+    if (!(n >= 1)) return null;
+    var arrow = function (s, t) { return "e" + s + t; };
+    var verts = [], arrows = {}, i;
+    for (i = 1; i <= n; i++) verts.push(i);
+    if (letter === "A") {
+      if (n > 9) return null;                        // names stay single-digit
+      for (i = 1; i < n; i++) arrows[arrow(i, i + 1)] = [i, i + 1];
+      return { vertices: verts, arrows: arrows };
+    }
+    if (letter === "D") {
+      if (n < 4 || n > 9) return null;
+      for (i = 1; i <= n - 2; i++) arrows[arrow(i, i + 1)] = [i, i + 1];
+      arrows[arrow(n - 2, n)] = [n - 2, n];          // the fork off vertex n-2
+      return { vertices: verts, arrows: arrows };
+    }
+    if (letter === "E") {
+      if (n < 6 || n > 8) return null;
+      for (i = 1; i <= n - 2; i++) arrows[arrow(i, i + 1)] = [i, i + 1];
+      arrows[arrow(3, n)] = [3, n];                  // the branch leg off vertex 3
+      return { vertices: verts, arrows: arrows };
+    }
+    return null;
+  }
+  // QLGUI-DYNKIN-END
+
   // algebra B for derived_compare, over A's field so the fingerprints compare
-  // like-for-like. A quiver block (preset) works on every tier; a Dynkin type
-  // builds a PathAlgebra family block (the deployed server + families surface).
+  // like-for-like. BOTH modes emit a `quiver` block (works on every tier): a
+  // preset copies its quiver; a Dynkin type is synthesised by dynkinQuiver.
+  // An unrecognised type string surfaces an honest message and yields no request.
   function buildAlgebraB() {
     var field = currentField();
     if (el["algb-mode"].value === "preset") {
       var p = (S.presets || [])[parseInt(el["algb-preset"].value, 10)];
       if (!p) return null;
-      var arrows = {};
-      Object.keys(p.arrows).forEach(function (k) { arrows[k] = p.arrows[k].slice(); });
+      var parrows = {};
+      Object.keys(p.arrows).forEach(function (k) { parrows[k] = p.arrows[k].slice(); });
       return { kind: "quiver", vertices: p.vertices.slice(),
-               arrows: arrows, relations: (p.relations || []).slice(), field: field };
+               arrows: parrows, relations: (p.relations || []).slice(), field: field };
     }
     var t = (el["algb-type"].value || "").trim();
     if (!t) return null;
-    return { kind: "family", family: "PathAlgebra",
-             params: { type_or_quiver: t }, field: field };
+    var q = dynkinQuiver(t);
+    if (!q) {
+      el["algb-hint"].textContent = dataText("algb-unsupported",
+        "unsupported type — use A1..A9, D4..D9, or E6/E7/E8");
+      return null;
+    }
+    el["algb-hint"].textContent = dataText("algb-hint",
+      "B is compared over the same field as A");
+    return { kind: "quiver", vertices: q.vertices,
+             arrows: q.arrows, relations: [], field: field };
   }
 
   // Hand-rolled YAML emitter for the exported cluster config. MIRRORS
@@ -3120,6 +3172,11 @@
             ? "Not computed — " + (b.error || "input not eligible") + "."
             : "Partial (budget " + b.budget + " reached — the algebra is likely "
               + "representation-infinite; this is NOT the full AR quiver)." }));
+      // id -> indecomposable NAME, so the maps/orbits below read in the same
+      // names as the table above (arrows/orbits carry integer ids, not names).
+      var arName = {};
+      (b.vertices || []).forEach(function (v) { arName[v.id] = v.name || ("M" + v.id); });
+      var arLabel = function (id) { return (id in arName) ? arName[id] : String(id); };
       if ((b.vertices || []).length) {
         var avh = h("tr");
         avh.appendChild(h("th", { text: "indecomposable" }));
@@ -3128,23 +3185,30 @@
         b.vertices.forEach(function (v) {
           var dv = v.dimvec || {};
           var dvtxt = Object.keys(dv).map(function (w) { return w + ":" + dv[w]; }).join(", ");
-          avt.appendChild(h("tr", {}, h("th", { text: v.name || ("M" + v.id) }),
+          avt.appendChild(h("tr", {}, h("th", { text: arLabel(v.id) }),
             h("td", { text: dvtxt })));
         });
         div.appendChild(avt);
       }
       if ((b.arrows || []).length) {
         div.appendChild(h("p", { text: "Irreducible maps: " + b.arrows.map(function (a) {
-          return a.from + "→" + a.to + (a.mult > 1 ? " (×" + a.mult + ")" : "");
+          return arLabel(a.from) + "→" + arLabel(a.to)
+            + (a.mult > 1 ? " (×" + a.mult + ")" : "");
         }).join(", ") }));
       }
       if ((b.tau_orbits || []).length) {
         div.appendChild(h("p", { text: "τ-orbits: " + b.tau_orbits.map(function (o) {
-          return "{" + o.join(", ") + "}"; }).join("  ") }));
+          return "{" + o.map(arLabel).join(", ") + "}"; }).join("  ") }));
       }
     } else if (name === "derived_compare") {
       // Plan 43: the two fingerprints side by side + the honest verdict. Equal
       // rows are a NECESSARY condition for derived equivalence, never a proof.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+        div.appendChild(citesLine(b));
+        el.results.appendChild(div);
+        return;
+      }
       var dcCell = function (v) {
         if (v && typeof v === "object" && "error" in v) return "unavailable — " + v.error;
         if (Array.isArray(v)) return "[" + v.join(", ") + "]";
@@ -3260,6 +3324,9 @@
       return;
     }
     el.relations.value = res.relations.join(", ");
+    // A generated relation set is programmatic; refresh the potential-vs-relations
+    // hint so a filled potential box greys out (M3).
+    if (typeof syncRelPotConflict === "function") syncRelPotConflict();
     setRelStatus(dataText("rel-generated", "{n} relations generated — edit freely")
       .replace("{n}", res.relations.length));
     scheduleProbe();
@@ -3810,6 +3877,11 @@
       return { name: name, s: p.arrows[name][0], t: p.arrows[name][1] };
     });
     el.relations.value = (p.relations || []).join(", ");
+    // A loaded quiver carries its own relations; a stale potential from a
+    // previous quiver would collide with them (and auto-run under the server's
+    // 4xx). Clear it and refresh the mutual-exclusion hint.
+    el.potential.value = "";
+    if (typeof syncRelPotConflict === "function") syncRelPotConflict();
     el.field.value = (p.field.kind === "GF") ? "GF"
       : (p.field.kind === "QQ") ? "QQ" : "CC";
     el.field.dispatchEvent(new Event("change"));

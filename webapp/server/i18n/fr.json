@@ -253,5 +253,6 @@
   "draw.algb_type_label": "type de Dynkin",
   "draw.algb_preset_label": "préréglage",
   "draw.algb_hint": "B est comparée par ses invariants dérivés ; un type de Dynkin construit une algèbre de chemins, ou choisissez un carquois prédéfini. Les deux sont pris sur le corps choisi ci-dessus.",
+  "draw.algb_unsupported": "type non pris en charge — utilisez A1..A9, D4..D9 ou E6/E7/E8",
   "form.field_ph": "CC, GF(5) ou QQ"
 }

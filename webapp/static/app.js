@@ -853,11 +853,15 @@ initParamForm();
 function readComputeBody() {
   const fd = new FormData(form);
   const fieldRaw = fd.get("field").trim();
-  // Exact fields the library accepts: CC (complex), QQ (rationals), GF(p^n).
-  // A bare "CC"/"QQ" is that field; anything else is read as GF(p).
-  const SCALAR_FIELDS = {CC: {kind: "CC"}, QQ: {kind: "QQ"}};
-  const field = SCALAR_FIELDS[fieldRaw]
-    || {kind: "GF", p: parseInt(fieldRaw.replace(/[^0-9]/g, ""), 10), n: 1};
+  // The fields the library accepts come from the catalog (CATALOG.fields), NOT a
+  // hardcoded list -- a scalar field is one that `needs` no extra input (CC, QQ);
+  // a field that needs `p` (GF) reads the prime/degree. A bare "CC"/"QQ" matches
+  // its catalog entry; anything else falls through to GF(p).
+  const fieldsMeta = (CATALOG && CATALOG.fields) || {};
+  const meta = fieldsMeta[fieldRaw];
+  const field = (meta && !(meta.needs || []).length)
+    ? {kind: fieldRaw}
+    : {kind: "GF", p: parseInt(fieldRaw.replace(/[^0-9]/g, ""), 10), n: 1};
   return {
     schema: 1,
     algebra: {kind: "family", family: fd.get("family"),

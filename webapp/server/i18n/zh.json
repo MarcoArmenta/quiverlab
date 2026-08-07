@@ -253,5 +253,6 @@
   "draw.algb_type_label": "Dynkin 型",
   "draw.algb_preset_label": "预设",
   "draw.algb_hint": "B 通过其导出不变量进行比较；Dynkin 型构造路代数，或选择一个预设箭图。两者都取在上方所选的域上。",
+  "draw.algb_unsupported": "不支持的类型——请使用 A1..A9、D4..D9 或 E6/E7/E8",
   "form.field_ph": "CC、GF(5) 或 QQ"
 }
