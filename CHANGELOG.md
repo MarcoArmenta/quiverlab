@@ -9,6 +9,36 @@ acceptance).
 
 ### Added
 
+- **The surface-expansion program (2026-08-06)** — closing the gap between what the
+  library computes and what the no-code surface can ask for:
+  - **Five new input families** on the catalog page — Brauer-graph algebras,
+    one-point extensions, corner algebras `eAe`, opposite algebras, and marked
+    surfaces (the three P48 presets as first-class input) — each with
+    four-language help and a verified prefill, and each emitting a genuinely
+    runnable "reproduce in Python" snippet.
+  - **ℚ as an input field** everywhere ℂ is accepted, on both pages and both
+    runners.
+  - **Quiver-with-potential input**: a potential box beside relations turns the
+    drawn quiver with `W` into its Jacobian algebra (relations = cyclic
+    derivatives; mutually exclusive with hand-typed relations, loudly).
+  - **Three new compute kinds**, end to end: `radical_filtration_ss` (the second
+    spectral-sequence preset goes no-code, with the truncation boundary honestly
+    trimmed), `ar_quiver` (AR-quiver knitting — complete iff representation-finite,
+    loud budget cap), and `derived_compare` (the deferred two-algebra
+    derived-fingerprint panel: algebra B by Dynkin type — synthesized client-side,
+    so it works on every tier — or preset pick; verdict wording never claims
+    equivalence).
+  - **Quasi-hereditary and orbit-geometry blocks enriched** with the
+    characteristic tilting module, the Ringel dual, and degeneration-order Hasse
+    data, byte-identical when not applicable.
+  - **Cloud capacity tuning** for the deployed website (16 vCPU / 50 GB / 200 GB
+    provisioned instance): 1 h queued walls, 24 h / 16 GiB email-verified big
+    jobs, tier-aware claiming so one worker loop never takes big jobs (the
+    anonymous queue can no longer be starved), a global instant-children bound,
+    byte-consistent cache sizing, and honest requeue/drain documentation — the
+    downloadable app keeps its unlimited-wall offline profile, the cloud does the
+    HPC-grade work a laptop can't.
+
 - **French and Chinese** join English and Spanish across the whole webapp/GUI:
   173-key catalogs `fr.json` / `zh.json`, every page mounted under `/fr` and
   `/zh`, a four-way header language menu (each language named in itself),
