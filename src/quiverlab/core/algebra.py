@@ -563,6 +563,21 @@ class Algebra:
         from quiverlab.modules.homdims import finitistic_dimension_bounds
         return finitistic_dimension_bounds(self, bound=bound)
 
+    def phi_dim(self, **kw):
+        """The Igusa-Todorov phi-dimension ``phidim(A) = sup{ phi(M) }`` as an ALGEBRA
+        invariant (Plan 53 / R23a): EXACT for representation-finite ``A`` (direct sum of
+        all indecomposables via add-monotonicity), a certified LOWER bound when the AR
+        knit caps, the exact ``0`` for self-injective ``A``. A :class:`~quiverlab.modules.homdims.PhiDim`."""
+        from quiverlab.modules.homdims import phi_dim
+        return phi_dim(self, **kw)
+
+    def psi_dim(self, **kw):
+        """The Igusa-Todorov psi-dimension ``psidim(A) = sup{ psi(M) }`` as an ALGEBRA
+        invariant (Plan 53 / R23a); same rep-finite/honest-degrade contract as
+        :meth:`phi_dim`. A :class:`~quiverlab.modules.homdims.PsiDim`."""
+        from quiverlab.modules.homdims import psi_dim
+        return psi_dim(self, **kw)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""

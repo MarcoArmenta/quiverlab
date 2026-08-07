@@ -155,6 +155,177 @@ def igusa_todorov_psi(M, budget=512, bound=64):
 
 
 # ---------------------------------------------------------------------------
+# phidim / psidim as ALGEBRA invariants (Plan 53 / R23a). Fernandes-Lanzilotta-
+# Mendoza (arXiv:1304.0754) + the survey (arXiv:2310.09283):
+#   phidim(A) = sup{ phi(M) : M in mod A },  psidim(A) = sup{ psi(M) };
+#   BOTH phi and psi are add-monotone (add M <= add N => phi(M) <= phi(N)); so for a
+#   representation-finite A with M0 = (+) all indecomposables, phidim(A) = phi(M0)
+#   (a SINGLE evaluation). Self-injective => phidim = psidim = 0 (Plan 40 phi==0).
+#   Honest: EXACT only when the AR-knit closes (indecomposable universe finite); else
+#   a certified LOWER bound over a finite subfamily (never a claimed sup).
+# ---------------------------------------------------------------------------
+@dataclass
+class PhiDim:
+    """The Igusa-Todorov phi-dimension of an algebra, honest (Plan 53). ``value`` is
+    the EXACT ``phidim`` when the indecomposable universe closed (``exact=True``) OR a
+    certified LOWER bound over a finite subfamily (``exact=False``, add-monotone) --
+    never a claimed sup. ``status``: ``"complete"`` (knit closed) / ``"budget"`` (knit
+    capped, soft-degraded lower bound) / ``"self-injective"`` (short-circuit to 0)."""
+    value: int
+    exact: bool
+    status: str
+
+    def __int__(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, PhiDim):
+            return ((self.value, self.exact, self.status)
+                    == (other.value, other.exact, other.status))
+        if isinstance(other, int):
+            return self.exact and self.value == other
+        return NotImplemented
+
+    __hash__ = None
+
+    def __repr__(self):
+        if self.exact:
+            return f"phidim = {self.value}"
+        return (f">= {self.value} (certified lower bound; the indecomposable universe "
+                f"did not close -- knit status {self.status})")
+
+
+@dataclass
+class PsiDim:
+    """The Igusa-Todorov psi-dimension of an algebra, honest (Plan 53) -- identical
+    shape to :class:`PhiDim` with ``psi`` in place of ``phi``."""
+    value: int
+    exact: bool
+    status: str
+
+    def __int__(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, PsiDim):
+            return ((self.value, self.exact, self.status)
+                    == (other.value, other.exact, other.status))
+        if isinstance(other, int):
+            return self.exact and self.value == other
+        return NotImplemented
+
+    __hash__ = None
+
+    def __repr__(self):
+        if self.exact:
+            return f"psidim = {self.value}"
+        return (f">= {self.value} (certified lower bound; the indecomposable universe "
+                f"did not close -- knit status {self.status})")
+
+
+def _dedup_by_iso(modules):
+    """De-duplicate ``modules`` up to isomorphism (dim/dim-vector prefilter, then the
+    exact ``is_isomorphic`` certificate). A repeated summand does not change phi/psi
+    (they read the ADD-closure), so dropping duplicates only saves the ``decompose``
+    cost on the ``direct_sum``. Loud when ``is_isomorphic`` is undecidable (unchanged)."""
+    reps = []
+    for X in modules:
+        if X.dim == 0:
+            continue
+        dvX = X.dimension_vector()
+        for R in reps:
+            if R.dim == X.dim and R.dimension_vector() == dvX and is_isomorphic(R, X):
+                break
+        else:
+            reps.append(X)
+    return reps
+
+
+def _phipsi_dim(A, fn, cls, *, budget_modules, phi_budget, phi_bound):
+    """Shared rep-finite phidim/psidim engine (Plan 53). ``fn`` = ``igusa_todorov_phi``
+    or ``igusa_todorov_psi``; ``cls`` = :class:`PhiDim` or :class:`PsiDim`.
+
+    Self-injective short-circuits to the exact ``0`` (Plan 40 phi==0 theorem) BEFORE any
+    knit -- ``knit_ar_quiver`` REFUSES self-injective input anyway. Otherwise knit the AR
+    quiver and branch on its honest semi-decision (M3, adversarial review -- error and
+    budget are NOT the same degrade):
+      * ``is_complete``  -> EXACT ``fn(+ all indecomposables)`` (add-monotonicity makes
+        the single evaluation the sup);
+      * ``status=="budget"`` -> SOFT degrade to the certified LOWER bound over the
+        discovered prefix U the simples (a genuine finite subfamily; add-monotone);
+      * ``status in {"error","unsupported"}`` -> RAISE loudly (a broken knit is a bug or
+        an unhandled input, never a certified partial answer)."""
+    from quiverlab.modules.ar import knit_ar_quiver
+    from quiverlab.modules.ext import is_selfinjective
+    from quiverlab.modules.morphism import direct_sum
+    if A.quiver is not None and is_selfinjective(A):
+        return cls(0, exact=True, status="self-injective")
+    ar = knit_ar_quiver(A, budget_modules=budget_modules)
+    if ar.status in ("error", "unsupported"):
+        raise QuiverlabError(
+            f"phi/psi-dim: the AR knit did not close honestly (status "
+            f"{ar.status!r}): {ar.note}",
+            hint="a knit error is a bug or an unhandled input -- a lower bound built on "
+                 "a broken knit is not certified")
+    if ar.is_complete:
+        mods = _dedup_by_iso([v["module"] for v in ar.vertices])
+        M0, _, _ = direct_sum(*mods)
+        return cls(fn(M0, budget=phi_budget, bound=phi_bound),
+                   exact=True, status="complete")
+    # status == "budget": the discovered prefix U the simples is a finite subfamily; its
+    # phi/psi is a rigorous LOWER bound (add-monotonicity), never a claimed sup.
+    fam = [v["module"] for v in ar.vertices]
+    fam += [A.simple(v) for v in A.quiver.vertices]
+    mods = _dedup_by_iso(fam)
+    M0, _, _ = direct_sum(*mods)
+    return cls(fn(M0, budget=phi_budget, bound=phi_bound),
+               exact=False, status="budget")
+
+
+def phi_dim(A, *, budget_modules=256, phi_budget=512, phi_bound=64):
+    """The Igusa-Todorov phi-dimension ``phidim(A) = sup{ phi(M) }`` as an ALGEBRA
+    invariant (Plan 53 / R23a; Fernandes-Lanzilotta-Mendoza arXiv:1304.0754).
+
+    EXACT for representation-finite ``A`` via the direct sum of ALL indecomposables
+    (add-monotonicity of phi makes the single evaluation the sup -- survey
+    arXiv:2310.09283); a certified LOWER bound when the AR knit caps at ``budget_modules``
+    (``status="budget"``); the exact ``0`` for self-injective ``A`` (Plan 40 phi==0).
+    Inherits ``decompose``'s loud char-caveat refusal (``char <= dim`` over GF(p)); a
+    genuine AR-knitting failure raises. Returns a :class:`PhiDim`."""
+    return _phipsi_dim(A, igusa_todorov_phi, PhiDim, budget_modules=budget_modules,
+                       phi_budget=phi_budget, phi_bound=phi_bound)
+
+
+def psi_dim(A, *, budget_modules=256, phi_budget=512, phi_bound=64):
+    """The Igusa-Todorov psi-dimension ``psidim(A) = sup{ psi(M) }`` as an ALGEBRA
+    invariant (Plan 53 / R23a). Same rep-finite ⊕-of-all route + honest degrade as
+    :func:`phi_dim`, with ``psi`` in place of ``phi``. Returns a :class:`PsiDim`."""
+    return _phipsi_dim(A, igusa_todorov_psi, PsiDim, budget_modules=budget_modules,
+                       phi_budget=phi_budget, phi_bound=phi_bound)
+
+
+def _chain_selfcheck(A, bound=32):
+    """The standing chain ``findim(A) <= phidim(A) <= psidim(A) <= gldim(A)`` as a
+    self-certificate (Plan 53; survey arXiv:2310.09283). Checks every inequality whose
+    BOTH terms are exact/computed: ``findim.lower <= phidim <= psidim``, and (when
+    ``gldim`` is exact-finite) ``psidim <= gldim`` PLUS the collapse ``findim = phidim =
+    psidim = gldim`` (every module has finite pd, so phi = psi = pd). Returns a dict of
+    the computed terms and an ``ok`` flag (True iff every applicable inequality holds)."""
+    from quiverlab.modules.ext import global_dimension
+    fb = finitistic_dimension_bounds(A, bound=bound)
+    pd = phi_dim(A)
+    ps = psi_dim(A)
+    g = global_dimension(A, bound=bound)
+    ok = (fb.lower <= pd.value <= ps.value)
+    if g.exact:
+        ok = ok and (ps.value <= g.value)
+        # gldim exact-finite => all four EQUAL (finite pd everywhere => phi = psi = pd).
+        ok = ok and (fb.lower == pd.value == ps.value == g.value)
+    return {"ok": bool(ok), "findim_lower": fb.lower, "phidim": pd.value,
+            "psidim": ps.value, "gldim": g.value, "gldim_exact": bool(g.exact)}
+
+
+# ---------------------------------------------------------------------------
 # Dominant dimension (leading projective-injective coresolvents of the regular
 # module; self-injective => infinity)
 # ---------------------------------------------------------------------------
