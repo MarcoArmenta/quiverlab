@@ -292,7 +292,40 @@ Object: left/right degrees of irreducible maps, sectional paths,
 postprojective/preinjective/regular partition, generalized-standard flags;
 directing modules and rep-directed (Γ_A acyclic) — all finite sweeps on the
 knitted AR quiver (rep-finite). Refs: Liu JLMS 45 (1992) 32–54, JLMS 47 (1993)
-405–416; Ringel LNM 1099; Bongartz CMH 57 (1982). Size M.
+405–416; Ringel LNM 1099; Bongartz CMH 57 (1982). Size M. See R37 for the
+radical-filtration objects the degree theory computes with.
+
+**R37 — The radical filtration of mod A and the infinite radical (Liu–Chaio
+program).** [added 2026-08-07 at Marco's request; anchors web-verified]
+Object: (a) the layer dimensions dim rad^n(X, Y) for indecomposables X, Y —
+on the knitted rep-finite category rad(X,Y) is the non-isomorphism space and
+rad^n is built by mesh-composites, with Liu's left/right degrees (R21)
+deciding exactly when a composite of n irreducibles falls into rad^{n+1};
+(b) the **nilpotency index** of rad(mod A) for rep-finite A (the least n with
+rad^n = 0) — the Chaio-school invariant relating it to AR-quiver structure
+("Module Categories of Small Radical Nilpotency", Alg. Rep. Theory 2023;
+"On Sums of Compositions of Irreducible Morphisms", ART 2018; "Degrees of
+Irreducible Morphisms over Perfect Fields", ART 2019 / arXiv:1704.03933);
+(c) the certificate **rad^∞(mod A) = 0 ⇔ A representation-finite**
+(Auslander) — an operational rep-finiteness gate dual to the knitting bound;
+(d) for representation-INFINITE algebras, honest bounded-window rad^n data
+plus the nilpotency taxonomy of rad^∞ as class oracles: **(rad^∞)² = 0 ⇒
+representation-finite** (Coelho–Marcos–Merklen–Skowroński, "Module categories
+with infinite radical square zero are of finite type", Comm. Algebra 22(11)
+(1994)); the rep-infinite algebras with **(rad^∞)³ = 0** include the tilted
+algebras of Euclidean type (CMMS, "Module categories with infinite radical
+cube zero", J. Algebra (1996)); Kerner–Skowroński, "On module categories with
+nilpotent infinite radical", Compositio Math. (1991). Foundational bridge:
+Chaio–Liu, "A note on the radical of a module category" (Comm. Algebra 2013)
+— rep-finite representation theory through radical nilpotency. Honest scope:
+fully certified on the rep-finite domain (where quiverlab knits); on
+rep-infinite input the layers are bounded-window computations and the
+(rad^∞)-nilpotency statements serve as class pins, not per-instance deciders.
+Oracles: rad-layer tables on kA_n against the mesh combinatorics; the
+nilpotency index on Nakayama zoo algebras; (rad^∞)²=0 ⇒ rep-finite as a
+discriminating battery; degree-vs-layer consistency with R21 (an irreducible
+map of finite left degree d forces the predicted rad-layer drop). Size M.
+Deps: AR knitting, Hom, R21 degrees.
 
 **R22 — Cluster-tilted algebras: relation-extension constructor + local-slice
 recognizer.** [C-scout P6; keep]
@@ -472,8 +505,9 @@ prerequisite of four other records), R2 (BV — backlog item now executable),
 R24 (fractional CY — cheap flagship), R23 (φdim/ψdim on Plan 40).
 
 **Tier β — the recognizer & certificate ladder (C-cluster spine):**
-R15 → R16 → {R17, R18, R21} → R19 (+Bongartz) → R20; R14 (π₁) beside them;
-R34, R35 as batteries.
+R15 → R16 → {R17, R18, R21, R37} → R19 (+Bongartz) → R20; R14 (π₁) beside
+them; R34, R35 as batteries. (R37 = the Liu–Chaio radical filtration /
+infinite radical — added 2026-08-07.)
 
 **Tier γ — τ-tilting/lattice/derived expansion:** R25, R26, R27, R28, R29;
 R30 (silting, re-scoped); R32 (skew-gentle); R33 (persistence/TDA — outreach
