@@ -578,6 +578,13 @@ class Algebra:
         from quiverlab.modules.homdims import psi_dim
         return psi_dim(self, **kw)
 
+    def phi_spectrum(self, **kw):
+        """The phi-spectrum ``{ phi(X) : X indecomposable }`` + its gaps (Plan 53 / R23b;
+        Barrios-Mata-Rama). Rep-finite only; a partial spectrum claims no gaps. A
+        :class:`~quiverlab.modules.homdims.PhiSpectrum`."""
+        from quiverlab.modules.homdims import phi_spectrum
+        return phi_spectrum(self, **kw)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""

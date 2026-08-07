@@ -326,6 +326,53 @@ def _chain_selfcheck(A, bound=32):
 
 
 # ---------------------------------------------------------------------------
+# The phi-spectrum + gaps (Plan 53 / R23b; Barrios-Mata-Rama arXiv:1810.12112)
+# ---------------------------------------------------------------------------
+@dataclass
+class PhiSpectrum:
+    """The phi-spectrum ``Spec_phi(A) = { phi(X) : X indecomposable }`` (Plan 53). For
+    representation-finite ``A`` (``complete=True``) this is a genuine spectrum with
+    ``gaps`` = the integers in ``(0, phidim)`` NOT attained by phi (0 and phidim are
+    always attained; Barrios-Mata-Rama: 1 and phidim-1 too when ``0 < phidim < oo``).
+    A partial spectrum (``complete=False``, knit capped) claims NO gaps -- a "gap" needs
+    a proven complete spectrum."""
+    values: "list"
+    gaps: "list"
+    phidim: int
+    complete: bool
+    status: str
+
+
+def phi_spectrum(A, *, budget_modules=256):
+    """The phi-spectrum of ``A`` (Plan 53 / R23b; Barrios-Mata-Rama arXiv:1810.12112):
+    the sorted distinct ``phi`` over the AR-knit indecomposables + its gaps.
+
+    Rep-finite (``knit`` closes): ``values = sorted({ phi(X) })``, ``phidim = max``,
+    ``gaps = [g in (0, phidim) if g not in values]`` (0 and phidim are always attained).
+    A capped knit degrades to ``complete=False``, ``gaps=[]`` (a partial spectrum claims
+    no gaps). Self-injective input has ``phidim = 0`` (Plan 40 phi==0) -- the spectrum is
+    ``[0]`` with no knit; a knit ``error``/``unsupported`` raises loudly (the phi_dim
+    contract). Inherits ``decompose``'s loud char-caveat refusal."""
+    from quiverlab.modules.ar import knit_ar_quiver
+    from quiverlab.modules.ext import is_selfinjective
+    if A.quiver is not None and is_selfinjective(A):
+        return PhiSpectrum([0], [], 0, complete=True, status="self-injective")
+    ar = knit_ar_quiver(A, budget_modules=budget_modules)
+    if ar.status in ("error", "unsupported"):
+        raise QuiverlabError(
+            f"phi_spectrum: the AR knit did not close honestly (status "
+            f"{ar.status!r}): {ar.note}",
+            hint="a knit error is a bug or an unhandled input, not a partial spectrum")
+    # The knit vertices are ALREADY one-per-indecomposable, so no dedup is needed.
+    values = sorted({igusa_todorov_phi(v["module"]) for v in ar.vertices})
+    phidim = max(values) if values else 0
+    if ar.is_complete:
+        gaps = [g for g in range(1, phidim) if g not in values]
+        return PhiSpectrum(values, gaps, phidim, complete=True, status="complete")
+    return PhiSpectrum(values, [], phidim, complete=False, status="budget")
+
+
+# ---------------------------------------------------------------------------
 # Dominant dimension (leading projective-injective coresolvents of the regular
 # module; self-injective => infinity)
 # ---------------------------------------------------------------------------
