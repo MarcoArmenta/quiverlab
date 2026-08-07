@@ -593,6 +593,21 @@ class Algebra:
         from quiverlab.modules.homdims import lit_finitistic_certificate
         return lit_finitistic_certificate(self, bound=bound)
 
+    def fractional_calabi_yau_dimension(self, **kw):
+        """The stable-category fractional Calabi-Yau dimension ``(m, ell)`` of a
+        self-injective algebra (Plan 53 / R24): ``S = Omega.nu``, ``Sigma = Omega^{-1}``,
+        certified at the weak-on-generators tier (Ivanov-Volkov criterion; bounded search
+        + loud budget). RAISES for non-self-injective ``A``. A
+        :class:`~quiverlab.modules.fractional_cy.FractionalCY`."""
+        from quiverlab.modules.fractional_cy import fractional_calabi_yau
+        return fractional_calabi_yau(self, **kw)
+
+    def is_fractionally_calabi_yau(self, **kw):
+        """True iff the stable category of this self-injective algebra CERTIFIES a
+        fractional Calabi-Yau dimension (Plan 53 / R24). RAISES for non-self-injective."""
+        from quiverlab.modules.fractional_cy import is_fractionally_calabi_yau
+        return is_fractionally_calabi_yau(self, **kw)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
