@@ -5,7 +5,7 @@ All notable changes to quiverlab are documented here. The format follows
 [Semantic Versioning](https://semver.org) (0.x during battle-testing; 1.0 at JOSS
 acceptance).
 
-## [Unreleased]
+## [0.3.0] — 2026-08-06
 
 ### Added
 
