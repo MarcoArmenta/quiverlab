@@ -224,3 +224,39 @@ def is_fractionally_calabi_yau(A, **kw):
     (``status == "certified"``) for the self-injective algebra ``A`` (Plan 53). The
     degenerate shift-trivial case and the budget cap are NOT reported as certified."""
     return fractional_calabi_yau(A, **kw).status == "certified"
+
+
+# ---------------------------------------------------------------------------
+# The `fractional_cy` no-code block (Plan 53 Task E) -- ONE shared library builder,
+# so the server (hpc.spec) and Pyodide (docs/gui/runner) twins are byte-identical by
+# construction. Algebra-level scalar kind (routes through _dispatch, NOT
+# _dispatch_module; schema stays v1). A non-self-injective input is caught into
+# {"error": ...} (a clean typed 4xx in the webapp, never a 500 -- the Plan-26 precedent).
+# Each runner adds the resolved `citations`.
+# ---------------------------------------------------------------------------
+def fractional_cy_block(A):
+    """The ``fractional_cy`` block for algebra ``A`` (Plan 53 / R24): the stable-category
+    fractional Calabi-Yau dimension, certified at the weak-on-generators tier. The ``tier``
+    field is ALWAYS ``"weak-on-generators"`` and is rendered beside the value so the
+    displayed result never overstates the certificate. A non-self-injective input is
+    caught into ``{"error": ...}`` (the loud not-self-injective message), never raised out
+    of the block. Returns the block minus ``citations`` (each runner resolves
+    ``references`` to citation pairs)."""
+    refs = ["ivanov_volkov", "erdmann_skowronski_scy", "assem_book"]
+    try:
+        fcy = fractional_calabi_yau(A)
+    except QuiverlabError as exc:
+        return {"kind": "fractional_cy", "error": str(exc)}
+    return {
+        "kind": "fractional_cy",
+        "cy_dimension": fcy.cy_dimension,
+        "m": fcy.m, "ell": fcy.ell,
+        "weakly_n_cy": fcy.weakly_n_cy,
+        "sigma_period": fcy.sigma_period,
+        "status": fcy.status,
+        "tier": fcy.tier,
+        "checked_on": fcy.checked_on,
+        "certificate": [list(c) for c in fcy.certificate],
+        "text": repr(fcy),
+        "references": refs,
+    }

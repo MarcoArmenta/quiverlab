@@ -771,17 +771,47 @@ def _igusa_todorov_entry(A, bound):
         return {"error": str(exc)}
 
 
+def _phidim_profile_entry(A, fn, cls_name):
+    """phidim/psidim for the profile block, honest-noted; the decompose char-caveat
+    refusal (or a knit error) is caught into ``{"error": ...}`` (the Plan-40 IT-entry
+    precedent), never a silent omission."""
+    try:
+        d = _phipsi_dim(A, (igusa_todorov_phi if fn == "phi" else igusa_todorov_psi),
+                        (PhiDim if fn == "phi" else PsiDim),
+                        budget_modules=256, phi_budget=512, phi_bound=64)
+        return {"value": d.value, "exact": bool(d.exact), "status": d.status,
+                "text": str(d)}
+    except QuiverlabError as exc:
+        return {"error": str(exc)}
+
+
+def _phi_spectrum_profile_entry(A):
+    """The phi-spectrum for the profile block, honest-noted; the decompose char-caveat
+    (or a knit error) is caught into ``{"error": ...}``."""
+    try:
+        S = phi_spectrum(A)
+        return {"values": list(S.values), "gaps": list(S.gaps),
+                "complete": bool(S.complete), "status": S.status}
+    except QuiverlabError as exc:
+        return {"error": str(exc)}
+
+
 def homological_profile(A, bound=32):
-    """The whole C6 homological-dimension family as ONE block (Plan 40): global /
-    finitistic / dominant / Gorenstein dimensions + the Igusa-Todorov phi/psi of
-    ``(+)_v S_v``. Every entry carries its own honesty (exact/lower-bound/infinite/
-    undecided markers or a per-entry error). Returns the block minus ``citations``
-    (each runner resolves ``references`` to citation pairs)."""
+    """The whole C6 homological-dimension family as ONE block (Plan 40 + Plan 53):
+    global / finitistic / dominant / Gorenstein dimensions + the Igusa-Todorov phi/psi
+    of ``(+)_v S_v`` + (Plan 53, ADDITIVE keys) the phidim/psidim ALGEBRA invariants, the
+    phi-spectrum + gaps, and the Lat-Igusa-Todorov finitistic certificate. Every entry
+    carries its own honesty (exact/lower-bound/infinite/undecided markers or a per-entry
+    error). The Plan-53 keys are strictly ADDITIVE -- the block name is unchanged, so
+    canonical cache keys are unaffected and pre-P53 cached blocks (missing the four new
+    keys) replay under renderer tolerance. Returns the block minus ``citations`` (each
+    runner resolves ``references`` to citation pairs)."""
     from quiverlab.modules.ext import global_dimension
     g = global_dimension(A, bound=bound)
     fb = finitistic_dimension_bounds(A, bound=bound)
     dd = dominant_dimension(A, bound=bound)
     gd = gorenstein_dimension(A, bound=bound)
+    lit = lit_finitistic_certificate(A, bound=bound)
     return {
         "kind": "homological_profile",
         "global_dimension": {"text": str(g), "exact": bool(g.exact), "value": g.value},
@@ -792,5 +822,12 @@ def homological_profile(A, bound=32):
         "gorenstein": {"right_id": gd.right_id, "left_id": gd.left_id,
                        "is_gorenstein": gd.is_gorenstein, "text": str(gd)},
         "igusa_todorov": _igusa_todorov_entry(A, bound),
-        "references": ["igusa_todorov", "assem_book"],
+        # Plan 53 (R23a/b/c) -- additive keys:
+        "phidim": _phidim_profile_entry(A, "phi", "PhiDim"),
+        "psidim": _phidim_profile_entry(A, "psi", "PsiDim"),
+        "phi_spectrum": _phi_spectrum_profile_entry(A),
+        "lit": {"findim_upper": lit.findim_upper, "family": lit.family,
+                "proof": lit.proof},
+        "references": ["igusa_todorov", "assem_book", "fernandes_lanzilotta_mendoza",
+                       "barrios_mata", "bravo_lanzilotta_mendoza_vivero"],
     }
