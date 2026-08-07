@@ -115,6 +115,26 @@ class Algebra:
         return Algebra(dom, newT, new_unit, basis_labels=None,
                        _quiver=self.quiver, _relations=self.relations)
 
+    def _unit_adapting_change(self):
+        """The change-of-basis matrix P used by ``unit_adapted`` (columns = new
+        basis in old coords: new basis vector 0 is 1_A). Identity if already
+        unit-adapted. Exposed so a coefficient bimodule built in A's OWN basis can
+        be re-expressed in the unit-adapted basis the bar complex works in
+        (Plan 52; see hochschild.coefficients.Bimodule.change_of_basis)."""
+        dom = self.domain
+        m = self.dim
+        eye = [[dom.one() if r == c else dom.zero() for c in range(m)] for r in range(m)]
+        if self.is_unit_adapted:
+            return eye
+        j = next(i for i, c in enumerate(self.unit) if not dom.is_zero(c))
+        P = eye
+        for r in range(m):
+            P[r][j] = self.unit[r]
+        if j != 0:
+            for r in range(m):
+                P[r][0], P[r][j] = P[r][j], P[r][0]
+        return P
+
     def unit_adapted(self):
         """Return an isomorphic copy whose basis vector 0 is 1_A (spec §5, component 4)."""
         if self.is_unit_adapted:
@@ -122,12 +142,7 @@ class Algebra:
         dom = self.domain
         m = self.dim
         j = next(i for i, c in enumerate(self.unit) if not dom.is_zero(c))
-        P = [[dom.one() if r == c else dom.zero() for c in range(m)] for r in range(m)]
-        for r in range(m):
-            P[r][j] = self.unit[r]
-        if j != 0:
-            for r in range(m):
-                P[r][0], P[r][j] = P[r][j], P[r][0]
+        P = self._unit_adapting_change()
         out = self.change_of_basis(P)
         labels = None
         if self.basis_labels is not None:
