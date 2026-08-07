@@ -7,8 +7,8 @@ authors:
     given-names: Marco
     email: drmarcoarmenta@gmail.com
     orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO(Marco): real ORCID before release (placeholder is valid ORCID format only)
-version: 0.2.0
-date-released: "2026-07-18"
+version: 0.3.0
+date-released: "2026-08-06"
 license: MIT
 repository-code: "https://github.com/MarcoArmenta/quiverlab"
 url: "https://marcoarmenta.github.io/quiverlab/"

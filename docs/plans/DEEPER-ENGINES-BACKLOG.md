@@ -520,6 +520,16 @@ planned together even if delivered in slices.
   worked-steps fallback (no TeX in the image) is unit-tested but not in the smoke.
 - [ ] **De-flake `test_instant_compute`**: timing-sensitive tier assertion flaked
   once under a full-dir run (passed isolated + rerun); make it deterministic.
+- [ ] **Budget-kind estimator honesty** (W2 devil's advocate, 2026-08-06): the
+  `ar_quiver`/`tau_tilting` budgets are excluded from tier sizing, so a
+  rep-infinite small-dim algebra with a large budget classifies *instant* and
+  can burn a wall mislabeled (measured: `ar_quiver` on the 2-Kronecker ~3× per
+  +2 budget). Needs a rep-type/cost signal in `estimator.py::_max_degree`
+  (KNOWN LIMITATION comment marks the spot). Inherited pattern — fix both kinds.
+- [ ] **Draw-a-second-algebra canvas for `derived_compare`** (named successor,
+  2026-08-06): v1 takes algebra B as a Dynkin type string or a preset pick;
+  a free-form second canvas (and `derived_compare` on the index/family page)
+  is the successor.
 
 ## Done (this backlog's history)
 

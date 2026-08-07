@@ -29,9 +29,42 @@
     table.ql-matrix th.ql-corner { background:#e4e4e4; border-color:#c4c4c4; }
     header, footer { color:#555; }
     header a, footer a { color:#555; }
+    /* Header language menu (Marco: "the menu at the top is getting crowded").
+       A native details/summary disclosure -- NOT a select element -- because the
+       strict CSP (script-src 'self', no 'unsafe-inline'; see security.py) forbids
+       both an inline script and an inline onchange handler, and a select cannot
+       navigate without one. The disclosure opens on click with zero JS, lists the
+       four languages as ordinary links, and degrades to a plain visible list when
+       JS or details support is absent. */
+    details.lang-menu { display:inline; position:relative; }
+    details.lang-menu > summary {
+      display:inline; cursor:pointer; color:#555; list-style:none;
+      user-select:none; }
+    details.lang-menu > summary::-webkit-details-marker { display:none; }
+    details.lang-menu > summary::after { content:" \25BE"; font-size:.8em; }
+    details.lang-menu[open] > summary::after { content:" \25B4"; }
+    .lang-menu-panel {
+      position:absolute; right:0; margin-top:.25rem; padding:.25rem .4rem;
+      background:#fff; border:1px solid #ddd; border-radius:.3rem;
+      box-shadow:0 2px 6px rgba(0,0,0,.12); white-space:nowrap; z-index:20; }
+    .lang-menu-panel a, .lang-menu-panel .lang-current {
+      display:block; padding:.12rem .25rem; color:#555; text-decoration:none; }
+    .lang-menu-panel a:hover { text-decoration:underline; }
+    .lang-menu-panel .lang-current { color:#222; font-weight:600; }
   </style>
 </head>
-<body>
+{# data-offline: the LOCAL desktop app stamps app.state.offline (offline.py), which
+   _ctx surfaces as `offline`; the draw-page canvas (gui.js) reads this to offer the
+   "cancel the running job" action ONLY offline. The cancel strings ride along as
+   data-* so gui.js can localise them (it falls back to English until the catalog
+   keys land). On the deployed server `offline` is unset -> "false" and no button. #}
+<body
+  data-offline="{{ 'true' if offline else 'false' }}"
+  data-cancel-running-label="{{ t('cancel_running.button') }}"
+  data-cancel-running-progress="{{ t('cancel_running.cancelling') }}"
+  data-cancel-running-done="{{ t('cancel_running.cancelled') }}"
+  data-cancel-running-none="{{ t('cancel_running.none') }}"
+  data-cancel-running-error="{{ t('cancel_running.failed') }}">
   <header>
     <a href="{{ prefix }}/">quiverlab</a> ·
     <a href="{{ prefix }}/draw">{{ t("nav.draw") }}</a> ·
@@ -39,7 +72,20 @@
     <a href="{{ prefix }}/literature">{{ t("nav.literature") }}</a> ·
     <a href="{{ prefix }}/feedback">{{ t("nav.feedback") }}</a>
     {% if docs_url %}· <a href="{{ docs_url }}">{{ t("nav.docs") }}</a>{% endif %} ·
-    <a href="{{ other_url }}">{{ t("lang.other") }}</a>
+    {# Language menu. `lang_links` (from i18n.lang_links) is the OTHER three
+       languages; the current one is shown selected in the summary + first in the
+       panel. LANG_NAMES lives in webapp.server.i18n but cannot reach this template
+       without editing pages.py's _ctx, so the native-name map is mirrored here as
+       a literal (pinned to the source by tests/webapp/test_lang_dropdown.py). #}
+    {% set lang_native = {"en": "English", "es": "Español", "fr": "Français", "zh": "中文"} %}
+    <details class="lang-menu">
+      <summary title="Language" aria-label="Language">{{ lang_native[lang] }}</summary>
+      <div class="lang-menu-panel" role="menu">
+        <span class="lang-current" lang="{{ lang }}" aria-current="true">{{ lang_native[lang] }}</span>
+        {% for code, name, url in lang_links %}<a href="{{ url }}" lang="{{ code }}" hreflang="{{ code }}" role="menuitem">{{ name }}</a>
+        {% endfor %}
+      </div>
+    </details>
   </header>
   <main>{% block body %}{% endblock %}</main>
   <footer>

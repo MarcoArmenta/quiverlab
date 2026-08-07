@@ -22,6 +22,7 @@ from __future__ import annotations
 import inspect
 import json
 import logging
+import random
 import re
 import sys
 import time
@@ -33,6 +34,7 @@ from typing import Any, Callable
 
 import quiverlab as ql
 from quiverlab import errors as qerr
+from quiverlab.fields import QQ
 
 # The result envelope's schema version (Plan 28). ``run`` stamps it only when
 # asked (the CLI does; the webapp does NOT, so its result dict is byte-unchanged).
@@ -172,6 +174,7 @@ class QuiverAlgebra:
     arrows: dict          # name -> (source, target) tuple
     relations: list
     field: FieldSpec
+    potential: str | None = None   # optional QP potential -> P44 Jacobian (see build_algebra)
 
 
 @dataclass(frozen=True)
@@ -223,6 +226,7 @@ class ComputeRequest:
     tor_target: ModuleSpec | None    # Plan 30: the N in Tor^A_n(M, N), a left module
     hpc: HpcConfig | None
     raw_algebra: dict            # verbatim echo for the result envelope
+    algebra_b: Any = None        # wave 2: the SECOND algebra for derived_compare (opt.)
 
 
 # --------------------------------------------------------------------------- #
@@ -243,6 +247,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
+    # 'ar_quiver:512'. The budget caps the knitted indecomposable universe -- not a
+    # homological degree -- so it bypasses the 'name:0..N' grammar (like tau_tilting).
+    if s == "ar_quiver" or s.startswith("ar_quiver:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -384,8 +396,8 @@ def _parse_field(f) -> FieldSpec:
     if not isinstance(f, dict):
         raise SpecError("algebra.field must be an object with a 'kind'")
     kind = f.get("kind")
-    if kind not in ("CC", "GF"):
-        raise SpecError(f"unknown field kind {kind!r} (expected 'CC' or 'GF')")
+    if kind not in ("CC", "GF", "QQ"):
+        raise SpecError(f"unknown field kind {kind!r} (expected 'CC', 'GF' or 'QQ')")
     p = f.get("p")
     n = f.get("n", 1)
     if p is not None:
@@ -429,7 +441,18 @@ def _parse_algebra(a):
         relations = a.get("relations", [])
         if not (isinstance(relations, list) and all(isinstance(r, str) for r in relations)):
             raise SpecError("algebra.relations must be a list of strings")
-        return QuiverAlgebra("quiver", list(vertices), arrows, list(relations), fld)
+        potential = a.get("potential")
+        if potential is not None and not isinstance(potential, str):
+            raise SpecError("algebra.potential must be a string (a k-linear sum of "
+                            "oriented cycles, e.g. 'a*b*c - d*e*f')")
+        pot = potential.strip() if isinstance(potential, str) and potential.strip() else None
+        if pot is not None and relations:
+            raise SpecError(
+                "a 'potential' and explicit 'relations' cannot both be given: the "
+                "Jacobian algebra's relations ARE the cyclic derivatives of the "
+                "potential (leave 'relations' empty when a 'potential' is set)")
+        return QuiverAlgebra("quiver", list(vertices), arrows, list(relations), fld,
+                             potential=pot)
     raise SpecError(f"unknown algebra kind {kind!r} (expected 'family' or 'quiver')")
 
 
@@ -647,12 +670,25 @@ def parse_request(data) -> ComputeRequest:
     if "tor" in kinds and tor_target is None:
         raise SpecError("Tor needs a second module 'tor_target' (the N in "
                         "Tor^A_n(M, N), a LEFT A-module)")
+    # wave 2: the OPTIONAL second algebra for derived_compare. Absent for every other
+    # request (serialized away by the schema's model_dump), so canonical keys and the
+    # runner-delegation goldens are byte-unchanged. derived_compare REQUIRES it, and
+    # NOTHING ELSE may carry it: a spurious algebra_b would otherwise be accepted and
+    # pollute the canonical form, forging a different cache key for the same
+    # computation (Plan 25). Both directions guarded, the schema-layer twin of this.
+    algebra_b = _parse_algebra(data["algebra_b"]) if data.get("algebra_b") is not None else None
+    if "derived_compare" in kinds and algebra_b is None:
+        raise SpecError("derived_compare needs a second algebra 'algebra_b' (the B in "
+                        "the derived-fingerprint comparison of A and B)")
+    if algebra_b is not None and "derived_compare" not in kinds:
+        raise SpecError("a second algebra 'algebra_b' is only used by derived_compare; "
+                        "drop it, or add a 'derived_compare' compute kind")
 
     return ComputeRequest(schema_version=schema_version, algebra=algebra,
                           compute=list(compute), artifacts=artifacts,
                           module=module, ext_target=ext_target,
                           tor_target=tor_target, hpc=hpc,
-                          raw_algebra=data["algebra"])
+                          raw_algebra=data["algebra"], algebra_b=algebra_b)
 
 
 # --------------------------------------------------------------------------- #
@@ -662,6 +698,8 @@ def parse_request(data) -> ComputeRequest:
 def _field(spec: FieldSpec):
     if spec.kind == "CC":
         return ql.CC
+    if spec.kind == "QQ":
+        return QQ
     p, n = spec.p, (spec.n or 1)
     if not isinstance(p, int):
         raise ComputeError("FieldError", "field GF needs an integer p >= 2")
@@ -677,7 +715,18 @@ def build_algebra(spec):
     if isinstance(spec, QuiverAlgebra):
         Q = ql.Quiver(vertices=list(spec.vertices),
                       arrows={k: tuple(v) for k, v in spec.arrows.items()})
+        if spec.potential:
+            # A potential routes through the P44 Jacobian kQ/(d_a W). Its own loud
+            # refusals (unknown arrow / non-cyclic term / NotFiniteDimensionalError)
+            # are QuiverlabErrors and propagate as clean errors, never a 500.
+            return _build_jacobian(Q, spec.potential, _field(spec.field))
         return Q.algebra(relations=list(spec.relations), field=_field(spec.field))
+    if spec.family in _SYNTHETIC_FAMILY_PARAMS:
+        # The P44/P46/P48 construction families: their real library constructors take
+        # Algebra / Module / BrauerGraph / Triangulation arguments, so they cannot be
+        # introspected as scalar forms. They carry FLATTENED catalog-expressible params
+        # (type strings / lists / ints) that _build_synthetic reassembles.
+        return _build_synthetic(spec)
     validate_family(spec.family, spec.params)
     builder = _family_map().get(spec.family)
     if builder is None:
@@ -700,6 +749,159 @@ def build_algebra(spec):
             args[k] = ql.PathAlgebra(v.strip(), field=f)
         return builder(**args)
     return builder(field=_field(spec.field), **spec.params)
+
+
+# --------------------------------------------------------------------------- #
+# Quiver-with-potential (P44 Jacobian) + construction families (P44/P46/P48).
+# These build ordinary Algebra objects; once built they flow through every
+# existing compute kind unchanged (the webapp algebra `kind` stays
+# `family`/`quiver`, so the P50 reachability sweep audits them as construction
+# inputs, not compute kinds). The catalog (webapp/server/catalog.py) lists the
+# SAME flattened param names; tests/webapp/test_catalog.py auto-gates that every
+# catalog prefill builds here.
+# --------------------------------------------------------------------------- #
+
+def _build_jacobian(Q, potential_str, field):
+    """The Jacobian algebra ``Jac(Q, W)`` from a potential STRING in the relation
+    grammar ('*'-joined oriented cycles, k-linear combos, e.g. 'a*b*c - d*e*f').
+    Each term is parsed with the shared relation-term parser (so an unknown arrow /
+    non-composable factor is the library's loud ``RelationError``); ``Potential``
+    then certifies each term is a genuine oriented cycle."""
+    from quiverlab.combinat.relations import _parse_term, _split_terms
+    terms = [_parse_term(t, Q) for t in _split_terms(potential_str)]
+    W = ql.Potential(Q, terms)
+    return ql.JacobianAlgebra(Q, W, field=field)
+
+
+# The construction families and their FLATTENED catalog-expressible param names.
+# Kept in sync (by name) with webapp/server/catalog.py::_SYNTHETIC_FAMILIES.
+_SYNTHETIC_FAMILY_PARAMS = {
+    "BrauerGraphAlgebra": {"edges", "cyclic_order", "multiplicities"},
+    "OnePointExtension": {"base", "module_kind", "module_vertex"},
+    "CornerAlgebra": {"base", "vertices"},
+    "OppositeAlgebra": {"base"},
+    "MarkedSurface": {"preset"},
+}
+
+_SURFACE_PRESETS = ("disc_fan_A3", "annulus_C22", "hexagon_internal")
+
+
+def _base_path_algebra(base, field, fam):
+    if not isinstance(base, str) or not base.strip():
+        raise ComputeError(
+            "CatalogError",
+            f"family {fam!r} parameter 'base' names its base path algebra as a "
+            f"Dynkin type string (e.g. \"A3\"); got {base!r}")
+    return ql.PathAlgebra(base.strip(), field=field)
+
+
+def _builtin_module(A, kind, vertex, fam):
+    if kind not in ("simple", "projective", "injective"):
+        raise ComputeError("CatalogError",
+                           f"family {fam!r} parameter 'module_kind' must be "
+                           "simple / projective / injective")
+    match = next((v for v in A.quiver.vertices
+                  if v == vertex or str(v) == str(vertex)), None)
+    if match is None:
+        raise ComputeError("CatalogError",
+                           f"family {fam!r}: no vertex {vertex!r} in the base algebra")
+    return {"simple": A.simple, "projective": A.projective,
+            "injective": A.injective}[kind](match)
+
+
+def _int_list(val, fam, pname):
+    if not (isinstance(val, (list, tuple)) and val
+            and all(isinstance(x, int) and not isinstance(x, bool) for x in val)):
+        raise ComputeError(
+            "CatalogError",
+            f"family {fam!r} parameter {pname!r} must be a non-empty list of vertex "
+            "integers, e.g. [1, 2]")
+    return list(val)
+
+
+def _build_brauer(params, field):
+    """BrauerGraphAlgebra from flattened params: ``edges`` (endpoint pairs
+    ``[u, v]``), ``cyclic_order`` (ribbon orders ``[vertex, [edge_index, ...]]``) and
+    ``multiplicities`` (``[vertex, m]`` pairs). The ribbon end-tags the library needs
+    are synthesized here (they are cosmetic -- validation counts occurrences, not
+    tags). BrauerGraph.validate + the dim certificate are the library's loud gates."""
+    from quiverlab.families.brauer import BrauerGraph, BrauerGraphAlgebra
+    edges_p = params.get("edges")
+    if not (isinstance(edges_p, list) and edges_p
+            and all(isinstance(e, (list, tuple)) and len(e) == 2 for e in edges_p)):
+        raise ComputeError(
+            "CatalogError",
+            "BrauerGraphAlgebra.edges must be a non-empty list of [u, v] endpoint "
+            "pairs, e.g. [[0, 1], [1, 2]]")
+    edges = tuple((e[0], e[1]) for e in edges_p)
+    cyc_p = params.get("cyclic_order")
+    if not (isinstance(cyc_p, list) and cyc_p
+            and all(isinstance(c, (list, tuple)) and len(c) == 2
+                    and isinstance(c[1], (list, tuple)) for c in cyc_p)):
+        raise ComputeError(
+            "CatalogError",
+            "BrauerGraphAlgebra.cyclic_order must be a list of [vertex, "
+            "[edge_index, ...]] entries (the ribbon cyclic order around each graph "
+            "vertex), e.g. [[0, [0]], [1, [0, 1]], [2, [1]]]")
+    cyclic = {vtx: tuple((int(k), f"{vtx}:{pos}") for pos, k in enumerate(idxs))
+              for vtx, idxs in cyc_p}
+    mult_p = params.get("multiplicities")
+    if not (isinstance(mult_p, list) and mult_p
+            and all(isinstance(m, (list, tuple)) and len(m) == 2 for m in mult_p)):
+        raise ComputeError(
+            "CatalogError",
+            "BrauerGraphAlgebra.multiplicities must be a list of [vertex, m] entries, "
+            "e.g. [[0, 1], [1, 1], [2, 1]]")
+    mult = {vtx: int(m) for vtx, m in mult_p}
+    return BrauerGraphAlgebra(BrauerGraph(edges=edges, cyclic_order=cyclic),
+                              mult, field=field)
+
+
+def _build_marked_surface(preset, field):
+    """The gentle Jacobian algebra of a P48 build-time triangulation preset -- a
+    marked surface as a first-class no-code INPUT (disc fan A3, annulus C(2,2), or
+    the hexagon with an internal triangle)."""
+    from quiverlab.surfaces import (annulus_triangulation, fan_triangulation,
+                                     hexagon_with_internal_triangle, jacobian_of)
+    if preset not in _SURFACE_PRESETS:
+        raise ComputeError(
+            "CatalogError",
+            f"MarkedSurface.preset must be one of {list(_SURFACE_PRESETS)}; "
+            f"got {preset!r}")
+    if preset == "disc_fan_A3":
+        T = fan_triangulation(6)                 # disc fan -> gentle A3
+    elif preset == "annulus_C22":
+        T = annulus_triangulation(2, 2)          # annulus C(2, 2)
+    else:
+        T = hexagon_with_internal_triangle()     # one internal 3-cycle
+    return jacobian_of(T, field=field)
+
+
+def _build_synthetic(spec):
+    """Build one construction family from its flattened params. Loud
+    ``ComputeError`` (CatalogError) on an unknown/ill-typed param; the library
+    constructors' own ``QuiverlabError`` refusals propagate as clean errors."""
+    name, params = spec.family, spec.params
+    unknown = set(params) - _SYNTHETIC_FAMILY_PARAMS[name]
+    if unknown:
+        raise ComputeError("CatalogError",
+                           f"family {name!r} got unknown params {sorted(unknown)}")
+    field = _field(spec.field)
+    if name == "OppositeAlgebra":
+        return _base_path_algebra(params.get("base"), field, name).opposite()
+    if name == "CornerAlgebra":
+        A = _base_path_algebra(params.get("base"), field, name)
+        return A.corner_algebra(_int_list(params.get("vertices"), name, "vertices"))
+    if name == "OnePointExtension":
+        A = _base_path_algebra(params.get("base"), field, name)
+        M = _builtin_module(A, params.get("module_kind", "simple"),
+                            params.get("module_vertex"), name)
+        return ql.OnePointExtension(A, M)      # reads M as the (k, A)-bimodule (right module)
+    if name == "MarkedSurface":
+        return _build_marked_surface(params.get("preset"), field)
+    if name == "BrauerGraphAlgebra":
+        return _build_brauer(params, field)
+    raise ComputeError("CatalogError", f"no synthetic builder for {name!r}")
 
 
 # --------------------------------------------------------------------------- #
@@ -768,6 +970,12 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
 
             N = _target(req.ext_target, "ext")
             T = _target(req.tor_target, "tor")
+            # wave 2: the second algebra for derived_compare, built only when that kind
+            # is requested (parse_request already required algebra_b for it).
+            B = (build_algebra(req.algebra_b)
+                 if (req.algebra_b is not None
+                     and any(it.kind == "derived_compare" for it in items))
+                 else None)
             results: dict = {}
             per_kind: dict = {}
             for i, item in enumerate(items):
@@ -788,7 +996,7 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                         results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
                         per_kind[item.kind] = _item_resources(t_item)
                         continue
-                    block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps)
+                    block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps, B)
                     results[item.kind] = block
                     per_kind[item.kind] = _item_resources(t_item)
                     if hh is not None:
@@ -1124,7 +1332,7 @@ def _dispatch_deepen(A, item: ComputeItem, hpc: HpcConfig, progress_cb) -> dict:
 # Per-invariant dispatch (block shapes mirror docs/gui/runner.py::compute_one)
 # --------------------------------------------------------------------------- #
 
-def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
+def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     kind = item.kind
     if kind in ("hh_cohomology", "hh_homology"):
         top = item.hi
@@ -1193,6 +1401,20 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         block = specseq_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Radical-filtration (associated-graded) spectral sequence (P42 preset, wave 2): an
+    # algebra-only range kind. The shared builder runs the preset on the minimal
+    # projective resolution of (+)_v S_v to length `hi`; a refusal is caught INSIDE the
+    # builder into {"error": ...} (the specseq_block precedent), never a 500. Byte-
+    # identical Pyodide twin (docs/gui/runner.py). No hh_trace (its own tables).
+    if kind == "radical_filtration_ss":
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..4'")
+        from quiverlab.specseq.block import radical_filtration_ss_block
+        block = radical_filtration_ss_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # C4 tau-tilting engine (Plan 45): an ALGEBRA-level kind (like hh_*), NOT a module
     # kind. It carries a PAIR BUDGET, not a degree range: the spec grammar accepts
     # 'tau_tilting' (default budget 512) or 'tau_tilting:512' (a bare positive int); the
@@ -1204,6 +1426,17 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         budget = item.hi if item.hi is not None else 512
         from quiverlab.tautilting.block import tau_tilting_block
         block = tau_tilting_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # AR quiver (P41, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
+    # degree range ('ar_quiver' / 'ar_quiver:512', parsed like tau_tilting). Honest
+    # semi-decision -- complete iff rep-finite, else status='budget' (partial, labelled)
+    # or the self-injective/uncertifiable refusal in an `error` field, never a 500.
+    # Both runners share ar.ar_quiver_block, so the blocks are byte-identical.
+    if kind == "ar_quiver":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.modules.ar import ar_quiver_block
+        block = ar_quiver_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
@@ -1262,6 +1495,20 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True) -> tuple:
         top = item.hi if item.hi is not None else 4
         from quiverlab.derived.block import derived_fingerprint_block
         block = derived_fingerprint_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Derived-fingerprint COMPARISON of two algebras (P43 compare_fingerprints, wave 2):
+    # a scalar kind needing the second algebra B (parse_request required algebra_b, and
+    # run() built it into B). The verdict is HONEST -- "distinguished by <field>" /
+    # "not distinguished by these invariants" -- NEVER an equivalence claim. Both runners
+    # share derived.block.derived_compare_block, so the blocks are byte-identical.
+    if kind == "derived_compare":
+        top = item.hi if item.hi is not None else 4
+        if B is None:                       # defensive: parse_request already guards this
+            raise ComputeError("SchemaError",
+                               "derived_compare needs a second algebra 'algebra_b'")
+        from quiverlab.derived.block import derived_compare_block
+        block = derived_compare_block(A, B, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Recognizer batch + type detection (Plan 38): a pure scalar kind on the
@@ -1409,6 +1656,91 @@ def _build_module(algebra, mspec, name):
         return builder(v, side=mspec.side)
     dimvec, action = _full_matrices(algebra, mspec)
     return algebra.module(dimvec, action, side=mspec.side, name=name)
+
+
+# --------------------------------------------------------------------------- #
+# Random representations (GitHub #3, Samuel Leblanc). Shared by the webapp
+# /api/gui/random-module route and, byte-identically, by the Pyodide twin
+# docs/gui/runner.py::random_module -- SAME draw order (sorted arrow names,
+# row-major) under random.Random(seed), so both tiers agree for a fixed seed.
+# --------------------------------------------------------------------------- #
+def random_module(algebra, dims, side: str = "right", seed: int = 0,
+                  tries: int = 200, max_total_dim: int | None = _MAX_MODULE_DIM):
+    """Draw a random representation of ``algebra`` with dimension vector ``dims``.
+
+    Randomness is EXACT, never floating point: over GF(p) each entry is uniform in
+    ``0..p-1`` (the prime subfield -- the only field elements the exact-entry
+    grammar can name; for GF(p^n) with n > 1 that is an honest prime-subfield slice
+    of all representations, not the full variety). Over a characteristic-0 field
+    entries are small integers in ``-5..5``.
+
+    With relations the draw is REJECTION-SAMPLED: each candidate is built through
+    the library's checked ``A.module`` and the first that satisfies the relations is
+    returned. This is an honest semi-decision -- it terminates only where the
+    relation locus has positive density over the finite field: on success it
+    returns the module; after ``tries`` failures it returns ``{"error": "budget"}``.
+    Over a characteristic-0 field WITH relations a random point never satisfies the
+    relations exactly, so it refuses up front with ``{"error": "char0"}`` (the
+    issue's own analysis).
+
+    Returns ``{"maps": {arrow: [[int]]}, "seed": seed, "tries": k}`` on success, or
+    ``{"error": ...}``. ``maps`` is keyed and shaped exactly as the no-code module
+    editor's blocks (``dim[target] x dim[source]`` on the side's representation
+    quiver), so it drops straight into ``A.module`` and the grid editor.
+    """
+    if side not in SIDES:
+        raise ComputeError("SchemaError", "random module: side must be 'right' or 'left'")
+    if not isinstance(seed, int) or isinstance(seed, bool):
+        raise ComputeError("SchemaError", "random module: seed must be an integer")
+    if not isinstance(tries, int) or isinstance(tries, bool) or tries < 1:
+        raise ComputeError("SchemaError", "random module: tries must be a positive integer")
+    A = build_algebra(algebra)
+    rep = A if side == "right" else A.opposite()
+    by_str = {str(v): v for v in rep.quiver.vertices}
+    dimvec = {v: 0 for v in rep.quiver.vertices}
+    total = 0
+    for key, nv in (dims or {}).items():
+        if str(key) not in by_str:
+            raise ComputeError("SchemaError",
+                               f"random module: no vertex {key!r} in the algebra")
+        if not isinstance(nv, int) or isinstance(nv, bool) or nv < 0:
+            raise ComputeError("SchemaError",
+                               f"random module: dim[{key!r}] must be a non-negative integer")
+        dimvec[by_str[str(key)]] = nv
+        total += nv
+    if max_total_dim is not None and total > max_total_dim:
+        raise ComputeError("ModuleTooLarge",
+                           f"random module: total dimension {total} exceeds the "
+                           f"{max_total_dim} cap")
+    char = A.domain.characteristic
+    has_rel = bool(A.relations)
+    if has_rel and char == 0:
+        return {"error": "char0"}
+    dims_str = {str(k): int(v) for k, v in (dims or {}).items()}
+    arrow_names = sorted(rep.quiver.arrows)
+
+    def _draw(rng):
+        maps = {}
+        for a in arrow_names:
+            rows = dimvec[rep.quiver.target(a)]
+            cols = dimvec[rep.quiver.source(a)]
+            if char:
+                maps[a] = [[rng.randrange(char) for _ in range(cols)]
+                           for _ in range(rows)]
+            else:
+                maps[a] = [[rng.randint(-5, 5) for _ in range(cols)]
+                           for _ in range(rows)]
+        return maps
+
+    rng = random.Random(seed)
+    for k in range(1, (1 if not has_rel else tries) + 1):
+        maps = _draw(rng)
+        try:
+            _build_module(A, ModuleSpec(dims=dims_str, maps=maps, side=side), "random")
+        except qerr.QuiverlabError:
+            continue                       # relation-violating draw: try again
+        return {"maps": maps, "seed": seed, "tries": k}
+    return {"error": "budget", "tries": tries}
 
 
 def _dv(dimvec) -> dict:
@@ -1831,22 +2163,102 @@ def _module_construction(mspec, varname, A) -> list:
     return lines
 
 
+def _synthetic_reproduce_lines(family, params, field_ref) -> list:
+    """Runnable construction lines for one P44/P46/P48 construction family, mirroring
+    ``_build_synthetic`` EXACTLY (the emitted script builds a byte-identical algebra).
+    ``field_ref`` is a source expression for the field ('ql.CC', 'ql.GF(5)' or 'QQ');
+    the caller has already emitted ``import quiverlab as ql`` and, for QQ, its import.
+
+    These five families' real constructors take Algebra / Module / BrauerGraph /
+    Triangulation arguments, so the old ``ql.<Family>(field=..., **params)`` form
+    crashed (``ql.OppositeAlgebra`` is not an export; ``ql.OnePointExtension`` /
+    ``ql.BrauerGraphAlgebra`` reject the flattened params). This emits the real calls.
+    Kept byte-for-byte identical to the Pyodide twin (docs/gui/runner.py)."""
+    if family == "OppositeAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                "A = A.opposite()"]
+    if family == "CornerAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"A = A.corner_algebra({list(params.get('vertices', []))!r})"]
+    if family == "OnePointExtension":
+        kind = params.get("module_kind", "simple")
+        # M0 (not M) so a request module block named M is never clobbered.
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"M0 = A.{kind}({params.get('module_vertex')!r})",
+                "A = ql.OnePointExtension(A, M0)"]
+    if family == "MarkedSurface":
+        preset = params.get("preset")
+        if preset == "annulus_C22":
+            return ["from quiverlab.surfaces import annulus_triangulation, jacobian_of",
+                    "T = annulus_triangulation(2, 2)",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        if preset == "hexagon_internal":
+            return ["from quiverlab.surfaces import "
+                    "hexagon_with_internal_triangle, jacobian_of",
+                    "T = hexagon_with_internal_triangle()",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        return ["from quiverlab.surfaces import fan_triangulation, jacobian_of",
+                "T = fan_triangulation(6)",       # disc fan -> gentle A3
+                f"A = jacobian_of(T, field={field_ref})"]
+    if family == "BrauerGraphAlgebra":
+        # Reconstruct the un-flattened BrauerGraph args (the cosmetic ribbon end-tags
+        # are synthesized exactly as _build_brauer does, so the graph is identical).
+        edges = tuple((e[0], e[1]) for e in params.get("edges", []))
+        cyclic = {vtx: tuple((int(k), f"{vtx}:{pos}") for pos, k in enumerate(idxs))
+                  for vtx, idxs in params.get("cyclic_order", [])}
+        mult = {vtx: int(m) for vtx, m in params.get("multiplicities", [])}
+        return ["from quiverlab.families.brauer import "
+                "BrauerGraph, BrauerGraphAlgebra",
+                f"G = BrauerGraph(edges={edges!r}, cyclic_order={cyclic!r})",
+                f"A = BrauerGraphAlgebra(G, {mult!r}, field={field_ref})"]
+    # No short-script form: an honest comment, never crashing code (the algebra is
+    # still reachable through the webapp `family` block).
+    return [f"# built via the webapp family {family!r}; see docs"]
+
+
 def _snippet(req: ComputeRequest, A) -> str:
     f = req.algebra.field
-    field_name = "CC" if f.kind == "CC" else "GF"
-    field_expr = "CC" if f.kind == "CC" else f"GF({f.p ** (f.n or 1)})"
+    if f.kind == "CC":
+        field_name, field_expr = "CC", "CC"
+    elif f.kind == "QQ":
+        field_name, field_expr = "QQ", "QQ"
+    else:
+        field_name, field_expr = "GF", f"GF({f.p ** (f.n or 1)})"
+    # QQ is not a top-level export, so its import differs from CC/GF's.
+    field_import = ("from quiverlab import Quiver\nfrom quiverlab.fields import QQ"
+                    if f.kind == "QQ" else f"from quiverlab import Quiver, {field_name}")
     if req.algebra.kind == "quiver":
         arrows = ", ".join('"%s": (%d, %d)' % (k, s, t)
                            for k, (s, t) in req.algebra.arrows.items())
-        lines = [f"from quiverlab import Quiver, {field_name}", "",
-                 f"Q = Quiver(vertices={list(req.algebra.vertices)!r}, "
-                 f"arrows={{{arrows}}})",
-                 f"A = Q.algebra(relations={list(req.algebra.relations)!r}, "
-                 f"field={field_expr})"]
+        q_line = (f"Q = Quiver(vertices={list(req.algebra.vertices)!r}, "
+                  f"arrows={{{arrows}}})")
+        if getattr(req.algebra, "potential", None):
+            lines = [field_import,
+                     "from quiverlab import Potential, JacobianAlgebra",
+                     "from quiverlab.combinat.relations import _split_terms, _parse_term",
+                     "", q_line,
+                     f"W = Potential(Q, [_parse_term(t, Q) for t in "
+                     f"_split_terms({req.algebra.potential!r})])",
+                     f"A = JacobianAlgebra(Q, W, field={field_expr})"]
+        else:
+            lines = [field_import, "", q_line,
+                     f"A = Q.algebra(relations={list(req.algebra.relations)!r}, "
+                     f"field={field_expr})"]
     else:
-        params = "".join(f", {k}={v!r}" for k, v in req.algebra.params.items())
-        lines = ["import quiverlab as ql",
-                 f"A = ql.{req.algebra.family}(field=ql.{field_expr}{params})"]
+        # A source expression for the field: 'ql.CC' / 'ql.GF(q)' as before, and 'QQ'
+        # (not the nonexistent 'ql.QQ') with its own import. For CC/GF this is
+        # byte-identical to the old 'ql.{field_expr}', so the family goldens stand.
+        field_ref = ("ql.CC" if f.kind == "CC"
+                     else "QQ" if f.kind == "QQ" else f"ql.{field_expr}")
+        head = ["import quiverlab as ql"]
+        if f.kind == "QQ":
+            head.append("from quiverlab.fields import QQ")
+        if req.algebra.family in _SYNTHETIC_FAMILY_PARAMS:
+            lines = head + _synthetic_reproduce_lines(
+                req.algebra.family, req.algebra.params, field_ref)
+        else:
+            params = "".join(f", {k}={v!r}" for k, v in req.algebra.params.items())
+            lines = head + [f"A = ql.{req.algebra.family}(field={field_ref}{params})"]
     if req.module is not None:
         lines += _module_construction(req.module, "M", A)
     if req.ext_target is not None:
@@ -1857,6 +2269,23 @@ def _snippet(req: ComputeRequest, A) -> str:
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
              "cyclic_homology": lambda it: f"A.cyclic_homology({it.hi})",
              "ss_hochschild": lambda it: f"A.hochschild_bB_ss({it.hi})",
+             "radical_filtration_ss":
+                 lambda it: ("from quiverlab.modules.complexes import ChainComplex\n"
+                             "from quiverlab.modules.morphism import direct_sum\n"
+                             "from quiverlab.specseq import radical_filtration_ss\n"
+                             "S = direct_sum(*[A.simple(v) for v in A.quiver.vertices])[0]\n"
+                             "X = ChainComplex.from_projective_resolution(S, "
+                             f"{it.hi})\nradical_filtration_ss(X)"),
+             "ar_quiver":
+                 lambda it: ("A.ar_quiver(budget_modules="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "derived_compare":
+                 lambda it: ("from quiverlab.derived import compare_fingerprints, "
+                             "derived_fingerprint\n"
+                             "# build the second algebra B the same way as A\n"
+                             "compare_fingerprints(derived_fingerprint(A, "
+                             f"{it.hi if it.hi is not None else 4}), "
+                             f"derived_fingerprint(B, {it.hi if it.hi is not None else 4}))"),
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",

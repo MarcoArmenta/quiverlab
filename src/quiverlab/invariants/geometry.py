@@ -165,7 +165,68 @@ def orbit_geometry_block(M):
     except QuiverlabError as e:
         block["canonical_decomposition"] = None
         block["canonical_note"] = str(e)
+    # Wave 2 enrichment: the P49 degeneration (= hom) order of M's dimension vector,
+    # when the library supports it (representation-finite, budget-capped, honest
+    # status). Added ONLY when it is informative -- a genuinely computed poset with
+    # more than one iso-class, OR an honest library REFUSAL (self-injective / rep-
+    # infinite / budget). The trivial one-class case (a unique module of that
+    # dimension vector -- e.g. a rigid simple) adds NOTHING, so a block that carried
+    # no degeneration data before is byte-identical.
+    deg = _degeneration_order_field(M, dv)
+    if deg is not None:
+        block["degeneration_order"] = deg
     return block
+
+
+def _degeneration_order_field(M, dv):
+    """The P49 degeneration poset of ``M``'s dimension vector as a JSON-safe field, or
+    ``None`` when it is not informative (a trivial one-class poset, or a non-quiver
+    algebra). A LOUD library refusal (self-injective / representation-infinite / budget)
+    is captured as ``{"status", "note", "complete": False}`` -- the honest-refusal
+    contract, never a crash. On a genuine multi-class poset it carries the iso-classes
+    (dimension vector, indecomposable summands, orbit dim, generic flag), the Hasse
+    covers, and M's own position in the order when it can be located."""
+    A = M.algebra
+    if getattr(A, "quiver", None) is None:
+        return None
+    try:
+        from quiverlab.modules.degeneration import degeneration_order
+        from quiverlab.modules.hom import is_isomorphic
+        poset = degeneration_order(A, dv)
+    except QuiverlabError:
+        return None                       # a scope edge in the knit/hom: omit, never crash
+    if not poset.is_complete:
+        return {"status": poset.status, "complete": False,
+                "note": poset.note or "the degeneration order could not be computed"}
+    if len(poset.vertices) <= 1:
+        return None                       # a unique module of this dim vector: no order
+    vertices = []
+    m_index = None
+    for v in poset.vertices:
+        mod = v.get("module")
+        if m_index is None and mod is not None:
+            try:
+                if mod.dim == M.dim and is_isomorphic(mod, M):
+                    m_index = int(v["index"])
+            except QuiverlabError:
+                pass
+        vertices.append({
+            "index": int(v["index"]),
+            "dimvec": {str(w): int(n) for w, n in sorted(v["dimvec"].items(),
+                                                         key=lambda kv: str(kv[0]))},
+            "summands": [{"name": name, "mult": int(mult)}
+                         for name, mult in v.get("summands", [])],
+            "orbit_dim": int(v["orbit_dim"]),
+            "is_generic": bool(v.get("is_generic")),
+        })
+    out = {"status": "complete", "complete": True,
+           "vertices": vertices,
+           "covers": [[int(a), int(b)] for a, b in poset.covers],
+           "note": ("a <=_deg b means a is a degeneration of b (bigger orbit closure); "
+                    "the generic module has the largest orbit")}
+    if m_index is not None:
+        out["m_index"] = m_index
+    return out
 
 
 def _search_canonical(roots, target, ext, budget):

@@ -32,6 +32,7 @@ class Config:
     instant_max_degree: int
     instant_rate_max: int
     instant_rate_window_seconds: int
+    instant_global_max: int
     job_wall_seconds: int
     job_mem_bytes: int
     result_max_bytes: int
@@ -90,6 +91,14 @@ class Config:
             # while cutting a scripted flood.
             instant_rate_max=_int(env, "QLWEB_INSTANT_RATE_MAX", 60),
             instant_rate_window_seconds=_int(env, "QLWEB_INSTANT_RATE_WINDOW_SECONDS", 60),
+            # Process-wide ceiling on concurrently-running instant children. Each
+            # instant request spawns a resource-capped child; the per-IP rate gate
+            # bounds one client, but NOT the aggregate across many IPs, so a wide
+            # flood could spawn unboundedly many children at once and exhaust CPU/RAM.
+            # This caps the total live instant children per process (enforced in
+            # webapp/server/instant.py). Default 0 = unlimited = the previous
+            # behaviour (no additional gate); the cloud profile sets it to 8.
+            instant_global_max=_int(env, "QLWEB_INSTANT_GLOBAL_MAX", 0),
             job_wall_seconds=_int(env, "QLWEB_JOB_WALL_SECONDS", 900),
             job_mem_bytes=_int(env, "QLWEB_JOB_MEM_BYTES", 4 * 1024 ** 3),
             result_max_bytes=_int(env, "QLWEB_RESULT_MAX_BYTES", 32 * 1024 ** 2),

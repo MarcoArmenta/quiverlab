@@ -5,6 +5,7 @@ then falls through to queueing. This is the ~5s net mandated by the design."""
 from __future__ import annotations
 
 import collections
+import contextlib
 import multiprocessing as mp
 import os
 import queue
@@ -17,6 +18,50 @@ from pathlib import Path
 from webapp.server.config import Config
 from webapp.server.runner import run_spec, RunError
 from webapp.server.schema import ComputeRequest
+
+
+class InstantBusy(RuntimeError):
+    """The process-wide instant-concurrency ceiling is saturated.
+
+    Raised by ``run_with_timeout`` when ``QLWEB_INSTANT_GLOBAL_MAX`` (> 0) instant
+    children are already live in THIS process. The app layer turns it into a
+    graceful 503 "busy, try again" -- never a 500, and never a silent queue (an
+    instant request that trips the global ceiling is refused, not enqueued)."""
+
+
+# Process-wide count of live instant children (this uvicorn worker process). The
+# per-IP ``InstantRateLimiter`` bounds ONE client's rate; this bounds the AGGREGATE
+# number of instant children alive at once across every client, which is the actual
+# CPU/RAM resource the box has to honour. A plain counter + lock (not a fixed
+# ``BoundedSemaphore``) because the ceiling is read from ``cfg`` at call time and a
+# test/deploy may run several apps at different ceilings within one process.
+# ``limit <= 0`` disables the gate entirely -- the default, byte-for-byte the prior
+# behaviour: no counting, no ceiling, no ``InstantBusy`` ever raised.
+_instant_inflight_lock = threading.Lock()
+_instant_inflight = 0
+
+
+@contextlib.contextmanager
+def _instant_slot(limit: int):
+    """Reserve one process-wide instant slot for the duration of the ``with`` body.
+
+    Raises ``InstantBusy`` on entry when ``limit`` slots are already taken. A
+    non-positive ``limit`` disables the gate (yields immediately, counts nothing).
+    The slot is released in a ``finally`` so a crashing child never leaks a slot."""
+    global _instant_inflight
+    if limit <= 0:                         # disabled -> unbounded, prior behaviour
+        yield
+        return
+    with _instant_inflight_lock:
+        if _instant_inflight >= limit:
+            raise InstantBusy(
+                f"instant tier at capacity ({_instant_inflight}/{limit} children live)")
+        _instant_inflight += 1
+    try:
+        yield
+    finally:
+        with _instant_inflight_lock:
+            _instant_inflight -= 1
 
 
 class InstantRateLimiter:
@@ -114,39 +159,45 @@ def run_with_timeout(req: ComputeRequest, cfg: Config) -> dict | None:
     """Return the result dict, or None if the instant run exceeded the wall net.
 
     Raises ``RunError`` if the computation failed loudly (a real error, not a
-    timeout). The per-request temp dir is unique so concurrent instant runs never
-    collide, and it is removed unconditionally -- instant results are not
-    retained (only queued jobs keep artifacts)."""
-    ctx = mp.get_context("spawn")
-    result_q: "mp.Queue" = ctx.Queue()
-    cfg.artifacts_dir.mkdir(parents=True, exist_ok=True)
-    artifact_dir = Path(tempfile.mkdtemp(prefix="instant-", dir=cfg.artifacts_dir))
-    # Per-child resource caps. RLIMIT_CPU gets headroom over the wall net for the
-    # TWO pinned math threads (NUMBA/OMP=2) plus slack, so it is a true backstop
-    # that never fires before the parent wall-time kill on a legitimate instant
-    # compute; the parent join below remains the primary net. RLIMIT_AS reuses the
-    # anonymous job memory ceiling -- a sync compute must not outweigh a queued one.
-    cpu_seconds = cfg.instant_wall_seconds * 2 + 5
-    mem_bytes = cfg.job_mem_bytes
-    try:
-        p = ctx.Process(target=_child,
-                        args=(req.model_dump(by_alias=True), str(artifact_dir),
-                              cfg.result_max_bytes, cpu_seconds, mem_bytes, result_q))
-        p.start()
-        p.join(cfg.instant_wall_seconds)
-        if p.is_alive():
-            p.terminate()                  # SIGTERM: ask the child to exit
-            p.join(5)
-            if p.is_alive():               # ignored SIGTERM -> escalate to SIGKILL
-                p.kill()
-                p.join()
-            return None                    # exceeded the net -> caller queues it
+    timeout), or ``InstantBusy`` when the process-wide instant-concurrency ceiling
+    (``QLWEB_INSTANT_GLOBAL_MAX``) is already saturated -- the caller turns that
+    into a graceful 503 instead of spawning yet another child. The per-request
+    temp dir is unique so concurrent instant runs never collide, and it is removed
+    unconditionally -- instant results are not retained (only queued jobs keep
+    artifacts)."""
+    # Reserve a process-wide instant slot FIRST: if the ceiling is saturated this
+    # raises InstantBusy before any child is spawned or any temp dir is created.
+    with _instant_slot(cfg.instant_global_max):
+        ctx = mp.get_context("spawn")
+        result_q: "mp.Queue" = ctx.Queue()
+        cfg.artifacts_dir.mkdir(parents=True, exist_ok=True)
+        artifact_dir = Path(tempfile.mkdtemp(prefix="instant-", dir=cfg.artifacts_dir))
+        # Per-child resource caps. RLIMIT_CPU gets headroom over the wall net for the
+        # TWO pinned math threads (NUMBA/OMP=2) plus slack, so it is a true backstop
+        # that never fires before the parent wall-time kill on a legitimate instant
+        # compute; the parent join below remains the primary net. RLIMIT_AS reuses the
+        # anonymous job memory ceiling -- a sync compute must not outweigh a queued one.
+        cpu_seconds = cfg.instant_wall_seconds * 2 + 5
+        mem_bytes = cfg.job_mem_bytes
         try:
-            status, payload = result_q.get_nowait()
-        except queue.Empty:
-            return None                    # child died without a verdict -> queue it
-        if status == "ok":
-            return payload
-        raise RunError(payload["error_type"], payload["message"])
-    finally:
-        shutil.rmtree(artifact_dir, ignore_errors=True)
+            p = ctx.Process(target=_child,
+                            args=(req.model_dump(by_alias=True), str(artifact_dir),
+                                  cfg.result_max_bytes, cpu_seconds, mem_bytes, result_q))
+            p.start()
+            p.join(cfg.instant_wall_seconds)
+            if p.is_alive():
+                p.terminate()              # SIGTERM: ask the child to exit
+                p.join(5)
+                if p.is_alive():           # ignored SIGTERM -> escalate to SIGKILL
+                    p.kill()
+                    p.join()
+                return None                # exceeded the net -> caller queues it
+            try:
+                status, payload = result_q.get_nowait()
+            except queue.Empty:
+                return None                # child died without a verdict -> queue it
+            if status == "ok":
+                return payload
+            raise RunError(payload["error_type"], payload["message"])
+        finally:
+            shutil.rmtree(artifact_dir, ignore_errors=True)

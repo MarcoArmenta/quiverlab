@@ -16,6 +16,7 @@ Content-Type."""
 from __future__ import annotations
 
 import json
+import random
 from pathlib import Path
 
 from fastapi import Request
@@ -23,6 +24,8 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 
 from webapp.server.catalog import build_catalog
+from webapp.server.i18n import MOUNTS as _MOUNTS
+from webapp.server.i18n import lang_links as _lang_links
 from webapp.server.i18n import t as _t
 from webapp.server.references import grouped_bibliography
 from webapp.server.security import sanitize_error_string, valid_ulid
@@ -43,15 +46,8 @@ _CONTENT_TYPES = {
 }
 _ALLOWED = frozenset(_CONTENT_TYPES)
 
-# (url prefix, language) -- the two mount points every page gets.
-_LANGS = (("", "en"), ("/es", "es"))
-
-
-def _other_url(path: str) -> str:
-    """The same page under the other language prefix (for the header toggle)."""
-    if path == "/es" or path.startswith("/es/"):
-        return path[3:] or "/"
-    return "/es" + ("" if path == "/" else path)
+# (url prefix, language) -- one mount point per catalog language.
+_LANGS = _MOUNTS
 
 
 def _ctx(request: Request, cfg, lang: str, prefix: str, **extra) -> dict:
@@ -64,7 +60,7 @@ def _ctx(request: Request, cfg, lang: str, prefix: str, **extra) -> dict:
     state = request.app.state
     return {"lang": lang, "prefix": prefix,
             "t": (lambda k: _t(k, lang)),
-            "other_url": _other_url(request.url.path),
+            "lang_links": _lang_links(request.url.path, lang),
             "docs_url": cfg.docs_url,                # "" ⇒ no Docs link (base.html)
             "big_max_cells": cfg.big_ops_threshold,  # big.reject {maxcells}
             "big_jobs_enabled": cfg.big_jobs_enabled,
@@ -77,6 +73,58 @@ def register(app, cfg, store) -> None:
     for prefix, lang in _LANGS:
         _mount_pages(app, cfg, store, prefix, lang)
     _mount_download(app, cfg, store)
+    _mount_random_module(app)
+
+
+def _mount_random_module(app) -> None:
+    # The draw page's "Fill at random" button (GitHub #3, Samuel Leblanc): draw a
+    # random representation of the current quiver on a chosen dimension vector.
+    # Language-neutral (JSON in / JSON out), mounted ONCE like /download. All the
+    # mathematics -- exactness, relation-aware rejection sampling, the char-0
+    # refusal, the dimension cap -- lives in the wheel's spec core; this boundary
+    # only validates shapes and turns a ComputeError into a clean 4xx (never a 500).
+    from quiverlab.hpc.spec import ComputeError, SpecError
+    from quiverlab.hpc.spec import random_module as _random_module
+
+    @app.post("/api/gui/random-module")
+    async def random_module(request: Request):
+        try:
+            body = await request.json()
+        except (json.JSONDecodeError, ValueError):
+            return JSONResponse(status_code=400, content={"error": "malformed JSON body"})
+        if not isinstance(body, dict):
+            return JSONResponse(status_code=400, content={"error": "body must be an object"})
+        algebra = body.get("algebra")
+        dims = body.get("dims")
+        if not isinstance(algebra, dict) or not isinstance(dims, dict):
+            return JSONResponse(status_code=400,
+                                content={"error": "need an 'algebra' object and a 'dims' object"})
+        side = body.get("side", "right")
+        tries = body.get("tries", 200)
+        if not isinstance(tries, int) or isinstance(tries, bool) or not 1 <= tries <= 2000:
+            return JSONResponse(status_code=400,
+                                content={"error": "'tries' must be an integer in 1..2000"})
+        # A seed is optional; when absent the server picks one and RETURNS it, so a
+        # user can reproduce or vary a draw. The draw itself is fully deterministic
+        # in the seed (that is the reproducibility contract the two runners share).
+        seed = body.get("seed")
+        if seed is None:
+            seed = random.randrange(1 << 31)
+        elif not isinstance(seed, int) or isinstance(seed, bool):
+            return JSONResponse(status_code=400, content={"error": "'seed' must be an integer"})
+        try:
+            out = _random_module(algebra, dims, side=side, seed=seed, tries=tries)
+        except (ComputeError, SpecError) as exc:
+            msg = getattr(exc, "message", str(exc))
+            return JSONResponse(status_code=422, content={"error": msg})
+        except Exception as exc:                       # a bad quiver/relation/field
+            return JSONResponse(status_code=422,
+                                content={"error": f"{type(exc).__name__}: {exc}"})
+        # A structured refusal (char-0-with-relations, or budget exhaustion) is a
+        # 422 too -- the request was well-formed but the mathematics declined.
+        if isinstance(out, dict) and out.get("error"):
+            return JSONResponse(status_code=422, content=out)
+        return JSONResponse(content=out)
 
 
 def _mount_pages(app, cfg, store, prefix: str, lang: str) -> None:

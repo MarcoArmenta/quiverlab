@@ -782,10 +782,12 @@ function renderParamFields() {
   const box = document.getElementById("param-fields");
   const summary = document.getElementById("family-summary");
   if (!box || !CATALOG) return;
-  const lang = (form.dataset.lang === "es") ? "es" : "en";
+  const lang = ["en", "es", "fr", "zh"].includes(form.dataset.lang)
+    ? form.dataset.lang : "en";
   const fam = CATALOG.families.find((f) => f.name === form.elements.family.value);
   box.textContent = "";
-  if (summary) summary.textContent = (fam && fam.summary) ? (fam.summary[lang] || "") : "";
+  if (summary) summary.textContent =
+    (fam && fam.summary) ? (fam.summary[lang] || fam.summary.en || "") : "";
   if (!fam) return;
   for (const p of fam.params) {
     const row = document.createElement("div");
@@ -805,10 +807,11 @@ function renderParamFields() {
       input.value = paramPrefill(p);
     }
     row.appendChild(input);
-    if (p.help && p.help[lang]) {
+    const helpText = p.help && (p.help[lang] || p.help.en);
+    if (helpText) {
       const help = document.createElement("div");
       help.className = "param-help";
-      help.textContent = p.help[lang];
+      help.textContent = helpText;
       row.appendChild(help);
     }
     box.appendChild(row);
@@ -850,8 +853,14 @@ initParamForm();
 function readComputeBody() {
   const fd = new FormData(form);
   const fieldRaw = fd.get("field").trim();
-  const field = fieldRaw === "CC"
-    ? {kind: "CC"}
+  // The fields the library accepts come from the catalog (CATALOG.fields), NOT a
+  // hardcoded list -- a scalar field is one that `needs` no extra input (CC, QQ);
+  // a field that needs `p` (GF) reads the prime/degree. A bare "CC"/"QQ" matches
+  // its catalog entry; anything else falls through to GF(p).
+  const fieldsMeta = (CATALOG && CATALOG.fields) || {};
+  const meta = fieldsMeta[fieldRaw];
+  const field = (meta && !(meta.needs || []).length)
+    ? {kind: fieldRaw}
     : {kind: "GF", p: parseInt(fieldRaw.replace(/[^0-9]/g, ""), 10), n: 1};
   return {
     schema: 1,

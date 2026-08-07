@@ -27,6 +27,18 @@ _log = logging.getLogger("quiverlab_web.worker")
 _STOP_GRACE_SLACK_SECONDS = 20
 
 
+def exclude_tiers_for(index: int, fleet_size: int) -> tuple[str, ...] | None:
+    """The tier reservation for poll loop ``index`` in a fleet of ``fleet_size``.
+
+    Loop 0 refuses the ``big`` tier (so one loop is always free for instant/queued
+    work) ONLY when the fleet has a second loop to run big jobs; every other loop,
+    and any loop in a single-loop fleet (the offline embedded worker, where the big
+    tier is off anyway), claims any tier -- byte-identical to the pre-M1 behaviour.
+    Returns the ``exclude_tiers`` tuple to pass to ``worker_tick`` / ``claim_next``,
+    or ``None`` for 'claim anything'."""
+    return ("big",) if (index == 0 and fleet_size >= 2) else None
+
+
 def _make_mailer(cfg: Config):
     """Return the real SMTP mailer for big-job completion emails, or ``None``
     when the big-job tier is off (no outbound relay configured).
@@ -44,20 +56,32 @@ def _make_mailer(cfg: Config):
     return smtp_mailer(cfg)
 
 
-def _loop(cfg: Config, index: int, stop) -> None:
+def _loop(cfg: Config, index: int, stop, fleet_size: int) -> None:
     """One poll loop. Claims and runs a single job per tick; between ticks it
     checks the shared ``stop`` event so a shutdown finishes the in-flight job
     (``worker_tick`` runs it to completion) and then exits cleanly.
 
     Retention sweeping runs on ``index == 0`` only: one sweeper is enough, and N
     loops all racing to ``rmtree`` the same expired dirs would be wasteful (and
-    log spurious errors). ``sweep_once`` itself passes an explicit ``now_iso``."""
+    log spurious errors). ``sweep_once`` itself passes an explicit ``now_iso``.
+
+    **Tier reservation (the M1 guarantee).** The claim queue is a single shared
+    FIFO, so without this loop 0 would happily run a big job and, with a fleet of
+    2, two verified-email big jobs could occupy every loop and freeze the
+    anonymous instant/queued tier behind a 24 h wall. When the fleet has >= 2
+    loops, loop 0 EXCLUDES the ``big`` tier (`exclude_tiers=('big',)`), so one
+    loop is always free to serve instant/queued work while big jobs run. A
+    single-loop fleet (the offline embedded worker, where the big tier is off
+    anyway) excludes nothing and claims everything -- byte-identical to before."""
     store = JobStore(cfg.db_path)
     store.init_schema()
     mailer = _make_mailer(cfg)
+    # Loop 0 is the reserved instant/queued loop when the fleet is big enough to
+    # spare it; every other loop (and any loop in a 1-loop fleet) claims any tier.
+    exclude_tiers = exclude_tiers_for(index, fleet_size)
     last_sweep = 0.0
     while not stop.is_set():
-        did = worker_tick(store, cfg, mailer=mailer)
+        did = worker_tick(store, cfg, mailer=mailer, exclude_tiers=exclude_tiers)
         if index == 0:
             now = time.time()
             if now - last_sweep > 3600:
@@ -87,7 +111,11 @@ def start_workers(cfg: Config, count: int | None = None, stop=None):
     ctx = mp.get_context("spawn")
     if stop is None:
         stop = ctx.Event()
-    procs = [ctx.Process(target=_loop, args=(cfg, i, stop), daemon=False)
+    # Pass the ACTUAL fleet size (``count``, which may be an explicit override, not
+    # cfg.worker_processes) so ``_loop`` decides its tier reservation on the real
+    # number of loops -- loop 0 only reserves itself for instant/queued when there
+    # is a second loop to run the big tier.
+    procs = [ctx.Process(target=_loop, args=(cfg, i, stop, count), daemon=False)
              for i in range(count)]
     for p in procs:
         p.start()

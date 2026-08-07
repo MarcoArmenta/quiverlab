@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "quiverlab"
-version = "0.2.0"
+version = "0.3.0"
 description = "Exact representation theory of quivers with relations, for algebraists: modules and AR theory, resolutions, Ext-algebras, Hochschild and cyclic (co)homology, invariants"
 readme = "README.md"
 requires-python = ">=3.10"

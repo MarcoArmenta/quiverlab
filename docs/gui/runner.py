@@ -9,6 +9,7 @@ pinned by tests/gui/test_interface_freshness.py. quiverlab.engine.* is forbidden
 All public functions take and return JSON STRINGS (postMessage-friendly)."""
 import json
 import os
+import random
 import traceback
 from fractions import Fraction
 
@@ -24,6 +25,9 @@ MAX_DEGREE = 10
 # Depth to which projective dimension is probed before reporting "infinite"
 # (matches the library's injective_dimension(bound=32) default).
 _PD_BOUND = 32
+# Ceiling on a random module's total dimension -- mirrors spec.py::_MAX_MODULE_DIM
+# (the webapp module-block parse cap): each arrow's dense action is n x n cells.
+_MAX_RANDOM_MODULE_DIM = 2048
 
 # Module compute kinds (Plan 26; Plan 30 adds `tor`/`decompose`). `ext`/`tor` also
 # need a second module (`ext_target`/`tor_target`, the latter a LEFT A-module).
@@ -35,7 +39,8 @@ _MODULE_KINDS = frozenset({
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
-          "module": None, "ext_target": None, "tor_target": None}
+          "module": None, "ext_target": None, "tor_target": None,
+          "algebra_b": None}
 
 
 class RequestError(Exception):
@@ -57,18 +62,70 @@ def _field_from_spec(spec):
     kind = spec.get("kind") if isinstance(spec, dict) else None
     if kind == "CC":
         return quiverlab.CC
+    if kind == "QQ":
+        # QQ (the rational field) is an exact input field alongside CC/GF; not a
+        # top-level export, so import it from quiverlab.fields.
+        from quiverlab.fields import QQ
+        return QQ
     if kind == "GF":
         p, n = spec.get("p"), spec.get("n", 1)
         if not (isinstance(p, int) and isinstance(n, int) and p >= 2 and n >= 1):
             raise RequestError("field GF needs integers p >= 2 and n >= 1")
         return quiverlab.GF(p ** n)   # FieldError (p not prime, ...) surfaces verbatim
-    raise RequestError("unknown field kind %r (expected 'CC' or 'GF')" % (kind,))
+    raise RequestError("unknown field kind %r (expected 'CC', 'GF' or 'QQ')" % (kind,))
+
+
+def _algebra_from_spec(alg):
+    """Build a quiverlab Algebra from a GUI ``algebra`` block (kind 'quiver').
+    Shared by :func:`run_build` and :func:`random_module`."""
+    kind = alg.get("kind")
+    if kind == "family":
+        raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
+                           "this GUI submits kind 'quiver' only")
+    if kind != "quiver":
+        raise RequestError("unknown algebra kind %r (expected 'quiver')" % (kind,))
+    vertices = alg.get("vertices")
+    if not (isinstance(vertices, list) and vertices
+            and all(isinstance(v, int) for v in vertices)):
+        raise RequestError("algebra.vertices must be a non-empty list of integers")
+    arrows = alg.get("arrows")
+    if not (isinstance(arrows, dict) and all(
+            isinstance(st, list) and len(st) == 2
+            and all(isinstance(x, int) for x in st)
+            for st in arrows.values())):
+        raise RequestError("algebra.arrows must map names to [source, target] pairs")
+    relations = alg.get("relations", [])
+    if not (isinstance(relations, list)
+            and all(isinstance(r, str) for r in relations)):
+        raise RequestError("algebra.relations must be a list of strings")
+    potential = alg.get("potential")
+    if potential is not None and not isinstance(potential, str):
+        raise RequestError("algebra.potential must be a string (a k-linear sum of "
+                           "oriented cycles, e.g. 'a*b*c - d*e*f')")
+    field = _field_from_spec(alg.get("field"))
+    Q = quiverlab.Quiver(vertices=vertices,
+                         arrows={k: (s, t) for k, (s, t) in arrows.items()})
+    if isinstance(potential, str) and potential.strip():
+        # A potential routes through the P44 Jacobian kQ/(d_a W); its relations ARE
+        # the cyclic derivatives, so explicit relations are then forbidden. Terms are
+        # parsed with the shared relation-term parser (loud RelationError on an
+        # unknown arrow / non-composable factor); Potential certifies each is a cycle.
+        if relations:
+            raise RequestError(
+                "a 'potential' and explicit 'relations' cannot both be given: the "
+                "Jacobian algebra's relations ARE the cyclic derivatives of the "
+                "potential (leave 'relations' empty when a 'potential' is set)")
+        from quiverlab.combinat.relations import _parse_term, _split_terms
+        terms = [_parse_term(t, Q) for t in _split_terms(potential)]
+        W = quiverlab.Potential(Q, terms)
+        return quiverlab.JacobianAlgebra(Q, W, field=field)
+    return Q.algebra(relations=relations, field=field)
 
 
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
-                  module=None, ext_target=None, tor_target=None)
+                  module=None, ext_target=None, tor_target=None, algebra_b=None)
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
@@ -76,36 +133,18 @@ def run_build(request_json):
             raise RequestError("unsupported schema %r (this GUI speaks schema 1/2)"
                                % (req.get("schema"),))
         alg = req.get("algebra") or {}
-        kind = alg.get("kind")
-        if kind == "family":
-            raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
-                               "this GUI submits kind 'quiver' only")
-        if kind != "quiver":
-            raise RequestError("unknown algebra kind %r (expected 'quiver')" % (kind,))
-        vertices = alg.get("vertices")
-        if not (isinstance(vertices, list) and vertices
-                and all(isinstance(v, int) for v in vertices)):
-            raise RequestError("algebra.vertices must be a non-empty list of integers")
-        arrows = alg.get("arrows")
-        if not (isinstance(arrows, dict) and all(
-                isinstance(st, list) and len(st) == 2
-                and all(isinstance(x, int) for x in st)
-                for st in arrows.values())):
-            raise RequestError("algebra.arrows must map names to [source, target] pairs")
-        relations = alg.get("relations", [])
-        if not (isinstance(relations, list)
-                and all(isinstance(r, str) for r in relations)):
-            raise RequestError("algebra.relations must be a list of strings")
-        field = _field_from_spec(alg.get("field"))
-        Q = quiverlab.Quiver(vertices=vertices,
-                             arrows={k: (s, t) for k, (s, t) in arrows.items()})
-        A = Q.algebra(relations=relations, field=field)
+        A = _algebra_from_spec(alg)
+        vertices, arrows = alg.get("vertices"), alg.get("arrows")
         # Module blocks (Plan 26) ride alongside the algebra; the module itself is
         # built lazily in compute_one, so a relation-violating matrix surfaces as a
         # per-computation error (rendered on the page), never a build crash.
+        # wave 2: the SECOND algebra for derived_compare rides alongside the request
+        # (spec dict, built lazily in compute_one -- a bad B surfaces as a per-
+        # computation error, like the module blocks, never a build crash).
         _state.update(algebra=A, request=req, module=req.get("module"),
                       ext_target=req.get("ext_target"),
-                      tor_target=req.get("tor_target"))
+                      tor_target=req.get("tor_target"),
+                      algebra_b=req.get("algebra_b"))
         out = {"ok": True, "dim": A.dim, "n_vertices": len(vertices),
                "n_arrows": len(arrows), "algebra": repr(A).splitlines()[0]}
     except Exception as exc:
@@ -123,6 +162,13 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
+    # 'ar_quiver:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "ar_quiver":
+        if rng and not rng.isdigit():
+            raise RequestError("ar_quiver budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "ar_quiver", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -226,6 +272,82 @@ def _build_module(A, mspec, name):
         raise RequestError("module: no vertex %r in the algebra" % (v,))
     dimvec, action = _full_matrices(A, mspec)
     return A.module(dimvec, action, side=mspec.get("side", "right"), name=name)
+
+
+def _random_module_core(A, dims, side, seed, tries):
+    """Draw a random representation of ``A`` (GitHub #3). Byte-identical twin of
+    ``quiverlab.hpc.spec.random_module``: SAME draw order (sorted arrow names,
+    row-major) under ``random.Random(seed)``, so both tiers agree for a fixed seed.
+    Exact entries only -- GF(p): uniform ``0..p-1`` (the prime subfield, the only
+    field elements the entry grammar can name); char 0: integers ``-5..5``. With
+    relations the draw is rejection-sampled (the first that builds through the
+    library's checked ``A.module`` wins); over char 0 with relations a random point
+    never satisfies them exactly, so it refuses with ``{"error": "char0"}``."""
+    if side not in ("right", "left"):
+        raise RequestError("random module: side must be 'right' or 'left'")
+    if not isinstance(seed, int) or isinstance(seed, bool):
+        raise RequestError("random module: seed must be an integer")
+    if not isinstance(tries, int) or isinstance(tries, bool) or tries < 1:
+        raise RequestError("random module: tries must be a positive integer")
+    rep = A if side == "right" else A.opposite()
+    by_str = {str(v): v for v in rep.quiver.vertices}
+    dimvec = {v: 0 for v in rep.quiver.vertices}
+    total = 0
+    for key, nv in (dims or {}).items():
+        if str(key) not in by_str:
+            raise RequestError("random module: no vertex %r in the algebra" % (key,))
+        if not isinstance(nv, int) or isinstance(nv, bool) or nv < 0:
+            raise RequestError("random module: dim[%r] must be a non-negative integer"
+                               % (key,))
+        dimvec[by_str[str(key)]] = nv
+        total += nv
+    if total > _MAX_RANDOM_MODULE_DIM:
+        raise RequestError("random module: total dimension %d exceeds the %d cap"
+                           % (total, _MAX_RANDOM_MODULE_DIM))
+    char = A.domain.characteristic
+    has_rel = bool(A.relations)
+    if has_rel and char == 0:
+        return {"error": "char0"}
+    dims_str = {str(k): int(v) for k, v in (dims or {}).items()}
+    arrow_names = sorted(rep.quiver.arrows)
+
+    def _draw(rng):
+        maps = {}
+        for a in arrow_names:
+            rows = dimvec[rep.quiver.target(a)]
+            cols = dimvec[rep.quiver.source(a)]
+            if char:
+                maps[a] = [[rng.randrange(char) for _ in range(cols)]
+                           for _ in range(rows)]
+            else:
+                maps[a] = [[rng.randint(-5, 5) for _ in range(cols)]
+                           for _ in range(rows)]
+        return maps
+
+    rng = random.Random(seed)
+    for k in range(1, (1 if not has_rel else tries) + 1):
+        maps = _draw(rng)
+        try:
+            _build_module(A, {"dims": dims_str, "maps": maps, "side": side}, "random")
+        except quiverlab.QuiverlabError:
+            continue                       # relation-violating draw: try again
+        return {"maps": maps, "seed": seed, "tries": k}
+    return {"error": "budget", "tries": tries}
+
+
+def random_module(request_json):
+    """JSON-string entry for the Pyodide worker's ``random`` verb:
+    ``{algebra, dims, side?, seed?, tries?}`` -> ``{maps, seed, tries}`` |
+    ``{error}``. The server tier's twin is POST /api/gui/random-module."""
+    try:
+        req = json.loads(request_json)
+        A = _algebra_from_spec(req.get("algebra") or {})
+        out = _random_module_core(A, req.get("dims") or {},
+                                  req.get("side", "right"),
+                                  req.get("seed", 0), req.get("tries", 200))
+    except Exception as exc:
+        out = _fail(exc)
+    return json.dumps(out)
 
 
 def _tor_target_spec():
@@ -700,19 +822,44 @@ def compute_one(spec):
             from quiverlab.specseq.block import specseq_block
             block = specseq_block(A, top)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "radical_filtration_ss":
+            # Radical-filtration (associated-graded) spectral sequence (P42 preset,
+            # wave 2). Range kind on the algebra block; byte-identical to the server
+            # twin (quiverlab.hpc.spec._dispatch) -- SAME shared builder
+            # (specseq.block.radical_filtration_ss_block) + references->citations.
+            if top is None:
+                raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
+            from quiverlab.specseq.block import radical_filtration_ss_block
+            block = radical_filtration_ss_block(A, top)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "ar_quiver":
+            # AR quiver (P41, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.ar.ar_quiver_block) + references->citations.
+            from quiverlab.modules.ar import ar_quiver_block
+            block = ar_quiver_block(A, budget=top if top is not None else 512)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
+            # PER-INVARIANT citation keys, matching the server twin
+            # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
+            # that set ACCUMULATES the HH bar-resolution key across a run, so the
+            # Cartan matrix was citing Hochschild 1945 instead of ASS2006 (the same
+            # bug the server fixed for its report; Marco's report-example.pdf).
             m = A.cartan_matrix()
+            keys = ["assem_book"]
             block = {"matrix": m, "latex": _latex_matrix(m),
-                     "citations": _citation_pairs(A.citations())}
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "coxeter_polynomial":
             import sympy
             p = A.coxeter_polynomial()
+            keys = ["lenzing_delapena_spectral", "assem_book"]
             block = {"latex": sympy.latex(p.as_expr()), "text": str(p.as_expr()),
-                     "citations": _citation_pairs(A.citations())}
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "global_dimension":
             g = A.global_dimension()
-            block = {"text": str(g), "exact": g.exact, "value": g.value,
-                     "citations": _citation_pairs(A.citations())}
+            keys = ["assem_book"]
+            block = {"text": str(g), "exact": bool(g.exact), "value": g.value,
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "homological_profile":
             # The C6 homological-dimension family (Plan 40). ONE shared library
             # builder (modules.homdims.homological_profile) drives this Pyodide twin
@@ -725,15 +872,21 @@ def compute_one(spec):
         elif name == "center":
             dim_z, basis = A.center()
             # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
-            # JSON-serializable; ship them as exact strings.
+            # JSON-serializable; ship them as exact strings. Per-invariant citation
+            # keys matching the server twin (Z(A) = HH^0(A), Hochschild's paper);
+            # not A.citations() (see the cartan note).
+            keys = ["bar"]
             block = {"dim": dim_z,
                      "basis": [[str(x) for x in row] for row in basis],
-                     "citations": _citation_pairs(A.citations())}
+                     "references": keys, "citations": _citation_pairs(keys)}
         elif name == "dimension":
             # Parity with the server/HPC runner (quiverlab.hpc.spec._dispatch),
             # which serves `dimension` = A.dim; same `value` semantics, GUI block
-            # shape (value + citations, like global_dimension).
-            block = {"value": A.dim, "citations": _citation_pairs(A.citations())}
+            # shape (value + references + citations). Per-invariant keys, not
+            # A.citations() (which cited Hochschild 1945 here -- see the cartan note).
+            keys = ["assem_book"]
+            block = {"value": A.dim, "references": keys,
+                     "citations": _citation_pairs(keys)}
         elif name == "ext_algebra":
             # Yoneda / Ext-algebra + Koszulity (Plan 38). Byte-identical to the
             # server twin (quiverlab.hpc.spec._dispatch): SAME library block
@@ -753,6 +906,20 @@ def compute_one(spec):
             # (derived.block.derived_fingerprint_block) + `references`->citations.
             from quiverlab.derived.block import derived_fingerprint_block
             block = derived_fingerprint_block(A, top if top is not None else 4)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "derived_compare":
+            # Two-algebra derived-fingerprint comparison (P43, wave 2): needs the SECOND
+            # algebra B, carried in _state["algebra_b"] (built lazily here, like the
+            # module blocks). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (derived.block.derived_compare_block) + references->citations.
+            spec_b = _state.get("algebra_b")
+            if spec_b is None:
+                raise RequestError("derived_compare needs a second algebra 'algebra_b' "
+                                   "(the B in the derived-fingerprint comparison)")
+            B = _algebra_from_spec(spec_b)
+            from quiverlab.derived.block import derived_compare_block
+            block = derived_compare_block(A, B, top if top is not None else 4)
             block["citations"] = _citation_pairs(block["references"])
         elif name == "strings":
             # Gentle / string subsystem (Plan 46): census + bands + rep-type + AG.
@@ -875,6 +1042,62 @@ def tikz():
     return "" if _state["algebra"] is None else _state["algebra"].tikz()
 
 
+# The P44/P46/P48 construction families whose real constructors take
+# Algebra / Module / BrauerGraph / Triangulation arguments (so the generic
+# ql.<Family>(field=..., **params) reproduce form crashes). Kept in sync (by name)
+# with quiverlab.hpc.spec._SYNTHETIC_FAMILY_PARAMS and webapp/server/catalog.py.
+_SYNTHETIC_FAMILY_NAMES = frozenset({
+    "BrauerGraphAlgebra", "OnePointExtension", "CornerAlgebra",
+    "OppositeAlgebra", "MarkedSurface"})
+
+
+def _synthetic_reproduce_lines(family, params, field_ref):
+    """Runnable construction lines for one P44/P46/P48 construction family, mirroring
+    ``quiverlab.hpc.spec._build_synthetic`` EXACTLY (the emitted script builds a
+    byte-identical algebra). ``field_ref`` is a source expression for the field
+    ('ql.CC', 'ql.GF(5)' or 'QQ'); the caller has already emitted ``import quiverlab
+    as ql`` and, for QQ, its import. BYTE-FOR-BYTE identical to the server twin
+    (quiverlab.hpc.spec._synthetic_reproduce_lines)."""
+    if family == "OppositeAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                "A = A.opposite()"]
+    if family == "CornerAlgebra":
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"A = A.corner_algebra({list(params.get('vertices', []))!r})"]
+    if family == "OnePointExtension":
+        kind = params.get("module_kind", "simple")
+        # M0 (not M) so a request module block named M is never clobbered.
+        return [f"A = ql.PathAlgebra({params.get('base')!r}, field={field_ref})",
+                f"M0 = A.{kind}({params.get('module_vertex')!r})",
+                "A = ql.OnePointExtension(A, M0)"]
+    if family == "MarkedSurface":
+        preset = params.get("preset")
+        if preset == "annulus_C22":
+            return ["from quiverlab.surfaces import annulus_triangulation, jacobian_of",
+                    "T = annulus_triangulation(2, 2)",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        if preset == "hexagon_internal":
+            return ["from quiverlab.surfaces import "
+                    "hexagon_with_internal_triangle, jacobian_of",
+                    "T = hexagon_with_internal_triangle()",
+                    f"A = jacobian_of(T, field={field_ref})"]
+        return ["from quiverlab.surfaces import fan_triangulation, jacobian_of",
+                "T = fan_triangulation(6)",       # disc fan -> gentle A3
+                f"A = jacobian_of(T, field={field_ref})"]
+    if family == "BrauerGraphAlgebra":
+        # Reconstruct the un-flattened BrauerGraph args (the cosmetic ribbon end-tags
+        # are synthesized exactly as _build_brauer does, so the graph is identical).
+        edges = tuple((e[0], e[1]) for e in params.get("edges", []))
+        cyclic = {vtx: tuple((int(k), f"{vtx}:{pos}") for pos, k in enumerate(idxs))
+                  for vtx, idxs in params.get("cyclic_order", [])}
+        mult = {vtx: int(m) for vtx, m in params.get("multiplicities", [])}
+        return ["from quiverlab.families.brauer import "
+                "BrauerGraph, BrauerGraphAlgebra",
+                f"G = BrauerGraph(edges={edges!r}, cyclic_order={cyclic!r})",
+                f"A = BrauerGraphAlgebra(G, {mult!r}, field={field_ref})"]
+    return [f"# built via the webapp family {family!r}; see docs"]
+
+
 def python_snippet():
     """Copy-paste reproduction of the GUI computation (the GUI-to-library bridge)."""
     req = _state["request"]
@@ -884,19 +1107,50 @@ def python_snippet():
     f = alg["field"]
     if f["kind"] == "CC":
         field_name, field_expr = "CC", "CC"
+    elif f["kind"] == "QQ":
+        field_name, field_expr = "QQ", "QQ"
     else:
         q = f["p"] ** f.get("n", 1)
         field_name, field_expr = "GF", "GF(%d)" % q
-    arrows = ", ".join('"%s": (%d, %d)' % (k, s, t)
-                       for k, (s, t) in alg["arrows"].items())
-    lines = [
-        "from quiverlab import Quiver, %s" % field_name,
-        "",
-        "Q = Quiver(vertices=%r, arrows={%s})" % (alg["vertices"], arrows),
-        "A = Q.algebra(relations=%r, field=%s)" % (list(alg.get("relations", [])),
-                                                   field_expr),
-        "print(A.dim)",
-    ]
+    # QQ is not a top-level export, so it needs its own import line.
+    header = ("from quiverlab import Quiver\nfrom quiverlab.fields import QQ"
+              if field_name == "QQ" else "from quiverlab import Quiver, %s" % field_name)
+    if alg.get("kind") == "family":
+        # A `family` block (server tier -- the twin refuses to BUILD it, but the
+        # reproduce string mirrors quiverlab.hpc.spec._snippet's family branch so the
+        # cross-runner snippet contract holds). Real constructors, never a crashing
+        # ql.<Family>(field=..., **params) form for the five construction families.
+        field_ref = ("ql.CC" if f["kind"] == "CC"
+                     else "QQ" if f["kind"] == "QQ" else "ql.%s" % field_expr)
+        head = ["import quiverlab as ql"]
+        if f["kind"] == "QQ":
+            head.append("from quiverlab.fields import QQ")
+        family, params = alg.get("family"), alg.get("params", {})
+        if family in _SYNTHETIC_FAMILY_NAMES:
+            lines = head + _synthetic_reproduce_lines(family, params, field_ref)
+        else:
+            ptxt = "".join(", %s=%r" % (k, v) for k, v in params.items())
+            lines = head + ["A = ql.%s(field=%s%s)" % (family, field_ref, ptxt)]
+        lines.append("print(A.dim)")
+    else:
+        arrows = ", ".join('"%s": (%d, %d)' % (k, s, t)
+                           for k, (s, t) in alg["arrows"].items())
+        q_line = "Q = Quiver(vertices=%r, arrows={%s})" % (alg["vertices"], arrows)
+        potential = alg.get("potential")
+        if isinstance(potential, str) and potential.strip():
+            lines = [header,
+                     "from quiverlab import Potential, JacobianAlgebra",
+                     "from quiverlab.combinat.relations import _split_terms, _parse_term",
+                     "", q_line,
+                     "W = Potential(Q, [_parse_term(t, Q) for t in _split_terms(%r)])"
+                     % potential,
+                     "A = JacobianAlgebra(Q, W, field=%s)" % field_expr,
+                     "print(A.dim)"]
+        else:
+            lines = [header, "", q_line,
+                     "A = Q.algebra(relations=%r, field=%s)"
+                     % (list(alg.get("relations", [])), field_expr),
+                     "print(A.dim)"]
     if req.get("module"):
         lines += _module_snippet_lines(req["module"], "M")
     if req.get("ext_target"):

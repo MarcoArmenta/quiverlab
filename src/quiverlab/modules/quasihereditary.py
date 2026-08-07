@@ -426,7 +426,7 @@ def quasi_hereditary_block(A, order=None):
                           "delta_filters_P": bool(info["delta_filters_P"]),
                           "note": info["note"]}
                  for v, info in rep.per_index.items()}
-    return {
+    block = {
         "kind": "quasi_hereditary",
         "is_quasi_hereditary": bool(rep.is_quasi_hereditary),
         "order": [str(v) for v in rep.order],
@@ -438,3 +438,60 @@ def quasi_hereditary_block(A, order=None):
         "note": rep.note,
         "references": ["dlab_ringel", "assem_book"],
     }
+    # Wave 2 enrichment: on a quasi-hereditary algebra the block ALSO carries the
+    # Ringel data -- the characteristic tilting module (summand dims) and the Ringel
+    # dual R(A) = End_A(T)^op (its dimension + Cartan matrix). Each is a self-contained
+    # per-field entry whose loud refusal (the char 0 / char > dim caveat, or a
+    # presentation-less Cartan) is captured as {"error": ...}, never a crash. The block
+    # is byte-identical to before this wave when the algebra is NOT quasi-hereditary.
+    if block["is_quasi_hereditary"]:
+        block["characteristic_tilting"] = _characteristic_tilting_field(A, rep.order)
+        block["ringel_dual"] = _ringel_dual_field(A, rep.order)
+    return block
+
+
+def _dimvec_str(mod):
+    """A module's dimension vector as a string-keyed, vertex-sorted dict (JSON-safe)."""
+    return {str(w): int(n)
+            for w, n in sorted(mod.dimension_vector().items(), key=lambda kv: str(kv[0]))}
+
+
+def _characteristic_tilting_field(A, order):
+    """The characteristic tilting module ``T`` for the quasi_hereditary block: its total
+    dimension + dimension vector, and (best-effort) the per-summand dimensions from the
+    Krull-Schmidt splitter. A loud refusal (the Ringel iteration or the char-caveat
+    decompose) is captured as ``{"error": ...}`` -- the block never crashes."""
+    try:
+        T = characteristic_tilting(A, order)
+    except QuiverlabError as exc:
+        return {"error": str(exc)}
+    out = {"dim": int(T.dim), "dimvec": _dimvec_str(T)}
+    try:
+        from quiverlab.modules.decompose import decompose
+        out["summands"] = [{"dim": int(s.dim), "dimvec": _dimvec_str(s), "mult": int(m)}
+                           for s, m in decompose(T)]
+    except QuiverlabError as exc:
+        out["summands_error"] = str(exc)      # char <= dim: honest, T's dims still stand
+    return out
+
+
+def _ringel_dual_field(A, order):
+    """The Ringel dual ``R(A) = End_A(T)^op`` for the quasi_hereditary block: its
+    dimension and (best-effort) its Cartan matrix. A loud refusal at construction is
+    ``{"error": ...}``; a Cartan refusal (presentation-less structure-constant dual)
+    is captured as a per-field ``cartan_error`` -- the dimension still stands."""
+    try:
+        R = ringel_dual(A, order)
+    except QuiverlabError as exc:
+        return {"error": str(exc)}
+    out = {"dim": int(R.dim)}
+    note = getattr(R, "_ringel_note", None)
+    if note:
+        out["note"] = str(note)
+    try:
+        C = R.cartan_matrix()
+        rows = C.tolist() if hasattr(C, "tolist") else C
+        out["cartan"] = [[int(x) for x in row] for row in rows]
+    except QuiverlabError as exc:
+        out["cartan_error"] = str(exc)
+    return out

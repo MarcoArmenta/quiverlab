@@ -42,9 +42,13 @@
 
   // ---------- static shell ----------
   root.innerHTML =
+    '<div class="qlgui-search-wrap">' +
+    '  <input type="text" id="qlgui-search" autocomplete="off" spellcheck="false">' +
+    '  <div id="qlgui-search-menu" class="qlgui-search-menu" style="display:none"></div>' +
+    '</div>' +
     '<div class="qlgui-row">' +
     '  <label>Preset <select id="qlgui-preset"><option value="">— build your own —</option></select></label>' +
-    '  <label>Field <select id="qlgui-field"><option value="CC">CC</option><option value="GF">GF(p^n)</option></select></label>' +
+    '  <label>Field <select id="qlgui-field"><option value="CC">CC</option><option value="GF">GF(p^n)</option><option value="QQ">QQ</option></select></label>' +
     '  <label id="qlgui-p-wrap" style="display:none">p <input type="number" id="qlgui-p" value="2" min="2"></label>' +
     '  <label id="qlgui-n-wrap" style="display:none">n <input type="number" id="qlgui-n" value="1" min="1"></label>' +
     '  <button id="qlgui-clear" class="qlgui-secondary" type="button">Clear</button>' +
@@ -57,8 +61,28 @@
     '<p class="qlgui-hint">Click empty space: add a vertex. Drag vertex → vertex: add an arrow ' +
     '(onto itself: a loop). Click: select. Double-click an arrow label: rename. Delete key: remove.</p>' +
     '<div class="qlgui-row"><label style="flex:1 1 260px">Relations ' +
-    '<input type="text" id="qlgui-relations" placeholder="e.g. a*b - c, x*x*x"></label></div>' +
-    '<div class="qlgui-row" id="qlgui-invariants">' +
+    '<input type="text" id="qlgui-relations" placeholder="e.g. a*b - c, x*x*x"></label>' +
+    // GitHub #2 (Samuel Leblanc): generate the two most-wanted relation sets so a
+    // big quiver need not be typed out by hand. The buttons WRITE into the box above
+    // (still fully editable); the status line reports how many were generated.
+    '  <button id="qlgui-rel-rad2" class="qlgui-secondary" type="button">rad&sup2; = 0</button>' +
+    '  <button id="qlgui-rel-comm" class="qlgui-secondary" type="button">commutativity</button>' +
+    '  <span id="qlgui-rel-status" class="qlgui-hint"></span></div>' +
+    // GitHub #3 / Plan-44 (Marco 2026-08-06): a potential W turns the drawn quiver
+    // into its Jacobian algebra kQ/(cyclic derivatives of W). It is MUTUALLY
+    // EXCLUSIVE with explicit relations (the server 4xx is the authority; the box
+    // greys the other input as a hint). Absent unless typed -> the request keeps
+    // its byte-identical Plan-25 cache key.
+    '<div class="qlgui-row"><label style="flex:1 1 260px">' +
+    '<span id="qlgui-potential-label">Potential W (optional)</span> ' +
+    '<input type="text" id="qlgui-potential"></label>' +
+    '  <span id="qlgui-potential-hint" class="qlgui-hint"></span></div>' +
+    // Layout C (Marco 2026-08-06): this flat grid is the HIDDEN source of truth --
+    // every real checkbox/degree input still lives here (so buildRequest() and the
+    // el-map are untouched, and the compute order / Plan-25 cache keys are preserved
+    // by construction). The picker built below RELOCATES these very nodes into
+    // themed rows; nothing is duplicated into a parallel state object.
+    '<div class="qlgui-row qlpick-src" id="qlgui-invariants">' +
     '  <label><input type="checkbox" id="qlgui-hhc" checked> HH^0..<select id="qlgui-hhc-top"></select></label>' +
     '  <label><input type="checkbox" id="qlgui-hhh"> HH_0..<select id="qlgui-hhh-top"></select></label>' +
     // ---- Plan 35: HH product surface (cup / cap / bracket / connes_b) ----
@@ -70,6 +94,8 @@
     '  <label><input type="checkbox" id="qlgui-cyclic_homology"> cyclic homology 0..<input type="number" id="qlgui-cyclic_homology-top" value="6" min="0"></label>' +
     // Plan-42: the Hochschild (b, B) spectral sequence (abutting to HC), right after cyclic homology.
     '  <label><input type="checkbox" id="qlgui-ss_hochschild"> (b,B) spectral sequence 0..<input type="number" id="qlgui-ss_hochschild-top" value="4" min="0"></label>' +
+    // Plan-42: the radical-filtration spectral sequence, beside the (b,B) one.
+    '  <label><input type="checkbox" id="qlgui-radical_filtration_ss"> radical-filtration SS 0..<input type="number" id="qlgui-radical_filtration_ss-top" value="4" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
@@ -79,6 +105,10 @@
     '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-recognizers"> recognizers + type</label>' +
     '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
+    // Plan-43: derived comparison of THIS algebra with a second algebra B.
+    '  <label><input type="checkbox" id="qlgui-derived_compare"> derived compare (with B)</label>' +
+    // Plan-41: AR-quiver knitting (algebra-level; honest semi-decision + budget).
+    '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
     // ---- Plan 47: quasi-hereditary structure (natural order) ----
@@ -90,7 +120,7 @@
     '</div>' +
     // ---- Plan 26: no-code module panel ----
     '<fieldset id="qlgui-module" class="qlgui-fieldset">' +
-    '  <legend><label><input type="checkbox" id="qlgui-mod-enable"> Module (no code)</label></legend>' +
+    '  <legend><label><input type="checkbox" id="qlgui-mod-enable" class="qlpick-src"> Module M (no code)</label></legend>' +
     '  <div class="qlgui-row">' +
     '    <label>build <select id="qlgui-mod-mode">' +
     '      <option value="explicit">explicit (dims + matrices)</option>' +
@@ -103,7 +133,7 @@
     '    </select></label>' +
     '  </div>' +
     '  <div id="qlgui-mod-body"></div>' +
-    '  <div class="qlgui-row" id="qlgui-mod-kinds">' +
+    '  <div class="qlgui-row qlpick-src" id="qlgui-mod-kinds">' +
     '    <label><input type="checkbox" id="qlgui-dimension_vector" checked> dim vector</label>' +
     '    <label><input type="checkbox" id="qlgui-rad_top_soc"> rad/top/soc</label>' +
     '    <label><input type="checkbox" id="qlgui-tau"> τ</label>' +
@@ -137,6 +167,22 @@
     '    <p class="qlgui-hint" id="qlgui-target-note"></p>' +
     '  </fieldset>' +
     '</fieldset>' +
+    // Plan-43: the second algebra B for `derived_compare`. Shown only when that
+    // kind is selected. v1 no-code scope: B is a Dynkin path algebra (type string)
+    // or a preset quiver -- NEVER a second canvas (the named successor). Always a
+    // quiver/family block over A's field, so the comparison is like-for-like.
+    '<fieldset id="qlgui-algb" class="qlgui-fieldset" style="display:none">' +
+    '  <legend id="qlgui-algb-legend">Compare with algebra B</legend>' +
+    '  <div class="qlgui-row">' +
+    '    <label><span id="qlgui-algb-mode-label">source</span> ' +
+    '<select id="qlgui-algb-mode"><option value="type"></option><option value="preset"></option></select></label>' +
+    '    <label id="qlgui-algb-type-wrap"><span id="qlgui-algb-type-label">type</span> ' +
+    '<input type="text" id="qlgui-algb-type" value="A2" placeholder="A3, D4, E6"></label>' +
+    '    <label id="qlgui-algb-preset-wrap" style="display:none"><span id="qlgui-algb-preset-label">preset</span> ' +
+    '<select id="qlgui-algb-preset"></select></label>' +
+    '  </div>' +
+    '  <p class="qlgui-hint" id="qlgui-algb-hint"></p>' +
+    '</fieldset>' +
     '<div id="qlgui-eta" class="qlgui-hint"></div>' +
     '<div class="qlgui-row">' +
     '  <button id="qlgui-compute" type="button" disabled>Compute</button>' +
@@ -152,13 +198,25 @@
     '<div id="qlgui-results"></div>';
 
   var el = {};
-  ["preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
-   "rename", "relations", "hhc", "hhc-top", "hhh", "hhh-top",
+  ["search", "search-menu",
+   "preset", "field", "p-wrap", "n-wrap", "p", "n", "clear", "status", "canvas",
+   "rename", "relations", "rel-rad2", "rel-comm", "rel-status",
+   // GitHub #3 / Plan-44: potential -> Jacobian algebra
+   "potential", "potential-label", "potential-hint",
+   "hhc", "hhc-top", "hhh", "hhh-top",
    // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
    "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top",
    // Plan 42: the Hochschild (b, B) spectral sequence + its degree picker
-   "ss_hochschild", "ss_hochschild-top", "cartan",
+   "ss_hochschild", "ss_hochschild-top",
+   // Plan 42: the radical-filtration spectral sequence + its degree picker
+   "radical_filtration_ss", "radical_filtration_ss-top",
+   // Plan 41: AR-quiver knitting (algebra-level, budget) ; Plan 43: derived compare + algebra B
+   "ar_quiver", "ar_quiver-budget", "derived_compare",
+   "algb", "algb-legend", "algb-mode", "algb-mode-label",
+   "algb-type", "algb-type-wrap", "algb-type-label",
+   "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
+   "cartan",
    "coxeter_polynomial", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
@@ -370,9 +428,14 @@
   function matrixDims(a) { return matrixDimsFor(a, S.module, S.module.side); }
   function syncModuleMaps() { syncMaps(S.module, S.module.side); }
 
+  // Transient "Fill at random" feedback, kept per editor so a panel re-render
+  // (which rebuilds the body) does not wipe the last message (GitHub #3).
+  var randMsg = { module: "", target: "" };
+
   // Render the explicit dims-picker + per-arrow matrix grids for `mstate`/`side`
   // into `bodyEl`. `onEdit` fires on every dim change (rebuild) or cell edit.
-  function renderExplicitBody(bodyEl, mstate, side, onDimChange) {
+  // `which` ("module"/"target") routes the random-fill buttons (GitHub #3).
+  function renderExplicitBody(bodyEl, mstate, side, onDimChange, which) {
     syncDims(mstate); syncMaps(mstate, side);
     var dimRow = h("div", { "class": "qlgui-row" });
     S.vertices.forEach(function (v) {
@@ -384,6 +447,22 @@
       inp.addEventListener("change", onDimChange);
       dimRow.appendChild(h("label", { text: "dim " + v.id + " " }, inp));
     });
+    // "random dims" (GitHub #3): each vertex dim uniform 0..3, never the all-zero
+    // module; pure client-side, then re-render so the grids follow.
+    var rndDims = h("button", { "class": "qlgui-secondary", type: "button",
+      text: dataText("mod-random-dims", "random dims") });
+    rndDims.addEventListener("click", function () {
+      var anyPos = false;
+      S.vertices.forEach(function (v) {
+        var d = Math.floor(Math.random() * 4);
+        mstate.dims[v.id] = d; if (d > 0) anyPos = true;
+      });
+      if (!anyPos && S.vertices.length) {
+        mstate.dims[S.vertices[0].id] = 1 + Math.floor(Math.random() * 3);
+      }
+      randMsg[which] = ""; onDimChange();
+    });
+    dimRow.appendChild(rndDims);
     bodyEl.appendChild(h("div", { "class": "qlgui-mrow" },
       h("span", { "class": "qlgui-mlabel", text: "dimension vector" }), dimRow));
     S.arrows.forEach(function (a) {
@@ -409,6 +488,68 @@
         h("span", { "class": "qlgui-mlabel",
           text: a.name + ": " + a.s + "→" + a.t + "  [" + rows + "×" + cols + "]" }), grid));
     });
+    // "Fill at random" (GitHub #3): exact random arrow matrices from the engine
+    // (relation-aware). The engine draws + validates; gui.js only fills the cells.
+    if (S.arrows.length) {
+      var rndFill = h("button", { "class": "qlgui-secondary", type: "button",
+        text: dataText("mod-random", "Fill at random") });
+      rndFill.addEventListener("click", function () {
+        requestRandomFill(mstate, side, which);
+      });
+      bodyEl.appendChild(h("div", { "class": "qlgui-row" }, rndFill,
+        h("span", { "class": "qlgui-hint", text: randMsg[which] || "" })));
+    }
+  }
+
+  // Ask the engine for a random representation on the current dims + side, and
+  // drop the returned exact matrices straight into `mstate.maps` (GitHub #3).
+  function requestRandomFill(mstate, side, which) {
+    if (S.busy) return;
+    ensureEngine();
+    if (!S.engineReady || !S.worker) {
+      randMsg[which] = dataText("mod-random-wait",
+        "engine still loading — click again in a moment");
+      renderModulePanel();
+      return;
+    }
+    syncDims(mstate); syncMaps(mstate, side);
+    var dims = {};
+    S.vertices.forEach(function (v) { dims[String(v.id)] = stDim(mstate, v.id); });
+    randMsg[which] = "…";
+    renderModulePanel();
+    S.worker.postMessage({ cmd: "random", which: which,
+      request: { algebra: buildRequest().algebra, dims: dims, side: side } });
+  }
+
+  // A "random" worker reply: fill the named editor's matrices, or show the
+  // refusal (char-0 / budget) in its status line.
+  function onRandomFill(m) {
+    var which = m.which === "target" ? "target" : "module";
+    var mstate = which === "target" ? S.target : S.module;
+    if (m.error) {
+      // The engine's structured refusals are the exact codes "char0"/"budget";
+      // anything else is a real validation/build error, shown verbatim.
+      randMsg[which] = m.error === "char0"
+          ? dataText("mod-random-char0",
+              "random fill with relations needs a finite field GF(p)")
+        : m.error === "budget"
+          ? dataText("mod-random-fail",
+              "no random module satisfied the relations after {tries} draws")
+              .replace("{tries}", m.tries)
+        : m.error;
+      renderModulePanel();
+      return;
+    }
+    mstate.maps = {};
+    Object.keys(m.maps || {}).forEach(function (name) {
+      mstate.maps[name] = (m.maps[name] || []).map(function (row) {
+        return row.map(function (x) { return String(x); });
+      });
+    });
+    randMsg[which] = dataText("mod-random-done",
+      "random module found (seed {seed}, {tries} draws)")
+      .replace("{seed}", m.seed).replace("{tries}", m.tries);
+    renderModulePanel(); scheduleProbe();
   }
 
   function fillVertexOptions(sel, current) {
@@ -448,7 +589,7 @@
       } else {
         renderExplicitBody(body, S.module, S.module.side, function () {
           renderModulePanel(); scheduleProbe();
-        });
+        }, "module");
       }
     }
     renderTargetPanel(on);
@@ -497,7 +638,7 @@
     }
     renderExplicitBody(body, S.target, S.target.side, function () {
       renderModulePanel(); scheduleProbe();
-    });
+    }, "target");
   }
 
   function normGrid(g) {        // trim; an empty cell means 0
@@ -627,37 +768,62 @@
     el["mod-side"].value = "right";
     el["target-mode"].value = "explicit"; el["target-side"].value = "right";
     el.ext.checked = false; el.tor.checked = false;
-    el.relations.value = ""; el.results.innerHTML = ""; render();
+    el.relations.value = ""; el.potential.value = "";
+    el.results.innerHTML = ""; render();
+    if (typeof syncRelPotConflict === "function") syncRelPotConflict();
+    if (typeof syncModule === "function") { syncModule(); pickRefresh(); }
   });
   el.field.addEventListener("change", function () {
-    var gf = el.field.value === "GF";
+    var gf = el.field.value === "GF";   // p/n only for GF; CC and QQ hide them
     el["p-wrap"].style.display = gf ? "" : "none";
     el["n-wrap"].style.display = gf ? "" : "none";
+  });
+
+  // ---------- potential (GitHub #3 / Plan-44) ----------
+  el["potential-label"].textContent = dataText("potential-label", "Potential W (optional)");
+  el.potential.placeholder = dataText("potential-ph", "a*b*c - d*e*f  (builds the Jacobian algebra)");
+  // A hint only -- the server 4xx is the authority. When one box is used the
+  // other is greyed with a note; the relation-preset buttons never touch the
+  // potential box (they write el.relations, wired elsewhere).
+  function syncRelPotConflict() {
+    var pot = (el.potential.value || "").trim();
+    var rel = (el.relations.value || "").trim();
+    var note = dataText("potential-conflict",
+      "a potential and explicit relations are mutually exclusive");
+    el.relations.style.opacity = pot ? "0.5" : "";
+    el.potential.style.opacity = (rel && !pot) ? "0.5" : "";
+    el["potential-hint"].textContent = (pot && rel) ? note : "";
+  }
+  el.potential.addEventListener("input", syncRelPotConflict);
+  el.relations.addEventListener("input", syncRelPotConflict);
+
+  // ---------- algebra B for derived_compare (Plan-43) ----------
+  el["algb-legend"].textContent = dataText("algb-legend", "Compare with algebra B");
+  el["algb-mode-label"].textContent = dataText("algb-mode-label", "source");
+  el["algb-type-label"].textContent = dataText("algb-type-label", "type");
+  el["algb-preset-label"].textContent = dataText("algb-preset-label", "preset");
+  el["algb-hint"].textContent = dataText("algb-hint",
+    "B is compared by its derived invariants; a Dynkin type builds a path algebra, "
+    + "or pick a preset quiver. Both are taken over the field chosen above.");
+  el["algb-mode"].options[0].text = dataText("algb-type-label", "Dynkin type");
+  el["algb-mode"].options[1].text = dataText("algb-preset-label", "preset");
+  el["algb-mode"].addEventListener("change", function () {
+    var preset = el["algb-mode"].value === "preset";
+    el["algb-type-wrap"].style.display = preset ? "none" : "";
+    el["algb-preset-wrap"].style.display = preset ? "" : "none";
   });
 
   // ---------- presets ----------
   fetch("gui/presets.json").then(function (r) { return r.ok ? r.json() : []; })
     .then(function (presets) {
+      S.presets = presets;                       // reused by algebra-B (Plan-43)
       presets.forEach(function (p, i) {
         el.preset.appendChild(h("option", { value: String(i), text: p.label }));
+        el["algb-preset"].appendChild(h("option", { value: String(i), text: p.label }));
       });
       el.preset.addEventListener("change", function () {
         if (el.preset.value === "") return;
-        var p = presets[parseInt(el.preset.value, 10)];
-        S.vertices = p.vertices.map(function (id, i) {
-          var angle = 2 * Math.PI * i / p.vertices.length - Math.PI / 2;
-          var rad = p.vertices.length === 1 ? 0 : 110;
-          return { id: id, x: 400 + rad * Math.cos(angle), y: 185 + rad * Math.sin(angle) };
-        });
-        S.nextId = Math.max.apply(null, p.vertices.concat([0])) + 1;
-        S.arrows = Object.keys(p.arrows).map(function (name) {
-          return { name: name, s: p.arrows[name][0], t: p.arrows[name][1] };
-        });
-        el.relations.value = p.relations.join(", ");
-        el.field.value = p.field.kind === "CC" ? "CC" : "GF";
-        el.field.dispatchEvent(new Event("change"));
-        if (p.field.kind === "GF") { el.p.value = p.field.p; el.n.value = p.field.n || 1; }
-        S.selected = null; el.results.innerHTML = ""; render();
+        loadQuiver(presets[parseInt(el.preset.value, 10)]);
       });
     }).catch(function () { /* presets are a convenience; the editor still works */ });
 
@@ -667,8 +833,7 @@
     S.arrows.forEach(function (a) { arrows[a.name] = [a.s, a.t]; });
     var relations = el.relations.value.split(",")
       .map(function (s) { return s.trim(); }).filter(Boolean);
-    var field = el.field.value === "CC" ? { kind: "CC" }
-      : { kind: "GF", p: parseInt(el.p.value, 10) || 0, n: parseInt(el.n.value, 10) || 1 };
+    var field = currentField();
     var compute = [];
     if (el.hhc.checked) compute.push("hh_cohomology:0.." + el["hhc-top"].value);
     if (el.hhh.checked) compute.push("hh_homology:0.." + el["hhh-top"].value);
@@ -684,6 +849,9 @@
     // Plan 42: the (b, B) spectral sequence, right after cyclic homology.
     if (el.ss_hochschild.checked)
       compute.push("ss_hochschild:0.." + el["ss_hochschild-top"].value);
+    // Plan 42: the radical-filtration spectral sequence, beside the (b,B) one.
+    if (el.radical_filtration_ss.checked)
+      compute.push("radical_filtration_ss:0.." + el["radical_filtration_ss-top"].value);
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
@@ -695,6 +863,12 @@
     // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
     if (el.tau_tilting.checked)
       compute.push("tau_tilting:" + el["tau_tilting-budget"].value);
+    // Plan 41: AR-quiver knitting carries a BUDGET (max indecomposables), not a
+    // degree -- the single-int form both runners parse (like tau_tilting).
+    if (el.ar_quiver.checked)
+      compute.push("ar_quiver:" + el["ar_quiver-budget"].value);
+    // Plan 43: derived_compare is algebra-level and needs a second algebra B.
+    if (el.derived_compare.checked) compute.push("derived_compare");
     var module = null, extTarget = null, torTarget = null;
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
@@ -726,10 +900,99 @@
                            arrows: arrows, relations: relations, field: field },
                 compute: compute,
                 artifacts: { pdf: el.trace.checked, tikz: true } };
+    // GitHub #3 / Plan-44: a non-empty potential routes the quiver through the
+    // Jacobian-algebra constructor. Only attached when typed, so a request with
+    // no potential keeps its byte-identical cache key. The server refuses a
+    // potential ALONGSIDE explicit relations (4xx) -- that stays the authority.
+    var pot = (el.potential.value || "").trim();
+    if (pot) req.algebra.potential = pot;
     if (module) req.module = module;
     if (extTarget) req.ext_target = extTarget;
     if (torTarget) req.tor_target = torTarget;
+    // Plan-43: derived_compare's second algebra. Only attached with the kind,
+    // so an ordinary request never carries algebra_b (cache-key discipline).
+    if (el.derived_compare.checked) {
+      var algb = buildAlgebraB();
+      if (algb) req.algebra_b = algb;
+    }
     return req;
+  }
+
+  // The field spec from the picker: CC, GF(p^n), or QQ (Plan-19 exact rationals).
+  function currentField() {
+    if (el.field.value === "CC") return { kind: "CC" };
+    if (el.field.value === "QQ") return { kind: "QQ" };
+    return { kind: "GF", p: parseInt(el.p.value, 10) || 0,
+             n: parseInt(el.n.value, 10) || 1 };
+  }
+
+  // QLGUI-DYNKIN-BEGIN
+  // Synthesise the QUIVER of a Dynkin type client-side, so algebra B is a plain
+  // `quiver` block that computes on EVERY tier (the public Pyodide docs GUI, the
+  // server-backed desktop app, and the deployed server) -- a `family` block only
+  // runs where the library builder is reachable, which the browser Pyodide runner
+  // is NOT. Orientation matches quiverlab.PathAlgebra EXACTLY (verified from the
+  // library): vertices 1..n; arrows named "e"+src+tgt (single digit, n<=8):
+  //   A_n (n>=1): a linear chain i -> i+1, i = 1..n-1.
+  //   D_n (n>=4): the chain i -> i+1, i = 1..n-2, plus a fork (n-2) -> n.
+  //   E_n (n in 6,7,8): the chain i -> i+1, i = 1..n-2, plus a leg 3 -> n.
+  // Returns {vertices:[...ints], arrows:{name:[src,tgt]}} or null for anything
+  // unsupported (so the caller can show an honest "supported types" message).
+  function dynkinQuiver(type) {
+    var m = /^([ADE])\s*([0-9]+)$/.exec(String(type || "").trim().toUpperCase());
+    if (!m) return null;
+    var letter = m[1], n = parseInt(m[2], 10);
+    if (!(n >= 1)) return null;
+    var arrow = function (s, t) { return "e" + s + t; };
+    var verts = [], arrows = {}, i;
+    for (i = 1; i <= n; i++) verts.push(i);
+    if (letter === "A") {
+      if (n > 9) return null;                        // names stay single-digit
+      for (i = 1; i < n; i++) arrows[arrow(i, i + 1)] = [i, i + 1];
+      return { vertices: verts, arrows: arrows };
+    }
+    if (letter === "D") {
+      if (n < 4 || n > 9) return null;
+      for (i = 1; i <= n - 2; i++) arrows[arrow(i, i + 1)] = [i, i + 1];
+      arrows[arrow(n - 2, n)] = [n - 2, n];          // the fork off vertex n-2
+      return { vertices: verts, arrows: arrows };
+    }
+    if (letter === "E") {
+      if (n < 6 || n > 8) return null;
+      for (i = 1; i <= n - 2; i++) arrows[arrow(i, i + 1)] = [i, i + 1];
+      arrows[arrow(3, n)] = [3, n];                  // the branch leg off vertex 3
+      return { vertices: verts, arrows: arrows };
+    }
+    return null;
+  }
+  // QLGUI-DYNKIN-END
+
+  // algebra B for derived_compare, over A's field so the fingerprints compare
+  // like-for-like. BOTH modes emit a `quiver` block (works on every tier): a
+  // preset copies its quiver; a Dynkin type is synthesised by dynkinQuiver.
+  // An unrecognised type string surfaces an honest message and yields no request.
+  function buildAlgebraB() {
+    var field = currentField();
+    if (el["algb-mode"].value === "preset") {
+      var p = (S.presets || [])[parseInt(el["algb-preset"].value, 10)];
+      if (!p) return null;
+      var parrows = {};
+      Object.keys(p.arrows).forEach(function (k) { parrows[k] = p.arrows[k].slice(); });
+      return { kind: "quiver", vertices: p.vertices.slice(),
+               arrows: parrows, relations: (p.relations || []).slice(), field: field };
+    }
+    var t = (el["algb-type"].value || "").trim();
+    if (!t) return null;
+    var q = dynkinQuiver(t);
+    if (!q) {
+      el["algb-hint"].textContent = dataText("algb-unsupported",
+        "unsupported type — use A1..A9, D4..D9, or E6/E7/E8");
+      return null;
+    }
+    el["algb-hint"].textContent = dataText("algb-hint",
+      "B is compared over the same field as A");
+    return { kind: "quiver", vertices: q.vertices,
+             arrows: q.arrows, relations: [], field: field };
   }
 
   // Hand-rolled YAML emitter for the exported cluster config. MIRRORS
@@ -879,6 +1142,8 @@
     } else if (m.type === "calibrated") {
       S.factor = m.factor;
       scheduleProbe();
+    } else if (m.type === "random") {
+      onRandomFill(m);
     } else if (m.type === "probe") {
       if (m.seq === S.probeSeq && !S.busy) {
         if (m.data.ok) {
@@ -888,6 +1153,9 @@
           if (m.data.detail) console.error(m.data.detail);
           setEta(m.data.error.type + ": " + m.data.error.message, true);
         }
+        // Layout C: feed the SAME real probe (dim + wait bucket) to the cart's
+        // colour-coded cost dot -- never a heuristic (Marco + the critic).
+        if (S.onProbe) S.onProbe(m.data);
       }
     } else if (m.type === "built") {
       if (m.data.ok) {
@@ -925,6 +1193,83 @@
     var div = h("div", { "class": "qlgui-block qlgui-error",
       text: res.error.type + ": " + res.error.message });
     el.results.appendChild(div);
+    // Offline desktop app only (Marco): when the failure is the "you already have
+    // a job running" rate-limit, offer to cancel that running job locally and
+    // retry. Never on the deployed cloud server -- the cancel endpoint 404s there
+    // and data-offline is "false", so the button is not even rendered.
+    var msg = (res.error && res.error.message) || "";
+    if (offlineApp() && /already have a job running/i.test(msg)) {
+      appendCancelRunning();
+    }
+  }
+
+  // ---- offline-only "cancel the running job" control (Feature 2) ----
+  function offlineApp() {
+    var ds = document.body && document.body.dataset;
+    return !!ds && ds.offline === "true";
+  }
+  // A localised string from a <body data-*> attribute (base.html sets these via
+  // t()); falls back to English while the catalog keys are still being added --
+  // until then t() emits the raw "cancel_running.*" key, treated here as missing.
+  function cancelMsg(camel, fallback) {
+    var ds = document.body && document.body.dataset;
+    var v = ds ? ds[camel] : null;
+    if (!v || v.indexOf("cancel_running.") === 0) return fallback;
+    return v;
+  }
+  function appendCancelRunning() {
+    var wrap = h("div", { "class": "qlgui-block qlgui-cancel-running" });
+    var btn = h("button", { "class": "qlgui-secondary", type: "button",
+      text: cancelMsg("cancelRunningLabel", "Cancel the running job") });
+    var note = h("span", { "class": "qlgui-hint" });
+    wrap.appendChild(btn);
+    wrap.appendChild(note);
+    el.results.appendChild(wrap);
+    btn.addEventListener("click", function () {
+      btn.disabled = true;
+      note.textContent = " " + cancelMsg("cancelRunningProgress", "cancelling…");
+      fetch("/api/cancel-running", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: "{}"
+      }).then(function (r) {
+        return r.json().catch(function () { return {}; });
+      }).then(function (data) {
+        if (data && data.cancelled && data.job_id) {
+          // Wait for the worker to finalise the killed job (its status leaves
+          // 'running') before recomputing, else the retry is rate-limited again.
+          note.textContent = " " + cancelMsg("cancelRunningDone", "cancelled — retrying…");
+          waitTerminalThenRetry(data.job_id, 30);
+        } else {
+          // Nothing was running (idempotent no-op): the slot is already free.
+          note.textContent = " " + cancelMsg("cancelRunningNone", "no running job — retrying…");
+          runCompute();
+        }
+      }).catch(function (err) {
+        console.error("cancel-running failed:", err);
+        btn.disabled = false;
+        note.textContent = " " + cancelMsg("cancelRunningError", "could not cancel — try again");
+      });
+    });
+  }
+  // Poll the cancelled job until it is terminal (failed/done/error) or vanishes,
+  // then recompute. Bounded so a stuck worker cannot hang the UI -- on exhaustion
+  // we retry anyway (worst case: the rate-limit error simply re-appears).
+  function waitTerminalThenRetry(jobId, tries) {
+    fetch("/api/jobs/" + jobId).then(function (r) {
+      if (r.status === 404) return null;         // vanished -> terminal
+      return r.json();
+    }).then(function (job) {
+      var s = job && job.status;
+      if (!job || s === "failed" || s === "error" || s === "done" || tries <= 0) {
+        runCompute();
+        return;
+      }
+      setTimeout(function () { waitTerminalThenRetry(jobId, tries - 1); }, 500);
+    }).catch(function () {
+      if (tries <= 0) { runCompute(); return; }
+      setTimeout(function () { waitTerminalThenRetry(jobId, tries - 1); }, 500);
+    });
   }
 
   function citesLine(block) {
@@ -2796,6 +3141,110 @@
       }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
+    } else if (name === "radical_filtration_ss") {
+      // Plan 42: the radical-filtration spectral sequence — same honest shape as
+      // ss_hochschild (abutment table over the certified window + grid + prose).
+      if (b.error) {
+        div.appendChild(h("p", { text: b.error }));
+      } else {
+        var rshead = h("tr"), rsrow = h("tr");
+        rshead.appendChild(h("th", { text: "n" }));
+        rsrow.appendChild(h("th", { text: "dim E_inf total" }));
+        (b.abutment || []).forEach(function (d, n) {
+          rshead.appendChild(h("td", { text: String(n) }));
+          rsrow.appendChild(h("td", { text: String(d) }));
+        });
+        div.appendChild(h("p", { text: "Radical-filtration spectral sequence" }));
+        div.appendChild(h("table", {}, rshead, rsrow));
+        if (b.grid)
+          div.appendChild(h("pre", { text: String(b.grid).replace(/```/g, "").trim() }));
+        if (b.prose) div.appendChild(h("p", { text: b.prose }));
+      }
+    } else if (name === "ar_quiver") {
+      // Plan 41: the AR quiver. Completeness/budget status FIRST (an honest
+      // semi-decision), then indecomposables, irreducible maps, and τ-orbits.
+      var arDone = b.complete === true;
+      div.appendChild(h("p", { "class": arDone ? "" : "qlgui-error",
+        text: arDone
+          ? "Complete AR quiver: " + b.num_vertices + " indecomposable(s), "
+            + b.num_arrows + " irreducible map(s)."
+          : (b.status === "unsupported" || b.status === "error")
+            ? "Not computed — " + (b.error || "input not eligible") + "."
+            : "Partial (budget " + b.budget + " reached — the algebra is likely "
+              + "representation-infinite; this is NOT the full AR quiver)." }));
+      // id -> indecomposable NAME, so the maps/orbits below read in the same
+      // names as the table above (arrows/orbits carry integer ids, not names).
+      var arName = {};
+      (b.vertices || []).forEach(function (v) { arName[v.id] = v.name || ("M" + v.id); });
+      var arLabel = function (id) { return (id in arName) ? arName[id] : String(id); };
+      if ((b.vertices || []).length) {
+        var avh = h("tr");
+        avh.appendChild(h("th", { text: "indecomposable" }));
+        avh.appendChild(h("th", { text: "dim vector" }));
+        var avt = h("table", {}, avh);
+        b.vertices.forEach(function (v) {
+          var dv = v.dimvec || {};
+          var dvtxt = Object.keys(dv).map(function (w) { return w + ":" + dv[w]; }).join(", ");
+          avt.appendChild(h("tr", {}, h("th", { text: arLabel(v.id) }),
+            h("td", { text: dvtxt })));
+        });
+        div.appendChild(avt);
+      }
+      if ((b.arrows || []).length) {
+        div.appendChild(h("p", { text: "Irreducible maps: " + b.arrows.map(function (a) {
+          return arLabel(a.from) + "→" + arLabel(a.to)
+            + (a.mult > 1 ? " (×" + a.mult + ")" : "");
+        }).join(", ") }));
+      }
+      if ((b.tau_orbits || []).length) {
+        div.appendChild(h("p", { text: "τ-orbits: " + b.tau_orbits.map(function (o) {
+          return "{" + o.map(arLabel).join(", ") + "}"; }).join("  ") }));
+      }
+    } else if (name === "derived_compare") {
+      // Plan 43: the two fingerprints side by side + the honest verdict. Equal
+      // rows are a NECESSARY condition for derived equivalence, never a proof.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+        div.appendChild(citesLine(b));
+        el.results.appendChild(div);
+        return;
+      }
+      var dcCell = function (v) {
+        if (v && typeof v === "object" && "error" in v) return "unavailable — " + v.error;
+        if (Array.isArray(v)) return "[" + v.join(", ") + "]";
+        return String(v);
+      };
+      var fa = b.fingerprint_a || {}, fb = b.fingerprint_b || {};
+      var dcRows = [
+        ["Coxeter polynomial", "coxeter_polynomial"], ["det C", "cartan_det"],
+        ["Cartan Smith factors", "cartan_smith"], ["dim HH^•", "hh_cohomology_dims"],
+        ["dim HH_•", "hh_homology_dims"], ["dim HC_•", "cyclic_dims"],
+        ["dim Z(A)", "center_dim"], ["global dimension", "gl_dim"]
+      ];
+      var dch = h("tr");
+      dch.appendChild(h("th", { text: "invariant" }));
+      dch.appendChild(h("th", { text: "A" }));
+      dch.appendChild(h("th", { text: "B" }));
+      var dct = h("table", {}, dch);
+      dcRows.forEach(function (r) {
+        var differ = dcCell(fa[r[1]]) !== dcCell(fb[r[1]]);
+        var tr = h("tr", {}, h("th", { text: r[0] }),
+          h("td", { text: dcCell(fa[r[1]]) }), h("td", { text: dcCell(fb[r[1]]) }));
+        if (differ) tr.style.fontWeight = "600";
+        dct.appendChild(tr);
+      });
+      div.appendChild(dct);
+      div.appendChild(h("p", { text: b.verdict_text
+        || (b.verdict === "distinguished"
+              ? "Distinguished by " + (b.distinguished_by || []).join(", ")
+                + " — A and B are NOT derived equivalent."
+              : "Not distinguished by these invariants (a necessary condition only, "
+                + "never a proof of derived equivalence).") }));
+      if ((b.incomparable_fields || []).length)
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "Incomparable (errored on one/both sides): "
+            + b.incomparable_fields.join(", ") + "." }));
+      if (b.scope) div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -2812,8 +3261,11 @@
   }
 
   // ---------- buttons ----------
-  el.compute.addEventListener("click", function () {
-    if (S.busy || !S.engineReady) return;
+  // The compute run body, shared by the Compute button and the search-bar
+  // auto-run. Returns true once a run was actually dispatched (engine ready, a
+  // quiver present, not already busy), so the search auto-run can poll for it.
+  function runCompute() {
+    if (S.busy || !S.engineReady || !S.vertices.length) return false;
     el.results.innerHTML = "";
     S.artifacts = { tikz: "", snippet: "", bundle: "", traceHtml: "", traceJson: "" };
     el.print.disabled = el.tikz.disabled = el.json.disabled = el.snippet.disabled = true;
@@ -2823,7 +3275,9 @@
     setStatus("computing…");
     startTicker();
     S.worker.postMessage({ cmd: "run", request: buildRequest(), factor: S.factor });
-  });
+    return true;
+  }
+  el.compute.addEventListener("click", function () { runCompute(); });
   el.cancel.addEventListener("click", function () {
     if (!S.busy) return;
     stopTicker();
@@ -2841,6 +3295,48 @@
     fitTimer = setTimeout(fitMath, 150);
   });
   el.relations.addEventListener("input", scheduleProbe);
+  // ---------- relation presets (GitHub #2) ----------
+  function currentArrowsObj() {
+    var arrows = {};
+    S.arrows.forEach(function (a) { arrows[a.name] = [a.s, a.t]; });
+    return arrows;
+  }
+  function setRelStatus(text) { el["rel-status"].textContent = text || ""; }
+  function applyRelPreset(kind) {
+    if (!S.arrows.length) {
+      setRelStatus(dataText("rel-none", "no relations of this kind for this quiver"));
+      return;
+    }
+    var res = (kind === "rad2") ? qlguiRelRad2(currentArrowsObj())
+                                : qlguiRelCommutativity(currentArrowsObj());
+    if (res.error === "cycle") {
+      setRelStatus(dataText("rel-comm-cycle",
+        "the commutativity preset needs an acyclic quiver — with an oriented "
+        + "cycle the set of parallel paths is infinite"));
+      return;
+    }
+    if (res.error === "cap") {
+      setRelStatus("more than 500 relations — type them or shrink the quiver");
+      return;
+    }
+    if (!res.relations.length) {
+      setRelStatus(dataText("rel-none", "no relations of this kind for this quiver"));
+      return;
+    }
+    el.relations.value = res.relations.join(", ");
+    // A generated relation set is programmatic; refresh the potential-vs-relations
+    // hint so a filled potential box greys out (M3).
+    if (typeof syncRelPotConflict === "function") syncRelPotConflict();
+    setRelStatus(dataText("rel-generated", "{n} relations generated — edit freely")
+      .replace("{n}", res.relations.length));
+    scheduleProbe();
+  }
+  el["rel-rad2"].textContent = dataText("rel-rad2", "rad² = 0");
+  el["rel-comm"].textContent = dataText("rel-comm", "commutativity");
+  el["rel-rad2"].title = dataText("rel-rad2-hint", "");
+  el["rel-comm"].title = dataText("rel-comm-hint", "");
+  el["rel-rad2"].addEventListener("click", function () { applyRelPreset("rad2"); });
+  el["rel-comm"].addEventListener("click", function () { applyRelPreset("comm"); });
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
    el.connes_b, el["connes_b-top"],
@@ -2916,6 +3412,283 @@
     download("quiverlab-config.yaml", text, "text/yaml");
   });
 
+  // ==================================================================
+  // Layout C: two-pane theme picker + "to compute" cart (Marco 2026-08-06).
+  // A VIEW over the real (now-hidden) checkbox grid. Every toggle drives the
+  // ORIGINAL el[...] input and every inline degree/budget control is the REAL
+  // node, relocated into its row -- so buildRequest(), the compute order and the
+  // Plan-25 cache keys are untouched by construction (no parallel state object).
+  // ==================================================================
+  // QLGUI-THEMES-BEGIN
+  var THEMES =
+  [
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
+    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
+    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "center"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
+    {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
+    {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
+    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver"]}
+  ];
+  // QLGUI-THEMES-END
+
+  var pickState = { theme: "hochschild" };
+  var pickKW = {};                 // kind -> multilingual keyword blob
+  var pickRows = {};               // kind -> row element
+  var pickGroups = {};             // theme id -> group element
+  var pickNav = {};                // theme id -> nav button
+  var pickCartChips = null, pickCartEmpty = null, pickCartCost = null;
+
+  function pkName(kind) { return dataText("pick-kind-" + kind, kind); }
+  function pkTheme(id) { return dataText("pick-theme-" + id, id); }
+  function pkTxt(key, fb) { return dataText("pick-" + key, fb); }
+  function isModuleKind(kind) { var c = KIND_CTRL[kind]; return !!(c && c.mod); }
+  function kindChecked(kind) {
+    var c = KIND_CTRL[kind]; return !!(c && el[c.cb] && el[c.cb].checked);
+  }
+
+  function buildKW() {
+    // kind -> keywords, harvested from the shipped multilingual SEARCH_INDEX so
+    // the filter matches en/es/fr/zh terms (the critic's regression fix).
+    SEARCH_INDEX.forEach(function (e) {
+      (e.example.compute || []).forEach(function (spec) {
+        var k = spec.split(":")[0];
+        pickKW[k] = (pickKW[k] || []).concat(e.keywords || []);
+      });
+    });
+  }
+
+  function activeModuleKindCount() {
+    var n = 0;
+    THEMES.forEach(function (t) {
+      t.kinds.forEach(function (k) { if (isModuleKind(k) && kindChecked(k)) n++; });
+    });
+    return n;
+  }
+
+  // Auto-manage mod-enable + the module editor's visibility from the picker's
+  // module-kind selection (the critic's mandatory coupling). Never dispatches a
+  // synthetic change (that would defeat the lazy engine load); ensureEngine is
+  // called separately, only on a real user gesture.
+  function syncModule() {
+    var want = activeModuleKindCount() > 0;
+    if (el["mod-enable"].checked !== want) {
+      el["mod-enable"].checked = want;
+      renderModulePanel();
+    }
+    if (el.module) el.module.style.display = want ? "" : "none";
+  }
+
+  // Plan-43: the algebra-B panel is visible exactly when derived_compare is on.
+  function syncAlgebraB() {
+    if (el.algb) el.algb.style.display = kindChecked("derived_compare") ? "" : "none";
+  }
+
+  function setKind(kind, on, intent) {
+    var c = KIND_CTRL[kind];
+    if (!c || !el[c.cb]) return;
+    el[c.cb].checked = !!on;
+    syncModule();
+    syncAlgebraB();
+    if (intent) ensureEngine();
+    pickRefresh();
+    scheduleProbe();
+  }
+
+  // ---- cart cost dot, bound to the REAL probe bucket (never a heuristic) ----
+  var COST_CLASS = { seconds: "fast", minute: "fast", minutes: "medium",
+                     long: "heavy", cap: "heavy" };
+  function renderCost(data) {
+    if (!pickCartCost) return;
+    var lab = pickCartCost.querySelector(".qlcart-lab");
+    if (!data) {
+      pickCartCost.setAttribute("data-cost", "");
+      lab.textContent = pkTxt("cost-estimating", "estimating…");
+      return;
+    }
+    if (!data.ok) {
+      pickCartCost.setAttribute("data-cost", "error");
+      lab.textContent = pkTxt("cost-error", "check the quiver");
+      return;
+    }
+    var b = data.eta ? data.eta.bucket : null;
+    var cls = COST_CLASS[b] || "medium";
+    pickCartCost.setAttribute("data-cost", cls);
+    var txt = cls === "fast" ? pkTxt("cost-fast", "fast")
+            : cls === "heavy" ? pkTxt("cost-heavy", "could be long — Cancel anytime")
+            : pkTxt("cost-medium", "a little while");
+    lab.textContent = "dim " + data.dim + " · " + txt;
+  }
+
+  function pickRefresh() {
+    // nav counts
+    THEMES.forEach(function (t) {
+      var badge = pickNav[t.id] && pickNav[t.id].querySelector(".qlpick-count");
+      if (!badge) return;
+      var n = 0;
+      t.kinds.forEach(function (k) { if (kindChecked(k)) n++; });
+      badge.textContent = String(n);
+      badge.setAttribute("data-n", String(n));
+    });
+    // row toggles + inline-control visibility (state may have changed via search)
+    Object.keys(pickRows).forEach(function (k) {
+      var row = pickRows[k], on = kindChecked(k);
+      var tg = row.querySelector(".qlpick-toggle");
+      if (tg) { tg.setAttribute("aria-checked", on ? "true" : "false");
+                tg.textContent = on ? "✓" : ""; }
+      var ctrl = row.querySelector(".qlpick-rowctrl");
+      if (ctrl) ctrl.style.display = (on && ctrl.getAttribute("data-has") === "1")
+                                     ? "" : "none";
+    });
+    // chips
+    var box = pickCartChips; box.innerHTML = "";
+    var any = false;
+    THEMES.forEach(function (t) {
+      t.kinds.forEach(function (k) {
+        if (!kindChecked(k)) return;
+        any = true;
+        var chip = h("span", { "class": "qlcart-chip", text: pkName(k) });
+        var x = h("button", { "class": "qlcart-x", type: "button",
+          "aria-label": pkTxt("remove", "remove") + " " + pkName(k), text: "×" });
+        x.addEventListener("click", function () { setKind(k, false, true); });
+        chip.appendChild(x);
+        box.appendChild(chip);
+      });
+    });
+    pickCartEmpty.style.display = any ? "none" : "";
+  }
+
+  function pickShowTheme(id) {
+    pickState.theme = id;
+    Object.keys(pickGroups).forEach(function (g) {
+      pickGroups[g].style.display = (g === id) ? "" : "none";
+    });
+    Object.keys(pickNav).forEach(function (g) {
+      pickNav[g].setAttribute("aria-pressed", g === id ? "true" : "false");
+    });
+  }
+
+  function pickApplyFilter(q) {
+    q = searchNorm((q || "").trim());
+    if (!q) {                                    // no filter: single active theme
+      Object.keys(pickRows).forEach(function (k) { pickRows[k].style.display = ""; });
+      pickShowTheme(pickState.theme);
+      return;
+    }
+    var groupHit = {};
+    THEMES.forEach(function (t) {
+      t.kinds.forEach(function (k) {
+        var hay = searchNorm(pkName(k) + " " + k + " " + (pickKW[k] || []).join(" "));
+        var hit = hay.indexOf(q) >= 0;
+        pickRows[k].style.display = hit ? "" : "none";
+        if (hit) groupHit[t.id] = 1;
+      });
+    });
+    Object.keys(pickGroups).forEach(function (g) {
+      pickGroups[g].style.display = groupHit[g] ? "" : "none";
+    });
+    Object.keys(pickNav).forEach(function (g) {
+      pickNav[g].setAttribute("aria-pressed", "false");
+    });
+  }
+
+  function buildRow(kind) {
+    var c = KIND_CTRL[kind];
+    var row = h("div", { "class": "qlpick-row" });
+    row.setAttribute("data-kind", kind);
+    var tg = h("button", { "class": "qlpick-toggle", type: "button",
+      role: "checkbox", "aria-checked": "false",
+      "aria-label": pkTxt("add", "add") + " " + pkName(kind), text: "" });
+    var main = h("div", { "class": "qlpick-rowmain" },
+      h("span", { "class": "qlpick-rowname", text: pkName(kind) }));
+    var ctrl = h("span", { "class": "qlpick-rowctrl" });
+    ctrl.setAttribute("data-has", "0");
+    if (c && c.top && el[c.top]) {               // relocate the REAL degree/budget node
+      ctrl.setAttribute("data-has", "1");
+      ctrl.appendChild(h("span", { text: c.budget ? pkTxt("budget", "budget")
+                                                   : pkTxt("degrees", "degrees 0–") }));
+      ctrl.appendChild(el[c.top]);
+    }
+    ctrl.style.display = "none";
+    function toggle() { setKind(kind, !kindChecked(kind), true); }
+    tg.addEventListener("click", toggle);
+    main.querySelector(".qlpick-rowname").addEventListener("click", toggle);
+    row.appendChild(tg); row.appendChild(main); row.appendChild(ctrl);
+    pickRows[kind] = row;
+    return row;
+  }
+
+  function initPicker() {
+    buildKW();
+    var invGrid = document.getElementById("qlgui-invariants");
+    // ---- picker shell ----
+    var picker = h("div", { id: "qlgui-picker" });
+    var fwrap = h("div", { "class": "qlpick-filterwrap" });
+    var filter = h("input", { id: "qlgui-picker-filter", type: "text",
+      autocomplete: "off", spellcheck: "false",
+      "aria-label": pkTxt("filter", "Filter…") });
+    filter.placeholder = pkTxt("filter", "Filter…");
+    fwrap.appendChild(filter);
+    var body = h("div", { "class": "qlpick-body" });
+    var nav = h("nav", { "class": "qlpick-nav", "aria-label": "computation themes" });
+    var rowsWrap = h("div", { "class": "qlpick-rows" });
+    THEMES.forEach(function (t) {
+      var btn = h("button", { "class": "qlpick-navitem", type: "button",
+        "aria-pressed": "false" },
+        h("span", { text: pkTheme(t.id) }),
+        h("span", { "class": "qlpick-count", "data-n": "0", text: "0" }));
+      btn.addEventListener("click", function () {
+        filter.value = ""; pickApplyFilter(""); pickShowTheme(t.id);
+      });
+      pickNav[t.id] = btn;
+      nav.appendChild(btn);
+      var group = h("div", { "class": "qlpick-group" });
+      group.setAttribute("data-theme", t.id);
+      // SOME (not every): module_ar now also holds ar_quiver, an algebra-level
+      // kind -- the note still describes the genuine module kinds in the theme,
+      // and ar_quiver (no `mod` flag) never forces the module panel open.
+      var moduleTheme = t.kinds.some(isModuleKind);
+      if (moduleTheme) {
+        group.appendChild(h("p", { "class": "qlpick-modnote",
+          text: pkTxt("modules-note", "opens the module editor below") }));
+      }
+      t.kinds.forEach(function (k) { group.appendChild(buildRow(k)); });
+      pickGroups[t.id] = group;
+      rowsWrap.appendChild(group);
+    });
+    body.appendChild(nav); body.appendChild(rowsWrap);
+    picker.appendChild(fwrap); picker.appendChild(body);
+    invGrid.parentNode.insertBefore(picker, invGrid);
+
+    filter.addEventListener("input", function () { pickApplyFilter(filter.value); });
+
+    // ---- cart ----
+    var cart = h("div", { id: "qlgui-cart" });
+    var head = h("div", { "class": "qlcart-head" });
+    head.appendChild(h("span", { "class": "qlcart-title",
+      text: pkTxt("cart-title", "To compute") }));
+    pickCartCost = h("span", { "class": "qlcart-cost", "data-cost": "" });
+    pickCartCost.appendChild(h("span", { "class": "qlcart-dot" }));
+    pickCartCost.appendChild(h("span", { "class": "qlcart-lab" }));
+    head.appendChild(pickCartCost);
+    pickCartChips = h("div", { "class": "qlcart-chips" });
+    pickCartEmpty = h("span", { "class": "qlcart-empty",
+      text: pkTxt("cart-empty", "Nothing chosen yet — pick from a theme.") });
+    pickCartChips.appendChild(pickCartEmpty);
+    var opts = h("div", { "class": "qlcart-opts" });
+    if (el.trace && el.trace.parentNode) opts.appendChild(el.trace.parentNode); // relocate the report toggle
+    cart.appendChild(head); cart.appendChild(pickCartChips); cart.appendChild(opts);
+    el.eta.parentNode.insertBefore(cart, el.eta);
+
+    S.onProbe = renderCost;
+    pickShowTheme(pickState.theme);
+    syncModule();
+    syncAlgebraB();
+    pickRefresh();
+    renderCost(null);
+    window.QLGUI.pickRefresh = pickRefresh;
+  }
+
   window.QLGUI = { S: S, buildRequest: buildRequest, configYaml: configYaml };
   render();
   // Engine loads on FIRST INTENT (whole-branch review decision): pure readers
@@ -2930,4 +3703,345 @@
   el.preset.addEventListener("change", ensureEngine);
   el.relations.addEventListener("focus", ensureEngine);
   el["mod-enable"].addEventListener("change", ensureEngine);   // enabling the module panel is intent
+
+  // ---------- predetermined relations (GitHub #2, Samuel Leblanc) ----------
+  // Pure, DOM-free relation generators over an `arrows` object {name: [src, tgt]},
+  // shared with tests/webapp/test_relations_presets.py (extracted between the
+  // sentinels and run under node, checked against an independent Python oracle).
+  // Path composition is LEFT-TO-RIGHT: "a*b" means first a then b, so it is a
+  // valid path iff target(a) === source(b) (Assem–Simson–Skowroński).
+  // QLGUI-RELGEN-BEGIN
+  function qlguiRelRad2(arrows) {
+    // rad^2 = 0: every length-2 path is a relation. For arrows a: u→v and
+    // b: v→w (v shared; a and b may coincide on a loop) emit "a*b". Deterministic:
+    // the emitted strings are sorted.
+    var names = Object.keys(arrows).sort();
+    var rels = [];
+    for (var i = 0; i < names.length; i++) {
+      for (var j = 0; j < names.length; j++) {
+        var a = names[i], b = names[j];
+        if (arrows[a][1] === arrows[b][0]) rels.push(a + "*" + b);
+      }
+    }
+    rels.sort();
+    return { relations: rels };
+  }
+  function qlguiRelCommutativity(arrows) {
+    // Commutativity: on an ACYCLIC quiver, for each ordered vertex pair (u,w) with
+    // ≥2 directed paths, set them all equal — emit p0 - pk for k ≥ 1 (first-vs-rest;
+    // paths sorted). A cycle (incl. a loop) makes the set of parallel paths infinite
+    // → {error:"cycle"}. Capped at 500 relations → {error:"cap"}.
+    var names = Object.keys(arrows).sort();
+    var verts = {}, out = {};
+    names.forEach(function (a) { verts[arrows[a][0]] = 1; verts[arrows[a][1]] = 1; });
+    var outArrows = {};                          // source vertex -> [arrow names]
+    Object.keys(verts).forEach(function (v) { outArrows[v] = []; });
+    names.forEach(function (a) { outArrows[arrows[a][0]].push(a); });
+    // Cycle detection (DFS colouring); a loop is a length-1 cycle.
+    var color = {};                              // 0=white,1=grey,2=black
+    var cyclic = false;
+    function visit(v) {
+      color[v] = 1;
+      outArrows[v].forEach(function (a) {
+        var w = arrows[a][1];
+        if (color[w] === 1) cyclic = true;
+        else if (!color[w]) visit(w);
+      });
+      color[v] = 2;
+    }
+    Object.keys(verts).forEach(function (v) { if (!color[v]) visit(v); });
+    if (cyclic) return { error: "cycle" };
+    // Enumerate every directed path (acyclic ⇒ finite); bucket by (source,target).
+    var classes = {};                            // "u\x00w" -> [path strings]
+    var nVerts = Object.keys(verts).length;
+    function walk(startV, curV, acc) {
+      if (acc.length && acc.length <= nVerts) {
+        var key = startV + "\x00" + curV;
+        (classes[key] || (classes[key] = [])).push(acc.join("*"));
+      }
+      if (acc.length >= nVerts) return;          // acyclicity bounds path length
+      outArrows[curV].forEach(function (a) {
+        acc.push(a); walk(startV, arrows[a][1], acc); acc.pop();
+      });
+    }
+    Object.keys(verts).forEach(function (v) { walk(v, v, []); });
+    var rels = [];
+    Object.keys(classes).sort().forEach(function (key) {
+      var paths = classes[key].slice().sort();
+      for (var k = 1; k < paths.length; k++) rels.push(paths[0] + " - " + paths[k]);
+    });
+    if (rels.length > 500) return { error: "cap" };
+    return { relations: rels };
+  }
+  // QLGUI-RELGEN-END
+
+  // ---------- search-first landing (Marco 2026-08-06) ----------
+  // Type what you want to compute; pick a match; a small, pre-validated example
+  // (quiver + field + compute request, module/target when the kind needs one)
+  // loads into the editor and auto-runs. Keywords carry EN/ES/FR/ZH synonyms so
+  // search works in every UI language even though these labels are English.
+  // QLGUI-SEARCH-INDEX-BEGIN
+  var SEARCH_INDEX =
+  [
+    {"id": "hh_cohomology", "title": "Hochschild cohomology HH•", "category": "hochschild", "keywords": ["hochschild", "cohomology", "cohomología", "cohomologie", "上同调", "HH", "hh"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["hh_cohomology:0..4"]}},
+    {"id": "hh_homology", "title": "Hochschild homology HH_•", "category": "hochschild", "keywords": ["hochschild", "homology", "homología", "homologie", "同调", "HH"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["hh_homology:0..4"]}},
+    {"id": "cyclic_homology", "title": "Cyclic homology HC_•", "category": "hochschild", "keywords": ["cyclic", "cíclica", "cyclique", "循环同调", "HC", "connes"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cyclic_homology:0..4"]}},
+    {"id": "connes_b", "title": "Connes differential B", "category": "hochschild", "keywords": ["connes", "differential", "diferencial", "différentielle", "B", "微分"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["connes_b:0..3"]}},
+    {"id": "products", "title": "HH products: cup, cap, bracket", "category": "hochschild", "keywords": ["cup", "cap", "bracket", "gerstenhaber", "producto", "produit", "杯", "帽", "括号", "product"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cup:0..2", "cap:0..2", "bracket:0..2"]}},
+    {"id": "ss_hochschild", "title": "Hochschild (b,B) spectral sequence", "category": "hochschild", "keywords": ["spectral", "sequence", "espectral", "spectrale", "谱序列", "ss", "b,B", "abutment"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ss_hochschild:0..3"]}},
+    {"id": "cartan_coxeter", "title": "Cartan matrix & Coxeter polynomial", "category": "invariants", "keywords": ["cartan", "coxeter", "matrix", "matriz", "matrice", "polynomial", "polinomio", "polynôme", "卡坦", "矩阵", "多项式"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cartan", "coxeter_polynomial"]}},
+    {"id": "homological_profile", "title": "Homological dimensions & global dimension", "category": "invariants", "keywords": ["homological", "dimension", "global", "gldim", "dimensión", "dimension", "同调维数", "全局维数", "findim", "gorenstein", "igusa", "todorov"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["homological_profile", "global_dimension"]}},
+    {"id": "center", "title": "Center of the algebra Z(A)", "category": "invariants", "keywords": ["center", "centre", "centro", "中心", "Z(A)", "zentrum"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["center"]}},
+    {"id": "recognizers", "title": "Recognizers & Dynkin type", "category": "invariants", "keywords": ["recognizers", "type", "dynkin", "tipo", "reconocedores", "reconnaisseurs", "hereditary", "nakayama", "识别", "类型", "gentle", "string"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers"]}},
+    {"id": "ext_algebra", "title": "Ext-algebra & Koszulity", "category": "invariants", "keywords": ["ext", "koszul", "yoneda", "ext-algebra", "koszulity", "代数", "koszulidad", "koszulité"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ext_algebra:0..3"]}},
+    {"id": "derived_fingerprint", "title": "Derived fingerprint", "category": "derived", "keywords": ["derived", "fingerprint", "derivada", "dérivée", "导出", "invariant", "huella", "empreinte"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["derived_fingerprint"]}},
+    {"id": "quasi_hereditary", "title": "Quasi-hereditary structure (Δ/∇)", "category": "invariants", "keywords": ["quasi-hereditary", "standard", "costandard", "delta", "nabla", "bgg", "cuasi-hereditaria", "quasi-héréditaire", "准遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["quasi_hereditary"]}},
+    {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
+    {"id": "tau_tilting", "title": "τ-tilting: pairs, exchange graph, fan", "category": "tau-tilting", "keywords": ["tau-tilting", "tilting", "mutation", "torsion", "silting", "g-vector", "wall", "stability", "chamber", "inclinación", "basculement", "mutación", "倾斜", "突变", "brick", "semibrick", "fan"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["tau_tilting:512"]}},
+    {"id": "module_basics", "title": "Module: dimension vector, rad/top/soc", "category": "modules", "keywords": ["module", "dimension vector", "radical", "top", "socle", "zócalo", "socle", "módulo", "module", "模块", "维数向量", "loewy"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["dimension_vector", "rad_top_soc"]}},
+    {"id": "resolutions", "title": "Projective & injective resolutions", "category": "modules", "keywords": ["resolution", "projective", "injective", "resolución", "résolution", "proyectiva", "inyectiva", "projective", "injective", "分解", "投影", "内射", "pd", "id"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["projective_resolution:0..6", "injective_resolution:0..6", "projective_dimension", "injective_dimension"]}},
+    {"id": "ext_tor", "title": "Ext & Tor between modules", "category": "modules", "keywords": ["ext", "tor", "extension", "extensión", "扩张", "torsion", "扭积", "yoneda"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}, "tor_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "left"}, "compute": ["ext:0..3", "tor:0..3"]}},
+    {"id": "ar_theory", "title": "Auslander–Reiten: τ, τ⁻, almost-split", "category": "ar", "keywords": ["auslander", "reiten", "tau", "translate", "almost-split", "irreducible", "traslación", "translation", "转变", "几乎分裂", "ar-quiver"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["tau", "tau_minus", "almost_split"]}},
+    {"id": "decompose", "title": "Krull–Schmidt decomposition", "category": "modules", "keywords": ["decompose", "krull-schmidt", "indecomposable", "descomponer", "décomposer", "indescomponible", "分解", "不可分"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"dims": {"1": 1, "2": 1, "3": 0}, "maps": {"a": [[0]], "b": []}, "side": "right"}, "compute": ["decompose"]}},
+    {"id": "orbit_geometry", "title": "Representation-variety orbit geometry", "category": "geometry", "keywords": ["orbit", "geometry", "variety", "voigt", "rigid", "degeneration", "kac", "órbita", "orbite", "geometría", "géométrie", "轨道", "几何", "rigidity"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["orbit_geometry"]}},
+    {"id": "tilting_check", "title": "Tilting-module check", "category": "tau-tilting", "keywords": ["tilting", "bongartz", "cotilting", "inclinación", "basculant", "倾斜模块"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "projective", "vertex": 1}, "side": "right"}, "compute": ["tilting_check"]}}
+  ];
+  // QLGUI-SEARCH-INDEX-END
+
+  // i18n strings arrive as data-* on #qlgui (server-injected); English fallback.
+  function dataText(key, fallback) {
+    var v = root.getAttribute("data-" + key);
+    return (v == null || v === "") ? fallback : v;
+  }
+  // case- AND diacritic-insensitive (NFD, strip combining marks); CJK unaffected.
+  function searchNorm(x) {
+    return String(x).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  }
+  function searchMatch(query) {
+    var q = searchNorm((query || "").trim());
+    if (!q) return { direct: [], related: [] };
+    var direct = SEARCH_INDEX.filter(function (e) {
+      if (searchNorm(e.title).indexOf(q) >= 0) return true;
+      return e.keywords.some(function (k) { return searchNorm(k).indexOf(q) >= 0; });
+    });
+    var cats = {}, directId = {};
+    direct.forEach(function (e) { cats[e.category] = 1; directId[e.id] = 1; });
+    var related = SEARCH_INDEX.filter(function (e) {
+      return !directId[e.id] && cats[e.category];
+    });
+    return { direct: direct, related: related };
+  }
+  function searchItemEl(e) {
+    var item = h("div", { "class": "qlgui-search-item", "data-id": e.id });
+    item.appendChild(h("span", { "class": "qlgui-search-title", text: e.title }));
+    item.addEventListener("mousedown", function (ev) {
+      ev.preventDefault();               // pick before the input blur closes us
+      pickExample(e);
+    });
+    return item;
+  }
+  function renderSearchMenu() {
+    var menu = el["search-menu"];
+    menu.innerHTML = "";
+    if (!el.search.value.trim()) { menu.style.display = "none"; return; }
+    var m = searchMatch(el.search.value);
+    if (!m.direct.length && !m.related.length) {
+      menu.appendChild(h("div", { "class": "qlgui-search-none",
+        text: dataText("search-none", "No matches \u2014 try Hochschild, resolution, module, surface") }));
+      menu.style.display = ""; return;
+    }
+    m.direct.forEach(function (e) { menu.appendChild(searchItemEl(e)); });
+    if (m.related.length) {
+      menu.appendChild(h("div", { "class": "qlgui-search-head",
+        text: dataText("search-related", "Related environments") }));
+      m.related.forEach(function (e) { menu.appendChild(searchItemEl(e)); });
+    }
+    menu.style.display = "";
+  }
+  function pickExample(e) {
+    el["search-menu"].style.display = "none";
+    el.search.value = e.title;
+    loadExample(e);
+  }
+
+  // Load a quiver spec {vertices, arrows, relations, field} into the editor.
+  // Shared by the preset dropdown and the search loader (circle auto-layout).
+  function loadQuiver(p) {
+    S.vertices = p.vertices.map(function (id, i) {
+      var angle = 2 * Math.PI * i / p.vertices.length - Math.PI / 2;
+      var rad = p.vertices.length === 1 ? 0 : 110;
+      return { id: id, x: 400 + rad * Math.cos(angle), y: 185 + rad * Math.sin(angle) };
+    });
+    S.nextId = Math.max.apply(null, p.vertices.concat([0])) + 1;
+    S.arrows = Object.keys(p.arrows).map(function (name) {
+      return { name: name, s: p.arrows[name][0], t: p.arrows[name][1] };
+    });
+    el.relations.value = (p.relations || []).join(", ");
+    // A loaded quiver carries its own relations; a stale potential from a
+    // previous quiver would collide with them (and auto-run under the server's
+    // 4xx). Clear it and refresh the mutual-exclusion hint.
+    el.potential.value = "";
+    if (typeof syncRelPotConflict === "function") syncRelPotConflict();
+    el.field.value = (p.field.kind === "GF") ? "GF"
+      : (p.field.kind === "QQ") ? "QQ" : "CC";
+    el.field.dispatchEvent(new Event("change"));
+    if (p.field.kind === "GF") { el.p.value = p.field.p; el.n.value = p.field.n || 1; }
+    S.selected = null; el.results.innerHTML = ""; render();
+  }
+
+  // kind -> its GUI controls: cb = checkbox id, top = range/budget input id,
+  // budget = single-int (tau_tilting) vs a 0..hi range, mod = needs the module panel.
+  var KIND_CTRL = {
+    hh_cohomology: { cb: "hhc", top: "hhc-top" },
+    hh_homology: { cb: "hhh", top: "hhh-top" },
+    cup: { cb: "cup", top: "cup-top" },
+    cap: { cb: "cap", top: "cap-top" },
+    bracket: { cb: "bracket", top: "bracket-top" },
+    connes_b: { cb: "connes_b", top: "connes_b-top" },
+    cyclic_homology: { cb: "cyclic_homology", top: "cyclic_homology-top" },
+    ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
+    radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },
+    ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
+    derived_compare: { cb: "derived_compare" },
+    ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
+    cartan: { cb: "cartan" },
+    coxeter_polynomial: { cb: "coxeter_polynomial" },
+    global_dimension: { cb: "global_dimension" },
+    center: { cb: "center" },
+    recognizers: { cb: "recognizers" },
+    homological_profile: { cb: "homological_profile" },
+    derived_fingerprint: { cb: "derived_fingerprint" },
+    strings: { cb: "strings" },
+    quasi_hereditary: { cb: "quasi_hereditary" },
+    tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
+    dimension_vector: { cb: "dimension_vector", mod: true },
+    rad_top_soc: { cb: "rad_top_soc", mod: true },
+    tau: { cb: "tau", mod: true },
+    tau_minus: { cb: "tau_minus", mod: true },
+    projective_dimension: { cb: "projective_dimension", mod: true },
+    injective_dimension: { cb: "injective_dimension", mod: true },
+    projective_resolution: { cb: "projective_resolution", top: "pr-top", mod: true },
+    injective_resolution: { cb: "injective_resolution", top: "ir-top", mod: true },
+    decompose: { cb: "decompose", mod: true },
+    almost_split: { cb: "almost_split", mod: true },
+    tilting_check: { cb: "tilting_check", mod: true },
+    orbit_geometry: { cb: "orbit_geometry", mod: true },
+    ext: { cb: "ext", top: "ext-top", mod: true },
+    tor: { cb: "tor", top: "tor-top", mod: true }
+  };
+  function topValueOf(item, isBudget) {
+    var i = item.indexOf(":");
+    if (i < 0) return null;
+    var rest = item.slice(i + 1);
+    if (isBudget) return parseInt(rest, 10);
+    var dd = rest.indexOf("..");
+    return parseInt(dd < 0 ? rest : rest.slice(dd + 2), 10);
+  }
+  function copyDims(dst, src) {
+    Object.keys(src || {}).forEach(function (k) { dst[k] = src[k]; });
+  }
+  function copyMaps(dst, src) {
+    Object.keys(src || {}).forEach(function (name) {
+      dst[name] = src[name].map(function (row) {
+        return row.map(function (x) { return String(x); });
+      });
+    });
+  }
+  // Populate the main module panel (S.module + its DOM controls) from a spec:
+  // either { builtin: { kind, vertex }, side } or { dims, maps, side }.
+  function setModuleFromSpec(mspec) {
+    el["mod-enable"].checked = true;
+    S.module.enabled = true;
+    var side = (mspec && mspec.side) || "right";
+    el["mod-side"].value = side; S.module.side = side;
+    if (mspec && mspec.builtin) {
+      el["mod-mode"].value = mspec.builtin.kind;
+      S.module.vertex = mspec.builtin.vertex;
+    } else if (mspec && mspec.dims) {
+      el["mod-mode"].value = "explicit";
+      S.module.dims = {}; copyDims(S.module.dims, mspec.dims);
+      S.module.maps = {}; copyMaps(S.module.maps, mspec.maps);
+    }
+  }
+  // Populate the second-argument (Ext/Tor N) editor from a spec, same shapes.
+  function setTargetFromSpec(tspec) {
+    var side = (tspec && tspec.side) || "right";
+    el["target-side"].value = side; S.target.side = side;
+    if (tspec && tspec.builtin) {
+      el["target-mode"].value = tspec.builtin.kind;
+      S.target.vertex = tspec.builtin.vertex;
+    } else if (tspec && tspec.dims) {
+      el["target-mode"].value = "explicit";
+      S.target.dims = {}; copyDims(S.target.dims, tspec.dims);
+      S.target.maps = {}; copyMaps(S.target.maps, tspec.maps);
+    }
+  }
+  function clearAllKinds() {
+    Object.keys(KIND_CTRL).forEach(function (k) {
+      var c = KIND_CTRL[k];
+      if (el[c.cb]) el[c.cb].checked = false;
+    });
+  }
+  // Set every checkbox / range / module control an example needs, unchecking the
+  // rest first, then render() so the panels VISIBLY reflect the loaded example.
+  function applyExample(ex) {
+    clearAllKinds();
+    if (ex.module || ex.ext_target || ex.tor_target) {
+      setModuleFromSpec(ex.module || ex.ext_target || ex.tor_target);
+    } else {
+      el["mod-enable"].checked = false; S.module.enabled = false;
+    }
+    (ex.compute || []).forEach(function (raw) {
+      var kind = raw.split(":")[0], c = KIND_CTRL[kind];
+      if (!c || !el[c.cb]) return;
+      el[c.cb].checked = true;
+      if (c.top && el[c.top]) {
+        var v = topValueOf(raw, c.budget);
+        if (v != null && !isNaN(v)) el[c.top].value = String(v);
+      }
+    });
+    if (ex.ext_target) setTargetFromSpec(ex.ext_target);
+    else if (ex.tor_target) setTargetFromSpec(ex.tor_target);
+    render();                                    // refresh canvas + module panel
+    if (typeof syncModule === "function") { syncModule(); pickRefresh(); }
+  }
+  function loadExample(entry) {
+    var ex = entry.example;
+    loadQuiver(ex);
+    applyExample(ex);
+    ensureEngine();
+    // Auto-run once the (lazily loaded) engine is ready; give up silently after
+    // ~60 s, leaving the loaded example in place for a manual Compute.
+    setStatus(dataText("search-load", "small example loaded \u2014 computing\u2026"));
+    var waited = 0;
+    (function poll() {
+      if (runCompute()) return;
+      waited += 200;
+      if (waited > 60000) return;
+      setTimeout(poll, 200);
+    })();
+  }
+
+  el.search.placeholder = dataText("search-placeholder",
+    "Search: what do you want to compute? (e.g. Hochschild, \u03c4-tilting, gentle, resolution)");
+  el.search.addEventListener("input", renderSearchMenu);
+  el.search.addEventListener("focus", function () {
+    ensureEngine();                              // typing intent warms the engine
+    if (el.search.value.trim()) renderSearchMenu();
+  });
+  el.search.addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") {
+      var m = searchMatch(el.search.value), first = m.direct[0] || m.related[0];
+      if (first) { ev.preventDefault(); pickExample(first); }
+    } else if (ev.key === "Escape") {
+      el["search-menu"].style.display = "none";
+    }
+  });
+  document.addEventListener("click", function (ev) {
+    if (!el.search.contains(ev.target) && !el["search-menu"].contains(ev.target)) {
+      el["search-menu"].style.display = "none";
+    }
+  });
+
+  initPicker();
 })();

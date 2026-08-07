@@ -14,6 +14,11 @@ from pathlib import Path
 
 from ulid import ULID
 
+# The error a cancelled job carries. `mark_failed` records it, so the job ends in
+# the terminal `failed` state the /draw poller (webapp/static/gui/worker.js) already
+# recognises -- no new status value the read-only client would hang on.
+CANCEL_ERROR = "Cancelled: you cancelled this job."
+
 
 @dataclass
 class Job:
@@ -101,6 +106,18 @@ CREATE TABLE IF NOT EXISTS result_cache (
 );
 CREATE INDEX IF NOT EXISTS idx_result_cache_job ON result_cache(job_id);
 CREATE INDEX IF NOT EXISTS idx_result_cache_recency ON result_cache(last_hit_at);
+
+-- Cooperative cancellation (OFFLINE GUI only). A row here asks the worker parent
+-- loop (webapp/worker/worker.py::run_one_job) to kill a RUNNING job's child
+-- promptly. The ONLY writer is `request_cancel_for_ip`, called solely by the
+-- offline-only cancel endpoint (webapp/server/offline.py); on the deployed server
+-- nothing writes it, so the table stays empty and the per-tick `cancel_requested`
+-- check is inert. A PENDING job needs no signal -- it is finalised in place. The
+-- signal is torn down when the worker acts on it (`clear_cancel_request`).
+CREATE TABLE IF NOT EXISTS cancel_requests (
+  job_id TEXT PRIMARY KEY,
+  requested_at TEXT NOT NULL
+);
 """
 
 
@@ -133,9 +150,10 @@ class JobStore:
         return conn
 
     def init_schema(self) -> None:
-        """Create the `jobs`, `pending_big`, `feedback`, and `result_cache` tables
-        (idempotent -- CREATE ... IF NOT EXISTS, so it upgrades an older DB in place
-        by adding only the new `result_cache` table on the next start)."""
+        """Create the `jobs`, `pending_big`, `feedback`, `result_cache`, and
+        `cancel_requests` tables (idempotent -- CREATE ... IF NOT EXISTS, so it
+        upgrades an older DB in place by adding only the missing tables on the next
+        start)."""
         with self._conn() as conn:
             conn.executescript(_SCHEMA)
 
@@ -171,19 +189,33 @@ class JobStore:
             row = conn.execute("SELECT * FROM jobs WHERE id=?", (job_id,)).fetchone()
         return self._row_to_job(row) if row else None
 
-    def claim_next(self) -> Job | None:
+    def claim_next(self, exclude_tiers: tuple[str, ...] | None = None) -> Job | None:
         """Atomically claim the oldest pending job, flipping it to `running`.
 
         The read-then-update runs inside a single `BEGIN IMMEDIATE` transaction,
         which takes SQLite's write lock up front, so two concurrent workers can
         never select and claim the same row. Returns the claimed `Job`, or None
-        when no job is pending."""
+        when no eligible job is pending.
+
+        `exclude_tiers` filters the candidate rows by an added `tier NOT IN (...)`
+        WHERE clause (parameterised), so a caller can reserve a worker loop for the
+        instant/queued tier by excluding `('big',)`. It is a pure narrowing of the
+        eligible set: the FIFO order (`ORDER BY created_at`) and the BEGIN IMMEDIATE
+        atomicity are unchanged, and the oldest ELIGIBLE row is still the one
+        claimed. `None`/empty means claim any tier -- byte-identical to before."""
         conn = self._conn()
         try:
             conn.execute("BEGIN IMMEDIATE")
-            row = conn.execute(
-                "SELECT id FROM jobs WHERE status='pending' "
-                "ORDER BY created_at LIMIT 1").fetchone()
+            if exclude_tiers:
+                placeholders = ",".join("?" for _ in exclude_tiers)
+                row = conn.execute(
+                    f"SELECT id FROM jobs WHERE status='pending' "
+                    f"AND tier NOT IN ({placeholders}) "
+                    "ORDER BY created_at LIMIT 1", tuple(exclude_tiers)).fetchone()
+            else:
+                row = conn.execute(
+                    "SELECT id FROM jobs WHERE status='pending' "
+                    "ORDER BY created_at LIMIT 1").fetchone()
             if row is None:
                 conn.execute("COMMIT")
                 return None
@@ -250,6 +282,60 @@ class JobStore:
                 "UPDATE jobs SET status='failed', error=?, "
                 "finished_at=strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id=?",
                 (error, job_id))
+
+    # --- cooperative cancellation (offline GUI only) ------------------------
+    def request_cancel_for_ip(self, ip: str, now_iso: str) -> str | None:
+        """Cancel THIS caller's active (pending or running) job -- the offline
+        GUI's "cancel the running job" action. Returns the cancelled job id, or
+        None when the caller has nothing pending/running (an idempotent no-op).
+
+        A PENDING job is finalised directly (no worker/child is involved) so the
+        per-IP running slot frees immediately. A RUNNING job -- or a pending one
+        the worker claims in the very same instant -- is instead SIGNALLED via
+        `cancel_requests`; the worker parent loop notices within its ~1s poll tick,
+        kills the child, and marks the job failed itself (so the child's late
+        result can never overwrite the cancellation).
+
+        Runs inside `BEGIN IMMEDIATE`, so it serialises against `claim_next`: the
+        pending-vs-running decision can never tear, and a job claimed between the
+        SELECT and the guarded UPDATE falls through to the signal path."""
+        conn = self._conn()
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                "SELECT id, status FROM jobs WHERE ip=? AND status IN "
+                "('pending','running') ORDER BY created_at LIMIT 1", (ip,)).fetchone()
+            if row is None:
+                conn.execute("COMMIT")
+                return None
+            jid = row["id"]
+            if row["status"] == "pending":
+                cur = conn.execute(
+                    "UPDATE jobs SET status='failed', error=?, finished_at=? "
+                    "WHERE id=? AND status='pending'", (CANCEL_ERROR, now_iso, jid))
+                if cur.rowcount:              # finalised before any worker claimed it
+                    conn.execute("COMMIT")
+                    return jid
+            # running (or just-claimed): the worker loop must kill the child.
+            conn.execute("INSERT INTO cancel_requests (job_id, requested_at) "
+                         "VALUES (?, ?) ON CONFLICT(job_id) DO NOTHING", (jid, now_iso))
+            conn.execute("COMMIT")
+            return jid
+        finally:
+            conn.close()
+
+    def cancel_requested(self, job_id: str) -> bool:
+        """Whether a cooperative-cancel signal is pending for this job. The worker
+        parent loop polls this each tick for a running job (offline GUI only; the
+        table is always empty on the deployed server)."""
+        with self._conn() as conn:
+            return conn.execute("SELECT 1 FROM cancel_requests WHERE job_id=?",
+                                (job_id,)).fetchone() is not None
+
+    def clear_cancel_request(self, job_id: str) -> None:
+        """Drop a job's cancel signal once the worker has acted on it."""
+        with self._conn() as conn:
+            conn.execute("DELETE FROM cancel_requests WHERE job_id=?", (job_id,))
 
     def count_running_for_ip(self, ip: str) -> int:
         """Count this ip's jobs that are still pending or running (its live load)."""
