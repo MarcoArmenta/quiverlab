@@ -530,6 +530,16 @@ planned together even if delivered in slices.
   2026-08-06): v1 takes algebra B as a Dynkin type string or a preset pick;
   a free-form second canvas (and `derived_compare` on the index/family page)
   is the successor.
+- [ ] **Native Gerstenhaber bracket on minimal / Bardzell resolutions** (Plan 51
+  follow-up, 2026-08-07): the CS-native bracket (`resolutions_cs/homotopy_lifting.py`
+  + `bracket.py`) needs a diagonal Δ, which quiverlab ships only on the CS resolution.
+  A presentation-less **structure-constants** algebra therefore gets no native bracket
+  off GF(p) today (it keeps only the in-window GF(p) transported bracket). Closing that
+  gap needs a diagonal on the minimal `A^e` resolution (rides on **Plan 75 — GHMS
+  comultiplicative minimal resolution**, which is exactly Oke's own Koszul carrier) and
+  a smaller monomial diagonal on the Bardzell resolution. Both engines accept
+  structure-constants input, so the follow-up is what makes the native bracket reach
+  presentation-less algebras. Deps: Plan 75 GHMS / a Bardzell diagonal.
 
 ## Done (this backlog's history)
 
