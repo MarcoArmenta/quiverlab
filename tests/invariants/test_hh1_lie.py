@@ -107,3 +107,72 @@ def test_oversize_budget_refused_loudly():
     A = truncated_polynomial(3, field=QQ)
     with pytest.raises(QuiverlabError):
         hh1_lie_structure(A, budget=2)               # dim 3 > budget 2
+
+
+# -------------------------------------------------------------------- Task 3
+@lit
+def test_kronecker_is_sl2_char0():
+    A = _kron()                                                        # kK2
+    L = hh1_lie_structure(A)
+    assert L.dim == 3 and L.radical_dim == 0 and L.semisimple is True and L.simple is True
+    assert L.sl2_count == 1 and L.toral_rank == 1 and L.levi_type == "A1"
+
+
+@lit
+def test_trivial_extension_kronecker_sl2_plus_radical():
+    from quiverlab.families import TrivialExtension
+    A = TrivialExtension(_kron())                                      # T(kK2), dim 8
+    L = hh1_lie_structure(A)
+    assert L.dim == 4 and L.radical_dim == 1 and L.levi_dim == 3
+    assert L.sl2_count == 1 and L.simple is False    # k (x) sl2 : NOT sl2 itself (card refinement)
+
+
+@lit
+@pytest.mark.parametrize("n", [3, 5])
+def test_truncpoly_char0_radical_is_whole(n):
+    A = truncated_polynomial(n, field=QQ)
+    L = hh1_lie_structure(A)
+    assert L.radical_dim == L.dim and L.levi_dim == 0 and L.sl2_count == 0
+
+
+@selfcert
+def test_char_p_classification_refused_loudly():
+    A = truncated_polynomial(3, field=GF(3))          # W_1 in char 3
+    L = hh1_lie_structure(A)
+    assert L.dim == 3 and L.solvable is False          # field-general part still computed
+    assert L.radical_dim is None and L.sl2_count is None and L.char0_note   # loud gate
+    with pytest.raises(QuiverlabError):
+        hh1_lie_structure(A, require_char0=True)
+
+
+@selfcert
+def test_base_change_note_gated_on_arithmetic_not_formal_flag():
+    L_qq = hh1_lie_structure(_kron(QQ))
+    assert L_qq.algebraically_closed is False and L_qq.base_change_note
+    # MAJOR fix: the DEFAULT field CC is FORMALLY closed (is_algebraically_closed True)
+    # but its arithmetic is exact QQ -- the note MUST still be present.
+    L_cc = hh1_lie_structure(Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra())   # default CC
+    assert L_cc.algebraically_closed is True                 # formal flag
+    assert L_cc.base_change_note and "QQ" in L_cc.base_change_note
+
+
+@lit
+def test_default_field_CC_equals_QQ_run():
+    """MAJOR-fix oracle: a request with no field= (domain CC, char 0, formally closed,
+    exact QQ arithmetic) COMPUTES and matches the explicit-QQ values."""
+    A_cc = truncated_polynomial(3)                            # default CC
+    A_qq = truncated_polynomial(3, field=QQ)
+    L_cc, L_qq = hh1_lie_structure(A_cc), hh1_lie_structure(A_qq)
+    assert L_cc.dim == L_qq.dim == 2 and L_cc.solvable is True
+    assert L_cc.derived_series_dims == L_qq.derived_series_dims == [2, 1, 0]
+    assert L_cc.radical_dim == L_qq.radical_dim and L_cc.sl2_count == L_qq.sl2_count == 0
+    assert L_cc.base_change_note                              # present even though CC formally closed
+
+
+@lit
+def test_gf4_non_prime_field_arithmetic():
+    """MINOR (b): exercise GF(p^n), n>1, in the Leibniz/commutator layer (Domain.inv).
+    k[x]/x^3 over GF(4) -> dim 2 solvable (char 2 does not divide 3); ql HH^1 = 2."""
+    A = truncated_polynomial(3, field=GF(4))
+    L = hh1_lie_structure(A)
+    assert L.dim == 2 == A.hochschild_cohomology(top=2).dims[1] and L.solvable is True

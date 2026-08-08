@@ -320,9 +320,150 @@ def hh1_lie_structure(A, *, budget=DEFAULT_MAXDIM, require_char0=False):
             "HH^1(k[x]/(x^p)) = W_1 (Jacobson-Witt), on which the Killing form is "
             "degenerate and Levi's theorem has no content.")
         return HH1Lie(char0_note=note, status="complete", **common)
-    # char 0: the classification (radical / Levi / sl2-count) is filled by Task 3;
-    # until then the fields default to None (green intermediate slice).
-    return HH1Lie(status="complete", **common)
+    cls = _classify_char0(c, m, dom)
+    return HH1Lie(status=cls.pop("status"), note=cls.pop("note"),
+                  base_change_note=_base_change_note(dom), **cls, **common)
+
+
+# ---------------------------------------------------------------------------
+# characteristic-0 classification: radical, Levi, sl2-count, toral rank
+# ---------------------------------------------------------------------------
+def _identity_vecs(m, dom):
+    return [[dom.one() if u == v else dom.zero() for u in range(m)] for v in range(m)]
+
+
+def _killing(c, m, dom):
+    """The Killing form ``kappa(i, j) = tr(ad_i ad_j) = sum_{a,b} c[i][b][a] c[j][a][b]``."""
+    K = [[dom.zero()] * m for _ in range(m)]
+    for i in range(m):
+        for j in range(m):
+            s = dom.zero()
+            for a in range(m):
+                for b in range(m):
+                    cib = c[i][b][a]
+                    if not dom.is_zero(cib):
+                        s = dom.add(s, dom.mul(cib, c[j][a][b]))
+            K[i][j] = s
+    return K
+
+
+def _quotient_by_ideal(c, m, ideal_basis, dom):
+    """Structure constants ``cS`` (and dim ``mS``) of ``L / I`` for the ideal ``I``
+    spanned by ``ideal_basis``: a vector-space complement of ``I`` carries the
+    induced bracket ``[s_i, s_j] mod I``."""
+    ideal = _span_basis(ideal_basis, dom)
+    nrad = len(ideal)
+    cur = list(ideal)
+    reps = []
+    for v in _identity_vecs(m, dom):
+        test = _span_basis(cur + [v], dom)
+        if len(test) > len(cur):
+            reps.append(v)
+            cur = test
+    mS = len(reps)
+    basis = ideal + reps
+    cS = [[[dom.zero()] * mS for _ in range(mS)] for _ in range(mS)]
+    for i in range(mS):
+        for j in range(mS):
+            w = _bracket_coords(reps[i], reps[j], c, m, dom)
+            coo = _coords_in(basis, w, dom)
+            for k in range(mS):
+                cS[i][j][k] = coo[nrad + k]
+    return cS, mS
+
+
+def _num_simple_ideals(cS, mS, dom):
+    """The number of simple ideals of a SEMISIMPLE Lie algebra ``S`` = the dimension
+    of the space of invariant symmetric bilinear forms on ``S`` (each simple ideal
+    contributes exactly the multiples of its own Killing form; cross terms vanish by
+    invariance + perfectness). A clean exact linear-algebra count (de Graaf)."""
+    if mS == 0:
+        return 0
+    idx, cnt = {}, 0
+    for p in range(mS):
+        for q in range(p, mS):
+            idx[(p, q)] = cnt
+            cnt += 1
+
+    def vi(p, q):
+        return idx[(p, q)] if p <= q else idx[(q, p)]
+
+    rows = []
+    for a in range(mS):
+        for b in range(mS):
+            for cc in range(mS):
+                row = [dom.zero()] * cnt
+                for k in range(mS):
+                    # invariance: sum_k cS[a][b][k] B[k][cc] + sum_k cS[a][cc][k] B[b][k] = 0
+                    row[vi(k, cc)] = dom.add(row[vi(k, cc)], cS[a][b][k])
+                    row[vi(b, k)] = dom.add(row[vi(b, k)], cS[a][cc][k])
+                if any(not dom.is_zero(x) for x in row):
+                    rows.append(row)
+    return len(nullspace(rows, dom)) if rows else cnt
+
+
+def _classify_char0(c, m, dom):
+    """The char-0 classification dict (radical / Levi / sl2-count / toral rank /
+    type), on the Killing form and de Graaf's algorithms."""
+    K = _killing(c, m, dom)
+    LL = _span_basis([c[i][j][:] for i in range(m) for j in range(m)], dom)
+    # rad(L) = [L, L]^perp = { x : kappa(x, y) = 0 for all y in [L, L] } (de Graaf)
+    rows = []
+    for y in LL:
+        row = [dom.zero()] * m
+        for i in range(m):
+            s = dom.zero()
+            for jj in range(m):
+                if not dom.is_zero(y[jj]):
+                    s = dom.add(s, dom.mul(y[jj], K[i][jj]))
+            row[i] = s
+        rows.append(row)
+    rad_basis = nullspace(rows, dom) if rows else _identity_vecs(m, dom)
+    radical_dim = len(rad_basis)
+    levi_dim = m - radical_dim
+    semisimple = (radical_dim == 0)
+    # the semisimple Levi factor S = L / rad(L)
+    cS, mS = _quotient_by_ideal(c, m, rad_basis, dom)
+    if mS and rank(_killing(cS, mS, dom), dom) != mS:
+        raise QuiverlabError(
+            "HH^1-Lie char-0 classification: L/rad(L) is not semisimple (its Killing "
+            "form is degenerate) -- the radical computation is inconsistent")
+    r = _num_simple_ideals(cS, mS, dom)
+    note = ""
+    if levi_dim == 0:
+        sl2_count, toral_rank, levi_type, simple, status = 0, 0, "0", False, "complete"
+    elif levi_dim == 3 * r:                      # every simple ideal is a 3-dim form of sl2
+        sl2_count, toral_rank = r, r
+        levi_type = "+".join(["A1"] * r)
+        simple = (radical_dim == 0 and r == 1)
+        status = "complete"
+    else:                                        # a simple ideal of dim > 3: type not identified
+        sl2_count = toral_rank = levi_type = None
+        simple = (radical_dim == 0 and r == 1)
+        status = "levi_incomplete"
+        note = (f"the Levi factor S (dim {levi_dim}, {r} simple ideal(s)) is not a sum "
+                "of sl2's; its type / sl2-count / toral rank are not identified "
+                "(honest-scope, Plan 70 Task 3 -- only dim S in {0, 3} is pinned)")
+    return dict(radical_dim=radical_dim, levi_dim=levi_dim, sl2_count=sl2_count,
+                toral_rank=toral_rank, semisimple=semisimple, simple=simple,
+                levi_type=levi_type, char0_note=None, status=status, note=note)
+
+
+def _base_change_note(dom):
+    """The base-change provenance, attached over EVERY char-0 quiverlab domain
+    (gated on the exact ARITHMETIC field, not the formal ``is_algebraically_closed``
+    flag). Every quiverlab char-0 domain -- including the DEFAULT ``CC`` -- computes
+    in exact QQ, so an anisotropic-over-QQ form of sl2 can be undercounted."""
+    field = dom.name
+    if bool(dom.is_algebraically_closed):        # the DEFAULT CC: formally closed, exact QQ
+        return (f"sl2-count / toral rank count SPLIT sl2 forms over the exact arithmetic "
+                f"field ({field} is formally algebraically closed but computes in exact "
+                f"QQ arithmetic); base change to the algebraic closure may increase the "
+                f"count -- an anisotropic 3-dim simple factor splits only over k-bar "
+                f"(no fabricated 'algebraically closed' claim on the count)")
+    return (f"sl2-count / toral rank count SPLIT sl2 forms over {field}; base change to "
+            f"the algebraic closure may increase the count -- an anisotropic 3-dim simple "
+            f"factor (a form of sl2) splits only over k-bar")
 
 
 # ---------------------------------------------------------------------------
