@@ -134,6 +134,27 @@ def bracket_check(A, derived, independent, top):
             "agrees": bool(agrees and checked > 0), "pairs_checked": checked}
 
 
+def finalize_bracket_arbiter(A, bv, cup, independent, top):
+    """Attach ``bv.derived_bracket`` + ``bv.bracket_check`` and return the check
+    dict WITHOUT raising (the non-raising core, shared by the symmetric route and
+    the twisted-direction arbiter). For ``top < 2`` the arbiter is vacuous
+    (no in-window bracket pair) and ``agrees`` is recorded ``False`` with 0 pairs;
+    the caller decides whether a vacuous arbiter is acceptable (it is on the
+    symmetric anchor -- the Delta self-certs stand; the twisted route requires a
+    discriminating window)."""
+    if top < 2:
+        chk = {"engine": "gerstenhaber", "window": 0,
+               "agrees": False, "pairs_checked": 0}
+        bv.bracket_check = chk
+        return chk
+    derived = derived_bracket_tables(A, bv, cup, top)
+    chk = bracket_check(A, derived, independent, top)
+    bv.bracket_check = chk
+    if chk["agrees"]:
+        bv.derived_bracket = derived
+    return chk
+
+
 def attach_bracket_arbiter(A, bv, top, max_cells):
     """Attach ``bv.derived_bracket`` (built from Delta via (BV)) and
     ``bv.bracket_check`` (the in-window derived == independent equality). A
@@ -141,21 +162,16 @@ def attach_bracket_arbiter(A, bv, top, max_cells):
     is no bracket pair in-window; the arbiter is vacuous and records so (the Delta
     self-certs Delta^2=0 + perfect pairing still stand)."""
     if top < 2:
-        bv.bracket_check = {"engine": "gerstenhaber", "window": 0,
-                            "agrees": False, "pairs_checked": 0}
-        return bv
+        return finalize_bracket_arbiter(A, bv, None, None, top)
     cup = A.cup_products(top, max_cells=max_cells)
     independent = A.gerstenhaber_brackets(top, max_cells=max_cells)
-    derived = derived_bracket_tables(A, bv, cup, top)
-    chk = bracket_check(A, derived, independent, top)
+    chk = finalize_bracket_arbiter(A, bv, cup, independent, top)
     if not chk["agrees"]:
         raise QuiverlabError(
             "BV transport does not reproduce the independent Gerstenhaber bracket "
             "in-window -- the hypothesis/convention does not certify for this "
             "instance (no silent wrong Delta)",
             hint="the algebra may be outside the certified BV scope")
-    bv.bracket_check = chk
-    bv.derived_bracket = derived
     return bv
 
 

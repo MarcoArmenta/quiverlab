@@ -228,11 +228,168 @@ def bv_matrices_symmetric(A, top, max_cells=4_000_000):
     return bv
 
 
+def twisted_pairing_matrix(E, AU, n, lam_i, coh_n, tw_reps, perm, p):
+    """The nu-twisted Frobenius pairing ``P_n[i][j] = <coh_i, z_j> = lambda( a_0 .
+    f_i(a_1 (x) ... (x) a_n) )`` (spec s2.1 (dagger)), shape ``dim HH^n x dim
+    HH_n(twisted)`` over F_p. ``coh_n`` is the engine cohomology ``_Quotient``;
+    ``tw_reps`` the twisted homology class reps (columns over the BAR chain basis);
+    ``perm`` the bar->engine reindex (``perm[e]`` = bar index of engine index ``e``).
+
+    Evaluated by the RAW formula (NOT ``cap_cochain``, which is built for ordinary
+    cycles and vanishes on twisted ones): ``f_i(J)`` is the A-vector read off the
+    ``(J, .)`` block of the engine cochain column; ``a_0 = e_s``; the product is
+    ``AU``'s exact structure-constant multiplication, then ``lambda``."""
+    from quiverlab.engine.scan3 import cochain_basis
+    m = AU.dim
+    eb = list(cochain_basis(E, n))                     # [(J, s), ...] engine order
+    dl, dr = coh_n.dim, len(tw_reps)
+    P = np.zeros((dl, dr), dtype=np.int64)
+    for i in range(dl):
+        f = coh_n.reps[:, i]
+        fmap = {}                                      # J-tuple -> A-vector f(J)
+        for ee, (JJ, ss) in enumerate(eb):
+            fmap.setdefault(JJ, [0] * m)[ss] = int(f[ee]) % p
+        for j in range(dr):
+            z = tw_reps[j]
+            acc = 0
+            for e, (J, s) in enumerate(eb):
+                c = int(z[perm[e]]) % p
+                if not c:
+                    continue
+                fJ = fmap[J]                            # A-vector
+                # lambda( e_s . f(J) ) = sum_t lam_t (e_s . fJ)_t
+                prod = AU.T[s]
+                for u in range(m):
+                    fu = fJ[u]
+                    if not fu:
+                        continue
+                    row = prod[u]                       # e_s . e_u  (A-vector)
+                    for t in range(m):
+                        w = int(row[t])
+                        if w:
+                            acc = (acc + c * fu * w * lam_i[t]) % p
+            P[i, j] = acc % p
+    return P
+
+
 def bv_matrices_semisimple(A, top, max_cells=4_000_000):
     """Delta on HH^*(A) for a Frobenius algebra with a SEMISIMPLE Nakayama
     automorphism (LZZ route, spec s2.1): the nu-twisted homology HH_*(A, {}_1A_nu)
-    (P52) + the twisted Connes B_sigma + the nu-twisted pairing; the twist
-    DIRECTION is fixed by the bracket arbiter. Implemented in Task E
-    (``bv/twisted_connes.py``)."""
-    from quiverlab.hochschild.bv.twisted_connes import bv_matrices_twisted
-    return bv_matrices_twisted(A, top, max_cells)
+    (P52) + the twisted Connes B_sigma (``bv/twisted_connes.py``) + the nu-twisted
+    Frobenius pairing (``twisted_pairing_matrix``). The twist DIRECTION (nu vs
+    nu^{-1}) is fixed by the bracket ARBITER: for each candidate the transport
+    produces a Delta and the one whose derived bracket equals the independent
+    Gerstenhaber bracket in-window is selected; if neither certifies, a loud refusal
+    (never a silent wrong Delta). GF(p), in-window."""
+    from quiverlab.engine.adapter import to_engine
+    from quiverlab.engine import tt_calculus as TT
+    from quiverlab.engine.scan3 import cochain_basis
+    from quiverlab.hochschild.bv.bracket import finalize_bracket_arbiter
+    from quiverlab.hochschild.bv.twist import (
+        bar_to_engine_perm, nu_inverse, twisted_homology_quotient)
+    from quiverlab.hochschild.bv.twisted_connes import twisted_connes_class_matrix
+    from quiverlab.hochschild.products import BVOperator
+    from quiverlab.invariants.frobenius import (
+        frobenius_form_generic, nakayama_automorphism_generic)
+    dom = A.domain
+    if not isinstance(dom, PrimeField):
+        raise QuiverlabError("BV twisted route v1 is GF(p) only", hint="compute over GF(p)")
+    p = dom.p
+    AU = A.unit_adapted()
+    E = to_engine(AU)
+    m = AU.dim
+
+    # guard the bar/twisted-bar blow-up (same cardinality as the untwisted complex).
+    for n in range(top + 1):
+        cells = len(cochain_basis(E, n))
+        if cells * cells > max_cells:
+            raise DepthLimitError(
+                f"BV: the degree-{n} cochain basis pairs {cells * cells} cells "
+                f"(> max_cells = {max_cells})", hint="raise max_cells or lower top")
+
+    from quiverlab.hochschild.bv.hypothesis import classify_bv
+    hyp = classify_bv(A)                               # provenance label + nu order
+    lam, _G = frobenius_form_generic(AU)               # asymmetric Frobenius covector on AU
+    lam_i = [int(lam[t]) % p for t in range(m)]
+    nu = nakayama_automorphism_generic(AU)             # nu consistent with lam
+    nu_int = [[int(nu[i][j]) % p for j in range(m)] for i in range(m)]
+    nu_inv = nu_inverse(nu, dom)
+    nu_inv_int = [[int(nu_inv[i][j]) % p for j in range(m)] for i in range(m)]
+
+    coh = {n: TT.cohomology_classes(E, n, p) for n in range(top + 1)}
+    hh_dims = [coh[n].dim for n in range(top + 1)]
+    perms = {n: bar_to_engine_perm(E, n, m) for n in range(top + 1)}
+
+    # the independent bracket + cup, computed once for the arbiter (both directions).
+    cup = A.cup_products(top, max_cells=max_cells) if top >= 2 else None
+    independent = A.gerstenhaber_brackets(top, max_cells=max_cells) if top >= 2 else None
+
+    # candidate twist directions: {}_1A_nu (sigma = nu) then {}_1A_{nu^{-1}}.
+    candidates = [("nu", nu_int), ("nu^{-1}", nu_inv_int)]
+    last_reason = None
+    for name, sigma in candidates:
+        # HH_*(A,{}_1A_sigma): class reps to degree top + the boundary b_{top+1}
+        # (the quotient helper appends the trailing boundary without an extra nullspace).
+        try:
+            tw = twisted_homology_quotient(AU, sigma, top, max_cells=max_cells)
+        except QuiverlabError as exc:
+            last_reason = str(exc)
+            continue
+        hh_hom = [tw[n]["dim"] for n in range(top + 1)]
+        if hh_hom != hh_dims:                          # coarse coefficient-sanity (not direction)
+            last_reason = (f"twist {name}: dim HH_*(twisted) {hh_hom} != dim HH^* "
+                           f"{hh_dims} -- not a perfect pairing")
+            continue
+        twist_np = np.array(sigma, dtype=np.int64)     # coefficient twist (columns=images)
+        # perfect-pairing self-cert
+        Pmats = {}
+        ok = True
+        for n in range(top + 1):
+            Pn = twisted_pairing_matrix(E, AU, n, lam_i, coh[n], tw[n]["reps"],
+                                        perms[n], p)
+            try:
+                _assert_invertible(Pn, n, p)
+            except QuiverlabError as exc:
+                ok = False
+                last_reason = f"twist {name}: {exc}"
+                break
+            Pmats[n] = Pn
+        if not ok:
+            continue
+        # class-level twisted Connes B_{n}: HH_n -> HH_{n+1}
+        try:
+            Bmats = {n: twisted_connes_class_matrix(AU, twist_np, tw, n, p)
+                     for n in range(top)}
+        except QuiverlabError as exc:
+            last_reason = f"twist {name}: {exc}"
+            continue
+        deltas = _delta_from_pairing_and_B(Pmats, Bmats, hh_dims, top, p)
+        assert_delta_squared_zero(deltas, hh_dims, top, p)
+        matrices = {n: [[str(int(deltas[n][i, j])) for j in range(deltas[n].shape[1])]
+                        for i in range(deltas[n].shape[0])]
+                    for n in range(1, top + 1)}
+        ranks = {n: _rank_mod_p(deltas[n], p) for n in range(1, top + 1)}
+        nak = {"matrix": [[str(nu_int[i][j]) for j in range(m)] for i in range(m)],
+               "semisimple": True, "order": hyp.nu_order, "inner": False}
+        label = hyp.label + f"; twist {{}}_1A_{name}"
+        bv = BVOperator(
+            top=top, hh_dims=hh_dims, matrices=matrices, ranks=ranks,
+            hypothesis=label, nakayama=nak, basis=f"bar/GF({p})",
+            window=top, references=BV_REFERENCES)
+        # the ARBITER decides this direction: derived bracket == independent?
+        chk = finalize_bracket_arbiter(A, bv, cup, independent, top)
+        if top < 2:
+            # no discriminating window: refuse (the twisted route needs the arbiter).
+            raise QuiverlabError(
+                "BV twisted route needs top >= 2 so the bracket arbiter can "
+                "certify the twist direction (no discriminating window at top < 2)",
+                hint="raise top to at least 2")
+        if chk["agrees"]:
+            return bv
+        last_reason = (f"twist {name}: derived bracket != independent Gerstenhaber "
+                       "bracket in-window")
+    raise QuiverlabError(
+        "BV transport does not reproduce the independent Gerstenhaber bracket "
+        "in-window under either twist direction -- the hypothesis/convention does "
+        f"not certify for this instance (no silent wrong Delta). Last: {last_reason}",
+        hint="the algebra may be outside the certified BV scope")
