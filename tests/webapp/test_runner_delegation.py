@@ -280,7 +280,21 @@ never hide behind one:
     (the append is textual, existing bytes untouched); both runners share the library
     builders (``string_homological_block`` / ``toupie_block``), so the Pyodide twin
     agrees (``tests/gui/test_recognizer_runner_twin_p59.py``). ``canonical_key`` is
-    request-derived (schema-1 algebra-only, no ``module`` block)."""
+    request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-08 (``skew_gentle_arrow_sp2`` ADDED, Plan 68 / R32): a NEW algebra-only
+    scalar-kind fixture -- the skew-gentle triple ``Q = 1 --a--> 2, Sp = {2}`` over QQ,
+    expressed as the non-scalar constructor ``family: SkewGentleAlgebra`` (flattened
+    triple params ``vertices``/``arrows``/``relations``/``special``, the
+    ``BrauerGraphAlgebra`` precedent). The block pins the recognizer verdict, the split
+    shape (3 vertices, dim 5), the HZZ Lemma 1.5 dim law (split == associated gentle ==
+    5), rank ``|Q_0|+|Sp| = 3``, and the rep-type certificate (representation-finite).
+    Pure ADDITION: the whole goldens file was asserted byte-identical to
+    ``json.dumps(indent=1)+"\\n"`` BEFORE the single key was appended (order-preserving),
+    so every pre-existing entry is untouched. Both runners share the library builder
+    (``skewgentle.block.skew_gentle_block``) and the client accepts
+    ``family: SkewGentleAlgebra`` narrowly, so the Pyodide twin is byte-identical
+    (``tests/gui/test_skew_gentle_runner_twin.py``). ``canonical_key`` is request-derived
+    (schema-1, no ``module`` block)."""
 import json
 import pathlib
 
