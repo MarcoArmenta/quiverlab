@@ -28,8 +28,11 @@ Routing (per instance, in order; ``BVHypothesis.label`` records which fired):
 nu is defined only up to inner automorphism; this gate tests the concrete
 representative ``Algebra.nakayama_automorphism()`` returns. Semisimplicity of a
 WRONG representative would fail the downstream bracket arbiter (a loud refusal),
-never return a silent wrong Delta -- the arbiter is the ultimate per-instance
-certificate (spec s2.4 up-to-inner caveat).
+never return a silent wrong Delta -- the arbiter is the per-instance CORRECTNESS
+GATE, but note precisely what it certifies: it pins Delta MODULO cup-derivations
+(the data the BV relation ``[a,b] = eps(Delta(aUb) - Delta a U b - (-1)^p a U Delta b)``
+constrains), not every last coordinate; a Delta and a cup-derivation-shifted Delta
+are indistinguishable to it (spec s2.4 up-to-inner caveat).
 """
 from dataclasses import dataclass
 

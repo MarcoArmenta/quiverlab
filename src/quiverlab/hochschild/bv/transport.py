@@ -388,8 +388,15 @@ def bv_matrices_semisimple(A, top, max_cells=4_000_000):
             return bv
         last_reason = (f"twist {name}: derived bracket != independent Gerstenhaber "
                        "bracket in-window")
+    # The refusal NAMES the real boundary (``last_reason``): for the exterior class
+    # it is the DESCENT self-cert (the arbiter is never reached), not the bracket.
     raise QuiverlabError(
-        "BV transport does not reproduce the independent Gerstenhaber bracket "
-        "in-window under either twist direction -- the hypothesis/convention does "
-        f"not certify for this instance (no silent wrong Delta). Last: {last_reason}",
-        hint="the algebra may be outside the certified BV scope")
+        "BV twisted route: no admissible twist direction certifies for this "
+        "instance -- the semisimple-nu construction did not yield a certified "
+        "Delta (no silent wrong Delta). Root cause: "
+        + (last_reason or "no twist direction was admissible"),
+        hint="the algebra may be outside the certified BV scope; weakly-symmetric "
+             "algebras with an order-2 Nakayama automorphism (e.g. "
+             "ExteriorAlgebra(2) = Lambda(k^2) = QuantumCI(q = -1)) hit the known "
+             "chain-level descent limitation -- the general LZZ twisted Connes "
+             "operator (arXiv:1405.5325) is backlogged")

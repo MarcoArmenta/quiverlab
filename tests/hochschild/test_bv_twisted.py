@@ -24,7 +24,8 @@ import numpy as np
 import pytest
 
 import quiverlab as ql
-from quiverlab.families import QuantumCI
+from quiverlab.errors import QuiverlabError
+from quiverlab.families import ExteriorAlgebra, QuantumCI
 from quiverlab.hochschild.bv.hypothesis import classify_bv
 from quiverlab.hochschild.bv.twist import nu_inverse, twisted_homology_quotient
 from quiverlab.hochschild.bv.twisted_connes import twisted_connes_class_matrix
@@ -151,3 +152,69 @@ def test_quantumci_derived_bracket_equals_independent(q, prime):
                 for j in range(dr):
                     assert int(dt.constants[k][i][j]) % p == \
                         int(it.constants[k][i][j]) % p, (key, k, i, j)
+
+
+# ---------------------------------------------------------------------------
+# The weakly-symmetric "exterior class" (semisimple nu of ORDER 2 acting by -1
+# on odd-degree factors) is a KNOWN BOUNDARY: the naive twisted Connes operator
+# B_sigma = s o N does NOT descend at the chain level (B of a degree-2 cycle is a
+# cycle only MODULO boundaries), so bv_operator refuses LOUDLY -- naming the
+# DESCENT self-cert as the root cause (NOT the bracket arbiter, which is never
+# reached) and pointing at the backlogged general LZZ operator. The fix-round
+# bounded probe found no cheap strengthening of s o N recovering the exterior.
+# ---------------------------------------------------------------------------
+@pytest.mark.oracle_selfcert
+@pytest.mark.parametrize("prime", [5, 7])
+def test_exterior2_refuses_descent_known_boundary(prime):
+    A = ExteriorAlgebra(2, field=ql.GF(prime))
+    # routed to the semisimple-nu branch (nu = diag(1,-1,-1,1) = -id, order 2)
+    h = classify_bv(A)
+    assert h.route == "semisimple" and h.nu_semisimple is True and h.nu_order == 2
+    with pytest.raises(QuiverlabError) as exc:
+        A.bv_operator(3)
+    msg = str(exc.value)
+    hint = getattr(exc.value, "hint", "") or ""
+    # the root cause NAMED is the descent (not the bracket arbiter) ...
+    assert "does not descend to homology" in msg
+    assert "B of a cycle is not a cycle" in msg
+    # ... and the refusal points at the backlogged general LZZ operator + exterior
+    assert "LZZ" in hint and "arXiv:1405.5325" in hint
+    assert "ExteriorAlgebra(2)" in hint
+
+
+@pytest.mark.oracle_selfcert
+def test_exterior_descent_self_cert_fires_at_degree_2():
+    # the chain-level descent self-cert (twisted_connes_class_matrix) certifies
+    # degrees 0 and 1 but FIRES at degree 2 for the exterior algebra: (1 - T)
+    # does not vanish exactly on the twisted cycles there.
+    p = 5
+    A = ExteriorAlgebra(2, field=ql.GF(p))
+    AU = A.unit_adapted()
+    nu = nakayama_automorphism_generic(AU)
+    nu_int = [[int(nu[i][j]) % p for j in range(AU.dim)] for i in range(AU.dim)]
+    tw = twisted_homology_quotient(AU, nu_int, 3)
+    twist = np.array(nu_int, dtype=np.int64)
+    for n in (0, 1):                                   # low degrees descend fine
+        twisted_connes_class_matrix(AU, twist, tw, n, p)
+    with pytest.raises(QuiverlabError, match="does not descend to homology at degree 2"):
+        twisted_connes_class_matrix(AU, twist, tw, 2, p)
+
+
+@pytest.mark.oracle_selfcert
+@pytest.mark.parametrize("prime", [5, 7])
+def test_exterior_vs_quantumci_minus_one_presentation_dependence(prime):
+    # Lambda(k^2) as QuantumCI(q=-1) is detected symmetric and SERVED via the
+    # Tradler route; the SAME algebra as ExteriorAlgebra(2) is detected
+    # non-symmetric and routes to the refused semisimple-nu branch. Same math,
+    # different route/outcome (pre-existing is_symmetric presentation-dependence).
+    sym = QuantumCI(-1, field=ql.GF(prime))
+    assert sym.is_symmetric() is True
+    assert classify_bv(sym).route == "symmetric"
+    bv = sym.bv_operator(3)                            # served, no raise
+    assert "symmetric" in bv.hypothesis
+
+    ext = ExteriorAlgebra(2, field=ql.GF(prime))
+    assert ext.is_symmetric() is False
+    assert classify_bv(ext).route == "semisimple"
+    with pytest.raises(QuiverlabError):
+        ext.bv_operator(3)

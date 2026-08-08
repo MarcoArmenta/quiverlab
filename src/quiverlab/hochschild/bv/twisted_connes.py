@@ -13,12 +13,35 @@ satisfies ``d_0 t = d_n`` against P52's faces, but ``t^{n+1}`` is a diagonal
 ``bB + Bb = 0`` at CHAIN level -- the defect is ``1 - T`` with ``T`` the paracyclic
 ``sigma``-action.
 
-BUT for a SEMISIMPLE ``nu`` (the LZZ hypothesis) that action is trivial ON HOMOLOGY,
-so ``B_sigma`` DESCENDS: it carries twisted CYCLES to twisted cycles (``b B z = 0``
-whenever ``b z = 0``), well-defined modulo boundaries. This module builds the
-chain-level ``B_sigma`` and PROJECTS it to the class basis, asserting the descent
-per instance (``B(rep)`` is a cycle -- a loud refusal otherwise). The ultimate
-correctness gate remains the bracket arbiter (``bv/bracket.py``).
+Whether ``B_sigma`` DESCENDS is a PER-INSTANCE certified property, NOT a
+consequence of semisimplicity. For semisimple ``nu`` the paracyclic action is
+trivial ON HOMOLOGY, so ``(1 - T) z`` is always a BOUNDARY for a cycle ``z`` -- but
+the naive ``B_sigma = s o N`` only satisfies ``b B z = 0`` EXACTLY (carries cycles
+to cycles at the CHAIN level, which is what the transport here needs) when that
+boundary vanishes on the nose. That holds on the tested QuantumCI instances
+(``nu`` diagonal of order 3/4, whose cycle reps are fixed by ``T`` exactly), but
+FAILS on the weakly-symmetric exterior class: for ``ExteriorAlgebra(2) = Lambda(k^2)
+= QuantumCI(q = -1)`` over GF(5)/GF(7), ``nu = diag(1, -1, -1, 1) = -id`` has order 2
+and ``B_sigma`` of a degree-2 cycle is a cycle only MODULO boundaries
+(``b B z != 0`` at the chain level). The bounded probe of the fix round confirmed
+that no cheap strengthening of ``s o N`` (the ``(1 - t)``-corrected forms, the
+sign-normalization variants, the norm over the paracyclic orbit of the correct
+order ``r(n+1)``) recovers an exact chain-level descent that ALSO reproduces the
+independent Gerstenhaber bracket; the general LZZ operator (arXiv:1405.5325) closes
+this by a per-class correction solve ``b w = (1 - T) z``, ``B~ z = B z - w`` -- a
+close-out that is BACKLOGGED (see DEEPER-ENGINES-BACKLOG). This module therefore
+refuses the exterior class LOUDLY rather than return a wrong Delta.
+
+This module builds the chain-level ``B_sigma`` and PROJECTS it to the class basis,
+asserting the descent PER INSTANCE by the CYCLE leg: ``B(rep)`` is a twisted cycle
+(``b B rep = 0`` EXACTLY, on EVERY class rep) -- a loud refusal otherwise. This is
+the leg that fires on the exterior class. It is NECESSARY but does NOT prove ``B`` is
+a genuine chain map to homology: the naive ``B_sigma`` need not carry boundaries to
+boundaries (it does not, even on QuantumCI -- see
+:func:`twisted_connes_class_matrix`). When the cycle leg certifies, the bracket
+arbiter (``bv/bracket.py``) is the correctness gate for the resulting Delta -- it
+pins Delta MODULO cup-derivations (the data the BV relation constrains), not every
+last coordinate, and ``Delta^2 = 0`` is checked alongside.
 
 ``twist`` is the RIGHT twist of the coefficient itself (``twist = nu`` for
 ``{}_1A_nu``): the wrapping element carries exactly this matrix. Whether it is
@@ -103,8 +126,11 @@ def _s_extra_degeneracy(AU, n, p):
 
 def twisted_connes_matrix(AU, twist, n, p):
     """The chain-level twisted Connes ``B_sigma : C_n -> C_{n+1}`` (bar basis) =
-    ``s o N``, ``N = sum_{i=0}^{n} t_sigma^i``. Descends to homology for semisimple
-    nu (asserted downstream)."""
+    ``s o N``, ``N = sum_{i=0}^{n} t_sigma^i``. Its descent to homology is NOT
+    automatic from semisimplicity -- it is certified PER INSTANCE downstream by the
+    cycle leg of :func:`twisted_connes_class_matrix` (loud refusal when the
+    paracyclic defect ``(1 - T)`` does not vanish exactly on the twisted cycles, as
+    on the exterior class)."""
     T = twisted_cyclic_tau(AU, twist, n, p)
     N = np.eye(T.shape[0], dtype=np.int64)
     cur = np.eye(T.shape[0], dtype=np.int64)
@@ -115,11 +141,38 @@ def twisted_connes_matrix(AU, twist, n, p):
     return (S @ N) % p
 
 
+_DESCENT_HINT = (
+    "only symmetric or descent-certified semisimple-nu Frobenius algebras are "
+    "served; weakly-symmetric algebras with an order-2 Nakayama automorphism "
+    "(e.g. ExteriorAlgebra(2) = Lambda(k^2) = QuantumCI(q = -1)) hit the known "
+    "chain-level descent limitation -- the general LZZ twisted Connes operator "
+    "(arXiv:1405.5325) is backlogged (DEEPER-ENGINES-BACKLOG)")
+
+
 def twisted_connes_class_matrix(AU, twist, tw, n, p):
     """``B_{n} : HH_n(A, {}_1A_sigma) -> HH_{n+1}`` in the CLASS basis (rows =
-    HH_{n+1} classes, cols = HH_n classes). Builds the chain ``B_sigma``, checks
-    each ``B(rep_j)`` is a twisted CYCLE (the descent self-cert -- loud refusal on
-    failure), and expresses it in the target class reps modulo boundaries.
+    HH_{n+1} classes, cols = HH_n classes). Builds the chain ``B_sigma`` and
+    self-certifies its DESCENT before projecting to the class basis. TWO exact
+    linear-algebra legs, a loud refusal on either:
+
+    * **cycle leg (required, discriminating)** -- each ``B(rep_j)`` is a twisted
+      CYCLE (``b_{n+1} B rep = 0`` EXACTLY). This is the leg the paracyclic defect
+      ``(1 - T)`` breaks on the weakly-symmetric exterior class (``ExteriorAlgebra(2)``
+      degree 2): there ``B`` of a cycle is a cycle only MODULO boundaries.
+    * **class-span leg** -- ``B(rep_j)`` lies in the span of the target class reps
+      and the boundaries ``im b_{n+2}`` (an internal invariant; loud otherwise).
+
+    On the WELL-DEFINEDNESS of the induced map (rep-independence, ``B(boundary) in
+    boundary``): the NAIVE operator ``B_sigma = s o N`` does NOT satisfy this in
+    general -- not even on the served QuantumCI instances, where ``B(beta)`` can be a
+    cycle carrying a NONZERO homology class for a boundary ``beta`` (verified: e.g.
+    ``QuantumCI(q=2)/GF(5)`` degree 1). Its correctness therefore rests on the
+    DOWNSTREAM bracket arbiter (``bv/bracket.py``), which pins Delta MODULO
+    cup-derivations, together with ``Delta^2 = 0`` -- NOT on ``B`` being a genuine
+    chain map to homology. A fatal boundary-well-definedness gate here would (rightly)
+    reject even the validated QuantumCI route; the general LZZ operator (arXiv:
+    1405.5325) is what makes ``B`` a genuine chain map (per-class correction solve
+    ``b w = (1 - T) z``), and that close-out is BACKLOGGED (DEEPER-ENGINES-BACKLOG).
 
     ``tw`` is the :func:`bv.twist.twisted_homology_quotient` output (``reps``,
     ``boundary`` per degree); ``twist`` is the coefficient's Nakayama matrix."""
@@ -134,6 +187,7 @@ def twisted_connes_class_matrix(AU, twist, tw, n, p):
     bnp2 = tw[n + 2]["boundary"] if (n + 2) < len(tw) else None
     reps_next = tw[n + 1]["reps"]
     # column space of the class reps + the boundary image im b_{n+2} inside C_{n+1}
+    # (= a spanning set of the cycles Z_{n+1}, split as classes (+) boundaries).
     basis_cols = [reps_next[j] for j in range(rows)]
     if bnp2 is not None and bnp2.size:
         basis_cols += [bnp2[:, c] for c in range(bnp2.shape[1])]
@@ -143,10 +197,11 @@ def twisted_connes_class_matrix(AU, twist, tw, n, p):
         if bnp1 is not None and bnp1.size and np.any((bnp1 @ v) % p):
             raise QuiverlabError(
                 f"BV twisted route: Connes B_sigma does not descend to homology at "
-                f"degree {n} (B of a cycle is not a cycle) -- the Nakayama "
-                f"automorphism does not act trivially on twisted homology; the "
-                "semisimple-nu hypothesis is not certified for this instance",
-                hint="only symmetric or semisimple-nu Frobenius algebras are served")
+                f"degree {n} (B of a cycle is not a cycle at the chain level) -- "
+                f"the paracyclic defect (1 - T) does not vanish exactly on the "
+                f"twisted cycles; the semisimple-nu descent is not certified for "
+                "this instance",
+                hint=_DESCENT_HINT)
         x = solve_mod_p(Bmat, v % p, p)
         if x is None:
             raise QuiverlabError(
