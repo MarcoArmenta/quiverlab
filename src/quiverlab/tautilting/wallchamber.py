@@ -129,3 +129,212 @@ def wall_of_brick(B, *, budget=4096):
         rays = None                                   # n >= 3: geometry via grouped facets
     return Wall(brick_dimvec=dv, brick_name=name, equality=dv, inequalities=ineqs,
                 is_full_hyperplane=is_full, codim=1, rays=rays)
+
+
+# --------------------------------------------------------------------------- #
+# the full wall-and-chamber structure payload
+# --------------------------------------------------------------------------- #
+def _build_chambers(eg, verts):
+    """One chamber per support tau-tilting pair (a maximal g-cone): the g-matrix, its
+    g-vector columns as exact rays, the pair label/support, and (n == 3) the L1/octahedron
+    projection (mirroring the Plan-45 fan)."""
+    from quiverlab.tautilting.stability import _l1_project
+    n = len(verts)
+    chambers = []
+    for i, rec in enumerate(eg.vertices):
+        G = rec["g_matrix"]
+        rays = [[G[r][c] for r in range(n)] for c in range(n)]     # columns = g-vectors
+        ch = {"id": i, "g_matrix": G,
+              "rays": [[str(Fraction(x)) for x in ray] for ray in rays],
+              "label": rec["label"], "support": list(rec["support"]),
+              "is_initial": rec["is_initial"]}
+        if n == 3:
+            proj = [_l1_project(ray) for ray in rays]
+            ch["rays_l1"] = [p[0] for p in proj]
+            ch["faces"] = [p[1] for p in proj]
+            ch["net2d"] = [p[2] for p in proj]
+        chambers.append(ch)
+    return chambers
+
+
+def _shared_gvectors(eg, i, j):
+    """The g-vectors IN the wall between adjacent pairs ``i, j`` (their SHARED g-columns);
+    each is a facet vector on the King hyperplane ``theta . dim B = 0`` (Plan-45 fan idiom)."""
+    pi = eg.vertices[i]["pair"]
+    pj = eg.vertices[j]["pair"]
+    return [list(c) for c in sorted(pi.g_key() & pj.g_key())]
+
+
+def _iso(X, Y):
+    """A cheap-prefiltered ``is_isomorphic`` (dim + dim-vector before the Hom certificate)."""
+    from quiverlab.modules.hom import is_isomorphic
+    return (X.dim == Y.dim and X.dimension_vector() == Y.dimension_vector()
+            and is_isomorphic(X, Y))
+
+
+def _wall_dict(wall, wid, facets, verts, eg, n):
+    """A JSON-ready wall record from a :class:`Wall` + its grouped exchange-edge facets.
+    For ``n == 3`` the drawing rays are the DISTINCT shared g-vectors of the grouped edges
+    (each lies IN D(B) -- self-certified by the caller), L1-projected."""
+    from quiverlab.tautilting.stability import _l1_project
+    d = {"id": wid,
+         "brick_dimvec": {verts[k]: int(wall.brick_dimvec[k]) for k in range(n)},
+         "brick_name": wall.brick_name,
+         "equality": [int(x) for x in wall.equality],
+         "inequalities": [list(map(int, ineq)) for ineq in wall.inequalities],
+         "is_full_hyperplane": wall.is_full_hyperplane,
+         "codim": wall.codim,
+         "facets": [list(f) for f in facets]}
+    if n <= 2:
+        d["rays"] = None if wall.rays is None else [list(r) for r in wall.rays]
+    else:   # n == 3: rays = distinct shared g-vectors of the grouped facet edges
+        seen = set()
+        rays = []
+        for (i, j) in facets:
+            for g in _shared_gvectors(eg, i, j):
+                key = tuple(g)
+                if key not in seen:
+                    seen.add(key)
+                    rays.append(g)
+        d["rays"] = [[str(Fraction(x)) for x in g] for g in rays]
+        proj = [_l1_project(g) for g in rays]
+        d["rays_l1"] = [p[0] for p in proj]
+        d["faces"] = [p[1] for p in proj]
+        d["net2d"] = [p[2] for p in proj]
+    return d
+
+
+def _build_walls_complete(A, eg, brs, verts, n, budget):
+    """One wall per canonical brick ISO-CLASS (``torsion.bricks(A)``). Each edge is assigned
+    to the wall of the brick it is ISO to -- NEVER grouped by dim-vector (BST Rem 3.19:
+    kZ2/rad^2 carries two non-isomorphic (1,1)-bricks P1, P2 on opposite half-rays of one
+    hyperplane; a dim-vector key would merge them into 3 walls, the truth is 4). The shipped
+    :func:`torsion._edge_brick` disambiguates same-dim-vector bricks by torsion-class
+    membership -- reused here so facets <-> edges stays a bijection."""
+    from quiverlab.tautilting.torsion import _edge_brick, _torsion_universe
+    universe = _torsion_universe(A, budget=budget)
+    edge_bricks = {}
+    for (i, j) in eg.arrows:
+        dv = eg.arrows[(i, j)]["brick"]
+        edge_bricks[(i, j)] = _edge_brick(
+            A, eg.vertices[i]["pair"], eg.vertices[j]["pair"], dv, universe)
+    walls = []
+    for wid, B in enumerate(brs):
+        wall = wall_of_brick(B, budget=budget)
+        facets = sorted((i, j) for (i, j), EB in edge_bricks.items()
+                        if EB is not None and _iso(EB, B))
+        walls.append(_wall_dict(wall, wid, facets, verts, eg, n))
+    return walls
+
+
+def _build_walls_bounded(A, eg, verts, n):
+    """The honest BOUNDED-REGION walls for a tau-tilting-INFINITE (budget-capped) algebra:
+    the discovered exchange-edge facets grouped by their King wall-normal (the hyperplane),
+    each flagged ``partial`` -- the brick module + full D(B) inequality system are NOT
+    enumerated (that needs the COMPLETE torsion universe, which does not exist here). No
+    count is claimed (DIJ: brick-finite <=> tau-tilting-finite). Cheap by design: only the
+    one exchange-graph BFS is spent, never the per-brick submodule/iso work."""
+    groups = {}
+    order = []
+    for (i, j) in eg.arrows:
+        dv = eg.arrows[(i, j)]["brick"]               # the King wall normal (free from BFS)
+        key = tuple(int(dv[v]) if dv else 0 for v in verts) if dv else None
+        if key is None:
+            continue
+        if key not in groups:
+            groups[key] = []
+            order.append(key)
+        groups[key].append((i, j))
+    walls = []
+    for wid, key in enumerate(order):
+        walls.append({
+            "id": wid,
+            "brick_dimvec": {verts[k]: key[k] for k in range(n)},
+            "brick_name": None,
+            "equality": list(key),
+            "inequalities": [],
+            "is_full_hyperplane": False,
+            "codim": 1,
+            "rays": None,
+            "facets": [list(f) for f in sorted(groups[key])],
+            "partial": True,
+        })
+    return walls
+
+
+_TRUNC = ("A appears to be tau-tilting-infinite / brick-infinite (the exchange-graph BFS "
+          "did not close within budget {N}); the region shown is the sub-fan explored from "
+          "(A,0) -- each chamber and wall is exact, but the structure is NOT complete and no "
+          "count is claimed (DIJ: brick-finite <=> tau-tilting-finite).")
+
+
+def wall_chamber_structure(A, *, budget=512):
+    """The full wall-and-chamber payload of ``A`` via bricks (Plan 63 / R25). Chambers =
+    g-vector cones of the support tau-tilting pairs (the Plan-45 exchange graph); walls = one
+    per brick ISO-CLASS, each carrying its exact ``D(B)`` inequality system + (rank <= 3)
+    drawing rays; the chamber<->wall adjacency (exchange edges grouped by brick); the four
+    counts; and ``render in {fan2d, fan3d, table}``. Certified COMPLETE iff ``A`` is
+    brick-finite <=> tau-tilting-finite (DIJ, decided by the BFS closing); otherwise a BOUNDED
+    region with ``complete=False``, ``status="budget"``, a ``truncation`` note, and NO counts.
+    The brick / is_isomorphic char caveat propagates loudly (char 0 / char > dim; QQ default).
+    """
+    from quiverlab.tautilting.mutation import exchange_graph
+    verts = list(A.quiver.vertices)
+    n = len(verts)
+    render = "fan2d" if n == 2 else ("fan3d" if n == 3 else "table")
+    eg = exchange_graph(A, budget_pairs=budget)
+    out = {
+        "kind": "wall_chamber",
+        "n": n,
+        "complete": eg.is_complete,
+        "status": eg.status,
+        "render": render,
+        "references": list(_CITATIONS),
+    }
+    chambers = _build_chambers(eg, verts)
+    out["chambers"] = chambers
+    out["num_chambers"] = len(chambers)
+    if not eg.is_complete:
+        walls = _build_walls_bounded(A, eg, verts, n)
+        out["walls"] = walls
+        out["num_walls"] = len(walls)
+        out["counts"] = None
+        out["green_count"] = None
+        out["truncation"] = _TRUNC.format(N=budget)
+        return out
+    from quiverlab.tautilting.green import maximal_green_sequences
+    from quiverlab.tautilting.torsion import bricks as torsion_bricks
+    brs = torsion_bricks(A, budget=budget)
+    walls = _build_walls_complete(A, eg, brs, verts, n, budget)
+    out["walls"] = walls
+    out["num_walls"] = len(walls)
+    out["counts"] = {"chambers": len(eg.vertices), "walls": len(walls),
+                     "bricks": len(brs), "s_tau_tilt": len(eg.vertices)}
+    out["green_count"] = maximal_green_sequences(A, cap=budget)["count"]
+    out["truncation"] = None
+    return out
+
+
+def _is_green_path(eg, orient, seq):
+    """True iff ``seq`` (a list of pair-ids) is a monotone DOWNWARD chamber path from the
+    source ``(A,0)`` to the sink ``(0,A)`` -- a maximal green sequence read as a green path
+    through the wall-and-chamber structure (BST/Plan-45). Falsifiable: rejects a path that
+    does not start at ``(A,0)``, does not end at ``(0,A)``, or crosses any wall upward."""
+    if not seq:
+        return False
+    verts = list(eg.vertices[seq[0]]["pair"].algebra.quiver.vertices)
+    if not eg.vertices[seq[0]]["is_initial"]:
+        return False
+    last = eg.vertices[seq[-1]]
+    if last["summand_dimvecs"] or set(last["support"]) != set(verts):
+        return False                                  # the sink must be the terminal (0, A)
+    for t in range(len(seq) - 1):
+        i, j = seq[t], seq[t + 1]
+        e = (min(i, j), max(i, j))
+        if e not in eg.arrows:
+            return False                              # not an exchange edge
+        down = i if orient[e] == "down" else j
+        if down != i:
+            return False                              # the step goes UP, not down
+    return True
+
