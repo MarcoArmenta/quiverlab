@@ -27,7 +27,7 @@ See ``docs/plans/2026-08-08-plan-71-hh-lie-module.md``.
 """
 from dataclasses import dataclass
 
-from quiverlab.errors import QuiverlabError
+from quiverlab.errors import DepthLimitError, QuiverlabError
 from quiverlab.fields.linalg import nullspace, rank, solve
 from quiverlab.hochschild.bar import coboundary_matrix, _cochain_basis
 from quiverlab.modules import linalg_mod as lm
@@ -691,3 +691,30 @@ def lie_module_action(A, top, *, budget=DEFAULT_MAXDIM, max_cells=4_000_000,
         weights=weights, torus_provenance=torus_provenance, summands=summands,
         weight_base_change_note=weight_base_change_note, char0_note=char0_note,
         status="complete", note="", references=tuple(_REFERENCES))
+
+
+def hh_lie_module_block(A, top, *, budget=DEFAULT_MAXDIM, max_cells=4_000_000):
+    """The JSON block for the ``hh_lie_module`` compute kind (Plan 71), shared by all
+    three tiers (byte-identical). Ships ``hh_dims``, the verdicts, the char-0 WEIGHT
+    table and the indecomposable-SUMMAND decomposition table -- the action structure
+    constants are NOT shipped (they explode and are basis-dependent). An oversized
+    (``A.dim > budget``) or over-``max_cells`` refusal is a clean ``{"error": ...}``
+    block, never a 500."""
+    refs = list(_REFERENCES)
+    try:
+        L = lie_module_action(A, top, budget=budget, max_cells=max_cells)
+    except (QuiverlabError, DepthLimitError) as exc:
+        return {"kind": "hh_lie_module", "status": "budget", "error": str(exc),
+                "references": refs}
+    summ = None
+    if L.summands is not None:
+        summ = [{"n": n, "parts": L.summands[n]} for n in range(len(L.summands))]
+    return {
+        "kind": "hh_lie_module", "top": L.top, "hh_dims": list(L.hh_dims),
+        "hh1_dim": L.hh1_dim, "module_axiom_ok": L.module_axiom_ok,
+        "inner_acts_zero": L.inner_acts_zero, "characteristic": L.characteristic,
+        "weights": L.weights, "torus_provenance": L.torus_provenance,
+        "summands": summ, "weight_base_change_note": L.weight_base_change_note,
+        "char0_note": L.char0_note, "status": L.status, "note": L.note or None,
+        "references": refs,
+    }

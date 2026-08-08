@@ -65,6 +65,7 @@ _HEADINGS = {
     "simply_connected": "Simple connectivity",
     "tame_wild": "Representation type (tame / wild)",
     "hh1_lie": "HH¹ as a Lie algebra",
+    "hh_lie_module": "HH• as a Lie module over HH¹",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -308,6 +309,61 @@ def _hh1_lie_html(b):
         out.append("<p class='ql-note'>%s</p>" % _esc(str(b["char0_note"])))
     if b.get("base_change_note"):
         out.append("<p class='ql-note'>%s</p>" % _esc(str(b["base_change_note"])))
+    if b.get("note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return out
+
+
+def _hh_lie_module_html(b):
+    """HH^* as a graded Lie module over HH^1 (Plan 71): hh_dims, the module-axiom /
+    inner-zero verdicts, the indecomposable-summand decomposition table and (char 0)
+    the weight / torus table. The action structure constants are NOT shipped."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+
+    def yn(x):
+        return "yes" if x else "no"
+
+    out = ["<p>HH•(A) is a graded Lie module over HH¹(A): the action is the "
+           "Gerstenhaber degree-1 bracket [D, −], which on cochains is the Lie "
+           "derivative (field-general over any exact field).</p>",
+           "<p>dim HH• = [%s]; dim HH¹ = <b>%d</b> (the acting Lie algebra).</p>"
+           % (_esc(", ".join(str(d) for d in b.get("hh_dims", []))), b.get("hh1_dim", 0)),
+           "<p>Module axiom ρ([D,E]) = [ρ(D),ρ(E)]: <b>%s</b>; inner derivations act as "
+           "zero: <b>%s</b>.</p>"
+           % (yn(b.get("module_axiom_ok")), yn(b.get("inner_acts_zero")))]
+    summ = b.get("summands")
+    if summ:
+        rows = ["<tr><th>n</th><th>HHⁿ = ⊕ M<sup>dim</sup></th></tr>"]
+        for e in summ:
+            parts = e.get("parts")
+            if isinstance(parts, dict) and parts.get("error"):
+                desc = _esc(str(parts["error"]))
+            else:
+                pieces = []
+                for p in (parts or []):
+                    lab = (" (%s)" % _esc(str(p["label"]))) if p.get("label") else ""
+                    mult = ("<sup>%d</sup>" % p["mult"]) if p.get("mult", 1) > 1 else ""
+                    pieces.append("M<sub>%d</sub>%s%s" % (p["dim"], mult, lab))
+                desc = " ⊕ ".join(pieces) or "0"
+            rows.append("<tr><td>%d</td><td>%s</td></tr>" % (e["n"], desc))
+        out.append("<p>Indecomposable summands:</p><table>%s</table>" % "".join(rows))
+    weights = b.get("weights")
+    if weights:
+        rows = ["<tr><th>n</th><th>rank</th><th>weights (λ: dim)</th></tr>"]
+        for e in weights:
+            ws = "  ".join("(%s): %d" % (_esc(",".join(lam)), dim)
+                           for lam, dim in (e.get("weights") or []))
+            rows.append("<tr><td>%d</td><td>%d</td><td>%s</td></tr>"
+                        % (e["n"], e.get("torus_rank", 0), ws))
+        out.append("<p>Weights (maximal torus):</p><table>%s</table>" % "".join(rows))
+        if b.get("torus_provenance"):
+            out.append("<p class='ql-note'>%s</p>" % _esc(str(b["torus_provenance"])))
+    elif b.get("char0_note"):
+        out.append("<p class='ql-note'>Weights/decomposition need characteristic 0 — %s</p>"
+                   % _esc(str(b["char0_note"])))
+    if b.get("weight_base_change_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["weight_base_change_note"])))
     if b.get("note"):
         out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
     return out
@@ -1532,6 +1588,8 @@ def _block_html(kind, b, ctx=None):
         return _tame_wild_html(b)
     if kind == "hh1_lie":
         return _hh1_lie_html(b)
+    if kind == "hh_lie_module":
+        return _hh_lie_module_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":

@@ -1930,6 +1930,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         keys = list(block["references"])
         block["citations"] = _citation_pairs(keys)
         return block, None
+    # HH^* as a graded Lie module over HH^1 (Plan 71 / R12): a top-carrying HH kind
+    # (the gerstenhaber_brackets precedent -- budget caps A.dim for the Der solve, top
+    # caps the bar degree; over top >= 2 max_cells is the binding limiter). The shared
+    # block builder ships hh_dims, the module-axiom / inner-zero verdicts, the char-0
+    # weight table and the indecomposable-summand decomposition table (NOT the exploding
+    # basis-dependent action structure constants). Not an HH run (returns block, None).
+    if kind == "hh_lie_module":
+        from quiverlab.hochschild.lie_module import hh_lie_module_block
+        top = item.hi if item.hi is not None else 2
+        block = hh_lie_module_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Homological string-algebra test (Plan 59 / R34): an algebra-only scalar kind
     # (Suarez-Alvarez). Shared builder (string_homological.string_homological_block);
     # a rep-infinite / self-injective / presentation-less input -> {"error": ...},
@@ -2776,6 +2788,8 @@ def _snippet(req: ComputeRequest, A) -> str:
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
              "connes_b": lambda it: f"A.connes_differentials({it.hi})",
              "bv_operator": lambda it: f"A.bv_operator({it.hi})",
+             "hh_lie_module":
+                 lambda it: f"A.hh_lie_module(top={it.hi if it.hi is not None else 2})",
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
