@@ -291,7 +291,14 @@ def phi_dim(A, *, budget_modules=256, phi_budget=512, phi_bound=64):
     arXiv:2310.09283); a certified LOWER bound when the AR knit caps at ``budget_modules``
     (``status="budget"``); the exact ``0`` for self-injective ``A`` (Plan 40 phi==0).
     Inherits ``decompose``'s loud char-caveat refusal (``char <= dim`` over GF(p)); a
-    genuine AR-knitting failure raises. Returns a :class:`PhiDim`."""
+    genuine AR-knitting failure raises. Returns a :class:`PhiDim`.
+
+    REP-INFINITE INPUT (honest-scope, P53 critic): termination is governed by the AR
+    knit's budget semantics (``knit_ar_quiver``), whose inner almost-split loop is not
+    hard-step-capped -- so a large ``budget_modules`` on a representation-INFINITE algebra
+    can be SLOW before the budget trips. Pass an explicit SMALL ``budget_modules`` for
+    rep-infinite input; the returned lower bound is honest regardless. (A hard inner-loop
+    step cap is a named DEEPER-ENGINES-BACKLOG successor.)"""
     return _phipsi_dim(A, igusa_todorov_phi, PhiDim, budget_modules=budget_modules,
                        phi_budget=phi_budget, phi_bound=phi_bound)
 
@@ -299,7 +306,9 @@ def phi_dim(A, *, budget_modules=256, phi_budget=512, phi_bound=64):
 def psi_dim(A, *, budget_modules=256, phi_budget=512, phi_bound=64):
     """The Igusa-Todorov psi-dimension ``psidim(A) = sup{ psi(M) }`` as an ALGEBRA
     invariant (Plan 53 / R23a). Same rep-finite ⊕-of-all route + honest degrade as
-    :func:`phi_dim`, with ``psi`` in place of ``phi``. Returns a :class:`PsiDim`."""
+    :func:`phi_dim`, with ``psi`` in place of ``phi``. Same rep-infinite honest-scope
+    caveat (termination governed by the AR-knit budget; pass a small ``budget_modules``
+    for rep-infinite input). Returns a :class:`PsiDim`."""
     return _phipsi_dim(A, igusa_todorov_psi, PsiDim, budget_modules=budget_modules,
                        phi_budget=phi_budget, phi_bound=phi_bound)
 
@@ -319,10 +328,16 @@ def _chain_selfcheck(A, bound=32):
     ok = (fb.lower <= pd.value <= ps.value)
     if g.exact:
         ok = ok and (ps.value <= g.value)
-        # gldim exact-finite => all four EQUAL (finite pd everywhere => phi = psi = pd).
+    # The STRONG collapse (all four EQUAL) is asserted ONLY when the finitistic bound is
+    # itself EXACT (P53 critic minor-fix): ``findim`` exact-finite <=> gl.dim exact-finite,
+    # and then every module has finite pd so phi = psi = pd = gl.dim. Gating on
+    # ``fb.exact`` (not merely ``g.exact``) means a merely-lower ``findim`` can never cry
+    # wolf -- a non-exact bound only ever has to satisfy the inequality chain above.
+    if fb.exact:
         ok = ok and (fb.lower == pd.value == ps.value == g.value)
-    return {"ok": bool(ok), "findim_lower": fb.lower, "phidim": pd.value,
-            "psidim": ps.value, "gldim": g.value, "gldim_exact": bool(g.exact)}
+    return {"ok": bool(ok), "findim_lower": fb.lower, "findim_exact": bool(fb.exact),
+            "phidim": pd.value, "psidim": ps.value, "gldim": g.value,
+            "gldim_exact": bool(g.exact)}
 
 
 # ---------------------------------------------------------------------------
@@ -352,7 +367,11 @@ def phi_spectrum(A, *, budget_modules=256):
     A capped knit degrades to ``complete=False``, ``gaps=[]`` (a partial spectrum claims
     no gaps). Self-injective input has ``phidim = 0`` (Plan 40 phi==0) -- the spectrum is
     ``[0]`` with no knit; a knit ``error``/``unsupported`` raises loudly (the phi_dim
-    contract). Inherits ``decompose``'s loud char-caveat refusal."""
+    contract). Inherits ``decompose``'s loud char-caveat refusal.
+
+    REP-INFINITE INPUT (honest-scope, P53 critic): as with :func:`phi_dim`, termination is
+    governed by the AR-knit budget semantics and can be slow before the budget trips; pass
+    a small ``budget_modules`` for rep-infinite input (the partial spectrum is honest)."""
     from quiverlab.modules.ar import knit_ar_quiver
     from quiverlab.modules.ext import is_selfinjective
     if A.quiver is not None and is_selfinjective(A):

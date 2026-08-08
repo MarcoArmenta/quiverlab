@@ -553,10 +553,10 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 891 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 530 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1091 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 1094 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 198 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2149 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2152 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Counts as of the P43 merge (the derived-category surface); sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
@@ -1033,7 +1033,12 @@ verified precision and listed below as such.
   over the discovered prefix ∪ the simples (`exact=False`, `status="budget"`) — never a
   claimed sup. A genuine knit **error** RAISES loudly (a lower bound on a broken knit is
   not certified); only `status="budget"` degrades softly. Self-injective short-circuits to
-  the exact `0` (Plan-40 φ≡0) before any knit.
+  the exact `0` (Plan-40 φ≡0) before any knit. **Rep-infinite termination is governed by
+  the AR knit's budget semantics** (P53 critic): the knit's inner almost-split loop is not
+  hard-step-capped, so a LARGE `budget_modules` on a representation-infinite algebra (e.g.
+  the 2-Kronecker) can be slow before the budget trips — pass an explicit SMALL
+  `budget_modules` for rep-infinite input (the lower bound is honest regardless). A hard
+  inner-loop step cap in `knit_ar_quiver` is a named DEEPER-ENGINES-BACKLOG successor.
 - **LIT finitistic certificates: no known decision procedure in general** (Plan 53 R23c) —
   explicitly NOT "proven undecidable". Families 1–3 (self-injective / Iwanaga-Gorenstein /
   finite-φdim) emit certified EXECUTING findim upper bounds; **family 4 (finite one-sided

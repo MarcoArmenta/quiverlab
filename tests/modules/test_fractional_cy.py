@@ -7,8 +7,8 @@ Tier: weak-on-generators (object-wise on the simples + orbit reps) -- a NECESSAR
 condition for weak/strong CY, never a functor iso; the payload `tier` field says so."""
 import pytest
 
-from quiverlab import PreprojectiveAlgebra, Quiver, linear_path_algebra, \
-    truncated_polynomial
+from quiverlab import ExteriorAlgebra, NakayamaAlgebra, PreprojectiveAlgebra, Quiver, \
+    linear_path_algebra, truncated_polynomial
 from quiverlab.errors import QuiverlabError
 from quiverlab.fields import QQ
 from quiverlab.modules.fractional_cy import (fractional_calabi_yau,
@@ -70,3 +70,40 @@ def test_not_self_injective_refused():
     A = linear_path_algebra(3, field=QQ)                 # hereditary: not self-injective
     with pytest.raises(QuiverlabError, match="self-injective"):
         fractional_calabi_yau(A)
+
+
+@selfcert
+def test_fractional_cy_sign_anchor_kz3():
+    # SIGN ANCHOR (P53 critic top recommendation): NakayamaAlgebra(n=3, l=2, cyclic=True)
+    # = kZ_3/J^2 is self-injective with a Nakayama permutation of ORDER 3, so nu is NOT
+    # its own inverse on the simples (nu(S_i) NOT iso nu^{-1}(S_i), asserted below). The
+    # Serre functor S = Omega.nu then satisfies S(S_i) = Omega(nu S_i) ~ S_i = Sigma^0 S_i,
+    # giving (m, ell) = (0, 1). The WRONG composition order (nu^{-1}, or Omega on the wrong
+    # side) yields (1, 1) instead -- so this test PINS the nu-direction of S = Omega.nu
+    # forever (the discrimination the critic verified live: Omega(nu S_i) = S_i).
+    from quiverlab.modules.hom import is_isomorphic
+    A = NakayamaAlgebra(n=3, l=2, cyclic=True, field=QQ)
+    assert A.is_selfinjective() and not A.is_symmetric()      # nu of order 3, not identity
+    for v in A.quiver.vertices:                              # nu != nu^{-1} on the simples
+        S = A.simple(v)
+        assert not is_isomorphic(_nf(S.nakayama()), _nf(S.nakayama_minus()))
+    fcy = fractional_calabi_yau(A)
+    assert fcy.status == "certified"
+    assert (fcy.m, fcy.ell) == (0, 1) and fcy.weakly_n_cy == 0
+    assert fcy.cy_dimension == "0/1"
+    assert len(fcy.certificate) == 3                         # one witness per simple
+
+
+@selfcert
+def test_fractional_cy_budget_honest():
+    # BUDGET PATH (P53 critic): ExteriorAlgebra(2) is a representation-INFINITE
+    # self-injective local algebra whose syzygies grow (dims 3, 5, 7, ...) -- NOT
+    # Omega-periodic, so no (m, ell) exists. At a SMALL dim_budget the search trips
+    # PROMPTLY (< 1 s) and returns an honest status="budget" with NO certified claim
+    # (never a fabricated "not CY"). Runtime is kept tight per the critic's measurement.
+    E = ExteriorAlgebra(2, field=QQ)
+    assert E.is_selfinjective()
+    fcy = fractional_calabi_yau(E, dim_budget=8, ell_max=2, m_window=4)
+    assert fcy.status == "budget"
+    assert fcy.m is None and fcy.ell is None and fcy.cy_dimension is None
+    assert is_fractionally_calabi_yau(E, dim_budget=8, ell_max=2, m_window=4) is False

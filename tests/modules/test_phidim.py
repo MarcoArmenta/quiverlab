@@ -56,12 +56,37 @@ def test_phidim_equals_max_phi_over_indecomposables():
 
 @selfcert
 def test_standing_chain_holds():
+    # The strong COLLAPSE (all four equal) is asserted only when the finitistic bound is
+    # itself EXACT; a self-injective input has a lower-only findim, so only the inequality
+    # chain is asserted there -- a loose lower bound never cries wolf (P53 critic fix 4).
     from quiverlab.modules.homdims import _chain_selfcheck    # returns dict of checks
-    for A in (linear_path_algebra(3, field=QQ),
-              TruncatedPathAlgebra("A3", 2, field=QQ),
-              truncated_polynomial(4, field=QQ)):
+    for A in (linear_path_algebra(3, field=QQ),              # hereditary, gl.dim 1
+              TruncatedPathAlgebra("A3", 2, field=QQ)):      # gl.dim 2
         chk = _chain_selfcheck(A)
-        assert chk["ok"]                                # findim<=phidim<=psidim<=gldim
+        assert chk["ok"] and chk["findim_exact"] and chk["gldim_exact"]
+        # findim exact-finite => the full collapse findim = phidim = psidim = gldim
+        assert (chk["findim_lower"] == chk["phidim"]
+                == chk["psidim"] == chk["gldim"])
+    si = _chain_selfcheck(truncated_polynomial(4, field=QQ))  # self-injective, gl.dim oo
+    assert si["ok"] and si["findim_exact"] is False
+    assert si["findim_lower"] <= si["phidim"] <= si["psidim"]    # inequality chain only
+
+
+@selfcert
+def test_phidim_rep_infinite_is_honest_lower_bound():
+    # REP-INFINITE HONESTY (P53 critic fix 3): the 2-Kronecker is representation-infinite,
+    # so the AR knit cannot close. With a SMALL budget_modules the knit caps PROMPTLY
+    # (~1.5 s) and phi_dim returns a CERTIFIED LOWER BOUND (exact=False, status="budget"),
+    # never a claimed sup. (A LARGE budget on rep-infinite input can be slow -- termination
+    # is governed by the AR-knit budget; documented in the docstrings + verification page +
+    # a DEEPER-ENGINES-BACKLOG successor for a hard inner-loop step cap.)
+    K = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=QQ)
+    assert not K.is_selfinjective()
+    pd = phi_dim(K, budget_modules=3)
+    assert pd.exact is False and pd.status == "budget"
+    # the discovered prefix U the simples includes S_1 (pd = 1 over the hereditary
+    # Kronecker), so the honest lower bound is 1 -- a rigorous >= 1, never a claimed sup.
+    assert pd.value == 1
 
 
 @selfcert
