@@ -187,6 +187,16 @@ never hide behind one:
     ``canonical_key`` is request-derived (the budget rides in the ``compute`` string, no
     new request field); the ``result_json`` was frozen from the server runner, and the
     Plan-45 cross-runner test asserts the Pyodide twin agrees byte-for-byte.
+  * 2026-08-07 (``congruences_kA2`` ADDED, Plan 64 / R26): a NEW fixture for the
+    ``congruences`` ALGEBRA-level compute kind (kA2 over QQ, budget 512 -- the full run:
+    the pentagon N5 torsion lattice |L|=5, |Con(tors A)|=5, the forcing "V" on 3 bricks,
+    #wide=5 = M3). Pure addition: every pre-existing entry was verified byte-identical
+    BEFORE the new one was appended (the delegation test passed on all 18 unchanged). Its
+    ``canonical_key`` is request-derived (the pair budget rides in the ``compute`` string,
+    no new request field), so schema stays v1 and no existing golden re-freezes; the
+    ``result_json`` was frozen from the server runner, and the Plan-64 cross-runner tests
+    (``tests/webapp/test_congruences_p64.py`` / ``tests/gui/test_congruences_runner_twin.py``)
+    assert the Pyodide twin is byte-identical via the shared ``congruences_block`` builder.
   * 2026-08-05 (ALL 18 result_json re-frozen, v0.2.0 bump at the P50 gate): the
     embedded ``quiverlab_version`` moved 0.1.0 -> 0.2.0. Gated re-freeze: every
     regenerated blob is byte-identical to its predecessor after mapping the
@@ -400,6 +410,16 @@ never hide behind one:
     agrees (``tests/gui/test_exceptional_runner_twin_p65.py``). ``canonical_key`` is
     request-derived (schema-1 algebra-only, the budget rides in the ``compute``
     string, no ``module`` block).
+  * 2026-08-08 (``hh1_lie_kronecker`` ADDED, Plan 70 / R11): a NEW algebra-only DIM-budget
+    kind. kK2 (the Kronecker quiver 1 => 2, no relations) over QQ, ``compute ==
+    ["hh1_lie"]`` -- the shared block reports HH^1 = Der/Inn = sl2: ``dim == 3``,
+    ``solvable == false``, ``perfect == true``, ``radical_dim == 0``, ``sl2_count == 1``,
+    ``levi_type == "A1"``, ``toral_rank == 1``, with the QQ ``base_change_note``. Pure
+    ADDITION: all 38 pre-existing entries were verified byte-identical BEFORE the append
+    (the generator round-trips the file bytes, then re-dumps ``indent=1`` order-preserving).
+    Both runners share the library builder (``invariants.hh1_lie.hh1_lie_block``), so the
+    Pyodide twin agrees (``tests/gui/test_hh1_lie_runner_twin_p70.py``). ``canonical_key``
+    is request-derived (schema-1 algebra-only, no ``module`` block).
   * 2026-08-08 (``split_extension_kA2`` + ``arrow_removal_P1`` ADDED, Plan 72 /
     R5+R6): two NEW algebra-only TOP-DEGREE budget kinds. ``split_extension_kA2`` =
     kA2 (1->2) over GF(7), ``split_extension:4`` -- the trivial-extension Hochschild
