@@ -275,6 +275,14 @@ ported and wired in:
   The **Gerstenhaber bracket goes native on the Chouhy–Solotar resolution — past the
   bar window, over any exact field** (Negron–Witherspoon / Volkov homotopy liftings),
   completing the TT calculus surface (cup and cap went native earlier).
+- **HH¹ as a Lie algebra (R11).** The outer-derivation algebra `Der/Inn` with the
+  commutator bracket over **any exact field** (`A.hh1_lie_structure` — derived /
+  lower-central series, solvable / nilpotent / abelian / perfect, computed from the
+  algebra's own structure constants, independent of the window-bounded bracket engine),
+  and over **characteristic 0** the solvable radical, Levi decomposition, sl₂-count and
+  toral rank behind a hard char gate; the `k[x]/(x^n)` **solvable-vs-Jacobson–Witt**
+  dichotomy (`W₁` at `n = char = p`) and `HH¹(Kronecker) ≅ sl₂` (char ≠ 2), plus the
+  RSS Ext-quiver solvability certificate — clickable in the no-code GUI.
 - **Hochschild (co)homology with arbitrary bimodule coefficients** (`D(A)`, twisted
   `{}_1A_ν`, `A/soc`, any no-code bimodule) and **relative HH over the vertices** —
   `coefficients=` on the Hochschild kinds, `relative_to="vertices"` for `HH_•(A|kQ₀,M)`.
