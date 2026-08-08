@@ -793,6 +793,46 @@ REGISTRY: dict = {r.key: r for r in [
        "Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the "
        "closed-form count oracle.",
        "modules"),
+    _r("rss_hh1_lie", "RSS2023hh1lie", "foundation",
+       "The first Hochschild cohomology as a Lie algebra",
+       "Rubio y Degrassi-Schroll-Solotar: the no-loops/no-parallel-arrows Ext-quiver "
+       "criterion => HH^1 solvable, in arbitrary characteristic (Plan 70's RSS "
+       "solvability certificate).",
+       "hochschild", "lie"),
+    _r("css_gentle_hh1_lie", "CSS2020gentlehh1", "foundation",
+       "On the Lie algebra structure of the first Hochschild cohomology of gentle and Brauer graph algebras",
+       "Chaparro-Schroll-Solotar: HH^1 of gentle / Brauer graph algebras is solvable "
+       "except one low-dimensional case (T(kK2) = k semidirect sl2, sl2-count 1).",
+       "hochschild", "lie"),
+    _r("eisele_raedschelders", "EiseleRaedschelders2019", "foundation",
+       "On solvability of the first Hochschild cohomology of a finite-dimensional algebra",
+       "Eisele-Raedschelders: for tame/finite representation type, HH^1 = solvable (+) "
+       "sum of sl2's, the sl2-count formula from Kronecker subquivers "
+       "(non-wild, algebraically closed, char != 2).",
+       "hochschild", "lie"),
+    _r("strametz_hh1_lie", "Strametz2006", "foundation",
+       "The Lie algebra structure of the first Hochschild cohomology group for monomial algebras",
+       "Strametz: solvability / (semi)simplicity / commutativity / nilpotency criteria "
+       "for HH^1 of a monomial algebra in any characteristic -- the monomial-case "
+       "foundation for Plan 70.",
+       "hochschild", "lie"),
+    _r("liu_xing_hh1", "LiuXing2023", "foundation",
+       "Generalized parallel paths method for computing the first Hochschild cohomology group",
+       "Liu-Xing: algebraic Morse theory for HH^1 and the comparison of Lie structures "
+       "of Brauer graph algebras and their associated graded algebras.",
+       "hochschild", "lie"),
+    _r("gerstenhaber1963", "Gerstenhaber1963", "foundation",
+       "The cohomology structure of an associative ring",
+       "Gerstenhaber: the graded Lie bracket on HH^*; in degree 1 it is the commutator "
+       "of derivations and descends to HH^1 = Der/Inn -- the identity that makes the "
+       "field-general Der/Inn route the Gerstenhaber Lie structure.",
+       "hochschild", "lie"),
+    _r("degraaf_lie", "deGraaf2000", "algorithm",
+       "Lie Algebras: Theory and Algorithms",
+       "de Graaf: the algorithms behind the char-0 classification -- solvable radical "
+       "rad = [L,L]^perp, Levi-Malcev decomposition, and direct-sum-of-simple-ideals "
+       "type of a semisimple Lie algebra.",
+       "lie", "algorithm"),
 ]}
 
 

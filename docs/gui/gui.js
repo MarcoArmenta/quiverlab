@@ -140,6 +140,8 @@
     '  <label><input type="checkbox" id="qlgui-simply_connected"> simply connected (+ strongly)</label>' +
     // ---- Plan 62: Tits-form tame/wild certificate ----
     '  <label><input type="checkbox" id="qlgui-tame_wild"> tame / wild (Tits form)</label>' +
+    // ---- Plan 70: HH^1 as a Lie algebra (Der/Inn, solvable/Levi) ----
+    '  <label><input type="checkbox" id="qlgui-hh1_lie"> HH&sup1; Lie structure (Der/Inn, solvable/Levi)</label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
@@ -287,6 +289,8 @@
    "fundamental_group", "simply_connected",
    // Plan 62: Tits-form tame/wild certificate (scalar kind)
    "tame_wild",
+   // Plan 70: HH^1 as a Lie algebra (scalar algebra-only kind)
+   "hh1_lie",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
    // Plan 64: torsion lattice / Con / forcing / wide subcategories (budget picker)
@@ -929,7 +933,7 @@
     ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "string_homological", "toupie", "quasi_hereditary",
-     "fundamental_group", "simply_connected", "tame_wild"].forEach(function (k) {
+     "fundamental_group", "simply_connected", "tame_wild", "hh1_lie"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
@@ -3001,6 +3005,45 @@
   }
 
   // ---- Plan 45: the C4 tau-tilting block + the LIVE wall-and-chamber SVG ----
+  // ---- Plan 70: HH^1 as a Lie algebra (Der/Inn, series, char-0 Levi) ----
+  function renderHh1Lie(div, b) {
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.error }));
+      return;
+    }
+    var yn = function (x) { return x ? "yes" : "no"; };
+    div.appendChild(h("p", { text: dataText("block-hh1_lie-title",
+      "HH¹ as a Lie algebra") + " = Der(A)/Inn(A) with the commutator bracket "
+      + "[D, E] = D∘E − E∘D (Gerstenhaber 1963, degree 1)." }));
+    div.appendChild(h("p", { text: "dim HH¹ = " + b.dim
+      + "  (dim Der = " + b.dim_der + ", dim Inn = " + b.dim_inn + ")." }));
+    div.appendChild(h("p", { text:
+      dataText("block-hh1_lie-solvable", "Solvable") + ": " + yn(b.solvable)
+      + " · " + dataText("block-hh1_lie-nilpotent", "Nilpotent") + ": " + yn(b.nilpotent)
+      + " · abelian: " + yn(b.abelian) + " · perfect: " + yn(b.perfect) + "." }));
+    div.appendChild(h("p", { text: "Derived series (dim L^(k)): "
+      + (b.derived_series_dims || []).join(", ")
+      + "  ·  lower-central series (dim L^[k]): "
+      + (b.lower_central_dims || []).join(", ") + "." }));
+    if (b.radical_dim != null) {
+      div.appendChild(h("p", { text:
+        dataText("block-hh1_lie-radical", "Solvable radical") + ": dim " + b.radical_dim
+        + " · " + dataText("block-hh1_lie-levi", "Levi factor / sl₂-count")
+        + ": dim " + b.levi_dim
+        + (b.levi_type != null ? " (type " + b.levi_type + ")" : "")
+        + ", sl₂-count " + b.sl2_count + ", toral rank " + b.toral_rank
+        + " · semisimple: " + yn(b.semisimple) + " · simple: " + yn(b.simple) + "." }));
+    } else if (b.char0_note) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: dataText("block-hh1_lie-charp", "Levi/radical need characteristic 0")
+          + " — " + b.char0_note }));
+    }
+    if (b.base_change_note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.base_change_note }));
+    if (b.note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+  }
+
   function renderTauTilting(div, b) {
     div.appendChild(h("p", { text: "Support τ-tilting pairs (Adachi–Iyama–"
       + "Reiten): each is a maximal cone of the g-vector fan; each mutation crosses a wall "
@@ -3908,6 +3951,8 @@
       renderTauTilting(div, b);
     } else if (name === "congruences") {
       renderCongruences(div, b);
+    } else if (name === "hh1_lie") {
+      renderHh1Lie(div, b);
     } else if (name === "wall_chamber") {
       renderWallChamber(div, b);
     } else if (name === "silting") {
@@ -4480,7 +4525,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -5006,6 +5051,7 @@
     fundamental_group: { cb: "fundamental_group" },
     simply_connected: { cb: "simply_connected" },
     tame_wild: { cb: "tame_wild" },
+    hh1_lie: { cb: "hh1_lie" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     congruences: { cb: "congruences", top: "congruences-budget", budget: true },
     wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },

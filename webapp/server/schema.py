@@ -428,6 +428,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"congruences budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
+    # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
+    # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
+    # so it skips the degree grammar (like tau_tilting).
+    if s == "hh1_lie" or s.startswith("hh1_lie:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"hh1_lie budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="hh1_lie", lo=None, hi=(int(b) if b else None))
     # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
     # -- the exchange-graph pair budget, not a homological degree; skips the 'name:0..N'
     # grammar -- server and GUI/hpc agree on this special form.

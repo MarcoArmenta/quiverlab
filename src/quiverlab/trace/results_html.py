@@ -64,6 +64,7 @@ _HEADINGS = {
     "fundamental_group": "Fundamental group π₁(Q, I)",
     "simply_connected": "Simple connectivity",
     "tame_wild": "Representation type (tame / wild)",
+    "hh1_lie": "HH¹ as a Lie algebra",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -270,6 +271,46 @@ def _ext_algebra_html(b):
                          for k, v in sorted(d.items(), key=lambda kv: int(kv[0])))
     out.append("<p>Minimal generators of E(A): %s. Minimal relations: %s.</p>"
                % (_by_degree(gens), _by_degree(rels)))
+    return out
+
+
+def _hh1_lie_html(b):
+    """HH^1 = Der(A)/Inn(A) as a Lie algebra (Plan 70): dims, derived / lower-central
+    series, solvable / nilpotent / abelian / perfect, and (char 0) the solvable
+    radical / Levi factor / sl2-count / toral rank, with the base-change note."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+
+    def yn(x):
+        return "yes" if x else "no"
+
+    out = ["<p>HH¹(A) = Der(A)/Inn(A) with the commutator bracket "
+           "[D, E] = D∘E − E∘D (Gerstenhaber 1963, degree 1) — computed field-generally "
+           "from the algebra's own structure constants, independent of the "
+           "window-bounded Gerstenhaber-bracket engine.</p>",
+           "<p>dim HH¹ = <b>%d</b> (dim Der = %d, dim Inn = %d).</p>"
+           % (b.get("dim", 0), b.get("dim_der", 0), b.get("dim_inn", 0)),
+           "<p>Solvable: <b>%s</b>; nilpotent: <b>%s</b>; abelian: %s; perfect: %s.</p>"
+           % (yn(b.get("solvable")), yn(b.get("nilpotent")),
+              yn(b.get("abelian")), yn(b.get("perfect"))),
+           "<p>Derived series (dim L<sup>(k)</sup>): %s. Lower-central series "
+           "(dim L<sup>[k]</sup>): %s.</p>"
+           % (_esc(", ".join(str(d) for d in b.get("derived_series_dims", []))),
+              _esc(", ".join(str(d) for d in b.get("lower_central_dims", []))))]
+    if b.get("radical_dim") is not None:
+        out.append(
+            "<p>Solvable radical: dim <b>%d</b>. Levi factor S = HH¹/rad: dim %d%s, "
+            "sl₂-count %s, toral rank %s. Semisimple: %s; simple: %s.</p>"
+            % (b["radical_dim"], b.get("levi_dim", 0),
+               (" (type %s)" % _esc(str(b["levi_type"]))) if b.get("levi_type") is not None else "",
+               _esc(str(b.get("sl2_count"))), _esc(str(b.get("toral_rank"))),
+               yn(b.get("semisimple")), yn(b.get("simple"))))
+    elif b.get("char0_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["char0_note"])))
+    if b.get("base_change_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["base_change_note"])))
+    if b.get("note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
     return out
 
 
@@ -1590,6 +1631,8 @@ def _block_html(kind, b, ctx=None):
         return _simply_connected_html(b)
     if kind == "tame_wild":
         return _tame_wild_html(b)
+    if kind == "hh1_lie":
+        return _hh1_lie_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":
