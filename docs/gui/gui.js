@@ -114,6 +114,9 @@
     '  <label><input type="checkbox" id="qlgui-derived_compare"> derived compare (with B)</label>' +
     // Plan-41: AR-quiver knitting (algebra-level; honest semi-decision + budget).
     '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
+    // Plan-72: split-extension LES (trivial extension) + certified arrow removal (algebra-level; top-degree budget).
+    '  <label><input type="checkbox" id="qlgui-split_extension"> split-extension LES (trivial ext), top <input type="number" id="qlgui-split_extension-budget" value="6" min="1"></label>' +
+    '  <label><input type="checkbox" id="qlgui-arrow_removal"> arrow removal (inert), top <input type="number" id="qlgui-arrow_removal-budget" value="6" min="1"></label>' +
     // Plan-57: radical filtration of mod A (rad^n(X,Y) + nilpotency index) and the
     // AR-component invariants (Liu degrees, directing, rep-directed). Algebra-level,
     // budget (max indecomposables). NOT the Loewy radical series (radical_filtration_ss).
@@ -252,6 +255,8 @@
    "radical_filtration_ss", "radical_filtration_ss-top",
    // Plan 41: AR-quiver knitting (algebra-level, budget) ; Plan 43: derived compare + algebra B
    "ar_quiver", "ar_quiver-budget", "derived_compare",
+   // Plan 72: split-extension LES + certified arrow removal (algebra-level, top-degree budget)
+   "split_extension", "split_extension-budget", "arrow_removal", "arrow_removal-budget",
    // Plan 57: radical filtration + AR-component invariants (algebra-level, budget)
    "radical_filtration", "radical_filtration-budget",
    "ar_invariants", "ar_invariants-budget",
@@ -947,6 +952,12 @@
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
       compute.push("ar_quiver:" + el["ar_quiver-budget"].value);
+    // Plan 72: split-extension LES + arrow removal carry a TOP-DEGREE budget -- the
+    // single-int form "split_extension:<top>" both runners parse (like ar_quiver).
+    if (el.split_extension.checked)
+      compute.push("split_extension:" + el["split_extension-budget"].value);
+    if (el.arrow_removal.checked)
+      compute.push("arrow_removal:" + el["arrow_removal-budget"].value);
     // Plan 57: radical_filtration + ar_invariants carry a MODULE BUDGET (like
     // ar_quiver) -- the single-int form both runners parse.
     if (el.radical_filtration.checked)
@@ -3810,6 +3821,75 @@
       renderSilting(div, b);
     } else if (name === "exceptional_sequences") {
       renderExceptionalSequences(div, b);
+    } else if (name === "split_extension") {
+      // Plan 72: the split-extension (trivial-extension) Hochschild LES. Flanks +
+      // p=0 leading pieces + snake delta + assembled vs direct + HH^1 witness.
+      if (b.error || b.status === "unsupported" || b.status === "error") {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Split-extension LES not computed — " + (b.error || "input not eligible") + "." }));
+      } else {
+        div.appendChild(h("p", { text: "Drawn algebra read as B; extension L = T(B) = "
+          + "B ⋉ D(B). " + (b.side || "cohomology")
+          + " LES assembled from the flanks + snake, cross-checked against direct." }));
+        var seRows = [
+          ["dim HH^n(L, D(B)) [M-flank -> top+1]", b.flank_M],
+          ["dim HH^n(L, B) [B-flank]", b.flank_B],
+          ["p=0 leading HH^n(B)", b.leading_B],
+          ["p=0 leading H^n(B, D(B))", b.leading_M],
+          ["rank of connecting map δ^n", b.delta_ranks],
+          ["assembled HH^n(L)", b.assembled],
+          ["direct HH^n(L) [cross-check]", b.direct]
+        ];
+        seRows.forEach(function (r) {
+          if (!r[1]) return;
+          var head = h("tr"), row = h("tr");
+          head.appendChild(h("th", { text: r[0] }));
+          row.appendChild(h("th", { text: "" }));
+          r[1].forEach(function (d, n) {
+            head.appendChild(h("th", { text: String(n) }));
+            row.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, head, row));
+        });
+        div.appendChild(h("p", { text: "LES exactness self-cert: " + String(b.exact)
+          + "; assembled == direct: " + String(b.agrees) + "." }));
+        var seWit = b.hh1_nonzero
+          ? "HH^1(L) ≠ 0 (the grading-derivation witness E(b+m)=m is outer)."
+          : "HH^1(L) witness unavailable.";
+        if (b.hh1_directed_formula === true)
+          seWit += " For this directed B, HH^1(T(B)) = k ⊕ HH^1(B).";
+        div.appendChild(h("p", { text: seWit }));
+      }
+    } else if (name === "arrow_removal") {
+      // Plan 72: certified arrow removal. Inert arrows + clean HH_{>=2} homology
+      // isomorphism (Thm 3.2) + cohomology Ext-correction (Thm 4.2).
+      if (b.error || b.status === "unsupported" || b.status === "error") {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Arrow-removal reduction not computed — " + (b.error || "input not eligible") + "." }));
+      } else {
+        div.appendChild(h("p", { text: "Inert arrows deleted (Def. 3.1): "
+          + ((b.removed || []).join(", ") || "none") + ". B = A \\ {" + (b.removed || []).join(", ") + "}." }));
+        var arRows = [["dim HH_n(A)", b.hom_A], ["dim HH_n(B)", b.hom_B],
+          ["dim HH^n(A)", b.coh_A], ["dim HH^n(B)", b.coh_B],
+          ["cohomology Ext-correction (n>=2)", b.coh_correction]];
+        arRows.forEach(function (r) {
+          if (!r[1]) return;
+          var head = h("tr"), row = h("tr");
+          head.appendChild(h("th", { text: r[0] }));
+          row.appendChild(h("th", { text: "" }));
+          r[1].forEach(function (d, n) {
+            head.appendChild(h("th", { text: String(n) }));
+            row.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, head, row));
+        });
+        div.appendChild(h("p", { text: "Homology isomorphism HH_n(A) = HH_n(B) for n >= 2 (Thm 3.2): "
+          + String(b.hom_agrees) + ". HH_0 provably invariant; HH_{0,1}: "
+          + JSON.stringify(b.hom_low_agrees) + "." }));
+        if (b.coh_low_delta)
+          div.appendChild(h("p", { text: "Low-degree center/disconnection deltas [n=0, n=1]: "
+            + JSON.stringify(b.coh_low_delta) + " (distinct from the n>=2 Ext-correction)." }));
+      }
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -4373,7 +4453,7 @@
   // QLGUI-THEMES-BEGIN
   var THEMES =
   [
-    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
@@ -4878,6 +4958,8 @@
     ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
     radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },
     ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
+    split_extension: { cb: "split_extension", top: "split_extension-budget", budget: true },
+    arrow_removal: { cb: "arrow_removal", top: "arrow_removal-budget", budget: true },
     radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
     ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
     left_right_parts: { cb: "left_right_parts", top: "left_right_parts-budget", budget: true },

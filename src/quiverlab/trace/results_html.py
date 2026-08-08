@@ -83,6 +83,8 @@ _HEADINGS = {
                     "g-cone chambers",
     "silting": "Silting: verifier, mutation neighbours, bounded exploration",
     "exceptional_sequences": "Exceptional sequences",
+    "split_extension": "Split-extension Hochschild long exact sequence",
+    "arrow_removal": "Certified arrow-removal HH reduction",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -870,6 +872,73 @@ def _ar_quiver_html(b):
     return chunks
 
 
+def _split_extension_html(b):
+    """The split-extension LES block (Plan 72 / R5): the flanks HH^*(L, D(B)) /
+    HH^*(L, B) with their p=0 leading pieces, the snake connecting-map ranks, the
+    assembled HH^*(L) vs the direct cross-check, and the HH^1(L) != 0 witness."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Split-extension LES not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = []
+    out.append("<p>The drawn algebra is read as <em>B</em>; the extension is "
+               "<em>L = T(B) = B &#8905; D(B)</em>. The %s long exact sequence "
+               "assembles HH of <em>L</em> from the two flanks and the snake "
+               "connecting map, cross-checked against the direct answer.</p>"
+               % _esc(str(b.get("side", "cohomology"))))
+    out.append(_dims_table("dim HH^n(L, D(B))  [M-flank, to top+1]", b.get("flank_M") or []))
+    out.append(_dims_table("dim HH^n(L, B)  [B-flank]", b.get("flank_B") or []))
+    out.append(_dims_table("p=0 leading piece HH^n(B)", b.get("leading_B") or []))
+    out.append(_dims_table("p=0 leading piece H^n(B, D(B))", b.get("leading_M") or []))
+    out.append(_dims_table("rank of the connecting map δ^n", b.get("delta_ranks") or []))
+    out.append(_dims_table("assembled HH^n(L)", b.get("assembled") or []))
+    if b.get("direct") is not None:
+        out.append(_dims_table("direct HH^n(L)  [cross-check]", b.get("direct")))
+    agrees = b.get("agrees")
+    exact = b.get("exact")
+    out.append("<p>LES exactness self-cert: <strong>%s</strong>; assembled == direct: "
+               "<strong>%s</strong>.</p>" % (_esc(str(exact)), _esc(str(agrees))))
+    hh1 = b.get("hh1_nonzero")
+    fml = b.get("hh1_directed_formula")
+    wit = ("HH<sup>1</sup>(L) &ne; 0 (the grading-derivation witness E(b+m)=m is an "
+           "outer derivation).") if hh1 else "HH<sup>1</sup>(L) witness unavailable."
+    if fml is True:
+        wit += " For this directed B the sharper HH<sup>1</sup>(T(B)) = k &oplus; HH<sup>1</sup>(B) holds."
+    out.append("<p>%s</p>" % wit)
+    return out
+
+
+def _arrow_removal_html(b):
+    """The certified arrow-removal block (Plan 72 / R6): the inert arrows deleted,
+    the clean HH_n(A) = HH_n(B) homology isomorphism for n >= 2 (Thm 3.2), and the
+    cohomology Ext-correction / center-disconnection deltas (Thm 4.2)."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Arrow-removal reduction not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = []
+    removed = b.get("removed") or []
+    out.append("<p>Inert arrows deleted (CLMS Def. 3.1, appear in no relation): "
+               "<strong>%s</strong>. B = A &#8726; {%s}.</p>"
+               % (_esc(", ".join(str(a) for a in removed) or "none"),
+                  _esc(", ".join(str(a) for a in removed))))
+    out.append(_dims_table("dim HH_n(A)", b.get("hom_A") or []))
+    out.append(_dims_table("dim HH_n(B)", b.get("hom_B") or []))
+    out.append("<p>Homology isomorphism HH_n(A) &cong; HH_n(B) for n &ge; 2 "
+               "(Thm 3.2): <strong>%s</strong>. HH_0 is provably invariant; "
+               "HH_{0,1} agreement: %s.</p>"
+               % (_esc(str(b.get("hom_agrees"))),
+                  _esc(str(b.get("hom_low_agrees")))))
+    if b.get("coh_A") is not None:
+        out.append(_dims_table("dim HH^n(A)", b.get("coh_A") or []))
+        out.append(_dims_table("dim HH^n(B)", b.get("coh_B") or []))
+        out.append(_dims_table("cohomology Ext-correction (n≥2, Thm 4.2)",
+                               b.get("coh_correction") or []))
+        out.append("<p>Low-degree center/disconnection deltas [n=0, n=1]: %s. "
+                   "Cohomology is NOT a clean isomorphism (the Ext-correction can be "
+                   "nonzero for n &ge; 2).</p>"
+                   % _esc(str(b.get("coh_low_delta"))))
+    return out
+
+
 def _fundamental_group_html(b):
     """The pi1(Q, I) block (Plan 56): the abelianization (exact SNF), the finite
     presentation, the Hom(pi1, k+) count, and the honest intrinsic-vs-presentation note."""
@@ -1467,6 +1536,10 @@ def _block_html(kind, b, ctx=None):
         return _silting_html(b)
     if kind == "exceptional_sequences":
         return _exceptional_sequences_html(b)
+    if kind == "split_extension":
+        return _split_extension_html(b)
+    if kind == "arrow_removal":
+        return _arrow_removal_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
     if kind == "derived_fingerprint":

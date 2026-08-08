@@ -286,6 +286,8 @@
   "pick.remove": "quitar",
   "pick.kind.radical_filtration_ss": "Sucesión espectral de la filtración radical",
   "pick.kind.ar_quiver": "Carcaj de Auslander–Reiten",
+  "pick.kind.split_extension": "Sucesión exacta larga de Hochschild de la extensión escindida",
+  "pick.kind.arrow_removal": "Reducción certificada de HH por eliminación de flechas",
   "pick.kind.string_homological": "Prueba homológica de cuerdas",
   "pick.kind.toupie": "Estructura toupie",
   "pick.kind.skew_gentle": "Álgebra skew-gentle (Q, I, Sp)",

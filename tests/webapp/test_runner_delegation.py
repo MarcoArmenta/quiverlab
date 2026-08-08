@@ -399,7 +399,22 @@ never hide behind one:
     (``tautilting.exceptional.exceptional_sequences_block``), so the Pyodide twin
     agrees (``tests/gui/test_exceptional_runner_twin_p65.py``). ``canonical_key`` is
     request-derived (schema-1 algebra-only, the budget rides in the ``compute``
-    string, no ``module`` block)."""
+    string, no ``module`` block).
+  * 2026-08-08 (``split_extension_kA2`` + ``arrow_removal_P1`` ADDED, Plan 72 /
+    R5+R6): two NEW algebra-only TOP-DEGREE budget kinds. ``split_extension_kA2`` =
+    kA2 (1->2) over GF(7), ``split_extension:4`` -- the trivial-extension Hochschild
+    LES (``assembled == direct == [3,1,1,1,1]``, ``agrees``/``exact`` true, the
+    grading-derivation ``HH^1 != 0`` witness). ``arrow_removal_P1`` = a loop x (x^2=0)
+    plus an inert bridge c:1->2 over GF(7), ``arrow_removal:4`` (``removed == ['c']``,
+    ``HH_n(A) == HH_n(B) == [3,1,1,1,1]``, ``hom_agrees`` true, ``coh_low_delta[0] ==
+    -2`` the disconnection effect). Pure ADDITION: every pre-existing entry was
+    verified byte-identical BEFORE the append (the generator round-trips the file
+    bytes, then re-dumps with the same ``indent=1`` settings). Both runners share the
+    library builders (``split_extension.split_extension_block`` /
+    ``arrow_removal.arrow_removal_block``), so the Pyodide twin agrees
+    (``tests/gui/test_split_arrow_runner_twin.py``). ``canonical_key`` is
+    request-derived (schema-1 algebra-only, the top-degree budget rides in the
+    ``compute`` string, no ``module`` block)."""
 import json
 import pathlib
 

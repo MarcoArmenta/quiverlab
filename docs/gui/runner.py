@@ -230,6 +230,13 @@ def _parse_compute(spec):
             raise RequestError("ar_quiver budget must be a positive integer (got %r)"
                                % (spec,))
         return "ar_quiver", (int(rng) if rng else None)
+    # split_extension / arrow_removal (Plan 72) carry a TOP-DEGREE budget, not a lo..hi
+    # range: 'split_extension' / 'split_extension:6'. Skips MAX_DEGREE like ar_quiver.
+    if name in ("split_extension", "arrow_removal"):
+        if rng and not rng.isdigit():
+            raise RequestError("%s budget must be a positive integer (got %r)"
+                               % (name, spec))
+        return name, (int(rng) if rng else None)
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. Skips MAX_DEGREE like tau_tilting.
     if name == "exceptional_sequences":
@@ -980,6 +987,21 @@ def compute_one(spec):
             from quiverlab.modules.ar import ar_quiver_block
             block = ar_quiver_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "split_extension":
+            # Split-extension LES (Plan 72 / R5): an ALGEBRA-level TOP-DEGREE budget
+            # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (split_extension.split_extension_block), which folds
+            # its own loud refusals into status='unsupported' + error.
+            from quiverlab.hochschild.split_extension import split_extension_block
+            block = split_extension_block(A, top=top if top is not None else 6)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "arrow_removal":
+            # Certified arrow removal (Plan 72 / R6): an ALGEBRA-level TOP-DEGREE budget
+            # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (arrow_removal.arrow_removal_block).
+            from quiverlab.hochschild.arrow_removal import arrow_removal_block
+            block = arrow_removal_block(A, top=top if top is not None else 6)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "radical_filtration":
             # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET
             # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
@@ -1496,6 +1518,9 @@ def python_snippet():
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
              "wall_chamber": "A.wall_chamber_structure(budget_pairs=%d)",
+             # Plan 72: split_extension / arrow_removal carry a top-degree budget (%d = top).
+             "split_extension": "A.split_extension_cohomology(%d)",
+             "arrow_removal": "A.arrow_removal(top=%d)",
              # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
              # tmpl % top fills both %d).
              "silting": "A.silting_exploration(radius=%d, budget=%d)",
@@ -1634,6 +1659,11 @@ ETA_MODEL = {
                 # Plan 63: wall_chamber runs the tau_tilting exchange-graph BFS PLUS the
                 # per-brick submodule enumeration for each D(B) -- just above tau_tilting.
                 "wall_chamber": 2.5,
+                # Plan 72: split_extension runs the CS Hom-complex of L = T(B)
+                # (dim 2*dim B) to degree top+2 and block-partitions it for the snake;
+                # arrow_removal runs HH_* + HH^* of A and B. Both are CS-dominated,
+                # around the tau_tilting cost class.
+                "split_extension": 2.0, "arrow_removal": 1.5,
                 # Plan 67: silting = a bounded-radius BFS of the silting quiver via K^b
                 # Hom + minimal approximations + cone/reduce per step; the hyper-Hom passes
                 # dominate. Budget-capped honestly (complete only for local).

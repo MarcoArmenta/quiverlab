@@ -85,6 +85,12 @@ def split_extension(B, M=None, *, name=None):
             "coefficients", hint="present B via Quiver(...).algebra(...)")
     from quiverlab.families.trivial_extension import TrivialExtension
     L = TrivialExtension(B)
+    if L.quiver is None or L.basis_labels is None:
+        raise QuiverlabError(
+            "the split-extension LES needs a PRESENTED L = T(B); over this domain "
+            "TrivialExtension falls back to a structure-constant build with no quiver "
+            "(e.g. CC / GF(p^n), or char <= dim)",
+            hint="use QQ or a prime field GF(p) with char > dim B")
     if L.dim != 2 * B.dim:                       # self-cert (mirrors Plan 31 D2)
         raise QuiverlabError(
             f"split_extension: dim L = {L.dim} must be 2·dim B = {2 * B.dim}",

@@ -60,6 +60,8 @@ ALL_KINDS = {
     "bv_operator",
     # Plan 65 (2026-08-08): exceptional sequences (classical hereditary + tau-exceptional).
     "exceptional_sequences",
+    # Plan 72 (2026-08-08): split-extension LES + certified arrow removal.
+    "split_extension", "arrow_removal",
 }
 
 
