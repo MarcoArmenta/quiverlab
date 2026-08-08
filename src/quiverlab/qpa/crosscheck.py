@@ -505,6 +505,36 @@ def crosscheck_koszul_derived(algebra, top: int) -> CrosscheckReport:
     return CrosscheckReport("koszul_derived", ours, qpa_derived, agree)
 
 
+def crosscheck_tits_weak(algebra) -> CrosscheckReport:
+    """The combinatorial Tits FORM layer (Plan 62 / R19): our weak positivity /
+    weak nonnegativity of q_A vs QPA's ``IsWeaklyPositiveUnitForm`` /
+    ``IsWeaklyNonnegativeUnitForm`` of ``TitsUnitFormOfAlgebra(A)`` -- two wholly
+    independent implementations of the same field-free integer decision. ``ours``
+    and ``qpa`` are ``[weakly_positive, weakly_nonnegative]`` boolean pairs.
+
+    QPA HAS a Tits-form + weak-positivity/nonnegativity surface (verified live,
+    QPA 1.37): TitsUnitFormOfAlgebra / IsWeaklyPositiveUnitForm /
+    IsWeaklyNonnegativeUnitForm. It has NO representation-type (tame/wild) VERDICT
+    verb, so the Plan-62 VERDICT layer has no QPA oracle -- only the form layer does
+    (this cross-check). Scope: QQ or prime GF(p) (the fields QPA supports); the form
+    is field-free so the verdict is the same on any base field.
+
+    Our None (budget) has no QPA analogue and would fail the equality -- callers
+    pass forms the box/PSD/list decides exactly (not a budget corner)."""
+    session.require_gap()
+    from quiverlab.invariants.tits import (as_unit_form, is_weakly_nonnegative,
+                                           is_weakly_positive)
+    f = as_unit_form(algebra)
+    ours = [is_weakly_positive(f).holds, is_weakly_nonnegative(f).holds]
+    base = scripts.quiver_and_algebra_script(algebra)
+    qwp = str(session.run(
+        base + "\nIsWeaklyPositiveUnitForm(TitsUnitFormOfAlgebra(A));")) == "true"
+    qwnn = str(session.run(
+        base + "\nIsWeaklyNonnegativeUnitForm(TitsUnitFormOfAlgebra(A));")) == "true"
+    qpa = [qwp, qwnn]
+    return CrosscheckReport("tits_weak", ours, qpa, ours == qpa)
+
+
 def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     """Dispatch. what="hochschild"|"module_ext" (Plan 08); "symmetric" (Plan 29);
     "trivial_extension" (Plan 31); "tau"|"tau_minus"|"proj_resolution"|
@@ -551,6 +581,8 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_quadratic(algebra, *args, **kwargs)
     if what == "koszul_derived":
         return crosscheck_koszul_derived(algebra, *args, **kwargs)
+    if what == "tits_weak":
+        return crosscheck_tits_weak(algebra, *args, **kwargs)
     # An unrecognized `what` is a usage error, NOT "QPA unavailable".
     raise QuiverlabError(f"unknown cross-check {what!r}",
                          hint='use "hochschild", "module_ext", "symmetric", '
@@ -560,4 +592,5 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
                               '"proj_resolution", "inj_resolution", '
                               '"inj_dimension", "decompose", "indecomposable", '
                               '"ext_algebra_dims", "ext_generator_degrees", '
-                              '"ext_quiver", "quadratic", or "koszul_derived"')
+                              '"ext_quiver", "quadratic", "koszul_derived", '
+                              'or "tits_weak"')
