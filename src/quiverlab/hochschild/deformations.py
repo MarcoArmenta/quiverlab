@@ -450,3 +450,132 @@ def maurer_cartan(A, *, order=2, engine="auto", max_cells=4_000_000):
 def _rank(M, dom):
     from quiverlab.fields.linalg import rank
     return rank(M, dom)
+
+
+# ---------------------------------------------------------------------------
+# the presented deformed algebra A_alpha (RRRV) + the Ext-algebra handoff (RRR)
+# ---------------------------------------------------------------------------
+def _deformed_relation(r, pert, t):
+    """The deformed relation string r - t*pert (the first-order product a*b = ab +
+    t*f(a,b), the radical direction f supported on paths of length >= 2). Folds the sign
+    of t into the +/- like QuantumCI (no parenthesised coefficient -- the grammar splits
+    every +/-). t == '1' / '-1' drop the redundant coefficient (so the unit direction
+    yields 'x*x - 1' with the clean 'term 1 has no arrows' RelationError, Pin 1)."""
+    tok = str(t)
+    if tok == "1":
+        return "%s - %s" % (r, pert)
+    if tok == "-1":
+        return "%s + %s" % (r, pert)
+    if tok.startswith("-"):
+        return "%s + %s*%s" % (r, tok[1:], pert)
+    return "%s - %s*%s" % (r, tok, pert)
+
+
+def deformed_algebra(A, direction, *, t="1"):
+    """Build the presented deformed algebra A_alpha = kQ/I_alpha for a RADICAL 2-cocycle
+    `direction` and value `t`, and RE-CERTIFY it (RRRV, algebraically closed).
+
+    `direction` is a dict {base_relation_str: perturbation_path_str}: each named base
+    relation r is replaced by r - t*pert (a radical, length->2 perturbation), the rest of
+    the presentation unchanged; the algebra is rebuilt on the SAME quiver and re-certified
+    admissible + FLAT (dim A_alpha == dim A).
+
+    Loud on the honest-scope boundaries: a UNIT direction (a length-0 term) is refused at
+    PARSE level by RelationError ('term ... has no arrows', Pin 1); a parseable but
+    non-admissible / infinite radical direction relays AdmissibilityError /
+    NotFiniteDimensionalError; a non-flat jump is refused too. All relayed as QuiverlabError
+    (the radical-collapse honest scope, section 5)."""
+    from quiverlab.errors import (RelationError, AdmissibilityError,
+                                  NotFiniteDimensionalError)
+    _require_presented(A, "deformed_algebra")
+    if not isinstance(direction, dict) or not direction:
+        raise QuiverlabError(
+            "deformed_algebra: `direction` must be a non-empty dict "
+            "{base_relation_str: perturbation_path_str}",
+            hint="e.g. {'x*y': 'y*x'} deforms the relation x*y by - t*(y*x)")
+    base = [str(r) for r in A.relations]
+    unknown = [k for k in direction if k not in base]
+    if unknown:
+        raise QuiverlabError(
+            "deformed_algebra: direction keys %r are not relations of A (relations: %r)"
+            % (unknown, base))
+    new_rels = [_deformed_relation(r, direction[r], t) if r in direction else r
+                for r in base]
+    try:
+        A_alpha = A.quiver.algebra(relations=new_rels, field=A.domain)
+    except (RelationError, AdmissibilityError, NotFiniteDimensionalError) as exc:
+        raise QuiverlabError(
+            "deformed_algebra: the direction leaves the admissible radical sub-locus -- "
+            "%s: %s. A unit (length-0) direction (e.g. k[x]/(x^2) ~> k[x]/(x^2 - t), the "
+            "semisimplification) is an HH^2/MC story on C(A), NOT a presented A_alpha; the "
+            "presented feedback covers the RADICAL (admissible) directions only (section 5)."
+            % (type(exc).__name__, exc)) from exc
+    if A_alpha.dim != A.dim:
+        raise QuiverlabError(
+            "deformed_algebra: the deformation is NOT flat (dim A_alpha = %d != dim A = %d) "
+            "-- the radical changed size; this direction is not a flat formal deformation"
+            % (A_alpha.dim, A.dim))
+    return A_alpha
+
+
+def _ext_summary(E):
+    """A one-line summary of the Ext-algebra YonedaPresentation (Plan 27) of A_alpha."""
+    ngen = sum(len(v) for v in E.generators_by_degree.values())
+    nrel = sum(len(v) for v in E.relations_by_degree.values())
+    return "E(A_alpha): %d generator%s, %d relation%s, koszul=%s" % (
+        ngen, "" if ngen == 1 else "s", nrel, "" if nrel == 1 else "s", E.koszul)
+
+
+def _parallel_paths(A, k, src, tgt, limit=64):
+    """Length-k paths src -> tgt in A's quiver, as '*'-joined arrow-name strings."""
+    arrows = A.quiver.arrows
+    out = []
+
+    def dfs(cur, word):
+        if len(out) >= limit:
+            return
+        if len(word) == k:
+            if cur == tgt:
+                out.append("*".join(word))
+            return
+        for name, (s, tt) in arrows.items():
+            if s == cur:
+                dfs(tt, word + [name])
+    dfs(src, [])
+    return out
+
+
+def _relation_endpoints(A, r):
+    """(source, target, length) of a monomial relation string r = 'a*b*...'."""
+    arrows = A.quiver.arrows
+    names = r.split("*")
+    src = arrows[names[0]][0]
+    tgt = arrows[names[-1]][1]
+    return src, tgt, len(names)
+
+
+def _canonical_radical_direction(A):
+    """A canonical radical deformation direction for the report (display-only): perturb
+    one monomial relation r by a parallel length-|r| path p (same source/target) so that
+    A_alpha stays FLAT. Best-effort over monomial A; returns ({r: p}, A_alpha) or (None,
+    None). The flatness check filters bad perturbations (no separate ideal-membership
+    test needed)."""
+    if A.quiver is None or A.relations is None:
+        return None, None
+    mono = [str(r) for r in A.relations if getattr(r, "is_monomial", False)]
+    for r in mono:
+        try:
+            src, tgt, k = _relation_endpoints(A, r)
+        except (KeyError, IndexError):
+            continue
+        if k < 2:
+            continue
+        for p in _parallel_paths(A, k, src, tgt):
+            if p == r:
+                continue
+            try:
+                A_alpha = deformed_algebra(A, {r: p}, t="1")
+            except QuiverlabError:
+                continue
+            return {r: p}, A_alpha
+    return None, None
