@@ -625,10 +625,75 @@ function renderModuleBlocks(out, res) {
       out.appendChild(tauBlock(b, d, kind));
     } else if (kind === "homological_profile") {
       out.appendChild(homologicalProfileBlock(b, d));
+    } else if (kind === "fractional_cy") {
+      out.appendChild(fractionalCYBlock(b, d));
     } else if (kind === "derived_fingerprint") {
       out.appendChild(derivedFingerprintBlock(b, d));
     }
   }
+}
+
+// The stable-category fractional Calabi–Yau dimension (Plan 53 / R24). The `tier` is
+// ALWAYS "weak-on-generators" and is shown beside the value so the display never
+// overstates the certificate. A non-self-injective input is a clean error message.
+function fractionalCYBlock(block, d) {
+  const wrap = document.createElement("div");
+  if (block.error) {
+    const pr = document.createElement("p");
+    pr.className = "error";
+    pr.textContent = block.error;
+    wrap.appendChild(pr);
+    return wrap;
+  }
+  const p = document.createElement("p");
+  p.textContent = d.fcyTitle || "Stable-category fractional Calabi–Yau dimension";
+  wrap.appendChild(p);
+  const crit = document.createElement("p");
+  crit.textContent = d.fcyCriterion
+    || "S = Ω∘ν (Serre functor), Σ = Ω⁻¹ (suspension); fractionally CY of dimension m/ℓ ⇔ Sℓ ≅ Σᵐ (Ivanov–Volkov).";
+  wrap.appendChild(crit);
+  if (block.status === "certified") {
+    const head = document.createElement("p");
+    let line = "stable CY dimension " + block.cy_dimension;
+    if (block.ell === 1)
+      line += "  (weakly " + block.weakly_n_cy + "-CY, Ivanov–Volkov n = " + block.weakly_n_cy + ")";
+    head.textContent = line;
+    wrap.appendChild(head);
+    const rows = [
+      [d.fcyPair || "(m, ℓ)", "(" + block.m + ", " + block.ell + ")"],
+      [d.fcyTier || "tier", block.tier],
+    ];
+    if (block.sigma_period !== null && block.sigma_period !== undefined)
+      rows.push([d.fcySigmaPeriod || "Σ-period on generators", String(block.sigma_period)]);
+    const tbl = document.createElement("table");
+    for (const r of rows) {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      th.textContent = r[0];
+      const td = document.createElement("td");
+      td.textContent = r[1];
+      tr.appendChild(th);
+      tr.appendChild(td);
+      tbl.appendChild(tr);
+    }
+    wrap.appendChild(tbl);
+    const scope = document.createElement("p");
+    scope.className = "hint";
+    scope.textContent = "checked on: " + block.checked_on;
+    wrap.appendChild(scope);
+  } else if (block.status === "shift-trivial") {
+    const q = document.createElement("p");
+    q.textContent = d.fcyShiftTrivial
+      || "The suspension Σ = Ω⁻¹ is trivial on the generators (radical-square-zero self-injective local); the CY dimension is degenerate, reported (m, ℓ) = (0, 1).";
+    wrap.appendChild(q);
+  } else {
+    const q = document.createElement("p");
+    q.className = "hint";
+    q.textContent = d.fcyBudget
+      || "Not certified within the (m, ℓ) search window — the generators were not Σ-periodic in budget (likely representation-infinite self-injective).";
+    wrap.appendChild(q);
+  }
+  return wrap;
 }
 
 // The derived fingerprint (Plan 43) as a labelled table + necessary-condition scope.
@@ -684,6 +749,27 @@ function homProfileFindim(f) {
   return "findim ≥ " + f.lower + "  (" + f.note + ")";
 }
 
+// Plan 53: phidim/psidim algebra-invariant row (honest exact / lower-bound / error).
+function homProfilePhi(entry) {
+  return entry.error ? "not computed: " + entry.error : entry.text;
+}
+
+// Plan 53: the phi-spectrum row (value set + gaps; a partial spectrum claims no gaps).
+function homProfileSpectrum(sp) {
+  if (sp.error) return "not computed: " + sp.error;
+  const s = "{" + sp.values.join(", ") + "}";
+  if (!sp.complete) return s + "  (partial — not closed; no gaps claimed)";
+  return s + (sp.gaps.length ? "  (gaps: " + sp.gaps.join(", ") + ")" : "  (no gaps)");
+}
+
+// Plan 53: the Lat-Igusa-Todorov finitistic row (certified findim upper, or the honest
+// "no known decision procedure" degrade).
+function homProfileLit(lit) {
+  if (lit.family !== null && lit.family !== undefined)
+    return "findim(A) ≤ " + lit.findim_upper + "  [" + lit.family + "]";
+  return lit.proof;
+}
+
 function homologicalProfileBlock(block, d) {
   const wrap = document.createElement("div");
   const p = document.createElement("p");
@@ -699,6 +785,17 @@ function homologicalProfileBlock(block, d) {
   rows.push([(d.hpIgusa || "Igusa–Todorov φ/ψ"),
              it.error ? ("not computed: " + it.error)
                       : ("of " + it.module + ": φ = " + it.phi + ", ψ = " + it.psi)]);
+  // Plan 53 (additive keys) -- EACH behind a missing-key guard, so a pre-P53 cached
+  // block (which lacks these) renders the old four dimensions and never crashes (W3
+  // renderer tolerance; the additive-golden contract).
+  if (block.phidim)
+    rows.push([d.hpPhidim || "φdim (algebra invariant)", homProfilePhi(block.phidim)]);
+  if (block.psidim)
+    rows.push([d.hpPsidim || "ψdim (algebra invariant)", homProfilePhi(block.psidim)]);
+  if (block.phi_spectrum)
+    rows.push([d.hpSpectrum || "φ-spectrum (rep-finite)", homProfileSpectrum(block.phi_spectrum)]);
+  if (block.lit)
+    rows.push([d.hpLit || "Lat-Igusa-Todorov findim bound", homProfileLit(block.lit)]);
   const tbl = document.createElement("table");
   for (const r of rows) {
     const tr = document.createElement("tr");

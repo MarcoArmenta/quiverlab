@@ -563,6 +563,51 @@ class Algebra:
         from quiverlab.modules.homdims import finitistic_dimension_bounds
         return finitistic_dimension_bounds(self, bound=bound)
 
+    def phi_dim(self, **kw):
+        """The Igusa-Todorov phi-dimension ``phidim(A) = sup{ phi(M) }`` as an ALGEBRA
+        invariant (Plan 53 / R23a): EXACT for representation-finite ``A`` (direct sum of
+        all indecomposables via add-monotonicity), a certified LOWER bound when the AR
+        knit caps, the exact ``0`` for self-injective ``A``. A :class:`~quiverlab.modules.homdims.PhiDim`."""
+        from quiverlab.modules.homdims import phi_dim
+        return phi_dim(self, **kw)
+
+    def psi_dim(self, **kw):
+        """The Igusa-Todorov psi-dimension ``psidim(A) = sup{ psi(M) }`` as an ALGEBRA
+        invariant (Plan 53 / R23a); same rep-finite/honest-degrade contract as
+        :meth:`phi_dim`. A :class:`~quiverlab.modules.homdims.PsiDim`."""
+        from quiverlab.modules.homdims import psi_dim
+        return psi_dim(self, **kw)
+
+    def phi_spectrum(self, **kw):
+        """The phi-spectrum ``{ phi(X) : X indecomposable }`` + its gaps (Plan 53 / R23b;
+        Barrios-Mata-Rama). Rep-finite only; a partial spectrum claims no gaps. A
+        :class:`~quiverlab.modules.homdims.PhiSpectrum`."""
+        from quiverlab.modules.homdims import phi_spectrum
+        return phi_spectrum(self, **kw)
+
+    def finitistic_certificate(self, bound=32):
+        """A Lat-Igusa-Todorov finitistic certificate (Plan 53 / R23c): a proof-carrying
+        certified finite ``findim`` upper bound from a decidable LIT family (self-injective
+        / Iwanaga-Gorenstein / finite-phidim), or an honest ``None`` (no known decision
+        procedure in general). A :class:`~quiverlab.modules.homdims.LITCertificate`."""
+        from quiverlab.modules.homdims import lit_finitistic_certificate
+        return lit_finitistic_certificate(self, bound=bound)
+
+    def fractional_calabi_yau_dimension(self, **kw):
+        """The stable-category fractional Calabi-Yau dimension ``(m, ell)`` of a
+        self-injective algebra (Plan 53 / R24): ``S = Omega.nu``, ``Sigma = Omega^{-1}``,
+        certified at the weak-on-generators tier (Ivanov-Volkov criterion; bounded search
+        + loud budget). RAISES for non-self-injective ``A``. A
+        :class:`~quiverlab.modules.fractional_cy.FractionalCY`."""
+        from quiverlab.modules.fractional_cy import fractional_calabi_yau
+        return fractional_calabi_yau(self, **kw)
+
+    def is_fractionally_calabi_yau(self, **kw):
+        """True iff the stable category of this self-injective algebra CERTIFIES a
+        fractional Calabi-Yau dimension (Plan 53 / R24). RAISES for non-self-injective."""
+        from quiverlab.modules.fractional_cy import is_fractionally_calabi_yau
+        return is_fractionally_calabi_yau(self, **kw)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""

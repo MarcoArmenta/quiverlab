@@ -530,6 +530,16 @@ planned together even if delivered in slices.
   2026-08-06): v1 takes algebra B as a Dynkin type string or a preset pick;
   a free-form second canvas (and `derived_compare` on the index/family page)
   is the successor.
+- [ ] **Knit budget promptness** (P53 critic find, 2026-08-07): thread a hard
+  step cap into `knit_ar_quiver`'s inner almost-split loop so a `budget_modules`
+  cap terminates PROMPTLY on representation-infinite input. Today the budget
+  bounds the discovered-module COUNT but not the per-module almost-split work, so
+  `phi_dim`/`psi_dim`/`phi_spectrum` on a rep-infinite algebra (e.g. the
+  2-Kronecker) can run minutes before the budget trips (critic measured >5 min at
+  `budget_modules=12`). P53 documents the limitation (loud small-budget advice in
+  the docstrings + the verification honest-scope entry); this backlog item is the
+  actual fix (a `max_steps`/deadline in the BFS inner loop, honest `status="budget"`
+  on trip).
 
 ## Done (this backlog's history)
 

@@ -43,6 +43,7 @@ _HEADINGS = {
     "coxeter_polynomial": "Coxeter polynomial",
     "global_dimension": "Global dimension",
     "homological_profile": "Homological dimensions",
+    "fractional_cy": "Fractional Calabi–Yau dimension",
     "center": "Centre",
     "dimension": "Dimension",
     "ext_algebra": "Yoneda Ext-algebra and Koszulity",
@@ -725,6 +726,8 @@ def _block_html(kind, b, ctx=None):
         return ["<p>%s</p>" % _esc(str(b.get("text", "")))]
     if kind == "homological_profile":
         return _homological_profile_html(b)
+    if kind == "fractional_cy":
+        return _fractional_cy_html(b)
     if kind == "center":
         return [_math(r"\dim Z(A) = %s" % _num(b.get("dim")))]
     if kind == "dimension":
@@ -1061,9 +1064,83 @@ def _homological_profile_html(b):
         ("Gorenstein", (b.get("gorenstein") or {}).get("text", "")),
         ("Igusa–Todorov φ/ψ", it_text),
     ]
+    # Plan 53 (additive keys) -- EACH behind a missing-key guard (W3 renderer tolerance):
+    # a pre-P53 cached block lacks these; render only what is present, never crash.
+    pd_e = b.get("phidim")
+    if pd_e is not None:
+        rows.append(("φdim (algebra invariant)",
+                     ("not computed: %s" % pd_e["error"]) if pd_e.get("error")
+                     else pd_e.get("text", "")))
+    ps_e = b.get("psidim")
+    if ps_e is not None:
+        rows.append(("ψdim (algebra invariant)",
+                     ("not computed: %s" % ps_e["error"]) if ps_e.get("error")
+                     else ps_e.get("text", "")))
+    sp = b.get("phi_spectrum")
+    if sp is not None:
+        rows.append(("φ-spectrum (rep-finite)", _phi_spectrum_text(sp)))
+    lit = b.get("lit")
+    if lit is not None:
+        rows.append(("Lat-Igusa-Todorov findim bound", _lit_text(lit)))
     body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(lab), _esc(str(val)))
                    for lab, val in rows)
     return ['<table class="ql-table">%s</table>' % body]
+
+
+def _phi_spectrum_text(sp):
+    if sp.get("error"):
+        return "not computed: %s" % sp["error"]
+    s = "{%s}" % ", ".join(str(v) for v in sp.get("values", []))
+    if not sp.get("complete"):
+        return s + "  (partial — not closed; no gaps claimed)"
+    gaps = sp.get("gaps") or []
+    return s + ("  (gaps: %s)" % ", ".join(str(g) for g in gaps) if gaps
+                else "  (no gaps)")
+
+
+def _lit_text(lit):
+    if lit.get("family") is not None:
+        return "findim(A) ≤ %s  [%s]" % (_num(lit.get("findim_upper")), lit["family"])
+    return lit.get("proof", "")
+
+
+def _fractional_cy_html(b):
+    """The stable-category fractional Calabi–Yau dimension (Plan 53 / R24): S = Ω∘ν,
+    Σ = Ω⁻¹, the Ivanov–Volkov criterion, and the HONEST weak-on-generators (tier-3)
+    scope. A non-self-injective input renders the loud refusal message."""
+    if b.get("error"):
+        return ["<p>%s</p>" % _esc(b["error"])]
+    out = ["<p>Serre functor S = Ω∘ν, suspension Σ = Ω⁻¹; fractionally CY of "
+           "dimension m/ℓ ⇔ Sℓ ≅ Σᵐ (Ivanov–Volkov).</p>"]
+    if b.get("status") == "certified":
+        head = "stable CY dimension %s" % _esc(str(b.get("cy_dimension")))
+        if b.get("ell") == 1:
+            head += " (weakly %s-CY, Ivanov–Volkov n = %s)" % (
+                _num(b.get("weakly_n_cy")), _num(b.get("weakly_n_cy")))
+        out.append("<p><b>%s</b></p>" % head)
+        rows = [("(m, ℓ)", "(%s, %s)" % (_num(b.get("m")), _num(b.get("ell")))),
+                ("tier", b.get("tier", ""))]
+        if b.get("sigma_period") is not None:
+            rows.append(("Σ-period on generators", _num(b.get("sigma_period"))))
+        body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(str(l)), _esc(str(v)))
+                       for l, v in rows)
+        out.append('<table class="ql-table">%s</table>' % body)
+        out.append("<p class=\"ql-hint\">Certified at the weak-on-generators tier "
+                   "(object-wise on the simples + orbit reps — a NECESSARY condition "
+                   "for the weak (hence strong) CY property, never a functor "
+                   "isomorphism; can under-report both m and ℓ). checked on: %s</p>"
+                   % _esc(str(b.get("checked_on", ""))))
+    elif b.get("status") == "shift-trivial":
+        out.append("<p>The suspension Σ = Ω⁻¹ is trivial on the generators "
+                   "(radical-square-zero self-injective local); the CY dimension is "
+                   "degenerate, reported (m, ℓ) = (0, 1).</p>")
+    else:
+        out.append("<p class=\"ql-hint\">Not certified within the (m, ℓ) search window "
+                   "— the generators were not Σ-periodic in budget (likely "
+                   "representation-infinite self-injective).</p>")
+    return out
+
+
 def _almost_split_html(b):
     """The almost-split sequence 0 → τM → E → M → 0 (Plan 41): τM as a full
     representation, then E's Krull–Schmidt summands (standard summands named, others
