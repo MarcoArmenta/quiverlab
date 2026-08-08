@@ -259,6 +259,7 @@
   "pick.kind.radical_filtration_ss": "Suite spectrale de la filtration radicale",
   "pick.kind.ar_quiver": "Carquois d'Auslander–Reiten",
   "pick.kind.derived_compare": "Comparaison dérivée (avec B)",
+  "pick.kind.left_right_parts": "Parties gauche / droite + algèbres support",
   "draw.potential_label": "Potentiel W (facultatif)",
   "draw.potential_ph": "a*b*c - d*e*f  (construit l'algèbre jacobienne)",
   "draw.potential_conflict": "un potentiel et des relations explicites sont mutuellement exclusifs",

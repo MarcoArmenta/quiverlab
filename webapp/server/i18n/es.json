@@ -259,6 +259,7 @@
   "pick.kind.radical_filtration_ss": "Sucesión espectral de la filtración radical",
   "pick.kind.ar_quiver": "Carcaj de Auslander–Reiten",
   "pick.kind.derived_compare": "Comparación derivada (con B)",
+  "pick.kind.left_right_parts": "Partes izquierda / derecha + álgebras soporte",
   "draw.potential_label": "Potencial W (opcional)",
   "draw.potential_ph": "a*b*c - d*e*f  (construye el álgebra jacobiana)",
   "draw.potential_conflict": "un potencial y las relaciones explícitas son mutuamente excluyentes",

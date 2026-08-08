@@ -259,6 +259,7 @@
   "pick.kind.radical_filtration_ss": "根基滤链谱序列",
   "pick.kind.ar_quiver": "Auslander–Reiten 箭图",
   "pick.kind.derived_compare": "导出比较（与 B）",
+  "pick.kind.left_right_parts": "左部 / 右部 + 支撑代数",
   "draw.potential_label": "势 W（可选）",
   "draw.potential_ph": "a*b*c - d*e*f （构造 Jacobi 代数）",
   "draw.potential_conflict": "势与显式关系互斥",

@@ -259,6 +259,7 @@
   "pick.kind.radical_filtration_ss": "Radical-filtration spectral sequence",
   "pick.kind.ar_quiver": "Auslander–Reiten quiver",
   "pick.kind.derived_compare": "Derived comparison (with B)",
+  "pick.kind.left_right_parts": "Left / right parts + support algebras",
   "draw.potential_label": "Potential W (optional)",
   "draw.potential_ph": "a*b*c - d*e*f  (builds the Jacobian algebra)",
   "draw.potential_conflict": "a potential and explicit relations are mutually exclusive",
