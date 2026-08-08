@@ -445,6 +445,57 @@ class Bimodule:
         M.check()
         return M
 
+    @classmethod
+    def inflate(cls, L, B, coeff_over_B, *, vanishing_arrows):
+        """The ``L``-bimodule obtained from a ``B``-bimodule ``coeff_over_B`` by
+        **inflation along the split projection** ``π: L ↠ B`` (Plan 72, CMRS
+        ``math/0102194``). ``L = B ⋉ M`` is a split square-zero extension: its
+        generators split into those coming from ``B`` (the shared vertices ``e_v``
+        and ``B``'s arrows) and the ``M``-part ``vanishing_arrows`` (the new arrows
+        spanning the ideal ``M``, with ``M·M = 0``). For a ``B``-generator the
+        ``L``-action copies ``coeff_over_B``'s action at that generator's ``B``-basis
+        index; the ``vanishing_arrows`` act as **zero** (``M·M = 0``). The whole
+        action is then folded to the full ``L``-basis by :meth:`from_actions` and
+        certified by :meth:`check`.
+
+        The ``M``-space (``dim_M = coeff_over_B.dim_M``) is unchanged; only the
+        ambient algebra becomes ``L``. For the trivial-extension flagship
+        (``coeff_over_B = Bimodule.dual(B)``, ``vanishing_arrows`` = the dual arrows)
+        this returns ``D(B)`` viewed as the ideal of ``T(B)``; for
+        ``coeff_over_B = Bimodule.regular(B)`` it returns ``B = L/M`` pulled back
+        along ``π``. (Reused by P74 skew group algebras — noted for the record.)
+        """
+        if L.quiver is None or not L.basis_labels:
+            raise QuiverlabError(
+                "Bimodule.inflate needs a quiver presentation of L to read its "
+                "generators", hint="present L via Quiver(...).algebra(...)")
+        if B.basis_labels is None:
+            raise QuiverlabError(
+                "Bimodule.inflate needs B's basis labels to map generators of L "
+                "back to B", hint="present B via Quiver(...).algebra(...)")
+        dom = L.domain
+        dim_M = coeff_over_B.dim_M
+        b_index = {lab: i for i, lab in enumerate(B.basis_labels)}
+        vanish = set(vanishing_arrows)
+        zero = [[dom.zero()] * dim_M for _ in range(dim_M)]
+        left_maps, right_maps = {}, {}
+        gens = [f"e_{v}" for v in L.quiver.vertices] + list(L.quiver.arrows)
+        for lab in gens:
+            if lab in vanish:
+                left_maps[lab] = [row[:] for row in zero]
+                right_maps[lab] = [row[:] for row in zero]
+                continue
+            if lab not in b_index:
+                raise QuiverlabError(
+                    f"Bimodule.inflate: generator {lab!r} of L is neither a "
+                    f"vanishing (M-part) arrow nor a generator of B",
+                    hint="vanishing_arrows must be exactly the M-part arrows of L")
+            j = b_index[lab]
+            left_maps[lab] = [list(r) for r in coeff_over_B.Lact[j]]
+            right_maps[lab] = [list(r) for r in coeff_over_B.Ract[j]]
+        return cls.from_actions(L, dim_M, left_maps, right_maps,
+                                name=coeff_over_B.name)
+
 
 # ---------------------------------------------------------------------------
 # helpers

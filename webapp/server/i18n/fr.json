@@ -295,6 +295,8 @@
   "pick.remove": "retirer",
   "pick.kind.radical_filtration_ss": "Suite spectrale de la filtration radicale",
   "pick.kind.ar_quiver": "Carquois d'Auslander–Reiten",
+  "pick.kind.split_extension": "Suite exacte longue de Hochschild de l'extension scindée",
+  "pick.kind.arrow_removal": "Réduction certifiée de HH par suppression de flèches",
   "pick.kind.string_homological": "Test homologique de cordes",
   "pick.kind.toupie": "Structure toupie",
   "pick.kind.skew_gentle": "Algèbre skew-gentle (Q, I, Sp)",

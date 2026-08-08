@@ -92,9 +92,13 @@ def _max_degree(req: ComputeRequest) -> int:
         # homological degree -- sized on the algebra dimension (sizing_dim), so a big
         # algebra routes off the instant tier while the dim-220 Nakayama examples get an
         # honest budget refusal (the tau_tilting/products-omission precedent).
+        # Plan 72: `split_extension` / `arrow_removal` carry a TOP-DEGREE budget in hi;
+        # they are sized on the algebra dim (split_extension on 2*dim via sizing_dim's
+        # extension-awareness below), NOT tiered by hi-as-degree, so they skip too.
         if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts",
                          "tilted_check", "recognizer_ladder", "silting",
-                         "exceptional_sequences", "congruences", "hh1_lie"):
+                         "exceptional_sequences", "congruences", "hh1_lie",
+                         "split_extension", "arrow_removal"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)
@@ -138,6 +142,21 @@ def _algebra_b_dim(req: ComputeRequest) -> int:
         return 0
 
 
+def _extension_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Plan 72 (DD-G1): the ``split_extension`` LES runs the CS Hom-complex over
+    ``L = T(B)`` of dimension ``2*dim B``, so a ``split_extension`` compute item
+    sizes the job on ``2*algebra_dim`` (it routes off instant like an oversized
+    family). ``arrow_removal`` runs HH of ``A`` and ``B`` (both <= dim A), so it
+    sizes on ``algebra_dim`` -- no extra term."""
+    for raw in req.compute:
+        try:
+            if parse_compute_item(raw).kind == "split_extension":
+                return 2 * algebra_dim
+        except Exception:
+            continue
+    return 0
+
+
 def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     """Effective dimension for tier classification. Module resolutions, Ext and Tor
     scale with the MODULE dimension, so a big module -- INCLUDING the Tor second
@@ -145,11 +164,13 @@ def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     it would be mis-classified as instant and let an oversized Tor target drive a
     multi-GB dense-matrix allocation in the sync tier. ``derived_compare`` likewise
     fingerprints a SECOND algebra ``algebra_b``, so its dimension sizes the job too.
-    Falls back to the algebra dimension when there is no explicit module / second
-    algebra, so every existing family/quiver request classifies exactly as before
-    (Plan 26/30 + wave 2)."""
+    ``split_extension`` (Plan 72) runs over the trivial extension ``2*dim B``, so it
+    sizes on ``2*algebra_dim``. Falls back to the algebra dimension when there is no
+    explicit module / second algebra, so every existing family/quiver request
+    classifies exactly as before (Plan 26/30 + wave 2)."""
     return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
-               _module_dim(req.tor_target), _coefficient_dim(req), _algebra_b_dim(req))
+               _module_dim(req.tor_target), _coefficient_dim(req), _algebra_b_dim(req),
+               _extension_dim(req, algebra_dim))
 
 
 # Heuristic throughput used to turn the op estimate into a human "minutes"

@@ -498,6 +498,34 @@ class Algebra:
         return knit_ar_quiver(self, budget_modules=budget_modules,
                               budget_dim=budget_dim)
 
+    def split_extension_cohomology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension (trivial-extension) Hochschild-cohomology LES,
+        assembling ``HH^•(T(A))`` from the flanks ``HH^•(L, D(A))`` / ``HH^•(L, A)``
+        and the snake connecting map, cross-checked against the direct ``HH^•(T(A))``
+        (Plan 72 / R5, CMRS ``math/0102194``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_cohomology
+        return split_extension_cohomology(self, top, M=M, max_cells=max_cells)
+
+    def split_extension_homology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension Hochschild-HOMOLOGY twin (the dual SES
+        ``0 → M → L → A → 0`` in ``HH_•(L, −)``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_homology
+        return split_extension_homology(self, top, M=M, max_cells=max_cells)
+
+    def inert_arrows(self):
+        """The inert arrows of ``A`` — arrows in no minimal relation of ``I`` (CLMS
+        Def. 3.1, Plan 72 / R6). Structure-constant-only ⇒ loud."""
+        from quiverlab.hochschild.arrow_removal import inert_arrows
+        return inert_arrows(self)
+
+    def arrow_removal(self, arrows=None, top=6, *, side="both"):
+        """The certified arrow-removal HH reduction (CLMS ``1812.07655``, Plan 72 /
+        R6): build ``B = A ∖ (inert arrows)`` and report the clean ``HH_{≥2}``
+        homology isomorphism (Thm 3.2) + the cohomology Ext-correction (Thm 4.2).
+        ``arrows=None`` removes ALL inert arrows. Returns an ``ArrowRemovalReport``."""
+        from quiverlab.hochschild.arrow_removal import arrow_removal
+        return arrow_removal(self, arrows=arrows, top=top, side=side)
+
     def radical_filtration(self, budget_modules=256, budget_dim=4096):
         """The radical filtration of ``mod A`` (Plan 57 / R37): exact
         ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the

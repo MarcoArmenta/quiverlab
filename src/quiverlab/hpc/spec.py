@@ -314,6 +314,16 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # split_extension / arrow_removal (Plan 72) are ALGEBRA kinds carrying a TOP-DEGREE
+    # budget (the LES / reduction is assembled to degree hi), parsed like ar_quiver:
+    # 'split_extension' / 'split_extension:6'. hi = the top degree (None => default),
+    # bypassing the 'name:0..N' grammar (a single cap, not a lo..hi range).
+    for _kind in ("split_extension", "arrow_removal"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SpecError(f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget caps the classical
     # tuple search / the tau-tilting exchange graph -- not a homological degree -- so it
@@ -1728,6 +1738,29 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = ar_quiver_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Split-extension LES (Plan 72 / R5): an ALGEBRA-level kind carrying a TOP-DEGREE
+    # budget ('split_extension' / 'split_extension:6'). Interprets A as B, assembles
+    # HH^*(T(B)) from the flanks + snake, cross-checks against direct. Both runners share
+    # split_extension.split_extension_block (byte-identical), and its own loud refusals
+    # (presentation-less / char<=dim) come back as status='unsupported' + error (never a
+    # 500). No hh_trace (the block carries its own tables).
+    if kind == "split_extension":
+        budget = item.hi if item.hi is not None else 6
+        from quiverlab.hochschild.split_extension import split_extension_block
+        block = split_extension_block(A, top=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Certified arrow removal (Plan 72 / R6): an ALGEBRA-level kind carrying a TOP-DEGREE
+    # budget ('arrow_removal' / 'arrow_removal:6'). Auto-detects the inert arrows, builds
+    # B = A \ (inert), and reports the clean HH_{>=2} homology iso + the cohomology
+    # Ext-correction. Shared arrow_removal.arrow_removal_block; refusals -> status +
+    # error, never a 500.
+    if kind == "arrow_removal":
+        budget = item.hi if item.hi is not None else 6
+        from quiverlab.hochschild.arrow_removal import arrow_removal_block
+        block = arrow_removal_block(A, top=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Exceptional sequences (Plan 65 / R27+R28): an ALGEBRA-level kind carrying an
     # ENUMERATION BUDGET, not a degree range (parsed like tau_tilting / ar_quiver). One
     # shared block dispatches BOTH halves -- classical hereditary (braid-orbit counts) and
@@ -2739,6 +2772,12 @@ def _snippet(req: ComputeRequest, A) -> str:
              "ar_quiver":
                  lambda it: ("A.ar_quiver(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
+             "split_extension":
+                 lambda it: ("A.split_extension_cohomology("
+                             f"{it.hi if it.hi is not None else 6})"),
+             "arrow_removal":
+                 lambda it: ("A.arrow_removal(top="
+                             f"{it.hi if it.hi is not None else 6})"),
              "radical_filtration":
                  lambda it: ("A.radical_filtration(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),

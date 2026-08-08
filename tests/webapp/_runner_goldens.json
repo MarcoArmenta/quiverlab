@@ -1541,5 +1541,77 @@
   },
   "canonical_key": "45613063ac0c9828ff43e1d00496c5d3eae51c99e4175e5e8725a55d725b2027",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Demonet-Iyama-Reading-Reiten-Thomas: tors A is a complete, bialgebraic, completely semidistributive, completely congruence-uniform lattice; the brick labelling of its Hasse quiver; the representation-theoretic forcing order and the congruence lattice Con(tors A). The Plan-64 congruence + forcing ground truth.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"DIRRT2023\", \"doi\": \"10.1090/btran/100\", \"doi_url\": \"https://doi.org/10.1090/btran/100\", \"formatted\": \"Demonet, Laurent; Iyama, Osamu; Reading, Nathan; Reiten, Idun; Thomas, Hugh (2023). Lattice theory of torsion classes: Beyond $tau$-tilting theory. Transactions of the American Mathematical Society, Series B 10, 542-612.\", \"key\": \"dirrt_lattice_torsion\", \"topic\": \"Foundations\"}, {\"annotation\": \"Barnard-Carroll-Zhu: cover relations of tors A characterized by indecomposables; the completely join-irreducible torsion classes are in bijection with bricks; faces of the canonical join complex read representation-theoretically. Plan 64's join-irreducibles <-> bricks and canonical join representations.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"BCZ2019\", \"doi\": \"10.5802/alco.72\", \"doi_url\": \"https://doi.org/10.5802/alco.72\", \"formatted\": \"Barnard, Emily; Carroll, Andrew; Zhu, Shijie (2019). Minimal inclusions of torsion classes. Algebraic Combinatorics 2, 879-901.\", \"key\": \"barnard_carroll_zhu\", \"topic\": \"Foundations\"}, {\"annotation\": \"Enomoto: the kappa order (extended kappa map of Barnard-Todorov-Zhu) and the core label order on a completely semidistributive lattice coincide and are isomorphic to the poset of wide subcategories. Plan 64's core-label-order = wide-subcategory computation.\", \"arxiv\": \"2201.00595\", \"arxiv_url\": \"https://arxiv.org/abs/2201.00595\", \"bibtex_key\": \"Enomoto2023wide\", \"doi\": \"10.1007/s10468-023-10214-0\", \"doi_url\": \"https://doi.org/10.1007/s10468-023-10214-0\", \"formatted\": \"Enomoto, Haruhisa (2023). From the lattice of torsion classes to the posets of wide subcategories and ICE-closed subcategories. Algebras and Representation Theory.\", \"key\": \"enomoto_wide_ice\", \"topic\": \"Foundations\"}, {\"annotation\": \"Marks-Stovicek: the Ingalls-Thomas maps between torsion classes and wide subcategories; wide A injects into tors A, and the two are in BIJECTION iff A is REPRESENTATION-FINITE (not merely hereditary). Plan 64's #wide <= #torsion bound and the honest-scope statement that the count discriminates only off the representation-finite case.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"MarksStovicek2017\", \"doi\": \"10.1112/blms.12033\", \"doi_url\": \"https://doi.org/10.1112/blms.12033\", \"formatted\": \"Marks, Frederik; vSvtov'ivcek, Jan (2017). Torsion classes, wide subcategories and localisations. Bulletin of the London Mathematical Society 49, 405-416.\", \"key\": \"marks_stovicek\", \"topic\": \"Foundations\"}, {\"annotation\": \"Adachi-Iyama-Reiten: support tau-tilting pairs, mutation, the exchange graph, g-vectors, and the bijection with functorially finite torsion classes -- the ground truth for the Plan-45 / C4 tau-tilting engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AIR2014\", \"doi\": \"10.1112/S0010437X13007422\", \"doi_url\": \"https://doi.org/10.1112/S0010437X13007422\", \"formatted\": \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\", \"key\": \"air_tau_tilting\", \"topic\": \"Foundations\"}, {\"annotation\": \"DIJ: tau-tilting-finiteness <=> finite g-fan <=> finitely many bricks; the counting identities and the wall-and-chamber / g-vector fan (Plan 45 / C4).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"DIJ2019\", \"doi\": \"10.1093/imrn/rnx135\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnx135\", \"formatted\": \"Demonet, Laurent; Iyama, Osamu; Jasso, Gustavo (2019). $tau$-tilting finite algebras, bricks, and $g$-vectors. International Mathematics Research Notices 2019, 852-892.\", \"key\": \"demonet_iyama_jasso\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.congruence_lattice(budget=512)\", \"results\": {\"congruences\": {\"citations\": [[\"DIRRT2023\", \"Demonet, Laurent; Iyama, Osamu; Reading, Nathan; Reiten, Idun; Thomas, Hugh (2023). Lattice theory of torsion classes: Beyond $tau$-tilting theory. Transactions of the American Mathematical Society, Series B 10, 542-612.\"], [\"BCZ2019\", \"Barnard, Emily; Carroll, Andrew; Zhu, Shijie (2019). Minimal inclusions of torsion classes. Algebraic Combinatorics 2, 879-901.\"], [\"Enomoto2023wide\", \"Enomoto, Haruhisa (2023). From the lattice of torsion classes to the posets of wide subcategories and ICE-closed subcategories. Algebras and Representation Theory.\"], [\"MarksStovicek2017\", \"Marks, Frederik; vSvtov'ivcek, Jan (2017). Torsion classes, wide subcategories and localisations. Bulletin of the London Mathematical Society 49, 405-416.\"], [\"AIR2014\", \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\"], [\"DIJ2019\", \"Demonet, Laurent; Iyama, Osamu; Jasso, Gustavo (2019). $tau$-tilting finite algebras, bricks, and $g$-vectors. International Mathematics Research Notices 2019, 852-892.\"]], \"complete\": true, \"congruences\": {\"forcing_order\": {\"bricks\": [{\"dimvec\": {\"1\": 1, \"2\": 0}, \"name\": \"S1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1}, \"name\": \"S2\"}, {\"dimvec\": {\"1\": 1, \"2\": 1}, \"name\": \"P1\"}], \"relations\": [[2, 0], [2, 1]]}, \"is_distributive\": true, \"num_join_irreducibles\": 3, \"size\": 5}, \"kind\": \"congruences\", \"lattice\": {\"canonical_joins\": [{\"element\": 0, \"joinands\": [{\"brick_dimvec\": {\"1\": 1, \"2\": 0}, \"brick_name\": \"S1\"}, {\"brick_dimvec\": {\"1\": 0, \"2\": 1}, \"brick_name\": \"S2\"}], \"label\": \"(P1(+)S2,{})\"}, {\"element\": 1, \"joinands\": [{\"brick_dimvec\": {\"1\": 0, \"2\": 1}, \"brick_name\": \"S2\"}], \"label\": \"(S2,{1})\"}, {\"element\": 2, \"joinands\": [{\"brick_dimvec\": {\"1\": 1, \"2\": 1}, \"brick_name\": \"P1\"}], \"label\": \"(P1(+)S1,{})\"}, {\"element\": 3, \"joinands\": [], \"label\": \"(0,{1,2})\"}, {\"element\": 4, \"joinands\": [{\"brick_dimvec\": {\"1\": 1, \"2\": 0}, \"brick_name\": \"S1\"}], \"label\": \"(S1,{2})\"}], \"hasse\": [{\"brick_dimvec\": {\"1\": 1, \"2\": 0}, \"brick_name\": \"S1\", \"from\": 0, \"to\": 1}, {\"brick_dimvec\": {\"1\": 0, \"2\": 1}, \"brick_name\": \"S2\", \"from\": 0, \"to\": 2}, {\"brick_dimvec\": {\"1\": 0, \"2\": 1}, \"brick_name\": \"S2\", \"from\": 1, \"to\": 3}, {\"brick_dimvec\": {\"1\": 1, \"2\": 1}, \"brick_name\": \"P1\", \"from\": 2, \"to\": 4}, {\"brick_dimvec\": {\"1\": 1, \"2\": 0}, \"brick_name\": \"S1\", \"from\": 4, \"to\": 3}], \"is_distributive\": false, \"is_modular\": false, \"is_semidistributive\": true, \"join_irreducibles\": 3, \"meet_irreducibles\": 3, \"num_covers\": 5, \"size\": 5}, \"n\": 2, \"note\": null, \"references\": [\"dirrt_lattice_torsion\", \"barnard_carroll_zhu\", \"enomoto_wide_ice\", \"marks_stovicek\", \"air_tau_tilting\", \"demonet_iyama_jasso\"], \"status\": \"complete\", \"wide\": {\"constructions_agree\": true, \"labels\": [[{\"dimvec\": {\"1\": 1, \"2\": 0}, \"name\": \"S1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1}, \"name\": \"S2\"}], [{\"dimvec\": {\"1\": 0, \"2\": 1}, \"name\": \"S2\"}], [{\"dimvec\": {\"1\": 1, \"2\": 1}, \"name\": \"P1\"}], [], [{\"dimvec\": {\"1\": 1, \"2\": 0}, \"name\": \"S1\"}]], \"relations\": [[1, 0], [2, 0], [3, 0], [3, 1], [3, 2], [3, 4], [4, 0]], \"size\": 5}}}}"
+ },
+ "split_extension_kA2": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2
+    ],
+    "arrows": {
+     "a1": [
+      1,
+      2
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "GF",
+     "p": 7,
+     "n": 1
+    }
+   },
+   "compute": [
+    "split_extension:4"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "546ed99ecb6b271089dbdce1b4cdd7a35b6bdccc7751bf1c4ce3f8dd9b6c0cf1",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"HH^1(T(A)) is never zero -- Z(A) is always a summand -- for every finite-dimensional A; the trivial-extension HH^1 oracle.\", \"arxiv\": \"math/0102194\", \"arxiv_url\": \"https://arxiv.org/abs/math/0102194\", \"bibtex_key\": \"cibilsmarcosredondosolotar2003\", \"doi\": \"10.1017/S0017089502008948\", \"doi_url\": \"https://doi.org/10.1017/S0017089502008948\", \"formatted\": \"Cibils, Claude; Marcos, Eduardo; Redondo, Mar'ia Julia; Solotar, Andrea (2003). Cohomology of split algebras and of trivial extensions. Glasgow Mathematical Journal 45, 21-40.\", \"key\": \"cmrs_split\", \"topic\": \"Foundations\"}, {\"annotation\": \"The HH^1(T(A)) decomposition and Example 2.20 (the Z_5 cycle) -- the trivial-extension first-cohomology oracle.\", \"arxiv\": \"math/0210284\", \"arxiv_url\": \"https://arxiv.org/abs/math/0210284\", \"bibtex_key\": \"cibilsredondosaorin2004\", \"doi\": \"10.1142/S0219498804000769\", \"doi_url\": \"https://doi.org/10.1142/S0219498804000769\", \"formatted\": \"Cibils, Claude; Redondo, Mar'ia Julia; Saor'in, Manuel (2004). The first cohomology group of the trivial extension of a monomial algebra. Journal of Algebra and its Applications 3, 143-159.\", \"key\": \"crs_trivial_ext_hh1\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a1\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(7))\\nA.split_extension_cohomology(4)\", \"results\": {\"split_extension\": {\"agrees\": true, \"assembled\": [3, 1, 1, 1, 1], \"base\": \"Algebra of dimension 3 over GF(7)\", \"citations\": [[\"cibilsmarcosredondosolotar2003\", \"Cibils, Claude; Marcos, Eduardo; Redondo, Mar'ia Julia; Solotar, Andrea (2003). Cohomology of split algebras and of trivial extensions. Glasgow Mathematical Journal 45, 21-40.\"], [\"cibilsredondosaorin2004\", \"Cibils, Claude; Redondo, Mar'ia Julia; Saor'in, Manuel (2004). The first cohomology group of the trivial extension of a monomial algebra. Journal of Algebra and its Applications 3, 143-159.\"]], \"coeff\": \"D(B)\", \"delta_ranks\": [0, 0, 0, 2, 0], \"direct\": [3, 1, 1, 1, 1], \"exact\": true, \"extension\": \"Algebra of dimension 6 over GF(7)\", \"flank_B\": [1, 0, 1, 2, 1], \"flank_M\": [2, 1, 0, 1, 2, 1], \"hh1_directed_formula\": true, \"hh1_nonzero\": true, \"kind\": \"split_extension\", \"leading_B\": [1, 0, 0, 0, 0], \"leading_M\": [2, 0, 0, 0, 0], \"note\": \"\", \"references\": [\"cmrs_split\", \"crs_trivial_ext_hh1\"], \"side\": \"cohomology\", \"status\": \"complete\", \"top\": 4}}}"
+ },
+ "arrow_removal_P1": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ],
+     "c": [
+      1,
+      2
+     ]
+    },
+    "relations": [
+     "x^2"
+    ],
+    "field": {
+     "kind": "GF",
+     "p": 7,
+     "n": 1
+    }
+   },
+   "compute": [
+    "arrow_removal:4"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "eea52b45678f7e57c2677a4d973ec8d15ad5e8fb592276c1af622286daa25c73",
+  "result_json": "{\"algebra\": {\"arrows\": {\"c\": [1, 2], \"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x^2\"], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Inert-arrow deletion (Def. 3.1) gives a clean HH_n isomorphism for n >= 2 (Thm 3.2) and a cohomology Ext-correction (Thm 4.2); arrow addition = the tensor algebra T_B(N), finite iff no relative cycle (Thm 3.5/3.6) -- the Plan-72 certified arrow-removal reduction and the P73 Han-conjecture seam.\", \"arxiv\": \"1812.07655\", \"arxiv_url\": \"https://arxiv.org/abs/1812.07655\", \"bibtex_key\": \"cibilslanzilottamarcossolotar2020\", \"doi\": \"10.1090/proc/14936\", \"doi_url\": \"https://doi.org/10.1090/proc/14936\", \"formatted\": \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2020). Deleting or adding arrows of a bound quiver algebra and Hochschild (co)homology. Proceedings of the American Mathematical Society 148, 2421-2432.\", \"key\": \"clms_arrow_removal\", \"topic\": \"Foundations\"}, {\"annotation\": \"Finite global dimension iff finite Hochschild homology dimension -- the conjecture the zoo scans probe.\", \"arxiv\": \"math/0408402\", \"arxiv_url\": \"https://arxiv.org/abs/math/0408402\", \"bibtex_key\": \"Han2006\", \"doi\": \"10.1112/S002461070602299X\", \"doi_url\": \"https://doi.org/10.1112/S002461070602299X\", \"formatted\": \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\", \"key\": \"han_conjecture\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"x\\\": (1, 1), \\\"c\\\": (1, 2)})\\nA = Q.algebra(relations=['x^2'], field=GF(7))\\nA.arrow_removal(top=4)\", \"results\": {\"arrow_removal\": {\"algebra\": \"Algebra of dimension 5 over GF(7)\", \"citations\": [[\"cibilslanzilottamarcossolotar2020\", \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2020). Deleting or adding arrows of a bound quiver algebra and Hochschild (co)homology. Proceedings of the American Mathematical Society 148, 2421-2432.\"], [\"Han2006\", \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\"]], \"coh_A\": [1, 1, 1, 1, 1], \"coh_B\": [3, 1, 1, 1, 1], \"coh_correction\": [0, 0, 0, 0, 0], \"coh_low_delta\": [-2, 0], \"hom_A\": [3, 1, 1, 1, 1], \"hom_B\": [3, 1, 1, 1, 1], \"hom_agrees\": true, \"hom_iso_from\": 2, \"hom_low_agrees\": [true, true], \"inert_certificate\": {\"c\": \"appears in no relation\"}, \"kind\": \"arrow_removal\", \"note\": \"\", \"reduced\": \"Algebra of dimension 3 over GF(7)\", \"references\": [\"clms_arrow_removal\", \"han_conjecture\"], \"removed\": [\"c\"], \"status\": \"complete\"}}}"
  }
 }
