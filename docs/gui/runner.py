@@ -205,6 +205,14 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
+    # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
+    # so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
+    if name == "hh1_lie":
+        if rng and not rng.isdigit():
+            raise RequestError("hh1_lie budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "hh1_lie", (int(rng) if rng else None)
     # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
     # -- the exchange-graph pair budget, not a homological degree, so it skips MAX_DEGREE.
     if name == "wall_chamber":
@@ -1195,6 +1203,15 @@ def compute_one(spec):
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "hh1_lie":
+            # HH^1 as a Lie algebra (Plan 70 / R11): algebra-level, DIM budget (not
+            # degree). SAME shared library builder (invariants.hh1_lie.hh1_lie_block) +
+            # references -> citations as the server twin (quiverlab.hpc.spec._dispatch),
+            # so the cross-runner contract holds byte-for-byte. Der/Inn + bracket + series
+            # + solvable/nilpotent over any exact field; char-0 radical/Levi/sl2-count.
+            from quiverlab.invariants.hh1_lie import hh1_lie_block
+            block = hh1_lie_block(A, budget=top if top is not None else 48)
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "wall_chamber":
             # Wall-and-chamber structure via bricks (Plan 63 / R25): algebra-level, budget
             # (not degree). SAME shared library builder
@@ -1505,6 +1522,8 @@ def python_snippet():
              "bv_operator": "A.bv_operator(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 70: HH^1 as a Lie algebra, a scalar algebra-only kind, no %d.
+             "hh1_lie": "A.hh1_lie_structure()",
              # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
              "wall_chamber": "A.wall_chamber_structure(budget_pairs=%d)",
              # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
@@ -1647,6 +1666,10 @@ ETA_MODEL = {
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
                 "tau_tilting": 2.0,
+                # Plan 70: hh1_lie runs the Der/Inn Leibniz null space (d^2 unknowns /
+                # d^3 equations, ~ d^5.4 over QQ) + the bracket/series/Killing; budget-
+                # capped honestly at dim 48. The same cost class as tau_tilting.
+                "hh1_lie": 2.0,
                 # Plan 63: wall_chamber runs the tau_tilting exchange-graph BFS PLUS the
                 # per-brick submodule enumeration for each D(B) -- just above tau_tilting.
                 "wall_chamber": 2.5,

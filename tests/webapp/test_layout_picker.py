@@ -62,6 +62,8 @@ ALL_KINDS = {
     "barcode",
     # Plan 65 (2026-08-08): exceptional sequences (classical hereditary + tau-exceptional).
     "exceptional_sequences",
+    # Plan 70 (2026-08-08): HH^1 as a Lie algebra (Der/Inn, solvable/Levi).
+    "hh1_lie",
 }
 
 

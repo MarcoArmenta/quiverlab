@@ -271,6 +271,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
+    # 'hh1_lie:48'. The budget caps A.dim for the Der solve (d^2 unknowns / d^3
+    # equations) -- not a homological degree -- so it bypasses the 'name:0..N' grammar.
+    if s == "hh1_lie" or s.startswith("hh1_lie:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"hh1_lie budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="hh1_lie", lo=None, hi=(int(b) if b else None))
     # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or
     # 'wall_chamber:512' -- the exchange-graph pair budget, not a degree range.
     if s == "wall_chamber" or s.startswith("wall_chamber:"):
@@ -1657,6 +1665,17 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = tau_tilting_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # HH^1 as a Lie algebra (Plan 70 / R11): an ALGEBRA-level kind carrying a DIM
+    # BUDGET, not a degree range (parsed like tau_tilting). Der/Inn + bracket + series
+    # + solvable/nilpotent over any exact field; over char 0 also radical/Levi/sl2-count.
+    # Both runners share invariants.hh1_lie.hh1_lie_block, so the blocks are byte-
+    # identical; an oversized / presentation-less refusal is an `error` field, never a 500.
+    if kind == "hh1_lie":
+        budget = item.hi if item.hi is not None else 48   # DEFAULT_MAXDIM (Plan 70)
+        from quiverlab.invariants.hh1_lie import hh1_lie_block
+        block = hh1_lie_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # Wall-and-chamber structure via bricks (Plan 63 / R25): an ALGEBRA-level kind
     # carrying a PAIR BUDGET, parsed like tau_tilting. Walls D(B) as exact inequality
     # systems + chambers = g-cones; certified complete iff brick-finite <=> tau-tilting-
@@ -2768,6 +2787,7 @@ def _snippet(req: ComputeRequest, A) -> str:
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
+             "hh1_lie": lambda it: "A.hh1_lie_structure()",
              "wall_chamber":
                  lambda it: ("A.wall_chamber_structure(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),

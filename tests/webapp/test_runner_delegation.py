@@ -400,15 +400,25 @@ never hide behind one:
     agrees (``tests/gui/test_exceptional_runner_twin_p65.py``). ``canonical_key`` is
     request-derived (schema-1 algebra-only, the budget rides in the ``compute``
     string, no ``module`` block).
+  * 2026-08-08 (``hh1_lie_kronecker`` ADDED, Plan 70 / R11): a NEW algebra-only DIM-budget
+    kind. kK2 (the Kronecker quiver 1 => 2, no relations) over QQ, ``compute ==
+    ["hh1_lie"]`` -- the shared block reports HH^1 = Der/Inn = sl2: ``dim == 3``,
+    ``solvable == false``, ``perfect == true``, ``radical_dim == 0``, ``sl2_count == 1``,
+    ``levi_type == "A1"``, ``toral_rank == 1``, with the QQ ``base_change_note``. Pure
+    ADDITION: all 38 pre-existing entries were verified byte-identical BEFORE the append
+    (the generator round-trips the file bytes, then re-dumps ``indent=1`` order-preserving).
+    Both runners share the library builder (``invariants.hh1_lie.hh1_lie_block``), so the
+    Pyodide twin agrees (``tests/gui/test_hh1_lie_runner_twin_p70.py``). ``canonical_key``
+    is request-derived (schema-1 algebra-only, no ``module`` block).
   * 2026-08-08 (``barcode_a5``): ADDED for Plan 69 (R33 persistence/TDA bridge) -- the
     new ``barcode`` module-side compute kind. One entry: a schema-2 request drawing the
     forward line ``A_5`` (1->2->3->4->5, QQ) with the filtration ``H_0`` module (dims
     (1,2,1,2,1), Plan-26 per-arrow block maps) + ``compute: ["barcode"]``. The block is
-    the interval barcode ``{[1,5] essential, [2,2], [4,4]}`` (LIVE-VERIFIED). The 38
-    prior delegation asserts were confirmed byte-identical BEFORE the append (parse dev's
-    dict, append ``barcode_a5``, re-dump ``indent=1``, NEVER ``sort_keys``). Both runners
-    share the library core builder (``quiverlab.modules.barcode.barcode_block``), so the
-    Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
+    the interval barcode ``{[1,5] essential, [2,2], [4,4]}`` (LIVE-VERIFIED). Appended AFTER
+    dev's ``hh1_lie_kronecker`` (parse dev's dict, append ``barcode_a5`` LAST, re-dump
+    ``indent=1``, NEVER ``sort_keys``); all 39 prior entries confirmed byte-identical first.
+    Both runners share the library core builder (``quiverlab.modules.barcode.barcode_block``),
+    so the Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
     is request-derived (the ``module`` block canonicalizes through the Plan-25 key; no new
     top-level request field)."""
 import json
