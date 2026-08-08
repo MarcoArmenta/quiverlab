@@ -3334,6 +3334,8 @@
         var pc = b.partition_counts || {};
         var pcs = Object.keys(pc).map(function (k) { return k + ": " + pc[k]; }).join(", ");
         if (pcs) div.appendChild(h("p", { text: "Partition — " + pcs + "." }));
+        if (b.partition_note)
+          div.appendChild(h("p", { text: b.partition_note }));
         var dg = b.degrees || {}, dks = Object.keys(dg);
         if (dks.length) {
           var dgh = h("tr");

@@ -142,16 +142,58 @@ def right_degree(rf: RadicalFiltration, i, j, f_vec=None):
     return _degree_sweep(rf, i, j, fmat, "right")
 
 
+def _class_reps(rf: RadicalFiltration, i, j):
+    """The class representatives of ``rad(X_i, X_j) / rad^2`` (one per arrow
+    multiplicity): the ``rad^1`` basis vectors independent modulo ``rad^2``."""
+    dom = rf._dom
+    rad1 = rf._layer_basis(i, j, 1)
+    rad2 = rf._layer_basis(i, j, 2)
+    idxs = lm.independent_modulo(rad1, rad2, dom)
+    return [rad1[t] for t in idxs]
+
+
+def _min_finite(vals):
+    """The least FINITE degree in ``vals`` (``None`` = infinite), or ``None`` if every
+    entry is infinite."""
+    finite = [v for v in vals if v is not None]
+    return min(finite) if finite else None
+
+
 def degree_table(rf: RadicalFiltration, ar):
-    """``{(i, j): {"d_l", "d_r", "finite_l", "finite_r"}}`` over the irreducible-map
-    arrows of the knit (computed for the first ``rad/rad^2`` class representative;
-    ``d`` is ``None`` for an infinite degree)."""
+    """``{(i, j): {...}}`` over the irreducible-map arrows of the knit. A
+    multiplicity-1 arrow carries ``{"d_l", "d_r", "finite_l", "finite_r"}`` (``d`` is
+    ``None`` for an infinite degree). A multiplicity > 1 arrow additionally carries
+    ``{"mult", "d_l_classes", "d_r_classes"}`` -- the per-class list, with ``d_l``/``d_r``
+    the min (finite-preferring) over the classes (Plan-57 honest per-class report).
+
+    # PIN (missing algebra-level fixture): every knittable representation-finite
+    # quiver algebra in scope has ONLY multiplicity-1 AR arrows (`dim rad(X,Y)/rad^2 =
+    # 1`) -- verified over kA_4/kA_5, D_4/D_5 and the Nakayama zoo [3,2,2]/[4,3,2,2].
+    # Multiplicity > 1 needs a non-trivial AR valuation (a species / non-algebraically-
+    # closed base field), which `knit_ar_quiver` (projective-seeded quiver-algebra BFS)
+    # does not produce. The per-class code path is therefore covered by a synthetic
+    # `_class_reps` unit test (`tests/modules/test_liu_degrees.py`); a genuine mult>1
+    # algebra-level fixture is DEFERRED until the AR engine grows a species surface."""
     out = {}
     for (i, j) in ar.arrows:
-        dl, fin_l, _ = left_degree(rf, i, j)
-        dr, fin_r, _ = right_degree(rf, i, j)
-        out[(i, j)] = {"d_l": dl, "d_r": dr,
-                       "finite_l": bool(fin_l), "finite_r": bool(fin_r)}
+        reps = _class_reps(rf, i, j)
+        if len(reps) <= 1:
+            f = reps[0] if reps else None
+            dl, fin_l, _ = left_degree(rf, i, j, f)
+            dr, fin_r, _ = right_degree(rf, i, j, f)
+            out[(i, j)] = {"d_l": dl, "d_r": dr,
+                           "finite_l": bool(fin_l), "finite_r": bool(fin_r)}
+        else:
+            dls = [left_degree(rf, i, j, f) for f in reps]
+            drs = [right_degree(rf, i, j, f) for f in reps]
+            dl_cls = [d for (d, _f, _w) in dls]
+            dr_cls = [d for (d, _f, _w) in drs]
+            out[(i, j)] = {
+                "d_l": _min_finite(dl_cls), "d_r": _min_finite(dr_cls),
+                "finite_l": any(fin for (_d, fin, _w) in dls),
+                "finite_r": any(fin for (_d, fin, _w) in drs),
+                "mult": len(reps),
+                "d_l_classes": dl_cls, "d_r_classes": dr_cls}
     return out
 
 
@@ -355,6 +397,8 @@ def ar_invariants(A, *, budget_modules=256, budget_dim=4096):
             % (len(rf.indecs), rep_directed,
                "acyclic" if rep_directed else "has an oriented cycle",
                rf.nilpotency_index))
+    if not rep_directed:                            # honest labeling of the partition
+        note = note + " -- " + _NONDIRECTED_CAVEAT
     return ARInvariants(
         partition=partition, directing=directing,
         is_representation_directed=rep_directed,
@@ -371,6 +415,14 @@ def ar_invariants(A, *, budget_modules=256, budget_dim=4096):
 # --------------------------------------------------------------------------- #
 _AR_INV_REFS = ["liu_degrees", "liu_semistable", "ringel_tame"]
 
+# The plan-mandated honesty caveat on a NON-directed component: the τ-partition is
+# the clean postprojective/preinjective/regular trichotomy ONLY on a directed
+# component; on a non-directed one the buckets can overlap, so the classification is
+# reported as a τ-orbit reading, never the clean trichotomy. Carried as block DATA
+# (like ar_quiver's `partial_note`), so it needs no i18n key.
+_NONDIRECTED_CAVEAT = ("τ-orbit classification; non-directed component — buckets "
+                       "may overlap")
+
 
 def ar_invariants_block(A, *, budget=512):
     """The ``ar_invariants`` algebra block (Plan 57 / R21): Liu degrees, the
@@ -384,9 +436,10 @@ def ar_invariants_block(A, *, budget=512):
         part_counts[lab] = part_counts.get(lab, 0) + 1
     degrees = {}
     for (i, j), rec in inv.degrees.items():
-        degrees["%d->%d" % (i, j)] = {
-            "d_l": rec["d_l"], "d_r": rec["d_r"],
-            "finite_l": rec["finite_l"], "finite_r": rec["finite_r"]}
+        # Copy the whole record: a multiplicity-1 arrow carries exactly
+        # {d_l, d_r, finite_l, finite_r} (byte-unchanged), a mult>1 arrow additionally
+        # carries {mult, d_l_classes, d_r_classes} (Plan-57 per-class honesty).
+        degrees["%d->%d" % (i, j)] = dict(rec)
     block = {
         "kind": "ar_invariants",
         "status": inv.status,
@@ -408,4 +461,9 @@ def ar_invariants_block(A, *, budget=512):
                   r"\text{directing},\ \Gamma_A\ \text{acyclic}"),
         "references": list(_AR_INV_REFS),
     }
+    # Honest partition caveat: on a NON-directed component the buckets can overlap, so
+    # the classification is a tau-orbit reading, never the clean trichotomy (plan-
+    # mandated). Block data, like ar_quiver's partial_note -- no i18n key needed.
+    if inv.is_complete and not inv.is_representation_directed:
+        block["partition_note"] = _NONDIRECTED_CAVEAT
     return block

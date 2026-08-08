@@ -656,6 +656,8 @@ def _ar_invariants_html(b):
     if pc:
         chunks.append("<p>Partition: %s.</p>"
                       % _esc(", ".join("%s: %s" % (k, pc[k]) for k in sorted(pc))))
+    if b.get("partition_note"):                     # honest non-directed caveat
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["partition_note"])))
     degs = b.get("degrees") or {}
     if degs:
         def _deg(v):

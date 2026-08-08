@@ -12,7 +12,7 @@ import pytest
 from quiverlab import Quiver, linear_path_algebra, NakayamaAlgebra
 from quiverlab.fields import QQ
 from quiverlab.families.dynkin import dynkin_quiver     # NOT a top-level export
-from quiverlab.modules.ar_invariants import ar_invariants
+from quiverlab.modules.ar_invariants import ar_invariants, ar_invariants_block
 
 lit = pytest.mark.oracle_literature
 selfcert = pytest.mark.oracle_selfcert
@@ -63,6 +63,23 @@ def test_cyclic_nakayama_is_knittable_but_NOT_representation_directed():
     assert inv.is_representation_directed is False           # the negative branch
     # the two flags are INDEPENDENT: rep-finite => rad^inf = 0 => generalized standard
     assert inv.generalized_standard is True
+
+
+@selfcert
+def test_non_directed_partition_carries_the_honesty_caveat():
+    # On a NON-directed component the τ-partition is not the clean trichotomy, so the
+    # block/note must carry the plan-mandated caveat (never claim the clean partition).
+    A = NakayamaAlgebra(kupisch=[3, 2, 2], field=QQ)
+    inv = ar_invariants(A)
+    assert inv.is_representation_directed is False
+    assert "buckets may overlap" in inv.note                 # library-level note
+    b = ar_invariants_block(A)
+    assert b["representation_directed"] is False
+    assert b.get("partition_note") == (
+        "τ-orbit classification; non-directed component — buckets may overlap")
+    # a DIRECTED component carries NO caveat (the clean trichotomy is honest there)
+    bd = ar_invariants_block(linear_path_algebra(3, field=QQ))
+    assert bd["representation_directed"] is True and "partition_note" not in bd
 
 
 @selfcert

@@ -127,3 +127,43 @@ def test_degree_table_covers_every_arrow():
     for rec in tab.values():
         # exactly one of d_l / d_r finite on kA_n (mono/epi dichotomy)
         assert rec["finite_l"] ^ rec["finite_r"]
+        # a multiplicity-1 arrow carries EXACTLY the four scalar keys (byte-stable):
+        assert set(rec) == {"d_l", "d_r", "finite_l", "finite_r"}
+
+
+@selfcert
+def test_min_finite_helper():
+    from quiverlab.modules.ar_invariants import _min_finite
+    assert _min_finite([None, 2, None]) == 2
+    assert _min_finite([3, 1, 2]) == 1
+    assert _min_finite([None, None]) is None
+    assert _min_finite([]) is None
+
+
+@selfcert
+def test_degree_table_multiplicity_gt_1_per_class(monkeypatch):
+    # No knittable rep-finite quiver algebra in scope has a mult>1 AR arrow (verified
+    # over kA_4/kA_5, D_4/D_5, the Nakayama zoo -- see the # PIN in degree_table). We
+    # cover the per-class code path SYNTHETICALLY: force _class_reps to return TWO
+    # class reps for every arrow (the two rad/rad^2 generators of a length-2 pair),
+    # and assert the block gains {mult, d_l_classes, d_r_classes} with the min-degree
+    # aggregation, while a genuine mult-1 run stays four-key.
+    import quiverlab.modules.ar_invariants as ari
+    A = linear_path_algebra(3, field=QQ)
+    rf, ar = radical_filtration(A), knit_ar_quiver(A)
+    real = ari._class_reps
+
+    def _doubled(rf_, i, j):
+        reps = real(rf_, i, j)
+        return reps + reps[:1] if reps else reps      # duplicate the first rep -> mult 2
+
+    monkeypatch.setattr(ari, "_class_reps", _doubled)
+    tab = degree_table(rf, ar)
+    for (i, j), rec in tab.items():
+        assert rec["mult"] == 2
+        assert len(rec["d_l_classes"]) == 2 and len(rec["d_r_classes"]) == 2
+        # the scalar d_l/d_r is the finite-preferring min over the class list
+        assert rec["d_l"] == ari._min_finite(rec["d_l_classes"])
+        assert rec["d_r"] == ari._min_finite(rec["d_r_classes"])
+        # duplicated rep => identical per-class degrees
+        assert rec["d_l_classes"][0] == rec["d_l_classes"][1]

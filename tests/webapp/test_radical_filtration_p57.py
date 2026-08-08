@@ -19,6 +19,12 @@ _kA3 = {"kind": "quiver", "vertices": [1, 2, 3], "arrows": {"a1": [1, 2], "a2": 
         "relations": [], "field": {"kind": "QQ"}}
 _kxx = {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
         "relations": ["x*x"], "field": {"kind": "GF", "p": 5, "n": 1}}
+# The non-uniform cyclic Nakayama [3,2,2] over GF(2): knittable + NON-self-injective,
+# but char 2 <= dim 3 trips the trace-form rad-End char guard -> a loud typed error.
+_n322_gf2 = {"kind": "quiver", "vertices": [1, 2, 3],
+             "arrows": {"a1": [1, 2], "a2": [2, 3], "a3": [3, 1]},
+             "relations": ["a1*a2*a3", "a2*a3", "a3*a1"],
+             "field": {"kind": "GF", "p": 2, "n": 1}}
 
 
 def _server_block(req, kind):
@@ -85,6 +91,18 @@ def test_twin_parity(req, key, kind):
     assert sb.get("kind") == kind
     assert json.dumps(sb, sort_keys=True, default=str) == \
            json.dumps(tb, sort_keys=True, default=str)
+
+
+@pytest.mark.parametrize("kind", ["radical_filtration", "ar_invariants"])
+def test_char_le_dim_yields_a_clean_typed_error_block(kind):
+    # char 2 <= dim 3 on [3,2,2]/GF(2): the trace-form rad-End refusal must surface as
+    # a clean typed {"kind":..., "error":...} block through the dispatch -- never a 500
+    # or an uncaught raise.
+    b = _server_block({"schema": 1, "algebra": _n322_gf2, "compute": [kind]}, kind)
+    assert b["kind"] == kind
+    assert "error" in b and "char 2" in b["error"]
+    # a char-scope refusal never emits a fake verdict
+    assert "nilpotency_index" not in b or b.get("nilpotency_index") is None
 
 
 def test_budget_is_not_a_degree_range():

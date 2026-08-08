@@ -161,6 +161,20 @@ def test_layer1_equals_hom_off_diagonal_field_parity():
 
 
 @selfcert
+def test_window_skips_layers_when_over_the_module_cap():
+    # A rep-finite algebra with a SMALL budget_modules budget-caps with >24 discovered
+    # indecomposables (kA_8 has 36): the window branch then SKIPS the layer computation
+    # (layer == {}) and issues no verdict -- honest bounded-window contract, no fake
+    # index, and cheap (small modules).
+    rf = radical_filtration(linear_path_algebra(8, field=QQ), budget_modules=25)
+    assert rf.is_complete is False and rf.status == "budget"
+    assert len(rf.indecs) > 24
+    assert rf.layer == {}                            # layers skipped past the cap
+    assert rf.nilpotency_index is None and rf.rad_infinity_zero is None
+    assert "window" in rf.note.lower()
+
+
+@selfcert
 def test_generalized_standard_true_in_rep_finite_scope():
     rf = radical_filtration(linear_path_algebra(3, field=QQ))
     assert rf.is_generalized_standard() is True

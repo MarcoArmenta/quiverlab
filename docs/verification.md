@@ -554,14 +554,16 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 905 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 532 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1107 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 1111 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 200 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2183 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2187 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Collected 2026-08-07 on the `plan-57-radical-degrees` branch (Plan 57 R37/R21 — the
 radical filtration of `mod A` + Liu degrees + AR-component invariants): +14 literature,
-+2 cross-engine, +13 self-cert, +2 qpa (mid-merge-train live recount; the P53 base was
-891 / 530 / 1094 / 198 / 11).
++2 cross-engine, +17 self-cert, +2 qpa (mid-merge-train live recount; the P53 base was
+891 / 530 / 1094 / 198 / 11). The self-cert delta includes the adversarial-review minor
+round (non-directed partition-caveat honesty, the per-class degree logic, the window-skip
+branch — 4 additional self-cert tests).
 
 Counts as of the P43 merge (the derived-category surface); sibling plans in the v0.2.0
 
