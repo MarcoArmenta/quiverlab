@@ -399,7 +399,17 @@ never hide behind one:
     (``tautilting.exceptional.exceptional_sequences_block``), so the Pyodide twin
     agrees (``tests/gui/test_exceptional_runner_twin_p65.py``). ``canonical_key`` is
     request-derived (schema-1 algebra-only, the budget rides in the ``compute``
-    string, no ``module`` block)."""
+    string, no ``module`` block).
+  * 2026-08-08 (``hh1_lie_kronecker`` ADDED, Plan 70 / R11): a NEW algebra-only DIM-budget
+    kind. kK2 (the Kronecker quiver 1 => 2, no relations) over QQ, ``compute ==
+    ["hh1_lie"]`` -- the shared block reports HH^1 = Der/Inn = sl2: ``dim == 3``,
+    ``solvable == false``, ``perfect == true``, ``radical_dim == 0``, ``sl2_count == 1``,
+    ``levi_type == "A1"``, ``toral_rank == 1``, with the QQ ``base_change_note``. Pure
+    ADDITION: all 38 pre-existing entries were verified byte-identical BEFORE the append
+    (the generator round-trips the file bytes, then re-dumps ``indent=1`` order-preserving).
+    Both runners share the library builder (``invariants.hh1_lie.hh1_lie_block``), so the
+    Pyodide twin agrees (``tests/gui/test_hh1_lie_runner_twin_p70.py``). ``canonical_key``
+    is request-derived (schema-1 algebra-only, no ``module`` block)."""
 import json
 import pathlib
 

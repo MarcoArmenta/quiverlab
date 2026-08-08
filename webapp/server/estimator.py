@@ -87,9 +87,13 @@ def _max_degree(req: ComputeRequest) -> int:
         # Plan 67: `silting` carries a RADIUS,BUDGET pair in (lo, hi) -- enumeration
         # bounds, not homological degrees -- so it joins the skip tuple (sized on A.dim).
         # Plan 65: `exceptional_sequences` carries an ENUMERATION BUDGET (not a degree).
+        # Plan 70: `hh1_lie` carries a DIM BUDGET (caps A.dim for the Der solve), not a
+        # homological degree -- sized on the algebra dimension (sizing_dim), so a big
+        # algebra routes off the instant tier while the dim-220 Nakayama examples get an
+        # honest budget refusal (the tau_tilting/products-omission precedent).
         if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts",
                          "tilted_check", "recognizer_ladder", "silting",
-                         "exceptional_sequences"):
+                         "exceptional_sequences", "hh1_lie"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

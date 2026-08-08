@@ -556,6 +556,82 @@ def crosscheck_tits_weak(algebra) -> CrosscheckReport:
     return CrosscheckReport("tits_weak", ours, qpa, ours == qpa)
 
 
+@dataclass
+class Hh1LieReport:
+    """QPA/GAP cross-check of HH^1(A) as a Lie algebra (Plan 70). GAP's core Lie
+    library (``LieAlgebraByStructureConstants`` + ``IsLieSolvable`` /
+    ``LieDerivedSeries`` / ``SemiSimpleType``) recomputes our verdicts from the
+    shipped HH^1 structure constants. QPA itself has NO HH^1-Lie surface -- this is
+    GAP's own Lie machinery, a genuine independent oracle."""
+    ours_solvable: bool
+    gap_solvable: bool
+    ours_derived_dims: list
+    gap_derived_dims: list
+    ours_semisimple_type: object
+    gap_semisimple_type: object
+    agree: bool
+
+    def assert_agree(self):
+        if not self.agree:
+            raise AssertionError(
+                "GAP Lie cross-check DISAGREES on HH^1-Lie: "
+                f"solvable ours={self.ours_solvable} gap={self.gap_solvable}; "
+                f"derived-dims ours={self.ours_derived_dims} gap={self.gap_derived_dims}; "
+                f"type ours={self.ours_semisimple_type} gap={self.gap_semisimple_type}")
+        return self
+
+
+def crosscheck_hh1_lie(algebra) -> Hh1LieReport:
+    """Feed the computed HH^1 = Der/Inn structure constants to GAP's Lie library and
+    cross-check ``IsLieSolvable``, ``LieDerivedSeries`` dims (solvable case), and
+    ``SemiSimpleType`` (semisimple char-0 case; ``sl2 -> "A1"``).
+
+    Conventions confirmed live against the installed GAP: GAP's ``LieDerivedSeries``
+    STOPS at the perfect part (a single term ``[L]`` for perfect L), so the
+    derived-series dims are compared only when L is solvable (both reach 0);
+    ``SemiSimpleType`` returns ``fail`` off a semisimple algebra, so it is read only
+    when our ``radical_dim == 0``."""
+    session.require_gap()
+    L = algebra.hh1_lie_structure()
+    m = L.dim
+    if m == 0:
+        raise QuiverlabError(
+            "HH^1(A) = 0: there is no Lie algebra to cross-check with GAP")
+    dom = algebra.domain
+    ring = "Rationals" if dom.characteristic == 0 else f"GF({dom.characteristic})"
+    c = L.constants
+    lines = [f'T := EmptySCTable({m}, 0, "antisymmetric");;']
+    for i in range(m):
+        for j in range(i + 1, m):
+            terms = [f"{c[i][j][k]},{k + 1}" for k in range(m) if c[i][j][k] != "0"]
+            if terms:
+                lines.append(f"SetEntrySCTable(T, {i + 1}, {j + 1}, [{','.join(terms)}]);;")
+    lines.append(f"LL := LieAlgebraByStructureConstants({ring}, T);;")
+    session.run("\n".join(lines))
+    gap_solvable = str(session.run("IsLieSolvable(LL);")) == "true"
+    gap_ds = [int(x) for x in session.run("List(LieDerivedSeries(LL), Dimension);")]
+    gap_type = None
+    if dom.characteristic == 0 and L.semisimple:
+        gap_type = str(session.run("SemiSimpleType(LL);"))
+    ok = (gap_solvable == L.solvable)
+    if L.solvable:                                    # GAP's series reaches 0 too
+        ok = ok and (gap_ds == L.derived_series_dims)
+    if gap_type is not None:
+        # GAP's SemiSimpleType is SPACE-separated ("A1 A1"); our levi_type is "+"-joined
+        # ("A1+A1"). Compare as the canonical sorted multiset of simple factors so the
+        # multi-factor semisimple path (sl2 (+) sl2 (+) ...) does not spuriously disagree.
+        ok = ok and (_norm_lie_type(gap_type) == _norm_lie_type(L.levi_type))
+    return Hh1LieReport(L.solvable, gap_solvable, L.derived_series_dims, gap_ds,
+                        L.levi_type, gap_type, ok)
+
+
+def _norm_lie_type(s):
+    """The canonical sorted multiset of simple factors from either "A1+A1" (our
+    ``levi_type``) or "A1 A1" (GAP ``SemiSimpleType``) or "A1" (a single factor)."""
+    import re
+    return tuple(sorted(f for f in re.split(r"[+\s]+", str(s).strip()) if f))
+
+
 def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     """Dispatch. what="hochschild"|"module_ext" (Plan 08); "symmetric" (Plan 29);
     "trivial_extension" (Plan 31); "tau"|"tau_minus"|"proj_resolution"|
