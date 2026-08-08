@@ -286,6 +286,32 @@ REGISTRY: dict = {r.key: r for r in [
        "The delooping level dell(A) as an upper bound for the finitistic dimension "
        "-- the deferred Plan-40 Task-F invariant (honest-scope note).",
        "homdim", "finitistic"),
+    # --- Plan 53: phidim/psidim as algebra invariants + LIT + fractional CY ---
+    _r("fernandes_lanzilotta_mendoza", "FernandesLanzilottaMendoza2015", "foundation",
+       "The Phi-dimension: a new homological measure",
+       "phidim(A) = sup phi(M) as an algebra invariant + derived-equivalence invariance "
+       "of its finiteness -- the Plan-53 phidim/psidim ground truth.",
+       "homdim", "finitistic"),
+    _r("bravo_lanzilotta_mendoza_vivero", "BravoLanzilottaMendozaVivero2021", "foundation",
+       "Generalised Igusa-Todorov functions and Lat-Igusa-Todorov algebras",
+       "The LIT algebras + the proof-carrying finitistic bound psi_D(V) + n + 1 -- the "
+       "Plan-53 LIT finitistic certificate.",
+       "homdim", "finitistic"),
+    _r("ivanov_volkov", "IvanovVolkov2012", "family",
+       "Stable Calabi-Yau dimension of self-injective algebras of finite type",
+       "The Serre functor S = Omega.nu, suspension Sigma = Omega^{-1}, and the criterion "
+       "Omega^{n+1} ~ nu^{-1} -- the Plan-53 fractional-CY ground truth (Table 1 deferred).",
+       "modules", "oracle"),
+    _r("erdmann_skowronski_scy", "ErdmannSkowronski2006", "foundation",
+       "The stable Calabi-Yau dimension of tame symmetric algebras",
+       "Introduced the stable Calabi-Yau dimension of a self-injective algebra as the "
+       "weak CY dimension of mod-bar A -- the Plan-53 fractional-CY foundation.",
+       "modules"),
+    _r("geiss_leclerc_schroer", "GeissLeclercSchroer2006", "family",
+       "Rigid modules over preprojective algebras",
+       "The stable category of a Dynkin preprojective algebra is 2-Calabi-Yau -- the "
+       "Plan-53 Pi(Delta) fractional-CY (2,1) literature oracle.",
+       "modules", "oracle"),
     # --- Plan 46: C5 gentle / string subsystem ---
     _r("butler_ringel", "ButlerRingel1987", "algorithm",
        "Auslander-Reiten sequences for string algebras",

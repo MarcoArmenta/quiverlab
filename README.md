@@ -298,6 +298,15 @@ ported and wired in:
   family, each result carrying the `GlobalDimension`-style certified-value-or-honest-bound
   honesty (never a bare number when unresolved, `is_gorenstein` three-valued
   True/None), and clickable end-to-end via the no-code `homological_profile`.
+- **Homological invariants II (C6, P53).** **φdim / ψdim as algebra invariants**
+  (exact for representation-finite input via the ⊕-of-all-indecomposables theorem, a
+  certified lower bound otherwise — never a claimed sup), the **φ-spectrum and its gaps**
+  (Barrios–Mata–Rama), **Lat-Igusa-Todorov finitistic certificates** (a proof-carrying
+  certified `findim` upper bound from a decidable family, or an honest "no known decision
+  procedure"), and the **stable fractional Calabi–Yau dimension** of self-injective
+  algebras (`S = Ω∘ν`, `Σ = Ω⁻¹`, Ivanov–Volkov, certified at the weak-on-generators
+  tier) — clickable via `homological_profile` (new φdim/ψdim/spectrum/LIT rows) and the
+  new `fractional_cy` compute kind.
 - **Auslander–Reiten theory.** The AR translates τ / τ⁻ and the Nakayama functor
   ν / ν⁻ as named functors, **almost-split sequences** `0 → τM → E → M → 0` with the
   middle term built and certified (exact, non-split, indecomposable ends), irreducible
