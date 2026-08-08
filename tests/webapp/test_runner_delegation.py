@@ -281,6 +281,61 @@ never hide behind one:
     builders (``string_homological_block`` / ``toupie_block``), so the Pyodide twin
     agrees (``tests/gui/test_recognizer_runner_twin_p59.py``). ``canonical_key`` is
     request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-07 (``tilted_check_kA3`` ADDED, Plan 60 R17): a NEW fixture for the
+    ``tilted_check`` ALGEBRA-level compute kind (schema v1, kA3 = 1->2->3 over QQ,
+    ``compute == ["tilted_check:256"]``). The block is ``verdict == "tilted"``,
+    ``reason == "hereditary"``, ``hereditary_type == "A_3"`` with the certified
+    projective slice + the self-referential reconstruction. Pure ADDITION: every
+    pre-existing entry was verified byte-identical BEFORE the append (added/removed/
+    changed check == {tilted_check_kA3}/{}/[]); both runners share the library builder
+    ``modules.tilted.tilted_check_block``, so the Pyodide twin agrees
+    (``tests/webapp/test_tilted_check_p60.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only, no ``module`` block; the budget carries in the compute
+    string, adding no request field).
+  * 2026-08-07 (``recognizer_ladder_kA3`` ADDED, Plan 61 R18): a NEW fixture for the
+    ``recognizer_ladder`` ALGEBRA-level compute kind (schema v1, kA3 = 1->2->3 over QQ,
+    budget 256 -- the quasi-tilted/shod/weakly-shod/laura/ada ladder). Hereditary kA3 =>
+    all five verdicts ``True``, empty laura complement, gl.dim 1; the ada/HH^1 block
+    reports ``hh1_dim == 0`` with ``applicable == False`` and ``verdict == null`` because
+    QQ is NOT algebraically closed (ACLV Theorem B's hypothesis unmet -- no SC verdict off
+    CC). Pure ADDITION: every pre-existing entry was verified byte-identical BEFORE the
+    append (textual, existing bytes untouched); both runners share the library builder
+    (``modules.recognizers_ladder.recognizer_ladder_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_recognizer_ladder_p61.py`` /
+    ``tests/gui/test_recognizer_ladder_twin.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only, budget rides in the ``compute`` string, no new request
+    field).
+  * 2026-08-08 (``recognizer_ladder_kA3`` re-freeze, Plan 61 fix round -- honest gl.dim):
+    the ``recognizer_ladder`` block now carries ``gldim_exact`` alongside ``gldim`` (the
+    house style of the ``global_dimension`` / ``homological_profile`` blocks), so an
+    UNRESOLVED global dimension is presented as a certified lower bound, never a definite
+    value (the fix for ``NakayamaAlgebra(kupisch=[3,3,2])``, whose ``global_dimension``
+    returns ``value=32, exact=False``). kA3 is exact, so its block gains only
+    ``"gldim_exact": true``. Gated re-freeze: the regenerated blob was asserted
+    byte-identical to the old one after ADDING the single ``gldim_exact`` key (no other
+    field changed), and every OTHER golden entry was verified byte-identical BEFORE the
+    write. Both runners share the builder, so the twin stays byte-identical; the
+    ``canonical_key`` is unchanged (request-derived, no request-shape change).
+  * 2026-08-08 (``tame_wild_a5_cc`` ADDED, Plan 62 / R19): a NEW algebra-only scalar
+    kind. A5 (linear 1->2->3->4->5) over CC -- the combinatorial Tits form + the
+    rep-finite/tame/wild verdict gated on the P56 certificate: ``rep_type ==
+    "rep-finite"``, ``weakly_positive == true``, ``is_unit_form == true``. Pure
+    ADDITION: every pre-existing entry was verified byte-identical BEFORE the append
+    (60 delegation asserts green first); both runners share the library builder
+    (``invariants.tits_block.tame_wild_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_tame_wild_exposure_p62.py::test_twin_parity``).
+    ``canonical_key`` is request-derived (schema-1 algebra-only, no ``module``
+    block).
+  * 2026-08-08 (``tame_wild_a5_cc`` RE-FREEZE, Plan 62 fix round -- honesty fixes):
+    the tame/wild block gained a ``certified`` field (``"rep_infinite"`` when
+    Bongartz certifies representation-infinite but rep_type stays None; ``null``
+    here since A5 is rep-finite), and the ``reason`` / ``scope_note`` no longer say
+    "over an algebraically closed field" for a char-0 field (the verdict is read by
+    BASE CHANGE to the algebraic closure -- field-independent in char 0). Gated
+    re-freeze, scoped BY KEY: the regenerated blob differs from the old one ONLY in
+    ``results.tame_wild.{certified (added null),reason,scope_note}`` (verified by a
+    structured diff); ``body`` and ``canonical_key`` are byte-identical, and every
+    OTHER golden entry was asserted unchanged before the write.
   * 2026-08-08 (``wall_chamber_kA2`` ADDED, Plan 63): a NEW algebra-only budget kind
     over QQ -- the wall-and-chamber structure via bricks on kA2 (``wall_chamber:512``),
     5 chambers / 3 walls, complete, render ``fan2d``, ``D(P1)`` a ray. Pure ADDITION:

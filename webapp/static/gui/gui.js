@@ -119,6 +119,10 @@
     '  <label><input type="checkbox" id="qlgui-ar_invariants"> AR-component invariants (Liu degrees, directing), budget <input type="number" id="qlgui-ar_invariants-budget" value="512" min="1"></label>' +
     // Plan-55: left/right parts of the module category (algebra-level; honest semi-decision + budget).
     '  <label><input type="checkbox" id="qlgui-left_right_parts"> left/right parts, budget <input type="number" id="qlgui-left_right_parts-budget" value="256" min="1"></label>' +
+    // Plan-60: tilted-algebra recognizer (algebra-level; honest semi-decision + knit budget).
+    '  <label><input type="checkbox" id="qlgui-tilted_check"> tilted-algebra check (Liu-Skowroński), budget <input type="number" id="qlgui-tilted_check-budget" value="256" min="1"></label>' +
+    // Plan-61: quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder + ada/HH^1 simple connectedness (algebra-level; budget).
+    '  <label><input type="checkbox" id="qlgui-recognizer_ladder"> recognizer ladder (quasi-tilted/shod/weakly-shod/laura/ada), budget <input type="number" id="qlgui-recognizer_ladder-budget" value="256" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
     // ---- Plan 59: R34 homological string test + R35 toupie structure ----
@@ -129,6 +133,8 @@
     // ---- Plan 56: pi1(Q,I) + simple connectivity ----
     '  <label><input type="checkbox" id="qlgui-fundamental_group"> fundamental group &pi;&#8321;(Q,I)</label>' +
     '  <label><input type="checkbox" id="qlgui-simply_connected"> simply connected (+ strongly)</label>' +
+    // ---- Plan 62: Tits-form tame/wild certificate ----
+    '  <label><input type="checkbox" id="qlgui-tame_wild"> tame / wild (Tits form)</label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
@@ -237,6 +243,10 @@
    "ar_invariants", "ar_invariants-budget",
    // Plan 55: left/right parts of the module category (algebra-level, budget)
    "left_right_parts", "left_right_parts-budget",
+   // Plan 60: tilted-algebra recognizer (algebra-level, knit budget)
+   "tilted_check", "tilted_check-budget",
+   // Plan 61: quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder (algebra-level, budget)
+   "recognizer_ladder", "recognizer_ladder-budget",
    "algb", "algb-legend", "algb-mode", "algb-mode-label",
    "algb-type", "algb-type-wrap", "algb-type-label",
    "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
@@ -256,6 +266,8 @@
    "quasi_hereditary",
    // Plan 56: pi1(Q,I) + simple connectivity (scalar kinds)
    "fundamental_group", "simply_connected",
+   // Plan 62: Tits-form tame/wild certificate (scalar kind)
+   "tame_wild",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
    // Plan 63: wall-and-chamber structure via bricks (budget picker)
@@ -889,7 +901,7 @@
     ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "string_homological", "toupie", "quasi_hereditary",
-     "fundamental_group", "simply_connected"].forEach(function (k) {
+     "fundamental_group", "simply_connected", "tame_wild"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
@@ -914,6 +926,13 @@
     // form both runners parse (like ar_quiver / tau_tilting).
     if (el.left_right_parts.checked)
       compute.push("left_right_parts:" + el["left_right_parts-budget"].value);
+    // Plan 60: tilted_check carries the KNIT budget (budget_modules); budget_sections
+    // stays an internal default. Single-int form both runners parse.
+    if (el.tilted_check.checked)
+      compute.push("tilted_check:" + el["tilted_check-budget"].value);
+    // Plan 61: recognizer ladder carries a MODULE BUDGET (not a degree), like left_right_parts.
+    if (el.recognizer_ladder.checked)
+      compute.push("recognizer_ladder:" + el["recognizer_ladder-budget"].value);
     // Plan 43: derived_compare is algebra-level and needs a second algebra B.
     if (el.derived_compare.checked) compute.push("derived_compare");
     var module = null, extTarget = null, torTarget = null;
@@ -3506,6 +3525,50 @@
           stline += " (witness: " + JSON.stringify(st.witness) + ")";
         div.appendChild(h("p", { text: stline + "." }));
       }
+    } else if (name === "tame_wild") {
+      // Plan 62 / R19: the combinatorial Tits form + the theorem-gated rep-finite /
+      // tame / wild verdict (never confused with P38's form-type definiteness).
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        var certRepInf = (b.rep_type === null || b.rep_type === undefined)
+          && b.certified === "rep_infinite";
+        var twName = b.rep_type === "rep-finite" ? "representation-finite"
+          : b.rep_type === "tame" ? "tame"
+          : b.rep_type === "wild" ? "wild"
+          : certRepInf ? "representation-infinite (tame vs wild withheld)"
+          : "undecided";
+        var twline = "Representation type (certified): " + twName;
+        div.appendChild(h("p", { text: twline + "." }));
+        if ((b.rep_type === null || b.rep_type === undefined) && !certRepInf)
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: "Verdict withheld — " + (b.reason || "out of scope") }));
+        else if (b.reason)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.reason }));
+        // the two field-free form booleans + the exact witness
+        var wpph = b.weakly_positive === true ? "yes"
+          : b.weakly_positive === false ? "no" : "undecided";
+        var wnph = b.weakly_nonnegative === true ? "yes"
+          : b.weakly_nonnegative === false ? "no" : "undecided";
+        div.appendChild(h("p", { text: "Tits form: weakly positive — " + wpph
+          + "; weakly nonnegative — " + wnph + "." }));
+        if (b.witness)
+          div.appendChild(h("p", { text: "Witness d = " + JSON.stringify(b.witness)
+            + " with q_A(d) = " + b.witness_value + "." }));
+        // the P56 certificate trail (the gate for the verdict)
+        var sc = b.simply_connected, ssc = b.strongly_simply_connected;
+        var tri = function (v) { return v === true ? "yes" : v === false ? "no" : "undecided"; };
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "Certificate (Plan 56): simply connected — " + tri(sc)
+            + "; strongly simply connected — " + tri(ssc)
+            + "; base field admits the representation-type verdict — "
+            + (b.field_alg_closed ? "yes" : "no") + "." }));
+        // the integer Tits Gram matrix as an indexed grid
+        if (b.gram && b.gram.length)
+          div.appendChild(matrixGrid(b.gram));
+        if (b.scope_note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope_note }));
+      }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
     } else if (name === "wall_chamber") {
@@ -3681,6 +3744,117 @@
                 + "}, dim " + sa.dim + ", " + (sa.components || []).length
                 + " connected component(s)")));
           });
+      }
+    } else if (name === "tilted_check") {
+      // Plan 60: the tilted-algebra recognizer (Liu-Skowroński). Verdict + reason FIRST
+      // (an honest semi-decision: theorem gates or the rep-finite faithful-section
+      // search), then the hereditary type, the slice Sigma named S_v/P_v/I_v, the
+      // reconstructed H = End_A(S), and the Ringel reconstruction note. citesLine is
+      // appended globally at the end of renderBlock.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Tilted check not computed — " + b.error }));
+      } else {
+        var tcReason = {
+          "hereditary": "hereditary (A = End_A(A), the postprojective slice)",
+          "self_injective": "non-semisimple self-injective ⇒ gl.dim = ∞ ⇒ not tilted",
+          "gldim>2": "gl.dim > 2 (tilted ⇒ gl.dim ≤ 2)",
+          "faithful_section_found":
+            "a faithful section with Hom(X, τY)=0, certified a slice (Ringel Thm 1.9(2))",
+          "search_exhausted":
+            "no faithful section with Hom(X, τY)=0 (rep-finite, complete knit, budget-exhaustive)",
+          "budget": "the transversal enumeration exceeded the budget",
+          "unsupported": "the AR knit is out of scope (self-injective / rep-infinite)",
+          "error": "refused loudly"
+        };
+        var tcVerdict = { "tilted": "tilted", "not_tilted": "not tilted", "unknown": "unknown" };
+        div.appendChild(h("p", {}, h("b", { text: "A is " + (tcVerdict[b.verdict] || b.verdict) }),
+          document.createTextNode(" — " + (tcReason[b.reason] || b.reason) + ".")));
+        if (b.hereditary_type)
+          div.appendChild(h("p", {}, h("b", { text: "Hereditary type: " }),
+            document.createTextNode(b.hereditary_type)));
+        if (b.slice && b.slice.length) {
+          var tcNames = b.slice.map(function (r) {
+            if (r.name) return r.name;
+            var dv = r.dimvec || {};
+            return "(" + Object.keys(dv).map(function (w) { return dv[w]; }).join(",") + ")";
+          }).join(", ");
+          div.appendChild(h("p", {}, h("b", { text: "Slice Σ (S = ⊕Σ, a tilting A-module): " }),
+            document.createTextNode(tcNames)));
+        }
+        if (b.hereditary_algebra) {
+          var tcH = b.hereditary_algebra;
+          div.appendChild(h("p", {}, h("b", { text: "H = End_A(S) (presented, hereditary): " }),
+            document.createTextNode((tcH.vertices || []).length + " vertices, "
+              + Object.keys(tcH.arrows || {}).length + " arrows, dim " + tcH.dim)));
+        }
+        if (b.reconstruction && b.reconstruction.note)
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: b.reconstruction.note + " (dim A = " + b.reconstruction.dim_A
+              + ", dim H = " + b.reconstruction.dim_H + ")." }));
+        if (b.verdict === "unknown" && b.note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+      }
+    } else if (name === "recognizer_ladder") {
+      // Plan 61: the quasi-tilted/shod/weakly-shod/laura/ada ladder. Completeness/refusal
+      // status FIRST (rep-finite non-self-injective only), then a ✓/✗ verdict table with a
+      // witness per ✗, the finite laura complement, and the ada/HH^1 simple-connectedness line.
+      var rlDone = b.complete === true;
+      // An inexact gl.dim is a CERTIFIED LOWER BOUND (resolution not resolved within the
+      // depth bound), never a definite value -- state it honestly, never as a bare number.
+      var rlGldim = (b.gldim_exact === false)
+        ? ("≥ " + b.gldim + " (certified lower bound)")
+        : ("" + b.gldim);
+      div.appendChild(h("p", { "class": rlDone ? "" : "qlgui-error",
+        text: rlDone
+          ? ("Module category: " + b.universe_size + " indecomposable(s), global dimension "
+             + rlGldim + ".")
+          : (b.status === "unsupported" || b.status === "error")
+            ? "Not computed — " + (b.error || b.note || "input not eligible "
+              + "(self-injective or not representation-finite)") + "."
+            : "Partial (budget reached — the algebra is likely representation-infinite; "
+              + "this is NOT the full ladder)." }));
+      if (rlDone) {
+        var rlLabels = [["quasi_tilted", "quasi-tilted"], ["shod", "shod"],
+          ["weakly_shod", "weakly shod"], ["laura", "laura"], ["ada", "ada"]];
+        var rlTbl = h("table", {}, h("tr", {}, h("th", { text: "class" }),
+          h("th", { text: "verdict" }), h("th", { text: "witness" })));
+        rlLabels.forEach(function (pair) {
+          var rung = (b.ladder || {})[pair[0]] || {};
+          var wit = "";
+          if (pair[0] === "laura") {
+            wit = "complement size " + rung.complement_size;
+          } else if (rung.verdict === false && rung.witness) {
+            wit = Object.keys(rung.witness).map(function (k) {
+              return k + ": " + rung.witness[k]; }).join(", ");
+          }
+          rlTbl.appendChild(h("tr", {}, h("th", { text: pair[1] }),
+            h("td", { text: rung.verdict ? "✓" : "✗" }), h("td", { text: wit })));
+        });
+        div.appendChild(rlTbl);
+        var rlComp = b.complement || [];
+        var rlCompText = rlComp.length
+          ? rlComp.map(function (r) {
+              if (r.name) return r.name;
+              var dv = r.dimvec || {};
+              return "(" + Object.keys(dv).map(function (w) { return dv[w]; }).join(",") + ")";
+            }).join(", ")
+          : "∅ (this algebra is shod)";
+        div.appendChild(h("p", {}, h("b", { text: "Laura complement: " }),
+          document.createTextNode(rlCompText)));
+        var sc = b.simple_connectedness || {};
+        if (sc.applicable) {
+          div.appendChild(h("p", { text: sc.verdict === true
+            ? "Simple connectedness (ACLV Theorem B): dim HH¹(A) = " + sc.hh1_dim
+              + ", so A is simply connected and HH•(A) reduces to the base field."
+            : "Simple connectedness (ACLV Theorem B): dim HH¹(A) = " + sc.hh1_dim
+              + " ≠ 0, so A is not simply connected." }));
+        } else if (sc.hh1_dim !== null && sc.hh1_dim !== undefined) {
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: "dim HH¹(A) = " + sc.hh1_dim + ". " + (sc.note || "") }));
+        } else if (sc.note) {
+          div.appendChild(h("p", { "class": "qlgui-hint", text: sc.note }));
+        }
       }
     } else if (name === "derived_compare") {
       // Plan 43: the two fingerprints side by side + the honest verdict. Equal
@@ -3883,7 +4057,7 @@
    el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
-   el.fundamental_group, el.simply_connected]
+   el.fundamental_group, el.simply_connected, el.tame_wild]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -3964,7 +4138,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "left_right_parts"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -4357,6 +4531,8 @@
     {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
     {"id": "tau_tilting", "title": "τ-tilting: pairs, exchange graph, fan", "category": "tau-tilting", "keywords": ["tau-tilting", "tilting", "mutation", "torsion", "silting", "g-vector", "wall", "stability", "chamber", "inclinación", "basculement", "mutación", "倾斜", "突变", "brick", "semibrick", "fan"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["tau_tilting:512"]}},
     {"id": "left_right_parts", "title": "Left / right parts L_A, R_A + support algebras", "category": "structure", "keywords": ["left part", "right part", "L_A", "R_A", "support algebra", "laura", "ada", "quasi-tilted", "ext-injective", "complement", "assem", "coelho", "trepode", "parte izquierda", "parte derecha", "partie gauche", "partie droite", "álgebra soporte", "algèbre support", "左部", "右部", "支撑代数"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["left_right_parts:256"]}},
+    {"id": "tilted_check", "title": "Tilted-algebra recognizer (Liu-Skowroński)", "category": "structure", "keywords": ["tilted", "tilted algebra", "liu", "skowronski", "skowroński", "slice", "section", "hereditary", "End_H(T)", "ringel", "happel", "faithful section", "álgebra inclinada", "algèbre inclinée", "rebanada", "tranche", "hereditaria", "héréditaire", "倾斜代数", "倾斜", "遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a1": [2, 1], "a2": [3, 2]}, "relations": ["a2*a1"], "field": {"kind": "QQ"}, "compute": ["tilted_check:256"]}},
+    {"id": "recognizer_ladder", "title": "Recognizer ladder: quasi-tilted / shod / weakly-shod / laura / ada", "category": "structure", "keywords": ["quasi-tilted", "shod", "weakly shod", "laura", "ada", "recognizer", "simply connected", "simple connectedness", "HH^1", "happel", "reiten", "smalo", "coelho", "lanzilotta", "assem", "escalera", "échelle", "casi inclinada", "quasi-inclinée", "cuasi-inclinada", "simplemente conexo", "simplement connexe", "拟倾斜", "单连通", "识别阶梯"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["recognizer_ladder:256"]}},
     {"id": "module_basics", "title": "Module: dimension vector, rad/top/soc", "category": "modules", "keywords": ["module", "dimension vector", "radical", "top", "socle", "zócalo", "socle", "módulo", "module", "模块", "维数向量", "loewy"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["dimension_vector", "rad_top_soc"]}},
     {"id": "resolutions", "title": "Projective & injective resolutions", "category": "modules", "keywords": ["resolution", "projective", "injective", "resolución", "résolution", "proyectiva", "inyectiva", "projective", "injective", "分解", "投影", "内射", "pd", "id"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["projective_resolution:0..6", "injective_resolution:0..6", "projective_dimension", "injective_dimension"]}},
     {"id": "ext_tor", "title": "Ext & Tor between modules", "category": "modules", "keywords": ["ext", "tor", "extension", "extensión", "扩张", "torsion", "扭积", "yoneda"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}, "tor_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "left"}, "compute": ["ext:0..3", "tor:0..3"]}},
@@ -4465,6 +4641,8 @@
     radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
     ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
     left_right_parts: { cb: "left_right_parts", top: "left_right_parts-budget", budget: true },
+    tilted_check: { cb: "tilted_check", top: "tilted_check-budget", budget: true },
+    recognizer_ladder: { cb: "recognizer_ladder", top: "recognizer_ladder-budget", budget: true },
     derived_compare: { cb: "derived_compare" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },
@@ -4482,6 +4660,7 @@
     quasi_hereditary: { cb: "quasi_hereditary" },
     fundamental_group: { cb: "fundamental_group" },
     simply_connected: { cb: "simply_connected" },
+    tame_wild: { cb: "tame_wild" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },

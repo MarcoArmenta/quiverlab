@@ -197,6 +197,20 @@ def _parse_compute(spec):
             raise RequestError("left_right_parts budget must be a positive integer (got %r)"
                                % (spec,))
         return "left_right_parts", (int(rng) if rng else None)
+    # tilted_check carries the KNIT budget (budget_modules), not a degree range (Plan 60): it
+    # skips MAX_DEGREE like ar_quiver / left_right_parts. budget_sections stays internal.
+    if name == "tilted_check":
+        if rng and not rng.isdigit():
+            raise RequestError("tilted_check budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tilted_check", (int(rng) if rng else None)
+    # recognizer_ladder carries a MODULE BUDGET, not a degree range (Plan 61): the budget caps
+    # the knitted universe, so it skips MAX_DEGREE (like left_right_parts / ar_quiver).
+    if name == "recognizer_ladder":
+        if rng and not rng.isdigit():
+            raise RequestError("recognizer_ladder budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "recognizer_ladder", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -936,6 +950,22 @@ def compute_one(spec):
             from quiverlab.modules.left_right import left_right_parts_block
             block = left_right_parts_block(A, budget=top if top is not None else 256)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "tilted_check":
+            # Tilted-algebra recognizer (Plan 60): an ALGEBRA-level KNIT-BUDGET kind (not a
+            # degree range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.tilted.tilted_check_block) + references->citations.
+            # budget_sections keeps its internal default 4096.
+            from quiverlab.modules.tilted import tilted_check_block
+            block = tilted_check_block(A, budget_modules=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "recognizer_ladder":
+            # The recognizer ladder (P61, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # shared builder (modules.recognizers_ladder.recognizer_ladder_block) +
+            # references->citations.
+            from quiverlab.modules.recognizers_ladder import recognizer_ladder_block
+            block = recognizer_ladder_block(A, budget=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -1119,6 +1149,16 @@ def compute_one(spec):
             # HH + char-0 sl_a lower bound -- + `references`->citations.
             from quiverlab.families.toupie import toupie_block
             block = toupie_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "tame_wild":
+            # Tits-form tame/wild certificate (Plan 62 / R19). Byte-identical to the
+            # server twin (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (invariants.tits_block.tame_wild_block) -- combinatorial Tits form + weak
+            # positivity/nonnegativity + the rep-finite/tame/wild verdict gated on the
+            # P56 certificate over char 0 -- + `references`->citations. A presentation-
+            # less / non-triangular input returns an {"error": ...} block, never a raise.
+            from quiverlab.invariants.tits_block import tame_wild_block
+            block = tame_wild_block(A)
             block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
@@ -1342,6 +1382,8 @@ def python_snippet():
              # pi1 + simple connectivity (Plan 56): scalar kinds, no %d.
              "fundamental_group": "A.fundamental_group()",
              "simply_connected": "A.is_simply_connected()",
+             # Tits-form tame/wild certificate (Plan 62 / R19): a scalar kind, no %d.
+             "tame_wild": "A.tame_wild_certificate()",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -1358,6 +1400,10 @@ def python_snippet():
              "ar_invariants": "A.ar_invariants(budget_modules=%d)",
              # Plan 55: the left/right parts kind carries a module budget (%d = budget).
              "left_right_parts": "A.left_right_parts(budget=%d)",
+             # Plan 60: the tilted recognizer carries the knit budget (%d = budget_modules).
+             "tilted_check": "A.tilted_check(budget_modules=%d)",
+             # Plan 61: the recognizer ladder carries a module budget (%d = budget).
+             "recognizer_ladder": "A.recognizer_ladder(budget=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1485,10 +1531,22 @@ ETA_MODEL = {
                 # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
                 # the same cost class as tau_tilting.
                 "left_right_parts": 2.0,
+                # Plan 60: tilted_check = an AR knit + a budget-capped transversal search
+                # (faithful + Hom(X,tauY)=0 + tilting/presented-End certificate per candidate);
+                # knit- and certificate-dominated, the same cost class as left_right_parts.
+                "tilted_check": 2.0,
+                # Plan 61: the recognizer ladder reads the P55 atlas + gl.dim + a second AR
+                # knit (weakly-shod SCC) + HH^1 (ada/Theorem B); a touch heavier than P55.
+                "recognizer_ladder": 2.5,
                 # Plan 59: string_homological KNITS the AR quiver + realizes/decomposes
                 # extensions (expensive, ar_quiver class); toupie is a small HH + a
                 # graph-shape scan (cheap).
-                "string_homological": 2.0, "toupie": 0.5},
+                "string_homological": 2.0, "toupie": 0.5,
+                # Plan 62: tame_wild = the Tits form (P56 minimal-relation counts) +
+                # weak positivity/nonnegativity (box/PSD/list) + the P56 simple/strong-
+                # simple-connectivity convex sweep -- the convex sweep dominates
+                # (simply_connected class), sized above the cheap scalars.
+                "tame_wild": 3.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

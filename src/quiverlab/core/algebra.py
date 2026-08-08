@@ -586,6 +586,26 @@ class Algebra:
         from quiverlab.modules.tilting import bongartz_completion
         return bongartz_completion(T)
 
+    def tilted_check(self, budget_modules=256, budget_sections=4096):
+        """A :class:`~quiverlab.modules.tilted.TiltedReport` deciding whether this algebra
+        is tilted -- ``A = End_H(T)`` for a hereditary ``H`` and a tilting ``H``-module
+        ``T`` (Plan 60 / R17) -- by the Liu-Skowronski faithful-section criterion on the
+        AR quiver, certified by Ringel's slice theorem. Theorem gates (hereditary =>
+        tilted; non-semisimple self-injective => not; gl.dim > 2 => not) then a rep-finite
+        exhaustive search; two budgets: the knit cap ``budget_modules`` and the transversal
+        cap ``budget_sections`` (a product of orbit sizes). Char 0 / char > dim."""
+        from quiverlab.modules.tilted import tilted_check
+        return tilted_check(self, budget_modules=budget_modules,
+                            budget_sections=budget_sections)
+
+    def is_tilted(self, budget_modules=256, budget_sections=4096) -> bool:
+        """``True`` iff this algebra is tilted (Plan 60); the Boolean shorthand for
+        ``bool(self.tilted_check(...))``. An honest ``unknown`` verdict (rep-infinite
+        non-hereditary / budget-tripped) returns ``False`` -- read ``tilted_check`` for the
+        status when the distinction matters."""
+        return bool(self.tilted_check(budget_modules=budget_modules,
+                                      budget_sections=budget_sections))
+
     # -- quasi-hereditary structure + recollements (Plan 47) ------------------
     def standard_modules(self, order=None):
         """The standard modules ``Delta(i)`` for the given vertex ``order`` (dict
@@ -829,6 +849,43 @@ class Algebra:
         from quiverlab.invariants.roots import positive_roots
         return positive_roots(self)
 
+    # -- combinatorial Tits form + tame/wild certificate (Plan 62 / R19) ------
+    def tits_form_combinatorial(self, d):
+        """The COMBINATORIAL Tits form q_A(d) = sum d_i^2 - sum_{arrows i->j} d_i
+        d_j + sum_{(i,j)} r_ij d_i d_j, r_ij = minimal_relation_counts (P56); it
+        truncates the Euler form at Ext^2 and is defined for every admissible
+        presentation (they coincide iff gl.dim <= 2). Distinct from tits_form
+        (Plan 38's homological Euler form). Field-free exact int (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import tits_form_combinatorial
+        return tits_form_combinatorial(self, d)
+
+    def is_weakly_positive(self, budget=3_000_000):
+        """Exact weak-positivity FormVerdict of the combinatorial Tits form
+        (Ovsienko's box-6, branch-and-bound; positive-definite / isotropic-radical
+        fast certificates). None only on budget, never a guessed True. A False
+        carries the exact witness d >= 0 with q(d) <= 0 (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import as_unit_form, is_weakly_positive
+        return is_weakly_positive(as_unit_form(self), budget=budget)
+
+    def is_weakly_nonnegative(self, budget=3_000_000):
+        """Exact weak-nonnegativity FormVerdict of the combinatorial Tits form,
+        decided by the classified hypercritical list (primary) + a sound witness
+        finder. A False is a FOUND witness d >= 0 with q(d) < 0; a True rests on the
+        positive-semidefinite certificate or recorded list completeness; else honest
+        None -- never a guessed True (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import as_unit_form, is_weakly_nonnegative
+        return is_weakly_nonnegative(as_unit_form(self), budget=budget)
+
+    def tame_wild_certificate(self, convex_budget=20000, search_budget=3_000_000):
+        """The Tits-form representation-type certificate: rep-finite / tame / wild
+        gated on the P56 strong-simple-connectivity certificate over a
+        characteristic-0 field (Bongartz 1984; Brustle-de la Pena-Skowronski 2011).
+        The form is always computed; off scope the verdict is None (P56's None
+        propagates, never a fabricated tame/wild) (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import tame_wild_certificate
+        return tame_wild_certificate(self, convex_budget=convex_budget,
+                                     search_budget=search_budget)
+
     # -- geometry of representations (Plan 49 / C8) ---------------------------
     def orbit_dimension(self, M):
         """dim of the GL(d)-orbit of the module M in Rep(Q, d):
@@ -897,6 +954,53 @@ class Algebra:
         from quiverlab.modules.left_right import left_right_parts
         atlas = left_right_parts(self, budget=budget)
         return atlas.left_support, atlas.right_support
+
+    # -- the recognizer ladder (Plan 61 / R18) --------------------------------
+    def recognizer_ladder(self, budget=256):
+        """Classify this algebra against the Assem-school recognizer ladder --
+        quasi-tilted / shod / weakly-shod / laura / ada (Plan 61 / R18) -- off ONE
+        :meth:`left_right_parts` atlas + :meth:`global_dimension` (+ one AR knit for the
+        weakly-shod sweep). Returns a :class:`~quiverlab.modules.recognizers_ladder.RecognizerLadder`
+        with the five witnessed/certified rungs, the finite laura complement, and -- for ada
+        algebras over an algebraically closed field -- the ACLV-Theorem-B simple-connectedness
+        verdict off ``HH^1``. Complete iff representation-finite and not self-injective, else a
+        loud status (never a partial ladder)."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget)
+
+    def is_quasi_tilted(self, budget=256):
+        """True iff this algebra is quasi-tilted -- (QT1) gl.dim <= 2 and (QT2) every
+        indecomposable has pd <= 1 or id <= 1 (Happel-Reiten-Smalo); the ``quasi_tilted`` rung
+        of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("quasi_tilted")
+
+    def is_shod(self, budget=256):
+        """True iff this algebra is shod -- every indecomposable has pd <= 1 or id <= 1
+        (Coelho-Lanzilotta), equivalently ``ind A = L_A u R_A``; the ``shod`` rung of
+        :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("shod")
+
+    def is_weakly_shod(self, budget=256):
+        """True iff this algebra is weakly shod -- the lengths of irreducible-morphism paths
+        from an injective to a projective are bounded (Coelho-Lanzilotta); the ``weakly_shod``
+        rung of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("weakly_shod")
+
+    def is_laura(self, budget=256):
+        """True iff this algebra is laura -- ``ind A \\ (L_A u R_A)`` is finite (Assem-Coelho);
+        trivially True in representation-finite scope, with the finite complement reported by
+        :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("laura")
+
+    def is_ada(self, budget=256):
+        """True iff this algebra is ada -- every indecomposable projective and injective lies
+        in ``L_A u R_A`` (ACLV Def 2.1); the ``ada`` rung of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("ada")
 
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):

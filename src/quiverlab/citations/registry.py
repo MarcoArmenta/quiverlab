@@ -584,6 +584,87 @@ REGISTRY: dict = {r.key: r for r in [
        "Organising the module category",
        "Alvares-Assem-Castonguay-Vargas survey of the left/right parts, supports, and the "
        "quasi-tilted/laura/ada organisation of mod A -- Plan 55's secondary reference.", "survey"),
+    # Plan 60 (R17): the tilted-algebra recognizer via the Liu-Skowronski faithful section.
+    _r("liu_tilted_1993", "Liu1993", "foundation",
+       "Tilted algebras and generalized standard Auslander-Reiten components",
+       "Liu (independently with Skowronski): A is tilted iff Gamma_A has a faithful "
+       "generalized-standard component with a section -- the criterion Plan 60 searches for. "
+       "Venue verified (Arch. Math. 61 (1993) 12-19).",
+       "recognizer"),
+    _r("liu_another_2014", "Liu2014", "foundation",
+       "Another characterization of tilted algebras (arXiv:1409.2054)",
+       "Liu: A is tilted iff Gamma_A contains a FAITHFUL CUT Delta with Hom(X, tau Y)=0 "
+       "(Thm 2.6); the cut is a finite/local object (weakly convex), the documented "
+       "rep-infinite extension path. Ringel's slice theorem (Thm 1.9(2)) is the "
+       "reconstruction certificate Plan 60 uses.",
+       "recognizer"),
+    _r("happel_ringel_tilted", "HappelRingel1982", "foundation",
+       "Tilted algebras",
+       "Happel-Ringel: the origin of tilted algebras A = End_H(T) (H hereditary, T tilting); "
+       "tilted => gl.dim <= 2 -- the theorem gate Plan 60 uses to refute high-gl.dim algebras.",
+       "recognizer"),
+    _r("hrs_quasitilted", "HRS1996", "foundation",
+       "Tilting in Abelian Categories and Quasitilted Algebras",
+       "Happel-Reiten-Smalo: quasi-tilted = (QT1) gl.dim <= 2 AND (QT2) every indec pd<=1 or "
+       "id<=1; QT2 alone => gl.dim <= 3. The definitional ground truth for Plan 61's "
+       "quasi-tilted rung.", "recognizer"),
+    _r("coelho_lanzilotta_weakly_shod", "CL2003weaklyshod", "foundation",
+       "Weakly shod algebras",
+       "Coelho-Lanzilotta: shod = every indec pd<=1 or id<=1 (=> gl.dim <= 3); weakly shod = "
+       "bounded irreducible-morphism paths from an injective to a projective (WSA). Plan 61's "
+       "shod + weakly-shod rungs.", "recognizer"),
+    _r("assem_coelho_laura", "AC2003laura", "foundation",
+       "Two-sided gluings of tilted algebras",
+       "Assem-Coelho: laura = ind A minus (L_A u R_A) is finite. Plan 61's laura rung (trivially "
+       "true in representation-finite scope; the finite complement is the reported datum).",
+       "recognizer"),
+    _r("smith_almost_laura", "Smith2007almostlaura", "foundation",
+       "Almost laura algebras",
+       "Smith: the almost-laura generalisation of laura algebras -- context for the laura "
+       "landscape; Plan 61 cites it for the class, not for the elementary rep-finite triviality.",
+       "recognizer"),
+    _r("bft_quasitilted_quiver", "BFT2017quasitilted", "foundation",
+       "On the quiver with relations of a quasitilted algebra and applications",
+       "Bordino-Fernandez-Trepode: the quiver-with-relations structure of quasitilted algebras "
+       "-- a secondary reference on Plan 61's quasi-tilted rung.", "recognizer"),
+    _r("bongartz_criterion", "Bongartz1984", "foundation",
+       "A criterion for finite representation type",
+       "Bongartz: a simply connected algebra is representation-finite iff its Tits form is "
+       "weakly positive (iff it has no critical convex subcategory) -- the Plan-62 rep-finite "
+       "axis of the tame/wild trichotomy.",
+       "tits", "tame_wild"),
+    _r("bdps_tame_tits", "BrustleDlPSkowronski2011", "foundation",
+       "Tame algebras and Tits quadratic forms",
+       "Bruestle-de la Pena-Skowronski: a strongly simply connected algebra over an "
+       "algebraically closed field is tame iff its Tits form is weakly nonnegative -- the "
+       "Plan-62 tame axis (the theorem gated on the P56 strong-simple-connectivity certificate).",
+       "tits", "tame_wild"),
+    _r("kasjan_skowronski", "KasjanSkowronski2019", "foundation",
+       "On the tame-wild dichotomy for strongly simply connected algebras",
+       "Kasjan-Skowronski (arXiv:1905.06028): the tame/wild dichotomy statements Plan 62 "
+       "consumes for strongly simply connected algebras (companion source to BdlPS).",
+       "tits", "tame_wild"),
+    _r("ovsienko_forms", "Ovsienko1978", "foundation",
+       "Integral weakly positive forms",
+       "Ovsienko: every positive root of a weakly positive unit form has coordinates <= 6 -- "
+       "the cited complete decision behind Plan-62 weak positivity (the box-6 branch-and-bound).",
+       "tits"),
+    _r("vonhohne_wnn", "vonHohne1996", "foundation",
+       "On weakly non-negative unit forms and tame algebras",
+       "von Hohne: the classified hypercritical unit forms driving the Plan-62 weak-nonnegativity "
+       "decision (the primary route; NOT bounded to <= 9 variables -- T_{2,3,7} is a 10-variable "
+       "hypercritical form).",
+       "tits", "tame_wild"),
+    _r("delapena_banach26", "DelaPenaBanach26", "foundation",
+       "Algebras with hypercritical Tits form",
+       "de la Pena (Banach Center Publ. 26): the printed hypercritical Tits-form list -- the "
+       "Plan-62 weak-nonnegativity cross-oracle for the classified data.",
+       "tits", "tame_wild"),
+    _r("bjp_quadratic_forms", "BarotJimenezDlP2019", "foundation",
+       "Quadratic Forms: Combinatorics and Numerical Results",
+       "Barot-Jimenez-Gonzalez-de la Pena: the combinatorics of critical / hypercritical unit "
+       "forms and the search-box exposition underpinning Plan 62.",
+       "tits", "tame_wild"),
 ]}
 
 

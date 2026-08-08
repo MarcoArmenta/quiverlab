@@ -36,6 +36,8 @@ _HEADINGS = {
     "radical_filtration": "Radical filtration of mod A",
     "ar_invariants": "AR-component invariants",
     "left_right_parts": "Left / right parts",
+    "tilted_check": "Tilted-algebra check",
+    "recognizer_ladder": "Recognizer ladder",
     "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
@@ -59,6 +61,7 @@ _HEADINGS = {
     "quasi_hereditary": "Quasi-hereditary structure",
     "fundamental_group": "Fundamental group π₁(Q, I)",
     "simply_connected": "Simple connectivity",
+    "tame_wild": "Representation type (tame / wild)",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -810,6 +813,52 @@ def _simply_connected_html(b):
     return out
 
 
+def _tame_wild_html(b):
+    """The Tits-form tame/wild certificate (Plan 62 / R19): the theorem-gated
+    rep-finite / tame / wild verdict (verdict withheld -> honest reason, never a
+    guessed type), the two field-free form booleans with the exact witness, the P56
+    certificate trail, the integer Tits Gram matrix, and the honest scope note. This
+    is P62's certified representation type -- kept distinct from P38's form-type
+    definiteness heuristic (never share a label)."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Tame/wild certificate not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = []
+    rep = b.get("rep_type")
+    name = {"rep-finite": "representation-finite", "tame": "tame",
+            "wild": "wild"}.get(rep)
+    if name is None:
+        if b.get("certified") == "rep_infinite":
+            out.append("<p>Representation type (certified): "
+                       "<b>representation-infinite</b> (tame vs wild withheld). %s</p>"
+                       % _esc(str(b.get("reason", ""))))
+        else:
+            out.append("<p>Representation type <b>undecided</b> — %s</p>"
+                       % _esc(str(b.get("reason", "out of scope"))))
+    else:
+        out.append("<p>Representation type (certified): <b>%s</b>. %s</p>"
+                   % (_esc(name), _esc(str(b.get("reason", "")))))
+    tri = lambda v: "yes" if v is True else "no" if v is False else "undecided"
+    out.append("<p>Tits form: weakly positive — <b>%s</b>; weakly nonnegative — "
+               "<b>%s</b>.</p>" % (tri(b.get("weakly_positive")),
+                                   tri(b.get("weakly_nonnegative"))))
+    if b.get("witness") is not None:
+        out.append("<p>Witness d = %s with q_A(d) = %s.</p>"
+                   % (_esc(str(b["witness"])), _num(b.get("witness_value"))))
+    out.append("<p><em>Certificate (Plan 56): simply connected — %s; strongly "
+               "simply connected — %s; base field admits the representation-type "
+               "verdict — %s.</em></p>"
+               % (tri(b.get("simply_connected")),
+                  tri(b.get("strongly_simply_connected")),
+                  "yes" if b.get("field_alg_closed") else "no"))
+    gram = b.get("gram")
+    if gram:
+        out.append(matrix_grid(gram, label="q_A"))
+    if b.get("scope_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["scope_note"])))
+    return out
+
+
 def _radical_filtration_html(b):
     """The radical filtration of mod A (Plan 57 / R37): the completeness verdict, the
     nilpotency index + rad^inf certificate, and the layer profile (sum_ij dim rad^n).
@@ -921,6 +970,122 @@ def _left_right_parts_html(b):
         chunks.append("<p><b>%s</b>: vertices {%s}, dim %s, %s connected component(s).</p>"
                       % (label, ", ".join(_esc(str(v)) for v in (sa.get("vertices") or [])),
                          _num(sa.get("dim")), _num(len(sa.get("components") or []))))
+    return chunks
+
+
+_TILTED_VERDICT = {"tilted": "tilted", "not_tilted": "not tilted", "unknown": "unknown"}
+_TILTED_REASON = {
+    "hereditary": "hereditary (A = End_A(A), the postprojective slice)",
+    "self_injective": "non-semisimple self-injective &rArr; gl.dim = &infin; &rArr; not tilted",
+    "gldim>2": "gl.dim &gt; 2 (tilted &rArr; gl.dim &le; 2)",
+    "faithful_section_found": "a faithful section with Hom(X, &tau;Y)=0, certified a slice "
+                             "(Ringel Thm 1.9(2))",
+    "search_exhausted": "no faithful section with Hom(X, &tau;Y)=0 (rep-finite, complete knit, "
+                        "budget-exhaustive)",
+    "budget": "the transversal enumeration exceeded the budget",
+    "unsupported": "the AR knit is out of scope (self-injective / rep-infinite)",
+    "error": "refused loudly",
+}
+
+
+def _tilted_check_html(b):
+    """The tilted-algebra recognizer verdict (Plan 60): the verdict + reason, the slice
+    Sigma (named S_v/P_v/I_v), the hereditary type, and the reconstructed H = End_A(S). An
+    honest refusal (char-scope / rep-infinite) surfaces the library's loud message."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Tilted check not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    verdict = b.get("verdict")
+    chunks = ["<p>A is <b>%s</b> &mdash; %s.</p>"
+              % (_esc(_TILTED_VERDICT.get(verdict, str(verdict))),
+                 _TILTED_REASON.get(b.get("reason"), _esc(str(b.get("reason")))))]
+    if b.get("hereditary_type"):
+        chunks.append("<p>Hereditary type (the underlying Dynkin diagram of the slice): "
+                      "<b>%s</b>.</p>" % _esc(str(b["hereditary_type"])))
+    slc = b.get("slice") or []
+    if slc:
+        names = ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {})) for r in slc)
+        chunks.append("<p><b>Slice &Sigma;</b> (S = &oplus;&Sigma;, a tilting A-module): %s.</p>"
+                      % names)
+    hered = b.get("hereditary_algebra")
+    if hered:
+        chunks.append("<p><b>H = End<sub>A</sub>(S)</b> (presented, hereditary): "
+                      "%s vertices, %s arrows, dim %s.</p>"
+                      % (_num(len(hered.get("vertices") or [])),
+                         _num(len(hered.get("arrows") or {})), _num(hered.get("dim"))))
+    recon = b.get("reconstruction")
+    if recon:
+        chunks.append("<p class='ql-note'>%s (dim A = %s, dim H = %s).</p>"
+                      % (_esc(str(recon.get("note") or "")),
+                         _num(recon.get("dim_A")), _num(recon.get("dim_H"))))
+    if verdict == "unknown" and b.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return chunks
+
+
+_LADDER_LABELS = (
+    ("quasi_tilted", "quasi-tilted"), ("shod", "shod"), ("weakly_shod", "weakly shod"),
+    ("laura", "laura"), ("ada", "ada"))
+
+
+def _recognizer_ladder_html(b):
+    """The quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder (Plan 61 / R18): a
+    verdict table (with witness-per-False), the finite laura complement, and the ada/HH^1
+    simple-connectedness paragraph (ACLV Theorem B). An honest refusal (self-injective /
+    rep-infinite / char-scope) is the library's loud status/message -- never a partial ladder."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Recognizer ladder not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Incomplete (status: %s) — %s</p>"
+                % (_esc(str(b.get("status"))),
+                   _esc(str(b.get("note") or "the algebra is not representation-finite / "
+                        "the knit did not close (self-injective or rep-infinite)")))]
+    gldim_txt = _num(b.get("gldim"))
+    if b.get("gldim") is not None and b.get("gldim_exact") is False:
+        # An inexact global dimension is a CERTIFIED LOWER BOUND (the resolution did not
+        # terminate within the depth bound), never a definite value -- state it honestly.
+        gldim_txt = "&ge; %s (certified lower bound)" % _num(b.get("gldim"))
+    chunks = ["<p>Module category: %s indecomposable(s), global dimension %s.</p>"
+              % (_num(b.get("universe_size")), gldim_txt)]
+    ladder = b.get("ladder") or {}
+    rows = ["<tr><th>class</th><th>verdict</th><th>witness</th></tr>"]
+    for key, label in _LADDER_LABELS:
+        rung = ladder.get(key) or {}
+        verdict = rung.get("verdict")
+        mark = "&#10003;" if verdict else "&#10007;"          # check / cross
+        wit = ""
+        if verdict is False and key != "laura":
+            w = rung.get("witness")
+            if w:
+                wit = _esc(", ".join("%s: %s" % (wk, w[wk]) for wk in w))
+        if key == "laura":
+            wit = "complement size %s" % _num(rung.get("complement_size"))
+        rows.append("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                    % (_esc(label), mark, wit))
+    chunks.append("<table class='ql-table'>%s</table>" % "".join(rows))
+    comp = b.get("complement") or []
+    if comp:
+        names = ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {})) for r in comp)
+        chunks.append("<p><b>Laura complement</b> (ind A &setminus; (L<sub>A</sub> &cup; "
+                      "R<sub>A</sub>)): %s.</p>" % names)
+    else:
+        chunks.append("<p><b>Laura complement</b>: &empty; (this algebra is shod).</p>")
+    sc = b.get("simple_connectedness") or {}
+    if sc.get("applicable"):
+        if sc.get("verdict") is True:
+            chunks.append("<p><b>Simple connectedness</b> (ACLV Theorem B): dim HH<sup>1</sup>"
+                          "(A) = %s, so A is <b>simply connected</b> and HH<sup>*</sup>(A) "
+                          "reduces to the base field.</p>" % _num(sc.get("hh1_dim")))
+        else:
+            chunks.append("<p><b>Simple connectedness</b> (ACLV Theorem B): dim HH<sup>1</sup>"
+                          "(A) = %s &ne; 0, so A is <b>not</b> simply connected.</p>"
+                          % _num(sc.get("hh1_dim")))
+    elif sc.get("hh1_dim") is not None:
+        chunks.append("<p><b>Simple connectedness</b>: dim HH<sup>1</sup>(A) = %s. %s</p>"
+                      % (_num(sc.get("hh1_dim")), _esc(str(sc.get("note") or ""))))
+    elif sc.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(sc.get("note"))))
     return chunks
 
 
@@ -1103,6 +1268,10 @@ def _block_html(kind, b, ctx=None):
         return _ar_invariants_html(b)
     if kind == "left_right_parts":
         return _left_right_parts_html(b)
+    if kind == "tilted_check":
+        return _tilted_check_html(b)
+    if kind == "recognizer_ladder":
+        return _recognizer_ladder_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]
@@ -1145,6 +1314,8 @@ def _block_html(kind, b, ctx=None):
         return _fundamental_group_html(b)
     if kind == "simply_connected":
         return _simply_connected_html(b)
+    if kind == "tame_wild":
+        return _tame_wild_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":

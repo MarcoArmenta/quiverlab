@@ -81,7 +81,11 @@ def _max_degree(req: ComputeRequest) -> int:
         # knit-heavy, so it is not in this caveat.)
         # wall_chamber's `hi` is a PAIR BUDGET too (Plan 63), sized on sizing_dim like
         # tau_tilting -- not a degree.
-        if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts"):
+        # Plan 60: `tilted_check` is likewise knit-heavy with a MODULE budget in `hi`.
+        # Plan 61: `recognizer_ladder` carries a MODULE BUDGET too (not a degree), so it
+        # joins the skip tuple beside left_right_parts.
+        if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts",
+                         "tilted_check", "recognizer_ladder"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

@@ -42,12 +42,18 @@ ALL_KINDS = {
     "radical_filtration", "ar_invariants",
     # Plan 55 (2026-08-07): the left/right parts + support algebras.
     "left_right_parts",
+    # Plan 61 (2026-08-07): the quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder.
+    "recognizer_ladder",
     # Plan 59 (2026-08-07): the R34 homological string test + R35 toupie structure.
     "string_homological", "toupie",
     # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
     "fundamental_group", "simply_connected",
     # Plan 63 (2026-08-07): wall-and-chamber structure via bricks (D(B) inequality systems).
     "wall_chamber",
+    # Plan 60 (2026-08-07): the tilted-algebra recognizer (Liu-Skowroński).
+    "tilted_check",
+    # Plan 62 (2026-08-08): Tits-form tame/wild certificate.
+    "tame_wild",
 }
 
 
