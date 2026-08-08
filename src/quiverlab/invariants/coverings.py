@@ -336,3 +336,426 @@ def minimal_relation_counts(A) -> dict:
     (= dim_k e_tgt (I / (rad.I + I.rad)) e_src, the Tits-form r_ij). Presentation-less
     A: loud QuiverlabError. Empty dict for a hereditary (relation-free) algebra."""
     return dict(_relation_data(A).counts)
+
+
+# ---------------------------------------------------------------------------
+# bypasses (Le Meur) + Tietze-lite triviality test
+# ---------------------------------------------------------------------------
+_BYPASS_BUDGET = 100_000
+
+
+def _all_paths(quiver, s, t):
+    """All oriented paths s -> t of length >= 1 (arrow-name tuples). Acyclic => finite;
+    a cyclic quiver is length-capped at |V| and refused loudly if it blows the budget."""
+    from collections import defaultdict
+    by_src = defaultdict(list)
+    for name in sorted(quiver.arrows):
+        a, b = quiver.arrows[name]
+        by_src[a].append((name, b))
+    N = len(quiver.vertices)
+    out = []
+    frontier = [((name,), b) for name, b in by_src.get(s, [])]
+    length = 1
+    while frontier:
+        nxt = []
+        for (w, cur) in frontier:
+            if cur == t:
+                out.append(w)
+            if length < N:
+                for (name, b) in by_src.get(cur, []):
+                    nxt.append((w + (name,), b))
+        if len(out) > _BYPASS_BUDGET or len(nxt) > _BYPASS_BUDGET:
+            raise QuiverlabError(
+                "bypasses: oriented-path enumeration exceeded the internal budget",
+                hint="the quiver has too many bounded-length paths (resource guard)")
+        frontier = nxt
+        length += 1
+    return out
+
+
+def bypasses(A):
+    """[(arrow, path_word), ...]: an arrow alpha and an oriented path parallel to it
+    (same endpoints, distinct). Bounded enumeration (loud budget on blow-up)."""
+    _require_quiver(A, "bypasses")
+    quiver = A.quiver
+    out = []
+    for name in sorted(quiver.arrows):
+        s, t = quiver.arrows[name]
+        for u in _all_paths(quiver, s, t):
+            if u != (name,):
+                out.append((name, u))
+    return out
+
+
+def has_double_bypass(A) -> bool:
+    """True iff some (alpha, u, beta, v) with (alpha,u),(beta,v) bypasses and the
+    arrow beta appearing inside the path u (Le Meur)."""
+    bps = bypasses(A)
+    for (_alpha, u) in bps:
+        for (beta, _v) in bps:
+            if beta in u:
+                return True
+    return False
+
+
+def _free_reduce(word):
+    out = []
+    for tok in word:
+        if out and out[-1][0] == tok[0] and out[-1][1] == -tok[1]:
+            out.pop()
+        else:
+            out.append(tok)
+    return out
+
+
+def _inv(word):
+    return [(g, -s) for g, s in reversed(word)]
+
+
+def _tietze_trivial(generators, relator_words):
+    """A SUFFICIENT triviality test: repeatedly eliminate a generator occurring EXACTLY
+    ONCE in some relator (a sound Tietze/Nielsen transformation), substituting it into
+    the others. All generators eliminated => the group is trivial. It NEVER returns True
+    for a group it did not genuinely trivialise (it only ever certifies triviality)."""
+    from collections import Counter
+    gens = set(generators)
+    rels = [_free_reduce(list(r)) for r in relator_words]
+    rels = [r for r in rels if r]
+    progress = True
+    while gens and progress:
+        progress = False
+        for ri in range(len(rels)):
+            r = rels[ri]
+            cnt = Counter(g for g, _s in r)
+            target = next((g for g in gens if cnt.get(g, 0) == 1), None)
+            if target is None:
+                continue
+            pos = next(i for i, (g, _s) in enumerate(r) if g == target)
+            _g, ss = r[pos]
+            pre, post = r[:pos], r[pos + 1:]
+            # r = pre * g^ss * post = 1  =>  g = inv(pre)*inv(post) (ss=+1) or post*pre (ss=-1)
+            value = _inv(pre) + _inv(post) if ss == 1 else post + pre
+            newrels = []
+            for rj, other in enumerate(rels):
+                if rj == ri:
+                    continue
+                w = []
+                for (g, s) in other:
+                    if g == target:
+                        w += value if s == 1 else _inv(value)
+                    else:
+                        w.append((g, s))
+                w = _free_reduce(w)
+                if w:
+                    newrels.append(w)
+            rels = newrels
+            gens.discard(target)
+            progress = True
+            break
+    return not gens
+
+
+# ---------------------------------------------------------------------------
+# separation condition (R16) + strongly-simply-connected recognizer
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Separation:
+    holds: object          # True / False / None (undecided_char)
+    witness: object        # on False: {vertex, summand_supports:[set, set]}
+    reason: str
+
+
+def _transitive_predecessors(quiver, a):
+    """All x != a with a directed path x ~> a."""
+    preds = set()
+    stack = [a]
+    while stack:
+        v = stack.pop()
+        for p in quiver.predecessors(v):
+            if p != a and p not in preds:
+                preds.add(p)
+                stack.append(p)
+    return preds
+
+
+def separation_condition(A) -> Separation:
+    """For triangular A: at each vertex a the DISTINCT indecomposable summands of
+    rad P_a must have supports in DISTINCT connected components of
+    Q_a = the full subquiver on {v : a is UNREACHABLE from v} = Q minus a and its
+    transitive predecessor closure. Raises loudly ONLY on non-triangular input; a
+    decompose char refusal is CAUGHT as holds=None (undecided_char)."""
+    _require_quiver(A, "separation_condition")
+    quiver = A.quiver
+    if not quiver.is_acyclic():
+        raise QuiverlabError(
+            "separation_condition requires a triangular algebra (acyclic quiver)",
+            hint="the separation condition / strong simple connectivity are defined "
+                 "for triangular algebras (Skowronski 1993); this quiver has an "
+                 "oriented cycle")
+    from quiverlab.modules.decompose import decompose
+    verts = list(quiver.vertices)
+    for a in verts:
+        radP = A.projective(a).radical()
+        if radP.dim == 0:
+            continue
+        try:
+            summands = decompose(radP)
+        except QuiverlabError:
+            return Separation(None, None,
+                              "undecided_char (decompose refused over char<=dim)")
+        Qa_verts = set(verts) - _transitive_predecessors(quiver, a) - {a}
+        comps = quiver.induced_subquiver(Qa_verts).undirected_components()
+        comp_of = {}
+        for i, comp in enumerate(comps):
+            for v in comp:
+                comp_of[v] = i
+        claimed = {}
+        for (M, _mult) in summands:
+            dv = M.dimension_vector()
+            supp = frozenset(v for v, d in dv.items() if d > 0)
+            comp_ids = {comp_of[v] for v in supp if v in comp_of}
+            for cid in comp_ids:
+                if cid in claimed and claimed[cid] != supp:
+                    return Separation(
+                        False,
+                        {"vertex": a,
+                         "summand_supports": [set(claimed[cid]), set(supp)]},
+                        f"vertex {a}: summands share a component")
+                if cid in claimed:            # same support, distinct summand: still shares
+                    return Separation(
+                        False,
+                        {"vertex": a, "summand_supports": [set(supp), set(supp)]},
+                        f"vertex {a}: summands share a component")
+                claimed[cid] = supp
+    return Separation(True, None, "separated")
+
+
+@dataclass(frozen=True)
+class StrongSimpleConnectivity:
+    verdict: object        # True / False / None (budget_exceeded OR undecided_char)
+    witness: object        # on False: {convex_subset, vertex, summand_supports}
+    reason: str
+    checked_convex: int
+
+
+def _reachable(quiver):
+    """x -> frozenset of vertices reachable from x (including x)."""
+    from collections import deque
+    succ = {v: set() for v in quiver.vertices}
+    for (s, t) in quiver.arrows.values():
+        if s != t:
+            succ[s].add(t)
+    reach = {}
+    for v in quiver.vertices:
+        seen = {v}
+        dq = deque([v])
+        while dq:
+            x = dq.popleft()
+            for y in succ[x]:
+                if y not in seen:
+                    seen.add(y)
+                    dq.append(y)
+        reach[v] = frozenset(seen)
+    return reach
+
+
+def _convex_closure(quiver, T, reach):
+    S = set(T)
+    changed = True
+    while changed:
+        changed = False
+        add = set()
+        for x in S:
+            rx = reach[x]
+            for y in S:
+                for u in rx:                        # x ~> u and u ~> y  =>  u in [x, y]
+                    if u not in S and y in reach[u]:
+                        add.add(u)
+        if add:
+            S |= add
+            changed = True
+    return frozenset(S)
+
+
+def _convex_subsets(quiver, budget):
+    """Every non-empty convex vertex subset (complete: each convex C is reached by
+    adding its vertices under convex closure, staying inside C). Returns None if the
+    count exceeds `budget`."""
+    from collections import deque
+    verts = list(quiver.vertices)
+    reach = _reachable(quiver)
+    seen = set()
+    dq = deque()
+    for v in verts:
+        cc = _convex_closure(quiver, {v}, reach)
+        if cc not in seen:
+            seen.add(cc)
+            dq.append(cc)
+    while dq:
+        if len(seen) > budget:
+            return None
+        S = dq.popleft()
+        for v in verts:
+            if v in S:
+                continue
+            cc = _convex_closure(quiver, S | {v}, reach)
+            if cc not in seen:
+                if len(seen) >= budget:
+                    return None
+                seen.add(cc)
+                dq.append(cc)
+    return seen
+
+
+def _restrict_relations(A, S):
+    """repr-strings of the stored relations whose every path stays inside S."""
+    quiver = A.quiver
+    out = []
+    for rel in (A.relations or []):
+        ok = True
+        for _c, w in rel.terms:
+            for name in w:
+                s, t = quiver.arrows[name]
+                if s not in S or t not in S:
+                    ok = False
+                    break
+            if not ok:
+                break
+        if ok:
+            out.append(repr(rel))
+    return out
+
+
+def _subalgebra(A, S):
+    from quiverlab.resolutions_cs._fieldshim import field_for_domain
+    sub_q = A.quiver.induced_subquiver(S)
+    field = field_for_domain(A.domain)
+    return sub_q.algebra(relations=_restrict_relations(A, S), field=field)
+
+
+def is_strongly_simply_connected(A, convex_budget=20000) -> StrongSimpleConnectivity:
+    """R16 (Skowronski 1993): triangular A is strongly simply connected iff every
+    full convex subcategory satisfies the separation condition. Three-valued: the
+    first HARD separation failure => False (+ witness); a per-subcategory char refusal
+    (undecided_char) or exceeding convex_budget => None; else True. Raises loudly ONLY
+    on non-triangular TOP input -- NEVER from inside the sweep."""
+    _require_quiver(A, "is_strongly_simply_connected")
+    if not A.quiver.is_acyclic():
+        raise QuiverlabError(
+            "is_strongly_simply_connected requires a triangular algebra (acyclic quiver)",
+            hint="strong simple connectivity is defined for triangular algebras "
+                 "(Skowronski 1993); this quiver has an oriented cycle")
+    subsets = _convex_subsets(A.quiver, convex_budget)
+    if subsets is None:
+        return StrongSimpleConnectivity(
+            None, None, "budget_exceeded", convex_budget)
+    ordered = sorted(subsets, key=lambda s: (len(s), sorted(map(str, s))))
+    checked = 0
+    undecided = None
+    for S in ordered:
+        sub = _subalgebra(A, S)
+        sep = separation_condition(sub)
+        checked += 1
+        if sep.holds is False:
+            w = dict(sep.witness or {})
+            w["convex_subset"] = sorted(S, key=str)
+            return StrongSimpleConnectivity(
+                False, w, f"{sorted(S, key=str)}@vertex {w.get('vertex')} fails", checked)
+        if sep.holds is None and undecided is None:
+            undecided = sorted(S, key=str)
+    if undecided is not None:
+        return StrongSimpleConnectivity(
+            None, None, f"undecided_char@{undecided}", checked)
+    return StrongSimpleConnectivity(True, None, "all convex separated", checked)
+
+
+# ---------------------------------------------------------------------------
+# three-valued is_simply_connected
+# ---------------------------------------------------------------------------
+@dataclass(frozen=True)
+class SimpleConnectivity:
+    verdict: object                 # True / False / None (inconclusive -- Adian-Rabin)
+    reason: str
+    witness: object                 # on False: {"kind": ...}
+    abelianization: FundamentalGroup
+    strongly: object                # StrongSimpleConnectivity or None
+
+
+def is_simply_connected(A, strong="auto", convex_budget=20000) -> SimpleConnectivity:
+    """Three-valued simple-connectivity verdict (sound: True is NEVER derived from a
+    failed search). False guards first (disconnected / oriented cycle / nontrivial
+    pi1^ab), then the True routes cheapest-first R1 (tree) -> R3 (no-bypass Le Meur,
+    Tietze-lite) -> R2 (separation / R16). `strong` controls the R16 certificate:
+    "auto" computes it only if R1/R3 do not decide; True always computes it (the
+    P62 gate); False never computes it (cheap routes only, so this NEVER raises on an
+    R1/R3-decidable input). Loud only on presentation-less input."""
+    _require_quiver(A, "is_simply_connected")
+    quiver = A.quiver
+    g = fundamental_group(A)
+
+    def _cert():
+        return is_strongly_simply_connected(A, convex_budget)
+
+    # -- decidable False witnesses ------------------------------------------
+    if g.components > 1:
+        return SimpleConnectivity(
+            False, "the quiver is not connected (simple connectivity requires a "
+            "connected quiver)", {"kind": "disconnected"}, g, None)
+    if not quiver.is_acyclic():
+        return SimpleConnectivity(
+            False, "the quiver has an oriented cycle (simple connectivity requires "
+            "no oriented cycles)", {"kind": "oriented_cycle"}, g, None)
+    if g.free_rank > 0 or g.invariant_factors:
+        return SimpleConnectivity(
+            False, "the stored presentation has pi1(Q,I)^ab != 0, so pi1 != 1 for "
+            "this presentation", {"kind": "nontrivial_pi1ab",
+                                  "free_rank": g.free_rank,
+                                  "invariant_factors": list(g.invariant_factors)},
+            g, None)
+
+    # -- True routes, cheapest first ----------------------------------------
+    # R1: tree (Betti 0) => pi1(Q, J) = 1 for EVERY presentation.
+    if len(g.generators) == 0:
+        cert = _cert() if strong is True else None
+        return SimpleConnectivity(
+            True, "the underlying graph is a tree (first Betti number 0): pi1 is "
+            "trivial for every presentation (R1)", None, g, cert)
+
+    # R3: triangular + no bypasses => pi1 presentation-independent (Le Meur); trivialise.
+    bps = bypasses(A)
+    tietze_ok = None
+    if len(bps) == 0:
+        tietze_ok = _tietze_trivial(g.generators, g.relator_words)
+        if tietze_ok:
+            cert = _cert() if strong is True else None
+            return SimpleConnectivity(
+                True, "triangular with no bypasses (pi1 is presentation-independent, "
+                "Le Meur) and the presentation trivialises (R3)", None, g, cert)
+
+    # R2: separation / strong simple connectivity (the expensive convex sweep).
+    if strong in (True, "auto"):
+        cert = _cert()
+        if cert.verdict is True:
+            return SimpleConnectivity(
+                True, "strongly simply connected via the separation condition (R2)",
+                None, g, cert)
+        return SimpleConnectivity(
+            None, _none_reason(bps, tietze_ok, cert), None, g, cert)
+
+    # strong is False: cheap routes only -> honest None.
+    return SimpleConnectivity(None, _none_reason(bps, tietze_ok, None), None, g, None)
+
+
+def _none_reason(bps, tietze_ok, cert):
+    if bps:
+        base = ("bypasses are present, so pi1(Q,I) is presentation-dependent and no "
+                "privileged-presentation route applies")
+    elif tietze_ok is False:
+        base = ("pi1(Q,I)^ab = 0 but the finite presentation did not trivialise "
+                "(a perfect-pi1 corner)")
+    else:
+        base = "no decidable sufficient criterion fired"
+    if cert is not None and cert.verdict is None:
+        base += f"; separation inconclusive ({cert.reason})"
+    return (base + "; verdict undecided (triviality of a finitely presented group is "
+            "undecidable -- Adian-Rabin)")

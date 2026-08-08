@@ -10,5 +10,7 @@ from quiverlab.invariants.recognizers import (  # noqa: F401
 )
 from quiverlab.invariants.coverings import (  # noqa: F401
     FundamentalGroup, fundamental_group, intrinsic_fundamental_group,
-    minimal_relation_counts,
+    minimal_relation_counts, bypasses, has_double_bypass,
+    SimpleConnectivity, is_simply_connected, Separation, separation_condition,
+    StrongSimpleConnectivity, is_strongly_simply_connected,
 )
