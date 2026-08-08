@@ -917,16 +917,26 @@
         torTarget = torTargetSpec();
       }
     }
-    // Schema tag is HONEST: module / Ext / Tor blocks are the schema-2 surface
-    // (the webapp validator refuses them under schema 1 -- found live when the
-    // ported canvas 422'd on every module request); plain algebra requests keep
-    // the schema-1 tag so their cache keys stay byte-stable.
-    var req = { schema: (module || extTarget || torTarget) ? 2 : 1,
+    // Plan 52: a Hochschild coefficient bimodule (D(A) / twisted _1A_nu / A/soc),
+    // chosen from the picklist. Only a NON-regular coefficient emits a block (and
+    // only alongside a Hochschild kind), so a coefficients-less request keeps its
+    // schema 1/2 tag and byte-identical cache key (conditional versioning).
+    var coeffKind = (el.coeff_kind && el.coeff_kind.value) || "regular";
+    var hasHH = compute.some(function (c) {
+      return c.indexOf("hh_cohomology") === 0 || c.indexOf("hh_homology") === 0; });
+    var coefficients = (hasHH && coeffKind !== "regular")
+      ? { builtin: { kind: coeffKind } } : null;
+    // Schema tag is HONEST: a coefficients block is the schema-3 surface; module /
+    // Ext / Tor blocks are schema 2 (the webapp validator refuses them under lower
+    // schemas); plain algebra requests keep schema 1 so their cache keys stay
+    // byte-stable.
+    var req = { schema: coefficients ? 3 : ((module || extTarget || torTarget) ? 2 : 1),
                 algebra: { kind: "quiver",
                            vertices: S.vertices.map(function (v) { return v.id; }),
                            arrows: arrows, relations: relations, field: field },
                 compute: compute,
                 artifacts: { pdf: el.trace.checked, tikz: true } };
+    if (coefficients) req.coefficients = coefficients;
     // GitHub #3 / Plan-44: a non-empty potential routes the quiver through the
     // Jacobian-algebra constructor. Only attached when typed, so a request with
     // no potential keeps its byte-identical cache key. The server refuses a
@@ -2916,6 +2926,11 @@
       var route = /cs|chouhy|solotar/.test(String(b.engine || "").toLowerCase())
         ? "cs" : "bar";
       div.appendChild(h("p", { "class": "qlgui-hint", text: hhTyping(name, route) }));
+      if (b.coefficients)                       // Plan 52: non-regular coefficient bimodule
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "coefficients: " + b.coefficients + " — Hochschild (co)homology "
+                + "with values in the A-bimodule " + b.coefficients
+                + " (not the regular bimodule A)." }));
       var head = h("tr"), row = h("tr");
       head.appendChild(h("th", { text: "n" }));
       row.appendChild(h("th", { text: sup ? "dim HH^n" : "dim HH_n" }));
@@ -3956,6 +3971,23 @@
     pickCartChips.appendChild(pickCartEmpty);
     var opts = h("div", { "class": "qlcart-opts" });
     if (el.trace && el.trace.parentNode) opts.appendChild(el.trace.parentNode); // relocate the report toggle
+    // Plan 52: the Hochschild coefficient bimodule picklist. Default "regular"
+    // emits NO block (byte-stable request); the others carry a schema-3
+    // coefficients block. Read live in buildRequest via el.coeff_kind.
+    var coeffWrap = h("label", { "class": "qlcart-coeff" },
+      h("span", { text: pkTxt("coeff-label", "Coefficients") + ": " }));
+    var coeffSel = h("select", { id: "qlgui-coeff", "aria-label":
+      pkTxt("coeff-label", "Coefficients") });
+    [["regular", pkTxt("coeff-regular", "regular A")],
+     ["dual", pkTxt("coeff-dual", "dual D(A)")],
+     ["twisted_nakayama", pkTxt("coeff-twisted_nakayama", "twisted _1A_nu")],
+     ["quotient_socle", pkTxt("coeff-quotient_socle", "A/soc")]].forEach(function (o) {
+      coeffSel.appendChild(h("option", { value: o[0], text: o[1] }));
+    });
+    coeffSel.addEventListener("change", function () { if (S.onProbe) S.onProbe(); });
+    el.coeff_kind = coeffSel;
+    coeffWrap.appendChild(coeffSel);
+    opts.appendChild(coeffWrap);
     cart.appendChild(head); cart.appendChild(pickCartChips); cart.appendChild(opts);
     el.eta.parentNode.insertBefore(cart, el.eta);
 

@@ -25,6 +25,7 @@ from quiverlab.families import (  # noqa: E402,F401
 )
 from quiverlab.families import BrauerGraph, BrauerGraphAlgebra  # noqa: E402,F401
 from quiverlab.citations import bibliography  # noqa: E402,F401
+from quiverlab.hochschild.coefficients import Bimodule  # noqa: E402,F401
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 from quiverlab.modules.complexes import ChainComplex, ChainMap  # noqa: E402,F401
 from quiverlab.specseq import (  # noqa: E402,F401
@@ -56,6 +57,7 @@ __all__ = [
     "OnePointExtension", "repetitive_slice", "JacobianAlgebra", "Potential",
     "cyclic_derivative",
     "bibliography",
+    "Bimodule",
     "sweep",
     "ChainComplex", "ChainMap",
     "FilteredComplex", "DoubleComplex", "SpectralSequence",

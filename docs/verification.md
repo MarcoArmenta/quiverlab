@@ -578,13 +578,13 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 935 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 547 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1170 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 204 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 937 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 574 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1190 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 205 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2286 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
-Counts as of the P55 merge (the left/right-parts substrate, atop P51+P53+P57+P58);
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2334 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+Counts as of the P52 merge (HH with coefficients -- Wave 1 complete; atop P51+P53+P55+P57+P58);
 sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
@@ -639,6 +639,32 @@ verified precision and listed below as such.
   failure in the dedicated CI job under `QUIVERLAB_REQUIRE_M2=1`.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+- **HH with bimodule coefficients + relative HH (Plan 52):**
+  - **`engine="fast"` refuses a coefficient loudly** — the GF(p) bar-basis
+    accelerator carries only `(m, T, unit)`; the regular bimodule is hard-wired, so
+    no coefficient object exists there. The refusal points at `bar` (any field) /
+    `cs` (presented). `engine="auto"` never routes fast with a coefficient.
+  - **Cyclic homology / Connes `B` with a coefficient is out of v1 scope** — Connes
+    `B` assumes the coefficient is `A` itself (it rotates the unit into bar slots);
+    a general `M` is P54's BV concern, not shipped here.
+  - **Relative HH is `B = kQ₀` only** — the vertex-relative (separable) case, exactly
+    the Lindell–Rubio y Degrassi setting, is IN scope (`relative_to="vertices"`); a
+    general / non-separable subalgebra `B` is **refused loudly** and is the recorded
+    Cibils-relative follow-up.
+  - **CS coefficients need a presentation** — a presentation-less structure-constant
+    algebra computes coefficients via `bar` only; CS refuses (as today) because it
+    cannot form a reduction system.
+  - **The minimal `A^e` coefficient path is GF(p) int64 only** (engine-internal, the
+    cross-check); off GF(p) the coefficient routes through `bar`/`cs`.
+  - **QPA has no HH-with-coefficients / relative-HH surface** (probed live via a
+    `NamesGVars()` sweep; `tests/qpa/test_coeff_qpa.py` skips honestly and FAILS if a
+    matching verb ever appears). The covering oracles are the internal identities +
+    the ported GF(p) bank + the CS/minimal cross-engine web + the literature pins.
+  - **The literature pins are BLOCKED-until-transcribed** — the gentle-`HH¹`
+    (1811.02211) and radical-square-zero relative-`HH¹` (2411.03080) values are
+    `xfail(strict=False)` until a concrete example is transcribed VERBATIM (value +
+    equation number); a fetch of the 2411.03080 ar5iv HTML errored out at
+    implementation time, so no number was fabricated.
 - **Gentle / string subsystem (Plan 46):**
   - For a **string** algebra the Butler–Ringel classification is complete **iff there
     are no bands** (rep-finite). When bands exist the algebra is rep-infinite and

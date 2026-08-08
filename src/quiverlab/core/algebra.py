@@ -115,6 +115,26 @@ class Algebra:
         return Algebra(dom, newT, new_unit, basis_labels=None,
                        _quiver=self.quiver, _relations=self.relations)
 
+    def _unit_adapting_change(self):
+        """The change-of-basis matrix P used by ``unit_adapted`` (columns = new
+        basis in old coords: new basis vector 0 is 1_A). Identity if already
+        unit-adapted. Exposed so a coefficient bimodule built in A's OWN basis can
+        be re-expressed in the unit-adapted basis the bar complex works in
+        (Plan 52; see hochschild.coefficients.Bimodule.change_of_basis)."""
+        dom = self.domain
+        m = self.dim
+        eye = [[dom.one() if r == c else dom.zero() for c in range(m)] for r in range(m)]
+        if self.is_unit_adapted:
+            return eye
+        j = next(i for i, c in enumerate(self.unit) if not dom.is_zero(c))
+        P = eye
+        for r in range(m):
+            P[r][j] = self.unit[r]
+        if j != 0:
+            for r in range(m):
+                P[r][0], P[r][j] = P[r][j], P[r][0]
+        return P
+
     def unit_adapted(self):
         """Return an isomorphic copy whose basis vector 0 is 1_A (spec §5, component 4)."""
         if self.is_unit_adapted:
@@ -122,12 +142,7 @@ class Algebra:
         dom = self.domain
         m = self.dim
         j = next(i for i, c in enumerate(self.unit) if not dom.is_zero(c))
-        P = [[dom.one() if r == c else dom.zero() for c in range(m)] for r in range(m)]
-        for r in range(m):
-            P[r][j] = self.unit[r]
-        if j != 0:
-            for r in range(m):
-                P[r][0], P[r][j] = P[r][j], P[r][0]
+        P = self._unit_adapting_change()
         out = self.change_of_basis(P)
         labels = None
         if self.basis_labels is not None:
@@ -141,11 +156,45 @@ class Algebra:
         out.is_unit_adapted = True
         return out
 
-    def _use_fast_engine(self, engine):
+    def _use_fast_engine(self, engine, coefficients=None):
+        # The fast GF(p) bar-basis accelerator is hard-wired to the regular bimodule
+        # (Plan 52): a coefficient never routes fast.
+        if coefficients is not None:
+            return False
         from quiverlab.fields.primefield import PrimeField
         return engine == "fast" or (
             engine == "auto" and isinstance(self.domain, PrimeField)
         )
+
+    def _check_coefficients(self, engine, coefficients):
+        """Loud scope-boundary checks for a coefficient bimodule (Plan 52): it must
+        be built over THIS algebra, and the fast engine refuses it."""
+        if coefficients is None:
+            return
+        if getattr(coefficients, "algebra", None) is not self:
+            raise QuiverlabError(
+                "the coefficient bimodule was built over a different algebra",
+                hint="build the coefficient with the SAME algebra you call HH on")
+        if engine == "fast":
+            raise QuiverlabError(
+                "engine='fast' cannot carry a coefficient bimodule (the GF(p) "
+                "bar-basis accelerator is hard-wired to the regular bimodule M = A)",
+                hint="use engine='bar' (any field) or engine='cs' (presented)")
+
+    def _relative_route(self, side, top, max_cells, coefficients, relative_to):
+        """Relative HH over B (Plan 52): only B = kQ_0 (``relative_to="vertices"``)
+        in v1, via the E-relative reduced bar complex; any other B is refused
+        loudly. Returns an HHTable (references/coefficients stamped by the caller)."""
+        if relative_to != "vertices":
+            raise QuiverlabError(
+                f"relative HH over B is implemented only for B = kQ_0 in v1 "
+                f"(got relative_to={relative_to!r})",
+                hint='pass relative_to="vertices" for the separable vertex subalgebra; '
+                     "a general / non-separable subalgebra B is the recorded follow-up")
+        from quiverlab.hochschild.relative import (relative_cohomology_dims,
+                                                   relative_homology_dims)
+        fn = relative_cohomology_dims if side == "coh" else relative_homology_dims
+        return fn(self, top, coefficients=coefficients, max_cells=max_cells)
 
     # -- citations ------------------------------------------------------------
     def _engine_citations(self):
@@ -195,7 +244,7 @@ class Algebra:
         return engine == "auto" and auto_cs and self._auto_cs_routes()
 
 
-    def _cs_depth_fallback(self, side, rec, top, max_cells, cause):
+    def _cs_depth_fallback(self, side, rec, top, max_cells, cause, coefficients=None):
         """The Marco-2026-07-26 dispatch amendment: engine='auto' no longer DIES at
         the bar/fast depth wall when the algebra carries a quiver presentation -- it
         reroutes to the Chouhy-Solotar engine (recorded in the dispatch trace, never
@@ -213,10 +262,11 @@ class Algebra:
         from quiverlab.resolutions_cs.homology import (cs_cohomology_dims,
                                                        cs_homology_dims)
         fn = cs_cohomology_dims if side == "coh" else cs_homology_dims
-        return fn(self, top, max_cells=max_cells, trace=rec)
+        return fn(self, top, max_cells=max_cells, trace=rec, coefficients=coefficients)
 
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
-                              auto_cs=False, verbose=None, trace=None):
+                              auto_cs=False, coefficients=None, relative_to=None,
+                              verbose=None, trace=None):
         """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
         bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise),
         'cs' (Chouhy-Solotar, any admissible presentation over any field). Set
@@ -238,6 +288,13 @@ class Algebra:
         if engine not in ("auto", "bar", "fast", "cs"):
             raise QuiverlabError(f"unknown engine {engine!r}",
                                  hint="choose 'auto', 'bar', 'fast', or 'cs'")
+        self._check_coefficients(engine, coefficients)
+        if relative_to is not None:
+            table = self._relative_route("coh", top, max_cells, coefficients, relative_to)
+            table.references = self.citations()
+            if coefficients is not None:
+                table.coefficients = coefficients.describe()
+            return table
         want = resolve_verbose(verbose, quiverlab.verbose)
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
@@ -247,8 +304,9 @@ class Algebra:
                     route="chouhy-solotar",
                     reason="general Chouhy-Solotar resolution over the admissible presentation",
                     n_relations=len(self.relations or ())))
-            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
-        elif self._use_fast_engine(engine):
+            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=rec,
+                                       coefficients=coefficients)  # CS fills rec
+        elif self._use_fast_engine(engine, coefficients):
             from quiverlab.engine.adapter import engine_cohomology_dims
             if rec is not None:
                 rec.append(Dispatch(
@@ -263,7 +321,7 @@ class Algebra:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("coh", rec, top, max_cells,
-                                                "fast GF(p) bar basis")
+                                                "fast GF(p) bar basis", coefficients=coefficients)
         else:
             if rec is not None:
                 rec.append(Dispatch(
@@ -272,13 +330,15 @@ class Algebra:
                     n_relations=len(self.relations or ())))
             try:
                 table = hochschild_cohomology_dims(self, top, max_cells=max_cells,
-                                                   trace=rec)
+                                                   trace=rec, coefficients=coefficients)
             except DepthLimitError:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("coh", rec, top, max_cells,
-                                                "bar oracle")
+                                                "bar oracle", coefficients=coefficients)
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
+        if coefficients is not None:
+            table.coefficients = coefficients.describe()   # provenance (only when non-None)
         if want and trace is None and rec is not None:
             from quiverlab.trace.provenance import references_for, resolve_references
             from quiverlab.trace.writer import write_trace
@@ -289,9 +349,11 @@ class Algebra:
         return table
 
     def hochschild_homology(self, top, max_cells=4_000_000, engine="auto",
-                            auto_cs=False, verbose=None, trace=None):
+                            auto_cs=False, coefficients=None, relative_to=None,
+                            verbose=None, trace=None):
         """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology
-        (including 'cs', auto_cs, verbose, and the trace event sink)."""
+        (including 'cs', auto_cs, coefficients, relative_to, verbose, and the trace
+        event sink)."""
         import quiverlab
         from quiverlab.hochschild.bar import hochschild_homology_dims
         from quiverlab.hochschild.table import HHTable
@@ -301,6 +363,13 @@ class Algebra:
         if engine not in ("auto", "bar", "fast", "cs"):
             raise QuiverlabError(f"unknown engine {engine!r}",
                                  hint="choose 'auto', 'bar', 'fast', or 'cs'")
+        self._check_coefficients(engine, coefficients)
+        if relative_to is not None:
+            table = self._relative_route("hom", top, max_cells, coefficients, relative_to)
+            table.references = self.citations()
+            if coefficients is not None:
+                table.coefficients = coefficients.describe()
+            return table
         want = resolve_verbose(verbose, quiverlab.verbose)
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
@@ -310,8 +379,9 @@ class Algebra:
                     route="chouhy-solotar",
                     reason="general Chouhy-Solotar resolution over the admissible presentation",
                     n_relations=len(self.relations or ())))
-            table = cs_homology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
-        elif self._use_fast_engine(engine):
+            table = cs_homology_dims(self, top, max_cells=max_cells, trace=rec,
+                                     coefficients=coefficients)  # CS fills rec
+        elif self._use_fast_engine(engine, coefficients):
             from quiverlab.engine.adapter import engine_homology_dims
             if rec is not None:
                 rec.append(Dispatch(
@@ -326,7 +396,7 @@ class Algebra:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("hom", rec, top, max_cells,
-                                                "fast GF(p) bar basis")
+                                                "fast GF(p) bar basis", coefficients=coefficients)
         else:
             if rec is not None:
                 rec.append(Dispatch(
@@ -335,13 +405,15 @@ class Algebra:
                     n_relations=len(self.relations or ())))
             try:
                 table = hochschild_homology_dims(self, top, max_cells=max_cells,
-                                                 trace=rec)
+                                                 trace=rec, coefficients=coefficients)
             except DepthLimitError:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("hom", rec, top, max_cells,
-                                                "bar oracle")
+                                                "bar oracle", coefficients=coefficients)
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
+        if coefficients is not None:
+            table.coefficients = coefficients.describe()   # provenance (only when non-None)
         if want and trace is None and rec is not None:
             from quiverlab.trace.provenance import references_for, resolve_references
             from quiverlab.trace.writer import write_trace

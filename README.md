@@ -275,6 +275,9 @@ ported and wired in:
   The **Gerstenhaber bracket goes native on the Chouhy–Solotar resolution — past the
   bar window, over any exact field** (Negron–Witherspoon / Volkov homotopy liftings),
   completing the TT calculus surface (cup and cap went native earlier).
+- **Hochschild (co)homology with arbitrary bimodule coefficients** (`D(A)`, twisted
+  `{}_1A_ν`, `A/soc`, any no-code bimodule) and **relative HH over the vertices** —
+  `coefficients=` on the Hochschild kinds, `relative_to="vertices"` for `HH_•(A|kQ₀,M)`.
 - **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
   canonical representatives + a convergence certificate (`E_∞` totals == total
   homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,

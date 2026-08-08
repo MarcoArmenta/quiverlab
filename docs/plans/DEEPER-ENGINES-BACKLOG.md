@@ -557,6 +557,14 @@ planned together even if delivered in slices.
   a smaller monomial diagonal on the Bardzell resolution. Both engines accept
   structure-constants input, so the follow-up is what makes the native bracket reach
   presentation-less algebras. Deps: Plan 75 GHMS / a Bardzell diagonal.
+- [ ] **P52 explicit two-sided bimodule matrix editor** (deferred to P80, DD5):
+  the Plan-52 coefficient GUI ships the BUILTIN named bimodules
+  (regular / dual / twisted `{}_1A_ν` / `A/soc`) as a pick-list. The EXPLICIT
+  `{dim, left_maps, right_maps}` form (one exact-entry matrix per generator per
+  side) is accepted by the library + server, but its CANVAS matrix editor is
+  deferred: the Plan-26 module editor is one-sided (a right-module action per
+  arrow), whereas a bimodule needs BOTH a left and a right action per generator.
+  P80 adds the two-sided grid editor.
 
 ## Done (this backlog's history)
 

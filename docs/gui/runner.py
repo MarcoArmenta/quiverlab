@@ -18,9 +18,12 @@ os.environ.setdefault("MPLBACKEND", "Agg")   # never let matplotlib probe for a 
 import quiverlab
 
 SCHEMA_VERSION = 1
-# The GUI tags requests carrying module / Ext / Tor blocks as schema 2 (the
-# webapp validator's rule); this runner's dispatch handles both identically.
-ACCEPTED_SCHEMAS = (1, 2)
+# The GUI tags requests carrying module / Ext / Tor blocks as schema 2, and a
+# Hochschild coefficient block (Plan 52) as schema 3; this runner's dispatch
+# handles all three identically.
+ACCEPTED_SCHEMAS = (1, 2, 3)
+# The Hochschild compute kinds that may carry a coefficient bimodule (Plan 52).
+_HH_COEFFICIENT_KINDS = frozenset({"hh_cohomology", "hh_homology"})
 MAX_DEGREE = 10
 # Depth to which projective dimension is probed before reporting "infinite"
 # (matches the library's injective_dimension(bound=32) default).
@@ -40,7 +43,7 @@ _MODULE_KINDS = frozenset({
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
           "module": None, "ext_target": None, "tor_target": None,
-          "algebra_b": None}
+          "algebra_b": None, "coefficients": None}
 
 
 class RequestError(Exception):
@@ -125,12 +128,13 @@ def _algebra_from_spec(alg):
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
-                  module=None, ext_target=None, tor_target=None, algebra_b=None)
+                  module=None, ext_target=None, tor_target=None, algebra_b=None,
+                  coefficients=None)
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
         if req.get("schema") not in ACCEPTED_SCHEMAS:
-            raise RequestError("unsupported schema %r (this GUI speaks schema 1/2)"
+            raise RequestError("unsupported schema %r (this GUI speaks schema 1/2/3)"
                                % (req.get("schema"),))
         alg = req.get("algebra") or {}
         A = _algebra_from_spec(alg)
@@ -144,7 +148,8 @@ def run_build(request_json):
         _state.update(algebra=A, request=req, module=req.get("module"),
                       ext_target=req.get("ext_target"),
                       tor_target=req.get("tor_target"),
-                      algebra_b=req.get("algebra_b"))
+                      algebra_b=req.get("algebra_b"),
+                      coefficients=req.get("coefficients"))
         out = {"ok": True, "dim": A.dim, "n_vertices": len(vertices),
                "n_arrows": len(arrows), "algebra": repr(A).splitlines()[0]}
     except Exception as exc:
@@ -288,6 +293,31 @@ def _build_module(A, mspec, name):
         raise RequestError("module: no vertex %r in the algebra" % (v,))
     dimvec, action = _full_matrices(A, mspec)
     return A.module(dimvec, action, side=mspec.get("side", "right"), name=name)
+
+
+def _build_coefficient(A, cspec):
+    """Build a Hochschild coefficient Bimodule from a request coefficient block
+    (Plan 52). None => the regular bimodule (no block emitted). Mirrors
+    quiverlab.hpc.spec._build_coefficient / _parse_coefficients."""
+    if cspec is None:
+        return None
+    from quiverlab.hochschild.coefficients import Bimodule
+    if not isinstance(cspec, dict):
+        raise RequestError("coefficients must be an object")
+    builtin = cspec.get("builtin")
+    if builtin is not None:
+        kind = builtin.get("kind") if isinstance(builtin, dict) else None
+        builder = {"regular": Bimodule.regular, "dual": Bimodule.dual,
+                   "twisted_nakayama": Bimodule.twisted_by_nakayama,
+                   "quotient_socle": Bimodule.mod_socle}.get(kind)
+        if builder is None:
+            raise RequestError("unknown coefficient builtin kind %r" % (kind,))
+        return builder(A)
+    dim, lm, rm = cspec.get("dim"), cspec.get("left_maps"), cspec.get("right_maps")
+    if dim is None or lm is None or rm is None:
+        raise RequestError("coefficients: needs a 'builtin' pick-list OR "
+                           "'dim'+'left_maps'+'right_maps'")
+    return Bimodule.from_actions(A, dim, lm, rm)
 
 
 def _random_module_core(A, dims, side, seed, tries):
@@ -796,22 +826,33 @@ def compute_one(spec):
                 raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
             method = (A.hochschild_cohomology if name == "hh_cohomology"
                       else A.hochschild_homology)
-            table = method(top, verbose=False, trace=_state["events"])
+            coeff = _build_coefficient(A, _state.get("coefficients"))   # Plan 52 (None=regular)
+            hh_kwargs = {"coefficients": coeff} if coeff is not None else {}
+            table = method(top, verbose=False, trace=_state["events"], **hh_kwargs)
+            keys = list(table.references)
+            if coeff is not None:              # Plan 52 coefficient provenance
+                for ckey in ("chaparro_schroll_solotar", "lindell_rubio_relative"):
+                    if ckey not in keys:
+                        keys.append(ckey)
             block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                      "engine": table.engine,
-                     "citations": _citation_pairs(table.references)}
+                     "citations": _citation_pairs(keys)}
+            if coeff is not None:
+                block["coefficients"] = coeff.describe()
             # Plan 35 wave 3d: capture the explicit HH^n / HH_n representatives alongside
             # the dims (basis_classes / chain_basis / differentials / inner_dims per
             # degree) from the SAME dims path -- key-for-key identical to the server twin
             # (quiverlab.hpc.spec._dispatch), so the cross-runner contract holds. None
-            # (dims-only) when no representative route applies.
-            from quiverlab.hochschild.hh_reps import hh_reps_blocks
-            try:                               # reps are ADDITIVE + best-effort: a
-                reps = hh_reps_blocks(A, name, top, list(table.dims), table.engine)
-            except Exception:                  # capture must NEVER break the dims block
-                reps = None
-            if reps:
-                block.update(reps)
+            # (dims-only) when no representative route applies. Skipped with a coefficient
+            # (reps are for the regular bimodule).
+            if coeff is None:
+                from quiverlab.hochschild.hh_reps import hh_reps_blocks
+                try:                           # reps are ADDITIVE + best-effort: a
+                    reps = hh_reps_blocks(A, name, top, list(table.dims), table.engine)
+                except Exception:              # capture must NEVER break the dims block
+                    reps = None
+                if reps:
+                    block.update(reps)
         elif name == "cyclic_homology":
             # Plan-35 follow-up: cyclic homology HC_0..HC_n (Connes (b, B) mixed
             # complex). Range kind; the block is key-for-key identical to the server

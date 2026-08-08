@@ -293,6 +293,19 @@ REGISTRY: dict = {r.key: r for r in [
        "The HH^1(T(A)) decomposition and Example 2.20 (the Z_5 cycle) -- the "
        "trivial-extension first-cohomology oracle.",
        "hochschild", "oracle"),
+    _r("chaparro_schroll_solotar", "ChaparroSchrollSolotar2020", "foundation",
+       "On the Lie algebra structure of the first Hochschild cohomology of gentle "
+       "and Brauer graph algebras",
+       "Determines HH^1(A, M) with different coefficients for gentle algebras via "
+       "ribbon-graph combinatorics -- the Plan-52 gentle HH^1-with-coefficients "
+       "provenance (numeric pin BLOCKED-until-transcribed).",
+       "hochschild", "coefficients"),
+    _r("lindell_rubio_relative", "LindellRubio2024", "foundation",
+       "On the first relative Hochschild cohomology and the contracted fundamental group",
+       "The Lie-algebra structure of the first RELATIVE (vertex-relative, E = kQ_0) "
+       "Hochschild cohomology, with radical-square-zero computations -- the Plan-52 "
+       "relative HH provenance (numeric pin BLOCKED-until-transcribed).",
+       "hochschild", "relative"),
     _r("xhj_truncated", "xuhanjiang2007truncated", "foundation",
        "Hochschild cohomology of truncated quiver algebras",
        "For a truncated algebra kQ/R^N, dim HH^* is finite iff Q is acyclic -- "

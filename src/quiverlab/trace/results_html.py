@@ -843,8 +843,14 @@ def _block_html(kind, b, ctx=None):
             route_of_engine)
         # Typing statement at the TOP of the section (Marco 2026-07-31): exactly what
         # the engine computes and what the bar-bracket / tensor notation means.
-        chunks = [hh_typing_html(kind, route_of_engine(b.get("engine"))),
-                  _dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or [])]
+        chunks = [hh_typing_html(kind, route_of_engine(b.get("engine")))]
+        if b.get("coefficients"):
+            # Plan 52: HH(A, M) with a non-regular coefficient bimodule M. State it.
+            chunks.append("<p class='ql-note'>coefficients: %s — Hochschild "
+                          "(co)homology with values in the A-bimodule %s (not the "
+                          "regular bimodule A).</p>"
+                          % (_esc(b["coefficients"]), _esc(b["coefficients"])))
+        chunks.append(_dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or []))
         if b.get("engine"):
             chunks.append(_engine_note(b["engine"]))
         chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))

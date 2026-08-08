@@ -197,6 +197,27 @@ class ModuleSpec:
     side: str = "right"
 
 
+# Plan 52: the Hochschild compute kinds that may carry a coefficient bimodule.
+HH_COEFFICIENT_KINDS = frozenset({"hh_cohomology", "hh_homology"})
+
+_COEFFICIENT_BUILTINS = ("regular", "dual", "twisted_nakayama", "quotient_socle")
+
+
+@dataclass(frozen=True)
+class CoefficientBuiltin:
+    kind: str
+
+
+@dataclass(frozen=True)
+class CoefficientSpec:
+    """A Hochschild coefficient A-bimodule (Plan 52, schema v3): a ``builtin`` named
+    bimodule OR the explicit ``dim``/``left_maps``/``right_maps`` form."""
+    builtin: CoefficientBuiltin | None = None
+    dim: int | None = None
+    left_maps: dict | None = None
+    right_maps: dict | None = None
+
+
 @dataclass(frozen=True)
 class HpcConfig:
     checkpoint_dir: str | None = None
@@ -227,6 +248,7 @@ class ComputeRequest:
     hpc: HpcConfig | None
     raw_algebra: dict            # verbatim echo for the result envelope
     algebra_b: Any = None        # wave 2: the SECOND algebra for derived_compare (opt.)
+    coefficients: CoefficientSpec | None = None   # v3 (Plan 52): the M in HH(A, M)
 
 
 # --------------------------------------------------------------------------- #
@@ -490,6 +512,53 @@ def _lift_builtin_side(data: dict) -> dict:
     return data
 
 
+def _parse_coefficients(data) -> CoefficientSpec:
+    """Validate a Hochschild coefficient block (Plan 52). ``builtin`` names a library
+    bimodule; the explicit form is ``dim`` + ``left_maps`` + ``right_maps`` (one
+    exact-entry matrix per generator per side). Mirrors schema.py::CoefficientSpec."""
+    if not isinstance(data, dict):
+        raise SpecError("coefficients must be an object")
+    builtin = data.get("builtin")
+    dim = data.get("dim")
+    left_maps = data.get("left_maps")
+    right_maps = data.get("right_maps")
+    if builtin is not None:
+        if dim is not None or left_maps is not None or right_maps is not None:
+            raise SpecError("coefficients: give either a 'builtin' pick-list OR "
+                            "'dim'+'left_maps'+'right_maps', not both")
+        if not isinstance(builtin, dict):
+            raise SpecError("coefficients.builtin must be an object")
+        bkind = builtin.get("kind")
+        if bkind not in _COEFFICIENT_BUILTINS:
+            raise SpecError(f"coefficients.builtin.kind must be one of {_COEFFICIENT_BUILTINS}")
+        return CoefficientSpec(builtin=CoefficientBuiltin(bkind))
+    if dim is None or left_maps is None or right_maps is None:
+        raise SpecError("coefficients: needs a 'builtin' pick-list OR the explicit "
+                        "'dim' + 'left_maps' + 'right_maps'")
+    if not isinstance(dim, int) or isinstance(dim, bool) or dim < 0:
+        raise SpecError("coefficients: 'dim' must be a non-negative integer")
+    for name, maps in (("left_maps", left_maps), ("right_maps", right_maps)):
+        if not isinstance(maps, dict):
+            raise SpecError(f"coefficients.{name} must be an object mapping generator -> matrix")
+        for arrow, mat in maps.items():
+            if not isinstance(mat, list):
+                raise SpecError(f"coefficients {name}[{arrow!r}] must be a matrix")
+            width = None
+            for row in mat:
+                if not isinstance(row, list):
+                    raise SpecError(f"coefficients {name}[{arrow!r}] must be a matrix (list of rows)")
+                if width is None:
+                    width = len(row)
+                elif len(row) != width:
+                    raise SpecError(f"coefficients {name}[{arrow!r}] is not rectangular")
+                for x in row:
+                    if not _valid_entry(x):
+                        raise SpecError(
+                            f"coefficients {name}[{arrow!r}] has a non-exact entry {x!r}; "
+                            "entries must be integers or exact strings like '1/2' (never floats)")
+    return CoefficientSpec(dim=int(dim), left_maps=dict(left_maps), right_maps=dict(right_maps))
+
+
 def _parse_module(data, what: str, max_total_dim: int | None = _MAX_MODULE_DIM) -> ModuleSpec:
     """Validate a module block. ``max_total_dim`` caps the total module dimension
     at parse time (before any matrix is allocated); pass ``None`` to disable the cap
@@ -652,8 +721,8 @@ def parse_request(data) -> ComputeRequest:
     if not isinstance(data, dict):
         raise SpecError("request must be a mapping (object)")
     schema_version = data.get("schema", 1)
-    if schema_version not in (1, 2):
-        raise SpecError(f"unsupported schema version {schema_version}; this tool speaks v1/v2")
+    if schema_version not in (1, 2, 3):
+        raise SpecError(f"unsupported schema version {schema_version}; this tool speaks v1/v2/v3")
     if "algebra" not in data:
         raise SpecError("request needs an 'algebra' block")
     algebra = _parse_algebra(data["algebra"])
@@ -679,9 +748,18 @@ def parse_request(data) -> ComputeRequest:
     tor_target = _parse_tor_target(data.get("tor_target"), module_cap)
 
     if (module is not None or ext_target is not None or tor_target is not None) \
-            and schema_version != 2:
-        raise SpecError("a 'module'/'ext_target'/'tor_target' block requires schema 2")
+            and schema_version < 2:
+        raise SpecError("a 'module'/'ext_target'/'tor_target' block requires schema >= 2")
+    coefficients = (_parse_coefficients(data["coefficients"])
+                    if data.get("coefficients") is not None else None)
     kinds = {it.kind for it in items}
+    if coefficients is not None:
+        if schema_version < 3:
+            raise SpecError("a 'coefficients' block requires schema 3")
+        bad = sorted(kinds - HH_COEFFICIENT_KINDS)
+        if bad:
+            raise SpecError("a 'coefficients' block only applies to Hochschild kinds "
+                            f"(hh_cohomology / hh_homology); got {bad}")
     if kinds & MODULE_KINDS and module is None:
         need = sorted(kinds & MODULE_KINDS)
         raise SpecError(f"module compute kind(s) {need} require a 'module' block")
@@ -708,7 +786,8 @@ def parse_request(data) -> ComputeRequest:
                           compute=list(compute), artifacts=artifacts,
                           module=module, ext_target=ext_target,
                           tor_target=tor_target, hpc=hpc,
-                          raw_algebra=data["algebra"], algebra_b=algebra_b)
+                          raw_algebra=data["algebra"], algebra_b=algebra_b,
+                          coefficients=coefficients)
 
 
 # --------------------------------------------------------------------------- #
@@ -928,6 +1007,22 @@ def _build_synthetic(spec):
 # Top-level entry point (ported from runner.run_spec, byte-stable)
 # --------------------------------------------------------------------------- #
 
+def _build_coefficient(A, spec):
+    """Build the library :class:`quiverlab.hochschild.coefficients.Bimodule` from a
+    validated CoefficientSpec (Plan 52). Its own loud QuiverlabErrors (not Frobenius,
+    non-path-type, relation-violating actions, floats) propagate as clean 4xx."""
+    from quiverlab.hochschild.coefficients import Bimodule
+    if spec.builtin is not None:
+        kind = spec.builtin.kind
+        return {
+            "regular": Bimodule.regular,
+            "dual": Bimodule.dual,
+            "twisted_nakayama": Bimodule.twisted_by_nakayama,
+            "quotient_socle": Bimodule.mod_socle,
+        }[kind](A)
+    return Bimodule.from_actions(A, spec.dim, spec.left_maps, spec.right_maps)
+
+
 def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
         result_max_bytes: int | None = None, *, result_schema: int | None = None,
         write_result: bool = True, capture_reps: bool = True) -> dict:
@@ -973,6 +1068,8 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
             ql.verbose = False
         try:
             A = build_algebra(req.algebra)
+            if req.coefficients is not None:      # Plan 52: HH(A, M) coefficient bimodule
+                hh_kwargs = {**hh_kwargs, "coefficients": _build_coefficient(A, req.coefficients)}
             M = (_build_module(A, req.module, "M")
                  if any(it.kind in MODULE_KINDS for it in items) else None)
             # ext/tor CONSUME their target, so those items build it unconditionally
@@ -1361,6 +1458,7 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
                                f"{kind} needs a degree range, e.g. '{kind}:0..4'")
         method = (A.hochschild_cohomology if kind == "hh_cohomology"
                   else A.hochschild_homology)
+        coeff = hh_kwargs.get("coefficients")     # Plan 52 (None = regular bimodule)
         table = method(top, verbose=False, trace=events, **hh_kwargs)
         keys = list(table.references)
         # Credit the resolution that actually computed the table: the engine
@@ -1370,16 +1468,22 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         for marker, ckey in (("chouhy", "chouhy_solotar"), ("bardzell", "bardzell")):
             if marker in eng and ckey not in keys:
                 keys.append(ckey)
+        if coeff is not None:                     # Plan 52 coefficient provenance
+            for ckey in ("chaparro_schroll_solotar", "lindell_rubio_relative"):
+                if ckey not in keys:
+                    keys.append(ckey)
         block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                  "engine": table.engine, "references": keys,
                  "citations": _citation_pairs(keys)}
+        if coeff is not None:
+            block["coefficients"] = coeff.describe()
         # Plan 35 wave 3d: capture the explicit HH^n / HH_n representatives alongside the
         # dims (basis_classes / chain_basis / differentials / inner_dims per degree),
         # from the SAME dims path (GF(p) bar or Chouhy-Solotar). Additive block fields;
         # None (dims-only) when no representative route applies. Byte-identical Pyodide
         # twin (docs/gui/runner.py). The reader can read off HH^0's centre, HH^1's
         # derivations, HH^2's deformation cochain, HH_0's commutator residues.
-        if capture_reps:                       # skipped by the instant tier (report-only
+        if capture_reps and coeff is None:     # reps are for the regular bimodule only
             from quiverlab.hochschild.hh_reps import hh_reps_blocks
             try:                               # data + a cold-JIT cost over its wall net)
                 reps = hh_reps_blocks(A, kind, top, list(table.dims), table.engine)

@@ -249,7 +249,16 @@ never hide behind one:
     entries). The budget rides in the ``compute`` string (no new request field), so the
     ``canonical_key`` is request-derived; both runners share
     ``modules.left_right.left_right_parts_block``, so the Pyodide twin agrees
-    (``tests/webapp/test_left_right_parts_p55.py`` / ``tests/gui/test_left_right_runner_twin.py``)."""
+    (``tests/webapp/test_left_right_parts_p55.py`` / ``tests/gui/test_left_right_runner_twin.py``).
+  * 2026-08-07 (``hh_cohomology_dual_kA2`` ADDED, Plan 52): a NEW fixture for the
+    schema-3 Hochschild-with-COEFFICIENTS block (kA2 over GF(5), the dual bimodule
+    D(A), ``hh_cohomology:0..3``). Pure addition: every pre-existing entry was
+    verified byte-identical BEFORE the new one was appended (the delegation test
+    passed on all 18 unchanged). Its ``canonical_key`` is request-derived (the
+    ``coefficients`` block rides the request only when present -- a coefficients-LESS
+    request keeps sending schema 2 and drops the key via model_dump, so every prior
+    entry's key is unchanged); the ``result_json`` was frozen from the server runner,
+    and the Plan-52 cross-runner test asserts the Pyodide twin agrees on the block."""
 import json
 import pathlib
 

@@ -10,12 +10,16 @@ from quiverlab.resolutions_cs.aarith import AArith
 
 
 class ChouhySolotarResolution:
-    def __init__(self, A, rs, max_degree, max_cells=4_000_000):
+    def __init__(self, A, rs, max_degree, max_cells=4_000_000, coefficients=None):
         self.A = A
         self.rs = rs
         self.dom = A.domain
         self.ss = SSequence(rs, max_degree, max_cells)
         self.ar = AArith(A, rs)
+        # Plan 52: an optional coefficient bimodule M. The RESOLUTION of A over A^e is
+        # coefficient-independent (d_terms unchanged); only the collapse in matrix()
+        # swaps the corner e_t A e_o -> e_t M e_o and the two outer muls -> M's actions.
+        self.coefficients = coefficients
         self._chain_index = {}
         self._d_cache = {}
         self._rdec_cache = {}
@@ -165,10 +169,34 @@ class ChouhySolotarResolution:
         return self.ss.S(n)
 
     def _basis(self, n, side):
-        return [(ch, j) for ch in self._cochains(n) for j in self.ar.corner(ch.o, ch.t, side)]
+        C = self.coefficients
+        if C is None:
+            return [(ch, j) for ch in self._cochains(n)
+                    for j in self.ar.corner(ch.o, ch.t, side)]
+        return [(ch, j) for ch in self._cochains(n)
+                for j in self.ar.corner_M(C, ch.o, ch.t, side)]
 
     def dim_C(self, n, side):
         return len(self._basis(n, side))
+
+    def _collapse_hom(self, j, a_vec, c_vec):
+        """b·w·a with b=c_vec, w the corner element index j, a=a_vec. Regular:
+        c_vec·e_j·a_vec (an A-vector). With a coefficient M: (c_vec ▷ m_j) ◁ a_vec
+        (an M-vector) via M's actions."""
+        C = self.coefficients
+        if C is None:
+            ej = self.ar.A._basis_vec(j)
+            return self.ar.mul(c_vec, self.ar.mul(ej, a_vec))
+        return C.right_apply(a_vec, C.left_apply(c_vec, C._unit_vec(j)))
+
+    def _collapse_coh(self, j, a_vec, c_vec):
+        """a·w·b with a=a_vec, w the corner element index j, b=c_vec. Regular:
+        a_vec·e_j·c_vec. With a coefficient M: (a_vec ▷ m_j) ◁ c_vec."""
+        C = self.coefficients
+        if C is None:
+            ej = self.ar.A._basis_vec(j)
+            return self.ar.mul(a_vec, self.ar.mul(ej, c_vec))
+        return C.right_apply(c_vec, C.left_apply(a_vec, C._unit_vec(j)))
 
     def matrix(self, n, side):
         from quiverlab.resolutions_cs.pelt import _resolve_chain, _vecs
@@ -181,10 +209,9 @@ class ChouhySolotarResolution:
         M = [[dom.zero()] * len(cols) for _ in range(len(rows))]
         if side == "hom":
             for cj, (sigma, j) in enumerate(cols):
-                ej = self.ar.A._basis_vec(j)
                 for (coeff, a_word, tw, c_word) in self.d_terms(n, sigma):
                     a_vec, c_vec = _vecs(self, sigma, a_word, c_word)
-                    val = self.ar.mul(c_vec, self.ar.mul(ej, a_vec))     # b·w·a  (homology collapse)
+                    val = self._collapse_hom(j, a_vec, c_vec)            # b·w·a  (homology collapse)
                     tw_word = _resolve_chain(self, tw).word
                     for p, vp in enumerate(val):
                         if not dom.is_zero(vp) and (tw_word, p) in ridx:
@@ -192,13 +219,12 @@ class ChouhySolotarResolution:
                             M[r][cj] = dom.add(M[r][cj], dom.mul(coeff, vp))
         else:
             for cj, (sigma, j) in enumerate(cols):                       # δ^n: C^n -> C^{n+1}
-                ej = self.ar.A._basis_vec(j)
                 for tau in self._cochains(n + 1):                        # empty beyond cap (see _cochains)
                     for (coeff, a_word, tw, c_word) in self.d_terms(n + 1, tau):
                         if _resolve_chain(self, tw).word != sigma.word:
                             continue
                         a_vec, c_vec = _vecs(self, tau, a_word, c_word)
-                        val = self.ar.mul(a_vec, self.ar.mul(ej, c_vec)) # a·w·b  (cohomology collapse)
+                        val = self._collapse_coh(j, a_vec, c_vec)        # a·w·b  (cohomology collapse)
                         for p, vp in enumerate(val):
                             if not dom.is_zero(vp) and (tau.word, p) in ridx:
                                 r = ridx[(tau.word, p)]
