@@ -882,6 +882,40 @@ REGISTRY: dict = {r.key: r for r in [
        "with HH_* a module over HH^*; the Lie-module-over-HH^1 structure Plan 71 computes "
        "is one facet, and gentle algebras are its literature anchor.",
        "hochschild", "lie"),
+    # --- Plan 78: R13 L-infinity / Maurer-Cartan formal deformations ---
+    _r("rrb_linfty_bardzell", "RedondoRossiBertone2022linfty", "foundation",
+       "L-infinity-structure on Bardzell's complex for monomial algebras",
+       "Redondo-Rossi Bertone: the explicit L-infinity structure on B(A) for a monomial "
+       "char-0 algebra (weakly equivalent to the Hochschild complex C(A)), the "
+       "Maurer-Cartan equation in degree 2, and the rad^2=0 => B(A) is a dg-Lie algebra "
+       "collapse -- Plan 78's rad^2=0 dg-Lie certificate and the higher-l_n route.",
+       "hochschild", "deformation"),
+    _r("mrrs_mc_gentle", "MullerRedondoRossiBertoneSuarez2025", "foundation",
+       "Maurer-Cartan equation for gentle algebras",
+       "Muller-Redondo-Rossi Bertone-Suarez: under quiver hypotheses on a gentle A=kQ/I "
+       "the L-infinity structure on B(A)[1] is nilpotent and the Maurer-Cartan set equals "
+       "the 2-cocycles Z^2 (every infinitesimal deformation integrates) -- Plan 78's "
+       "nilpotent-regime MC=Z^2 gate.",
+       "hochschild", "deformation"),
+    _r("rrrv_morita_deform", "RedondoRomanRossiBertoneVerdecchia2020", "foundation",
+       "Morita invariance for infinitesimal deformations",
+       "Redondo-Roman-Rossi Bertone-Verdecchia: the transfer of infinitesimal deformations "
+       "HH^2(A)<->HH^2(B) under Morita equivalence, and (over an algebraically closed field) "
+       "the presentation by quiver and relations of the infinitesimal deformations -- "
+       "Plan 78's presented deformed algebra A_alpha.",
+       "hochschild", "deformation"),
+    _r("rrr_ext_deform", "RedondoRomanRossiBertone2022ext", "foundation",
+       "The Ext-algebra for infinitesimal deformations",
+       "Redondo-Roman-Rossi Bertone (three authors): the algebra structure of the "
+       "Ext-algebra of an infinitesimal deformation A_f, described (under conditions on f) "
+       "in terms of the Ext-algebra of A -- Plan 78's Ext-algebra handoff on A_alpha.",
+       "hochschild", "deformation"),
+    _r("chouhy_degeneration", "Chouhy2019degeneration", "foundation",
+       "On geometric degenerations and Gerstenhaber formal deformations",
+       "Chouhy: the degeneration relation on associative-algebra varieties described via "
+       "Gerstenhaber formal deformations, with N-Koszulity preserved under degeneration -- "
+       "the geometric reading of A ~> A_alpha in Plan 78.",
+       "hochschild", "deformation"),
 ]}
 
 
