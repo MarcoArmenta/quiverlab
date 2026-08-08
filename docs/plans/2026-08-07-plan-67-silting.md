@@ -1620,3 +1620,106 @@ git commit -m "docs(verification): Plan-67 silting oracle rows + AI/Oppermann/Jo
    and BibTeX-verified; `tests/release/` + `tests/citations/` green; deep + qpa + fast +
    webapp/gui buckets green on the touched surface; the P67 card ticked in the
    metaplan §6 ledger.
+
+---
+
+## Fix-round addendum (2026-08-08, branch `plan-67-silting-impl`)
+
+The implementation (7 commits) survived a live adversarial review — every concrete
+correctness attack passed — but the critic returned NEEDS WORK on two MAJOR honesty
+items + minors, all adjudicated VALID. This addendum records the resolutions.
+
+### MAJOR H1 — rung-1 / rung-4 K₀-evidence inconsistency (the plan's central honesty question)
+
+**The finding.** `is_silting_object` rung 1 returned a hard `is_silting=True` when
+`is_tilting_complex(...).is_tilting` was True, where `is_tilting` = rigid AND
+`det(g_proj) ∈ {±1}`. Rung 4 honestly returns `"unknown"` for presilting + det±1, citing
+the Krah phantom (K₀ does not detect thick subcategories). But **generation
+`thick(T)=K^b(proj)` is the SAME requirement for tilting and silting** — only the vanishing
+window differs. Using det±1 as a generation certificate in rung 1 while refusing it in
+rung 4 was unreconciled. Neither `is_tilting_complex` NOR the silting rung independently
+built `thick(T)`; both substituted the K₀-necessary condition.
+
+**Mathematical resolution — Rickard's rank question is OPEN (verified this session).**
+The proposition "a two-sided rigid perfect complex with `#(indec summands) = rk K₀(A)`
+(⇔ `det(g_proj)=±1`, square) generates `K^b(proj A)`" is **exactly Rickard's rank
+question, an open problem** — not a theorem. Verified against the literature this session:
+
+- Rickard asks precisely whether tilting complexes are those `T` with (1)
+  `Hom(T,T[i])=0` for `i≠0` and (2) `#(indec summands) = rk K₀(A)`. This is a *question*,
+  with only **partial** answers (e.g. Zhang: a self-orthogonal τ-tilting **module** of
+  finite projective dimension is tilting — modules, pd < ∞, not the general complex case).
+- The **2-term** case IS decided (IJY / AIR): a 2-term presilting complex is silting iff
+  `#(indec summands) = #(Λ)`. Beyond 2-term, non-completable presilting objects exist
+  (arXiv:2302.12502, "A negative answer to the Complement Question for presilting
+  complexes"; the Krah-phantom family), so K₀ alone does NOT decide generation.
+
+There is therefore **no verifiable general theorem** upgrading two-sided rigidity + det±1
+to generation. Per the plan's own rule ("if you cannot verify such a theorem, make the
+honesty CONSISTENT"), we applied the **honesty downgrade** (option B).
+
+**What changed.** `TiltingReport` gains a three-valued `generation` sibling field (the P61
+`gldim_exact` house pattern): `"certified"` | `"k0_necessary_only"` | `"no"`. `is_tilting`
+becomes three-valued. Generation is CERTIFIED only where the IJY completion theorem
+reaches — a **2-term** self-orthogonal K₀-basis object is 2-term silting and, two-sided
+rigid, tilting — which covers the regular object `A` (width 0) and every 2-term / APR tilt
+(all **backward-compatible**: `"certified"` still yields hard `True`, so the entire P43
+`test_derived_tilting.py` + `test_derived_tau.py` suite stays green byte-for-byte). A
+**wide** (non-2-term) rigid K₀-basis object is `"k0_necessary_only"` ⇒ `is_tilting =
+"unknown"` (the verifier does not build `thick(T)`). `is_silting_object` rung 1 now keys
+on `is_tilting is True`, so such an object falls through to the K₀-basis-only rung and
+lands on the SAME `"unknown"` — the tilting rung and the silting K₀-only rung are
+reconciled. This is a **P43 public-surface change**, taken deliberately over preserving a
+possibly-unsound hard `True`; the only behavioural change is that genuinely non-2-term rigid
+full-rank inputs move from `True` to the honest `"unknown"`. Pinned by a genuine width-2
+rigid tilting complex over `k[1→2→3]/(ab)` (verified generating by brutal-truncation
+triangles, yet honestly `"unknown"` because K₀ cannot run that argument) that agrees under
+both verifiers. Commit `26c539a`.
+
+### MAJOR H2 — "2-term ≡ P45" is now a real bidirectional cross-engine check
+
+The old oracle iterated P45's `exchange_graph` pairs and re-verified them (one-directional;
+`count==5` compared P45 to itself). Rebuilt: the SILTING engine INDEPENDENTLY enumerates the
+2-term silting objects — a BFS from the regular object through single `silting_mutate`s
+(both directions), keeping only results in the canonical AIR `{0,1}` window that re-verify
+silting, dedup by a `g_proj` g-vector fingerprint (a different verification + dedup +
+traversal pipeline than P45's `mutate` + `make_pair` + `g_key`). The SET of g-fingerprints
+equals P45's vertex set BOTH ways, the `silting_neighbors` edges equal the `exchange_graph`
+edges, on kA₂ (5, hereditary) AND kZ₃/J² (14, NON-hereditary self-injective). A key
+correction found in the process: the shift-INsensitive `_silting_key` wrongly merges `A`
+(`{e_v}`, deg 0) and `A[1]` (`{-e_v}`, deg 1) — distinct support τ-tilting pairs; the
+correct canonical identifier is the shift-SENSITIVE `g_proj` fingerprint, enumerated in the
+`{0,1}` window. Commit `0e8f490`.
+
+### Minors (all adjudicated valid)
+
+- **W1** — the mutant self-cert re-verifies **PRESILTING** (the decidable positive-window
+  half), not full silting/generation. The module docstring, `silting_mutate` docstring, the
+  bridge comment and `_assert_neighbour` now say so (honest wording; no behaviour change).
+- **M3** — `_summand_key` (per-degree dim-vectors) is a NECESSARY, not canonical, summand
+  identifier. `_assert_neighbour` now splits the shares check into two DISTINCT loud
+  branches: `shared < n-1` = the mutation DEGENERATED; `shared > n-1` (== n) = FINGERPRINT
+  AMBIGUITY (the new cone shares the mutated summand's profile, so the fingerprint cannot
+  certify the mutant DIFFERS from the input — not a proof it is wrong). Both pinned by test.
+- **W2** — the "never a 500" / "never a crash" claim was too strong (the guard catches
+  `QuiverlabError` only). Narrowed the comment in BOTH runners (`hpc/spec.py` +
+  `docs/gui/runner.py`): the TYPED refusals are caught into an `error` field; a
+  non-QuiverlabError bug surfaces loudly (fail-fast house rule).
+- **M1/M2** — committed the critic's robustness probes: `μ⁻∘μ⁺ = id` on kA₂ AND kZ₃/J²,
+  a multi-vertex mutation chain over kA₃, and the non-hereditary 2-term cross-check
+  (folded into H2).
+- **H3** — a direct `_cx_to_pc`/`_pc_to_cx` bridge round-trip on a non-2-term complex
+  ([P3→P2→P1] over `k[1→2→3]/(ab)`): degrees, per-degree dims AND every differential
+  matrix preserved byte-for-byte.
+
+Minors commit `d8c08b6`.
+
+### Recount (branch-relative)
+
+Recounted live on-branch (the frozen counts predated the new tests): oracle classes
+literature 1006 (=) / cross-engine 600→**601** / self-cert 1247→**1254** / qpa 216 (=) /
+m2 11 (=) / union 2495→**2503**. The total-suite anchor `3540` is a pre-existing staleness
+inherited from the P60 recount (a live full collection on-branch is ~4274; it is NOT
+live-audited — the badge/page/prose triple stays mutually consistent — and predates this
+fix round), left for the orchestrator's merge recount. `dev` has moved on; these are
+branch-relative.
