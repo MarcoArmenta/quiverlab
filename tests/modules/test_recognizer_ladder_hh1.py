@@ -38,12 +38,28 @@ def test_fixture_simply_connected_over_CC():
     assert sc.hh1_dim == 0 and sc.verdict is True          # simply connected
 
 
+@lit
+def test_theorem_B_verdict_false_on_real_ada_hh1_nonzero():
+    # A REAL rep-finite ada algebra over CC with HH^1 != 0 (verified live) -- the genuine
+    # negative pin, no longer only the synthetic _theorem_b_verdict branch. The "square"
+    # kQ/(a*b, c*d) on 1->2->4, 1->3->4 with BOTH length-2 routes killed: quasi-tilted
+    # (gl.dim 2, empty complement) hence ada, dim HH^1 = 1, pi_1 = Z (NOT simply connected),
+    # so ACLV Theorem B returns verdict False. Cross-agrees with P56 (see
+    # tests/modules/test_ada_hh1_p56_agreement.py, where this same algebra is the False member).
+    A = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)}).algebra(
+        relations=["a*b", "c*d"], field=CC)
+    L = recognizer_ladder(A)
+    assert L.verdict("ada") is True and L.verdict("quasi_tilted") is True
+    sc = L.simple_connectedness
+    assert sc.applicable is True and sc.field_algebraically_closed is True
+    assert sc.hh1_dim == 1 and sc.verdict is False          # HH^1 != 0 => NOT simply connected
+
+
 @selfcert
 def test_theorem_B_verdict_false_when_hh1_nonzero():
-    # UNCONDITIONAL coverage of the verdict=False branch via the pure helper (a rep-finite
-    # ada NOT-simply-connected instance is elusive -- ada strongly pushes rep-finite algebras
-    # toward simple connectedness, see the in-plan note -- so the False branch is exercised
-    # synthetically, mirroring the weakly-shod digraph unit test).
+    # Gate-logic coverage of the pure _theorem_b_verdict helper across all four
+    # (ada x alg_closed) corners; the end-to-end REAL ada + HH^1 != 0 instance is pinned in
+    # test_theorem_B_verdict_false_on_real_ada_hh1_nonzero above.
     from quiverlab.modules.recognizers_ladder import _theorem_b_verdict
     assert _theorem_b_verdict(ada=True, alg_closed=True, hh1_dim=1) is False
     assert _theorem_b_verdict(ada=True, alg_closed=True, hh1_dim=0) is True

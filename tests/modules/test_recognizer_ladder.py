@@ -22,6 +22,13 @@ def _radsq_nakayama_a5():
     return RadicalSquareZero(Q, field=QQ)
 
 
+def _radsq_nakayama_a4():
+    # linear A4 (4 -> 3 -> 2 -> 1) bound by rad^2 = 0: gl.dim 3, shod True, quasi_tilted False
+    # -- the strict shod-not-quasi-tilted boundary member (verified live).
+    Q = Quiver([1, 2, 3, 4], {"a1": (2, 1), "a2": (3, 2), "a3": (4, 3)})
+    return RadicalSquareZero(Q, field=QQ)
+
+
 @lit
 def test_aclv_22b_full_ladder():
     L = recognizer_ladder(_radsq_nakayama_a5())
@@ -117,12 +124,42 @@ def test_monotone_nesting_holds_on_ladder():
 
 @selfcert
 def test_theorem_gates_gldim():
-    for A in (_radsq_nakayama_a5(), linear_path_algebra(3, field=QQ)):
+    # radsq A4 exercises the shod => gl.dim <= 3 gate AT THE BOUNDARY (shod True, gl.dim
+    # exactly 3), not just vacuously below it (kA3 is shod at gl.dim 1); it is the strict
+    # shod-not-quasi-tilted separator (shod True, quasi_tilted False since gl.dim 3 > 2).
+    for A in (_radsq_nakayama_a5(), linear_path_algebra(3, field=QQ), _radsq_nakayama_a4()):
         L = recognizer_ladder(A)
         if L.verdict("shod"):
             assert L.gldim <= 3
         if L.verdict("quasi_tilted"):
             assert L.gldim <= 2
+    L4 = recognizer_ladder(_radsq_nakayama_a4())
+    assert L4.gldim == 3 and L4.gldim_exact is True
+    assert L4.verdict("shod") is True                       # boundary: shod AT gl.dim 3
+    assert L4.verdict("quasi_tilted") is False              # gl.dim 3 > 2 => NOT quasi-tilted
+
+
+@selfcert
+def test_inexact_gldim_reported_honestly_and_verdicts_unaffected():
+    # NakayamaAlgebra(kupisch=[3,3,2]) is rep-finite + non-self-injective (the ladder
+    # COMPLETES) but has UNRESOLVED global dimension: global_dimension returns value=32,
+    # exact=False -- a certified LOWER BOUND, not a definite value (verified live). Two claims:
+    # (1) the block reports the value as a lower bound (gldim_exact=False), never as fact; and
+    # (2) EVERY gl.dim-thresholded verdict is unaffected -- an inexact value is always >= the
+    # resolution bound (>= 32 > 3 > 2), so quasi_tilted (needs gld<=2), the shod theorem gate
+    # (needs gld<=3) and ada all resolve to False by their OWN logic, never by trusting 32.
+    from quiverlab import NakayamaAlgebra
+    from quiverlab.modules.recognizers_ladder import recognizer_ladder_block
+    A = NakayamaAlgebra(kupisch=[3, 3, 2], field=QQ)
+    gd = A.global_dimension()
+    assert gd.exact is False and gd.value == 32             # certified lower bound (live)
+    L = recognizer_ladder(A)
+    assert L.is_complete and L.gldim == 32 and L.gldim_exact is False
+    assert L.verdict("quasi_tilted") is False and L.verdict("shod") is False
+    assert L.verdict("weakly_shod") is False and L.verdict("ada") is False
+    assert L.verdict("laura") is True                       # trivially True in rep-finite scope
+    b = recognizer_ladder_block(A)
+    assert b["complete"] is True and b["gldim"] == 32 and b["gldim_exact"] is False
 
 
 @selfcert

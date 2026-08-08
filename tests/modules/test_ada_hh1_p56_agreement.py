@@ -14,12 +14,16 @@ pytestmark = pytest.mark.oracle_crossengine
 
 
 def _ada_cc_members():
-    # two ada algebras over CC (both simply connected here): the tree fixture + the comm-square.
+    # three ada algebras over CC exercising BOTH agreement directions. Two are simply connected
+    # (P56 verdict True): the tree fixture + the commutative square kQ/(a*b - c*d). The third is
+    # NOT (P56 verdict False): the "square" kQ/(a*b, c*d) on the SAME quiver with both length-2
+    # routes killed -- pi_1 = Z, dim HH^1 = 1 -- so the agreement is pinned on a True AND a False.
     Q5 = Quiver([1, 2, 3, 4, 5],
                 {"a1": (2, 1), "a2": (3, 2), "a3": (4, 3), "a4": (5, 4)})
-    comm = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)}
-                  ).algebra(relations=["a*b - c*d"], field=CC)
-    return [RadicalSquareZero(Q5, field=CC), comm]
+    sq = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (2, 4), "c": (1, 3), "d": (3, 4)})
+    comm = sq.algebra(relations=["a*b - c*d"], field=CC)               # P56 True (simply conn.)
+    square = sq.algebra(relations=["a*b", "c*d"], field=CC)            # P56 False (pi_1 = Z)
+    return [RadicalSquareZero(Q5, field=CC), comm, square]
 
 
 @pytest.mark.parametrize("A", _ada_cc_members())

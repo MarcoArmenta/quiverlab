@@ -91,6 +91,7 @@ class RecognizerLadder:
     complement: tuple           # ({"index","name","dimvec"}, ...) -- the laura datum
     simple_connectedness: SimpleConnectedness
     gldim: int | None
+    gldim_exact: bool           # False => gldim is a CERTIFIED LOWER BOUND, not a definite value
     universe_size: int
     is_complete: bool
     status: str
@@ -393,9 +394,16 @@ def recognizer_ladder(A, *, budget=256) -> RecognizerLadder:
         applicable=False, field_algebraically_closed=False, hh1_dim=None, verdict=None,
         theorem=_THEOREM_B, note="not computed (the ladder did not complete)")
     if not atlas.is_complete:
-        return RecognizerLadder(A, {}, (), default_sc, None, 0, False, atlas.status,
+        return RecognizerLadder(A, {}, (), default_sc, None, True, 0, False, atlas.status,
                                 atlas.note or "")
-    gld = A.global_dimension().value
+    gd = A.global_dimension()
+    # The verdict logic reads the (possibly lower-bound) VALUE. When gd.exact is False the
+    # value is >= the resolution bound (global_dimension caps at 32, so an inexact value is
+    # always >= 32 > 3 > 2): every gl.dim-thresholded rung -- quasi-tilted (needs gld <= 2)
+    # and the shod theorem gate (needs gld <= 3) -- therefore resolves to the correct False by
+    # its own logic, never by trusting a spurious finite number. gd.exact is threaded through
+    # ONLY for honest REPORTING (a lower bound must not be printed as a definite gl.dim).
+    gld = gd.value
     rungs = {
         "shod": _shod(atlas),
         "quasi_tilted": _quasi_tilted(atlas, gld),
@@ -409,8 +417,8 @@ def recognizer_ladder(A, *, budget=256) -> RecognizerLadder:
     complement = tuple({"index": r["index"], "name": r["name"], "dimvec": r["dimvec"]}
                        for r in atlas.complement)
     sc = _simple_connectedness(A, rungs["ada"].verdict)
-    return RecognizerLadder(A, rungs, complement, sc, gld, int(atlas.universe_size),
-                            True, atlas.status, atlas.note or "")
+    return RecognizerLadder(A, rungs, complement, sc, gld, gd.exact,
+                            int(atlas.universe_size), True, atlas.status, atlas.note or "")
 
 
 # -- the JSON block shared byte-for-byte by both runners (Task D) -------------
@@ -433,7 +441,7 @@ def _sc_json(sc):
 
 def _empty_ladder_block(n, status, note):
     return {"kind": "recognizer_ladder", "n": int(n), "complete": False, "status": status,
-            "universe_size": None, "gldim": None, "ladder": {},
+            "universe_size": None, "gldim": None, "gldim_exact": True, "ladder": {},
             "complement": [], "simple_connectedness": _sc_json(SimpleConnectedness(
                 applicable=False, field_algebraically_closed=False, hh1_dim=None,
                 verdict=None, theorem=_THEOREM_B, note="not computed (the ladder did not complete)")),
@@ -467,7 +475,9 @@ def recognizer_ladder_block(A, *, budget=256) -> dict:
             ladder[name] = _rung_json(rung)
     return {
         "kind": "recognizer_ladder", "n": int(n), "complete": True, "status": L.status,
-        "universe_size": int(L.universe_size), "gldim": (None if L.gldim is None else int(L.gldim)),
+        "universe_size": int(L.universe_size),
+        "gldim": (None if L.gldim is None else int(L.gldim)),
+        "gldim_exact": bool(L.gldim_exact),
         "ladder": ladder,
         "complement": [{"name": r["name"], "dimvec": _sorted_dimvec(r["dimvec"])}
                        for r in L.complement],

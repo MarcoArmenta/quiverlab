@@ -872,8 +872,13 @@ def _recognizer_ladder_html(b):
                 % (_esc(str(b.get("status"))),
                    _esc(str(b.get("note") or "the algebra is not representation-finite / "
                         "the knit did not close (self-injective or rep-infinite)")))]
+    gldim_txt = _num(b.get("gldim"))
+    if b.get("gldim") is not None and b.get("gldim_exact") is False:
+        # An inexact global dimension is a CERTIFIED LOWER BOUND (the resolution did not
+        # terminate within the depth bound), never a definite value -- state it honestly.
+        gldim_txt = "&ge; %s (certified lower bound)" % _num(b.get("gldim"))
     chunks = ["<p>Module category: %s indecomposable(s), global dimension %s.</p>"
-              % (_num(b.get("universe_size")), _num(b.get("gldim")))]
+              % (_num(b.get("universe_size")), gldim_txt)]
     ladder = b.get("ladder") or {}
     rows = ["<tr><th>class</th><th>verdict</th><th>witness</th></tr>"]
     for key, label in _LADDER_LABELS:

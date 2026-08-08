@@ -3553,10 +3553,15 @@
       // status FIRST (rep-finite non-self-injective only), then a ✓/✗ verdict table with a
       // witness per ✗, the finite laura complement, and the ada/HH^1 simple-connectedness line.
       var rlDone = b.complete === true;
+      // An inexact gl.dim is a CERTIFIED LOWER BOUND (resolution not resolved within the
+      // depth bound), never a definite value -- state it honestly, never as a bare number.
+      var rlGldim = (b.gldim_exact === false)
+        ? ("≥ " + b.gldim + " (certified lower bound)")
+        : ("" + b.gldim);
       div.appendChild(h("p", { "class": rlDone ? "" : "qlgui-error",
         text: rlDone
           ? ("Module category: " + b.universe_size + " indecomposable(s), global dimension "
-             + b.gldim + ".")
+             + rlGldim + ".")
           : (b.status === "unsupported" || b.status === "error")
             ? "Not computed — " + (b.error || b.note || "input not eligible "
               + "(self-injective or not representation-finite)") + "."
