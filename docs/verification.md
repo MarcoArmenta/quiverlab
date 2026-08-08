@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **3542 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **4366 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Plan-48 marked-surface subsystem (marked surfaces →
 ideal triangulations → gentle Jacobian algebras; +70 tests), the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
@@ -369,7 +369,7 @@ recompute independently and refuses to silently disagree
   (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
   square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (224 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (225 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -390,6 +390,7 @@ out of QPA scope, and raise loudly). Everything below is therefore covered by a
 | Feature QPA does not cover | Theory oracle that covers it |
 |---|---|
 | Cup / cap / Gerstenhaber bracket + the induced Connes `B` (Plan 35 — QPA 1.37 has **no** Hochschild product surface: no `CupProduct`/`HochschildCohomologyRing*`, confirmed by a live `NamesGVars()` sweep with zero `Hochschild`/`Cup` name; its `ExtAlgebraGenerators`/`YonedaProduct` is *module* Ext, not `HH^*(A)`) | the Gerstenhaber identity batteries (graded commutativity, associativity, Jacobi/antisymmetry, cup-Leibniz, cap module law `(z∩f)∩g = z∩(f∪g)`, `B²=0`, SBI rank consistency) + the `k[x]/(x²)` and QuantumCI-BGMS literature pins + the bar↔CS in-window cross-engine gate |
+| The BV operator `Δ` on `HH^*` (Plan 54 — QPA 1.37 exposes **no** BV / Δ surface: a fortiori, since it has no Hochschild product ring at all; confirmed by a live `NamesGVars()` sweep with zero `Batalin`/`Vilkovisky`/`BVOperator` name in `tests/qpa/test_bv_qpa.py`, an honest skip that FAILS if one ever appears) | `Δ²=0` + the seven-term relation `(7T)` + the perfect-pairing certificate + the twisted-Connes descent self-cert + **the decisive cross-engine arbiter** (the bracket recovered from Δ equals the independent Gerstenhaber bracket in-window, no Frobenius input) + the Tradler `k[x,y]/(x²,y²)` and BIKLZ `k[x]/(x^N)` literature pins |
 | Cyclic homology | Connes λ-complex second model + mixed-complex identities |
 | The Chouhy–Solotar resolution | CS ≡ bar, CS ≡ Bardzell, and the bank byte-level closed forms |
 | Deep degrees past the bar window | bank closed forms + cross-engine + closed-form/chain-count pins |
@@ -469,6 +470,7 @@ Plan-35 product surface).
 | `core/` + `combinat/` (Quiver, Algebra, relations, dispatch; the Plan-44 `basic.py` — `primitive_idempotents`/`basic_algebra`/`gabriel_quiver`/`presented_form`, the exact Wedderburn/trace-form recovery of a structure-constant algebra, batteried in `tests/families/test_gabriel_recovery.py`) | 43 | fast | structure-constant identities; left-to-right path law; the Gabriel-recovery certificates live in the deep `families/` bucket |
 | `groebner/` (overlap completion, admissibility) | 50 | fast | admissibility certificate; finiteness; lowering |
 | `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery; the Plan-35 product surface — `products.py`: cup/cap/bracket tables + the induced Connes `B`, `basis_reps.py`: the explicit-representatives capture, `cyclic_reps.py`: the wave-3b cyclic-homology explicit representatives, and `hh_reps.py`: the wave-3d plain-HH explicit representatives) | 107 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins; **the Gerstenhaber identity batteries** (graded-commutative + associative cup, antisymmetric bracket, cup-Leibniz, cap module law, `B²=0`, SBI rank) + the `k[x]/(x²)`/QuantumCI-BGMS product literature pins + the bar↔CS in-window cross-engine gate + **the explicit-reps self-certification** (every shipped product class satisfies `δ·v = 0` / `b·v = 0` from its shipped or note-rebuilt differential; hand-checked `k[x]/(x²)` labels; elision+rebuild path) + **the cyclic-homology explicit representatives** (every shipped HC class is a cycle of the (b,B) total complex — `D·v = 0` on both engines; GF(p)≡generic on prime 32003; hand-checked dual-numbers `HC_0 = A/[A,A]` + `Tot_2 = C_2 ⊕ C_0` column structure) + **the plain-HH explicit representatives** (the `hh_cohomology`/`hh_homology` dims blocks now carry per-degree reps over BOTH routes — the GF(p) bar and Chouhy-Solotar; every shipped vector annihilates its shipped differential; the `k[x]/(x²)` HH¹ `[x ↦ x]` = derivation `D(x)=x` hand-check ties the classical dictionary read-off to the captured representative) |
+| `hochschild/bv/` (Plan-54 R2 — the Batalin–Vilkovisky operator `Δ: HHⁿ → HHⁿ⁻¹` on a Frobenius / symmetric algebra with semisimple Nakayama automorphism: `hypothesis.py` the decidable ν gate (minpoly-squarefree semisimplicity + the symmetric anchor + loud BIKLZ-blocked / non-Frobenius refusals), `transport.py` the Frobenius perfect pairing `(†)` + the adjoint transport `Δ_n = (P_{n-1}ᵀ)⁻¹ Bᵀ P_nᵀ` (symmetric **and** semisimple-ν routes), `twist.py` the P52 twisted-homology adapter (the cross-plan `twisted_homology_classes` contract), `twisted_connes.py` the twisted Connes `B_σ` that descends to twisted homology, `bracket.py` the bracket recovered from Δ via the BV relation + the arbiter) | 52 | fast | **`oracle_selfcert`**: `Δ²=0`, the seven-term relation `(7T)` (Δ is a differential operator of order ≤ 2), the perfect-pairing certificate (`P_n` square + invertible in-window), the twisted-Connes DESCENT self-cert (`B_σ` carries twisted cycles to cycles — a loud refusal otherwise), **GF(2) served** (Δ²=0 + BV-relation mod 2 + pairing-invertibility; the sign is inherited from the odd-prime anchor, not char-2-determined). **`oracle_crossengine`** (the decisive gate): the bracket recovered from Δ via `(BV)` equals the INDEPENDENT `gerstenhaber_brackets` table-for-table in-window over ODD primes (3/5/32003) — no Frobenius input in the independent bracket — which also SELECTS the twist direction (`QuantumCI(q=2/3)` semisimple diagonal ν, the non-trivial-twist flagship). **`oracle_literature`**: the Tradler `k[x,y]/(x²,y²)` ([4,4,5,6]) anchor, the `k[x]/(x^N)` char-sensitivity (dim HH⁰=N; HHⁿ=N−1 if char∤N else N) in BOTH regimes, and the BIKLZ §3.2 `kZ₁/J^N` value oracle (the exact char-sensitive dims + the Δ-rank profile `rank Δ_odd = N−1, rank Δ_even = 0` that the §3.2 formulas force — basis-independent, live). QPA has NO BV surface (`tests/qpa/test_bv_qpa.py`, honest skip that FAILS on change) |
 | `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama; Plan-29 literature/identity batteries) | 579 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
 | `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries; the Plan-35 Domain-generic CS product tables `products.py` — cup/cap on the CS basis over any exact Domain; the Plan-35 wave-3d `cs_hh_basis` 0-codomain fix; the Plan-51 native Gerstenhaber bracket — `homotopy_lifting.py` (the per-corner `D_corner` + the Negron–Witherspoon/Volkov tower ψ) + `bracket.py` (`native_bracket`) + `cs_bracket_tables`) | 275 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization; the CS product unit-law + Domain-genericity self-cert; **the `cs_hh_basis` rep-count ≡ `cs_(co)homology_dims`** even when the top differential lands in a 0-dimensional space (the multi-vertex `kZ_3/J^2` witness — HH¹ = 1 with C² = 0 — that the old 0-row `nullspace` silently undercounted); **the Plan-51 bracket oracles** — `oracle_selfcert`: `D_corner` d²=0, the homotopy-lifting equation (★) exactly (GF(p)+QQ), ψ consistency at every built degree + the `CocycleError` guard, bracket descent, graded Jacobi, native Poisson/cup-Leibniz, off-GF(p) antisymmetry; `oracle_crossengine`: the in-window native ≡ transported bracket anchor (THE sign fix; QCI (2,4)→HH⁵ odd-exponent, flipped-sign breaks it) + bar ≡ CS bracket tables; `oracle_literature`: k[x]/xⁿ off-GF(p) zeros + `[α,β]≠0`, the QCI dims-line-up (self-cert, not a value), and the Oke §7 blocked-until-transcribed strict-xfail |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-39 C8 complex layer — `complexes.py` validated bounded `ChainComplex`/`ChainMap`, shift/truncation/homology, mapping cones + triangles + the derived-iso test, the Hom total complex `hyper_hom_dims`, and certified projective models `projective_model` + general `hyper_ext_dims`) | 317 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) + **the Plan-39 complex-layer oracles** — self-cert: `d∘d=0` refused at construction, the mapping-cone `d²=0` re-asserted under full validation, quasi-iso ⇔ cone acyclicity, shift/truncate degree+sign identities, and the Hom total-complex `δ∘δ=0` block-indexing certificate (the Weibel `−(−1)^n` sign is a documented convention — verified sign-independent for the dims: both `±` give isomorphic cochain complexes); cross-engine: stalk `hyper_hom_dims` ≡ module `Ext` degreewise (kA₃/(ab), all vertices), the resolution-augmentation quasi-iso, the Euler-characteristic triangle identity `χ(cone) = −χ(X)+χ(Y)`, the certified projective model (`projective_model` asserts `is_perfect` + `is_quasi_iso` before return — NEVER returns uncertified), and the sharpened two-term shift identity `hyper_ext([P₁→S₁])[n] = Ext^{n−1}(rad P₁, N)` (the derived-category source-shift arithmetic, replacing the plan's placeholder); live QPA Ch.10 (`qpa/`) |
@@ -584,13 +586,13 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 1029 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 601 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1243 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 224 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 1042 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 610 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1278 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 225 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2524 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
-Counts as of the P62 merge (Tits-form tame/wild certificates -- Wave 2 COMPLETE);
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2582 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+Counts as of the P54 merge (Batalin-Vilkovisky operator -- Wave 1 COMPLETE);
 sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
@@ -827,6 +829,62 @@ verified precision and listed below as such.
   (`test_oke_section7_koszul_bracket_tables`) that flips to a real assert only after
   the PDF's quiver/relations/values are transcribed verbatim; the plan never fabricates
   them, and the k[x]/xⁿ + QuantumCI + anchor oracles carry the burden meanwhile.
+- **The BV operator `Δ` on `HH^*` (Plan 54, R2):** (a) **GF(p), in-window in v1.**
+  The bracket arbiter that certifies correctness is itself GF(p)-window-bounded
+  (Plan 35), so v1 serves `Δ` over GF(p) in the bar window and refuses loudly off
+  GF(p) / past window (`engine="cs"` raises `"not available until P51"` — the P51
+  native past-window enhancer is an optional follow-up, never a silent fallback).
+  (b) **The general BIKLZ non-semisimple construction is refused** (`e ≥ 2`
+  self-injective Nakayama with non-semisimple ν, `char | ord ν`): the loud
+  BIKLZ-blocked refusal. The `e = 1` case `k[x]/(x^N)` is *symmetric* (ν = id), so its
+  char-sensitivity + the BIKLZ §3.2 Δ-value oracle are LIVE via the symmetric route
+  in every characteristic — nothing about the `e = 1` values is deferred. The BIKLZ
+  §3.2 value oracle asserts the char-sensitive dims + the basis-independent Δ-RANK
+  profile the formulas force (`rank Δ_odd = N−1`, `rank Δ_even = 0`); the exact
+  per-representative Δ entries are representative-dependent (a Plan non-goal) and are
+  pinned indirectly-but-rigorously by the cross-engine bracket arbiter. (c) **QPA has
+  NO BV surface** — the covering oracle is the theory battery (`Δ²=0` + the seven-term
+  relation + the perfect-pairing certificate + the derived-bracket == independent-
+  Gerstenhaber arbiter + the Tradler/BIKLZ literature pins). (d) **ν is defined only
+  up to inner automorphism**; the gate tests the concrete `nakayama_automorphism()`
+  representative, and the bracket arbiter is the per-instance CORRECTNESS GATE — but
+  note precisely what it certifies: it pins Δ **modulo cup-derivations** (the data the
+  BV relation `[a,b] = ε(Δ(a∪b) − Δa∪b − (−1)^p a∪Δb)` constrains) together with
+  `Δ²=0`, **not** every last coordinate (a Δ and a cup-derivation-shifted Δ are
+  indistinguishable to it). A wrong ν-representative fails the arbiter and refuses,
+  never returns a wrong Δ. The twist DIRECTION (ν vs ν⁻¹) is determined by the arbiter,
+  not assumed; on the flagship `QuantumCI(q=2)` the two directions even give different
+  twisted-homology dims, so the perfect-pairing dim-match already rejects ν⁻¹ and the
+  arbiter confirms ν. (e) **char 2 is SERVED** but its certification is `Δ²=0` + the BV
+  relation mod 2 + pairing invertibility, NOT sign-determination — the sign/transpose
+  convention is inherited from the odd-prime (3/5/32003) arbiter, applied uniformly.
+  (f) **The weakly-symmetric semisimple-ν "exterior class" is REFUSED loudly (engine
+  limitation, not a theorem gap).** The semisimple-ν route carries the ORDINARY twisted
+  Connes operator `B_σ = s∘N` (the naive norm-then-degeneracy), whose descent to twisted
+  homology is a PER-INSTANCE certified property, **NOT** a consequence of semisimplicity:
+  it holds only when the paracyclic defect `(1 − T)` (with `T = t_σ^{n+1}` the diagonal
+  σ-action) vanishes EXACTLY on the twisted cycle representatives. For a diagonal ν of
+  order 3/4 (the `QuantumCI(q)` instances) the reps are fixed by `T` on the nose and the
+  descent certifies; but for a weakly-symmetric ν of **order 2 acting by −1 on odd-degree
+  factors** — the exterior algebra `ExteriorAlgebra(2) = Λ(k²)` over GF(5)/GF(7), where
+  `ν = diag(1,−1,−1,1) = −id` — `B_σ` of a degree-2 cycle is a cycle only MODULO
+  boundaries, so the chain-level descent self-cert fires and `bv_operator` refuses
+  loudly rather than return a wrong Δ. LZZ (arXiv:1405.5325) guarantees `HH^*(Λ(k²))`
+  IS a BV algebra; the fix is the **general LZZ twisted Connes operator** (a per-class
+  correction solve `b·w = (1 − T)·z`, `B̃z = Bz − w`), which is **backlogged**
+  (DEEPER-ENGINES-BACKLOG). A fix-round bounded probe confirmed that no cheap
+  strengthening of `s∘N` (the `(1 − t)`-corrected forms, the sign-normalization variants,
+  or the norm over the paracyclic orbit of the correct order `r(n+1)`) recovers an exact
+  chain-level descent that ALSO reproduces the independent Gerstenhaber bracket: the only
+  variant passing the exterior descent (`s(1−t)N = s(1−T)`) gives the WRONG bracket there
+  and zeroes the QuantumCI Δ. **Presentation-dependence (pre-existing `is_symmetric`
+  behavior), stated plainly:** the SAME algebra Λ(k²) presented as `QuantumCI(q=−1)` is
+  detected `is_symmetric = True` and is SERVED via the symmetric (Tradler) route, whereas
+  presented as `ExteriorAlgebra(2)` it is detected non-symmetric and routes to the
+  refused semisimple-ν branch — same mathematics, different route/outcome, because
+  `is_symmetric` reads the concrete presentation's trace form. Pinned by
+  `tests/hochschild/test_bv_twisted.py` (the exterior refusal as a known boundary, and
+  the QuantumCI(−1)-symmetric-served vs ExteriorAlgebra(2)-refused contrast).
 - **The delooping level (Plan 40, Task F) is DEFERRED, not shipped.** Gélinas's
   `dell(M) = inf{ n : Ωⁿ M is a direct summand of Ω^{n+1} N for SOME f.d. `N` }`
   (Gélinas, *Adv. Math.* 394, 2022 — cited as `gelinas_delooping`) has an

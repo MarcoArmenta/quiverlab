@@ -109,6 +109,60 @@ class ConnesB:
         return f"<ConnesB top={self.top} ranks={self.ranks}>"
 
 
+class BVOperator:
+    """The Batalin-Vilkovisky operator Delta: HH^n -> HH^{n-1} (Plan 54).
+
+    Delta lowers cohomological degree by 1 and is the adjoint of the (twisted)
+    Connes B under the Frobenius perfect pairing. ``matrices[n]`` is Delta_n, a
+    ``dim HH^{n-1} x dim HH^n`` matrix of exact strings (rows indexed by the
+    OUTPUT degree HH^{n-1}, mirroring ConnesB); the family starts at ``n = 1``
+    (Delta_0 = 0 by degree: there is no HH^{-1}). Constants live in the recorded
+    ``basis`` (Plan 35 basis-dependence doctrine)."""
+
+    def __init__(self, top, hh_dims, matrices, ranks, hypothesis, nakayama,
+                 basis, window, references, bracket_check=None,
+                 derived_bracket=None, basis_classes=None, chain_basis=None,
+                 differentials=None):
+        self.top = top
+        self.hh_dims = list(hh_dims)      # dim HH^0 .. dim HH^top (cohomology)
+        self.matrices = dict(matrices)    # {n: rows-of-str}, Delta_n hh^{n-1} x hh^n
+        self.ranks = dict(ranks)          # {n: int}
+        self.hypothesis = hypothesis      # provenance: WHICH hypothesis certified it
+        self.nakayama = dict(nakayama)    # {matrix, semisimple, order, inner}
+        self.basis = basis                # WHICH basis the constants live in
+        self.window = window              # certified degree window served
+        self.references = list(references)
+        self.bracket_check = dict(bracket_check) if bracket_check else None
+        self.derived_bracket = derived_bracket    # an HHProducts(kind="bracket")
+        self.basis_classes = dict(basis_classes) if basis_classes else None
+        self.chain_basis = dict(chain_basis) if chain_basis else None
+        self.differentials = dict(differentials) if differentials else None
+
+    def blocks(self):
+        out = {"kind": "bv_operator", "top": self.top,
+               "hh_dims": list(self.hh_dims),
+               "matrices": {str(n): self.matrices[n] for n in sorted(self.matrices)},
+               "ranks": {str(n): self.ranks[n] for n in sorted(self.ranks)},
+               "hypothesis": self.hypothesis, "nakayama": dict(self.nakayama),
+               "basis": self.basis, "window": self.window,
+               "references": list(self.references)}
+        if self.bracket_check is not None:
+            out["bracket_check"] = dict(self.bracket_check)
+        if self.derived_bracket is not None:
+            out["derived_bracket"] = self.derived_bracket.blocks()
+        if self.basis_classes is not None:
+            out["basis_classes"] = _by_side(self.basis_classes)
+        if self.chain_basis is not None:
+            out["chain_basis"] = _by_side(self.chain_basis)
+        if self.differentials is not None:
+            out["differentials"] = _by_side(self.differentials)
+        return out
+
+    def __repr__(self):
+        return (f"<BVOperator top={self.top} ranks={self.ranks} "
+                f"hypothesis={self.hypothesis!r}>")
+
+
 def _pairs(kind, top):
     """The degree pairs a `kind` table family covers up to `top`."""
     if kind == "cup":

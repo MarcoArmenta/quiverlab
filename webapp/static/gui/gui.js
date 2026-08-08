@@ -90,6 +90,8 @@
     '  <label><input type="checkbox" id="qlgui-cap"> cap 0..<input type="number" id="qlgui-cap-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-bracket"> bracket 0..<input type="number" id="qlgui-bracket-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-connes_b"> Connes B 0..<input type="number" id="qlgui-connes_b-top" value="2" min="0"></label>' +
+    // Plan 54: the Batalin-Vilkovisky operator Delta (Frobenius / semisimple nu), right after Connes B.
+    '  <label><input type="checkbox" id="qlgui-bv_operator"> BV operator &Delta; 0..<input type="number" id="qlgui-bv_operator-top" value="2" min="0"></label>' +
     // Plan-35 follow-up: cyclic homology HC_0..HC_n (default 6), right after Connes B.
     '  <label><input type="checkbox" id="qlgui-cyclic_homology"> cyclic homology 0..<input type="number" id="qlgui-cyclic_homology-top" value="6" min="0"></label>' +
     // Plan-42: the Hochschild (b, B) spectral sequence (abutting to HC), right after cyclic homology.
@@ -226,9 +228,11 @@
    // GitHub #3 / Plan-44: potential -> Jacobian algebra
    "potential", "potential-label", "potential-hint",
    "hhc", "hhc-top", "hhh", "hhh-top",
-   // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
+   // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers;
+   // Plan 54: bv_operator (the BV operator Delta) right after connes_b.
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
-   "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top",
+   "connes_b", "connes_b-top", "bv_operator", "bv_operator-top",
+   "cyclic_homology", "cyclic_homology-top",
    // Plan 42: the Hochschild (b, B) spectral sequence + its degree picker
    "ss_hochschild", "ss_hochschild-top",
    // Plan 42: the radical-filtration spectral sequence + its degree picker
@@ -883,6 +887,9 @@
     if (el.cap.checked) compute.push("cap:0.." + el["cap-top"].value);
     if (el.bracket.checked) compute.push("bracket:0.." + el["bracket-top"].value);
     if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
+    // Plan 54: the BV operator Delta, immediately after connes_b -- do not reorder.
+    if (el.bv_operator.checked)
+      compute.push("bv_operator:0.." + el["bv_operator-top"].value);
     if (el.cyclic_homology.checked)
       compute.push("cyclic_homology:0.." + el["cyclic_homology-top"].value);
     // Plan 42: the (b, B) spectral sequence, right after cyclic homology.
@@ -1772,7 +1779,8 @@
   // webapp families page carries the i18n twins block.*.title / products.zero).
   var PRODUCT_TITLE = { cup: "Cup product tables", cap: "Cap product tables",
                         bracket: "Gerstenhaber bracket tables",
-                        connes_b: "Connes differentials" };
+                        connes_b: "Connes differentials",
+                        bv_operator: "BV operator Δ" };
   var PRODUCT_OP = { cup: "\\cup", cap: "\\cap" };
   function coeffTerm(c, sym) {              // exact-string coeff -> "c \, sym" LaTeX
     return c === "1" ? sym : c + " \\, " + sym;   // matches trace.products._term
@@ -2739,6 +2747,41 @@
     });
     div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
+  function renderBVOperator(div, b) {
+    // Plan 54: the Batalin-Vilkovisky operator Delta: HH^n -> HH^{n-1} for a
+    // Frobenius / symmetric algebra with semisimple Nakayama automorphism. Same
+    // matrix-family shape as connes_b (per-n `matrices` + `ranks`), on the recorded
+    // COHOMOLOGY basis.
+    div.appendChild(h("p", { text: PRODUCT_TITLE.bv_operator }));
+    div.appendChild(h("p", { "class": "qlgui-hint",
+      text: "Δ: HH^n → HH^{n-1} is the degree −1, square-zero BV operator whose "
+          + "defect from being a cup-derivation is the Gerstenhaber bracket. "
+          + "Each Δ_n is written on the recorded cohomology basis — rows index "
+          + "HH^{n-1}, columns index HH^n." }));
+    if (b.hypothesis)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "hypothesis: " + b.hypothesis }));
+    if (b.nakayama)
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Nakayama automorphism: " + (b.nakayama.inner
+          ? "inner (symmetric)" : "not inner")
+          + (b.nakayama.semisimple ? ", semisimple" : "") }));
+    var keys = Object.keys(b.matrices || {})
+      .map(Number).sort(function (a, c) { return a - c; });
+    keys.forEach(function (n) {
+      div.appendChild(h("p", { "class": "arithmatex",
+        text: "\\( \\Delta_{" + n + "} : HH^{" + n + "} \\to HH^{" + (n - 1) + "} \\)" }));
+      div.appendChild(matrixGrid(b.matrices[String(n)]));
+      div.appendChild(h("p", { text: "rank Δ_" + n + " = " + b.ranks[String(n)] }));
+    });
+    if (b.bracket_check && b.bracket_check.agrees)
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "arbiter: the bracket recovered from Δ equals the independently "
+            + "computed Gerstenhaber bracket over the served window (degrees ≤ "
+            + b.bracket_check.window + ", " + b.bracket_check.pairs_checked
+            + " pair(s) checked)." }));
+    div.appendChild(h("div", { "class": "qlgui-cites",
+      text: engineNote(b.basis ? ("bar/GF(p) recorded basis " + b.basis) : b.engine) }));
+  }
 
   function homProfileFinitistic(f) {
     if (f.exact) return "findim = " + f.lower + "  (" + f.note + ")";
@@ -2982,6 +3025,8 @@
       renderProductTables(div, name, b);
     } else if (name === "connes_b") {
       renderConnesB(div, b);
+    } else if (name === "bv_operator") {
+      renderBVOperator(div, b);
     } else if (name === "cyclic_homology") {
       // Plan-35 follow-up: HC is a homology-style subscript table HC_n, rendered
       // exactly like the HH dims tables above.
@@ -3910,7 +3955,7 @@
   el["rel-comm"].addEventListener("click", function () { applyRelPreset("comm"); });
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
-   el.connes_b, el["connes_b-top"],
+   el.connes_b, el["connes_b-top"], el.bv_operator, el["bv_operator-top"],
    el.cyclic_homology, el["cyclic_homology-top"],
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
    el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
@@ -3995,7 +4040,7 @@
   var THEMES =
   [
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
-    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
+    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
@@ -4377,6 +4422,7 @@
     {"id": "cyclic_homology", "title": "Cyclic homology HC_•", "category": "hochschild", "keywords": ["cyclic", "cíclica", "cyclique", "循环同调", "HC", "connes"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cyclic_homology:0..4"]}},
     {"id": "connes_b", "title": "Connes differential B", "category": "hochschild", "keywords": ["connes", "differential", "diferencial", "différentielle", "B", "微分"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["connes_b:0..3"]}},
     {"id": "products", "title": "HH products: cup, cap, bracket", "category": "hochschild", "keywords": ["cup", "cap", "bracket", "gerstenhaber", "producto", "produit", "杯", "帽", "括号", "product"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cup:0..2", "cap:0..2", "bracket:0..2"]}},
+    {"id": "bv_operator", "title": "BV operator Δ (Frobenius / symmetric)", "category": "hochschild", "keywords": ["bv", "batalin", "vilkovisky", "delta", "frobenius", "nakayama", "BV算子"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["bv_operator:0..3"]}},
     {"id": "ss_hochschild", "title": "Hochschild (b,B) spectral sequence", "category": "hochschild", "keywords": ["spectral", "sequence", "espectral", "spectrale", "谱序列", "ss", "b,B", "abutment"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ss_hochschild:0..3"]}},
     {"id": "cartan_coxeter", "title": "Cartan matrix & Coxeter polynomial", "category": "invariants", "keywords": ["cartan", "coxeter", "matrix", "matriz", "matrice", "polynomial", "polinomio", "polynôme", "卡坦", "矩阵", "多项式"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cartan", "coxeter_polynomial"]}},
     {"id": "coxeter_spectral", "title": "Coxeter spectral analysis (certified ρ/M, Φ_n)", "category": "invariants", "keywords": ["coxeter", "spectral", "mahler", "lehmer", "cyclotomic", "salem", "spectral radius", "espectral", "ciclotómico", "spectrale", "cyclotomique", "谱", "分圆", "谱半径", "pisot"], "example": {"vertices": [1, 2], "arrows": {"a0": [1, 2], "a1": [1, 2], "a2": [1, 2]}, "relations": [], "field": {"kind": "QQ"}, "compute": ["coxeter_spectral"]}},
@@ -4493,6 +4539,7 @@
     cap: { cb: "cap", top: "cap-top" },
     bracket: { cb: "bracket", top: "bracket-top" },
     connes_b: { cb: "connes_b", top: "connes_b-top" },
+    bv_operator: { cb: "bv_operator", top: "bv_operator-top" },
     cyclic_homology: { cb: "cyclic_homology", top: "cyclic_homology-top" },
     ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
     radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },

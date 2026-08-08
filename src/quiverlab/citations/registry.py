@@ -127,6 +127,29 @@ REGISTRY: dict = {r.key: r for r in [
        "Cohomology structure of an associative ring",
        "The definitional source of the cup product and Gerstenhaber bracket.",
        "foundation"),
+    _r("bv_tradler", "Tradler2008", "algorithm",
+       "The BV algebra on Hochschild cohomology from infinity inner products",
+       "The symmetric-algebra BV operator Delta on HH^* induced by a symmetric, "
+       "invariant, nondegenerate inner product -- quiverlab's symmetric (nu-inner) "
+       "BV route (Plan 54).",
+       "bv"),
+    _r("bv_lzz", "LambreZhouZimmermann2016", "algorithm",
+       "BV structure on HH^* for Frobenius algebras with semisimple Nakayama automorphism",
+       "The Frobenius-algebra BV operator under the semisimple-nu hypothesis -- "
+       "quiverlab's semisimple-nu / twisted BV route (Plan 54).",
+       "bv"),
+    _r("bv_volkov", "Volkov2016bv", "algorithm",
+       "BV-differential on Hochschild cohomology of Frobenius algebras",
+       "The BV differential under ord(nu) coprime to char k (over GF(p): the "
+       "squarefree-minpoly / p does not divide ord(nu) phrasing recorded in "
+       "quiverlab's provenance) -- Plan 54.",
+       "bv"),
+    _r("bv_biklz", "BianItagakiKouLyuZhou2026", "algorithm",
+       "BV algebra on HH^* of self-injective Nakayama algebras",
+       "The self-injective Nakayama BV structure; Sec 3.2 (e=1) gives the explicit "
+       "k[x]/(x^N) Delta values that back quiverlab's char-sensitivity + Delta-rank "
+       "literature oracle (Plan 54).",
+       "bv"),
     _r("conway", "Luebeck_ConwayPolynomials", "field",
        "Conway polynomials for finite fields",
        "Lubeck's Conway-polynomial tables fixing canonical generators of GF(p^n).",

@@ -1219,6 +1219,49 @@ class Algebra:
         from quiverlab.hochschild.products import connes_b_tables
         return connes_b_tables(self, top, max_cells=max_cells)
 
+    def bv_operator(self, top, engine="auto", max_cells=4_000_000):
+        """The Batalin-Vilkovisky operator Delta: HH^n -> HH^{n-1} for
+        1 <= n <= top, on the recorded HH basis, exact (Plan 54).
+
+        Delta is Connes' B carried across the sigma-twisted Frobenius duality
+        HH^n(A) ~= D(HH_n(A, {}_1A_nu)); its defect from being a cup-derivation is
+        the Gerstenhaber bracket (the BV relation). Requires a Frobenius algebra
+        whose Nakayama automorphism is semisimple (symmetric algebras included as
+        the nu-inner Tradler anchor); a loud typed refusal otherwise (non-Frobenius,
+        or Frobenius with a non-semisimple nu -- the general Bian-Itagaki-Kou-Lyu-
+        Zhou construction is out of v1 scope). Returns a ``BVOperator`` whose
+        ``.blocks()`` serializes identically for every serving tier.
+
+        engine: 'auto' (the GF(p) bar/tt route in v1); 'bar' is the explicit GF(p)
+        route (loud off GF(p)); 'cs' is reserved for the P51 past-window / off-GF(p)
+        enhancer (loud 'not available until P51' -- never a silent fallback). v1 is
+        GF(p) and in-window (the bracket arbiter that certifies correctness is
+        GF(p)-window-bounded); off GF(p) or past window refuses loudly."""
+        from quiverlab.fields.primefield import PrimeField
+        from quiverlab.hochschild.bv.hypothesis import classify_bv
+        from quiverlab.hochschild.bv.transport import (
+            bv_matrices_semisimple, bv_matrices_symmetric)
+        if engine not in ("auto", "bar", "cs"):
+            raise QuiverlabError(
+                f"unknown engine {engine!r} for the BV operator",
+                hint="choose 'auto', 'bar', or 'cs'")
+        if engine == "cs":
+            raise QuiverlabError(
+                "engine='cs' BV operator (native past-window / off-GF(p)) is not "
+                "available until P51 lands -- no silent fallback",
+                hint="use engine='auto' over GF(p) in the bar window")
+        if not isinstance(self.domain, PrimeField):
+            raise QuiverlabError(
+                "BV operator v1 is GF(p) only (the bracket arbiter that certifies "
+                f"it is GF(p)-window-bounded); this algebra is over {self.domain.name}",
+                hint="compute over GF(p), or wait for the P51 CS enhancer")
+        h = classify_bv(self)
+        if not h.applies:
+            raise QuiverlabError(h.refusal)
+        if h.route == "symmetric":
+            return bv_matrices_symmetric(self, top, max_cells=max_cells)
+        return bv_matrices_semisimple(self, top, max_cells=max_cells)
+
     def hochschild_bB_ss(self, top, max_cells=4_000_000):
         """The Hochschild ``(b, B)`` spectral sequence (Plan 42): the first-quadrant
         ``(b, B)`` bicomplex whose total complex computes cyclic homology, returned
