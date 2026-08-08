@@ -167,6 +167,17 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # silting carries a RADIUS,BUDGET pair, not a degree range (Plan 67): 'silting' or
+    # 'silting:3,64'. The top is the (radius, budget) tuple; neither is a homological
+    # degree, so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
+    if name == "silting":
+        if rng:
+            parts = rng.split(",")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise RequestError("silting suffix must be 'radius,budget' with positive "
+                                   "integers (got %r)" % (spec,))
+            return "silting", (int(parts[0]), int(parts[1]))
+        return "silting", None
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
     if name == "ar_quiver":
@@ -1113,6 +1124,19 @@ def compute_one(spec):
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "silting":
+            # Silting theory (Plan 67 / Aihara-Iyama): algebra-level, RADIUS,BUDGET pair
+            # (not a degree). SAME shared library builder (derived.block.silting_block) +
+            # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so
+            # the cross-runner contract holds byte-for-byte. A char-scope / presentation
+            # refusal is caught into an `error` field, never a crash.
+            radius, budget = top if top is not None else (3, 64)
+            from quiverlab.derived.block import silting_block
+            try:
+                block = silting_block(A, radius=radius, budget=budget)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "silting", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "string_homological":
             # Homological string-algebra test (Plan 59 / R34, Suarez-Alvarez). Byte-
             # identical to the server twin (quiverlab.hpc.spec._dispatch): SAME library
@@ -1361,6 +1385,9 @@ def python_snippet():
              "connes_b": "A.connes_differentials(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
+             # tmpl % top fills both %d).
+             "silting": "A.silting_exploration(radius=%d, budget=%d)",
              # Plan 57: radical_filtration + ar_invariants carry a module budget.
              "radical_filtration": "A.radical_filtration(budget_modules=%d)",
              "ar_invariants": "A.ar_invariants(budget_modules=%d)",
@@ -1490,6 +1517,10 @@ ETA_MODEL = {
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
                 "tau_tilting": 2.0,
+                # Plan 67: silting = a bounded-radius BFS of the silting quiver via K^b
+                # Hom + minimal approximations + cone/reduce per step; the hyper-Hom passes
+                # dominate. Budget-capped honestly (complete only for local).
+                "silting": 1.5,
                 # Plan 55: left/right parts = an AR knit + the N^2 Hom predecessor matrix +
                 # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
                 # the same cost class as tau_tilting.

@@ -420,6 +420,19 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # silting carries a RADIUS,BUDGET pair, not a degree range (Plan 67): 'silting' or
+    # 'silting:3,64'. lo = radius, hi = vertex budget; neither is a homological degree, so
+    # it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this special form.
+    if s == "silting" or s.startswith("silting:"):
+        _, _, rb = s.partition(":")
+        radius = budget = None
+        if rb:
+            parts = rb.split(",")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise SchemaError("silting suffix must be 'radius,budget' with positive "
+                                  f"integers (got {s!r})")
+            radius, budget = int(parts[0]), int(parts[1])
+        return ComputeItem(kind="silting", lo=radius, hi=budget)
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips the
     # 'name:0..N' grammar -- server and GUI/hpc agree on this special form.
