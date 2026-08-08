@@ -58,8 +58,6 @@
   "block.ext_algebra.koszul_no": "A no es de Koszul (obstrucción en grado {n})",
   "block.ext_algebra.koszul_undecided": "Koszulidad indecidida hasta el grado {n}",
   "block.recognizers.title": "Reconocedores estructurales y tipo",
-  "block.coxeter_spectral.title": "Análisis espectral de Coxeter certificado",
-  "block.coxeter_spectral.scope": "análisis espectral exacto del polinomio de Coxeter: factorización ciclotómica Φ_n, radio espectral y medida de Mahler como números algebraicos certificados, y la nota condicional de Lehmer",
   "block.homprofile.title": "Dimensiones homológicas",
   "block.homprofile.gldim": "Dimensión global",
   "block.homprofile.findim": "Dimensión finitística",

@@ -58,8 +58,6 @@
   "block.ext_algebra.koszul_no": "A 不是 Koszul 的（在次数 {n} 处存在障碍）",
   "block.ext_algebra.koszul_undecided": "至次数 {n} 尚无法判定 Koszul 性",
   "block.recognizers.title": "结构识别器与型",
-  "block.coxeter_spectral.title": "认证的 Coxeter 谱分析",
-  "block.coxeter_spectral.scope": "Coxeter 多项式的精确谱分析：分圆 Φ_n 分解、作为认证代数数的谱半径与 Mahler 测度，以及依类而定的 Lehmer 注记",
   "block.homprofile.title": "同调维数",
   "block.homprofile.gldim": "整体维数",
   "block.homprofile.findim": "有限性维数",
