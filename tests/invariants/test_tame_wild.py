@@ -87,3 +87,21 @@ def test_wild_witness_is_exact_negative():
     A = _star([1, 2, 6])
     from quiverlab.invariants.tits import tits_form_combinatorial as titsc
     assert titsc(A, list(c.witness)) == c.witness_value < 0
+
+
+@selfcert
+def test_bongartz_rep_infinite_middle_is_None_not_tame_wild():
+    # DECIDE-AND-PIN (Plan 62 Task 4): the Zito example is simply connected but NOT
+    # strongly (P56); its form is weakly nonnegative-not-positive. Bongartz (simple
+    # connectivity) certifies representation-INFINITE, but the tame/wild split needs
+    # STRONG simple connectivity -- which is not certified -- so the verdict is WITHHELD
+    # (rep_type None), NEVER "tame" even though the form is weakly nonnegative. The
+    # verdict never outruns its hypotheses.
+    Z = Quiver([1, 2, 3, 4, 5],
+               {"al": (1, 2), "be": (2, 3), "ga": (3, 5), "de": (2, 4), "ep": (4, 5)}
+               ).algebra(relations=["al*be*ga - al*de*ep"], field=CC)
+    c = tame_wild_certificate(Z)
+    assert c.simply_connected is True and c.strongly_simply_connected is False
+    assert c.weakly_positive is False and c.weakly_nonnegative is True
+    assert c.rep_type is None                       # withheld -- never a guessed tame
+    assert "strong" in c.reason.lower() and "infinite" in c.reason.lower()
