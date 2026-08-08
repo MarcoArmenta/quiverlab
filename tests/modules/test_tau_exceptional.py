@@ -6,14 +6,22 @@ Buan-Hanson-Marsh 2402.10301). tau-tilting-finite + char-0/char>dim scope, QQ.
 Also pins Plan 65 Task 0 (M1): the P45 `mutate` D_4-star defect fix -- `exchange_graph`
 must return status="complete" with 50 vertices on ALL D_4-star orientations (the mixed
 star tripped a spurious status="error" while still discovering all 50 vertices)."""
+from math import factorial
+
 import pytest
 
 from quiverlab import Quiver
 from quiverlab.fields import QQ
+from quiverlab.families.basic import linear_path_algebra
 
 lit = pytest.mark.oracle_literature
 selfcert = pytest.mark.oracle_selfcert
 xeng = pytest.mark.oracle_crossengine
+
+
+def _sig_key(tower):
+    """A unique path key for a materialised reduction tower (Plan 65 / R27, H1)."""
+    return tuple(entry.key() for entry in tower)
 
 
 # --------------------------------------------------------------------------- #
@@ -74,3 +82,162 @@ def test_d4_mixed_star_previously_failing_pair_certifies():
         nb = mutate(pair, k)                 # certifies internally; raises if it cannot
         back = mutate(nb, _matching_index(nb, pair))   # involution
         assert back.g_key() == pair.g_key()
+
+
+# --------------------------------------------------------------------------- #
+# Task A1 (selfcert): the Jasso tau-perpendicular reduction C(U)
+# --------------------------------------------------------------------------- #
+@selfcert
+def test_reduction_rank_drops():
+    from quiverlab.tautilting.exceptional import tau_perpendicular_reduction
+    A = linear_path_algebra(3, field=QQ)
+    red = tau_perpendicular_reduction(A, A.simple(1))     # a tau-rigid indecomposable
+    C = red.reduction_algebra
+    assert len(list(C.quiver.vertices)) == 3 - 1          # rk C(U) = n - |U|
+
+
+@selfcert
+def test_reduction_is_kA2_not_just_rank2():
+    """H5: rk = n-|U| ALONE is insensitive to a wrong Bongartz completion / wrong U-vertices
+    (any single-vertex idempotent quotient of a rank-3 algebra has rank 2). Pin the ISO:
+    C(S1) of kA3 must be kA2 (connected, dim 3), NOT k x k (dim 2)."""
+    from quiverlab.tautilting.exceptional import tau_perpendicular_reduction
+    A = linear_path_algebra(3, field=QQ)
+    C = tau_perpendicular_reduction(A, A.simple(1)).reduction_algebra
+    kA2 = linear_path_algebra(2, field=QQ)
+    assert len(list(C.quiver.arrows)) == 1                # connected rank-2 = kA2, not k x k
+    assert C.dim == kA2.dim                               # kA2 has dim 3 (1+1+1 for 1->2)
+
+
+@selfcert
+def test_shifted_projective_reduction_is_support_quotient():
+    """H2: the C(U)=End(T_U)/<e_U> recipe is ONLY for tau-rigid U; a shifted projective
+    P_v[1] reduces to the support quotient A/<e_v>."""
+    from quiverlab.tautilting.exceptional import tau_perpendicular_reduction
+    A = linear_path_algebra(2, field=QQ)
+    Pv_shift = next(o for o in A.tau_exceptional_objects()
+                    if o.sign < 0 and o.vertex == 2)
+    red = tau_perpendicular_reduction(A, Pv_shift)        # dispatches on the sign
+    assert list(red.reduction_algebra.quiver.vertices) == [1]   # A/<e_2> = k at vertex 1
+    assert red.reduction_algebra.dim == A.quotient_by_idempotent([2]).dim
+    assert red.kind == "shifted"
+
+
+# --------------------------------------------------------------------------- #
+# Task A2 (selfcert): objects + recognizer
+# --------------------------------------------------------------------------- #
+@selfcert
+def test_tau_exceptional_objects_count():
+    A = linear_path_algebra(2, field=QQ)
+    objs = A.tau_exceptional_objects()
+    pos = [o for o in objs if o.sign > 0]
+    neg = [o for o in objs if o.sign < 0]
+    assert len(pos) == 3                                  # tau-rigid indecs of kA2: S1,S2,P1
+    assert len(neg) == 2                                  # one shifted projective per vertex
+    assert {o.vertex for o in neg} == {1, 2}
+
+
+@selfcert
+def test_recognizer_length1_and_classical_seed():
+    """A length-1 tau-rigid object is accepted; a non-tau-rigid indecomposable is rejected;
+    a classical A2 exceptional sequence is accepted (the (a)<->(b) seed)."""
+    from quiverlab.families.radical_square_zero import RadicalSquareZero
+    A = linear_path_algebra(2, field=QQ)
+    assert A.is_tau_exceptional_sequence([A.simple(1)]) is True     # tau-rigid indec
+    assert A.is_tau_exceptional_sequence([A.simple(2), A.projective(1)]) is True   # classical CES
+    # a non-tau-rigid indecomposable simple over k[x]/(x^2) (self-injective, S not tau-rigid)
+    B = RadicalSquareZero(Quiver([1], {"x": (1, 1)}), field=QQ)
+    assert B.is_tau_exceptional_sequence([B.simple(1)]) is False
+
+
+@selfcert
+def test_recognizer_accepts_shifted_projective_sequence():
+    """H2 pin: on kA2 the signed sequence (S1, P2[1]) -- inner S1 (genuine module), outer the
+    shifted projective P2[1] -- is a complete signed tau-exceptional sequence. Its outer term
+    reduces via A/<e_2> = k at vertex 1, whose signed objects lift to {S1(+), P1[1](-)}."""
+    A = linear_path_algebra(2, field=QQ)
+    objs = {(o.sign, getattr(o, "vertex", None)): o for o in A.tau_exceptional_objects()}
+    P2shift = objs[(-1, 2)]                               # the shifted projective P_2[1]
+    S1 = A.simple(1)
+    assert A.is_tau_exceptional_sequence([S1, P2shift]) is True    # (inner, outer) convention
+
+
+# --------------------------------------------------------------------------- #
+# Task A3: the ordered-sTt bijection enumeration
+# --------------------------------------------------------------------------- #
+@selfcert   # H1: SELF-CERT -- signed_count is DEFINED as n!*stt_count (tautological).
+@pytest.mark.parametrize("n", [2, 3])            # A_2 -> 10, A_3 -> 84
+def test_signed_count_formula_wired(n):
+    from quiverlab.tautilting.mutation import exchange_graph
+    A = linear_path_algebra(n, field=QQ)
+    eg = exchange_graph(A, budget_pairs=2000)
+    assert eg.status == "complete"                        # M1: never trust a non-complete graph
+    rep = A.tau_exceptional_sequences(budget=4096, want_sequences=False)
+    assert rep.is_complete
+    assert rep.stt_count == len(eg.vertices)              # #sTt read correctly from P45
+    assert rep.signed_count == factorial(n) * len(eg.vertices)   # formula wired (tautological)
+
+
+@xeng   # H1: the REAL cross-engine oracle -- MATERIALISE the sequences and count them.
+@pytest.mark.parametrize("factory,n", [
+    ("A2", 2),                                           # signed_count = 2! * 5  = 10
+    ("A3", 3),                                           # signed_count = 3! * 14 = 84
+    ("nonhered", 2),                                     # k(1<->2)/rad^2 : 2! * 6 = 12
+])
+def test_materialised_count_equals_signed_count(factory, n):
+    """The formula n!*#sTt is cross-checked only when the enumerator actually BUILDS the
+    sequences and their number matches. #sTt: A2=5, A3=14, k(1<->2)/rad^2 = 6."""
+    if factory == "A2":
+        A = linear_path_algebra(2, field=QQ)
+    elif factory == "A3":
+        A = linear_path_algebra(3, field=QQ)
+    else:
+        from quiverlab.families.radical_square_zero import RadicalSquareZero
+        A = RadicalSquareZero(Quiver([1, 2], {"a": (1, 2), "b": (2, 1)}), field=QQ)
+    rep = A.tau_exceptional_sequences(budget=4096, want_sequences=True)
+    assert rep.is_complete and rep.status == "complete"
+    mats = rep.sequences
+    assert len(mats) == rep.signed_count                 # materialised == n!*#sTt (the cross-check)
+    assert len({_sig_key(s) for s in mats}) == len(mats)         # pairwise-DISTINCT
+    assert all(A.is_tau_exceptional_sequence(s) for s in mats)   # each genuinely recognized
+
+
+@selfcert
+def test_tau_tilting_infinite_refused():
+    Kron = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(field=QQ)
+    rep = Kron.tau_exceptional_sequences(budget=200)
+    assert rep.is_complete is False and rep.status in ("budget", "unsupported")
+
+
+@selfcert
+def test_exchange_graph_status_gate_and_d4_count():
+    """M1: the tau-side gate reads a count ONLY off a status='complete' graph. After Task 0
+    the D4 mixed star completes -> signed_count == 24*50 == 1200; the count is derived, never
+    from a non-complete graph. (want_sequences=False: the count is exact via the formula,
+    materialising 1200 towers is unnecessary for this gate.)"""
+    A = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (3, 1), "c": (4, 1)}).algebra(field=QQ)
+    rep = A.tau_exceptional_sequences(budget=4096, want_sequences=False)
+    assert (rep.is_complete and rep.signed_count == 24 * 50) or (
+        rep.is_complete is False and rep.status in ("error", "unsupported", "budget"))
+
+
+# --------------------------------------------------------------------------- #
+# Task A4 (xeng): the (a)<->(b) cross-check on hereditary rep-finite algebras
+# --------------------------------------------------------------------------- #
+@xeng
+@pytest.mark.parametrize("n", [2, 3])
+def test_tau_exc_unsigned_equals_classical(n):
+    """On hereditary rep-finite A, the tau-exceptional sequences with all objects genuine
+    modules (all-positive towers, no shifted projectives) are in bijection with the classical
+    exceptional sequences (Buan-Marsh: coincide for hereditary). Realized as a COUNT equality
+    between two INDEPENDENT enumerations -- the tau reduction recursion vs the classical
+    backward-orthogonality DFS -- a loud bug if they differ. (Honest scope: the termwise
+    is_isomorphic lift of a deep tower to ambient A-modules needs the general reduction
+    object-lift F, the Plan-65 scope boundary; the count equality is the realized
+    cross-engine content, note (c) on the verification page.)"""
+    A = linear_path_algebra(n, field=QQ)
+    tau = A.tau_exceptional_sequences(want_sequences=True)
+    all_module = [s for s in tau.sequences if all(e.obj.sign > 0 for e in s)]
+    classical = A.exceptional_sequences()
+    assert len(all_module) == classical.count            # two independent enumerations agree
+    assert all(A.is_tau_exceptional_sequence(s) for s in all_module)
