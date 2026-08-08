@@ -526,6 +526,16 @@ class Algebra:
         from quiverlab.hochschild.arrow_removal import arrow_removal
         return arrow_removal(self, arrows=arrows, top=top, side=side)
 
+    def barcode(self, M, *, budget=512, budget_modules=256):
+        """The barcode / generalized persistence diagram of a persistence module ``M``
+        (Plan 69 / R33). ``A_n``/zigzag: the interval decomposition (Gabriel /
+        Botnan-Crawley-Boevey), field-robust over any exact domain. ``CL(n<=4)``: the
+        AR-quiver-indexed generalized persistence diagram (Escolar-Hiraoka), char-scoped.
+        Returns a :class:`~quiverlab.modules.barcode.Barcode`; refuses loudly on a
+        non-A_n/non-CL quiver, ``CL(n>=5)``, or a char-undecidable input."""
+        from quiverlab.modules.barcode import barcode
+        return barcode(M, budget=budget, budget_modules=budget_modules)
+
     def radical_filtration(self, budget_modules=256, budget_dim=4096):
         """The radical filtration of ``mod A`` (Plan 57 / R37): exact
         ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the

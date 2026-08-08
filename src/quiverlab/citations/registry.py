@@ -801,6 +801,32 @@ REGISTRY: dict = {r.key: r for r in [
        "Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the "
        "closed-form count oracle.",
        "modules"),
+    _r("escolar_hiraoka", "EscolarHiraoka2016", "foundation",
+       "Persistence modules on commutative ladders of finite type",
+       "Representation theory of the commutative ladder CL(n) = A_n [] A_2: rep-finite "
+       "iff n <= 4 (the P69 scope boundary), with explicit AR quivers for n <= 4. TDA "
+       "gloss: the generalized persistence diagram of a ladder persistence module is its "
+       "AR-quiver-indexed Krull-Schmidt decomposition.",
+       "modules", "persistence"),
+    _r("botnan_crawley_boevey", "BotnanCrawleyBoevey2020", "foundation",
+       "Decomposition of persistence modules",
+       "A pointwise-finite-dimensional persistence module over a totally ordered or "
+       "zigzag poset decomposes uniquely into interval modules (Krull-Remak-Schmidt-"
+       "Azumaya) -- the theorem that 'barcode = interval decomposition' is well-defined "
+       "for A_n and zigzag lines.",
+       "modules", "persistence"),
+    _r("igusa_rock_todorov", "IgusaRockTodorov2019", "foundation",
+       "Continuous quivers of type A (I)",
+       "The continuous-limit representation theory of type-A persistence -- the "
+       "conceptual bridge (representation theory <-> persistence); cited as context, not "
+       "a computed oracle (quiverlab is finite/exact).",
+       "modules", "persistence"),
+    _r("gabriel", "Gabriel1972", "foundation",
+       "Unzerlegbare Darstellungen I",
+       "Gabriel's theorem: the indecomposable representations of a type-A_n quiver are "
+       "the interval (thin) modules = positive roots, each a brick (End = k) -- why the "
+       "A_n / zigzag barcode is field-robust over every exact domain.",
+       "modules", "persistence"),
     _r("rss_hh1_lie", "RSS2023hh1lie", "foundation",
        "The first Hochschild cohomology as a Lie algebra",
        "Rubio y Degrassi-Schroll-Solotar: the no-loops/no-parallel-arrows Ext-quiver "
