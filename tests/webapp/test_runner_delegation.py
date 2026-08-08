@@ -445,7 +445,22 @@ never hide behind one:
     Both runners share the library core builder (``quiverlab.modules.barcode.barcode_block``),
     so the Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
     is request-derived (the ``module`` block canonicalizes through the Plan-25 key; no new
-    top-level request field)."""
+    top-level request field).
+  * 2026-08-08 (``skew_group_hh_z2dual`` ADDED, Plan 74 / R8): a NEW fixture for the
+    ``SkewGroupAlgebra`` construction family + the ``skew_group_hh`` ALGEBRA-level
+    TOP-DEGREE budget kind. Z/2 on k[x]/(x^2) (σ: x ↦ −x, arrow scalar −1) over QQ,
+    ``compute == ["skew_group_hh:3"]`` -- the Ştefan conjugacy-class decomposition
+    ``dims == direct_dims == [1,1,1,1]``, ``agrees == true``, the per-class summands
+    (identity ``inv [1,1,1,1]`` + σ-twisted ``inv [0,0,0,0]``). Pure ADDITION: every
+    pre-existing entry was verified byte-identical BEFORE the append (the goldens JSON
+    round-trips through ``json.dumps(indent=1)`` + newline byte-for-byte, so the new key
+    is appended LAST and no existing bytes move). Both runners share the library builder
+    (``hochschild.skew_group.skew_group_hh_block``) and the family builder
+    (``families.skew_group.build_skew_group_from_params``), so the Pyodide twin agrees
+    (``tests/gui/test_skew_group_runner_twin_p74.py``). ``canonical_key`` is
+    request-derived (family params; the SkewGroupAlgebra ``generators`` list is
+    order-normalized in the schema so two orderings collide, the top-degree budget rides
+    in the ``compute`` string -- no new top-level request field)."""
 import json
 import pathlib
 

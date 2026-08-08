@@ -497,7 +497,97 @@ def skew_group_algebra(A, action, *, field=None):
             f"dim law failed: dim(A rtimes G) = {S.dim} != |G|*dim A = {order * m}",
             hint="internal invariant -- please report this action")
     S._family_citations = ("cibils_marcos_smash",)
+    # stamp the base + action so the skew_group_hh decomposition kind can recover
+    # them (a smash algebra flows through every other compute kind as a plain
+    # structure-constant Algebra; only the Stefan decomposition needs the origin).
+    S._skew_base = A
+    S._skew_action = action
     return S
+
+
+def build_skew_group_from_params(params, field):
+    """Build ``A rtimes G`` from a flattened GUI/HPC ``SkewGroupAlgebra`` param block:
+    ``vertices`` (list of ints), ``arrows`` (name -> [source, target]), ``relations``
+    (list of strings), ``generators`` (a list of quiver-automorphism dicts
+    ``{"vertex_perm", "arrow_perm", "arrow_scalars"}``). The generator list is
+    CANONICALIZED (each generator to a stable form, the list sorted + de-duplicated)
+    so two orderings of the same action build the same algebra. Loud
+    ``QuiverlabError`` on any ill-typed param; the group is closed field-correctly."""
+    from quiverlab.combinat.quiver import Quiver
+    verts = params.get("vertices")
+    if not (isinstance(verts, (list, tuple)) and verts
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in verts)):
+        raise QuiverlabError(
+            "SkewGroupAlgebra.vertices must be a non-empty list of vertex integers",
+            hint="e.g. [1] for the one-loop base of k[x]/(x^2)")
+    arrows_p = params.get("arrows") or {}
+    if not isinstance(arrows_p, dict):
+        raise QuiverlabError("SkewGroupAlgebra.arrows must map names to [source, target]",
+                             hint='e.g. {"x": [1, 1]}')
+    arrows = {}
+    for name, st in arrows_p.items():
+        if not (isinstance(st, (list, tuple)) and len(st) == 2):
+            raise QuiverlabError(
+                f"SkewGroupAlgebra.arrows[{name!r}] must be a [source, target] pair",
+                hint='e.g. {"x": [1, 1]}')
+        arrows[str(name)] = (st[0], st[1])
+    rels = params.get("relations") or []
+    if not (isinstance(rels, (list, tuple)) and all(isinstance(r, str) for r in rels)):
+        raise QuiverlabError("SkewGroupAlgebra.relations must be a list of strings",
+                             hint='e.g. ["x*x"]')
+    A = Quiver(vertices=list(verts), arrows=arrows).algebra(
+        relations=list(rels), field=field)
+    gen_dicts = params.get("generators")
+    if not (isinstance(gen_dicts, (list, tuple)) and gen_dicts):
+        raise QuiverlabError(
+            "SkewGroupAlgebra.generators must be a non-empty list of quiver-automorphism "
+            "dicts {vertex_perm, arrow_perm, arrow_scalars}",
+            hint='e.g. [{"vertex_perm": {"1": 1}, "arrow_perm": {"x": "x"}, '
+                 '"arrow_scalars": {"x": -1}}]')
+    gens = [_parse_generator_dict(g, A) for g in gen_dicts]
+    # certify each generator is a genuine algebra automorphism BEFORE closing the group
+    # (a non-automorphism gives a singular matrix that breaks the closure) -- loud.
+    for g in gens:
+        g.check(A)
+    # canonical generator-order normalization: sort + de-duplicate by canonical key
+    seen, canon = set(), []
+    for g in sorted(gens, key=lambda q: q.canonical_key()):
+        k = g.canonical_key()
+        if k not in seen:
+            seen.add(k)
+            canon.append(g)
+    action = GroupAction.from_generators(canon, A)
+    return skew_group_algebra(A, action)
+
+
+def _parse_generator_dict(g, A):
+    """Coerce one JSON generator dict into a QuiverAutomorphism, mapping vertex
+    labels (possibly strings from JSON) back to the quiver's vertex type."""
+    if not isinstance(g, dict):
+        raise QuiverlabError("each SkewGroupAlgebra generator must be a dict",
+                             hint='{"vertex_perm": ..., "arrow_perm": ..., "arrow_scalars": ...}')
+    vlabel = {str(v): v for v in A.quiver.vertices}
+
+    def cv(x):
+        if x in vlabel:
+            return vlabel[x]
+        if str(x) in vlabel:
+            return vlabel[str(x)]
+        raise QuiverlabError(f"generator names an unknown vertex {x!r}",
+                             hint=f"vertices are {sorted(A.quiver.vertices, key=str)}")
+
+    vp_raw = g.get("vertex_perm") or {}
+    vertex_perm = {cv(k): cv(v) for k, v in vp_raw.items()}
+    # a vertex omitted from vertex_perm is fixed
+    for v in A.quiver.vertices:
+        vertex_perm.setdefault(v, v)
+    ap_raw = g.get("arrow_perm") or {}
+    arrow_perm = {str(k): str(v) for k, v in ap_raw.items()}
+    for a in A.quiver.arrows:
+        arrow_perm.setdefault(a, a)
+    scalars = g.get("arrow_scalars") or {}
+    arrow_scalars = {str(k): v for k, v in scalars.items()}
+    return QuiverAutomorphism(vertex_perm, arrow_perm, arrow_scalars)
 
 
 def _ensure_bound(A, action):

@@ -88,6 +88,7 @@ _HEADINGS = {
     "exceptional_sequences": "Exceptional sequences",
     "split_extension": "Split-extension Hochschild long exact sequence",
     "arrow_removal": "Certified arrow-removal HH reduction",
+    "skew_group_hh": "Hochschild HH of A⋊G (Ştefan conjugacy-class decomposition)",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -1048,6 +1049,49 @@ def _split_extension_html(b):
     return out
 
 
+def _skew_group_hh_html(b):
+    """The skew-group HH decomposition block (Plan 74 / R8): per conjugacy-class
+    twisted HH dims + their Z(g)-invariants, the assembled total, and the DIRECT
+    cross-check row. Modular (char | |G|) shows direct-only; a bad action -> note."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Skew-group HH decomposition not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = []
+    out.append("<p>The algebra is the skew group algebra <em>A&#8905;G</em> "
+               "(dim = |G|&middot;dim A = %s&middot;%s = <strong>%s</strong>). Over "
+               "char <em>k</em> &#8740; |G| the Hochschild cohomology decomposes along "
+               "the conjugacy classes of <em>G</em>: "
+               "HH<sup>n</sup>(A&#8905;G) &cong; &oplus;<sub>[g]</sub> "
+               "HH<sup>n</sup>(A, <sub>g</sub>A)<sup>Z(g)</sup> "
+               "(&#350;tefan 1995; Shepler&ndash;Witherspoon 2012).</p>"
+               % (_esc(str(b.get("group_order"))), _esc(str(b.get("base_dim"))),
+                  _esc(str(b.get("dim")))))
+    if not b.get("char_ok", True):
+        out.append("<p class='ql-note'>%s Only the DIRECT HH of A&#8905;G is shown.</p>"
+                   % _esc(str(b.get("note") or "Modular case (char divides |G|).")))
+        if b.get("dims") is not None:
+            out.append(_dims_table("dim HH<sup>n</sup>(A&#8905;G)  [direct]", b["dims"]))
+        return out
+    for s in (b.get("decomposition") or []):
+        out.append("<p>Conjugacy class <strong>[%s]</strong>:</p>" % _esc(str(s.get("class"))))
+        out.append(_dims_table("dim HH<sup>n</sup>(A, <sub>g</sub>A)", s.get("hh") or []))
+        out.append(_dims_table("Z(g)-invariants  dim (&minus;)<sup>Z(g)</sup>",
+                               s.get("inv") or []))
+    out.append(_dims_table("assembled dim HH<sup>n</sup>(A&#8905;G)", b.get("dims") or []))
+    if b.get("direct_dims") is not None:
+        out.append(_dims_table("direct dim HH<sup>n</sup>(A&#8905;G)  [cross-check]",
+                               b["direct_dims"]))
+    agrees = b.get("agrees")
+    if agrees is not None:
+        out.append("<p>decomposition == direct: <strong>%s</strong>.</p>"
+                   % _esc(str(agrees)))
+    if b.get("status") and b["status"] != "complete":
+        out.append("<p class='ql-note'>status: %s%s</p>"
+                   % (_esc(str(b["status"])),
+                      (" &mdash; " + _esc(str(b["note"]))) if b.get("note") else ""))
+    return out
+
+
 def _arrow_removal_html(b):
     """The certified arrow-removal block (Plan 72 / R6): the inert arrows deleted,
     the clean HH_n(A) = HH_n(B) homology isomorphism for n >= 2 (Thm 3.2), and the
@@ -1683,6 +1727,8 @@ def _block_html(kind, b, ctx=None):
         return _split_extension_html(b)
     if kind == "arrow_removal":
         return _arrow_removal_html(b)
+    if kind == "skew_group_hh":
+        return _skew_group_hh_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
     if kind == "derived_fingerprint":

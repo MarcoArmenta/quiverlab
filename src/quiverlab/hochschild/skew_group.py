@@ -296,3 +296,65 @@ def _direct_dims(A, action, top, side, max_cells):
 
 def _label(i):
     return "e" if i == 0 else f"g{i}"
+
+
+# --------------------------------------------------------------------------- #
+# the three-tier compute-kind block (shared by both runners -> byte-identical)
+# --------------------------------------------------------------------------- #
+def skew_group_hh_block(A, budget, *, side="coh"):
+    """The ``skew_group_hh`` compute-kind block: the Stefan conjugacy-class
+    decomposition of ``HH^*(A rtimes G)`` with the DIRECT cross-check row. ``A`` must
+    be a ``SkewGroupAlgebra`` (a smash carrying its base + action, stamped by
+    :func:`skew_group_algebra`). ``budget`` is the top HH degree (default 3).
+
+    Modular (char ``|`` ``|G|``): ``decomposition=None``, ``status="modular"``,
+    ``dims`` = the DIRECT HH only (the constructor + direct HH stay available). A
+    relation-violating action raises a clean error entry, never a 500."""
+    refs = list(_DECOMP_CITATIONS)
+    base = getattr(A, "_skew_base", None)
+    action = getattr(A, "_skew_action", None)
+    if base is None or action is None:
+        return {"kind": "skew_group_hh",
+                "error": "skew_group_hh needs a SkewGroupAlgebra input (a base algebra "
+                         "with an explicit finite group action)",
+                "references": refs}
+    top = int(budget) if budget is not None else 3
+    dom = base.domain
+    order = action.order
+    base_dim = base.dim
+    char = dom.characteristic
+    char_ok = not (char != 0 and order % char == 0)
+    block = {"kind": "skew_group_hh", "base_dim": base_dim, "group_order": order,
+             "dim": order * base_dim, "char_ok": char_ok, "side": side,
+             "references": refs}
+    if not char_ok:
+        note = (f"modular case (char {char} divides |G| = {order}): the conjugacy-class "
+                "decomposition is unavailable (Maschke fails); the DIRECT HH of A|xG is "
+                "shown instead.")
+        try:
+            from quiverlab.families.skew_group import skew_group_algebra
+            S = skew_group_algebra(base, action)
+            method = (S.hochschild_cohomology if side == "coh"
+                      else S.hochschild_homology)
+            direct = list(method(top, verbose=False).dims)
+            block.update({"decomposition": None, "dims": direct, "direct_dims": direct,
+                          "agrees": None, "status": "modular", "note": note})
+        except QuiverlabError as exc:
+            block.update({"decomposition": None, "dims": None, "direct_dims": None,
+                          "agrees": None, "status": "modular", "note": note + f" ({exc})"})
+        return block
+    try:
+        rep = stefan_decomposition(base, action, top, side=side, verify_direct=True)
+    except QuiverlabError as exc:
+        block["error"] = str(exc)
+        return block
+    block.update({
+        "decomposition": [{"class": s["g"], "hh": s["hh"], "inv": s["inv"]}
+                          for s in rep.summands],
+        "dims": list(rep.dims),
+        "direct_dims": rep.direct_dims,
+        "agrees": rep.agrees,
+        "status": rep.status,
+        "note": rep.note or None,
+    })
+    return block
