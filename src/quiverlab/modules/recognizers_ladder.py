@@ -411,3 +411,67 @@ def recognizer_ladder(A, *, budget=256) -> RecognizerLadder:
     sc = _simple_connectedness(A, rungs["ada"].verdict)
     return RecognizerLadder(A, rungs, complement, sc, gld, int(atlas.universe_size),
                             True, atlas.status, atlas.note or "")
+
+
+# -- the JSON block shared byte-for-byte by both runners (Task D) -------------
+
+def _sorted_dimvec(dv):
+    return {str(w): int(n) for w, n in sorted(dv.items(), key=lambda kv: str(kv[0]))}
+
+
+def _rung_json(rung):
+    return {"verdict": bool(rung.verdict), "certificate": rung.certificate,
+            "witness": rung.witness}
+
+
+def _sc_json(sc):
+    return {"applicable": bool(sc.applicable),
+            "field_algebraically_closed": bool(sc.field_algebraically_closed),
+            "hh1_dim": (None if sc.hh1_dim is None else int(sc.hh1_dim)),
+            "verdict": sc.verdict, "theorem": sc.theorem, "note": sc.note}
+
+
+def _empty_ladder_block(n, status, note):
+    return {"kind": "recognizer_ladder", "n": int(n), "complete": False, "status": status,
+            "universe_size": None, "gldim": None, "ladder": {},
+            "complement": [], "simple_connectedness": _sc_json(SimpleConnectedness(
+                applicable=False, field_algebraically_closed=False, hh1_dim=None,
+                verdict=None, theorem=_THEOREM_B, note="not computed (the ladder did not complete)")),
+            "note": note, "references": list(_LADDER_REFS)}
+
+
+def recognizer_ladder_block(A, *, budget=256) -> dict:
+    """The JSON block shared byte-for-byte by both runners (Task D). An ALGEBRA-level kind
+    (schema v1, no module block): the five-rung ladder (verdict/certificate/witness each), the
+    finite laura complement (names + dim-vectors -- the `Module`s stripped), and the
+    ada/HH^1 simple-connectedness block. On refusal (rep-infinite / self-injective / knit
+    error) the same shape with an empty ladder + honest `status`/`note`; a char-scope
+    identification refusal (large GF(p) is_isomorphic) is surfaced as a loud `error` field
+    (the Plan-30 per-entry precedent -- never a 500)."""
+    n = len(A.quiver.vertices) if A.quiver is not None else 0
+    try:
+        L = recognizer_ladder(A, budget=budget)
+    except (QuiverlabError, DepthLimitError) as e:
+        block = _empty_ladder_block(n, "error", None)
+        block["error"] = str(e)
+        return block
+    if not L.is_complete:
+        return _empty_ladder_block(n, L.status, L.note or None)
+    ladder = {}
+    for name in _LADDER_ORDER:
+        rung = L.rungs[name]
+        if name == "laura":
+            ladder["laura"] = {"verdict": bool(rung.verdict),
+                               "complement_size": int(rung.certificate["complement_size"])}
+        else:
+            ladder[name] = _rung_json(rung)
+    return {
+        "kind": "recognizer_ladder", "n": int(n), "complete": True, "status": L.status,
+        "universe_size": int(L.universe_size), "gldim": (None if L.gldim is None else int(L.gldim)),
+        "ladder": ladder,
+        "complement": [{"name": r["name"], "dimvec": _sorted_dimvec(r["dimvec"])}
+                       for r in L.complement],
+        "simple_connectedness": _sc_json(L.simple_connectedness),
+        "note": (L.note or None),
+        "references": list(_LADDER_REFS),
+    }

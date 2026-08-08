@@ -190,6 +190,13 @@ def _parse_compute(spec):
             raise RequestError("left_right_parts budget must be a positive integer (got %r)"
                                % (spec,))
         return "left_right_parts", (int(rng) if rng else None)
+    # recognizer_ladder carries a MODULE BUDGET, not a degree range (Plan 61): the budget caps
+    # the knitted universe, so it skips MAX_DEGREE (like left_right_parts / ar_quiver).
+    if name == "recognizer_ladder":
+        if rng and not rng.isdigit():
+            raise RequestError("recognizer_ladder budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "recognizer_ladder", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -929,6 +936,14 @@ def compute_one(spec):
             from quiverlab.modules.left_right import left_right_parts_block
             block = left_right_parts_block(A, budget=top if top is not None else 256)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "recognizer_ladder":
+            # The recognizer ladder (P61, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # shared builder (modules.recognizers_ladder.recognizer_ladder_block) +
+            # references->citations.
+            from quiverlab.modules.recognizers_ladder import recognizer_ladder_block
+            block = recognizer_ladder_block(A, budget=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -1296,6 +1311,8 @@ def python_snippet():
              "ar_invariants": "A.ar_invariants(budget_modules=%d)",
              # Plan 55: the left/right parts kind carries a module budget (%d = budget).
              "left_right_parts": "A.left_right_parts(budget=%d)",
+             # Plan 61: the recognizer ladder carries a module budget (%d = budget).
+             "recognizer_ladder": "A.recognizer_ladder(budget=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1415,7 +1432,10 @@ ETA_MODEL = {
                 # Plan 55: left/right parts = an AR knit + the N^2 Hom predecessor matrix +
                 # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
                 # the same cost class as tau_tilting.
-                "left_right_parts": 2.0},
+                "left_right_parts": 2.0,
+                # Plan 61: the recognizer ladder reads the P55 atlas + gl.dim + a second AR
+                # knit (weakly-shod SCC) + HH^1 (ada/Theorem B); a touch heavier than P55.
+                "recognizer_ladder": 2.5},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)
