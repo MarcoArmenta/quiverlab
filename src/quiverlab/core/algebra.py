@@ -698,6 +698,36 @@ class Algebra:
         from quiverlab.modules.degeneration import degeneration_order
         return degeneration_order(self, d, budget=budget)
 
+    def left_right_parts(self, budget=256):
+        """The left/right parts L_A, R_A of the module category, their intersection and
+        the finite complement ind A \\ (L_A u R_A), the Ext-injectives of add L_A (and dual
+        Ext-projectives of add R_A), and the left/right support algebras A_lambda, A_rho
+        (Plan 55 / R15, Assem-Coelho-Trepode). Returns a LeftRightAtlas; complete iff A is
+        representation-finite and not self-injective, else a loud status (never a partial
+        atlas)."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget)
+
+    def left_part(self, budget=256):
+        """The left part L_A = { M in ind A : pd L <= 1 for every predecessor L of M }
+        (Plan 55) -- the ``left`` records of :meth:`left_right_parts`."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget).left
+
+    def right_part(self, budget=256):
+        """The right part R_A (successors, id <= 1) -- the ``right`` records of
+        :meth:`left_right_parts` (Plan 55)."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget).right
+
+    def support_algebras(self, budget=256):
+        """The left/right support algebras (A_lambda, A_rho) as presented induced-convex-
+        subquiver Algebras (Plan 55) -- ``(left_support, right_support)`` of
+        :meth:`left_right_parts`."""
+        from quiverlab.modules.left_right import left_right_parts
+        atlas = left_right_parts(self, budget=budget)
+        return atlas.left_support, atlas.right_support
+
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
         """True iff A is semisimple (Loewy length 1)."""
