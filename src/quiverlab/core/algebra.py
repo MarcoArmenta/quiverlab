@@ -526,6 +526,14 @@ class Algebra:
         from quiverlab.hochschild.arrow_removal import arrow_removal
         return arrow_removal(self, arrows=arrows, top=top, side=side)
 
+    def enveloping(self):
+        """The enveloping algebra ``A^e = A (x) A^op`` as a first-class bound quiver
+        Algebra (product quiver, ``present_from_pi``-certified ``dim = (dim A)^2``,
+        Plan 73 / R7). The first first-class enveloping algebra in quiverlab -- the
+        Hochschild engines only handle ``A^e`` internally."""
+        from quiverlab.families.extension import enveloping_algebra
+        return enveloping_algebra(self)
+
     def radical_filtration(self, budget_modules=256, budget_dim=4096):
         """The radical filtration of ``mod A`` (Plan 57 / R37): exact
         ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the

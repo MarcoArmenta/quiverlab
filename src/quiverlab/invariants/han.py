@@ -16,7 +16,8 @@ Composition is left-to-right (quiverlab); the CLMS paper is right-to-left.
 from dataclasses import dataclass, field as _field
 
 from quiverlab.errors import QuiverlabError
-from quiverlab.families.extension import arrow_removal_subalgebra
+from quiverlab.families.extension import (
+    arrow_removal_subalgebra, enveloping_algebra, _f_length, _tokens)
 
 
 # --------------------------------------------------------------------------- #
@@ -134,10 +135,197 @@ def finite_pd_Be(ext, *, pd_cap=16):
 
 
 def _finite_pd_Be_envelope(ext, *, pd_cap=16):
-    """The ``gl.dim B = infinity`` fallback: build ``B^e`` and resolve ``A/B`` over
-    it, capped (Task II3). Placeholder until Task II3 wires the enveloping bridge --
-    honest ``"undecided"`` so the primary-route slice stays green."""
+    """The ``gl.dim B = infinity`` fallback: build ``B^e`` and resolve ``A/B`` as a
+    right ``B^e``-module, capped at ``pd_cap``. Finite ``pd`` ``=> "finite"``;
+    unresolved within the cap ``=> "undecided"`` + the reached-length certified lower
+    bound (never ``infinity`` unproven). Loud refusals (heavy product quiver over
+    budget) surface as ``"undecided"`` with the reason."""
+    from quiverlab.hochschild.coefficients import Bimodule
+    B = ext.B
+    try:
+        Be = enveloping_algebra(B)
+        M = ext.quotient_bimodule()
+        N = _bimodule_to_Be_module(M, B, Be)
+        pd = N.projective_resolution(pd_cap).pd()
+    except QuiverlabError as exc:
+        return {"route": "enveloping", "status": "undecided", "gldim_B": None,
+                "value": None,
+                "note": f"gl.dim B = inf; enveloping fallback unavailable: {exc}"}
+    if pd is not None:
+        return {"route": "enveloping", "status": "finite", "gldim_B": None,
+                "value": pd,
+                "note": f"pd_{{B^e}}(A/B) = {pd} via B^e = B (x) B^op (gl.dim B = inf)"}
     return {"route": "enveloping", "status": "undecided", "gldim_B": None,
             "value": None,
-            "note": "gl.dim B = inf: the enveloping-algebra pd fallback is not yet "
-                    "wired (Task II3)"}
+            "note": f"pd_{{B^e}}(A/B) not resolved within pd_cap={pd_cap}: certified "
+                    f"lower bound pd > {pd_cap} (never infinity unproven)"}
+
+
+# --------------------------------------------------------------------------- #
+# module bridges: a B-bimodule / A/B as a one-sided or B^e module
+# --------------------------------------------------------------------------- #
+def _bimodule_to_Be_module(M, B, Be):
+    """A ``B``-bimodule ``M`` as a **right** ``B^e``-module over ``Be = B (x) B^op``
+    (``m . (b (x) c^op) = c . m . b``): the ``Be``-vertex ``(u, v)`` is the corner
+    ``e_v . M . e_u`` (right ``u``, left ``v``); ``L_{al}_v = al (x) e_v`` acts by
+    right-mult ``m . al``; ``R_{be}_u = e_u (x) be^op`` acts by left-mult ``be . m``.
+    Validated by ``from_arrow_action`` (the module axioms are the correctness gate)."""
+    from quiverlab.modules.module import Module
+    dom = B.domain
+
+    def which_vertex(s, apply):
+        es = M._unit_vec(s)
+        hits = [v for v in B.quiver.vertices
+                if apply(B._basis_vec(B.basis_labels.index(f"e_{v}")), es) == es]
+        return hits[0] if len(hits) == 1 else None
+
+    # corner (u, v) = e_v . M . e_u  (right vertex u, left vertex v)
+    corner = {}
+    for s in range(M.dim_M):
+        lv = which_vertex(s, M.left_apply)
+        rv = which_vertex(s, M.right_apply)
+        if lv is None or rv is None:
+            raise QuiverlabError(
+                "A/B is not B-homogeneous: a basis vector lies in no single corner "
+                "e_v M e_u -- cannot present it as a right B^e-module",
+                hint="the arrow-extension bimodules are corner-homogeneous")
+        corner.setdefault((rv, lv), []).append(s)
+
+    verts = list(Be.quiver.vertices)
+    dimvec = {vv: len(corner.get(vv, [])) for vv in verts}
+    starts, off = {}, 0
+    for vv in verts:
+        starts[vv] = off
+        off += dimvec[vv]
+    n = off
+    gidx = {}
+    for key, lst in corner.items():
+        for p, s in enumerate(lst):
+            gidx[s] = starts[key] + p
+
+    def bvec(name):
+        return B._basis_vec(B.basis_labels.index(name))
+
+    arrow_action = {}
+    for nm, (sv, tv) in Be.quiver.arrows.items():
+        mat = [[dom.zero()] * n for _ in range(n)]
+        gen = nm[2:].rsplit("_", 1)[0]
+        if nm.startswith("L_"):                       # al (x) e_v -> m . al
+            action = [M.right_apply(bvec(gen), M._unit_vec(s)) for s in range(M.dim_M)]
+        else:                                         # e_u (x) be^op -> be . m
+            action = [M.left_apply(bvec(gen), M._unit_vec(s)) for s in range(M.dim_M)]
+        for s in corner.get(sv, []):
+            res = action[s]
+            for t in range(M.dim_M):
+                if not dom.is_zero(res[t]) and t in gidx \
+                        and starts[tv] <= gidx[t] < starts[tv] + dimvec[tv]:
+                    mat[gidx[t]][gidx[s]] = dom.add(mat[gidx[t]][gidx[s]], res[t])
+        arrow_action[nm] = mat
+    return Module.from_arrow_action(Be, dimvec, arrow_action, name="A/B over B^e")
+
+
+def _one_sided_module(ext, side):
+    """``A/B`` as a right (``side="right"``) or left (``side="left"``) ``B``-module.
+    A left ``B``-module is a right ``B^op``-module (built over ``B.opposite()``)."""
+    from quiverlab.modules.module import Module
+    A = ext.A
+    dom = A.domain
+    labels = A.basis_labels
+    Q = A.quiver
+    rel = list(ext.rel_idx)
+    nR = len(rel)
+    rpos = {ai: k for k, ai in enumerate(rel)}
+
+    def projR(vec):
+        return [vec[rel[k]] for k in range(nR)]
+
+    if side == "right":
+        rep = ext.B                                   # right B-module
+        vfun = lambda ai: Q.word_target(_tokens(labels[ai]))
+
+        def act(ai, arrow):                           # r . arrow
+            return projR(A.multiply(A._basis_vec(ai), A._basis_vec(labels.index(arrow))))
+    elif side == "left":
+        rep = ext.B.opposite()                        # left B-module = right B^op-module
+        vfun = lambda ai: Q.word_source(_tokens(labels[ai]))
+
+        def act(ai, arrow):                           # arrow . r  (left-mult in A)
+            return projR(A.multiply(A._basis_vec(labels.index(arrow)), A._basis_vec(ai)))
+    else:
+        raise QuiverlabError(f"side must be 'left' or 'right', got {side!r}")
+
+    verts = list(rep.quiver.vertices)
+    corner = {v: [] for v in verts}
+    for ai in rel:
+        corner[vfun(ai)].append(ai)
+    dimvec = {v: len(corner[v]) for v in verts}
+    starts, off = {}, 0
+    for v in verts:
+        starts[v] = off
+        off += dimvec[v]
+    n = off
+    gidx = {}
+    for v in verts:
+        for p, ai in enumerate(corner[v]):
+            gidx[ai] = starts[v] + p
+    arrow_action = {}
+    for arrow, (sv, tv) in rep.quiver.arrows.items():
+        mat = [[dom.zero()] * n for _ in range(n)]
+        for ai in corner[sv]:
+            res = act(ai, arrow)
+            for k in range(nR):
+                if not dom.is_zero(res[k]) and vfun(rel[k]) == tv:
+                    mat[gidx[rel[k]]][gidx[ai]] = dom.add(mat[gidx[rel[k]]][gidx[ai]], res[k])
+        arrow_action[arrow] = mat
+    return Module.from_arrow_action(rep, dimvec, arrow_action, name=f"A/B {side}")
+
+
+# --------------------------------------------------------------------------- #
+# leg (iii): one-sided B-projectivity (CLMS Thm 5.20)
+# --------------------------------------------------------------------------- #
+@dataclass
+class OneSidedProjectivity:
+    """Leg (iii): is ``A/B`` projective as a one-sided ``B``-module? A data report."""
+    side: "str | None"                   # the projective side ("left"|"right") or None
+    projective: "bool | None"            # True if projective on `side` (or either, auto)
+    pd_left: "int | None" = None
+    pd_right: "int | None" = None
+    note: str = ""
+
+
+def one_sided_projective(ext, *, side="auto", bound=16):
+    """Decide whether ``A/B`` is projective as a one-sided ``B``-module (leg iii,
+    CLMS Def. 2.3 / Thm 5.20). ``pd_B(A/B) = 0`` on the shipped module resolution
+    stack is the exact test.
+
+    ``side="auto"`` tries both sides and reports the projective one (CLMS bounds an
+    extension on a FIXED side; either suffices for the Han transport, Thm 4.6).
+    NOTE the composition-convention translation: quiverlab composes left-to-right,
+    the CLMS paper right-to-left, so a CLMS "left"-bounded extension is
+    "right"-projective here (Ex. 5.3 is RIGHT ``B``-projective in this convention)."""
+    def pd_side(sd):
+        M = _one_sided_module(ext, sd)
+        return M.projective_resolution(bound).pd()
+
+    if side in ("left", "right"):
+        pd = pd_side(side)
+        proj = (pd == 0)
+        rep = {("left" if side == "left" else "right"): pd}
+        return OneSidedProjectivity(
+            side=(side if proj else None), projective=proj,
+            pd_left=pd if side == "left" else None,
+            pd_right=pd if side == "right" else None,
+            note=f"pd_B(A/B as a {side} B-module) = {pd}")
+    # auto: try right then left
+    pdr = pd_side("right")
+    pdl = pd_side("left")
+    if pdr == 0:
+        winner = "right"
+    elif pdl == 0:
+        winner = "left"
+    else:
+        winner = None
+    return OneSidedProjectivity(
+        side=winner, projective=(winner is not None),
+        pd_left=pdl, pd_right=pdr,
+        note=f"pd_B(A/B) left={pdl}, right={pdr}; projective side = {winner}")

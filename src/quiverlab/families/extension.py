@@ -240,6 +240,104 @@ class Extension:
         k = rpos[self.A.basis_labels.index(cycle_label)]
         return self._tensor_element_is_zero((k, k))
 
+    # -- A/B as a B-bimodule ------------------------------------------------- #
+    def _b_images(self):
+        """``{B-basis index: A-coordinate vector}`` -- the embedding ``B ↪ A`` on
+        ``B``'s basis (a product of the kept-arrow images). Cached."""
+        cached = getattr(self, "_bimg_cache", None)
+        if cached is not None:
+            return cached
+        A = self.A
+        B = self.B
+        labels = A.basis_labels
+        img = {name: A._basis_vec(labels.index(name))
+               for name in A.quiver.arrows if name not in self._new_arrow_set()}
+        out = []
+        for blabel in B.basis_labels:
+            if blabel.startswith("e_"):
+                out.append(A._basis_vec(labels.index(blabel)))
+            else:
+                toks = blabel.split("*")
+                av = img[toks[0]]
+                for t in toks[1:]:
+                    av = A.multiply(av, img[t])
+                out.append(av)
+        self._bimg_cache = out
+        return out
+
+    def quotient_bimodule(self):
+        """``A/B`` as a ``B``-bimodule (a :class:`hochschild.coefficients.Bimodule`
+        over ``B``): ``dim_M = dim_quotient``; ``Lact[j]`` / ``Ract[j]`` are the
+        ``B``-basis element ``b_j`` acting on the relative paths by multiplication in
+        ``A`` followed by the projection to ``A/B`` (drop the F-free part). The
+        coefficient the Jacobi-Zariski relative complex + the one-sided module read."""
+        from quiverlab.hochschild.coefficients import Bimodule
+        A = self.A
+        dom = A.domain
+        B = self.B
+        rel = list(self.rel_idx)
+        nR = len(rel)
+        bimgs = self._b_images()
+
+        def projR(vec):
+            return [vec[rel[k]] for k in range(nR)]
+
+        Lact, Ract = [], []
+        for bj in bimgs:
+            Lj, Rj = [], []
+            for k, ai in enumerate(rel):
+                er = A._basis_vec(ai)
+                Lj.append(projR(A.multiply(bj, er)))     # b_j . r
+                Rj.append(projR(A.multiply(er, bj)))     # r . b_j
+            Lact.append(Lj)
+            Ract.append(Rj)
+        return Bimodule(B, nR, Lact, Ract, name="A/B")
+
+
+# --------------------------------------------------------------------------- #
+# enveloping algebra B^e = B (x) B^op as a bound quiver algebra (Task II2)
+# --------------------------------------------------------------------------- #
+def enveloping_algebra(B):
+    """``B^e = B (x) B^op`` as a **bound quiver algebra** (the product quiver
+    ``Q_B (x) Q_B^op`` with the relations extracted + ``dim = (dim B)^2`` certified
+    by ``present_from_pi`` against the shipped ``TensorProduct(B, B.opposite())``
+    structure constants). The first first-class enveloping algebra in quiverlab (the
+    Hochschild engines only ever handle ``A^e`` internally). Used ONLY by the
+    ``gl.dim B = infinity`` fallback of leg (ii) -- the primary ``gl.dim`` route
+    never builds it.
+
+    Because ``present_from_pi`` certifies ``dim B^e = (dim B)^2`` and the generators
+    (arrow (x) idempotent, idempotent (x) arrow^op) map onto ``TensorProduct``, the
+    map ``kQ_e ->> B (x) B^op`` is a surjection of equal dimension, so ``B^e`` is
+    ISO to ``B (x) B^op`` -- the dimension certificate is the algebra iso witness.
+    """
+    from quiverlab.combinat.quiver import Quiver
+    from quiverlab.families.tensor import TensorProduct
+
+    _require_presented(B, "enveloping_algebra")
+    dom = B.domain
+    Bop = B.opposite()
+    T = TensorProduct(B, Bop)
+    tindex = {lab: i for i, lab in enumerate(T.basis_labels)}
+    verts = [(u, v) for u in B.quiver.vertices for v in Bop.quiver.vertices]
+    arrows, img = {}, {}
+    for al, (su, tu) in B.quiver.arrows.items():          # al (x) e_v (left factor)
+        for v in Bop.quiver.vertices:
+            name = f"L_{al}_{v}"
+            arrows[name] = ((su, v), (tu, v))
+            img[name] = T._basis_vec(tindex[f"{al}(x)e_{v}"])
+    for be, (sv, tv) in Bop.quiver.arrows.items():        # e_u (x) be^op (right factor)
+        for u in B.quiver.vertices:
+            name = f"R_{be}_{u}"
+            arrows[name] = ((u, sv), (u, tv))
+            img[name] = T._basis_vec(tindex[f"e_{u}(x){be}"])
+    Qe = Quiver(verts, arrows)
+    maxlen = max((len(_tokens(l)) for l in B.basis_labels), default=1)
+    base_bound = 2 * maxlen + 1
+    Be = present_from_pi(Qe, img, T, dom, B.dim ** 2, base_bound,
+                         citations=_EXT_CITATIONS)
+    return Be
+
 
 # --------------------------------------------------------------------------- #
 # the constructor
