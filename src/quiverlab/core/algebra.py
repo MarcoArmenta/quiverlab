@@ -586,6 +586,27 @@ class Algebra:
         from quiverlab.tautilting.congruence import wide_subcategories
         return wide_subcategories(self, budget=budget)
 
+    def tau_cluster_category(self, budget=512):
+        """The tau-cluster morphism category ``W(A)`` (Plan 66 / R29; Buan-Marsh IMRN 2021 +
+        Hanson-Igusa Comm. Alg. 2021): objects = the tau-perpendicular wide subcategories
+        (``object_count == wide_subcategories(A).size``), morphisms = support tau-rigid pairs
+        of the source graded by rank, the Hanson-Igusa classifying-space cube-complex
+        ``face_vector`` (``f_0 = #wide``, ``f_k = #(rank-k morphisms)``) + Euler characteristic
+        + the ``g``-fan sphere ``g_fan_face_vector``, and the theorem-anchored ``K(pi,1)``
+        verdict (Nakayama / hereditary Dynkin). Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import tau_cluster_category
+        return tau_cluster_category(self, budget=budget)
+
+    def picture_group(self, budget=512):
+        """The picture-group presentation ``pi_1(|W(A)|)`` as DATA (Plan 66 / R29;
+        Igusa-Todorov-Weyman arXiv:1609.02636; Hanson-Igusa): generators = the bricks,
+        relations = the rank-2 wides (typed commutation / atom via ``Ext^1``), and the
+        abelianization by exact Smith normal form. Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import picture_group
+        return picture_group(self, budget=budget)
+
     def wall_chamber_structure(self, budget_pairs=512):
         """The wall-and-chamber structure of ``A`` via bricks (Plan 63 / R25): the chambers
         (g-vector cones of the support tau-tilting pairs), the walls ``D(B)`` (one per brick,
