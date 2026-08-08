@@ -7,6 +7,7 @@ BOTH locales, and the runner carries the ETA + snippet + compute_one branch. Byt
 of the two ``gui.js`` copies is re-asserted so a drift is caught even here."""
 import json
 import pathlib
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 GUI_DOCS = ROOT / "docs" / "gui" / "gui.js"
@@ -28,7 +29,10 @@ def test_quasi_hereditary_checkbox_and_registry():
 
 def test_compute_push_and_render_branch():
     src = GUI_DOCS.read_text(encoding="utf-8")
-    assert '"quasi_hereditary"].forEach' in src                # in the plain-kind push-list
+    # the plain-kind push-list: an array literal containing "quasi_hereditary"
+    # fed straight to .forEach (kinds may be appended after it — P56 did).
+    assert re.search(r'\[[^][]*"quasi_hereditary"[^][]*\]\.forEach', src), \
+        "quasi_hereditary not in the plain-kind push-list"
     assert 'name === "quasi_hereditary"' in src                # renderBlock branch
 
 
