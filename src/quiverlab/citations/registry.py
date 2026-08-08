@@ -558,6 +558,26 @@ REGISTRY: dict = {r.key: r for r in [
        "King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the "
        "Plan-45 / C4 engine draws.",
        "tau-tilting", "stability"),
+    # --- Plan 63: wall-and-chamber structure via bricks (R25) ---
+    _r("brustle_smith_treffinger", "BST2019", "foundation",
+       "Wall and Chamber Structure for finite-dimensional Algebras",
+       "Brustle-Smith-Treffinger: the wall D(M) = {theta : M theta-semistable} (Def 3.1-3.3), "
+       "chambers <-> support tau-tilting pairs (Thm 1.2 / Cor 3.29), one wall = many facets "
+       "(Rem 3.19) -- the ground truth for Plan 63. NB walls=D(brick) is DIJ, not BST.",
+       "tau-tilting", "stability"),
+    _r("asai_semibricks", "Asai2020", "foundation",
+       "Semibricks",
+       "Asai: semibricks <-> functorially finite torsion classes <-> support tau-tilting "
+       "modules (Thm 1.3 / Prop 1.6) -- the brick/semibrick INDEXING that labels walls and "
+       "chambers (Plan 63). Contains no g-vector/fan/wall/chamber content -- do not cite for "
+       "the geometry.",
+       "tau-tilting", "stability"),
+    _r("kaipel_treffinger", "KT2023", "foundation",
+       "Wall-and-chamber structures for finite-dimensional algebras and tau-tilting theory",
+       "Kaipel-Treffinger: the definition + torsion-class/tau-tilting relationship, with the "
+       "worked kA2 (Ex 13: D(P1) a ray) and cyclic rad^2-Nakayama N3^2 (Ex 15: 14 chambers) "
+       "examples -- Plan 63 literature oracles.",
+       "tau-tilting", "stability"),
     # --- Plan 56: pi1(Q,I) + strongly simply connected (coverings) ---
     _r("assem_delapena", "AssemDelaPena1996", "foundation",
        "The fundamental groups of a triangular algebra",

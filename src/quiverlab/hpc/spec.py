@@ -270,6 +270,13 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or
+    # 'wall_chamber:512' -- the exchange-graph pair budget, not a degree range.
+    if s == "wall_chamber" or s.startswith("wall_chamber:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"wall_chamber budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="wall_chamber", lo=None, hi=(int(b) if b else None))
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget caps the knitted indecomposable universe -- not a
     # homological degree -- so it bypasses the 'name:0..N' grammar (like tau_tilting).
@@ -1625,6 +1632,21 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = tau_tilting_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Wall-and-chamber structure via bricks (Plan 63 / R25): an ALGEBRA-level kind
+    # carrying a PAIR BUDGET, parsed like tau_tilting. Walls D(B) as exact inequality
+    # systems + chambers = g-cones; certified complete iff brick-finite <=> tau-tilting-
+    # finite (DIJ), else an honest bounded region (status='budget', no count). Both runners
+    # share tautilting.wallchamber.wall_chamber_structure, so the blocks are byte-identical.
+    # The brick / is_isomorphic char caveat is caught into an `error` field (never a 500).
+    if kind == "wall_chamber":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.wallchamber import wall_chamber_structure
+        try:
+            block = wall_chamber_structure(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "wall_chamber", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # AR quiver (P41, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
     # degree range ('ar_quiver' / 'ar_quiver:512', parsed like tau_tilting). Honest
     # semi-decision -- complete iff rep-finite, else status='budget' (partial, labelled)
@@ -2682,6 +2704,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "bv_operator": lambda it: f"A.bv_operator({it.hi})",
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "wall_chamber":
+                 lambda it: ("A.wall_chamber_structure(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",

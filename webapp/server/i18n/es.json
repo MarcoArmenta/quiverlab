@@ -256,6 +256,7 @@
   "pick.kind.tame_wild": "Mansa / salvaje (forma de Tits)",
   "pick.kind.derived_fingerprint": "Huella derivada",
   "pick.kind.tau_tilting": "τ-tilting y abanico de muros y cámaras",
+  "pick.kind.wall_chamber": "muros y cámaras D(B) vía ladrillos",
   "pick.kind.dimension_vector": "Vector de dimensión",
   "pick.kind.rad_top_soc": "Radical, tope y zócalo",
   "pick.kind.tau": "Traslación de AR τ",

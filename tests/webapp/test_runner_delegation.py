@@ -365,7 +365,16 @@ never hide behind one:
     (``skewgentle.block.skew_gentle_block``) and the client accepts
     ``family: SkewGentleAlgebra`` narrowly, so the Pyodide twin is byte-identical
     (``tests/gui/test_skew_gentle_runner_twin.py``). ``canonical_key`` is request-derived
-    (schema-1, no ``module`` block)."""
+    (schema-1, no ``module`` block).
+  * 2026-08-08 (``wall_chamber_kA2`` ADDED, Plan 63): a NEW algebra-only budget kind
+    over QQ -- the wall-and-chamber structure via bricks on kA2 (``wall_chamber:512``),
+    5 chambers / 3 walls, complete, render ``fan2d``, ``D(P1)`` a ray. Pure ADDITION:
+    every pre-existing entry was verified byte-identical BEFORE the entry was appended
+    (the goldens JSON round-trips through ``json.dumps(indent=1)`` byte-for-byte, so the
+    new key is appended and no existing bytes move); both runners share the library
+    builder (``tautilting.wallchamber.wall_chamber_structure``), so the Pyodide twin
+    agrees (``tests/gui/test_wall_chamber_runner_twin.py``). ``canonical_key`` is
+    request-derived (schema-1 algebra-only, the budget rides in the ``compute`` string)."""
 import json
 import pathlib
 

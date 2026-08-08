@@ -420,6 +420,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
+    # -- the exchange-graph pair budget, not a homological degree; skips the 'name:0..N'
+    # grammar -- server and GUI/hpc agree on this special form.
+    if s == "wall_chamber" or s.startswith("wall_chamber:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"wall_chamber budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="wall_chamber", lo=None, hi=(int(b) if b else None))
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips the
     # 'name:0..N' grammar -- server and GUI/hpc agree on this special form.

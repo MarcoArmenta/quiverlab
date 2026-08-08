@@ -205,6 +205,13 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
+    # -- the exchange-graph pair budget, not a homological degree, so it skips MAX_DEGREE.
+    if name == "wall_chamber":
+        if rng and not rng.isdigit():
+            raise RequestError("wall_chamber budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "wall_chamber", (int(rng) if rng else None)
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
     if name == "ar_quiver":
@@ -1159,6 +1166,19 @@ def compute_one(spec):
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "wall_chamber":
+            # Wall-and-chamber structure via bricks (Plan 63 / R25): algebra-level, budget
+            # (not degree). SAME shared library builder
+            # (tautilting.wallchamber.wall_chamber_structure) + references -> citations as
+            # the server twin (quiverlab.hpc.spec._dispatch), byte-for-byte. Certified
+            # complete iff brick-finite <=> tau-tilting-finite, else an honest bounded region
+            # (status='budget', no count). The brick/is_isomorphic char caveat -> error block.
+            from quiverlab.tautilting.wallchamber import wall_chamber_structure
+            try:
+                block = wall_chamber_structure(A, budget=top if top is not None else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "wall_chamber", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "string_homological":
             # Homological string-algebra test (Plan 59 / R34, Suarez-Alvarez). Byte-
             # identical to the server twin (quiverlab.hpc.spec._dispatch): SAME library
@@ -1430,6 +1450,8 @@ def python_snippet():
              "bv_operator": "A.bv_operator(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
+             "wall_chamber": "A.wall_chamber_structure(budget_pairs=%d)",
              # Plan 57: radical_filtration + ar_invariants carry a module budget.
              "radical_filtration": "A.radical_filtration(budget_modules=%d)",
              "ar_invariants": "A.ar_invariants(budget_modules=%d)",
@@ -1559,6 +1581,9 @@ ETA_MODEL = {
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
                 "tau_tilting": 2.0,
+                # Plan 63: wall_chamber runs the tau_tilting exchange-graph BFS PLUS the
+                # per-brick submodule enumeration for each D(B) -- just above tau_tilting.
+                "wall_chamber": 2.5,
                 # Plan 55: left/right parts = an AR knit + the N^2 Hom predecessor matrix +
                 # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
                 # the same cost class as tau_tilting.

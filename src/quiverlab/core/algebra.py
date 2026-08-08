@@ -561,6 +561,17 @@ class Algebra:
         from quiverlab.tautilting.mutation import exchange_graph
         return exchange_graph(self, budget_pairs=budget_pairs)
 
+    def wall_chamber_structure(self, budget_pairs=512):
+        """The wall-and-chamber structure of ``A`` via bricks (Plan 63 / R25): the chambers
+        (g-vector cones of the support tau-tilting pairs), the walls ``D(B)`` (one per brick,
+        each an EXACT rational inequality system over the submodule dim-vectors -- BST 2019 /
+        King 1994), the chamber<->wall adjacency, the four counts, and a 2D/3D drawing for
+        rank <= 3. Certified COMPLETE iff ``A`` is brick-finite <=> tau-tilting-finite (DIJ);
+        otherwise a BOUNDED region with honest truncation and no count. Char 0 / char > dim
+        (QQ default; loud off scope)."""
+        from quiverlab.tautilting.wallchamber import wall_chamber_structure
+        return wall_chamber_structure(self, budget=budget_pairs)
+
     def is_tilting_module(self, T, n=1):
         """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
         ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,

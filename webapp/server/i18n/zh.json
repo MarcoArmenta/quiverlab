@@ -256,6 +256,7 @@
   "pick.kind.tame_wild": "驯顺 / 野性（Tits 形式）",
   "pick.kind.derived_fingerprint": "导出指纹",
   "pick.kind.tau_tilting": "τ-倾斜与墙腔扇形",
+  "pick.kind.wall_chamber": "经由砖的墙腔结构 D(B)",
   "pick.kind.dimension_vector": "维数向量",
   "pick.kind.rad_top_soc": "根基、顶与基座",
   "pick.kind.tau": "AR 平移 τ",

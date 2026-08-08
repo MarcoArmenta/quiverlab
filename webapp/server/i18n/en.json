@@ -256,6 +256,7 @@
   "pick.kind.tame_wild": "Tame / wild (Tits form)",
   "pick.kind.derived_fingerprint": "Derived fingerprint",
   "pick.kind.tau_tilting": "τ-tilting & wall–chamber fan",
+  "pick.kind.wall_chamber": "wall-and-chamber D(B) via bricks",
   "pick.kind.dimension_vector": "Dimension vector",
   "pick.kind.rad_top_soc": "Radical, top & socle",
   "pick.kind.tau": "AR translate τ",
