@@ -1233,3 +1233,34 @@ def test_twin_parity(tmp_path):
 7. QPA honest-scope probe skips (fails if QPA ever ships a π₁ surface);
    `docs/verification.md` recounted with the five honest-scope entries; README line
    added; fast + coverings + qpa + release suites green.
+
+---
+
+## Addendum (2026-08-07, P62 contract): expose the per-pair minimal-relation counts
+
+**Why.** P62 (Tits-form tame/wild, R19) needs the Tits form
+`q_A(x) = Σ x_i² − Σ_{arrows i→j} x_i x_j + Σ_{i,j} r_{ij} x_i x_j`, where
+`r_{ij}` = the number of **minimal relations** from `i` to `j` =
+`dim_k e_j·(I / (rad·I + I·rad))·e_i`. **This is exactly the per-`(x,y)`-block quantity
+Task 2's `fundamental_group` already computes** (`dim W_{x,y} − dim R_{x,y}`, the
+`I/(rad·I + I·rad)` complement-basis count). Rather than P62 forking that unsound-if-done-
+naively linear algebra, P56 retains and exposes it.
+
+**Contract (P56 delivers; P62 consumes read-only).** Add to
+`src/quiverlab/invariants/coverings.py`:
+```python
+def minimal_relation_counts(A) -> dict:
+    """{(src, tgt): count} for every ordered vertex pair with >= 1 minimal relation
+    (= dim_k e_tgt (I/(rad.I + I.rad)) e_src). Presentation-less A: loud QuiverlabError.
+    Empty dict for a hereditary (relation-free) algebra."""
+```
+**Honest scope of the change (NOT a five-line extraction).** Task 2's block loop currently
+folds each block's minimal-relation basis straight into the ℤ SNF rows of π₁^{ab} without
+retaining the per-`(x,y)` *count*. So this is a **small refactor**: retain the per-pair
+count `dim W_{x,y} − dim R_{x,y}` in a dict while the loop runs, return it from a shared
+helper, and have BOTH `fundamental_group` (unchanged output) and the new public
+`minimal_relation_counts` read that single computation. **P56's existing outputs and
+goldens stay byte-identical** — this only ADDS a public accessor over data already formed.
+Gate it with a one-line self-cert test in `tests/coverings/` (the total count ==
+`dim I/(rad·I + I·rad)` == the count `fundamental_group`'s self-cert already asserts), and
+P62's `test_r_ij_matches_ext2_of_simples` cross-checks it against `dim Ext²(S_i, S_j)`.
