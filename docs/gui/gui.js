@@ -100,6 +100,7 @@
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
     '  <label><input type="checkbox" id="qlgui-homological_profile"> homological dimensions</label>' +
+    '  <label><input type="checkbox" id="qlgui-fractional_cy"> fractional Calabi–Yau (self-injective)</label>' +
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
     // ---- Plan 38: Yoneda Ext-algebra + Koszulity, and the recognizer batch ----
     '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
@@ -220,6 +221,8 @@
    "coxeter_polynomial", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
+   // Plan 53: fractional Calabi-Yau (self-injective; scalar kind)
+   "fractional_cy",
    // Plan 43: derived fingerprint (scalar kind)
    "derived_fingerprint",
    // Plan 46: gentle / string subsystem
@@ -855,7 +858,7 @@
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
-     "recognizers", "homological_profile", "derived_fingerprint",
+     "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "quasi_hereditary"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
@@ -2670,6 +2673,27 @@
     return "findim ≥ " + f.lower + "  (" + f.note + ")";
   }
 
+  // Plan 53: the Lat-Igusa-Todorov finitistic row (a certified findim upper from a
+  // decidable family, or the honest "no known decision procedure" degrade).
+  function homProfileLit(lit) {
+    if (lit.family != null)
+      return "findim(A) ≤ " + lit.findim_upper + "  [" + lit.family + "]";
+    return lit.proof;
+  }
+
+  // Plan 53: the phidim/psidim algebra-invariant row (honest exact / lower-bound / error).
+  function homProfilePhi(entry) {
+    return entry.error ? "not computed: " + entry.error : entry.text;
+  }
+
+  // Plan 53: the phi-spectrum row (value set + gaps; a partial spectrum claims no gaps).
+  function homProfileSpectrum(sp) {
+    if (sp.error) return "not computed: " + sp.error;
+    var s = "{" + sp.values.join(", ") + "}";
+    if (!sp.complete) return s + "  (partial — not closed; no gaps claimed)";
+    return s + (sp.gaps.length ? "  (gaps: " + sp.gaps.join(", ") + ")" : "  (no gaps)");
+  }
+
   function renderHomologicalProfile(div, b) {
     // The C6 homological-dimensions family (Plan 40) as a labelled list. Each row is
     // its own honest marker (exact value / certified bound / infinity / undecided /
@@ -2688,6 +2712,14 @@
       rows.push(["Igusa–Todorov of " + it.module,
                  "φ = " + it.phi + ",  ψ = " + it.psi]);
     }
+    // Plan 53 (additive keys) -- EACH behind a missing-key guard, so a pre-P53 cached
+    // block (which lacks these) renders the old four dimensions and never crashes (W3
+    // renderer tolerance; the additive-golden contract).
+    if (b.phidim) rows.push(["φdim (algebra invariant)", homProfilePhi(b.phidim)]);
+    if (b.psidim) rows.push(["ψdim (algebra invariant)", homProfilePhi(b.psidim)]);
+    if (b.phi_spectrum)
+      rows.push(["φ-spectrum (rep-finite)", homProfileSpectrum(b.phi_spectrum)]);
+    if (b.lit) rows.push(["Lat-Igusa-Todorov findim bound", homProfileLit(b.lit)]);
     var tbl = h("table", { "class": "qlgui-table" });
     rows.forEach(function (r) {
       var tr = h("tr");
@@ -2696,6 +2728,49 @@
       tbl.appendChild(tr);
     });
     div.appendChild(tbl);
+  }
+
+  // ---- Plan 53: the stable-category fractional Calabi-Yau block ----
+  function renderFractionalCY(div, b) {
+    if (b.error) {                          // non-self-injective: a clean typed message
+      div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      return;
+    }
+    div.appendChild(h("p", {},
+      h("b", { text: "Stable-category fractional Calabi–Yau dimension" })));
+    div.appendChild(h("p", { text: "S = Ω∘ν (Serre functor), Σ = Ω⁻¹ (suspension); "
+      + "fractionally CY of dimension m/ℓ ⇔ Sℓ ≅ Σᵐ (Ivanov–Volkov)." }));
+    if (b.status === "certified") {
+      var line = "stable CY dimension " + b.cy_dimension;
+      if (b.ell === 1) line += "  (weakly " + b.weakly_n_cy + "-CY, Ivanov–Volkov n = "
+        + b.weakly_n_cy + ")";
+      div.appendChild(h("p", {}, h("b", { text: line })));
+      var rows = [
+        ["(m, ℓ)", "(" + b.m + ", " + b.ell + ")"],
+        ["tier", b.tier]                    // ALWAYS weak-on-generators — never overstate
+      ];
+      if (b.sigma_period != null) rows.push(["Σ-period on generators", String(b.sigma_period)]);
+      var tbl = h("table", { "class": "qlgui-table" });
+      rows.forEach(function (r) {
+        var tr = h("tr");
+        tr.appendChild(h("th", { text: r[0] }));
+        tr.appendChild(h("td", { text: r[1] }));
+        tbl.appendChild(tr);
+      });
+      div.appendChild(tbl);
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "checked on: " + b.checked_on }));
+      (b.certificate || []).forEach(function (c) {
+        div.appendChild(h("p", { "class": "qlgui-hint", text: "S_" + c[0] + ":  " + c[1] }));
+      });
+    } else if (b.status === "shift-trivial") {
+      div.appendChild(h("p", { text: "The suspension Σ = Ω⁻¹ is trivial on the "
+        + "generators (radical-square-zero self-injective local); the CY dimension is "
+        + "degenerate, reported (m, ℓ) = (0, 1)." }));
+    } else {
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "Not certified within the "
+        + "(m, ℓ) search window — the generators were not Σ-periodic in budget (likely "
+        + "representation-infinite self-injective)." }));
+    }
   }
 
   // ---- Plan 45: the C4 tau-tilting block + the LIVE wall-and-chamber SVG ----
@@ -2876,6 +2951,8 @@
       div.appendChild(h("p", { text: b.text }));
     } else if (name === "homological_profile") {
       renderHomologicalProfile(div, b);
+    } else if (name === "fractional_cy") {
+      renderFractionalCY(div, b);
     } else if (name === "center") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
     } else if (name === "tau" || name === "tau_minus") {
@@ -3344,7 +3421,7 @@
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
    el.coxeter_polynomial, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
-   el.homological_profile, el.strings, el.quasi_hereditary]
+   el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -3424,7 +3501,7 @@
   [
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
-    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "center"]},
+    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
@@ -3791,6 +3868,7 @@
     {"id": "ss_hochschild", "title": "Hochschild (b,B) spectral sequence", "category": "hochschild", "keywords": ["spectral", "sequence", "espectral", "spectrale", "谱序列", "ss", "b,B", "abutment"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ss_hochschild:0..3"]}},
     {"id": "cartan_coxeter", "title": "Cartan matrix & Coxeter polynomial", "category": "invariants", "keywords": ["cartan", "coxeter", "matrix", "matriz", "matrice", "polynomial", "polinomio", "polynôme", "卡坦", "矩阵", "多项式"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cartan", "coxeter_polynomial"]}},
     {"id": "homological_profile", "title": "Homological dimensions & global dimension", "category": "invariants", "keywords": ["homological", "dimension", "global", "gldim", "dimensión", "dimension", "同调维数", "全局维数", "findim", "gorenstein", "igusa", "todorov"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["homological_profile", "global_dimension"]}},
+    {"id": "fractional_cy", "title": "Fractional Calabi–Yau dimension (self-injective)", "category": "invariants", "keywords": ["fractional", "calabi", "yau", "calabi-yau", "cy", "stable", "serre", "nakayama", "self-injective", "selfinjective", "periodic", "calabi–yau", "分数", "卡拉比", "丘"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["fractional_cy"]}},
     {"id": "center", "title": "Center of the algebra Z(A)", "category": "invariants", "keywords": ["center", "centre", "centro", "中心", "Z(A)", "zentrum"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["center"]}},
     {"id": "recognizers", "title": "Recognizers & Dynkin type", "category": "invariants", "keywords": ["recognizers", "type", "dynkin", "tipo", "reconocedores", "reconnaisseurs", "hereditary", "nakayama", "识别", "类型", "gentle", "string"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers"]}},
     {"id": "ext_algebra", "title": "Ext-algebra & Koszulity", "category": "invariants", "keywords": ["ext", "koszul", "yoneda", "ext-algebra", "koszulity", "代数", "koszulidad", "koszulité"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ext_algebra:0..3"]}},
@@ -3910,6 +3988,7 @@
     center: { cb: "center" },
     recognizers: { cb: "recognizers" },
     homological_profile: { cb: "homological_profile" },
+    fractional_cy: { cb: "fractional_cy" },
     derived_fingerprint: { cb: "derived_fingerprint" },
     strings: { cb: "strings" },
     quasi_hereditary: { cb: "quasi_hereditary" },
