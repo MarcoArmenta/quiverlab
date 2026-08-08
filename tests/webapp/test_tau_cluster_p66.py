@@ -3,7 +3,8 @@ the Pyodide twin (tests/gui/test_tau_cluster_runner_twin.py), both byte-identica
 builder tautilting.cluster_morphism.tau_cluster_block. kA3 -> #objects=14, face vector
 (14,49,49,14) [classifying space], g-fan sphere (1,9,21,14), 6 generators, 4 atom + 2 comm,
 abelianization Z^3. Unmarked (extras-gated dir, Plan-32 ruling). QQ-scope."""
-import json
+from quiverlab.hpc.spec import parse_request
+from quiverlab.hpc.spec import run as spec_run
 
 
 def _req(vertices, arrows, relations, budget=512):
@@ -18,8 +19,7 @@ _KA3 = _req([1, 2, 3], {"a": [1, 2], "b": [2, 3]}, [])
 
 
 def test_tau_cluster_block_shape(tmp_path):
-    from quiverlab.hpc.spec import ComputeRequest, run
-    out = run(ComputeRequest.model_validate(_KA3), tmp_path)
+    out = spec_run(parse_request(_KA3), tmp_path)
     b = out["results"]["tau_cluster"]
     assert b["complete"]
     assert b["category"]["object_count"] == 14
@@ -38,17 +38,15 @@ def test_tau_cluster_block_shape(tmp_path):
 def test_tau_tilting_infinite_status(tmp_path):
     # 2-Kronecker, small budget -> complete False, status budget/error, category+picture_group
     # null, note set, no crash.
-    from quiverlab.hpc.spec import ComputeRequest, run
     body = _req([1, 2], {"a": [1, 2], "b": [1, 2]}, [], budget=40)
-    out = run(ComputeRequest.model_validate(body), tmp_path)
+    out = spec_run(parse_request(body), tmp_path)
     b = out["results"]["tau_cluster"]
     assert b["complete"] is False and b["status"] in ("budget", "error")
     assert b["category"] is None and b["picture_group"] is None and b["note"]
 
 
 def test_block_carries_citations_and_kind(tmp_path):
-    from quiverlab.hpc.spec import ComputeRequest, run
-    out = run(ComputeRequest.model_validate(_KA3), tmp_path)
+    out = spec_run(parse_request(_KA3), tmp_path)
     b = out["results"]["tau_cluster"]
     assert b["kind"] == "tau_cluster"
     # every reference resolves to a (key, human) citation pair
