@@ -79,6 +79,11 @@ def _max_degree(req: ComputeRequest) -> int:
         # rep-infinite algebra can likewise be mislabelled "instant" until the
         # wall-clock cap bounds the knit. (`toupie` is a small HH + graph scan, not
         # knit-heavy, so it is not in this caveat.)
+        # Plan 69: the `barcode` kind on a COMMUTATIVE LADDER also KNITS the AR quiver
+        # (knit-heavy), but -- UNLIKE ar_quiver/string_homological -- it is NOT left in
+        # this caveat: `classify` catches it via `_barcode_knit_heavy` and upgrades it
+        # instant->queued (reason="knit_heavy"). A plain A_n/zigzag barcode only
+        # decomposes (module-sized) and stays instant-eligible.
         # wall_chamber's `hi` is a PAIR BUDGET too (Plan 63), sized on sizing_dim like
         # tau_tilting -- not a degree.
         # Plan 60: `tilted_check` is likewise knit-heavy with a MODULE budget in `hi`.
