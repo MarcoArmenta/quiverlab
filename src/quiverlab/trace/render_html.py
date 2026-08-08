@@ -1530,6 +1530,7 @@ _PRODUCT_TITLE = {
     "cap": "The cap product",
     "bracket": "The Gerstenhaber bracket",
     "connes_b": "The Connes differential B",
+    "bv_operator": "The Batalin-Vilkovisky operator Delta",
 }
 _PRODUCT_DEF = {
     "cup": (r"(f \cup g)(a_1 \otimes \cdots \otimes a_{p+q}) = "
@@ -1543,6 +1544,9 @@ _PRODUCT_DEF = {
     "connes_b": (r"B : HH_n \to HH_{n+1}, \quad "
                  r"B([a_1 \otimes \cdots \otimes a_n]) = "
                  r"\sum_i (-1)^{ni}\, [1 \otimes a_i \otimes \cdots \otimes a_{i-1}]"),
+    "bv_operator": (r"\Delta : HH^{n} \to HH^{n-1}, \quad \Delta^2 = 0, \quad "
+                    r"[a, b] = \pm\big(\Delta(a \cup b) - \Delta(a) \cup b "
+                    r"- (-1)^{|a|} a \cup \Delta(b)\big)"),
 }
 
 
@@ -1584,11 +1588,16 @@ def _products_html(events):
     pb = next((e for e in events if isinstance(e, ProductBasis)), None)
     if pb is not None:
         out.extend(product_flat_classes_html(pb.basis_classes))
-    if kind == "connes_b":
-        out.append("<p class='ql-note'>Each cycle class is written over the chain basis "
-                   "enumerated in the Hochschild homology sections / JSON; the induced "
-                   "matrices below act on these classes (rows index HH_{n+1}, columns "
-                   "HH_n).</p>")
+    if kind in ("connes_b", "bv_operator"):
+        if kind == "connes_b":
+            out.append("<p class='ql-note'>Each cycle class is written over the chain "
+                       "basis enumerated in the Hochschild homology sections / JSON; the "
+                       "induced matrices below act on these classes (rows index "
+                       "HH_{n+1}, columns HH_n).</p>")
+        else:
+            out.append("<p class='ql-note'>Each Delta_n acts on the recorded cohomology "
+                       "basis (rows index HH^{n-1}, columns HH^n); the classes are "
+                       "enumerated in the Hochschild cohomology section / JSON.</p>")
         for s in steps:
             if s.heading:
                 out.append('<p class="ql-mlabel">%s</p>' % _math_inline(s.heading))

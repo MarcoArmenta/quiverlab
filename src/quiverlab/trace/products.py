@@ -49,6 +49,16 @@ _PROSE = {
             "The Connes (Rinehart) operator B: HH_n -> HH_{n+1} is the boundary of "
             "the (b, B) mixed complex computing cyclic homology; B^2 = 0 at the "
             "induced level. Each induced matrix in the class bases is below."),
+    "bv_operator": ("The Batalin-Vilkovisky operator Delta",
+            "For a Frobenius algebra with semisimple Nakayama automorphism (symmetric "
+            "algebras included), HH^*(A) is a Batalin-Vilkovisky algebra: a degree -1 "
+            "operator Delta: HH^n -> HH^{n-1} with Delta^2 = 0 whose defect from being "
+            "a cup-derivation is the Gerstenhaber bracket "
+            "([a,b] = +-(Delta(a U b) - Delta(a) U b - (-1)^{|a|} a U Delta(b))). "
+            "Delta is Connes' B carried across the sigma-twisted Frobenius duality "
+            "HH^n(A) ~= D(HH_n(A, {}_1A_nu)) (Tradler 2008; Lambre-Zhou-Zimmermann "
+            "2016; Volkov 2016). Each induced matrix in the recorded cohomology basis "
+            "is below."),
 }
 
 # Display symbols for the operand / output generators of a table equation. Marco
@@ -117,6 +127,12 @@ def notation_legend(kind, degrees_note, basis):
              "HH_n; the entries are basis-dependent. The homology cycle classes z^n_j "
              "(z^n_j = the j-th basis class of HH_n) are listed explicitly by degree "
              "above as combinations of the ordered basis elements.")
+    elif kind == "bv_operator":
+        s = ("each induced BV operator Delta_n: HH^n → HH^{n-1} is written on the "
+             "recorded cohomology bases -- rows index HH^{n-1}, columns index HH^n; "
+             "the entries are basis-dependent. The cohomology classes α^n_j "
+             "(α^n_j = the j-th basis class of HH^n) live in the recorded basis %s"
+             % on_basis)
     else:
         raise QuiverlabError(
             "unknown product kind %r for the notation legend" % (kind,))
@@ -143,6 +159,8 @@ def products_chapter(A, kind, obj):
     Hochschild (co)homology on ``A`` (the drift gate)."""
     if kind == "connes_b":
         return _connes_chapter(A, obj)
+    if kind == "bv_operator":
+        return _bv_chapter(A, obj)
     if kind in ("cup", "cap", "bracket"):
         return _table_chapter(A, kind, obj)
     raise QuiverlabError(
@@ -589,6 +607,49 @@ def combined_cayley(kind, tables, prime=None):
 # --------------------------------------------------------------------------- #
 # connes_b: the induced Connes differentials B: HH_n -> HH_{n+1} as matrices.
 # --------------------------------------------------------------------------- #
+
+def _bv_chapter(A, obj):
+    top = obj.top
+    coh = list(A.hochschild_cohomology(top, verbose=False).dims)  # no stray trace
+    if list(obj.hh_dims) != coh:
+        raise QuiverlabError(
+            "products chapter drift: the BV object records HH^ dimensions %s but a "
+            "fresh Hochschild cohomology gives %s -- refusing to narrate a chapter "
+            "that misstates the computation" % (list(obj.hh_dims), coh))
+    title, prose = _PROSE["bv_operator"]
+    events = [StepNote(title, prose, heading=True),
+              StepNote("Hypothesis.",
+                       "This algebra is served on the BV route: %s. The Nakayama "
+                       "automorphism is %s (semisimple)." % (
+                           obj.hypothesis,
+                           "inner (symmetric)" if obj.nakayama.get("inner")
+                           else "not inner")),
+              StepNote("Notation.", notation_legend("bv_operator", "", obj.basis)),
+              ResultDims(kind="HH^", dims=list(obj.hh_dims))]
+    events += _basis_events("bv_operator", obj)
+    for n in sorted(obj.matrices):
+        mat = obj.matrices[n]
+        rows = len(mat)
+        cols = len(mat[0]) if (mat and mat[0]) else 0
+        if rows != obj.hh_dims[n - 1] or (rows and cols != obj.hh_dims[n]):
+            raise QuiverlabError(
+                "products chapter drift: the BV Delta_%d matrix is %dx%d but the "
+                "HH^ dimensions demand %dx%d"
+                % (n, rows, cols, obj.hh_dims[n - 1], obj.hh_dims[n]))
+        events.append(ProductStep(
+            kind="bv_operator", degrees=(n,),
+            heading=r"\Delta_{%d} : HH^{%d} \to HH^{%d}" % (n, n, n - 1),
+            lines=(), matrix=mat, note="induced rank %d." % obj.ranks.get(n, 0)))
+    chk = obj.bracket_check or {}
+    if chk.get("agrees"):
+        events.append(StepNote(
+            "Arbiter.",
+            "No external oracle: the bracket recovered from Delta via the BV relation "
+            "equals the independently computed Gerstenhaber bracket over the served "
+            "window (degrees <= %d, %d pair(s) checked)."
+            % (chk.get("window", 0), chk.get("pairs_checked", 0))))
+    return events
+
 
 def _connes_chapter(A, obj):
     top = obj.top

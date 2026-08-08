@@ -83,10 +83,11 @@ MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
 _MODULE_TRACE_KINDS = frozenset({
     "projective_resolution", "injective_resolution", "ext", "tau", "tau_minus",
 })
-# HH product surface (Plan 35): cup / cap / bracket / connes_b. Each backs a
-# worked-steps chapter (quiverlab.trace.products) when a products request asks for
-# ``artifacts.pdf`` and no HH/module trace already claimed the bundle.
-PRODUCT_KINDS = frozenset({"cup", "cap", "bracket", "connes_b"})
+# HH product surface (Plan 35): cup / cap / bracket / connes_b, plus the BV operator
+# (Plan 54: bv_operator). Each backs a worked-steps chapter (quiverlab.trace.products)
+# when a products request asks for ``artifacts.pdf`` and no HH/module trace already
+# claimed the bundle.
+PRODUCT_KINDS = frozenset({"cup", "cap", "bracket", "connes_b", "bv_operator"})
 
 # Honest labels for ``meta["pdf"]`` (the request flag is still named ``pdf``; the
 # worked-steps report is now HTML + JSON, PDF/TeX output having been removed).
@@ -1380,7 +1381,8 @@ def _product_object(A, kind, top):
     inputs (``A``, ``kind``, ``top``); the report re-derives, it does not cache."""
     method = {"cup": A.cup_products, "cap": A.cap_products,
               "bracket": A.gerstenhaber_brackets,
-              "connes_b": A.connes_differentials}[kind]
+              "connes_b": A.connes_differentials,
+              "bv_operator": A.bv_operator}[kind]
     return method(top)
 
 
@@ -1725,14 +1727,15 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     # (kind/top/engine/basis/tables/window or hh_dims/matrices/ranks + references);
     # the only addition here is the resolved citation pairs, exactly as the other
     # kinds do above. No hh_trace (products are their own tables, not an HH run).
-    if kind in ("cup", "cap", "bracket", "connes_b"):
+    if kind in ("cup", "cap", "bracket", "connes_b", "bv_operator"):
         top = item.hi
         if top is None:
             raise ComputeError("SchemaError",
                                f"{kind} needs a degree range, e.g. '{kind}:0..4'")
         method = {"cup": A.cup_products, "cap": A.cap_products,
                   "bracket": A.gerstenhaber_brackets,
-                  "connes_b": A.connes_differentials}[kind]
+                  "connes_b": A.connes_differentials,
+                  "bv_operator": A.bv_operator}[kind]
         block = method(top).blocks()
         keys = list(block["references"])
         block["citations"] = _citation_pairs(keys)
@@ -2549,6 +2552,7 @@ def _snippet(req: ComputeRequest, A) -> str:
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
              "connes_b": lambda it: f"A.connes_differentials({it.hi})",
+             "bv_operator": lambda it: f"A.bv_operator({it.hi})",
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),

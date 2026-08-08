@@ -42,6 +42,7 @@ _HEADINGS = {
     "cap": "Cap product tables",
     "bracket": "Gerstenhaber bracket tables",
     "connes_b": "Connes differentials",
+    "bv_operator": "BV operator Δ",
     "cartan": "Cartan matrix",
     "coxeter_polynomial": "Coxeter polynomial",
     "coxeter_spectral": "Certified Coxeter spectral analysis",
@@ -1118,6 +1119,8 @@ def _block_html(kind, b, ctx=None):
         return _product_tables_html(kind, b, ctx)
     if kind == "connes_b":
         return _connes_b_html(b)
+    if kind == "bv_operator":
+        return _bv_operator_html(b)
     if kind in ("projective_resolution", "injective_resolution"):
         return _resolution_html(kind, b)
     if kind in ("projective_dimension", "injective_dimension"):
@@ -1687,6 +1690,40 @@ def _connes_b_html(b):
                    % (n, _num(ranks.get(key))))
     if b.get("engine"):
         out.append(_engine_note(b["engine"]))
+    return out
+
+
+def _bv_operator_html(b):
+    """bv_operator (Plan 54): the BV operator legend + hypothesis/Nakayama provenance,
+    then one induced grid ``Delta_n : HH^n -> HH^{n-1}`` per degree with its rank, and
+    the in-window bracket-arbiter statement. Cohomology basis (rows index HH^{n-1},
+    columns HH^n)."""
+    from quiverlab.trace.products import notation_legend
+    out = ["<p class='ql-note'>%s</p>"
+           % _esc(notation_legend("bv_operator", "", b.get("basis")))]
+    if b.get("hypothesis"):
+        out.append("<p class='ql-note'>Hypothesis: %s.</p>" % _esc(b["hypothesis"]))
+    nak = b.get("nakayama") or {}
+    if nak:
+        out.append("<p class='ql-note'>Nakayama automorphism: %s%s.</p>" % (
+            "inner (symmetric)" if nak.get("inner") else "not inner",
+            ", semisimple" if nak.get("semisimple") else ""))
+    matrices = b.get("matrices") or {}
+    ranks = b.get("ranks") or {}
+    for key in sorted(matrices, key=lambda s: int(s)):
+        n = int(key)
+        out.append('<p class="ql-mlabel">%s</p>'
+                   % _math_inline(r"\Delta_{%d} : HH^{%d} \to HH^{%d}"
+                                  % (n, n, n - 1)))
+        out.append(matrix_grid(matrices[key], label="Delta_{%d}" % n))
+        out.append("<p class='ql-note'>induced rank Δ_%d = %s</p>"
+                   % (n, _num(ranks.get(key))))
+    chk = b.get("bracket_check") or {}
+    if chk.get("agrees"):
+        out.append("<p class='ql-note'>Arbiter: the bracket recovered from Δ equals "
+                   "the independently computed Gerstenhaber bracket over the served "
+                   "window (degrees ≤ %s, %s pair(s) checked).</p>"
+                   % (_num(chk.get("window")), _num(chk.get("pairs_checked"))))
     return out
 
 

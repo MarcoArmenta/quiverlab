@@ -280,7 +280,23 @@ never hide behind one:
     (the append is textual, existing bytes untouched); both runners share the library
     builders (``string_homological_block`` / ``toupie_block``), so the Pyodide twin
     agrees (``tests/gui/test_recognizer_runner_twin_p59.py``). ``canonical_key`` is
-    request-derived (schema-1 algebra-only, no ``module`` block)."""
+    request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-07 (``bv_operator_kxx3`` ADDED, Plan 54 R2): a NEW fixture for the
+    ``bv_operator`` HH-PRODUCT compute kind (the Batalin-Vilkovisky operator Delta)
+    over the self-injective ``k[x]/(x^3)`` (loop x, ``x*x*x`` = 0, GF(7)),
+    ``bv_operator:0..2``. k[x]/(x^3) is symmetric, so the block is served on the
+    Tradler route (``hypothesis == "symmetric (Tradler AIF 2008)"``, ``matrices`` +
+    ``ranks`` + ``bracket_check.agrees``). ``bv_operator`` is a member of
+    ``PRODUCT_KINDS`` (spec.py), so its ``.blocks()`` IS the block (kind/top/hh_dims/
+    matrices/ranks/hypothesis/nakayama/basis/window/references + resolved citations).
+    Pure ADDITION: every pre-existing entry was verified byte-identical BEFORE the
+    new one was appended (the goldens dict was re-dumped with the same settings, so
+    prior bytes are untouched). Both runners share ``Algebra.bv_operator`` (the
+    server ``spec._dispatch`` product branch and the Pyodide twin
+    ``docs/gui/runner.py``), so the cross-runner block test agrees
+    (``tests/webapp/test_bv_block_p54.py``). ``canonical_key`` is request-derived
+    (the degree rides in the ``compute`` string; no new request field, so every
+    prior entry's key is unchanged)."""
 import json
 import pathlib
 

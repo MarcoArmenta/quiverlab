@@ -1061,9 +1061,9 @@ def compute_one(spec):
             from quiverlab.invariants.coverings_block import simply_connected_block
             block = simply_connected_block(A)
             block["citations"] = _citation_pairs(block["references"])
-        elif name in ("cup", "cap", "bracket", "connes_b"):
-            # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
-            # library method returns a frozen result whose .blocks() IS the block
+        elif name in ("cup", "cap", "bracket", "connes_b", "bv_operator"):
+            # HH product surface (Plan 35) + the BV operator (Plan 54: bv_operator).
+            # Each library method returns a frozen result whose .blocks() IS the block
             # dict (kind/top/engine + tables|matrices + references); we only add the
             # resolved citation pairs, exactly as the server twin does
             # (quiverlab.hpc.spec._dispatch). The block keeps `references` -- the
@@ -1072,7 +1072,8 @@ def compute_one(spec):
                 raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
             method = {"cup": A.cup_products, "cap": A.cap_products,
                       "bracket": A.gerstenhaber_brackets,
-                      "connes_b": A.connes_differentials}[name]
+                      "connes_b": A.connes_differentials,
+                      "bv_operator": A.bv_operator}[name]
             block = method(top).blocks()
             block["citations"] = _citation_pairs(block["references"])
         elif name == "tau_tilting":
@@ -1329,6 +1330,7 @@ def python_snippet():
              "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
              "bracket": "A.gerstenhaber_brackets(%d)",
              "connes_b": "A.connes_differentials(%d)",
+             "bv_operator": "A.bv_operator(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              # Plan 57: radical_filtration + ar_invariants carry a module budget.

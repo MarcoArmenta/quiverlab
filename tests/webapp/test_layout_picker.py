@@ -46,6 +46,8 @@ ALL_KINDS = {
     "string_homological", "toupie",
     # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
     "fundamental_group", "simply_connected",
+    # Plan 54 (2026-08-07): the Batalin-Vilkovisky operator Delta.
+    "bv_operator",
 }
 
 
@@ -77,9 +79,11 @@ def test_marco_taxonomy_pins():
     # Marco: cup, cap, bracket belong to Hochschild (not the cyclic block).
     for k in ("hh_cohomology", "hh_homology", "cup", "cap", "bracket"):
         assert k in by_id["hochschild"], k
-    # Marco: keep the rest in cyclic; the radical-filtration SS joins it (wave 2).
+    # Marco: keep the rest in cyclic; the radical-filtration SS joins it (wave 2),
+    # and the BV operator Delta joins it beside Connes B (Plan 54).
     assert set(by_id["cyclic"]) == {
-        "cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"}
+        "cyclic_homology", "connes_b", "bv_operator", "ss_hochschild",
+        "radical_filtration_ss"}
     # ar_quiver is algebra-level but sits in the AR theme; derived_compare in structure.
     assert "ar_quiver" in by_id["module_ar"]
     assert "derived_compare" in by_id["structure"]
