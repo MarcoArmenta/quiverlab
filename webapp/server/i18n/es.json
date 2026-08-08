@@ -279,6 +279,7 @@
   "pick.kind.ar_quiver": "Carcaj de Auslander–Reiten",
   "pick.kind.string_homological": "Prueba homológica de cuerdas",
   "pick.kind.toupie": "Estructura toupie",
+  "pick.kind.skew_gentle": "Álgebra skew-gentle (Q, I, Sp)",
   "pick.kind.radical_filtration": "Filtración radical de mod A: radⁿ(X,Y) y el índice de nilpotencia (NO la serie radical de Loewy)",
   "pick.kind.ar_invariants": "Invariantes de la componente AR: grados de Liu, módulos dirigentes, representación-dirigida",
   "pick.kind.derived_compare": "Comparación derivada (con B)",

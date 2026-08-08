@@ -56,6 +56,7 @@ _HEADINGS = {
     "strings": "Strings and bands",
     "string_homological": "Homological string test",
     "toupie": "Toupie structure",
+    "skew_gentle": "Skew-gentle algebra",
     "quasi_hereditary": "Quasi-hereditary structure",
     "fundamental_group": "Fundamental group π₁(Q, I)",
     "simply_connected": "Simple connectivity",
@@ -957,6 +958,45 @@ def _strings_html(b):
     return out
 
 
+def _skew_gentle_html(b):
+    """The skew-gentle block (Plan 68 / R32): the recognizer verdict, the split-quiver
+    shape, the HZZ Lemma 1.5 dim law, the special-string classification counts, support
+    tau-tilting, and the brick-finite <=> rep-finite certificate."""
+    if not b.get("is_skew_gentle"):
+        return ["<p>The algebra is <b>not</b> skew-gentle: %s</p>"
+                % _esc(str(b.get("note", "no construction marker")))]
+    sp = b.get("split") or {}
+    out = ["<p>Split algebra kQ&#770;/I&#770; (Chen &sect;3): <b>%s</b> vertices, %s "
+           "arrows, dim <b>%s</b> (rank |Q&#8320;|+|Sp| = %s).</p>"
+           % (_num(sp.get("num_vertices")), _num(sp.get("num_arrows")),
+              _num(sp.get("dim")), _num(b.get("rank")))]
+    dl = b.get("dim_law") or {}
+    out.append("<p>Dimension law (HZZ Lemma 1.5): dim(split) = %s, dim(associated "
+               "gentle) = %s &mdash; %s.</p>"
+               % (_num(dl.get("split_dim")), _num(dl.get("assoc_gentle_dim")),
+                  "certified equal" if dl.get("ok") else "<b>MISMATCH</b>"))
+    cl = b.get("classification") or {}
+    ni = cl.get("num_indecomposables")
+    out.append("<p>Special (type-p) strings: <b>%s</b>; bands: %s%s.</p>"
+               % (_num(cl.get("num_special")),
+                  "yes" if cl.get("has_bands") else "no",
+                  ("; indecomposables: <b>%s</b>" % _num(ni)) if ni is not None else ""))
+    tt = b.get("tau_tilting") or {}
+    if tt.get("num_pairs") is not None:
+        out.append("<p>Support &tau;-tilting pairs: <b>%s</b> (%s).</p>"
+                   % (_num(tt.get("num_pairs")),
+                      "complete" if tt.get("complete") else "incomplete"))
+    rt = b.get("rep_type") or {}
+    rf = rt.get("rep_finite")
+    verdict = ("representation-finite" if rf is True
+               else "representation-infinite" if rf is False
+               else "representation type withheld")
+    out.append("<p>Representation type (brick-finite &hArr; rep-finite, "
+               "Garcia&ndash;Lavou&eacute; Thm 3.1): <b>%s</b> [%s].</p>"
+               % (verdict, _esc(str(rt.get("scope")))))
+    return out
+
+
 def _block_html(kind, b, ctx=None):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
@@ -1066,6 +1106,8 @@ def _block_html(kind, b, ctx=None):
         return _string_homological_html(b)
     if kind == "toupie":
         return _toupie_html(b)
+    if kind == "skew_gentle":
+        return _skew_gentle_html(b)
     if kind == "quasi_hereditary":
         return _quasi_hereditary_html(b)
     if kind == "fundamental_group":
