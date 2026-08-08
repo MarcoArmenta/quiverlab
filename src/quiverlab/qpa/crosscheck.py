@@ -70,6 +70,27 @@ def crosscheck_symmetric(algebra) -> CrosscheckReport:
     return CrosscheckReport("symmetric", ours, qpa, ours == qpa)
 
 
+def crosscheck_dim(algebra) -> CrosscheckReport:
+    """``algebra.dim`` vs QPA ``Dimension(A)`` for a PLAIN presented ``kQ/I`` (Plan 68
+    skew-gentle split oracle: QPA has no skew-gentle surface, so the split algebra is
+    crosschecked as an ordinary presented algebra)."""
+    session.require_gap()
+    base = scripts.quiver_and_algebra_script(algebra)
+    ours = int(algebra.dim)
+    qpa = int(session.run(base + "\nDimension(A);"))
+    return CrosscheckReport("dim", ours, qpa, ours == qpa)
+
+
+def crosscheck_selfinjective(algebra) -> CrosscheckReport:
+    """``algebra.is_selfinjective()`` vs QPA ``IsSelfinjectiveAlgebra(A)`` for a plain
+    presented ``kQ/I`` (Plan 68 / Chen Cor 1.2c)."""
+    session.require_gap()
+    base = scripts.quiver_and_algebra_script(algebra)
+    ours = bool(algebra.is_selfinjective())
+    qpa = bool(session.run(base + "\nIsSelfinjectiveAlgebra(A);"))
+    return CrosscheckReport("is_selfinjective", ours, qpa, ours == qpa)
+
+
 def crosscheck_trivial_extension(algebra) -> CrosscheckReport:
     """Our certified double-quiver ``TrivialExtension(algebra)`` vs QPA's native
     ``TrivialExtensionOfQuiverAlgebra`` (Plan 31). Compares the 5-tuple
@@ -519,6 +540,10 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_symmetric(algebra, *args, **kwargs)
     if what == "trivial_extension":
         return crosscheck_trivial_extension(algebra, *args, **kwargs)
+    if what == "dim":
+        return crosscheck_dim(algebra, *args, **kwargs)
+    if what == "is_selfinjective":
+        return crosscheck_selfinjective(algebra, *args, **kwargs)
     if what == "tau":
         return crosscheck_tau(algebra, *args, minus=False, **kwargs)
     if what == "tau_minus":
