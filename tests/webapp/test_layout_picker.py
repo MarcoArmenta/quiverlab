@@ -46,6 +46,8 @@ ALL_KINDS = {
     "string_homological", "toupie",
     # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
     "fundamental_group", "simply_connected",
+    # Plan 63 (2026-08-07): wall-and-chamber structure via bricks (D(B) inequality systems).
+    "wall_chamber",
 }
 
 

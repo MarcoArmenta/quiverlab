@@ -74,6 +74,8 @@ _HEADINGS = {
     "tilting_check": "Tilting test",
     "orbit_geometry": "Orbit geometry",
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
+    "wall_chamber": "Wall-and-chamber structure via bricks: D(B) inequality systems + "
+                    "g-cone chambers",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -330,6 +332,69 @@ def _tau_tilting_html(b):
                          _dv(bd) if bd else "?"))
         if wl:
             out.append("<ul class='ql-tt-walls'>%s</ul>" % "".join(wl))
+    return out
+
+
+def _wall_chamber_html(b):
+    """The Plan-63 wall-and-chamber block: the chambers (g-vector cones), the walls
+    D(B) as exact inequality systems (one per brick), the four counts + green count,
+    and the honest complete-iff-brick-finite status. Every wall D(B) = {theta :
+    theta.dim B = 0 and theta.dim N <= 0 for every submodule N <= B} (Brustle-Smith-
+    Treffinger 2019 / King 1994); a simple brick gives the full hyperplane, a non-simple
+    brick a proper face (e.g. D(P1) over kA2 is a ray)."""
+    out = ["<p>The wall-and-chamber structure of A via bricks (Brüstle–Smith–Treffinger). "
+           "Each wall D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 for every submodule N ⊆ B} is "
+           "the King θ-semistable locus of a brick B; the chambers are the g-vector cones of "
+           "the support τ-tilting pairs. The structure is a complete fan iff A is brick-finite "
+           "⟺ τ-tilting-finite (DIJ). n = %s.</p>" % _esc(str(b.get("n")))]
+    if not b.get("complete"):
+        out.append("<p class='ql-note'>%s</p>"
+                   % _esc(str(b.get("truncation")
+                              or ("The exchange graph did not close (status: %s); a bounded "
+                                  "region is shown and no count is claimed."
+                                  % b.get("status")))))
+    counts = b.get("counts")
+    if counts:
+        out.append("<p>Counts: #chambers = #support τ-tilting = <b>%d</b>; "
+                   "#walls = #bricks = <b>%d</b>.</p>"
+                   % (counts.get("chambers"), counts.get("walls")))
+    if b.get("green_count") is not None:
+        out.append("<p>Maximal green sequences (directed maximal chains (A,0) → (0,A) of "
+                   "left mutations, read as monotone chamber paths): <b>%d</b>.</p>"
+                   % b["green_count"])
+    # chambers table (g-vector cones)
+    out.append("<p>Chambers (g-vector cones), %d in the region shown:</p>"
+               % b.get("num_chambers", 0))
+    rows = ["<tr><th>id</th><th>pair (M, P)</th><th>support</th>"
+            "<th>g-matrix (columns = g-vectors)</th></tr>"]
+    for c in (b.get("chambers") or []):
+        G = c.get("g_matrix") or []
+        gm = "; ".join("(" + ", ".join(str(G[r][col]) for r in range(len(G)))
+                       + ")" for col in range(len(G[0]) if G else 0))
+        star = " (initial)" if c.get("is_initial") else ""
+        rows.append("<tr><td>%d</td><td>%s%s</td><td>%s</td><td>%s</td></tr>"
+                    % (c["id"], _esc(str(c.get("label") or "")), star,
+                       _esc(str(c.get("support") or [])), _esc(gm)))
+    out.append("<table class='ql-wc-chambers'>%s</table>" % "".join(rows))
+    # walls table (one D(B) per brick)
+    out.append("<p>Walls D(B), one per brick, %d in the region shown:</p>"
+               % b.get("num_walls", 0))
+    wrows = ["<tr><th>brick</th><th>dim-vector</th><th>wall</th>"
+             "<th>inequality system D(B)</th></tr>"]
+    for w in (b.get("walls") or []):
+        if w.get("partial"):
+            shape = "hyperplane (bounded region)"
+        elif w.get("is_full_hyperplane"):
+            shape = "full line/hyperplane {θ·dim B = 0}"
+        else:
+            shape = "proper ray/face"
+        eqs = "θ·%s = 0" % (list(w.get("equality") or []),)
+        ins = "; ".join("θ·%s ≤ 0" % (list(d),) for d in (w.get("inequalities") or []))
+        system = (eqs + "; " + ins) if ins else eqs
+        wrows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                     % (_esc(str(w.get("brick_name") or "—")),
+                        _dv(w.get("brick_dimvec")), _esc(shape), _esc(system)))
+    out.append("<table class='ql-wc-walls'>%s</table>" % "".join(wrows))
     return out
 
 
@@ -1054,6 +1119,8 @@ def _block_html(kind, b, ctx=None):
         return _ext_algebra_html(b)
     if kind == "tau_tilting":
         return _tau_tilting_html(b)
+    if kind == "wall_chamber":
+        return _wall_chamber_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
     if kind == "derived_fingerprint":

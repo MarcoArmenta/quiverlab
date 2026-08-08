@@ -132,6 +132,9 @@
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
+    // ---- Plan 63: wall-and-chamber structure via bricks (D(B) inequality systems) ----
+    '  <label><input type="checkbox" id="qlgui-wall_chamber"> wall-and-chamber D(B), budget ' +
+    '<input type="number" id="qlgui-wall_chamber-budget" value="512" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -255,6 +258,8 @@
    "fundamental_group", "simply_connected",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
+   // Plan 63: wall-and-chamber structure via bricks (budget picker)
+   "wall_chamber", "wall_chamber-budget",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -891,6 +896,10 @@
     // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
     if (el.tau_tilting.checked)
       compute.push("tau_tilting:" + el["tau_tilting-budget"].value);
+    // Plan 63: the wall-and-chamber kind carries a PAIR BUDGET too -- pushes
+    // "wall_chamber:<budget>", the single-int form both runners parse (like tau_tilting).
+    if (el.wall_chamber.checked)
+      compute.push("wall_chamber:" + el["wall_chamber-budget"].value);
     // Plan 41: AR-quiver knitting carries a BUDGET (max indecomposables), not a
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
@@ -2927,6 +2936,131 @@
     return i < 0 ? parseFloat(s) : parseFloat(s.slice(0, i)) / parseFloat(s.slice(i + 1));
   }
 
+  // ---- Plan 63: the wall-and-chamber block (D(B) inequality systems) + LIVE SVG ----
+  function renderWallChamber(div, b) {
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      return;
+    }
+    div.appendChild(h("p", { text: "Wall-and-chamber structure via bricks (Brüstle–Smith–"
+      + "Treffinger): each wall D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 for every submodule "
+      + "N ⊆ B} is the King θ-semistable locus of a brick B; the chambers are the g-vector "
+      + "cones of the support τ-tilting pairs. n = " + b.n + "." }));
+    if (!b.complete) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: b.truncation || ("The exchange graph did not close (status: " + b.status
+          + "); a bounded region of " + b.num_chambers + " chamber(s) is shown and no count "
+          + "is claimed (DIJ: brick-finite ⟺ τ-tilting-finite).") }));
+    }
+    if (b.counts) {
+      div.appendChild(h("p", { text: "#chambers = #support τ-tilting = " + b.counts.chambers
+        + "; #walls = #bricks = " + b.counts.walls + "." }));
+    }
+    if (b.green_count != null)
+      div.appendChild(h("p", { text: "Maximal green sequences: " + b.green_count + "." }));
+    // chambers table (g-vector cones)
+    div.appendChild(h("p", { text: "Chambers (g-vector cones): " + b.num_chambers }));
+    var tbl = h("table", { "class": "qlgui-table" });
+    var hr = h("tr");
+    ["id", "pair (M, P)", "support", "g-matrix (columns = g-vectors)"].forEach(
+      function (t) { hr.appendChild(h("th", { text: t })); });
+    tbl.appendChild(hr);
+    (b.chambers || []).forEach(function (c) {
+      var tr = h("tr");
+      tr.appendChild(h("td", { text: String(c.id) }));
+      tr.appendChild(h("td", { text: (c.label || "") + (c.is_initial ? " (initial)" : "") }));
+      tr.appendChild(h("td", { text: JSON.stringify(c.support) }));
+      var gm = [], G = c.g_matrix || [], nc = G[0] ? G[0].length : 0;
+      for (var k = 0; k < nc; k++) {
+        var col = [];
+        for (var r = 0; r < G.length; r++) col.push(G[r][k]);
+        gm.push("(" + col.join(", ") + ")");
+      }
+      tr.appendChild(h("td", { text: gm.join("; ") }));
+      tbl.appendChild(tr);
+    });
+    div.appendChild(tbl);
+    // walls table (one D(B) per brick)
+    div.appendChild(h("p", { text: "Walls D(B), one per brick: " + b.num_walls }));
+    var wt = h("table", { "class": "qlgui-table" });
+    var wh = h("tr");
+    ["brick", "dim-vector", "wall", "inequality system D(B)"].forEach(
+      function (t) { wh.appendChild(h("th", { text: t })); });
+    wt.appendChild(wh);
+    (b.walls || []).forEach(function (w) {
+      var tr = h("tr");
+      tr.appendChild(h("td", { text: w.brick_name || "—" }));
+      tr.appendChild(h("td", { text: dvText(w.brick_dimvec) }));
+      var shape = w.partial ? "hyperplane (bounded region)"
+        : (w.is_full_hyperplane ? "full line/hyperplane {θ·dim B = 0}" : "proper ray/face");
+      tr.appendChild(h("td", { text: shape }));
+      var eqs = "θ·" + JSON.stringify(w.equality) + " = 0";
+      var ins = (w.inequalities || []).map(function (d) {
+        return "θ·" + JSON.stringify(d) + " ≤ 0"; }).join("; ");
+      tr.appendChild(h("td", { text: ins ? (eqs + "; " + ins) : eqs }));
+      wt.appendChild(tr);
+    });
+    div.appendChild(wt);
+    // the LIVE wall-and-chamber SVG (rank <= 3) -- chambers + labeled brick-walls
+    if ((b.render === "fan2d" || b.render === "fan3d") && b.chambers && b.chambers.length)
+      renderWallChamberSVG(div, b);
+    else if (b.render === "table")
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Rank ≥ 4 (or single vertex): the fan is the inequality tables above "
+          + "(no 2D drawing)." }));
+  }
+
+  function renderWallChamberSVG(div, b) {
+    // Exact fractions -> pixels happens HERE (the JS renderer is float-exempt). The
+    // chamber g-cones are drawn faint; each brick-wall D(B) is overlaid as a labelled
+    // dark ray/line -- the visual difference from the Plan-45 fan.
+    var fs = h("fieldset", { "class": "qlgui-fieldset" });
+    fs.appendChild(h("legend", { text: "Wall-and-chamber structure"
+      + (b.render === "fan3d" ? " (L1/octahedron projection)" : "")
+      + (b.complete ? "" : " — bounded region (incomplete)") }));
+    var W = 360, C = W / 2, R = 150;
+    var svg = sv("svg", { viewBox: "0 0 " + W + " " + W, width: String(W), height: String(W) });
+    svg.appendChild(sv("line", { x1: "0", y1: String(C), x2: String(W), y2: String(C),
+      stroke: "#ccc" }));
+    svg.appendChild(sv("line", { x1: String(C), y1: "0", x2: String(C), y2: String(W),
+      stroke: "#ccc" }));
+    var colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+                  "#8c564b", "#e377c2", "#17becf"];
+    var toXY = function (fx, fy) { return [C + evalFrac(fx) * R, C - evalFrac(fy) * R]; };
+    (b.chambers || []).forEach(function (ch, i) {
+      var rays = (b.n === 3 && ch.net2d) ? ch.net2d : ch.rays;
+      var col = colors[i % colors.length];
+      (rays || []).forEach(function (ray) {
+        if (!ray) return;
+        var p = toXY(ray[0], ray[1]);
+        svg.appendChild(sv("line", { x1: String(C), y1: String(C),
+          x2: String(p[0]), y2: String(p[1]), stroke: col, "stroke-width": "1",
+          "stroke-opacity": "0.5" }));
+      });
+      if (ch.is_initial && rays && rays[0]) {
+        var q = toXY(rays[0][0], rays[0][1]);
+        svg.appendChild(sv("circle", { cx: String(q[0]), cy: String(q[1]), r: "3",
+          fill: col }));
+      }
+    });
+    (b.walls || []).forEach(function (w) {
+      var wrays = (b.n === 3 && w.net2d) ? w.net2d : w.rays;
+      if (!wrays) return;
+      wrays.forEach(function (ray) {
+        if (!ray) return;
+        var p = toXY(ray[0], ray[1]);
+        svg.appendChild(sv("line", { x1: String(C), y1: String(C),
+          x2: String(p[0]), y2: String(p[1]), stroke: "#222", "stroke-width": "2.5" }));
+        var txt = sv("text", { x: String(p[0]), y: String(p[1]), "font-size": "10",
+          fill: "#222" });
+        txt.textContent = w.brick_name || dvText(w.brick_dimvec);
+        svg.appendChild(txt);
+      });
+    });
+    fs.appendChild(svg);
+    div.appendChild(fs);
+  }
+
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
     var div = h("div", { "class": "qlgui-block" });
@@ -3369,6 +3503,8 @@
       }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
+    } else if (name === "wall_chamber") {
+      renderWallChamber(div, b);
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -3823,7 +3959,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "left_right_parts"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -4342,6 +4478,7 @@
     fundamental_group: { cb: "fundamental_group" },
     simply_connected: { cb: "simply_connected" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
+    wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },
     rad_top_soc: { cb: "rad_top_soc", mod: true },
     tau: { cb: "tau", mod: true },
