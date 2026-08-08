@@ -382,7 +382,8 @@ ported and wired in:
   The combinatorial **Tits form** `q_A`, exact **weak positivity / weak nonnegativity**
   (Ovsienko's box-6 branch-and-bound + the classified hypercritical list, with the exact
   witness on every "no"), and the **rep-finite / tame / wild** verdict for strongly
-  simply connected algebras over an algebraically closed field — gated on the P56
+  simply connected algebras over an algebraically closed base field (`CC`, or
+  characteristic 0 by base change to the algebraic closure) — gated on the P56
   certificate, honest `None` off scope. Clickable via `tame_wild`.
 - **τ-tilting engine (C4, Adachi–Iyama–Reiten).** Support τ-tilting pairs via
   mutation, the exchange graph + torsion-class lattice with brick labels, 2-term
