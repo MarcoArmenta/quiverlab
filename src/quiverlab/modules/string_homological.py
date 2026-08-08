@@ -154,10 +154,11 @@ def _bounded_split_count(E, budget=512):
     return len(leaves), [m.dimension_vector() for m in leaves]
 
 
-def _summands_at_least(E, k):
+def _summand_count(E):
     """(count, dimvecs) for the REFUTE side: exact via ``decompose``; on a char-blocked
-    refusal, a bounded Fitting-split LOWER BOUND. A ``count >= k`` is a valid witness in
-    any characteristic (a found split base-changes up)."""
+    refusal, a bounded Fitting-split LOWER BOUND. The caller compares ``count >= 3`` --
+    a >= 3 split is a valid witness in any characteristic (a found split base-changes
+    up), so a char-blocked lower bound that already reaches 3 still refutes."""
     try:
         return _decompose_count(E)
     except QuiverlabError:
@@ -280,7 +281,7 @@ def homological_string_test(A, budget_classes=4096, budget_pairs=4096,
             ses = almost_split_sequence(Y)       # raises on a projective end -> skip
         except QuiverlabError:
             continue
-        cnt, dvs = _summands_at_least(ses.M, 3)
+        cnt, dvs = _summand_count(ses.M)
         if cnt >= 3:
             witness = _mk_witness(Y, ses.L, "ar_socle", None, ses.M, cnt, dvs)
             break
@@ -298,7 +299,7 @@ def homological_string_test(A, budget_classes=4096, budget_pairs=4096,
                     coeffs = [dom.one() if i == j else dom.zero() for i in range(d)]
                     n_classes += 1
                     E = _middle_from_pack(X, Y, coeffs, pack, dom)
-                    cnt, dvs = _summands_at_least(E, 3)
+                    cnt, dvs = _summand_count(E)
                     if cnt >= 3:
                         witness = _mk_witness(X, Y, "basis", coeffs, E, cnt, dvs)
                         break

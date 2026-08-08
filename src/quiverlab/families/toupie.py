@@ -244,10 +244,12 @@ def toupie_direct_arrow_count(A) -> int:
 
 
 def toupie_sl_a_lower_bound(A) -> int:
-    """``dim sl_a = a^2 - 1`` with ``a`` = the number of direct source->sink arrows
-    (:func:`toupie_direct_arrow_count`). ALS Thm 6.5 gives ``HH^1(A) ⊇ sl_a`` over a
-    field of characteristic 0 (``k = C``), so ``dim HH^1 >= a^2 - 1``. HARD-GATED to
-    char 0 (the theorem's hypothesis); refuses loudly off it."""
+    """``dim sl_a = max(a^2 - 1, 0)`` with ``a`` = the number of direct source->sink
+    arrows (:func:`toupie_direct_arrow_count`). ALS Thm 6.5 gives ``HH^1(A) ⊇ sl_a`` over
+    a field of characteristic 0 (``k = C``), so ``dim HH^1 >= a^2 - 1``. The clamp is for
+    the degenerate ``a = 0`` (no direct arrows): ``sl_0`` is empty, dim 0 -- never the
+    nonsensical ``-1``. HARD-GATED to char 0 (the theorem's hypothesis); refuses loudly
+    off it."""
     if A.domain.characteristic != 0:
         raise QuiverlabError(
             "toupie_sl_a_lower_bound: the sl_a inclusion (ALS Thm 6.5) requires "
@@ -255,7 +257,7 @@ def toupie_sl_a_lower_bound(A) -> int:
             hint="the theorem's hypothesis is k = C; over GF(p) the inclusion is not "
                  "claimed -- re-run over QQ")
     a = toupie_direct_arrow_count(A)
-    return a * a - 1
+    return max(a * a - 1, 0)          # a=0 (no direct arrows): sl_0 is empty -> 0, not -1
 
 
 def toupie_block(A, hh_top=4):

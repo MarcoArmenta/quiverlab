@@ -21,6 +21,7 @@ from quiverlab.families.toupie import (ToupieAlgebra, toupie_direct_arrow_count,
 
 lit = pytest.mark.oracle_literature
 xeng = pytest.mark.oracle_crossengine
+selfcert = pytest.mark.oracle_selfcert
 
 
 @lit
@@ -92,3 +93,12 @@ def test_sl_a_refused_off_char_zero():
     A = ToupieAlgebra([1, 1], field=GF(7))
     with pytest.raises(QuiverlabError):
         toupie_sl_a_lower_bound(A)                         # sl_a inclusion is char-0 only
+
+
+@selfcert
+def test_sl_a_lower_bound_clamped_at_zero_direct_arrows():
+    # a toupie with NO direct source->sink arrows (two length-2 branches): a_direct = 0,
+    # so dim sl_0 = 0 -- the public function clamps max(a^2-1, 0), never the bogus -1.
+    A = ToupieAlgebra([2, 2], field=QQ)
+    assert toupie_direct_arrow_count(A) == 0
+    assert toupie_sl_a_lower_bound(A) == 0

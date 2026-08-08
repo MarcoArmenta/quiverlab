@@ -97,6 +97,23 @@ def test_witness_middle_self_certifies():
 
 
 @selfcert
+def test_bounded_split_count_char_fallback_returns_three_on_kD4_middle():
+    # The char-blocked refute fallback (_bounded_split_count) is a bounded Fitting-split
+    # LOWER BOUND that never raises. On the kD4 AR middle P1 (+) P2 (+) P3 it returns 3 --
+    # the same >= 3 witness the char-robust terminal split gives (so a char <= dim input
+    # whose decompose refuses still refutes when the split reaches 3).
+    from quiverlab.modules.ar import almost_split_sequence, knit_ar_quiver
+    from quiverlab.modules.string_homological import _bounded_split_count
+    A = _kD4()
+    ar = knit_ar_quiver(A, budget_modules=64, budget_dim=32)
+    M = next(v["module"] for v in ar.vertices
+             if v["module"].dimension_vector() == {0: 2, 1: 1, 2: 1, 3: 1})
+    E = almost_split_sequence(M).M                  # dim vector {0:3,1:1,2:1,3:1}
+    cnt, dvs = _bounded_split_count(E)
+    assert cnt == 3 and len(dvs) == 3              # the lower-bound fallback finds all 3
+
+
+@selfcert
 def test_rep_infinite_and_selfinjective_and_presentationless_refused():
     from quiverlab.core.algebra import Algebra
     from quiverlab.families import NakayamaAlgebra

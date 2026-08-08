@@ -72,6 +72,13 @@ def _max_degree(req: ComputeRequest) -> int:
         # ar_quiver/tau_tilting budget can be mislabelled "instant" even though the knit
         # may run long before it hits the budget cap. The wall-clock/memory caps still
         # bound it once running; a budget-aware sizing heuristic is the open backlog fix.
+        # SAME limitation for the Plan-59 `string_homological` kind: it KNITS the AR
+        # quiver identically (measured >7 min churn at the default knit budget on the
+        # small rep-INFINITE 2-Kronecker), yet it is a scalar kind with no budget in
+        # `hi`, so it is sized purely on the algebra dimension (below) -- a small
+        # rep-infinite algebra can likewise be mislabelled "instant" until the
+        # wall-clock cap bounds the knit. (`toupie` is a small HH + graph scan, not
+        # knit-heavy, so it is not in this caveat.)
         if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts"):
             continue
         if item.hi is not None:
