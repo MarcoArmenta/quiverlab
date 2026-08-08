@@ -607,6 +607,44 @@ REGISTRY: dict = {r.key: r for r in [
        "On the quiver with relations of a quasitilted algebra and applications",
        "Bordino-Fernandez-Trepode: the quiver-with-relations structure of quasitilted algebras "
        "-- a secondary reference on Plan 61's quasi-tilted rung.", "recognizer"),
+    _r("bongartz_criterion", "Bongartz1984", "foundation",
+       "A criterion for finite representation type",
+       "Bongartz: a simply connected algebra is representation-finite iff its Tits form is "
+       "weakly positive (iff it has no critical convex subcategory) -- the Plan-62 rep-finite "
+       "axis of the tame/wild trichotomy.",
+       "tits", "tame_wild"),
+    _r("bdps_tame_tits", "BrustleDlPSkowronski2011", "foundation",
+       "Tame algebras and Tits quadratic forms",
+       "Bruestle-de la Pena-Skowronski: a strongly simply connected algebra over an "
+       "algebraically closed field is tame iff its Tits form is weakly nonnegative -- the "
+       "Plan-62 tame axis (the theorem gated on the P56 strong-simple-connectivity certificate).",
+       "tits", "tame_wild"),
+    _r("kasjan_skowronski", "KasjanSkowronski2019", "foundation",
+       "On the tame-wild dichotomy for strongly simply connected algebras",
+       "Kasjan-Skowronski (arXiv:1905.06028): the tame/wild dichotomy statements Plan 62 "
+       "consumes for strongly simply connected algebras (companion source to BdlPS).",
+       "tits", "tame_wild"),
+    _r("ovsienko_forms", "Ovsienko1978", "foundation",
+       "Integral weakly positive forms",
+       "Ovsienko: every positive root of a weakly positive unit form has coordinates <= 6 -- "
+       "the cited complete decision behind Plan-62 weak positivity (the box-6 branch-and-bound).",
+       "tits"),
+    _r("vonhohne_wnn", "vonHohne1996", "foundation",
+       "On weakly non-negative unit forms and tame algebras",
+       "von Hohne: the classified hypercritical unit forms driving the Plan-62 weak-nonnegativity "
+       "decision (the primary route; NOT bounded to <= 9 variables -- T_{2,3,7} is a 10-variable "
+       "hypercritical form).",
+       "tits", "tame_wild"),
+    _r("delapena_banach26", "DelaPenaBanach26", "foundation",
+       "Algebras with hypercritical Tits form",
+       "de la Pena (Banach Center Publ. 26): the printed hypercritical Tits-form list -- the "
+       "Plan-62 weak-nonnegativity cross-oracle for the classified data.",
+       "tits", "tame_wild"),
+    _r("bjp_quadratic_forms", "BarotJimenezDlP2019", "foundation",
+       "Quadratic Forms: Combinatorics and Numerical Results",
+       "Barot-Jimenez-Gonzalez-de la Pena: the combinatorics of critical / hypercritical unit "
+       "forms and the search-box exposition underpinning Plan 62.",
+       "tits", "tame_wild"),
 ]}
 
 

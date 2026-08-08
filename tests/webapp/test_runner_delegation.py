@@ -315,7 +315,27 @@ never hide behind one:
     byte-identical to the old one after ADDING the single ``gldim_exact`` key (no other
     field changed), and every OTHER golden entry was verified byte-identical BEFORE the
     write. Both runners share the builder, so the twin stays byte-identical; the
-    ``canonical_key`` is unchanged (request-derived, no request-shape change)."""
+    ``canonical_key`` is unchanged (request-derived, no request-shape change).
+  * 2026-08-08 (``tame_wild_a5_cc`` ADDED, Plan 62 / R19): a NEW algebra-only scalar
+    kind. A5 (linear 1->2->3->4->5) over CC -- the combinatorial Tits form + the
+    rep-finite/tame/wild verdict gated on the P56 certificate: ``rep_type ==
+    "rep-finite"``, ``weakly_positive == true``, ``is_unit_form == true``. Pure
+    ADDITION: every pre-existing entry was verified byte-identical BEFORE the append
+    (60 delegation asserts green first); both runners share the library builder
+    (``invariants.tits_block.tame_wild_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_tame_wild_exposure_p62.py::test_twin_parity``).
+    ``canonical_key`` is request-derived (schema-1 algebra-only, no ``module``
+    block).
+  * 2026-08-08 (``tame_wild_a5_cc`` RE-FREEZE, Plan 62 fix round -- honesty fixes):
+    the tame/wild block gained a ``certified`` field (``"rep_infinite"`` when
+    Bongartz certifies representation-infinite but rep_type stays None; ``null``
+    here since A5 is rep-finite), and the ``reason`` / ``scope_note`` no longer say
+    "over an algebraically closed field" for a char-0 field (the verdict is read by
+    BASE CHANGE to the algebraic closure -- field-independent in char 0). Gated
+    re-freeze, scoped BY KEY: the regenerated blob differs from the old one ONLY in
+    ``results.tame_wild.{certified (added null),reason,scope_note}`` (verified by a
+    structured diff); ``body`` and ``canonical_key`` are byte-identical, and every
+    OTHER golden entry was asserted unchanged before the write."""
 import json
 import pathlib
 

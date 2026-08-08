@@ -1808,6 +1808,17 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = simply_connected_block(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Tits-form tame/wild certificate (Plan 62 / R19): an algebra-scalar kind (schema
+    # v1, NO module block -- the coverings/recognizers precedent). Shared builder
+    # (invariants.tits_block.tame_wild_block): the combinatorial Tits form + weak
+    # positivity/nonnegativity + the rep-finite/tame/wild verdict gated on the P56
+    # certificate over char 0. A presentation-less / non-triangular input -> {"error":
+    # ...}, never a 500. Byte-identical twin.
+    if kind == "tame_wild":
+        from quiverlab.invariants.tits_block import tame_wild_block
+        block = tame_wild_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
 
 
@@ -2590,6 +2601,7 @@ def _snippet(req: ComputeRequest, A) -> str:
                              "homological_string_test\nhomological_string_test(A)"),
              "toupie": lambda it: ("from quiverlab.families.toupie import is_toupie, "
                                    "toupie_block\nis_toupie(A), toupie_block(A)"),
+             "tame_wild": lambda it: "A.tame_wild_certificate()",
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",

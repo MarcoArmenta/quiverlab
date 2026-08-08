@@ -61,6 +61,7 @@ _HEADINGS = {
     "quasi_hereditary": "Quasi-hereditary structure",
     "fundamental_group": "Fundamental group π₁(Q, I)",
     "simply_connected": "Simple connectivity",
+    "tame_wild": "Representation type (tame / wild)",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -741,6 +742,52 @@ def _simply_connected_html(b):
     return out
 
 
+def _tame_wild_html(b):
+    """The Tits-form tame/wild certificate (Plan 62 / R19): the theorem-gated
+    rep-finite / tame / wild verdict (verdict withheld -> honest reason, never a
+    guessed type), the two field-free form booleans with the exact witness, the P56
+    certificate trail, the integer Tits Gram matrix, and the honest scope note. This
+    is P62's certified representation type -- kept distinct from P38's form-type
+    definiteness heuristic (never share a label)."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Tame/wild certificate not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = []
+    rep = b.get("rep_type")
+    name = {"rep-finite": "representation-finite", "tame": "tame",
+            "wild": "wild"}.get(rep)
+    if name is None:
+        if b.get("certified") == "rep_infinite":
+            out.append("<p>Representation type (certified): "
+                       "<b>representation-infinite</b> (tame vs wild withheld). %s</p>"
+                       % _esc(str(b.get("reason", ""))))
+        else:
+            out.append("<p>Representation type <b>undecided</b> — %s</p>"
+                       % _esc(str(b.get("reason", "out of scope"))))
+    else:
+        out.append("<p>Representation type (certified): <b>%s</b>. %s</p>"
+                   % (_esc(name), _esc(str(b.get("reason", "")))))
+    tri = lambda v: "yes" if v is True else "no" if v is False else "undecided"
+    out.append("<p>Tits form: weakly positive — <b>%s</b>; weakly nonnegative — "
+               "<b>%s</b>.</p>" % (tri(b.get("weakly_positive")),
+                                   tri(b.get("weakly_nonnegative"))))
+    if b.get("witness") is not None:
+        out.append("<p>Witness d = %s with q_A(d) = %s.</p>"
+                   % (_esc(str(b["witness"])), _num(b.get("witness_value"))))
+    out.append("<p><em>Certificate (Plan 56): simply connected — %s; strongly "
+               "simply connected — %s; base field admits the representation-type "
+               "verdict — %s.</em></p>"
+               % (tri(b.get("simply_connected")),
+                  tri(b.get("strongly_simply_connected")),
+                  "yes" if b.get("field_alg_closed") else "no"))
+    gram = b.get("gram")
+    if gram:
+        out.append(matrix_grid(gram, label="q_A"))
+    if b.get("scope_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["scope_note"])))
+    return out
+
+
 def _radical_filtration_html(b):
     """The radical filtration of mod A (Plan 57 / R37): the completeness verdict, the
     nilpotency index + rad^inf certificate, and the layer profile (sum_ij dim rad^n).
@@ -1194,6 +1241,8 @@ def _block_html(kind, b, ctx=None):
         return _fundamental_group_html(b)
     if kind == "simply_connected":
         return _simply_connected_html(b)
+    if kind == "tame_wild":
+        return _tame_wild_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":

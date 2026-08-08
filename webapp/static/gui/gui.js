@@ -133,6 +133,8 @@
     // ---- Plan 56: pi1(Q,I) + simple connectivity ----
     '  <label><input type="checkbox" id="qlgui-fundamental_group"> fundamental group &pi;&#8321;(Q,I)</label>' +
     '  <label><input type="checkbox" id="qlgui-simply_connected"> simply connected (+ strongly)</label>' +
+    // ---- Plan 62: Tits-form tame/wild certificate ----
+    '  <label><input type="checkbox" id="qlgui-tame_wild"> tame / wild (Tits form)</label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
@@ -261,6 +263,8 @@
    "quasi_hereditary",
    // Plan 56: pi1(Q,I) + simple connectivity (scalar kinds)
    "fundamental_group", "simply_connected",
+   // Plan 62: Tits-form tame/wild certificate (scalar kind)
+   "tame_wild",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
    "trace", "compute",
@@ -892,7 +896,7 @@
     ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "string_homological", "toupie", "quasi_hereditary",
-     "fundamental_group", "simply_connected"].forEach(function (k) {
+     "fundamental_group", "simply_connected", "tame_wild"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
@@ -3382,6 +3386,50 @@
           stline += " (witness: " + JSON.stringify(st.witness) + ")";
         div.appendChild(h("p", { text: stline + "." }));
       }
+    } else if (name === "tame_wild") {
+      // Plan 62 / R19: the combinatorial Tits form + the theorem-gated rep-finite /
+      // tame / wild verdict (never confused with P38's form-type definiteness).
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        var certRepInf = (b.rep_type === null || b.rep_type === undefined)
+          && b.certified === "rep_infinite";
+        var twName = b.rep_type === "rep-finite" ? "representation-finite"
+          : b.rep_type === "tame" ? "tame"
+          : b.rep_type === "wild" ? "wild"
+          : certRepInf ? "representation-infinite (tame vs wild withheld)"
+          : "undecided";
+        var twline = "Representation type (certified): " + twName;
+        div.appendChild(h("p", { text: twline + "." }));
+        if ((b.rep_type === null || b.rep_type === undefined) && !certRepInf)
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: "Verdict withheld — " + (b.reason || "out of scope") }));
+        else if (b.reason)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.reason }));
+        // the two field-free form booleans + the exact witness
+        var wpph = b.weakly_positive === true ? "yes"
+          : b.weakly_positive === false ? "no" : "undecided";
+        var wnph = b.weakly_nonnegative === true ? "yes"
+          : b.weakly_nonnegative === false ? "no" : "undecided";
+        div.appendChild(h("p", { text: "Tits form: weakly positive — " + wpph
+          + "; weakly nonnegative — " + wnph + "." }));
+        if (b.witness)
+          div.appendChild(h("p", { text: "Witness d = " + JSON.stringify(b.witness)
+            + " with q_A(d) = " + b.witness_value + "." }));
+        // the P56 certificate trail (the gate for the verdict)
+        var sc = b.simply_connected, ssc = b.strongly_simply_connected;
+        var tri = function (v) { return v === true ? "yes" : v === false ? "no" : "undecided"; };
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "Certificate (Plan 56): simply connected — " + tri(sc)
+            + "; strongly simply connected — " + tri(ssc)
+            + "; base field admits the representation-type verdict — "
+            + (b.field_alg_closed ? "yes" : "no") + "." }));
+        // the integer Tits Gram matrix as an indexed grid
+        if (b.gram && b.gram.length)
+          div.appendChild(matrixGrid(b.gram));
+        if (b.scope_note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope_note }));
+      }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
     } else if (name === "radical_filtration_ss") {
@@ -3868,7 +3916,7 @@
    el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
-   el.fundamental_group, el.simply_connected]
+   el.fundamental_group, el.simply_connected, el.tame_wild]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -3949,7 +3997,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -4471,6 +4519,7 @@
     quasi_hereditary: { cb: "quasi_hereditary" },
     fundamental_group: { cb: "fundamental_group" },
     simply_connected: { cb: "simply_connected" },
+    tame_wild: { cb: "tame_wild" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },
     rad_top_soc: { cb: "rad_top_soc", mod: true },
