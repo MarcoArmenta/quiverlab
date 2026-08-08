@@ -189,7 +189,7 @@ def _wall_dict(wall, wid, facets, verts, eg, n):
          "facets": [list(f) for f in facets]}
     if n <= 2:
         d["rays"] = None if wall.rays is None else [list(r) for r in wall.rays]
-    else:   # n == 3: rays = distinct shared g-vectors of the grouped facet edges
+    else:   # n >= 3: rays = distinct shared g-vectors of the grouped facet edges
         seen = set()
         rays = []
         for (i, j) in facets:
@@ -199,10 +199,12 @@ def _wall_dict(wall, wid, facets, verts, eg, n):
                     seen.add(key)
                     rays.append(g)
         d["rays"] = [[str(Fraction(x)) for x in g] for g in rays]
-        proj = [_l1_project(g) for g in rays]
-        d["rays_l1"] = [p[0] for p in proj]
-        d["faces"] = [p[1] for p in proj]
-        d["net2d"] = [p[2] for p in proj]
+        if n == 3:   # the octahedron L1-net (fan3d drawing) exists only in R^3; n >= 4 renders
+                     # as a table, so it carries the exact rays but no 2D net (matches chambers)
+            proj = [_l1_project(g) for g in rays]
+            d["rays_l1"] = [p[0] for p in proj]
+            d["faces"] = [p[1] for p in proj]
+            d["net2d"] = [p[2] for p in proj]
     return d
 
 
@@ -269,6 +271,77 @@ _TRUNC = ("A appears to be tau-tilting-infinite / brick-infinite (the exchange-g
           "(A,0) -- each chamber and wall is exact, but the structure is NOT complete and no "
           "count is claimed (DIJ: brick-finite <=> tau-tilting-finite).")
 
+_NREG_NOTE = (
+    "Completeness certified by n-regularity: the exchange-graph engine reported a mutation "
+    "error (a support tau-tilting mutation raised), but every discovered chamber has exactly "
+    "n = #simples neighbours, so the exchange graph is CLOSED under mutation -- each edge is "
+    "rediscovered from its other endpoint, so a spurious single-mutation failure is harmless. "
+    "The wall-and-chamber structure below IS complete and every chamber, wall and count is "
+    "exact; only the maximal-green-sequence count is omitted (its enumerator conservatively "
+    "refuses on an error graph, and a false 0 would be dishonest).")
+
+
+def _closed_by_n_regularity(eg, n):
+    """The completeness certificate for a ``status='error'`` exchange graph (Plan 63 fix,
+    adjudicated 2026-08-07): every discovered support tau-tilting pair has exactly ``n``
+    neighbours (n = #simples). Each pair has exactly n mutations and every edge is rediscovered
+    from its OTHER endpoint, so an n-regular graph that was NOT budget-capped is CLOSED under
+    mutation == the whole exchange graph; a spurious ``mutate`` failure on one edge is harmless.
+    The certificate is recomputed here from ``eg.adj`` rather than read from ``eg.n_regular``:
+    that attribute is gated on ``eg.is_complete`` in ``tautilting/mutation.py`` and is therefore
+    ``False`` by construction on an error graph. ``mutation.py`` is NOT touched here -- Plan 65
+    Task 0 fixes the ``mutate`` ROOT that makes this certificate necessary; once it lands, a
+    finite algebra reports ``status='complete'`` and this path is simply never taken. The caller
+    guards this on ``status=='error'``, which already implies the BFS was not budget-capped
+    (a budget cap returns immediately with ``status='budget'``)."""
+    return all(len(eg.adj[i]) == n for i in range(len(eg.vertices)))
+
+
+def _seed_universe_from_eg(A, eg):
+    """Pre-seed the per-algebra indecomposable-summand universe cache in
+    :mod:`quiverlab.tautilting.torsion` from an already-computed, n-regularity-CERTIFIED-complete
+    exchange graph ``eg``. Without this, the shared complete machinery below
+    (:func:`torsion.bricks`, :func:`_build_walls_complete`) would re-run the BFS and hit
+    :func:`torsion._torsion_universe`'s loud ``status='error'`` refusal. The universe built here
+    is byte-identical to what ``_torsion_universe`` caches on a genuinely-complete graph (the
+    same iso-class dedup over the same summand set), so the recovered payload equals the payload
+    the un-erroring engine would have produced. mutation.py is left untouched (Plan 65).
+    Returns the universe (also seeded into the cache for the downstream torsion calls)."""
+    import quiverlab.tautilting.torsion as _torsion
+    cached = _torsion._UNIVERSE_CACHE.get(A)
+    if cached is not None:
+        return cached
+    from quiverlab.modules.hom import is_isomorphic
+    uni = []
+    for rec in eg.vertices:
+        for M in rec["pair"].summands:
+            if not any(U.dim == M.dim and U.dimension_vector() == M.dimension_vector()
+                       and is_isomorphic(U, M) for U in uni):
+                uni.append(M)
+    _torsion._UNIVERSE_CACHE[A] = uni
+    return uni
+
+
+def _bricks_from_eg(A, eg, universe):
+    """The iso-class-deduped bricks labelling ``eg``'s exchange edges -- the RECOVERY twin of
+    :func:`torsion.bricks`, but reading the ALREADY-computed (n-regularity-certified) ``eg``
+    instead of re-running the BFS (which would refuse on the ``status='error'`` graph). Mirrors
+    ``torsion.bricks`` verbatim (same arrow order, same ``_edge_brick`` labelling, same
+    first-seen is_isomorphic dedup), so the recovered brick list equals the one the un-erroring
+    engine would produce. Recovery-only; dead once Plan 65 fixes the mutate root."""
+    from quiverlab.tautilting.torsion import _edge_brick
+    from quiverlab.modules.hom import is_isomorphic
+    out = []
+    for (i, j) in eg.arrows:
+        dv = eg.arrows[(i, j)]["brick"]
+        B = _edge_brick(A, eg.vertices[i]["pair"], eg.vertices[j]["pair"], dv, universe)
+        if B is None:
+            continue
+        if not any(X.dim == B.dim and X.dimension_vector() == B.dimension_vector()
+                   and is_isomorphic(X, B) for X in out):
+            out.append(B)
+    return out
+
 
 def wall_chamber_structure(A, *, budget=512):
     """The full wall-and-chamber payload of ``A`` via bricks (Plan 63 / R25). Chambers =
@@ -276,9 +349,15 @@ def wall_chamber_structure(A, *, budget=512):
     per brick ISO-CLASS, each carrying its exact ``D(B)`` inequality system + (rank <= 3)
     drawing rays; the chamber<->wall adjacency (exchange edges grouped by brick); the four
     counts; and ``render in {fan2d, fan3d, table}``. Certified COMPLETE iff ``A`` is
-    brick-finite <=> tau-tilting-finite (DIJ, decided by the BFS closing); otherwise a BOUNDED
-    region with ``complete=False``, ``status="budget"``, a ``truncation`` note, and NO counts.
-    The brick / is_isomorphic char caveat propagates loudly (char 0 / char > dim; QQ default).
+    brick-finite <=> tau-tilting-finite (DIJ, decided by the BFS closing); a genuine budget cap
+    (``status="budget"``) yields a BOUNDED region with ``complete=False``, a ``truncation`` note,
+    ``num_walls=None`` (the discovered wall-normal groups are counted under
+    ``partial_wall_groups``) and NO counts. A spurious exchange-engine ``mutate`` error
+    (``status="error"``; Plan 65 Task 0 fixes its ROOT) is NEVER read as tau-tilting-infinite:
+    if the discovered graph is n-regular the structure is RECOVERED as complete (a ``note``
+    records the n-regularity provenance), otherwise the computation is refused LOUDLY as
+    unreliable -- never a bounded-sub-fan presentation. The brick / is_isomorphic char caveat
+    propagates loudly (char 0 / char > dim; QQ default).
     """
     from quiverlab.tautilting.mutation import exchange_graph
     verts = list(A.quiver.vertices)
@@ -296,24 +375,53 @@ def wall_chamber_structure(A, *, budget=512):
     chambers = _build_chambers(eg, verts)
     out["chambers"] = chambers
     out["num_chambers"] = len(chambers)
+    note = None
     if not eg.is_complete:
-        walls = _build_walls_bounded(A, eg, verts, n)
-        out["walls"] = walls
-        out["num_walls"] = len(walls)
-        out["counts"] = None
-        out["green_count"] = None
-        out["truncation"] = _TRUNC.format(N=budget)
-        return out
+        if eg.status == "budget":
+            # A GENUINE budget cap (ruling 1c): the honest bounded region, no count claimed.
+            walls = _build_walls_bounded(A, eg, verts, n)
+            out["walls"] = walls
+            out["num_walls"] = None                    # ruling 3: NOT a definitive wall count
+            out["partial_wall_groups"] = len(walls)    # discovered exchange-edge wall groups
+            out["counts"] = None
+            out["green_count"] = None
+            out["truncation"] = _TRUNC.format(N=budget)
+            return out
+        # status == "error": a spurious P45 mutate failure (Plan 65 Task 0 fixes the ROOT in
+        # tautilting/mutation.py -- NOT touched here). NEVER assert tau-tilting-infiniteness on
+        # an error graph (ruling 1a/1b).
+        if not _closed_by_n_regularity(eg, n):
+            raise QuiverlabError(
+                "the exchange-graph engine failed to certify a mutation; the wall-and-chamber "
+                "structure is unreliable (a support tau-tilting mutation raised and the "
+                "discovered exchange graph is not n-regular, so completeness cannot be "
+                "certified)",
+                hint="Plan 65 fixes the mutation root; report the algebra")
+        # RECOVERY (ruling 1a): the graph IS closed by n-regularity despite the mutate error, so
+        # the structure is genuinely COMPLETE. Seed torsion's universe cache from this certified
+        # graph (so _build_walls_complete's internal torsion._torsion_universe does not re-run
+        # the BFS and hit its status='error' refusal), build the bricks from THIS graph (no
+        # redundant ~20s BFS), then fall through to the FULL payload.
+        universe = _seed_universe_from_eg(A, eg)
+        brs = _bricks_from_eg(A, eg, universe)
+        out["complete"] = True                         # recovered truth (override engine False)
+        note = _NREG_NOTE
     from quiverlab.tautilting.green import maximal_green_sequences
-    from quiverlab.tautilting.torsion import bricks as torsion_bricks
-    brs = torsion_bricks(A, budget=budget)
+    if note is None:                                   # genuine-complete: shipped enumerator
+        from quiverlab.tautilting.torsion import bricks as torsion_bricks
+        brs = torsion_bricks(A, budget=budget)         # (byte-identical to before)
     walls = _build_walls_complete(A, eg, brs, verts, n, budget)
     out["walls"] = walls
     out["num_walls"] = len(walls)
     out["counts"] = {"chambers": len(eg.vertices), "walls": len(walls),
                      "bricks": len(brs), "s_tau_tilt": len(eg.vertices)}
-    out["green_count"] = maximal_green_sequences(A, cap=budget)["count"]
+    # green sequences need the exchange graph to CLOSE cleanly; on a recovered (status='error')
+    # graph the shipped enumerator conservatively refuses, so honestly OMIT the count (None)
+    # rather than emit its false 0. On a genuinely-complete graph it is the real count.
+    out["green_count"] = None if note else maximal_green_sequences(A, cap=budget)["count"]
     out["truncation"] = None
+    if note:
+        out["note"] = note
     return out
 
 

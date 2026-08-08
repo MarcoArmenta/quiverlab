@@ -353,6 +353,10 @@ def _wall_chamber_html(b):
                               or ("The exchange graph did not close (status: %s); a bounded "
                                   "region is shown and no count is claimed."
                                   % b.get("status")))))
+    if b.get("note"):
+        # Plan 63 recovery provenance: completeness certified by n-regularity despite a
+        # mutation-engine error (honest -- the structure IS complete, only the note explains it)
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b.get("note"))))
     counts = b.get("counts")
     if counts:
         out.append("<p>Counts: #chambers = #support τ-tilting = <b>%d</b>; "
@@ -376,9 +380,11 @@ def _wall_chamber_html(b):
                     % (c["id"], _esc(str(c.get("label") or "")), star,
                        _esc(str(c.get("support") or [])), _esc(gm)))
     out.append("<table class='ql-wc-chambers'>%s</table>" % "".join(rows))
-    # walls table (one D(B) per brick)
+    # walls table (one D(B) per brick). Count the walls SHOWN (len of the list): equals
+    # num_walls in the complete case, and stays honest in the partial/budget case where
+    # num_walls is None (the group count lives under partial_wall_groups).
     out.append("<p>Walls D(B), one per brick, %d in the region shown:</p>"
-               % b.get("num_walls", 0))
+               % len(b.get("walls") or []))
     wrows = ["<tr><th>brick</th><th>dim-vector</th><th>wall</th>"
              "<th>inequality system D(B)</th></tr>"]
     for w in (b.get("walls") or []):

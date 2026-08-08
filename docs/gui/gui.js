@@ -2952,6 +2952,8 @@
           + "); a bounded region of " + b.num_chambers + " chamber(s) is shown and no count "
           + "is claimed (DIJ: brick-finite ⟺ τ-tilting-finite).") }));
     }
+    if (b.note)                                    // Plan 63: n-regularity recovery provenance
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
     if (b.counts) {
       div.appendChild(h("p", { text: "#chambers = #support τ-tilting = " + b.counts.chambers
         + "; #walls = #bricks = " + b.counts.walls + "." }));
@@ -2980,8 +2982,11 @@
       tbl.appendChild(tr);
     });
     div.appendChild(tbl);
-    // walls table (one D(B) per brick)
-    div.appendChild(h("p", { text: "Walls D(B), one per brick: " + b.num_walls }));
+    // walls table (one D(B) per brick). Show the count of walls DISPLAYED: equals num_walls in
+    // the complete case, and stays honest when num_walls is null (partial/budget -- the group
+    // count lives under partial_wall_groups, not presented as a definitive wall count).
+    div.appendChild(h("p", { text: "Walls D(B), one per brick: "
+      + (b.num_walls != null ? b.num_walls : (b.walls || []).length) }));
     var wt = h("table", { "class": "qlgui-table" });
     var wh = h("tr");
     ["brick", "dim-vector", "wall", "inequality system D(B)"].forEach(
