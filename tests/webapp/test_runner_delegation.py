@@ -192,7 +192,16 @@ never hide behind one:
     regenerated blob is byte-identical to its predecessor after mapping the
     version string back (asserted for all 18 before writing). ``canonical_key``
     values are UNCHANGED -- they are pinned against the frozen ``_V`` constant
-    below, deliberately decoupled from the live version."""
+    below, deliberately decoupled from the live version.
+  * 2026-08-07 (``hh_cohomology_dual_kA2`` ADDED, Plan 52): a NEW fixture for the
+    schema-3 Hochschild-with-COEFFICIENTS block (kA2 over GF(5), the dual bimodule
+    D(A), ``hh_cohomology:0..3``). Pure addition: every pre-existing entry was
+    verified byte-identical BEFORE the new one was appended (the delegation test
+    passed on all 18 unchanged). Its ``canonical_key`` is request-derived (the
+    ``coefficients`` block rides the request only when present -- a coefficients-LESS
+    request keeps sending schema 2 and drops the key via model_dump, so every prior
+    entry's key is unchanged); the ``result_json`` was frozen from the server runner,
+    and the Plan-52 cross-runner test asserts the Pyodide twin agrees on the block."""
 import json
 import pathlib
 

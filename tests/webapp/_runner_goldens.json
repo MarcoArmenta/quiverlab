@@ -720,5 +720,38 @@
   },
   "canonical_key": "4493557b79b1ad3943676314fccf4ea6e035d02041e1a124a0ae757b37357c59",
   "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2], \"a2\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Voigt's lemma: Ext^1(M,M) = 0 => the orbit of M is open (rigid => open orbit); the codim = dim Ext^1(M,M) equality on hereditary algebras.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Voigt1977\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Voigt, Detlef (1977). Induzierte Darstellungen in der Theorie der endlichen, algebraischen Gruppen. Springer 592.\", \"key\": \"voigt_rigidity\", \"topic\": \"Foundations\"}, {\"annotation\": \"Kac's roots, Schur roots, and the canonical decomposition of a dimension vector -- the ground truth for Plan 49's canonical_decomposition.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Kac1980\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Kac, Victor G. (1980). Infinite root systems, representations of graphs and invariant theory. Inventiones Mathematicae 56, 57-92.\", \"key\": \"kac_canonical\", \"topic\": \"Foundations\"}, {\"annotation\": \"Schofield's generic hom/ext and the general-representation identities hom - ext = <a,b> underlying the canonical decomposition.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Schofield1992\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Schofield, Aidan (1992). General representations of quivers. Proceedings of the London Mathematical Society. Third Series 65, 46-64.\", \"key\": \"schofield_general_reps\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Derksen-Weyman recursive algorithm for the canonical decomposition (Plan 49 ships the Dynkin case; Euclidean/wild is the named deferral).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"DerksenWeyman2002\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Derksen, Harm; Weyman, Jerzy (2002). On the canonical decomposition of quiver representations. Compositio Mathematica 133, 245-265.\", \"key\": \"derksen_weyman_canonical\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a1\\\": (1, 2), \\\"a2\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(32003))\\nM = A.simple(2, side=\\\"right\\\")\", \"results\": {\"orbit_geometry\": {\"canonical_decomposition\": [{\"multiplicity\": 1, \"name\": \"S_2\", \"root\": [0, 1, 0]}], \"canonical_of\": \"dimension_vector\", \"citations\": [[\"Voigt1977\", \"Voigt, Detlef (1977). Induzierte Darstellungen in der Theorie der endlichen, algebraischen Gruppen. Springer 592.\"], [\"Kac1980\", \"Kac, Victor G. (1980). Infinite root systems, representations of graphs and invariant theory. Inventiones Mathematicae 56, 57-92.\"], [\"Schofield1992\", \"Schofield, Aidan (1992). General representations of quivers. Proceedings of the London Mathematical Society. Third Series 65, 46-64.\"], [\"DerksenWeyman2002\", \"Derksen, Harm; Weyman, Jerzy (2002). On the canonical decomposition of quiver representations. Compositio Mathematica 133, 245-265.\"]], \"codim_semantics\": \"hereditary\", \"dim_vector\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"end_dim\": 1, \"ext1_self\": 0, \"group_dim\": 1, \"hereditary\": true, \"kind\": \"orbit_geometry\", \"latex\": \"\\\\dim \\\\mathcal{O}_M = \\\\sum_v d_v^2 - \\\\dim_k \\\\operatorname{End}_A(M)\", \"orbit_dim\": 0, \"references\": [\"voigt_rigidity\", \"kac_canonical\", \"schofield_general_reps\", \"derksen_weyman_canonical\"], \"rep_variety_dim\": 0, \"rigid\": true, \"side\": \"right\"}}}"
+ },
+ "hh_cohomology_dual_kA2": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "GF",
+     "p": 5
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "coefficients": {
+    "builtin": {
+     "kind": "dual"
+    }
+   },
+   "compute": [
+    "hh_cohomology:0..3"
+   ],
+   "schema": 3
+  },
+  "canonical_key": "5a7bb0f044fa52a620228608ce390ff0a9aab2d08f4dec6e6d0c42c9941c7023",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [{\"note\": \"list; dim HH in degree n is dims[n].\", \"object\": \"Hochschild cohomology dimensions\", \"path\": \"results.hh_cohomology.dims\"}], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Hochschild1945\", \"doi\": \"10.2307/1969145\", \"doi_url\": \"https://doi.org/10.2307/1969145\", \"formatted\": \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\", \"key\": \"bar\", \"topic\": \"Foundations\"}, {\"annotation\": \"Determines HH^1(A, M) with different coefficients for gentle algebras via ribbon-graph combinatorics -- the Plan-52 gentle HH^1-with-coefficients provenance (numeric pin BLOCKED-until-transcribed).\", \"arxiv\": \"1811.02211\", \"arxiv_url\": \"https://arxiv.org/abs/1811.02211\", \"bibtex_key\": \"ChaparroSchrollSolotar2020\", \"doi\": \"10.1016/j.jalgebra.2020.04.008\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2020.04.008\", \"formatted\": \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea (2020). On the Lie algebra structure of the first Hochschild cohomology of gentle algebras and Brauer graph algebras. Journal of Algebra 558, 293-326.\", \"key\": \"chaparro_schroll_solotar\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Lie-algebra structure of the first RELATIVE (vertex-relative, E = kQ_0) Hochschild cohomology, with radical-square-zero computations -- the Plan-52 relative HH provenance (numeric pin BLOCKED-until-transcribed).\", \"arxiv\": \"2411.03080\", \"arxiv_url\": \"https://arxiv.org/abs/2411.03080\", \"bibtex_key\": \"LindellRubio2024\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lindell, Jonathan; Rubio y Degrassi, Lleonard (2024). On the first relative Hochschild cohomology and the contracted fundamental group. arXiv preprint.\", \"key\": \"lindell_rubio_relative\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(5))\\nA.hochschild_cohomology(3)\", \"results\": {\"hh_cohomology\": {\"citations\": [[\"Hochschild1945\", \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\"], [\"ChaparroSchrollSolotar2020\", \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea (2020). On the Lie algebra structure of the first Hochschild cohomology of gentle algebras and Brauer graph algebras. Journal of Algebra 558, 293-326.\"], [\"LindellRubio2024\", \"Lindell, Jonathan; Rubio y Degrassi, Lleonard (2024). On the first relative Hochschild cohomology and the contracted fundamental group. arXiv preprint.\"]], \"coefficients\": \"D(A)\", \"dims\": [2, 0, 0, 0], \"engine\": \"normalized bar complex\", \"kind\": \"HH^\", \"references\": [\"bar\", \"chaparro_schroll_solotar\", \"lindell_rubio_relative\"], \"top\": 3}}}"
  }
 }

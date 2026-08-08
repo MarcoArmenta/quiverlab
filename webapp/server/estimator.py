@@ -89,6 +89,17 @@ def _module_dim(mspec) -> int:
     return sum(int(n) for n in mspec.dims.values())
 
 
+def _coefficient_dim(req) -> int:
+    """The declared dimension of an EXPLICIT coefficient bimodule (Plan 52). The bar
+    cochain basis is dim_M*(m-1)^n, so a big explicit coefficient over a SMALL algebra
+    drives a cost quadratic in dim_M and must size the job off the instant tier. A
+    builtin coefficient is bounded by dim A (already in the max), so it adds nothing."""
+    spec = getattr(req, "coefficients", None)
+    if spec is None or spec.builtin is not None or spec.dim is None:
+        return 0
+    return int(spec.dim)
+
+
 def _algebra_b_dim(req: ComputeRequest) -> int:
     """The dimension of the SECOND algebra for ``derived_compare`` (wave 2), so a big
     B over a small A still sizes the job off the instant tier (derived_compare
@@ -116,7 +127,7 @@ def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     algebra, so every existing family/quiver request classifies exactly as before
     (Plan 26/30 + wave 2)."""
     return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
-               _module_dim(req.tor_target), _algebra_b_dim(req))
+               _module_dim(req.tor_target), _coefficient_dim(req), _algebra_b_dim(req))
 
 
 # Heuristic throughput used to turn the op estimate into a human "minutes"

@@ -530,6 +530,14 @@ planned together even if delivered in slices.
   2026-08-06): v1 takes algebra B as a Dynkin type string or a preset pick;
   a free-form second canvas (and `derived_compare` on the index/family page)
   is the successor.
+- [ ] **P52 explicit two-sided bimodule matrix editor** (deferred to P80, DD5):
+  the Plan-52 coefficient GUI ships the BUILTIN named bimodules
+  (regular / dual / twisted `{}_1A_ν` / `A/soc`) as a pick-list. The EXPLICIT
+  `{dim, left_maps, right_maps}` form (one exact-entry matrix per generator per
+  side) is accepted by the library + server, but its CANVAS matrix editor is
+  deferred: the Plan-26 module editor is one-sided (a right-module action per
+  arrow), whereas a bimodule needs BOTH a left and a right action per generator.
+  P80 adds the two-sided grid editor.
 
 ## Done (this backlog's history)
 

@@ -232,6 +232,59 @@ class ModuleSpec(BaseModel):
         return self
 
 
+# The Hochschild compute kinds that may carry a coefficient bimodule (Plan 52).
+HH_COEFFICIENT_KINDS = frozenset({"hh_cohomology", "hh_homology"})
+
+
+class CoefficientBuiltin(BaseModel):
+    """A zero-typing coefficient pick-list: a NAMED A-bimodule (the library's
+    ``Bimodule.regular/dual/twisted_by_nakayama/mod_socle``)."""
+    kind: Literal["regular", "dual", "twisted_nakayama", "quotient_socle"]
+
+
+class CoefficientSpec(BaseModel):
+    """A Hochschild coefficient A-bimodule M (Plan 52, schema v3): either a
+    ``builtin`` named bimodule (delivered in the GUI) or the explicit form
+    ``{dim, left_maps, right_maps}`` -- one exact-entry matrix per generator per
+    side (accepted server-side; its canvas EDITOR is ledger-deferred to P80, DD5).
+    Matrix entries are exact DATA (ints / exact strings, never floats)."""
+    builtin: CoefficientBuiltin | None = None
+    dim: int | None = None
+    left_maps: dict[str, list[list[Any]]] | None = None
+    right_maps: dict[str, list[list[Any]]] | None = None
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        if self.builtin is not None:
+            if (self.dim is not None or self.left_maps is not None
+                    or self.right_maps is not None):
+                raise SchemaError("coefficients: give either a 'builtin' pick-list OR "
+                                  "'dim'+'left_maps'+'right_maps', not both")
+            return self
+        if self.dim is None or self.left_maps is None or self.right_maps is None:
+            raise SchemaError("coefficients: needs a 'builtin' pick-list OR the explicit "
+                              "'dim' + 'left_maps' + 'right_maps'")
+        if not isinstance(self.dim, int) or isinstance(self.dim, bool) or self.dim < 0:
+            raise SchemaError("coefficients: 'dim' must be a non-negative integer")
+        for name, maps in (("left_maps", self.left_maps), ("right_maps", self.right_maps)):
+            for arrow, mat in maps.items():
+                width = None
+                for row in mat:
+                    if not isinstance(row, list):
+                        raise SchemaError(f"coefficients {name}[{arrow!r}] must be a matrix")
+                    if width is None:
+                        width = len(row)
+                    elif len(row) != width:
+                        raise SchemaError(f"coefficients {name}[{arrow!r}] is not rectangular")
+                    for x in row:
+                        if not _valid_entry(x):
+                            raise SchemaError(
+                                f"coefficients {name}[{arrow!r}] has a non-exact entry "
+                                f"{x!r}; entries must be integers or exact strings "
+                                "like '1/2' (never floats)")
+        return self
+
+
 class ComputeRequest(BaseModel):
     schema_version: int = Field(1, alias="schema")
     algebra: AlgebraSpec
@@ -240,6 +293,7 @@ class ComputeRequest(BaseModel):
     module: ModuleSpec | None = None          # v2 (Plan 26)
     ext_target: ModuleSpec | None = None      # v2: the N in Ext^n(M, N), a RIGHT A-module
     tor_target: ModuleSpec | None = None      # v2 (Plan 30): the N in Tor^A_n(M, N)
+    coefficients: CoefficientSpec | None = None   # v3 (Plan 52): the M in HH(A, M)
     algebra_b: AlgebraSpec | None = None      # wave 2: the SECOND algebra for derived_compare
 
     @model_validator(mode="before")
@@ -262,8 +316,8 @@ class ComputeRequest(BaseModel):
     @field_validator("schema_version")
     @classmethod
     def _schema_known(cls, v: int) -> int:
-        if v not in (1, 2):
-            raise SchemaError(f"unsupported schema version {v}; this server speaks v1/v2")
+        if v not in (1, 2, 3):
+            raise SchemaError(f"unsupported schema version {v}; this server speaks v1/v2/v3")
         return v
 
     @field_validator("compute")
@@ -280,9 +334,20 @@ class ComputeRequest(BaseModel):
         """The module block is a v2 feature; and any module compute kind needs a
         ``module`` (and, for ``ext``/``tor``, an ``ext_target``/``tor_target``)."""
         if (self.module is not None or self.ext_target is not None
-                or self.tor_target is not None) and self.schema_version != 2:
+                or self.tor_target is not None) and self.schema_version < 2:
             raise SchemaError("a 'module'/'ext_target'/'tor_target' block requires "
-                              "schema 2")
+                              "schema >= 2")
+        # Plan 52: a coefficients block is schema v3 and only rides the Hochschild
+        # compute kinds (HH^*/HH_* with coefficients); every kind must be one.
+        if self.coefficients is not None:
+            if self.schema_version < 3:
+                raise SchemaError("a 'coefficients' block requires schema 3")
+            bad = sorted({parse_compute_item(s).kind for s in self.compute}
+                         - HH_COEFFICIENT_KINDS)
+            if bad:
+                raise SchemaError(
+                    f"a 'coefficients' block only applies to Hochschild kinds "
+                    f"(hh_cohomology / hh_homology); got {bad}")
         kinds = {parse_compute_item(s).kind for s in self.compute}
         if kinds & MODULE_KINDS and self.module is None:
             need = sorted(kinds & MODULE_KINDS)
@@ -323,7 +388,7 @@ class ComputeRequest(BaseModel):
         request -- and every Plan-26 ext request -- is unchanged; only genuine Tor and
         derived_compare requests carry the extra blocks)."""
         d = super().model_dump(*args, **kwargs)
-        for k in ("module", "ext_target", "tor_target", "algebra_b"):
+        for k in ("module", "ext_target", "tor_target", "coefficients", "algebra_b"):
             if d.get(k) is None:
                 d.pop(k, None)
         # An ABSENT quiver potential must serialize away too, so every existing
