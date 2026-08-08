@@ -136,3 +136,164 @@ def co_t_structure_of(summands):
             "aisle": "T_M^{<=0} = { X : Hom_{D^b}(T, X[>0]) = 0 }  (AI Def 2.12)",
             "coaisle": "^perp(T_M^{<=0})  (AI Prop 2.23(b) torsion pair)",
             "coheart_is_addT": True, "references": list(_CT_REFS)}
+
+
+# --------------------------------------------------------------------------- #
+# single silting mutation via one approximation triangle (AI Def 2.30/2.34)
+#
+# The mutation MATH (minimal add(T/X)-approximation in K^b(proj), its cone / the dual
+# cocone, and the minimal-complex reduction that the involution + exploration-dedup
+# oracles REQUIRE) is exactly P45's retract-prune already lifted to K^b(proj) over the
+# projective-vertex complex representation (``tautilting._twoterm``): ``min_left_approx`` /
+# ``min_right_approx`` (P44 retract-pruning, lifted), ``left_mutation_summand`` /
+# ``right_mutation_summand`` = cone / cocone[-1] (AI Def 2.34), ``reduce_complex`` =
+# delooping/Gaussian elimination of iso blocks (the minimal representative). We reuse that
+# TESTED engine rather than re-deriving it on ``ChainComplex`` (the plan's Task-2 sketch
+# omitted the minimizer, which the involution oracle needs); the public surface stays
+# ``ChainComplex`` and the mutant is re-verified silting by the hyper-Hom verifier above.
+# The two representations differ only by the degree convention (PComplex is cohomological
+# d^i: C^i -> C^{i+1}; ChainComplex is homological d_n: C_n -> C_{n-1}), so n = -i is the
+# exact bijection and the differential matrix is byte-identical (same shape, same
+# concatenated builders.projective basis).
+# --------------------------------------------------------------------------- #
+def _vertex_lists(cx):
+    """Per (homological) degree, the ordered projective-summand vertex list of ``C_n``'s
+    basis blocks. Uses the ``_proj_vertices`` provenance when present (every engine-built
+    complex -- from_projective_resolution / cone-mutants / two_term_silting_from_presentation
+    -- carries it); else recovers it for a term that is a SINGLE indecomposable projective
+    (``top`` is 1-dim => one vertex), which covers the ``ChainComplex.stalk(A.projective(v))``
+    seeds. Raises loudly on a multi-block term with no provenance."""
+    prov = getattr(cx, "_proj_vertices", None)
+    out = {}
+    for n in cx.degrees():
+        if prov is not None and n in prov:
+            out[n] = list(prov[n])
+            continue
+        tv = cx.term(n).top().dimension_vector()
+        blocks = [(v, m) for v, m in tv.items() if m]
+        if sum(m for _, m in blocks) == 1:
+            out[n] = [blocks[0][0]]
+        else:
+            raise QuiverlabError(
+                "silting_mutate: a summand term carries no projective-block provenance "
+                "and is not a single indecomposable projective; supply a complex built by "
+                "the silting engine (stalks of A.projective(v) or prior mutants)")
+    return out
+
+
+def _cx_to_pc(cx):
+    """A perfect ``ChainComplex`` (homological) -> the ``tautilting._twoterm.PComplex``
+    (cohomological) it equals under ``i = -n``: same vertex-lists, same differential
+    matrices."""
+    from quiverlab.tautilting import _twoterm as tt
+    vl = _vertex_lists(cx)
+    terms = {-n: list(vl[n]) for n in vl}
+    diffs = {-n: mat for n, mat in cx._dmats.items() if mat and mat[0]}
+    return tt.PComplex(cx.algebra, terms, diffs)
+
+
+def _pc_to_cx(pc):
+    """A ``PComplex`` (cohomological) -> the perfect ``ChainComplex`` (homological) it
+    equals under ``n = -i``. Terms are ``(+)_v builders.projective(A, v)`` in the vertex
+    order (the same basis PComplex uses), ``check=True`` re-certifies d.d = 0, and
+    ``_proj_vertices`` provenance is carried so a subsequent mutation round-trips."""
+    from quiverlab.tautilting import _twoterm as tt
+    from quiverlab.modules.complexes import ChainComplex
+    A = pc.algebra
+    terms, dmats, prov = {}, {}, {}
+    for i in pc.degrees():
+        M = tt._proj_sum(A, pc.terms[i])
+        if M.dim:
+            terms[-i] = M
+            prov[-i] = list(pc.terms[i])
+    for i, d in pc.diffs.items():
+        n = -i
+        if d and d[0] and (n in terms) and ((n - 1) in terms):
+            dmats[n] = d
+    if not terms:
+        raise QuiverlabError("silting mutation produced the zero complex (degenerate) -- "
+                             "no silting summand to report")
+    cx = ChainComplex(terms, dmats, check=True)
+    cx._perfect = True
+    cx._proj_vertices = prov
+    return cx
+
+
+def _summand_key(cx):
+    """A degree-sensitive per-summand fingerprint (per-degree dim-vectors) -- the same
+    notion the mutation oracles use; enough to recognise the surviving summands and the
+    new cone. Minimal (reduced) representatives make this a canonical fingerprint."""
+    return tuple(sorted((n, tuple(sorted(cx.term(n).dimension_vector().items())))
+                        for n in cx.degrees()))
+
+
+def _assert_neighbour(T, mutant, n):
+    """Self-certificate for a single mutation (never trusts the construction): the mutant
+    has ``n`` summands, is presilting (AI Thm 2.31 -- if this fails the approximation /
+    cone / shift is wrong), and shares EXACTLY ``n-1`` summand fingerprints with the input
+    (a Hasse neighbour that differs from it)."""
+    if len(mutant) != n:
+        raise QuiverlabError(
+            f"silting_mutate: mutant has {len(mutant)} summands, expected {n}")
+    if not is_silting_object(mutant).is_presilting:
+        raise QuiverlabError(
+            "silting_mutate: the mutant is not presilting (AI Thm 2.31 says a mutation of "
+            "a silting object is silting) -- the approximation / cone / shift is wrong")
+    tkeys = [_summand_key(c) for c in T]
+    used = [False] * len(tkeys)
+    shared = 0
+    for c in mutant:
+        ck = _summand_key(c)
+        for k, tk in enumerate(tkeys):
+            if not used[k] and tk == ck:
+                used[k] = True
+                shared += 1
+                break
+    if shared != n - 1:
+        raise QuiverlabError(
+            f"silting_mutate: mutant shares {shared} summands with the input, expected "
+            f"{n - 1} -- not a single-mutation Hasse neighbour")
+
+
+def silting_mutate(summands, i, direction="left"):
+    """Irreducible mutation at summand index ``i`` (AI Def 2.34), ``direction`` in
+    ``{"left", "right"}``. SELF-CERTIFIED: the input must be silting or presilting +
+    K0-basis (loud otherwise); the result RE-VERIFIES silting, shares exactly ``n-1``
+    summands with the input, and differs from it. Returns the new list
+    ``[rest..., N_X]`` of minimal perfect complexes. Left mutation ``mu^+`` is the cone of
+    the minimal left ``add(T/X)``-approximation; right mutation ``mu^-`` is the cocone of
+    the right one; ``mu^- o mu^+ = id`` (AI Prop 2.33)."""
+    from quiverlab.tautilting import _twoterm as tt
+    rep = is_silting_object(summands)
+    if rep.is_silting not in (True, "unknown"):
+        raise QuiverlabError("silting_mutate: input is not a (candidate) silting object",
+                             hint=rep.generation_certified_by)
+    n = len(summands)
+    if not (0 <= i < n):
+        raise QuiverlabError(f"silting_mutate: summand index {i} out of range 0..{n - 1}")
+    pcs = [_cx_to_pc(T) for T in summands]
+    Xk = pcs[i]
+    U = pcs[:i] + pcs[i + 1:]
+    if direction == "left":
+        new_pc = tt.left_mutation_summand(Xk, U)              # cone(min left approx)
+    elif direction == "right":
+        new_pc = tt.right_mutation_summand(Xk, U)             # cocone(min right approx)
+    else:
+        raise QuiverlabError("silting_mutate: direction must be 'left' or 'right'")
+    N = _pc_to_cx(tt.reduce_complex(new_pc))                  # minimal representative
+    mutant = summands[:i] + summands[i + 1:] + [N]
+    _assert_neighbour(summands, mutant, n)                    # self-cert (AI Thm 2.31)
+    return mutant
+
+
+def silting_neighbors(summands, direction="left"):
+    """The (up to) ``n`` irreducible mutations -- the single-step neighbourhood, as a list
+    of ``(i, mutant)``. A summand whose approximation degenerates (mutation not defined /
+    refuses there) is reported with ``mutant=None`` -- never a silent skip."""
+    out = []
+    for i in range(len(summands)):
+        try:
+            out.append((i, silting_mutate(summands, i, direction=direction)))
+        except QuiverlabError:
+            out.append((i, None))
+    return out
