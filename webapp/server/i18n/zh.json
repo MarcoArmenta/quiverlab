@@ -257,6 +257,8 @@
   "pick.remove": "移除",
   "pick.kind.radical_filtration_ss": "根基滤链谱序列",
   "pick.kind.ar_quiver": "Auslander–Reiten 箭图",
+  "pick.kind.radical_filtration": "模范畴 mod A 的根基滤链：radⁿ(X,Y) 及幂零指数（不是 Loewy 根基列）",
+  "pick.kind.ar_invariants": "AR 分支不变量：Liu 度、导向模、表示导向",
   "pick.kind.derived_compare": "导出比较（与 B）",
   "draw.potential_label": "势 W（可选）",
   "draw.potential_ph": "a*b*c - d*e*f （构造 Jacobi 代数）",

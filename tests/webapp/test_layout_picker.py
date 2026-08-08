@@ -36,6 +36,8 @@ ALL_KINDS = {
     "radical_filtration_ss", "ar_quiver", "derived_compare",
     # Plan 53 (2026-08-07): the stable-category fractional Calabi-Yau dimension.
     "fractional_cy",
+    # Plan 57 (2026-08-07): the radical filtration of mod A + AR-component invariants.
+    "radical_filtration", "ar_invariants",
 }
 
 

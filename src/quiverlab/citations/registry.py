@@ -149,6 +149,30 @@ REGISTRY: dict = {r.key: r for r in [
        "The Auslander-Reiten theory reference: almost-split sequences, irreducible "
        "maps, the AR quiver, and the Nakayama functor -- the ground truth for Plan 41.",
        "book"),
+    # Plan 57 (R21 + R37): Liu degree theory, the Chaio-Liu radical of the module
+    # category, CMMS radical-square-zero, and Ringel's directing/trichotomy reference.
+    _r("liu_degrees", "Liu1992degrees", "foundation",
+       "Degrees of irreducible maps and the shapes of Auslander-Reiten quivers",
+       "Liu's left/right degrees of irreducible morphisms and their control of the "
+       "AR-quiver shape -- the R21 degree theory Plan 57 computes on the knit.", "ar"),
+    _r("liu_semistable", "Liu1993semistable", "foundation",
+       "Semi-stable components of an Auslander-Reiten quiver",
+       "Liu's component classification (sectional paths, semistable/directed "
+       "components) underlying Plan 57's partition and rep-directed recognizer.", "ar"),
+    _r("chaio_liu_radical", "ChaioLiu2013", "foundation",
+       "A note on the radical of a module category",
+       "Chaio-Liu: rep-finiteness through the infinite radical; the nilpotency of "
+       "rad(mod A) in the rep-finite case is the maximal depth of composites -- the "
+       "theorem behind Plan 57's nilpotency index and rad^inf=0 gate.", "ar"),
+    _r("cmms_radsq", "CMMS1994radsq", "foundation",
+       "Module categories with infinite radical square zero are of finite type",
+       "CMMS: (rad^inf)^2 = 0 implies representation-finite -- the class oracle "
+       "justifying Plan 57's finite-nilpotency-index rep-finiteness certificate "
+       "(documented, not a per-instance decider off the rep-finite domain).", "ar"),
+    _r("ringel_tame", "Ringel1984tame", "foundation",
+       "Tame Algebras and Integral Quadratic Forms",
+       "Ringel LNM 1099: directing modules, the postprojective/regular/preinjective "
+       "trichotomy -- the R21 component-invariant reference.", "book"),
     _r("han_conjecture", "Han2006", "foundation",
        "Han's conjecture",
        "Finite global dimension iff finite Hochschild homology dimension -- the "

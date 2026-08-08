@@ -257,6 +257,8 @@
   "pick.remove": "remove",
   "pick.kind.radical_filtration_ss": "Radical-filtration spectral sequence",
   "pick.kind.ar_quiver": "Auslander–Reiten quiver",
+  "pick.kind.radical_filtration": "Radical filtration of mod A: radⁿ(X,Y) and the nilpotency index (NOT the Loewy radical series)",
+  "pick.kind.ar_invariants": "AR-component invariants: Liu degrees, directing modules, representation-directed",
   "pick.kind.derived_compare": "Derived comparison (with B)",
   "draw.potential_label": "Potential W (optional)",
   "draw.potential_ph": "a*b*c - d*e*f  (builds the Jacobian algebra)",

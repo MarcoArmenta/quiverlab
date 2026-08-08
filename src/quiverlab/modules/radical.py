@@ -337,3 +337,54 @@ def _mesh_layer_dim(ar, i, j, n):
         return 0
     degree = (a - c) + (b - d)
     return 1 if 1 <= n <= degree else 0
+
+
+# --------------------------------------------------------------------------- #
+# The shared no-code ALGEBRA-block builder (byte-identical across both runners:
+# server hpc.spec and the Pyodide docs/gui/runner both import THIS function).
+# Every value JSON-safe; Module objects dropped.  A raised QuiverlabError (char
+# scope) is caught by the caller into {"error": ...} (the per-block precedent).
+# --------------------------------------------------------------------------- #
+_RADICAL_REFS = ["chaio_liu_radical", "liu_degrees", "cmms_radsq"]
+
+
+def _dimvec_json(dv):
+    return {str(v): int(c) for v, c in sorted(dv.items(), key=lambda kv: str(kv[0]))}
+
+
+def _layer_totals(rf):
+    """``[sum_ij dim rad^n(X_i, X_j)]_{n>=1}`` (the layer profile), or ``None`` off the
+    certified scope."""
+    if not rf.is_complete or rf.nilpotency_index is None:
+        return None
+    r = len(rf.indecs)
+    top = rf.nilpotency_index - 1
+    return [sum(rf.layer_dim(i, j, n) for i in range(r) for j in range(r))
+            for n in range(1, top + 1)]
+
+
+def radical_filtration_block(A, *, budget=512):
+    """The ``radical_filtration`` algebra block (Plan 57 / R37): the radical of the
+    MODULE CATEGORY ``rad^n(X, Y)`` and its nilpotency index -- NOT the Loewy radical
+    series spectral sequence (``radical_filtration_ss``).  Honest semi-decision: a
+    complete (rep-finite) knit ships the index + ``rad^inf`` verdict; a self-injective
+    or budget knit ships ``complete=False`` with the loud note and no verdict."""
+    rf = A.radical_filtration(budget_modules=budget)
+    return {
+        "kind": "radical_filtration",
+        "status": rf.status,
+        "complete": bool(rf.is_complete),
+        "budget": int(budget),
+        "num_indecomposables": len(rf.indecs),
+        "nilpotency_index": rf.nilpotency_index,
+        "rad_infinity_zero": rf.rad_infinity_zero,
+        "generalized_standard": (rf.is_generalized_standard()
+                                 if rf.is_complete else None),
+        "layer_profile": _layer_totals(rf),
+        "vertices": [{"name": nm, "dimvec": _dimvec_json(X.dimension_vector())}
+                     for nm, X in zip(rf.names, rf.indecs)],
+        "note": rf.note,
+        "latex": (r"\operatorname{rad}^{n}(X,Y)\ \text{and}\ "
+                  r"N=\min\{n:\operatorname{rad}^n=0\}"),
+        "references": list(_RADICAL_REFS),
+    }
