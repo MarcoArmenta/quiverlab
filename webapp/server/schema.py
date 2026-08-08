@@ -355,6 +355,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # congruences (Plan 64) carries a PAIR BUDGET, not a degree range: 'congruences' or
+    # 'congruences:512' -- the torsion lattice / Con / forcing / wide poset live on the
+    # exchange graph, so it skips the 'name:0..N' grammar (server and GUI/hpc agree).
+    if s == "congruences" or s.startswith("congruences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"congruences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips the
     # 'name:0..N' grammar -- server and GUI/hpc agree on this special form.

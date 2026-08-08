@@ -34,6 +34,8 @@ ALL_KINDS = {
     "orbit_geometry", "ext", "tor",
     # Wave-2 surface expansion (2026-08-06): the three new compute kinds.
     "radical_filtration_ss", "ar_quiver", "derived_compare",
+    # Plan 64 (2026-08-07): torsion-lattice congruences / forcing / wide subcategories.
+    "congruences",
 }
 
 

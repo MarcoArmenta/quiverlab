@@ -162,6 +162,13 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # congruences carries a PAIR BUDGET, not a degree range (Plan 64): 'congruences' or
+    # 'congruences:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "congruences":
+        if rng and not rng.isdigit():
+            raise RequestError("congruences budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "congruences", (int(rng) if rng else None)
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
     if name == "ar_quiver":
@@ -958,6 +965,14 @@ def compute_one(spec):
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "congruences":
+            # Torsion-lattice congruences (Plan 64): algebra-level, pair budget (not degree).
+            # SAME shared library builder (tautilting.congruence.congruences_block) +
+            # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so the
+            # cross-runner contract holds byte-for-byte. Honest complete-iff block.
+            from quiverlab.tautilting.congruence import congruences_block
+            block = congruences_block(A, budget=top if top is not None else 512)
+            block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
         _state["results"].append(dict(block, invariant=spec))
@@ -1182,6 +1197,8 @@ def python_snippet():
              "connes_b": "A.connes_differentials(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 64: the congruences kind carries a pair budget (%d = budget).
+             "congruences": "A.congruence_lattice(budget=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1288,7 +1305,11 @@ ETA_MODEL = {
                 # Plan 45: the C4 tau-tilting engine BFSes the exchange graph via the
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
-                "tau_tilting": 2.0},
+                "tau_tilting": 2.0,
+                # Plan 64: congruences BFSes the exchange graph (as tau_tilting) and then
+                # runs the principal-congruence fixed points + the kappa/CLO build -- a bit
+                # heavier than tau_tilting alone.
+                "congruences": 3.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

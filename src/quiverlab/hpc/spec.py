@@ -247,6 +247,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # congruences (Plan 64) carries a PAIR BUDGET, not a degree range: 'congruences' or
+    # 'congruences:512' -- the torsion lattice / Con / forcing / wide poset all live on the
+    # exchange graph, sized by the pair budget (like tau_tilting), not a homological degree.
+    if s == "congruences" or s.startswith("congruences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"congruences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget caps the knitted indecomposable universe -- not a
     # homological degree -- so it bypasses the 'name:0..N' grammar (like tau_tilting).
@@ -1428,6 +1436,25 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = tau_tilting_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Torsion-lattice congruences (Plan 64 / R26): an ALGEBRA-level kind carrying a PAIR
+    # BUDGET (parsed like tau_tilting). The torsion lattice + Con(tors A) + the forcing order
+    # on bricks + the wide-subcategory poset (Enomoto), all certified complete iff A is
+    # tau-tilting-finite (else lattice=congruences=wide=None + a note -- no partial-lattice
+    # lie). Both runners share tautilting.congruence.congruences_block, so the blocks are
+    # byte-identical. The char caveat (rigorous over char 0 / char > dim) surfaces as a clean
+    # {"error": ...} entry (the Plan-30 honest-per-entry precedent), never a 500.
+    if kind == "congruences":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.congruence import _CITATIONS as _CONG_KEYS
+        from quiverlab.tautilting.congruence import congruences_block
+        try:
+            block = congruences_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            keys = list(_CONG_KEYS)
+            return {"kind": "congruences", "error": str(exc), "references": keys,
+                    "citations": _citation_pairs(keys)}, None
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # AR quiver (P41, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
     # degree range ('ar_quiver' / 'ar_quiver:512', parsed like tau_tilting). Honest
     # semi-decision -- complete iff rep-finite, else status='budget' (partial, labelled)
@@ -2314,6 +2341,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "connes_b": lambda it: f"A.connes_differentials({it.hi})",
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "congruences":
+                 lambda it: ("A.congruence_lattice(budget="
                              f"{it.hi if it.hi is not None else 512})"),
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
