@@ -205,6 +205,13 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # congruences carries a PAIR BUDGET, not a degree range (Plan 64): 'congruences' or
+    # 'congruences:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "congruences":
+        if rng and not rng.isdigit():
+            raise RequestError("congruences budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "congruences", (int(rng) if rng else None)
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
@@ -1192,6 +1199,23 @@ def compute_one(spec):
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "congruences":
+            # Torsion-lattice congruences (Plan 64): algebra-level, pair budget (not degree).
+            # SAME shared library builder (tautilting.congruence.congruences_block) +
+            # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so the
+            # cross-runner contract holds byte-for-byte -- INCLUDING the char-caveat error path:
+            # a QuiverlabError refusal (rigorous over char 0 / char > dim) is caught into the
+            # SAME {"kind","error","references"} shape spec.py returns (the silting-branch
+            # pattern), so the two runners' error paths are byte-identical; a non-QuiverlabError
+            # bug surfaces loudly (fail-fast). Honest complete-iff block.
+            from quiverlab.tautilting.congruence import _CITATIONS as _CONG_KEYS
+            from quiverlab.tautilting.congruence import congruences_block
+            try:
+                block = congruences_block(A, budget=top if top is not None else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "congruences", "error": str(exc),
+                         "references": list(_CONG_KEYS)}
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "hh1_lie":
             # HH^1 as a Lie algebra (Plan 70 / R11): algebra-level, DIM budget (not
             # degree). SAME shared library builder (invariants.hh1_lie.hh1_lie_block) +
@@ -1511,6 +1535,8 @@ def python_snippet():
              "bv_operator": "A.bv_operator(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 64: the congruences kind carries a pair budget (%d = budget).
+             "congruences": "A.congruence_lattice(budget=%d)",
              # Plan 70: HH^1 as a Lie algebra, a scalar algebra-only kind, no %d.
              "hh1_lie": "A.hh1_lie_structure()",
              # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
@@ -1650,6 +1676,10 @@ ETA_MODEL = {
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
                 "tau_tilting": 2.0,
+                # Plan 64: congruences BFSes the exchange graph (as tau_tilting) and then
+                # runs the principal-congruence fixed points + the kappa/CLO build -- a bit
+                # heavier than tau_tilting alone.
+                "congruences": 3.0,
                 # Plan 70: hh1_lie runs the Der/Inn Leibniz null space (d^2 unknowns /
                 # d^3 equations, ~ d^5.4 over QQ) + the bracket/series/Killing; budget-
                 # capped honestly at dim 48. The same cost class as tau_tilting.

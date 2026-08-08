@@ -420,6 +420,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # congruences (Plan 64) carries a PAIR BUDGET, not a degree range: 'congruences' or
+    # 'congruences:512' -- the torsion lattice / Con / forcing / wide poset live on the
+    # exchange graph, so it skips the 'name:0..N' grammar (server and GUI/hpc agree).
+    if s == "congruences" or s.startswith("congruences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"congruences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips the degree grammar (like tau_tilting).
