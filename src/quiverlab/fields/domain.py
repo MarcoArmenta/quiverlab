@@ -60,6 +60,20 @@ class Domain:
 
     name: str = "?"
     characteristic: int = 0
+    #: Whether the field this domain represents is ALGEBRAICALLY CLOSED. Default ``False``
+    #: (RationalField, PrimeField, FiniteField, and the QQi Gaussian-rationals domain all
+    #: report ``False``); stamped ``True`` only on the CC working domain (see
+    #: ``ComplexField.make_domain``). This is an additive DECLARATION flag, not a property of
+    #: the exact working ring: ``field=CC`` computes in a finite algebraic extension of QQ, not
+    #: literally in the field of complex numbers, and BOTH ``CC`` and ``QQi`` realise as the
+    #: same ``SympyExactDomain`` class -- so no ``isinstance`` check can tell an algebraically
+    #: closed declaration from ``Q(i)``. The flag matters where a THEOREM needs an
+    #: algebraically closed field (e.g. Plan 61's ACLV Theorem B); the numerical answers of the
+    #: exact engines are unaffected by it, char-0 field-independent by flat base change (a
+    #: dimension computed over the exact subfield equals the one over C, since the boundary
+    #: matrices are defined over the smaller field and rank is preserved). Read it off
+    #: ``A.domain.is_algebraically_closed`` -- there is no ``Algebra.field`` attribute.
+    is_algebraically_closed: bool = False
 
     # -- construction hooks used by Algebra builders ------------------------
     def parse_entry(self, x):
