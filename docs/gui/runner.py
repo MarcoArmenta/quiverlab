@@ -83,6 +83,12 @@ def _algebra_from_spec(alg):
     Shared by :func:`run_build` and :func:`random_module`."""
     kind = alg.get("kind")
     if kind == "family":
+        # SkewGentleAlgebra (Plan 68) is the ONE non-scalar constructor the no-code GUI
+        # builds client-side: a triple (Q, I, Sp) drawn on the canvas + special-loop
+        # picks. Every OTHER family stays the server tier. Byte-identical to the server
+        # build (quiverlab.hpc.spec._build_skew_gentle).
+        if alg.get("family") == "SkewGentleAlgebra":
+            return _skew_gentle_from_spec(alg)
         raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
                            "this GUI submits kind 'quiver' only")
     if kind != "quiver":
@@ -125,6 +131,34 @@ def _algebra_from_spec(alg):
     return Q.algebra(relations=relations, field=field)
 
 
+def _skew_gentle_from_spec(alg):
+    """Build the split algebra SkewGentleAlgebra(Q, I, Sp) from a GUI
+    ``family: SkewGentleAlgebra`` block with flattened triple params (vertices, arrows,
+    relations, special). Byte-identical to the server build
+    (quiverlab.hpc.spec._build_skew_gentle)."""
+    params = alg.get("params") or {}
+    verts = params.get("vertices")
+    if not (isinstance(verts, list) and verts and all(isinstance(v, int) for v in verts)):
+        raise RequestError("SkewGentleAlgebra.vertices must be a non-empty list of ints")
+    arrows_p = params.get("arrows") or {}
+    if not (isinstance(arrows_p, dict) and all(
+            isinstance(st, list) and len(st) == 2 and all(isinstance(x, int) for x in st)
+            for st in arrows_p.values())):
+        raise RequestError("SkewGentleAlgebra.arrows must map names to [source, target] pairs")
+    rels = params.get("relations", [])
+    if not (isinstance(rels, list) and all(isinstance(r, str) for r in rels)):
+        raise RequestError("SkewGentleAlgebra.relations must be a list of strings")
+    special = params.get("special", [])
+    if not (isinstance(special, list) and all(isinstance(v, int) for v in special)):
+        raise RequestError("SkewGentleAlgebra.special must be a list of vertex integers")
+    field = _field_from_spec(alg.get("field"))
+    from quiverlab.skewgentle.split import SkewGentleAlgebra
+    Q = quiverlab.Quiver(vertices=list(verts),
+                         arrows={k: (s, t) for k, (s, t) in arrows_p.items()})
+    return SkewGentleAlgebra(quiver=Q, relations=list(rels), special=set(special),
+                             field=field)
+
+
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
@@ -138,7 +172,11 @@ def run_build(request_json):
                                % (req.get("schema"),))
         alg = req.get("algebra") or {}
         A = _algebra_from_spec(alg)
-        vertices, arrows = alg.get("vertices"), alg.get("arrows")
+        # For the family: SkewGentleAlgebra path the drawn quiver rides under params;
+        # the summary reports the ORIGINAL (Q, arrows), not the split.
+        _src = alg.get("params") if alg.get("kind") == "family" else alg
+        vertices = _src.get("vertices") or []
+        arrows = _src.get("arrows") or {}
         # Module blocks (Plan 26) ride alongside the algebra; the module itself is
         # built lazily in compute_one, so a relation-violating matrix surfaces as a
         # per-computation error (rendered on the page), never a build crash.
@@ -204,6 +242,13 @@ def _parse_compute(spec):
             raise RequestError("recognizer_ladder budget must be a positive integer (got %r)"
                                % (spec,))
         return "recognizer_ladder", (int(rng) if rng else None)
+    # skew_gentle carries a tau-tilting PAIR BUDGET, not a degree range (Plan 68):
+    # 'skew_gentle' or 'skew_gentle:512'. Skips MAX_DEGREE (like tau_tilting).
+    if name == "skew_gentle":
+        if rng and not rng.isdigit():
+            raise RequestError("skew_gentle budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "skew_gentle", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -1140,6 +1185,16 @@ def compute_one(spec):
             # less / non-triangular input returns an {"error": ...} block, never a raise.
             from quiverlab.invariants.tits_block import tame_wild_block
             block = tame_wild_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "skew_gentle":
+            # Skew-gentle world (Plan 68 / R32). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): the SAME library block builder
+            # (skewgentle.block.skew_gentle_block) reads the triple off the split
+            # algebra's construction marker -- recognizer + split shape + dim law +
+            # classification counts + support tau-tilting + rep-type certificate --
+            # + `references`->citations.
+            from quiverlab.skewgentle.block import skew_gentle_block
+            block = skew_gentle_block(A, budget=(top or 512))
             block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))

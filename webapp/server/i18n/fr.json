@@ -287,6 +287,7 @@
   "pick.kind.ar_quiver": "Carquois d'Auslander–Reiten",
   "pick.kind.string_homological": "Test homologique de cordes",
   "pick.kind.toupie": "Structure toupie",
+  "pick.kind.skew_gentle": "Algèbre skew-gentle (Q, I, Sp)",
   "pick.kind.radical_filtration": "Filtration radicale de mod A : radⁿ(X,Y) et l'indice de nilpotence (PAS la série radicale de Loewy)",
   "pick.kind.ar_invariants": "Invariants de la composante AR : degrés de Liu, modules dirigeants, représentation-dirigée",
   "pick.kind.derived_compare": "Comparaison dérivée (avec B)",

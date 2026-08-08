@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="defaultLanguage" content="en">
+    <meta name="availableLanguages" content="en, es, fr, ja, pt_BR, uk, el, de, zh_Hans, zh_Hant, ru, he, eo, ko">
+    <title>Trusted Publisher Management · PyPI</title>
+    <meta name="description" content="The Python Package Index (PyPI) is a repository of software for the Python programming language.">
+    <link rel="stylesheet" href="pypi-quiverlab_files/warehouse-ltr.99c89534_1l5t.css">
+    <link rel="stylesheet" href="pypi-quiverlab_files/fontawesome.94176253_1l5t.css">
+    <link rel="stylesheet" href="pypi-quiverlab_files/fonts.3b5d1a1c_1l5t.css">
+    <noscript>
+      <link rel="stylesheet"
+            href="/static/css/noscript.0673c9ea.css">
+    </noscript>
+    <link rel="icon" href="https://pypi.org/static/images/favicon.35549fe8.ico" type="image/x-icon">
+    <link rel="alternate" type="application/rss+xml" title="RSS: 40 latest updates" href="https://pypi.org/rss/updates.xml">
+    <link rel="alternate" type="application/rss+xml" title="RSS: 40 newest packages" href="https://pypi.org/rss/packages.xml">
+      <link rel="canonical" href="https://pypi.org/manage/account/publishing/">
+    <meta property="og:url" content="https://pypi.org/manage/account/publishing/">
+    <meta property="og:site_name" content="PyPI">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="https://pypi.org/static/images/twitter.abaf4b19.webp">
+    <meta property="og:title" content="Trusted Publisher Management">
+    <meta property="og:description" content="The Python Package Index (PyPI) is a repository of software for the Python programming language.">
+<meta name="source-commit" content="8bf167507c8913771def607c88f6aa448f6b8d66">    <link rel="search" type="application/opensearchdescription+xml" title="PyPI" href="https://pypi.org/opensearch.xml">
+    <script defer="defer" src="pypi-quiverlab_files/warehouse.e61f2735_1l5t.js">
+    </script>
+      <script src="pypi-quiverlab_files/plausible-init.f60de74f_1l5t.js"></script>
+      <script async="" src="pypi-quiverlab_files/pa-Z-QYGvOKHwfKWak0xljXn_1l5t.js"></script>
+    <script async="" src="pypi-quiverlab_files/ethicalads.min_1l5t.js" integrity="sha256-U3hKDidudIaxBDEzwGJApJgPEf2mWk6cfMWghrAa6i0= sha384-UcmsCqcNRSLW/dV3Lo1oCi2/VaurXbib6p4HyUEOeIa/4OpsrnucrugAefzVZJfI sha512-q4t1L4xEjGV2R4hzqCa41P8jrgFUS8xTb8rdNv4FGvw7FpydVj/kkxBJHOiaoxHa8olCcx1Slk9K+3sNbsM4ug==" crossorigin="anonymous"></script>
+  <style>:is([id*='google_ads_iframe'],[id*='taboola-'],.taboolaHeight,.taboola-placeholder,#top-ad,#credential_picker_container,#credentials-picker-container,#credential_picker_iframe,#onetap_google_intermediate_iframe,[id*='google-one-tap-iframe'],#google-one-tap-popup-container,.google-one-tap__module,.google-one-tap-modal-div,.adthrive-auto-injected-player-container,.adthrive[id^="cls-video-container"]:has(.adthrive-auto-injected-player-container),#amp_floatingAdDiv,#ez-content-blocker-container) {display:none!important;min-height:0!important;height:0!important;}</style><style>[data-ea-publisher].loaded,[data-ea-type].loaded{font-size:14px;font-family:-apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica Neue, Arial, Noto Sans, sans-serif, Apple Color Emoji, Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;font-weight:normal;font-style:normal;leter-spacing:0px;vertical-align:baseline;line-height:1.3em}[data-ea-publisher].loaded a,[data-ea-type].loaded a{text-decoration:none}[data-ea-publisher].loaded .ea-pixel,[data-ea-type].loaded .ea-pixel{display:none}[data-ea-publisher].loaded .ea-content,[data-ea-type].loaded .ea-content{margin:1em 1em 0.5em 1em;padding:1em;background:rgba(0,0,0,0.03);color:#505050}[data-ea-publisher].loaded .ea-content a:link,[data-ea-type].loaded .ea-content a:link{color:#505050}[data-ea-publisher].loaded .ea-content a:visited,[data-ea-type].loaded .ea-content a:visited{color:#505050}[data-ea-publisher].loaded .ea-content a:hover,[data-ea-type].loaded .ea-content a:hover{color:#373737}[data-ea-publisher].loaded .ea-content a:active,[data-ea-type].loaded .ea-content a:active{color:#373737}[data-ea-publisher].loaded .ea-content a strong,[data-ea-publisher].loaded .ea-content a b,[data-ea-type].loaded .ea-content a strong,[data-ea-type].loaded .ea-content a b{color:#088cdb}[data-ea-publisher].loaded .ea-callout a:link,[data-ea-type].loaded .ea-callout a:link{color:#6a6a6a}[data-ea-publisher].loaded .ea-callout a:visited,[data-ea-type].loaded .ea-callout a:visited{color:#6a6a6a}[data-ea-publisher].loaded .ea-callout a:hover,[data-ea-type].loaded .ea-callout a:hover{color:#505050}[data-ea-publisher].loaded .ea-callout a:active,[data-ea-type].loaded .ea-callout a:active{color:#505050}[data-ea-publisher].loaded .ea-callout a strong,[data-ea-publisher].loaded .ea-callout a b,[data-ea-type].loaded .ea-callout a strong,[data-ea-type].loaded .ea-callout a b{color:#088cdb}[data-ea-publisher].loaded .ea-callout a,[data-ea-type].loaded .ea-callout a{font-size:0.8em}[data-ea-publisher].loaded.dark .ea-content,[data-ea-type].loaded.dark .ea-content{background:rgba(255,255,255,0.05);color:#dcdcdc}[data-ea-publisher].loaded.dark .ea-content a:link,[data-ea-type].loaded.dark .ea-content a:link{color:#dcdcdc}[data-ea-publisher].loaded.dark .ea-content a:visited,[data-ea-type].loaded.dark .ea-content a:visited{color:#dcdcdc}[data-ea-publisher].loaded.dark .ea-content a:hover,[data-ea-type].loaded.dark .ea-content a:hover{color:#f6f6f6}[data-ea-publisher].loaded.dark .ea-content a:active,[data-ea-type].loaded.dark .ea-content a:active{color:#f6f6f6}[data-ea-publisher].loaded.dark .ea-content a strong,[data-ea-publisher].loaded.dark .ea-content a b,[data-ea-type].loaded.dark .ea-content a strong,[data-ea-type].loaded.dark .ea-content a b{color:#50baf9}[data-ea-publisher].loaded.dark .ea-callout a:link,[data-ea-type].loaded.dark .ea-callout a:link{color:#c3c3c3}[data-ea-publisher].loaded.dark .ea-callout a:visited,[data-ea-type].loaded.dark .ea-callout a:visited{color:#c3c3c3}[data-ea-publisher].loaded.dark .ea-callout a:hover,[data-ea-type].loaded.dark .ea-callout a:hover{color:#dcdcdc}[data-ea-publisher].loaded.dark .ea-callout a:active,[data-ea-type].loaded.dark .ea-callout a:active{color:#dcdcdc}[data-ea-publisher].loaded.dark .ea-callout a strong,[data-ea-publisher].loaded.dark .ea-callout a b,[data-ea-type].loaded.dark .ea-callout a strong,[data-ea-type].loaded.dark .ea-callout a b{color:#50baf9}@media (prefers-color-scheme: dark){[data-ea-publisher].loaded.adaptive .ea-content,[data-ea-type].loaded.adaptive .ea-content{background:rgba(255,255,255,0.05);color:#dcdcdc}[data-ea-publisher].loaded.adaptive .ea-content a:link,[data-ea-type].loaded.adaptive .ea-content a:link{color:#dcdcdc}[data-ea-publisher].loaded.adaptive .ea-content a:visited,[data-ea-type].loaded.adaptive .ea-content a:visited{color:#dcdcdc}[data-ea-publisher].loaded.adaptive .ea-content a:hover,[data-ea-type].loaded.adaptive .ea-content a:hover{color:#f6f6f6}[data-ea-publisher].loaded.adaptive .ea-content a:active,[data-ea-type].loaded.adaptive .ea-content a:active{color:#f6f6f6}[data-ea-publisher].loaded.adaptive .ea-content a strong,[data-ea-publisher].loaded.adaptive .ea-content a b,[data-ea-type].loaded.adaptive .ea-content a strong,[data-ea-type].loaded.adaptive .ea-content a b{color:#50baf9}[data-ea-publisher].loaded.adaptive .ea-callout a:link,[data-ea-type].loaded.adaptive .ea-callout a:link{color:#c3c3c3}[data-ea-publisher].loaded.adaptive .ea-callout a:visited,[data-ea-type].loaded.adaptive .ea-callout a:visited{color:#c3c3c3}[data-ea-publisher].loaded.adaptive .ea-callout a:hover,[data-ea-type].loaded.adaptive .ea-callout a:hover{color:#dcdcdc}[data-ea-publisher].loaded.adaptive .ea-callout a:active,[data-ea-type].loaded.adaptive .ea-callout a:active{color:#dcdcdc}[data-ea-publisher].loaded.adaptive .ea-callout a strong,[data-ea-publisher].loaded.adaptive .ea-callout a b,[data-ea-type].loaded.adaptive .ea-callout a strong,[data-ea-type].loaded.adaptive .ea-callout a b{color:#50baf9}}[data-ea-publisher].loaded .ea-content,[data-ea-type].loaded .ea-content{border:0px;border-radius:3px;box-shadow:0px 2px 3px rgba(0,0,0,0.15)}[data-ea-publisher].loaded.raised .ea-content,[data-ea-type].loaded.raised .ea-content{border:0px;border-radius:3px;box-shadow:0px 2px 3px rgba(0,0,0,0.15)}[data-ea-publisher].loaded.bordered .ea-content,[data-ea-type].loaded.bordered .ea-content{border:1px solid rgba(0,0,0,0.04);border-radius:3px;box-shadow:none}[data-ea-publisher].loaded.bordered.dark .ea-content,[data-ea-type].loaded.bordered.dark .ea-content{border:1px solid rgba(255,255,255,0.07)}@media (prefers-color-scheme: dark){[data-ea-publisher].loaded.bordered.adaptive .ea-content,[data-ea-type].loaded.bordered.adaptive .ea-content{border:1px solid rgba(255,255,255,0.07)}}[data-ea-publisher].loaded.flat .ea-content,[data-ea-type].loaded.flat .ea-content{border:0px;border-radius:3px;box-shadow:none}[data-ea-type="image"].loaded,[data-ea-publisher]:not([data-ea-type]).loaded,.ea-type-image{display:inline-block}[data-ea-type="image"].loaded .ea-content,[data-ea-publisher]:not([data-ea-type]).loaded .ea-content,.ea-type-image .ea-content{max-width:180px;overflow:auto;text-align:center}[data-ea-type="image"].loaded .ea-content>a>img,[data-ea-publisher]:not([data-ea-type]).loaded .ea-content>a>img,.ea-type-image .ea-content>a>img{width:120px;height:90px;display:inline-block}[data-ea-type="image"].loaded .ea-content>.ea-text,[data-ea-publisher]:not([data-ea-type]).loaded .ea-content>.ea-text,.ea-type-image .ea-content>.ea-text{margin-top:1em;font-size:1em;text-align:center}[data-ea-type="image"].loaded .ea-callout,[data-ea-publisher]:not([data-ea-type]).loaded .ea-callout,.ea-type-image .ea-callout{max-width:180px;margin:0em 1em 1em 1em;padding-left:1em;padding-right:1em;font-style:italic;text-align:right}[data-ea-type="image"].loaded.horizontal .ea-content,[data-ea-publisher]:not([data-ea-type]).loaded.horizontal .ea-content,.ea-type-image.horizontal .ea-content{max-width:320px}[data-ea-type="image"].loaded.horizontal .ea-content>a>img,[data-ea-publisher]:not([data-ea-type]).loaded.horizontal .ea-content>a>img,.ea-type-image.horizontal .ea-content>a>img{float:left;margin-right:1em}[data-ea-type="image"].loaded.horizontal .ea-content .ea-text,[data-ea-publisher]:not([data-ea-type]).loaded.horizontal .ea-content .ea-text,.ea-type-image.horizontal .ea-content .ea-text{margin-top:0em;text-align:left;overflow:auto}[data-ea-type="image"].loaded.horizontal .ea-callout,[data-ea-publisher]:not([data-ea-type]).loaded.horizontal .ea-callout,.ea-type-image.horizontal .ea-callout{max-width:320px;text-align:right}[data-ea-type="text"].loaded,.ea-type-text{font-size:14px}[data-ea-type="text"].loaded .ea-content,.ea-type-text .ea-content{text-align:left}[data-ea-type="text"].loaded .ea-callout,.ea-type-text .ea-callout{margin:0.5em 1em 1em 1em;padding-left:1em;padding-right:1em;text-align:right;font-style:italic}[data-ea-style="stickybox"].loaded .ea-type-image{z-index:1000;position:fixed;bottom:20px;right:20px}[data-ea-style="stickybox"].loaded .ea-type-image .ea-stickybox-hide{cursor:pointer;position:absolute;top:0.75em;right:0.75em;background-color:#fefefe;border:1px solid #088cdb;border-radius:50%;color:#088cdb;font-size:1em;text-align:center;height:1.5em;width:1.5em;line-height:1.5em}@media (max-width: 1300px){[data-ea-style="stickybox"].loaded .ea-type-image{position:static;bottom:0;right:0;margin:auto;text-align:center}[data-ea-style="stickybox"].loaded .ea-type-image .ea-stickybox-hide{display:none}}@media (min-width: 1301px){[data-ea-style="stickybox"].loaded .ea-type-image .ea-content{background:#dcdcdc}[data-ea-style="stickybox"].loaded.dark .ea-type-image .ea-content{background:#505050}}@media (min-width: 1301px) and (prefers-color-scheme: dark){[data-ea-style="stickybox"].loaded.adaptive .ea-type-image .ea-content{background:#505050}}
+</style></head>
+  <body data-controller="viewport-toggle" data-new-gr-c-s-check-loaded="8.937.0" data-gr-ext-installed="" style="padding-top: 0px;">
+      <!-- Accessibility: this link should always be the first piece of content inside the body-->
+      <a href="#content" class="skip-to-content">Skip to main content</a>
+      <button type="button" class="button button--primary button--switch-to-mobile hidden" data-viewport-toggle-target="switchToMobile" data-action="viewport-toggle#switchToMobile">Switch to mobile version</button>
+      <div id="sticky-notifications" class="stick-to-top js-stick-to-top">
+        <!-- Add browser warning. Will show for ie9 and below -->
+        <!--[if IE]>
+      <div class="notification-bar notification-bar--warning" role="status">
+        <span class="notification-bar__icon">
+          <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+          <span class="sr-only">Warning</span>
+        </span>
+        <span class="notification-bar__message">You are using an unsupported browser, upgrade to a newer version.</span>
+      </div>
+      <![endif]-->
+        <noscript>
+          <div class="notification-bar notification-bar--warning" role="status">
+            <span class="notification-bar__icon">
+              <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+              <span class="sr-only">Warning</span>
+            </span>
+            <span class="notification-bar__message">Some features may not work without JavaScript. Please try enabling it if you encounter problems.</span>
+          </div>
+        </noscript>
+<div data-html-include="/_includes/unauthed/notification-banners/"></div>    </div>
+<div data-html-include="/_includes/unauthed/flash-messages/"></div><div data-html-include="/_includes/authed/session-notifications/"></div><header class="site-header ">
+  <div class="site-container">
+    <div class="split-layout">
+        <div class="split-layout">
+          <div>
+            <a class="site-header__logo" href="https://pypi.org/">
+              <img alt="PyPI" src="pypi-quiverlab_files/logo-small.0e0855d0_1l5t.svg">
+            </a>
+          </div>
+          <form class="search-form search-form--primary" action="/search/" role="search">
+            <label for="search" class="sr-only">Search PyPI</label>
+            <input id="search" class="search-form__search" type="text" name="q" placeholder="Type '/' to search projects" autocomplete="off" autocapitalize="off" spellcheck="false" data-controller="search-focus" data-action="keydown@window-&gt;search-focus#focusSearchField" data-search-focus-target="searchField">
+            <button type="submit" class="search-form__button">
+              <i class="fa fa-search" aria-hidden="true"></i>
+              <span class="sr-only">Search</span>
+            </button>
+          </form>
+        </div>
+<div data-html-include="/_includes/authed/current-user-indicator/">  <div id="user-indicator" class="horizontal-menu horizontal-menu--light horizontal-menu--tall">
+    <nav aria-label="Main navigation" class="dropdown dropdown--on-menu dropdown--with-icons">
+      <button type="button" class="horizontal-menu__link--with-icon horizontal-menu__link dropdown__trigger" aria-haspopup="true" aria-expanded="false" aria-label="View menu" data-dropdown-bound="true">
+        <img class="user-image" src="pypi-quiverlab_files/68747470733a2f2f7365637572652e67726176617461722e636f6d2_1l5t.jpg" alt="User Image">
+        marcoarmenta
+        <span class="dropdown__trigger-caret">
+          <i class="fa fa-caret-down" aria-hidden="true"></i>
+        </span>
+      </button>
+      <ul class="dropdown__content" aria-hidden="true" aria-label="Main menu">
+        <li>
+          <a href="https://pypi.org/manage/projects/" class="dropdown__link">
+            <i class="fa fa-cubes" aria-hidden="true"></i>
+Your projects          </a>
+        </li>
+        <li>
+          <a href="https://pypi.org/manage/organizations/" class="dropdown__link">
+            <i class="fa fa-sitemap" aria-hidden="true"></i>
+Your organizations          </a>
+        </li>
+        <li>
+          <a href="https://pypi.org/manage/account/" class="dropdown__link">
+            <i class="fa fa-cog" aria-hidden="true"></i>
+Account settings          </a>
+        </li>
+        <li>
+          <a href="https://pypi.org/user/marcoarmenta/" class="dropdown__link">
+            <i class="fa fa-user-circle" aria-hidden="true"></i>
+Public profile          </a>
+        </li>
+        <li>
+          <a href="https://pypi.org/help/" class="dropdown__link">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+Help          </a>
+        </li>
+        <li>
+          <a href="https://pypi.org/sponsors/" class="dropdown__link">
+            <i class="fa fa-heart" aria-hidden="true"></i>
+Sponsors          </a>
+        </li>
+        <li>
+          <form method="post" action="/account/logout/">
+            <input name="csrf_token" type="hidden" value="2IJe18jmbMOkcim-b0VfL7FQvX4TdcGoSbehy-ncc7s">
+            <button type="submit" class="dropdown__link">
+              <i class="fa fa-sign-out-alt" aria-hidden="true"></i>
+Log out            </button>
+          </form>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</div>  </div>
+</div>
+</header>
+<main id="content">
+  <div class="tabs-container">
+      <nav aria-label="Breadcrumbs" class="breadcrumbs">
+        <ul>
+            <li class="breadcrumbs__breadcrumb">Your account</li>
+        </ul>
+      </nav>
+    <div class="vertical-tabs">
+      <div class="vertical-tabs__tabs">
+        <div class="sidebar-section">
+          <nav aria-label="Account navigation">
+            <ul class="vertical-tabs__list">
+              <li>
+                <a href="https://pypi.org/manage/projects/" class="vertical-tabs__tab vertical-tabs__tab--with-icon ">
+                  <i class="fa fa-lg fa-cubes" aria-hidden="true"></i>
+Your projects                </a>
+              </li>
+              <li>
+                <a href="https://pypi.org/manage/organizations/" class="vertical-tabs__tab vertical-tabs__tab--with-icon ">
+                  <i class="fa fa-sitemap" aria-hidden="true"></i>
+Your organizations                </a>
+              </li>
+              <li>
+                <a href="https://pypi.org/manage/account/" class="vertical-tabs__tab vertical-tabs__tab--with-icon ">
+                  <i class="fa fa-cog" aria-hidden="true"></i>
+Account settings                </a>
+              </li>
+              <li>
+                <a href="https://pypi.org/manage/account/publishing/" class="vertical-tabs__tab vertical-tabs__tab--with-icon vertical-tabs__tab--is-active" aria-selected="true">
+                  <i class="fa fa-upload" aria-hidden="true"></i>
+Publishing                </a>
+              </li>
+            </ul>
+          </nav>
+        </div>
+      </div>
+      <div class="vertical-tabs__panel">
+        <!-- mobile nav -->
+        <nav aria-label="Account navigation">
+          <ul class="vertical-tabs__list">
+            <li>
+              <a href="https://pypi.org/manage/projects/" class="vertical-tabs__tab vertical-tabs__tab--mobile vertical-tabs__tab--with-icon vertical-tabs__tab--no-top-border ">
+                <i class="fa fa-lg fa-cubes" aria-hidden="true"></i>
+Your projects              </a>
+            </li>
+            <li>
+              <a href="https://pypi.org/manage/organizations/" class="vertical-tabs__tab vertical-tabs__tab--mobile vertical-tabs__tab--with-icon vertical-tabs__tab--no-top-border ">
+                <i class="fa fa-sitemap" aria-hidden="true"></i>
+Your organizations              </a>
+            </li>
+            <li>
+              <a href="https://pypi.org/manage/account/" class="vertical-tabs__tab vertical-tabs__tab--mobile vertical-tabs__tab--with-icon vertical-tabs__tab--no-top-border ">
+                <i class="fa fa-cog" aria-hidden="true"></i>
+Account settings              </a>
+            </li>
+            <li>
+              <a href="https://pypi.org/manage/account/publishing/" class="vertical-tabs__tab vertical-tabs__tab--mobile vertical-tabs__tab--with-icon vertical-tabs__tab--no-top-border vertical-tabs__tab--is-active" aria-selected="true">
+                <i class="fa fa-upload" aria-hidden="true"></i>
+Publishing              </a>
+            </li>
+          </ul>
+        </nav>
+        <div class="vertical-tabs__content">
+  <section>
+    <h1 class="page-title">Trusted Publisher Management</h1>
+      <p>
+OpenID Connect (OIDC) provides a flexible, credential-free mechanism for
+ delegating publishing authority for a PyPI package to a trusted third 
+party service, like GitHub Actions.</p>
+<p>
+PyPI users and projects can use trusted publishers to automate their 
+release processes, without needing to use API tokens or passwords.</p>
+<p class="no-bottom-padding">
+You can read more about trusted publishers and how to use them <a href="https://docs.pypi.org/trusted-publishers/">here</a>.</p>
+
+    <h2 class="no-bottom-padding">Manage publishers</h2>
+    <h3>Projects with active publishers</h3>
+      <p class="no-bottom-padding">
+No publishers are currently configured. Publishers for existing projects
+ can be added in the publishing configuration for each individual 
+project.    </p>
+  <h3>Pending publishers</h3>
+    <div id="remove-publisher-d9f842cf-33a2-4919-acec-561fda4b026f" class="modal" data-controller="modal-close">
+    <div class="modal__content" role="dialog">
+      <a href="#modal-close" data-action="click-&gt;modal-close#cancel" title="Close" class="modal__close">
+        <i class="fa fa-times" aria-hidden="true"></i>
+        <span class="sr-only">Close</span>
+      </a>
+      <form method="POST" class="modal__form" action="/manage/account/publishing/"></form>
+        <input name="csrf_token" type="hidden" value="2IJe18jmbMOkcim-b0VfL7FQvX4TdcGoSbehy-ncc7s">
+        <div class="modal__body">
+          <h3 class="modal__title">
+            Remove trusted publisher
+            ?
+          </h3>
+              <p>
+Removing this GitHub trusted publisher will prevent automated package 
+uploads from this source. You can re-add it later if needed.    </p>
+
+          <div class="form-group">    <input name="publisher_id" type="hidden" value="d9f842cf-33a2-4919-acec-561fda4b026f">
+</div>
+        </div>
+        <div class="modal__footer">
+          <button type="reset" class="button modal__action js-cancel" data-action="click-&gt;modal-close#cancel">Cancel</button>
+          <button type="submit" class="button button--danger modal__action js-confirm" data-modal-close-target="button">
+            Remove publisher
+          </button>
+        </div>
+      
+    </div>
+  </div><table class="table table--publisher-list">
+      <thead>
+        <tr>
+          <th scope="col">Pending project name</th>
+          <th scope="col">Publisher</th>
+          <th scope="col">Details</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+  <tr>
+<td scope="row">quiverlab</td>    <td scope="row">GitHub</td>
+    <td scope="row">
+      <small>
+          <b>Repository:</b> <a href="https://github.com/MarcoArmenta/quiverlab">MarcoArmenta/quiverlab</a>
+          <br>
+          <b>Workflow:</b> release.yml
+          <br>
+          <b>Environment name:</b>
+            pypi
+      </small>
+    </td>
+    <td scope="row">
+      <a href="#remove-publisher-d9f842cf-33a2-4919-acec-561fda4b026f" class="button button--danger">Remove</a>
+    </td>
+  </tr>
+    
+      </tbody>
+    </table>
+</section>
+<section>
+  <h2>Add a new pending publisher</h2>
+  <p>
+You can use this page to register "pending" trusted publishers.</p>
+<p>
+These publishers behave similarly to trusted publishers registered against specific projects, except that they allow users to <strong>create</strong>
+ the project if it doesn't already exist. Once the project is created, 
+the "pending" publisher becomes an ordinary trusted publisher. You can 
+read more about "pending" and ordinary trusted publishers <a href="https://docs.pypi.org/trusted-publishers/">here</a>.</p>
+<p class="callout-block callout-block--warning">
+Configuring a "pending" publisher for a project name does <strong>not</strong> reserve that name. Until the project is created, any other user may create it, including via their own "pending" publisher.</p>
+  <div class="horizontal-tabs" data-controller="horizontal-tabs" data-horizontal-tabs-index="0">
+    <div class="horizontal-tabs__tabbar">
+          <button data-horizontal-tabs-target="tab" data-action="horizontal-tabs#change" class="tab is-active">GitHub</button>
+          <button data-horizontal-tabs-target="tab" data-action="horizontal-tabs#change" class="tab">GitLab</button>
+          <button data-horizontal-tabs-target="tab" data-action="horizontal-tabs#change" class="tab">Google</button>
+          <button data-horizontal-tabs-target="tab" data-action="horizontal-tabs#change" class="tab">ActiveState</button>
+    </div>
+        <div class="horizontal-tabs__tabcontent" data-horizontal-tabs-target="tabPanel">  <p>
+Read more about GitHub Actions' OpenID Connect support <a href="https://docs.github.com/en/actions/deployment/security-hardening-your-deployments/about-security-hardening-with-openid-connect">here</a>.</p>
+
+<form id="pending-github-publisher-form" method="post" action="/manage/account/publishing/#errors">
+  <input name="csrf_token" type="hidden" value="2IJe18jmbMOkcim-b0VfL7FQvX4TdcGoSbehy-ncc7s">
+  
+  <div class="form-group">
+    <label for="project_name" class="form-group__label">
+      PyPI
+Project Name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="project_name-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="project_name" name="project_name" placeholder="project name" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The project that will be created on PyPI when this publisher is used    </p>
+    <div id="project_name-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="owner" class="form-group__label">
+Owner        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="owner-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="owner" name="owner" placeholder="owner" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The GitHub organization name or GitHub username that owns the repository    </p>
+    <div id="owner-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="repository" class="form-group__label">
+Repository name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="repository-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="repository" name="repository" placeholder="repository" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The name of the GitHub repository that contains the publishing workflow    </p>
+    <div id="repository-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="workflow_filename" class="form-group__label">
+Workflow name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="workflow_filename-errors" autocomplete="off" class="form-group__field" id="workflow_filename" name="workflow_filename" placeholder="workflow.yml" required="" type="text">
+    <p class="form-group__help-text">
+The filename of the publishing workflow. This file should exist in the <code>.github/workflows/</code> directory in the repository configured above.    </p>
+    <div id="workflow_filename-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="environment" class="form-group__label">
+Environment name        <span class="form-group__required">(optional)</span>
+    </label>
+    <input aria-describedby="environment-errors" autocomplete="off" class="form-group__field" id="environment" name="environment" placeholder="pypi" type="text">
+    <p class="form-group__help-text">
+The name of the <a href="https://docs.github.com/en/actions/deployment/targeting-different-environments/using-environments-for-deployment">GitHub Actions environment</a>
+ that the above workflow uses for publishing.  This should be configured
+ under the repository's settings. While not required, a dedicated 
+publishing environment is <strong>strongly</strong> encouraged, <strong>especially</strong> if your repository has maintainers with commit access who shouldn't have PyPI publishing access.  </p>
+  <div id="environment-errors"></div>
+</div>
+<div>
+  <input type="submit" value="Add" class="button button--primary ">
+</div>
+</form>
+</div>
+        <div class="horizontal-tabs__tabcontent is-hidden" data-horizontal-tabs-target="tabPanel">  <p>
+Read more about GitLab CI/CD OpenID Connect support <a href="https://docs.gitlab.com/ee/ci/secrets/id_token_authentication.html">here</a>.</p>
+
+<form id="pending-gitlab-publisher-form" method="post" action="/manage/account/publishing/#errors">
+  <input name="csrf_token" type="hidden" value="2IJe18jmbMOkcim-b0VfL7FQvX4TdcGoSbehy-ncc7s">
+  
+  <div class="form-group">
+    <label for="project_name" class="form-group__label">
+PyPI Project Name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="project_name-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="project_name" name="project_name" placeholder="project name" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The project (on PyPI) that will be created when this publisher is used    </p>
+    <div id="project_name-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="namespace" class="form-group__label">
+Namespace        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="namespace-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="namespace" name="namespace" placeholder="namespace" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The GitLab username or GitLab group/subgroup namespace that the project is under    </p>
+    <div id="namespace-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="project" class="form-group__label">
+Project name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="project-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="project" name="project" placeholder="project" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The name of the GitLab project that contains the publishing workflow    </p>
+    <div id="project-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="workflow_filepath" class="form-group__label">
+Top-level pipeline file path        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="workflow_filepath-errors" autocomplete="off" class="form-group__field" id="workflow_filepath" name="workflow_filepath" placeholder=".gitlab-ci.yml" required="" type="text">
+    <p class="form-group__help-text">
+The file path of the top-level pipeline, relative to the project's root.
+ This file should exist in the project configured above (external 
+pipelines are not supported).    </p>
+    <div id="workflow_filepath-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="environment" class="form-group__label">
+Environment name        <span class="form-group__required">(optional)</span>
+    </label>
+    <input aria-describedby="environment-errors" autocomplete="off" class="form-group__field" id="environment" name="environment" placeholder="release" type="text">
+    <p class="form-group__help-text">
+The name of the <a href="https://docs.gitlab.com/ee/ci/environments/">GitLab CI/CD environment</a>
+ that the above workflow uses for publishing.  This should be configured
+ under the project's settings. While not required, a dedicated 
+publishing environment is <strong>strongly</strong> encouraged, <strong>especially</strong> if your project has maintainers with commit access who shouldn't have PyPI publishing access.  </p>
+  <div id="environment-errors"></div>
+  <select hidden="" id="issuer_url" name="issuer_url" required=""><option selected="selected" value="https://gitlab.com">https://gitlab.com</option></select>
+</div>
+<div>
+  <input type="submit" value="Add" class="button button--primary ">
+</div>
+</form>
+</div>
+        <div class="horizontal-tabs__tabcontent is-hidden" data-horizontal-tabs-target="tabPanel">  <p>
+Read more about Google's OpenID Connect support <a href="https://cloud.google.com/iam/docs/service-account-creds">here</a>.</p>
+
+<form id="pending-google-publisher-form" method="post" action="/manage/account/publishing/#errors">
+  <input name="csrf_token" type="hidden" value="2IJe18jmbMOkcim-b0VfL7FQvX4TdcGoSbehy-ncc7s">
+  
+  <div class="form-group">
+    <label for="project_name" class="form-group__label">
+PyPI Project Name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="project_name-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="project_name" name="project_name" placeholder="project name" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The project (on PyPI) that will be created when this publisher is used    </p>
+    <div id="project_name-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="email" class="form-group__label">
+Email        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="email-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="email" name="email" placeholder="email" required="" spellcheck="false" type="email">
+    <p class="form-group__help-text">
+The email address of the account or service account used to publish.    </p>
+    <div id="email-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="subject" class="form-group__label">
+Subject        <span class="form-group__required">(optional)</span>
+    </label>
+    <input aria-describedby="sub-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="sub" name="sub" placeholder="subject" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The subject is the numeric ID that represents the principal making the 
+request. While not required, providing the subject further restricts the
+ identity used for publishing. <a href="https://cloud.google.com/docs/authentication/token-types#id-contents">More details here.</a>    </p>
+    <div id="sub-errors"></div>
+  </div>
+  <div>
+    <input type="submit" value="Add" class="button button--primary ">
+  </div>
+</form>
+</div>
+        <div class="horizontal-tabs__tabcontent is-hidden" data-horizontal-tabs-target="tabPanel">  <p>
+Read more about ActiveState's OpenID Connect support <a href="https://docs.activestate.com/platform/user/oidc/">here</a>.</p>
+
+<form id="pending-activestate-publisher-form" method="post" action="/manage/account/publishing/#errors">
+  <input name="csrf_token" type="hidden" value="2IJe18jmbMOkcim-b0VfL7FQvX4TdcGoSbehy-ncc7s">
+  
+  <div class="form-group">
+    <label for="project_name" class="form-group__label">
+PyPI Project Name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="project_name-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="project_name" name="project_name" placeholder="project name" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The project (on PyPI) that will be created when this publisher is used    </p>
+    <div id="project_name-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="organization" class="form-group__label">
+Organization        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="organization-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="organization" name="organization" placeholder="my-organization" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">The ActiveState organization name that owns the project</p>
+    <div id="organization-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="project" class="form-group__label">
+ActiveState Project name        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="project-errors" autocapitalize="off" autocomplete="off" class="form-group__field" id="project" name="project" placeholder="my-project" required="" spellcheck="false" type="text">
+    <p class="form-group__help-text">
+The ActiveState project that will build your Python artifact.    </p>
+    <div id="project-errors"></div>
+  </div>
+  <div class="form-group">
+    <label for="actor" class="form-group__label">
+Actor Username        <span class="form-group__required">(required)</span>
+    </label>
+    <input aria-describedby="actor-errors" autocomplete="off" class="form-group__field" id="actor" name="actor" placeholder="my-username" required="" type="text">
+    <p class="form-group__help-text">
+The username for the ActiveState account that will trigger the build of your Python artifact.    </p>
+    <div id="actor-errors"></div>
+  </div>
+  <div>
+    <input type="submit" value="Add" class="button button--primary ">
+  </div>
+</form>
+</div>
+  </div>
+</section>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<footer class="footer">
+  <div class="footer__logo">
+    <img src="pypi-quiverlab_files/white-cube.2351a86c_1l5t.svg" alt="" class="-js-white-cube">
+  </div>
+  <div class="footer__menus">
+    <div class="footer__menu">
+      <h2>Help</h2>
+      <nav aria-label="Help navigation">
+        <ul>
+          <li>
+            <a href="https://packaging.python.org/tutorials/installing-packages/" title="External link" target="_blank" rel="noopener">Installing packages</a>
+          </li>
+          <li>
+            <a href="https://packaging.python.org/tutorials/packaging-projects/" title="External link" target="_blank" rel="noopener">Uploading packages</a>
+          </li>
+          <li>
+            <a href="https://packaging.python.org/" title="External link" target="_blank" rel="noopener">User guide</a>
+          </li>
+          <li>
+            <a href="https://www.python.org/dev/peps/pep-0541/" title="External link" target="_blank" rel="noopener">Project name retention</a>
+          </li>
+          <li>
+            <a href="https://pypi.org/help/">FAQs</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__menu">
+      <h2>About PyPI</h2>
+      <nav aria-label="About PyPI navigation">
+        <ul>
+          <li>
+            <a href="https://blog.pypi.org/" title="External link" target="_blank" rel="noopener">PyPI Blog</a>
+          </li>
+          <li>
+            <a href="https://dtdg.co/pypi" title="External link" target="_blank" rel="noopener">Infrastructure dashboard</a>
+          </li>
+          <li>
+            <a href="https://pypi.org/stats/">Statistics</a>
+          </li>
+          <li>
+            <a href="https://pypi.org/trademarks/">Logos &amp; trademarks</a>
+          </li>
+          <li>
+            <a href="https://pypi.org/sponsors/">Our sponsors</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__menu">
+      <h2>Contributing to PyPI</h2>
+      <nav aria-label="How to contribute navigation">
+        <ul>
+          <li>
+            <a href="https://pypi.org/help/#feedback">Bugs and feedback</a>
+          </li>
+          <li>
+            <a href="https://github.com/pypi/warehouse" title="External link" target="_blank" rel="noopener">Contribute on GitHub</a>
+          </li>
+          <li>
+            <a href="https://hosted.weblate.org/projects/pypa/warehouse/" title="External link" target="_blank" rel="noopener">Translate PyPI</a>
+          </li>
+          <li>
+            <a href="https://pypi.org/sponsors/">Sponsor PyPI</a>
+          </li>
+          <li>
+            <a href="https://github.com/pypi/warehouse/graphs/contributors" title="External link" target="_blank" rel="noopener">Development credits</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__menu">
+      <h2>Using PyPI</h2>
+      <nav aria-label="Using PyPI navigation">
+        <ul>
+          <li>
+            <a href="https://policies.python.org/pypi.org/Terms-of-Service/" title="External link" target="_blank" rel="noopener">Terms of Service</a>
+          </li>
+          <li>
+            <a href="https://pypi.org/security/">Report security issue</a>
+          </li>
+          <li>
+            <a href="https://policies.python.org/python.org/code-of-conduct/" title="External link" target="_blank" rel="noopener">Code of conduct</a>
+          </li>
+          <li>
+            <a href="https://policies.python.org/pypi.org/Privacy-Notice/" title="External link" target="_blank" rel="noopener">Privacy Notice</a>
+          </li>
+          <li>
+            <a href="https://policies.python.org/pypi.org/Acceptable-Use-Policy/" title="External link" target="_blank" rel="noopener">Acceptable Use Policy</a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+  <hr class="footer__divider">
+  <div class="footer__text">
+      <p>
+Status:<a href="https://status.python.org/" title="External link" target="_blank" rel="noopener">
+        <span data-statuspage-domain="https://2p66nmmycsj3.statuspage.io">All Systems Operational</span></a>
+    </p>
+  <p>
+Developed and maintained by the Python community, for the Python community.    <br>
+    <a href="https://donate.pypi.org/">Donate today!</a>
+  </p>
+  <p>
+    "PyPI", "Python Package Index", and the blocks logos are registered <a href="https://pypi.org/trademarks/">trademarks</a> of the <a href="https://www.python.org/psf-landing" target="_blank" rel="noopener">Python Software Foundation</a>.
+    <br>
+  </p>
+  <p>
+    © 2026 <a href="https://www.python.org/psf-landing/" title="External link" target="_blank" rel="noopener">Python Software Foundation</a>
+    <br>
+    <a href="https://pypi.org/sitemap/">Site map</a>
+  </p>
+    <p>
+Deployed from <a href="https://github.com/pypi/warehouse/commit/8bf167507c8913771def607c88f6aa448f6b8d66" title="External link" target="_blank" rel="noopener"><code>8bf1675</code></a>    </p>
+</div>
+<div class="centered hide-on-desktop">
+  <button type="button" class="button button--switch-to-desktop" data-viewport-toggle-target="switchToDesktop" data-action="viewport-toggle#switchToDesktop">Switch to desktop version</button>
+</div>
+</footer>
+<div class="language-switcher">
+  <form action="/locale/">
+    <ul>
+        <li>
+          <button class="language-switcher__selected" name="locale_id" value="en" type="submit">English</button>
+        </li>
+        <li>
+          <button name="locale_id" value="es" type="submit">español</button>
+        </li>
+        <li>
+          <button name="locale_id" value="fr" type="submit">français</button>
+        </li>
+        <li>
+          <button name="locale_id" value="ja" type="submit">日本語</button>
+        </li>
+        <li>
+          <button name="locale_id" value="pt_BR" type="submit">português (Brasil)</button>
+        </li>
+        <li>
+          <button name="locale_id" value="uk" type="submit">українська</button>
+        </li>
+        <li>
+          <button name="locale_id" value="el" type="submit">Ελληνικά</button>
+        </li>
+        <li>
+          <button name="locale_id" value="de" type="submit">Deutsch</button>
+        </li>
+        <li>
+          <button name="locale_id" value="zh_Hans" type="submit">中文 (简体)</button>
+        </li>
+        <li>
+          <button name="locale_id" value="zh_Hant" type="submit">中文 (繁體)</button>
+        </li>
+        <li>
+          <button name="locale_id" value="ru" type="submit">русский</button>
+        </li>
+        <li>
+          <button name="locale_id" value="he" type="submit">עברית</button>
+        </li>
+        <li>
+          <button name="locale_id" value="eo" type="submit">Esperanto</button>
+        </li>
+        <li>
+          <button name="locale_id" value="ko" type="submit">한국어</button>
+        </li>
+    </ul>
+  </form>
+</div>
+<div class="sponsors">
+  <p class="sponsors__title">Supported by</p>
+  <div class="sponsors__divider"></div>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://aws.amazon.com/">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c656170697_005_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">AWS</span>
+          <span class="sponsors__service">
+              Cloud computing and Security Sponsor
+          </span>
+        </a>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://www.datadoghq.com/">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c656170697_002_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">Datadog</span>
+          <span class="sponsors__service">
+              Monitoring
+          </span>
+        </a>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://depot.dev/">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c65617069732e6_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">Depot</span>
+          <span class="sponsors__service">
+              Continuous Integration
+          </span>
+        </a>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://www.fastly.com/">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c656170697_007_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">Fastly</span>
+          <span class="sponsors__service">
+              CDN
+          </span>
+        </a>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://careers.google.com/">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c656170697_006_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">Google</span>
+          <span class="sponsors__service">
+              Download Analytics
+          </span>
+        </a>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://www.pingdom.com/">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c656170697_003_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">Pingdom</span>
+          <span class="sponsors__service">
+              Monitoring
+          </span>
+        </a>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://sentry.io/for/python/?utm_source=pypi&amp;utm_medium=paid-community&amp;utm_campaign=python-na-evergreen&amp;utm_content=static-ad-pypi-sponsor-learnmore">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c656170697_008_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">Sentry</span>
+          <span class="sponsors__service">
+              Error logging
+          </span>
+        </a>
+        <a class="sponsors__sponsor" target="_blank" rel="noopener" href="https://statuspage.io/">
+          <img class="sponsors__image" src="pypi-quiverlab_files/68747470733a2f2f73746f726167652e676f6f676c656170697_004_1l5t.png" alt="" loading="lazy">
+          <span class="sponsors__name">StatusPage</span>
+          <span class="sponsors__service">
+              Status page
+          </span>
+        </a>
+</div>
+</body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>

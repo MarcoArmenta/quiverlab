@@ -27,6 +27,7 @@ class CatalogError(ValueError):
 _NON_FORM_FAMILIES = frozenset({
     "BrauerGraphAlgebra",   # P46: graph-structured input, preset-surfaced
     "ToupieAlgebra",        # P59: list-arg (branch lengths) constructor, preset-surfaced
+    "SkewGentleAlgebra",    # P68: triple (Q, I, Sp) input, skew-gentle preset-surfaced
     "zoo", "OnePointExtension", "repetitive_slice", "JacobianAlgebra",
     # P48 surfaces: take Triangulation/MarkedSurface/int args (not scalar bool/int/str
     # forms) -- surfaced as drawable presets, the produced gentle algebra flows through

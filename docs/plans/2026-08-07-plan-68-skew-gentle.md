@@ -806,15 +806,25 @@ the split algebra.
       forms: tuple           # the split incarnations: 1 form for (u,u); 2 for a p-end; ...
   def classify(triple, max_length=8, budget=4096) -> list[SkewGentleString]
       # P46 census on A^g, each walk typed by whether an endpoint sits at a special
-      # vertex (and is not the special loop). HONEST completeness contract inherited from
-      # enumerate_strings (complete iff rep-finite; see certificate.py).
+      # vertex (and is not the special loop).
+      # CORRECTION (fix round, adjudicated): this is the LOOP-FREE A^g-walk census, a
+      # documented STRICT SUBSET of the indecomposables at the MODULE level (headline 5 of
+      # 6, mesh 8 of 11) -- NOT "complete iff rep-finite". The missing modules are the
+      # loop-traversal / mixed-eigenvalue ones (e.g. the projective P_1); no loop-free
+      # A^g-walk produces them, and the symmetric-string enumeration (Garcia-Lavoue Table
+      # 1 / clan classification) that WOULD is a DEEPER-ENGINES-BACKLOG item.
+      # skew_gentle_indecomposables (AR route) is the AUTHORITATIVE enumeration.
   def skew_gentle_module(triple, sgstring, form=0, field=None) -> Module
       # materialise the A-module on the SPLIT algebra for the chosen `form`. Uses the
       # split copies i_plus/i_minus as the two forms of a special string; the ordinary
-      # string maps through the unique copies. Self-certifies via check_module.
+      # string maps through the unique copies. Self-certifies via check_module. (A member
+      # of the loop-free census -- the strict subset above.)
   def skew_gentle_indecomposables(triple, max_length=8, budget=4096, field=None) -> list[Module]
-      # all materialised indecomposables (every form of every classified string; bands at
-      # a sanctioned eigenvalue). Each is_indecomposable-checked over QQ / GF(32003).
+      # AUTHORITATIVE: ALL indecomposables via the P41 AR quiver, run over the char-FREE
+      # split model (QQ) -- a presentation invariant, NOT the caller's field (M3, mirroring
+      # the certificate; the char-2 regression). Falls back to the loop-free string census
+      # (a sound partial sample) only on a loud non-complete AR status -- never a silent
+      # read of "rep-infinite". Each is_indecomposable-checked over QQ.
   ```
 
 - [ ] **Step 1: Write the failing tests**

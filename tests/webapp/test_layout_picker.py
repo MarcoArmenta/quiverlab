@@ -46,6 +46,8 @@ ALL_KINDS = {
     "recognizer_ladder",
     # Plan 59 (2026-08-07): the R34 homological string test + R35 toupie structure.
     "string_homological", "toupie",
+    # Plan 68 (2026-08-07): the skew-gentle triple (Q, I, Sp).
+    "skew_gentle",
     # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
     "fundamental_group", "simply_connected",
     # Plan 60 (2026-08-07): the tilted-algebra recognizer (Liu-Skowroński).

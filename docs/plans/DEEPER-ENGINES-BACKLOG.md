@@ -375,6 +375,20 @@ planned together even if delivered in slices.
   the full knit**. Plus **Thm 2.7's tilted-quotient algebras** `B = A/ann(Δ)` (a genuine
   extension: tilted quotients of a non-tilted `A`; P60 accepts only faithful `Δ`, so
   `ann(Δ)=0` and `B=A`). Deferred from P60 v1; P80 reconciles.
+- [ ] **Complete the skew-gentle symmetric / loop-traversal string enumeration**
+  (Plan 68 fix round, 2026-08-08): the string layer `classify` / `skew_gentle_module`
+  is currently a **loop-free `A^g`-walk census**, a documented STRICT SUBSET of the
+  indecomposables at the module level (headline 5 of 6, mesh 8 of 11). The missing
+  modules are the **symmetric / loop-traversal** (mixed-eigenvalue) ones — e.g. the
+  projective `P_1` of the headline, on which the split idempotent mixes the `+/-`
+  eigenvalues along a path — which the theory DOES describe (Garcia–Lavoué Table 1 / the
+  clan classification), so the incompleteness is in the implementation's loop-free
+  enumeration, NOT the theory. Implement the symmetric-string / loop-traversal walks so
+  the STRING layer classifies ALL indecomposables (today `skew_gentle_indecomposables`
+  is authoritative via the P41 AR quiver, and the count stays AR-authoritative). This
+  also lets route 2 of the certificate (the associated-gentle band census) extend to
+  SPECIAL bands (W4), upgrading it from a one-sided rep-infinite check to a full
+  agreement oracle.
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
   Plan 20, 2026-07-24, branch `plan-20-native-cs-cup`**
   (`2026-07-24-plan-20-native-cs-cup.md`). A comparison-lifted diagonal

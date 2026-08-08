@@ -287,6 +287,7 @@
   "pick.kind.ar_quiver": "Auslander–Reiten 箭图",
   "pick.kind.string_homological": "同调弦代数判定",
   "pick.kind.toupie": "陀螺代数结构",
+  "pick.kind.skew_gentle": "skew-gentle 代数 (Q, I, Sp)",
   "pick.kind.radical_filtration": "模范畴 mod A 的根基滤链：radⁿ(X,Y) 及幂零指数（不是 Loewy 根基列）",
   "pick.kind.ar_invariants": "AR 分支不变量：Liu 度、导向模、表示导向",
   "pick.kind.derived_compare": "导出比较（与 B）",

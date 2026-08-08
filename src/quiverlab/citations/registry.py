@@ -432,6 +432,35 @@ REGISTRY: dict = {r.key: r for r in [
        "Tame biserial algebras",
        "Biserial / special-biserial structure underlying string and Brauer graph "
        "algebras.", "families"),
+    # --- Plan 68: R32 skew-gentle algebras ---
+    _r("he_zhou_zhu", "HeZhouZhu2020", "family",
+       "A geometric model for the module category of a skew-gentle algebra",
+       "He-Zhou-Zhu: the skew-gentle triple (Q,Sp,I), the idempotent specialization "
+       "eps^2=eps, the split/doubled quiver, and support tau-tilting via the orbifold "
+       "model -- the primary skew-gentle source.", "families", "modules"),
+    _r("chen_skew_gentle", "Chen2022skewgentle", "family",
+       "A characteristic free approach to skew-gentle algebras",
+       "Chen: the char-free idempotent split construction (sec 3), the selfinjective "
+       "classification (Sp=empty & gentle selfinjective), the K-theory/dim relation, and "
+       "Gorensteinness -- the split constructor's binding source, valid in char 2.",
+       "families"),
+    _r("amiot_skew_gentle", "Amiot2021skewgentle", "algorithm",
+       "Indecomposable objects in the derived category of a skew-gentle algebra via orbifolds",
+       "Amiot: skew-gentle as Z2-skew-group of a gentle algebra; the orbifold/double-cover "
+       "geometric model backing the geometric-vs-engine tau-tilting cross-check.", "modules"),
+    _r("garcia_lavoue", "GarciaLavoue2026", "algorithm",
+       "Brick-finite skew-gentle algebras are representation-finite",
+       "Garcia-Lavoue Thm 3.1 (char != 2): brick-finite <=> rep-finite for skew-gentle -- "
+       "composed with DIJ (brick-finite <=> tau-tilting-finite) gives the rep-type "
+       "certificate.", "modules"),
+    _r("geiss_delapena", "GeissDeLaPena1999", "foundation",
+       "Auslander-Reiten components for clans",
+       "Geiss-de la Pena: the original skew-gentle / clan definition (char != 2).",
+       "families"),
+    _r("crawley_boevey_clans", "CrawleyBoevey1989", "foundation",
+       "Functorial filtrations II: clans and the Gelfand problem",
+       "Crawley-Boevey: the classification of indecomposables for clans, underlying the "
+       "special-string re-gluing (the +/- forms).", "modules"),
     _r("bongartz_tilting", "Bongartz1981", "foundation",
        "Tilted algebras",
        "Bongartz's count criterion for tilting modules (# non-iso indecomposable "

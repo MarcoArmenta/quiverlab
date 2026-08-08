@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>html{background:#fff;color:#111}body{font-family:Georgia,'Times New Roman',serif;line-height:1.5;max-width:46em;margin:2em auto;padding:0 1.5em;background:#fff;color:#111}h1{font-size:1.6em;border-bottom:2px solid #333;padding-bottom:.25em}h2{font-size:1.15em;margin-top:1.5em;border-bottom:1px solid #ccc;padding-bottom:.12em}p{margin:.5em 0}math{font-size:1.05em}.ql-eq{margin:.7em 0;overflow-x:auto}.ql-hint{background:#eef3ff;border:1px solid #9db8e8;border-radius:6px;padding:.6em .85em;margin:0 0 1.4em;font-family:sans-serif;font-size:.92em;color:#123}ol,ul{padding-left:1.4em}@media print{.ql-hint{display:none}body{max-width:none;margin:0;font-size:11pt}h2,.ql-eq,math{break-inside:avoid;page-break-inside:avoid}h1,h2{break-after:avoid}}@page{margin:2cm}</style>
+<title>Worked steps: HH_ of Algebra of dimension 15 over CC (computing exactly in QQ)</title></head><body>
+<h1>Worked steps: HH_ of Algebra of dimension 15 over CC (computing exactly in QQ)</h1>
+<p class="ql-hint">The complete worked-steps record, exactly as 
+computed. Deliverables are this HTML page and the JSON records described
+ at the end — mathematics is typeset as MathML.</p>
+<h2>Contents</h2><ol class="ql-toc">
+<li><a href="#example">The example</a></li>
+<li><a href="#resolution">Resolution</a></li>
+<li><a href="#projectives-injectives">The projectives and injectives of A</a></li>
+<li><a href="#resolution-steps">Worked resolution steps</a></li>
+<li><a href="#result">Result</a></li>
+<li><a href="#json-record">The JSON record</a></li>
+<li><a href="#references">References</a></li>
+</ol>
+<h2 id="example">The example</h2>
+<svg viewBox="0 0 640 330" role="img" style="max-width:640px;width:100%;display:block;border:1px solid #ddd;border-radius:6px;background:#fafafa">
+<defs><marker id="qlarr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#444"></path></marker></defs>
+<path d="M 424 155 Q 350 113 276 71" fill="none" stroke="#444" stroke-width="2" marker-end="url(#qlarr)"></path>
+<text x="357" y="98" font-size="15" font-style="italic" text-anchor="middle" fill="#1c1c1c">a</text>
+<path d="M 250 47 C 234 9, 286 9, 270 47" fill="none" stroke="#444" stroke-width="2" marker-end="url(#qlarr)"></path>
+<text x="260" y="13" font-size="15" font-style="italic" text-anchor="middle" fill="#1c1c1c">b</text>
+<path d="M 260 79 Q 260 165 260 252" fill="none" stroke="#444" stroke-width="2" marker-end="url(#qlarr)"></path>
+<text x="248" y="161" font-size="15" font-style="italic" text-anchor="middle" fill="#1c1c1c">c</text>
+<path d="M 250 256 C 234 218, 286 218, 270 256" fill="none" stroke="#444" stroke-width="2" marker-end="url(#qlarr)"></path>
+<text x="260" y="222" font-size="15" font-style="italic" text-anchor="middle" fill="#1c1c1c">d</text>
+<circle cx="440" cy="165" r="15" fill="#fff" stroke="#3f51b5" stroke-width="2"></circle>
+<text x="440" y="170" font-size="14" text-anchor="middle" fill="#1c1c1c">1</text>
+<circle cx="260" cy="61" r="15" fill="#fff" stroke="#3f51b5" stroke-width="2"></circle>
+<text x="260" y="66" font-size="14" text-anchor="middle" fill="#1c1c1c">2</text>
+<circle cx="260" cy="270" r="15" fill="#fff" stroke="#3f51b5" stroke-width="2"></circle>
+<text x="260" y="275" font-size="14" text-anchor="middle" fill="#1c1c1c">3</text>
+</svg>
+<p><b>Relations:</b> <code>b*b, d*d</code></p>
+<p>Algebra of dimension 15 over CC (computing exactly in QQ)</p>
+<h2 id="resolution">Resolution</h2>
+<p><b>Resolution used:</b> chouhy-solotar<br><i>the bar oracle exceeded 
+max_cells at this depth; auto reroutes to the Chouhy-Solotar resolution 
+over the admissible presentation (exact, certified per instance)</i><br>defining relations: 2</p>
+<h2 id="projectives-injectives">The projectives and injectives of A</h2>
+<p><i>Loewy layers stacked top to bottom; the simples S<sub>v</sub> are omitted.</i></p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>P</mi><mrow><mn>1</mn></mrow></msub><mo>=</mo><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="2em"></mspace><mi>dim</mi><mo>=</mo><mn>7</mn><mo>,</mo><mspace width="0.25em"></mspace><munder accentunder="true"><mrow><mrow><mi>dim</mi></mrow></mrow><mo>―</mo></munder><mo>=</mo><mo>(</mo><mn>1</mn><mrow><mo>:</mo></mrow><mn>1</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>2</mn><mrow><mo>:</mo></mrow><mn>2</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>3</mn><mrow><mo>:</mo></mrow><mn>4</mn><mo>)</mo></mrow><annotation encoding="application/x-tex">P_{1}
+ = \begin{matrix} S_{1} \end{matrix} \;\big|\; \begin{matrix} S_{2} 
+\end{matrix} \;\big|\; \begin{matrix} S_{2} \\ S_{3} \end{matrix} 
+\;\big|\; \begin{matrix} S_{3} \\ S_{3} \end{matrix} \;\big|\; 
+\begin{matrix} S_{3} \end{matrix} \qquad \dim = 7,\ \underline{\dim} = 
+(1{:}1,\ 2{:}2,\ 3{:}4)</annotation></semantics></math></div>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>I</mi><mrow><mn>1</mn></mrow></msub><mo>=</mo><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr></mtable><mspace width="2em"></mspace><mi>dim</mi><mo>=</mo><mn>1</mn><mo>,</mo><mspace width="0.25em"></mspace><munder accentunder="true"><mrow><mrow><mi>dim</mi></mrow></mrow><mo>―</mo></munder><mo>=</mo><mo>(</mo><mn>1</mn><mrow><mo>:</mo></mrow><mn>1</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>2</mn><mrow><mo>:</mo></mrow><mn>0</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>3</mn><mrow><mo>:</mo></mrow><mn>0</mn><mo>)</mo></mrow><annotation encoding="application/x-tex">I_{1} = \begin{matrix} S_{1} \end{matrix} \qquad \dim = 1,\ \underline{\dim} = (1{:}1,\ 2{:}0,\ 3{:}0)</annotation></semantics></math></div>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>P</mi><mrow><mn>2</mn></mrow></msub><mo>=</mo><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="2em"></mspace><mi>dim</mi><mo>=</mo><mn>6</mn><mo>,</mo><mspace width="0.25em"></mspace><munder accentunder="true"><mrow><mrow><mi>dim</mi></mrow></mrow><mo>―</mo></munder><mo>=</mo><mo>(</mo><mn>1</mn><mrow><mo>:</mo></mrow><mn>0</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>2</mn><mrow><mo>:</mo></mrow><mn>2</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>3</mn><mrow><mo>:</mo></mrow><mn>4</mn><mo>)</mo></mrow><annotation encoding="application/x-tex">P_{2}
+ = \begin{matrix} S_{2} \end{matrix} \;\big|\; \begin{matrix} S_{2} \\ 
+S_{3} \end{matrix} \;\big|\; \begin{matrix} S_{3} \\ S_{3} \end{matrix} 
+\;\big|\; \begin{matrix} S_{3} \end{matrix} \qquad \dim = 6,\ 
+\underline{\dim} = (1{:}0,\ 2{:}2,\ 3{:}4)</annotation></semantics></math></div>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>I</mi><mrow><mn>2</mn></mrow></msub><mo>=</mo><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr></mtable><mspace width="2em"></mspace><mi>dim</mi><mo>=</mo><mn>4</mn><mo>,</mo><mspace width="0.25em"></mspace><munder accentunder="true"><mrow><mrow><mi>dim</mi></mrow></mrow><mo>―</mo></munder><mo>=</mo><mo>(</mo><mn>1</mn><mrow><mo>:</mo></mrow><mn>2</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>2</mn><mrow><mo>:</mo></mrow><mn>2</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>3</mn><mrow><mo>:</mo></mrow><mn>0</mn><mo>)</mo></mrow><annotation encoding="application/x-tex">I_{2}
+ = \begin{matrix} S_{1} \\ S_{1} \end{matrix} \;\big|\; \begin{matrix} 
+S_{2} \end{matrix} \;\big|\; \begin{matrix} S_{2} \end{matrix} \qquad 
+\dim = 4,\ \underline{\dim} = (1{:}2,\ 2{:}2,\ 3{:}0)</annotation></semantics></math></div>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>P</mi><mrow><mn>3</mn></mrow></msub><mo>=</mo><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="2em"></mspace><mi>dim</mi><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="0.25em"></mspace><munder accentunder="true"><mrow><mrow><mi>dim</mi></mrow></mrow><mo>―</mo></munder><mo>=</mo><mo>(</mo><mn>1</mn><mrow><mo>:</mo></mrow><mn>0</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>2</mn><mrow><mo>:</mo></mrow><mn>0</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>3</mn><mrow><mo>:</mo></mrow><mn>2</mn><mo>)</mo></mrow><annotation encoding="application/x-tex">P_{3}
+ = \begin{matrix} S_{3} \end{matrix} \;\big|\; \begin{matrix} S_{3} 
+\end{matrix} \qquad \dim = 2,\ \underline{\dim} = (1{:}0,\ 2{:}0,\ 
+3{:}2)</annotation></semantics></math></div>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>I</mi><mrow><mn>3</mn></mrow></msub><mo>=</mo><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>1</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr><mtr><mtd><msub><mi>S</mi><mrow><mn>2</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="0.278em"></mspace><mo>|</mo><mspace width="0.278em"></mspace><mtable><mtr><mtd><msub><mi>S</mi><mrow><mn>3</mn></mrow></msub></mtd></mtr></mtable><mspace width="2em"></mspace><mi>dim</mi><mo>=</mo><mn>10</mn><mo>,</mo><mspace width="0.25em"></mspace><munder accentunder="true"><mrow><mrow><mi>dim</mi></mrow></mrow><mo>―</mo></munder><mo>=</mo><mo>(</mo><mn>1</mn><mrow><mo>:</mo></mrow><mn>4</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>2</mn><mrow><mo>:</mo></mrow><mn>4</mn><mo>,</mo><mspace width="0.25em"></mspace><mn>3</mn><mrow><mo>:</mo></mrow><mn>2</mn><mo>)</mo></mrow><annotation encoding="application/x-tex">I_{3}
+ = \begin{matrix} S_{1} \\ S_{1} \\ S_{1} \\ S_{1} \end{matrix} 
+\;\big|\; \begin{matrix} S_{2} \\ S_{2} \end{matrix} \;\big|\; 
+\begin{matrix} S_{2} \\ S_{2} \end{matrix} \;\big|\; \begin{matrix} 
+S_{3} \end{matrix} \;\big|\; \begin{matrix} S_{3} \end{matrix} \qquad 
+\dim = 10,\ \underline{\dim} = (1{:}4,\ 2{:}4,\ 3{:}2)</annotation></semantics></math></div>
+<p class="ql-cite">Loewy series and the projectives/injectives P<sub>v</sub>, I<sub>v</sub> follow [ASS2006] (see References).</p>
+<h2 id="resolution-steps">Worked resolution steps</h2>
+<p><i>C<sub>n</sub> is the degree-n term of the resolution named above; 
+the matrices below are its differentials (rows: target basis, columns: 
+source basis).</i></p>
+<h3>Degree 0</h3><p>Term with 3 generators (dim C<sub>0</sub> = 5).</p>
+<h3>Degree 1</h3><p>Term with 4 generators (dim C<sub>1</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>1</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>1</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>0</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>1</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">b_{1}
+ : C_{1} \to C_{0},\qquad b_{1} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \end{pmatrix} 
+\qquad \operatorname{rank} = 0</annotation></semantics></math></div>
+<h3>Degree 2</h3><p>Term with 2 generators (dim C<sub>2</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>2</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>2</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>1</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>2</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">b_{2}
+ : C_{2} \to C_{1},\qquad b_{2} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 2 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 2 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 2</annotation></semantics></math></div>
+<h3>Degree 3</h3><p>Term with 2 generators (dim C<sub>3</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>3</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>3</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>2</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>3</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">b_{3}
+ : C_{3} \to C_{2},\qquad b_{3} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 0 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 0</annotation></semantics></math></div>
+<h3>Degree 4</h3><p>Term with 2 generators (dim C<sub>4</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>4</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>4</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>3</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>4</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">b_{4}
+ : C_{4} \to C_{3},\qquad b_{4} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 2 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 2 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 2</annotation></semantics></math></div>
+<h3>Degree 5</h3><p>Term with 2 generators (dim C<sub>5</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>5</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>5</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>4</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>5</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">b_{5}
+ : C_{5} \to C_{4},\qquad b_{5} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 0 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 0</annotation></semantics></math></div>
+<h3>Degree 6</h3><p>Term with 2 generators (dim C<sub>6</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>6</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>6</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>5</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>6</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">b_{6}
+ : C_{6} \to C_{5},\qquad b_{6} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 2 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 2 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 2</annotation></semantics></math></div>
+<h3>Degree 7</h3><p>Term with 2 generators (dim C<sub>7</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>7</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>7</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>6</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>7</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">b_{7}
+ : C_{7} \to C_{6},\qquad b_{7} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 0 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 0</annotation></semantics></math></div>
+<h3>Degree 8</h3><p>Term with 2 generators (dim C<sub>8</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>8</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>8</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>7</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>8</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">b_{8}
+ : C_{8} \to C_{7},\qquad b_{8} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 2 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 2 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 2</annotation></semantics></math></div>
+<h3>Degree 9</h3><p>Term with 2 generators (dim C<sub>9</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>9</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>9</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>8</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>9</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>0</mn></mrow><annotation encoding="application/x-tex">b_{9}
+ : C_{9} \to C_{8},\qquad b_{9} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 0 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 0</annotation></semantics></math></div>
+<h3>Degree 10</h3><p>Term with 2 generators (dim C<sub>10</sub> = 4).</p>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>b</mi><mrow><mn>10</mn></mrow></msub><mo>:</mo><msub><mi>C</mi><mrow><mn>10</mn></mrow></msub><mo>→</mo><msub><mi>C</mi><mrow><mn>9</mn></mrow></msub><mo>,</mo><mspace width="2em"></mspace><msub><mi>b</mi><mrow><mn>10</mn></mrow></msub><mo>=</mo><mrow><mo>(</mo><mtable><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd></mtr><mtr><mtd><mn>0</mn></mtd><mtd><mn>0</mn></mtd><mtd><mn>2</mn></mtd><mtd><mn>0</mn></mtd></mtr></mtable><mo>)</mo></mrow><mspace width="2em"></mspace><mi>rank</mi><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">b_{10}
+ : C_{10} \to C_{9},\qquad b_{10} = \begin{pmatrix} 0 &amp; 0 &amp; 0 
+&amp; 0 \\ 2 &amp; 0 &amp; 0 &amp; 0 \\ 0 &amp; 0 &amp; 0 &amp; 0 \\ 0 
+&amp; 0 &amp; 2 &amp; 0 \end{pmatrix} \qquad \operatorname{rank} = 2</annotation></semantics></math></div>
+<h2 id="result">Result</h2>
+<div class="ql-eq"><math display="block"><semantics><mrow><msub><mi>HH</mi><mrow><mn>0</mn></mrow></msub><mo>=</mo><mn>5</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>1</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>2</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>3</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>4</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>5</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>6</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>7</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>8</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>9</mn></mrow></msub><mo>=</mo><mn>2</mn><mo>,</mo><mspace width="1em"></mspace><msub><mi>HH</mi><mrow><mn>10</mn></mrow></msub><mo>=</mo><mn>2</mn></mrow><annotation encoding="application/x-tex">HH_{0}
+ = 5,\quad HH_{1} = 2,\quad HH_{2} = 2,\quad HH_{3} = 2,\quad HH_{4} = 
+2,\quad HH_{5} = 2,\quad HH_{6} = 2,\quad HH_{7} = 2,\quad HH_{8} = 
+2,\quad HH_{9} = 2,\quad HH_{10} = 2</annotation></semantics></math></div>
+<h2 id="json-record">The JSON record</h2>
+<p>This page pairs with a machine-readable record, <code>trace.json</code> (the “Report data (JSON)” download). Its structure:</p><ul><li><code>quiverlab_trace_schema</code> — integer version of this format;</li><li><code>title</code> — the computation this record traces;</li><li><code>references</code> — the same bibliography as the References section, as <code>[key, formatted]</code> pairs;</li><li><code>events</code> — the complete ordered stream of worked steps. Each event is an object with a <code>type</code> field (e.g. <code>dispatch</code>, <code>resolution_term</code>, <code>rank_step</code>, <code>module_term</code>, <code>module_differential</code>, <code>ext_degree</code>, <code>step_note</code>, <code>result_dims</code>) plus that step's exact data — every matrix entry is exact (integers / rationals as strings), never floating point.</li></ul><p>The
+ computation's summary results (one block per requested invariant, with 
+dimensions, matrices, and citation keys) live in the separate <code>result.json</code> deliverable. HTML and JSON are the only report formats — this page is the complete human-readable record.</p>
+<h2 id="references">References</h2>
+<ol>
+<li>[Hochschild1945] Hochschild, Gerhard (1945). On the cohomology 
+groups of an associative algebra. Annals of Mathematics. Second Series 
+46, 58-67.</li>
+<li>[ChouhySolotar2015] Chouhy, Sergio; Solotar, Andrea (2015). 
+Projective resolutions of associative algebras and ambiguities. Journal 
+of Algebra 432, 22-61.</li>
+<li>[ASS2006] Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej 
+(2006). Elements of the Representation Theory of Associative Algebras. 
+Volume 1: Techniques of Representation Theory. Cambridge University 
+Press 65.</li>
+<li>[LenzingdlPena2008spectral] Lenzing, Helmut; de la Pe na, Jos'e 
+Antonio (2008). Spectral analysis of finite dimensional algebras and 
+singularities. Trends in Representation Theory of Algebras and Related 
+Topics (ICRA XII), 541-588.</li>
+<li>[GSZ2001] Green, Edward L.; Solberg, Oyvind; Zacharia, Dan (2001). 
+Minimal projective resolutions. Transactions of the American 
+Mathematical Society 353, 2915-2939.</li>
+</ol>
+
+</body></html>

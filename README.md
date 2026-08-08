@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-4366_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-4411_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 4366 tests over the
+Every shipped feature is unit tested (the suite is 4411 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -351,6 +351,12 @@ ported and wired in:
   invariant, not complete), and a `BrauerGraphAlgebra` constructor from a ribbon
   graph — with the algebra-only `strings` no-code block (census + bands + rep-type
   + AG).
+- **Skew-gentle algebras (R32).** The triple `(Q, I, Sp)` recognizer, the
+  characteristic-free idempotent-split constructor `SkewGentleAlgebra` (He–Zhou–Zhu /
+  Chen — dim-certified against the associated gentle algebra), special-string module
+  re-gluing, support τ-tilting via the engine (the orbifold model as the cross-check
+  oracle), and the brick-finite ⇔ representation-finite certificate (Demonet–Iyama–Jasso
+  ∘ Garcia–Lavoué, char ≠ 2) — with the no-code `skew_gentle` block.
 - **Tilting and constructions (C7).** tilting/cotilting + Bongartz completion,
   minimal add(M)-approximations, one-point extensions, repetitive slices,
   Jacobian algebras from a potential, and Gabriel-quiver recovery of any

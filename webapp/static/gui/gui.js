@@ -130,6 +130,9 @@
     // ---- Plan 59: R34 homological string test + R35 toupie structure ----
     '  <label><input type="checkbox" id="qlgui-string_homological"> homological string test</label>' +
     '  <label><input type="checkbox" id="qlgui-toupie"> toupie structure</label>' +
+    // ---- Plan 68: skew-gentle triple (Q, I, Sp) -- mark special vertices, comma-sep ----
+    '  <label><input type="checkbox" id="qlgui-skew_gentle"> skew-gentle (Q, I, Sp); special vertices ' +
+    '<input type="text" id="qlgui-skew_gentle-special" placeholder="e.g. 2" size="6"></label>' +
     // ---- Plan 47: quasi-hereditary structure (natural order) ----
     '  <label><input type="checkbox" id="qlgui-quasi_hereditary"> quasi-hereditary (Δ/∇, natural order)</label>' +
     // ---- Plan 56: pi1(Q,I) + simple connectivity ----
@@ -263,6 +266,8 @@
    "strings",
    // Plan 59: R34 homological string test + R35 toupie structure (scalar kinds)
    "string_homological", "toupie",
+   // Plan 68: skew-gentle triple (Q, I, Sp) scalar kind + special-vertex picker
+   "skew_gentle", "skew_gentle-special",
    // Plan 47: quasi-hereditary structure (scalar kind)
    "quasi_hereditary",
    // Plan 56: pi1(Q,I) + simple connectivity (scalar kinds)
@@ -933,6 +938,10 @@
       compute.push("recognizer_ladder:" + el["recognizer_ladder-budget"].value);
     // Plan 43: derived_compare is algebra-level and needs a second algebra B.
     if (el.derived_compare.checked) compute.push("derived_compare");
+    // Plan 68: skew-gentle. The drawn quiver + relations + the special-vertex picks form
+    // the triple (Q, I, Sp); the request's algebra is REPLACED (below) by the split
+    // constructor family form so every compute runs on the admissible split algebra.
+    if (el.skew_gentle.checked) compute.push("skew_gentle");
     var module = null, extTarget = null, torTarget = null;
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
@@ -980,6 +989,20 @@
     // potential ALONGSIDE explicit relations (4xx) -- that stays the authority.
     var pot = (el.potential.value || "").trim();
     if (pot) req.algebra.potential = pot;
+    // Plan 68: when skew-gentle is requested, route the drawn quiver through the split
+    // constructor (family: SkewGentleAlgebra); the special-vertex picks are the Sp set
+    // (empty Sp is a valid triple -- byte-reduces to the plain gentle algebra). Only
+    // attached when the kind is checked, so an ordinary request's cache key is unchanged.
+    if (el.skew_gentle.checked) {
+      var special = (el["skew_gentle-special"].value || "")
+        .split(/[,\s]+/).filter(function (s) { return s.length; })
+        .map(function (s) { return parseInt(s, 10); })
+        .filter(function (v) { return !isNaN(v); });
+      req.algebra = { kind: "family", family: "SkewGentleAlgebra",
+                      params: { vertices: req.algebra.vertices, arrows: req.algebra.arrows,
+                                relations: req.algebra.relations, special: special },
+                      field: field };
+    }
     if (module) req.module = module;
     if (extTarget) req.ext_target = extTarget;
     if (torTarget) req.tor_target = torTarget;
@@ -3350,6 +3373,36 @@
         }
         if (b.note) div.appendChild(h("p", { text: b.note }));
       }
+    } else if (name === "skew_gentle") {
+      // Plan 68 / R32: recognizer + split shape + dim law + classification counts +
+      // support tau-tilting + brick-finite <=> rep-finite certificate.
+      if (!b.is_skew_gentle) {
+        div.appendChild(h("p", { text: b.note || "Not a skew-gentle algebra." }));
+      } else {
+        div.appendChild(h("p", { text: "Split algebra kQ̂/Î: "
+          + b.split.num_vertices + " vertices, " + b.split.num_arrows
+          + " arrows, dim " + b.split.dim + " (rank |Q₀|+|Sp| = " + b.rank + ")." }));
+        div.appendChild(h("p", { text: "Dimension law (HZZ Lemma 1.5): dim(split) = "
+          + b.dim_law.split_dim + ", dim(associated gentle) = " + b.dim_law.assoc_gentle_dim
+          + (b.dim_law.ok ? " — certified equal." : " — MISMATCH.") }));
+        var cl = b.classification || {};
+        div.appendChild(h("p", { text: "Special (type-p) strings: " + cl.num_special
+          + "; bands: " + (cl.has_bands ? "yes" : "no")
+          + (cl.num_indecomposables != null
+             ? "; indecomposables: " + cl.num_indecomposables : "") + "." }));
+        if (cl.note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: cl.note + "." }));
+        if (b.tau_tilting && b.tau_tilting.num_pairs != null)
+          div.appendChild(h("p", { text: "Support τ-tilting pairs: "
+            + b.tau_tilting.num_pairs
+            + (b.tau_tilting.complete ? " (complete)" : " (incomplete)") + "." }));
+        var rt = b.rep_type || {};
+        var rf = (rt.rep_finite === true) ? "representation-finite"
+          : (rt.rep_finite === false) ? "representation-infinite"
+          : "representation type withheld (" + rt.scope + ")";
+        div.appendChild(h("p", { text: "Representation type: " + rf
+          + " [" + rt.scope + "]." }));
+      }
     } else if (name === "quasi_hereditary") {
       // Plan 47: the quasi-heredity verdict + order-dependence note + per-index
       // certificates (End Δ(i)=k, P(i) Δ-filtered) + the standard-module dim vectors.
@@ -3961,7 +4014,8 @@
    el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
-   el.fundamental_group, el.simply_connected, el.tame_wild]
+   el.fundamental_group, el.simply_connected, el.tame_wild,
+   el.skew_gentle, el["skew_gentle-special"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -4042,7 +4096,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
