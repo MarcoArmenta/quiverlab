@@ -1530,6 +1530,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = recognizers_block(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Certified Coxeter spectral analysis (Plan 58 / R20): an algebra-scalar kind
+    # (schema v1, NO module block -- the recognizers/derived_fingerprint precedent):
+    # exact ZZ[x] cyclotomic factorization with Phi_n labels, cyclotomic /
+    # quasi-unipotent verdict + finite Coxeter order, outside-unit-circle count, and
+    # rho / M as CERTIFIED ALGEBRAIC NUMBERS (or a per-field loud refusal). Shared
+    # builder (invariants.coxeter_spectral.coxeter_spectral_block) drives both runners
+    # byte-identically.
+    if kind == "coxeter_spectral":
+        from quiverlab.invariants.coxeter_spectral import coxeter_spectral_block
+        block = coxeter_spectral_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Quasi-hereditary structure (Plan 47): an algebra-scalar kind (schema v1, NO module
     # block -- the recognizers/ext_algebra precedent). Reports the NATURAL vertex order with
     # the honest order-dependence note; shared block builder drives both runners.
@@ -2299,6 +2311,7 @@ def _snippet(req: ComputeRequest, A) -> str:
                              f"{it.hi if it.hi is not None else 4}), "
                              f"derived_fingerprint(B, {it.hi if it.hi is not None else 4}))"),
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
+             "coxeter_spectral": lambda it: "A.coxeter_spectral()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",
              "homological_profile": lambda it: ("A.global_dimension(), "

@@ -911,6 +911,14 @@ def compute_one(spec):
             from quiverlab.invariants.recognizers import recognizers_block
             block = recognizers_block(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "coxeter_spectral":
+            # Certified Coxeter spectral analysis (Plan 58 / R20). Byte-identical to
+            # the server twin (quiverlab.hpc.spec._dispatch): SAME library block
+            # builder (invariants.coxeter_spectral.coxeter_spectral_block) +
+            # `references`->citations.
+            from quiverlab.invariants.coxeter_spectral import coxeter_spectral_block
+            block = coxeter_spectral_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "derived_fingerprint":
             # Derived fingerprint (Plan 43). Byte-identical to the server twin
             # (quiverlab.hpc.spec._dispatch): SAME library block builder
@@ -1264,6 +1272,11 @@ ETA_MODEL = {
     "bar":  {"alpha": 1.4622e-07, "p": 1.3},
     "fast": {"alpha": 5.3447e-07, "p": 1.1},
     "scalars": {"cartan": 0.01, "coxeter_polynomial": 0.2,
+                # Plan 58: coxeter_spectral is bimodal-but-fast -- real-dominant certifies
+                # sub-second (minpoly + Sturm interval), complex-dominant is REFUSED
+                # without computing (the deterministic _real_roots_suffice gate, never the
+                # measured 121 s minimal_polynomial hang), so 0.5 is honest in both branches.
+                "coxeter_spectral": 0.5,
                 "center": 0.05, "global_dimension": 0.5,
                 # Plan 40: the C6 family aggregates gl.dim + finitistic + dominant +
                 # Gorenstein + Igusa-Todorov (several resolutions), so a bit heavier.
