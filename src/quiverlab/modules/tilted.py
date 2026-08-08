@@ -20,7 +20,7 @@ import itertools
 from dataclasses import dataclass
 
 from quiverlab.errors import QuiverlabError
-from quiverlab.invariants.dynkin_type import dynkin_type
+from quiverlab.invariants.dynkin_type import dynkin_type, is_connected
 from quiverlab.invariants.recognizers import is_hereditary
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.modules.hom import hom_dim
@@ -38,7 +38,7 @@ class TiltedReport:
     verdict: str                       # "tilted" | "not_tilted" | "unknown"
     reason: str                        # "hereditary"|"self_injective"|"gldim>2"|
                                        #   "faithful_section_found"|"search_exhausted"|
-                                       #   "budget"|"unsupported"|"error"
+                                       #   "budget"|"disconnected"|"unsupported"|"error"
     slice: list = ()                   # [ {"index","name","dimvec"} , ... ]  (Sigma)
     slice_module: object = None        # the Module S = (+) Sigma
     hereditary_type: str = None        # "A_3" | "D_4" | ... | "~A_2" | "unclassified"
@@ -63,6 +63,15 @@ def _type_str(t) -> str:
         return "unclassified"
     letter, k = t
     return f"{letter}_{k}"
+
+
+def _is_finite_dynkin(t) -> bool:
+    """True iff ``dynkin_type`` returned a FINITE ADE type ``('A'|'D'|'E', n)``. A finite
+    Dynkin quiver is exactly the rep-FINITE hereditary case (Gabriel), so only then is the
+    projective slice knit-enumerable. Euclidean (``~A``/``~D``/``~E``) / wild / unclassified
+    (``None``) are rep-INFINITE -- their AR knit does not terminate, so Gate H must NEVER build
+    it (the Plan-60 hang fix): the ``tilted`` verdict + type stand and the slice is omitted."""
+    return t is not None and t[0] in ("A", "D", "E")
 
 
 def _section_quiver(ar, section_indices):
@@ -258,9 +267,12 @@ def _locate(U, M):
 def _projective_section(A, budget_modules):
     """Gate-H certified payload: for rep-finite hereditary ``A``, the indecomposable
     projectives ``{P_v}`` form the slice ``A_A`` (``End_A(A_A)`` hereditary => a genuine
-    slice). Returns ``(slice_records, S)``; ``([], None)`` when the knit is incomplete
-    (rep-infinite hereditary, e.g. Kronecker) -- the ``tilted`` verdict + type still stand,
-    the slice is omitted with an honest note."""
+    slice). Returns ``(slice_records, S)``; ``([], None)`` when the AR knit does not complete
+    within ``budget_modules`` -- the ``tilted`` verdict + type still stand, the slice is
+    omitted with an honest note. Gate H calls this ONLY for a finite-Dynkin (rep-finite)
+    quiver; the rep-INFINITE hereditary case (Euclidean/wild, e.g. Kronecker) never reaches
+    here -- its slice is omitted upstream WITHOUT building the knit (which would not
+    terminate), decided from the Dynkin type of ``A``'s own quiver."""
     ar = A.ar_quiver(budget_modules=budget_modules)
     if not ar.is_complete:
         return [], None
@@ -314,10 +326,29 @@ def tilted_check(A, *, budget_modules=256, budget_sections=4096):
                  "type from the Gabriel quiver of End_A(S)")
     n = len(list(A.quiver.vertices))
 
-    # Gate H -- hereditary => tilted (incl. rep-infinite; type from A's own quiver).
+    # Connectedness -- a tilted algebra is a CONNECTED End-algebra over a CONNECTED hereditary
+    # algebra (ASS2006 VIII.4), so a disconnected A is not tilted by definition. Decided up
+    # front for consistency: without it a disconnected hereditary A returns tilted/unclassified
+    # from Gate H while the non-hereditary path would refute it. The P55 support surface feeds
+    # the recognizer its CONNECTED components one at a time, so this never fires there.
+    if not is_connected(A.quiver):
+        return TiltedReport(A, "not_tilted", "disconnected", is_complete=True, status="complete",
+                            note="disconnected quiver -- tilted algebras are connected by "
+                                 "definition (a connected End-algebra over a connected "
+                                 "hereditary algebra, ASS2006)")
+
+    # Gate H -- hereditary => tilted (Happel-Ringel); type read from A's OWN quiver (instant).
     if is_hereditary(A):
-        typ = _type_str(dynkin_type(A.quiver))
-        slc, S = _projective_section(A, budget_modules)
+        dt = dynkin_type(A.quiver)
+        typ = _type_str(dt)
+        # Only finite-Dynkin (rep-finite) hereditary has a knit-enumerable projective slice.
+        # For Euclidean/wild (rep-INFINITE) hereditary -- e.g. the Kronecker quiver ~A_1 -- the
+        # AR knit does not terminate, so we NEVER build it: the slice is honestly omitted while
+        # the tilted verdict + type stand (Plan-60 hang fix).
+        if _is_finite_dynkin(dt):
+            slc, S = _projective_section(A, budget_modules)
+        else:
+            slc, S = [], None
         H = None
         recon = None
         if S is not None:
@@ -327,10 +358,13 @@ def tilted_check(A, *, budget_modules=256, budget_sections=4096):
                              "End_A(A_A) is hereditary"}
             note = ("hereditary: slice = the indecomposable projectives (A_A), "
                     "End_A(A_A) hereditary")
+        elif _is_finite_dynkin(dt):
+            note = ("hereditary rep-finite but the AR knit did not complete within "
+                    "budget_modules: slice omitted; verdict + type stand")
         else:
-            note = ("hereditary but representation-infinite: slice omitted (the "
-                    "postprojective section exists but is not knit-enumerable); verdict + "
-                    "type stand")
+            note = ("hereditary but representation-infinite (Euclidean/wild): the AR knit is "
+                    "not built (it would not terminate); the postprojective section exists but "
+                    "is not knit-enumerable, so the slice is omitted -- verdict + type stand")
         return TiltedReport(A, "tilted", "hereditary", slice=slc, slice_module=S,
                             hereditary_type=typ, hereditary_algebra=H, reconstruction=recon,
                             is_complete=True, status="complete", note=note)
