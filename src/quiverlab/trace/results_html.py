@@ -33,6 +33,8 @@ _HEADINGS = {
     "ss_hochschild": "Hochschild (b,B) spectral sequence",
     "radical_filtration_ss": "Radical-filtration spectral sequence",
     "ar_quiver": "Auslander–Reiten quiver",
+    "radical_filtration": "Radical filtration of mod A",
+    "ar_invariants": "AR-component invariants",
     "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
@@ -663,6 +665,77 @@ def _ar_quiver_html(b):
     return chunks
 
 
+def _radical_filtration_html(b):
+    """The radical filtration of mod A (Plan 57 / R37): the completeness verdict, the
+    nilpotency index + rad^inf certificate, and the layer profile (sum_ij dim rad^n).
+    An honest window (budget) / self-injective (unsupported) block ships the loud note
+    and NO index -- never a fake verdict. Distinct from radical_filtration_ss (the
+    Loewy radical-series spectral sequence)."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Radical filtration not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    chunks = []
+    if b.get("complete"):
+        chunks.append(
+            "<p>The algebra is representation-finite: mod A has %s indecomposable(s); "
+            "the nilpotency index of rad(mod A) is <b>N = %s</b>, so "
+            "rad<sup>&infin;</sup>(mod A) = 0 (Auslander's certificate, with N the "
+            "finite witness), and every component is generalized standard: <b>%s</b>.</p>"
+            % (_num(b.get("num_indecomposables")), _num(b.get("nilpotency_index")),
+               "yes" if b.get("generalized_standard") else "no"))
+        prof = b.get("layer_profile") or []
+        if prof:
+            head = "".join("<th>%s</th>" % _num(n + 1) for n in range(len(prof)))
+            body = "".join("<td>%s</td>" % _num(d) for d in prof)
+            chunks.append(
+                "<table class='ql-table'><thead><tr><th>n</th>%s</tr></thead><tbody>"
+                "<tr><th>&Sigma; dim rad<sup>n</sup>(X,Y)</th>%s</tr></tbody></table>"
+                % (head, body))
+    else:
+        chunks.append("<p class='ql-note'>Not the category radical (status: %s) — %s</p>"
+                      % (_esc(str(b.get("status", "?"))), _esc(str(b.get("note") or
+                         "the knit did not close; no nilpotency index or rad^inf verdict"))))
+    return chunks
+
+
+def _ar_invariants_html(b):
+    """The AR-component invariants (Plan 57 / R21): the representation-directed verdict,
+    the postprojective/preinjective/regular partition, the generalized-standard flag,
+    and Liu's left/right degrees per irreducible map. Off-scope input ships the loud
+    note, never a false 'directed'."""
+    if b.get("error"):
+        return ["<p class='ql-note'>AR-component invariants not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Not computed (status: %s) — %s</p>"
+                % (_esc(str(b.get("status", "?"))), _esc(str(b.get("note") or
+                   "the knit did not close; no directing/partition/degree verdict")))]
+    chunks = ["<p>Representation-directed: <b>%s</b> (%s of %s indecomposables "
+              "directing); generalized standard: <b>%s</b>; nilpotency index N = %s; "
+              "maximal sectional-path length %s.</p>"
+              % ("yes" if b.get("representation_directed") else "no",
+                 _num(b.get("num_directing")), _num(b.get("num_indecomposables")),
+                 "yes" if b.get("generalized_standard") else "no",
+                 _num(b.get("nilpotency_index")), _num(b.get("max_sectional_length")))]
+    pc = b.get("partition_counts") or {}
+    if pc:
+        chunks.append("<p>Partition: %s.</p>"
+                      % _esc(", ".join("%s: %s" % (k, pc[k]) for k in sorted(pc))))
+    if b.get("partition_note"):                     # honest non-directed caveat
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["partition_note"])))
+    degs = b.get("degrees") or {}
+    if degs:
+        def _deg(v):
+            return "&infin;" if v is None else _num(v)
+        rows = "".join("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                       % (_esc(k), _deg(degs[k].get("d_l")), _deg(degs[k].get("d_r")))
+                       for k in sorted(degs))
+        chunks.append("<table class='ql-table'><thead><tr><th>irreducible map</th>"
+                      "<th>d<sub>&#8467;</sub></th><th>d<sub>r</sub></th></tr></thead>"
+                      "<tbody>%s</tbody></table>" % rows)
+    return chunks
+
+
 def _strings_html(b):
     """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
     census + band presence + honest rep-type + (gentle) AG invariant."""
@@ -781,6 +854,10 @@ def _block_html(kind, b, ctx=None):
         return _radical_filtration_ss_html(b)
     if kind == "ar_quiver":
         return _ar_quiver_html(b)
+    if kind == "radical_filtration":
+        return _radical_filtration_html(b)
+    if kind == "ar_invariants":
+        return _ar_invariants_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]

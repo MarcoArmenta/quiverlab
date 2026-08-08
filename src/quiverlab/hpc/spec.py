@@ -255,6 +255,19 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # radical_filtration + ar_invariants (Plan 57) are ALGEBRA kinds carrying a MODULE
+    # BUDGET, not a degree range (parsed like ar_quiver): 'radical_filtration' /
+    # 'radical_filtration:512' (and likewise ar_invariants). The budget caps the
+    # knitted indecomposable universe, so it bypasses the 'name:0..N' degree grammar.
+    # NOTE: 'radical_filtration' (the module-category radical rad^n(X,Y)) is DISTINCT
+    # from 'radical_filtration_ss' (the Loewy radical-series spectral sequence).
+    for _kind in ("radical_filtration", "ar_invariants"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SpecError(
+                    f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -1439,6 +1452,32 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = ar_quiver_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET kind
+    # like ar_quiver. Both runners share modules.radical.radical_filtration_block, so
+    # the blocks are byte-identical. A char-scope refusal is caught into an `error`
+    # field, never a 500. NOTE: distinct from radical_filtration_ss (the Loewy
+    # radical-series spectral sequence, a DIFFERENT object).
+    if kind == "radical_filtration":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.modules.radical import radical_filtration_block
+        try:
+            block = radical_filtration_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "radical_filtration", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
+    # The AR-component invariants (Plan 57 / R21): Liu degrees, partition, directing,
+    # rep-directed recognizer. Same BUDGET-kind contract + shared library builder
+    # (modules.ar_invariants.ar_invariants_block); byte-identical twin.
+    if kind == "ar_invariants":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.modules.ar_invariants import ar_invariants_block
+        try:
+            block = ar_invariants_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "ar_invariants", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -2302,6 +2341,12 @@ def _snippet(req: ComputeRequest, A) -> str:
                              f"{it.hi})\nradical_filtration_ss(X)"),
              "ar_quiver":
                  lambda it: ("A.ar_quiver(budget_modules="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "radical_filtration":
+                 lambda it: ("A.radical_filtration(budget_modules="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "ar_invariants":
+                 lambda it: ("A.ar_invariants(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
              "derived_compare":
                  lambda it: ("from quiverlab.derived import compare_fingerprints, "

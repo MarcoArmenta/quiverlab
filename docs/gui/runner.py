@@ -169,6 +169,15 @@ def _parse_compute(spec):
             raise RequestError("ar_quiver budget must be a positive integer (got %r)"
                                % (spec,))
         return "ar_quiver", (int(rng) if rng else None)
+    # radical_filtration + ar_invariants (Plan 57) carry a MODULE BUDGET, not a degree
+    # range (parsed like ar_quiver -- skips MAX_DEGREE). NOTE: 'radical_filtration'
+    # (the module-category radical rad^n(X,Y)) is DISTINCT from 'radical_filtration_ss'
+    # (the Loewy radical-series spectral sequence, a DIFFERENT object).
+    if name in ("radical_filtration", "ar_invariants"):
+        if rng and not rng.isdigit():
+            raise RequestError("%s budget must be a positive integer (got %r)"
+                               % (name, spec))
+        return name, (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -839,6 +848,31 @@ def compute_one(spec):
             from quiverlab.modules.ar import ar_quiver_block
             block = ar_quiver_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "radical_filtration":
+            # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET
+            # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.radical.radical_filtration_block). A
+            # char-scope refusal is caught into an `error` field, never a crash.
+            # NOTE: distinct from radical_filtration_ss (the Loewy radical-series
+            # spectral sequence, a DIFFERENT object).
+            from quiverlab.errors import QuiverlabError
+            from quiverlab.modules.radical import radical_filtration_block
+            try:
+                block = radical_filtration_block(A, budget=top if top is not None else 512)
+            except QuiverlabError as exc:
+                block = {"kind": "radical_filtration", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "ar_invariants":
+            # The AR-component invariants (Plan 57 / R21): Liu degrees, partition,
+            # directing, rep-directed recognizer. Same BUDGET-kind contract + shared
+            # builder (modules.ar_invariants.ar_invariants_block); byte-identical twin.
+            from quiverlab.errors import QuiverlabError
+            from quiverlab.modules.ar_invariants import ar_invariants_block
+            try:
+                block = ar_invariants_block(A, budget=top if top is not None else 512)
+            except QuiverlabError as exc:
+                block = {"kind": "ar_invariants", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -1201,6 +1235,9 @@ def python_snippet():
              "connes_b": "A.connes_differentials(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 57: radical_filtration + ar_invariants carry a module budget.
+             "radical_filtration": "A.radical_filtration(budget_modules=%d)",
+             "ar_invariants": "A.ar_invariants(budget_modules=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",

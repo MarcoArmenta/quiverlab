@@ -227,7 +227,19 @@ never hide behind one:
     the algebra block, no new request block). Both runners share
     ``invariants.coxeter_spectral.coxeter_spectral_block``, so the Pyodide twin is
     byte-identical (``tests/webapp/test_coxeter_spectral_p58.py::test_twin_parity``).
-    ``canonical_key`` is request-derived."""
+    ``canonical_key`` is request-derived.
+  * 2026-08-07 (``radical_filtration_kA3`` + ``ar_invariants_kA3`` ADDED, Plan 57):
+    two NEW algebra-only fixtures over the hereditary ``kA_3`` (1->2->3, GF(32003)).
+    ``radical_filtration_kA3`` pins the ``radical_filtration`` block (nilpotency index
+    3, ``rad^inf = 0``, layer profile ``[9, 3]``); ``ar_invariants_kA3`` pins the
+    ``ar_invariants`` block (representation-directed, Liu-degree table). Pure ADDITION:
+    every pre-existing entry was verified content-identical BEFORE the two were
+    appended (the generator reproduces the file bytes exactly, then re-dumps with the
+    same settings). Both runners share the library builders
+    (``modules.radical.radical_filtration_block`` /
+    ``modules.ar_invariants.ar_invariants_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_radical_filtration_p57.py``, ``tests/gui/test_radical_runner_twin.py``).
+    ``canonical_key`` is request-derived (the budget rides in the ``compute`` string)."""
 import json
 import pathlib
 

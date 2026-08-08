@@ -112,6 +112,11 @@
     '  <label><input type="checkbox" id="qlgui-derived_compare"> derived compare (with B)</label>' +
     // Plan-41: AR-quiver knitting (algebra-level; honest semi-decision + budget).
     '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
+    // Plan-57: radical filtration of mod A (rad^n(X,Y) + nilpotency index) and the
+    // AR-component invariants (Liu degrees, directing, rep-directed). Algebra-level,
+    // budget (max indecomposables). NOT the Loewy radical series (radical_filtration_ss).
+    '  <label><input type="checkbox" id="qlgui-radical_filtration"> radical filtration rad^n(X,Y) + nilpotency index, budget <input type="number" id="qlgui-radical_filtration-budget" value="512" min="1"></label>' +
+    '  <label><input type="checkbox" id="qlgui-ar_invariants"> AR-component invariants (Liu degrees, directing), budget <input type="number" id="qlgui-ar_invariants-budget" value="512" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
     // ---- Plan 47: quasi-hereditary structure (natural order) ----
@@ -216,6 +221,9 @@
    "radical_filtration_ss", "radical_filtration_ss-top",
    // Plan 41: AR-quiver knitting (algebra-level, budget) ; Plan 43: derived compare + algebra B
    "ar_quiver", "ar_quiver-budget", "derived_compare",
+   // Plan 57: radical filtration + AR-component invariants (algebra-level, budget)
+   "radical_filtration", "radical_filtration-budget",
+   "ar_invariants", "ar_invariants-budget",
    "algb", "algb-legend", "algb-mode", "algb-mode-label",
    "algb-type", "algb-type-wrap", "algb-type-label",
    "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
@@ -872,6 +880,12 @@
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
       compute.push("ar_quiver:" + el["ar_quiver-budget"].value);
+    // Plan 57: radical_filtration + ar_invariants carry a MODULE BUDGET (like
+    // ar_quiver) -- the single-int form both runners parse.
+    if (el.radical_filtration.checked)
+      compute.push("radical_filtration:" + el["radical_filtration-budget"].value);
+    if (el.ar_invariants.checked)
+      compute.push("ar_invariants:" + el["ar_invariants-budget"].value);
     // Plan 43: derived_compare is algebra-level and needs a second algebra B.
     if (el.derived_compare.checked) compute.push("derived_compare");
     var module = null, extTarget = null, torTarget = null;
@@ -3288,6 +3302,73 @@
         div.appendChild(h("p", { text: "τ-orbits: " + b.tau_orbits.map(function (o) {
           return "{" + o.map(arLabel).join(", ") + "}"; }).join("  ") }));
       }
+    } else if (name === "radical_filtration") {
+      // Plan 57 / R37: the radical of the MODULE CATEGORY rad^n(X,Y) and its
+      // nilpotency index -- NOT the Loewy radical series (radical_filtration_ss).
+      // Honest semi-decision: verdict FIRST, then the layer profile; off-scope input
+      // shows the loud window/unsupported note, never a fake index.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (b.complete === true) {
+        div.appendChild(h("p", { text: "Representation-finite: " + b.num_indecomposables
+          + " indecomposable(s); nilpotency index N = " + b.nilpotency_index
+          + "; rad^∞(mod A) = 0 (Auslander); generalized standard: "
+          + (b.generalized_standard ? "yes" : "no") + "." }));
+        if ((b.layer_profile || []).length) {
+          var lfh = h("tr"), lfr = h("tr");
+          lfh.appendChild(h("th", { text: "n" }));
+          lfr.appendChild(h("th", { text: "Σ dim radⁿ" }));
+          b.layer_profile.forEach(function (d, idx) {
+            lfh.appendChild(h("th", { text: String(idx + 1) }));
+            lfr.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, lfh, lfr));
+        }
+      } else {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: (b.status === "unsupported")
+            ? "Not computed — " + (b.note || "input not eligible (self-injective).")
+            : "Window only (budget " + b.budget + " reached) — "
+              + (b.note || "") + " No nilpotency index or rad^∞ verdict." }));
+      }
+    } else if (name === "ar_invariants") {
+      // Plan 57 / R21: Liu degrees + directing / rep-directed recognizer + partition.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (b.complete === true) {
+        div.appendChild(h("p", { text: "Representation-directed: "
+          + (b.representation_directed ? "yes" : "no") + " (" + b.num_directing
+          + " of " + b.num_indecomposables + " directing); generalized standard: "
+          + (b.generalized_standard ? "yes" : "no") + "; nilpotency index N = "
+          + b.nilpotency_index + "; max sectional length = "
+          + b.max_sectional_length + "." }));
+        var pc = b.partition_counts || {};
+        var pcs = Object.keys(pc).map(function (k) { return k + ": " + pc[k]; }).join(", ");
+        if (pcs) div.appendChild(h("p", { text: "Partition — " + pcs + "." }));
+        if (b.partition_note)
+          div.appendChild(h("p", { text: b.partition_note }));
+        var dg = b.degrees || {}, dks = Object.keys(dg);
+        if (dks.length) {
+          var dgh = h("tr");
+          dgh.appendChild(h("th", { text: "irreducible map" }));
+          dgh.appendChild(h("th", { text: "dℓ" }));
+          dgh.appendChild(h("th", { text: "dᵣ" }));
+          var dgt = h("table", {}, dgh);
+          dks.forEach(function (k) {
+            var rec = dg[k];
+            dgt.appendChild(h("tr", {}, h("th", { text: k }),
+              h("td", { text: rec.d_l === null ? "∞" : String(rec.d_l) }),
+              h("td", { text: rec.d_r === null ? "∞" : String(rec.d_r) })));
+          });
+          div.appendChild(dgt);
+        }
+      } else {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: (b.status === "unsupported")
+            ? "Not computed — " + (b.note || "input not eligible (self-injective).")
+            : "Off scope (status " + b.status + ") — " + (b.note || "")
+              + " No directing/partition/degree verdict." }));
+      }
     } else if (name === "derived_compare") {
       // Plan 43: the two fingerprints side by side + the honest verdict. Equal
       // rows are a NECESSARY condition for derived equivalence, never a proof.
@@ -3572,7 +3653,7 @@
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
-    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver"]}
+    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
   ];
   // QLGUI-THEMES-END
 
@@ -3948,6 +4029,7 @@
     {"id": "resolutions", "title": "Projective & injective resolutions", "category": "modules", "keywords": ["resolution", "projective", "injective", "resolución", "résolution", "proyectiva", "inyectiva", "projective", "injective", "分解", "投影", "内射", "pd", "id"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["projective_resolution:0..6", "injective_resolution:0..6", "projective_dimension", "injective_dimension"]}},
     {"id": "ext_tor", "title": "Ext & Tor between modules", "category": "modules", "keywords": ["ext", "tor", "extension", "extensión", "扩张", "torsion", "扭积", "yoneda"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}, "tor_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "left"}, "compute": ["ext:0..3", "tor:0..3"]}},
     {"id": "ar_theory", "title": "Auslander–Reiten: τ, τ⁻, almost-split", "category": "ar", "keywords": ["auslander", "reiten", "tau", "translate", "almost-split", "irreducible", "traslación", "translation", "转变", "几乎分裂", "ar-quiver"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["tau", "tau_minus", "almost_split"]}},
+    {"id": "radical_filtration", "title": "Radical filtration & AR-component invariants (Liu–Chaio)", "category": "ar", "keywords": ["radical", "filtration", "filtración", "filtration", "nilpotency", "index", "liu", "chaio", "degree", "grado", "degré", "sectional", "directing", "representation-directed", "generalized standard", "auslander", "rad^n", "根", "幂零指数", "radical de módulos"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["radical_filtration", "ar_invariants"]}},
     {"id": "decompose", "title": "Krull–Schmidt decomposition", "category": "modules", "keywords": ["decompose", "krull-schmidt", "indecomposable", "descomponer", "décomposer", "indescomponible", "分解", "不可分"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"dims": {"1": 1, "2": 1, "3": 0}, "maps": {"a": [[0]], "b": []}, "side": "right"}, "compute": ["decompose"]}},
     {"id": "orbit_geometry", "title": "Representation-variety orbit geometry", "category": "geometry", "keywords": ["orbit", "geometry", "variety", "voigt", "rigid", "degeneration", "kac", "órbita", "orbite", "geometría", "géométrie", "轨道", "几何", "rigidity"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["orbit_geometry"]}},
     {"id": "tilting_check", "title": "Tilting-module check", "category": "tau-tilting", "keywords": ["tilting", "bongartz", "cotilting", "inclinación", "basculant", "倾斜模块"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "projective", "vertex": 1}, "side": "right"}, "compute": ["tilting_check"]}}
@@ -4048,6 +4130,8 @@
     ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
     radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },
     ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
+    radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
+    ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
     derived_compare: { cb: "derived_compare" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },

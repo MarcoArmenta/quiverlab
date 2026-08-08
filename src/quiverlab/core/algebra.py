@@ -426,6 +426,29 @@ class Algebra:
         return knit_ar_quiver(self, budget_modules=budget_modules,
                               budget_dim=budget_dim)
 
+    def radical_filtration(self, budget_modules=256, budget_dim=4096):
+        """The radical filtration of ``mod A`` (Plan 57 / R37): exact
+        ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the
+        nilpotency index of ``rad(mod A)``, and the ``rad^inf = 0 <=>
+        representation-finite`` certificate (Auslander). Returns a
+        :class:`~quiverlab.modules.radical.RadicalFiltration`; certified iff the knit
+        closes (rep-finite), else an honest window/refusal with no verdict."""
+        from quiverlab.modules.radical import radical_filtration
+        return radical_filtration(self, budget_modules=budget_modules,
+                                  budget_dim=budget_dim)
+
+    def ar_invariants(self, budget_modules=256, budget_dim=4096):
+        """The Auslander-Reiten component invariants (Plan 57 / R21): Liu left/right
+        degrees of irreducible maps, sectional paths, the
+        postprojective/preinjective/regular partition, directing modules, the
+        representation-directed recognizer (``Gamma_A`` acyclic) and the
+        generalized-standard flag. Returns an
+        :class:`~quiverlab.modules.ar_invariants.ARInvariants`; certified iff the knit
+        closes (rep-finite), else an honest off-scope refusal."""
+        from quiverlab.modules.ar_invariants import ar_invariants
+        return ar_invariants(self, budget_modules=budget_modules,
+                             budget_dim=budget_dim)
+
     def ext_algebra(self, top=6):
         """The Yoneda / Ext-algebra E(A) = Ext^*_A(A/J, A/J) as a graded
         quiver-with-relations presentation over R = k^{Q_0}, through degree `top`

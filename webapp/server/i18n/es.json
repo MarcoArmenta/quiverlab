@@ -260,6 +260,8 @@
   "pick.remove": "quitar",
   "pick.kind.radical_filtration_ss": "Sucesión espectral de la filtración radical",
   "pick.kind.ar_quiver": "Carcaj de Auslander–Reiten",
+  "pick.kind.radical_filtration": "Filtración radical de mod A: radⁿ(X,Y) y el índice de nilpotencia (NO la serie radical de Loewy)",
+  "pick.kind.ar_invariants": "Invariantes de la componente AR: grados de Liu, módulos dirigentes, representación-dirigida",
   "pick.kind.derived_compare": "Comparación derivada (con B)",
   "draw.potential_label": "Potencial W (opcional)",
   "draw.potential_ph": "a*b*c - d*e*f  (construye el álgebra jacobiana)",
