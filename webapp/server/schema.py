@@ -443,6 +443,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tilted_check budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tilted_check", lo=None, hi=(int(b) if b else None))
+    # recognizer_ladder carries a MODULE BUDGET, not a degree range (Plan 61): the budget caps
+    # the knitted indecomposable universe, so it skips the 'name:0..N' grammar too -- server
+    # and GUI/hpc agree on this special form.
+    if s == "recognizer_ladder" or s.startswith("recognizer_ladder:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"recognizer_ladder budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="recognizer_ladder", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SchemaError(f"unparseable compute item {s!r}")

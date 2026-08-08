@@ -583,6 +583,30 @@ REGISTRY: dict = {r.key: r for r in [
        "Happel-Ringel: the origin of tilted algebras A = End_H(T) (H hereditary, T tilting); "
        "tilted => gl.dim <= 2 -- the theorem gate Plan 60 uses to refute high-gl.dim algebras.",
        "recognizer"),
+    _r("hrs_quasitilted", "HRS1996", "foundation",
+       "Tilting in Abelian Categories and Quasitilted Algebras",
+       "Happel-Reiten-Smalo: quasi-tilted = (QT1) gl.dim <= 2 AND (QT2) every indec pd<=1 or "
+       "id<=1; QT2 alone => gl.dim <= 3. The definitional ground truth for Plan 61's "
+       "quasi-tilted rung.", "recognizer"),
+    _r("coelho_lanzilotta_weakly_shod", "CL2003weaklyshod", "foundation",
+       "Weakly shod algebras",
+       "Coelho-Lanzilotta: shod = every indec pd<=1 or id<=1 (=> gl.dim <= 3); weakly shod = "
+       "bounded irreducible-morphism paths from an injective to a projective (WSA). Plan 61's "
+       "shod + weakly-shod rungs.", "recognizer"),
+    _r("assem_coelho_laura", "AC2003laura", "foundation",
+       "Two-sided gluings of tilted algebras",
+       "Assem-Coelho: laura = ind A minus (L_A u R_A) is finite. Plan 61's laura rung (trivially "
+       "true in representation-finite scope; the finite complement is the reported datum).",
+       "recognizer"),
+    _r("smith_almost_laura", "Smith2007almostlaura", "foundation",
+       "Almost laura algebras",
+       "Smith: the almost-laura generalisation of laura algebras -- context for the laura "
+       "landscape; Plan 61 cites it for the class, not for the elementary rep-finite triviality.",
+       "recognizer"),
+    _r("bft_quasitilted_quiver", "BFT2017quasitilted", "foundation",
+       "On the quiver with relations of a quasitilted algebra and applications",
+       "Bordino-Fernandez-Trepode: the quiver-with-relations structure of quasitilted algebras "
+       "-- a secondary reference on Plan 61's quasi-tilted rung.", "recognizer"),
 ]}
 
 

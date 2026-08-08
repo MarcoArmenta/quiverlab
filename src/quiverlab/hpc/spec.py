@@ -305,6 +305,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"tilted_check budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tilted_check", lo=None, hi=(int(b) if b else None))
+    # recognizer_ladder (Plan 61) is an ALGEBRA kind carrying a MODULE BUDGET (parsed like
+    # left_right_parts): 'recognizer_ladder' / 'recognizer_ladder:256'. Not a homological
+    # degree, so it bypasses the 'name:0..N' grammar.
+    if s == "recognizer_ladder" or s.startswith("recognizer_ladder:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"recognizer_ladder budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="recognizer_ladder", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -1620,6 +1628,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = tilted_check_block(A, budget_modules=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # The recognizer ladder (P61, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not
+    # a degree range ('recognizer_ladder' / 'recognizer_ladder:256'). Five witnessed/certified
+    # rungs (quasi-tilted/shod/weakly-shod/laura/ada), the laura complement, and the ada/HH^1
+    # simple-connectedness block. Honest semi-decision (complete iff rep-finite
+    # non-self-injective); a char-scope identification refusal is an `error` field, never a 500.
+    # Both runners share recognizers_ladder.recognizer_ladder_block, byte-identical.
+    if kind == "recognizer_ladder":
+        budget = item.hi if item.hi is not None else 256
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder_block
+        block = recognizer_ladder_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -2528,6 +2548,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "tilted_check":
                  lambda it: ("A.tilted_check(budget_modules="
                              f"{it.hi if it.hi is not None else 256})"),
+             "recognizer_ladder":
+                 lambda it: ("A.recognizer_ladder("
+                             f"budget={it.hi if it.hi is not None else 256})"),
              "derived_compare":
                  lambda it: ("from quiverlab.derived import compare_fingerprints, "
                              "derived_fingerprint\n"

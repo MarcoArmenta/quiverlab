@@ -80,7 +80,10 @@ def _max_degree(req: ComputeRequest) -> int:
         # wall-clock cap bounds the knit. (`toupie` is a small HH + graph scan, not
         # knit-heavy, so it is not in this caveat.)
         # Plan 60: `tilted_check` is likewise knit-heavy with a MODULE budget in `hi`.
-        if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts", "tilted_check"):
+        # Plan 61: `recognizer_ladder` carries a MODULE BUDGET too (not a degree), so it
+        # joins the skip tuple beside left_right_parts.
+        if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts", "tilted_check",
+                         "recognizer_ladder"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

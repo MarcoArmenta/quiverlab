@@ -401,6 +401,12 @@ ported and wired in:
   `add R_A`), and the left/right support algebras `A_λ`, `A_ρ` (products of tilted
   algebras) as presented induced-convex-subquiver algebras — the recognizer-ladder
   substrate, no-code in the browser (representation-finite scope, loud otherwise).
+- **The Assem-school recognizer ladder (P61).** The five nested per-instance
+  certificates **quasi-tilted / shod / weakly-shod / laura / ada** with witnesses, off
+  the P55 atlas + one gl.dim + one AR-SCC sweep — and, for **ada algebras over an
+  algebraically closed field**, HH¹ as a **complete simple-connectedness oracle** (ACLV
+  Theorem B: simply connected ⟺ HH¹ = 0), resolving exactly where the intrinsic
+  fundamental-group test must return the honest Adian–Rabin `None` — no-code in the browser.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

@@ -197,6 +197,13 @@ def _parse_compute(spec):
             raise RequestError("tilted_check budget must be a positive integer (got %r)"
                                % (spec,))
         return "tilted_check", (int(rng) if rng else None)
+    # recognizer_ladder carries a MODULE BUDGET, not a degree range (Plan 61): the budget caps
+    # the knitted universe, so it skips MAX_DEGREE (like left_right_parts / ar_quiver).
+    if name == "recognizer_ladder":
+        if rng and not rng.isdigit():
+            raise RequestError("recognizer_ladder budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "recognizer_ladder", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -944,6 +951,14 @@ def compute_one(spec):
             from quiverlab.modules.tilted import tilted_check_block
             block = tilted_check_block(A, budget_modules=top if top is not None else 256)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "recognizer_ladder":
+            # The recognizer ladder (P61, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # shared builder (modules.recognizers_ladder.recognizer_ladder_block) +
+            # references->citations.
+            from quiverlab.modules.recognizers_ladder import recognizer_ladder_block
+            block = recognizer_ladder_block(A, budget=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -1353,6 +1368,8 @@ def python_snippet():
              "left_right_parts": "A.left_right_parts(budget=%d)",
              # Plan 60: the tilted recognizer carries the knit budget (%d = budget_modules).
              "tilted_check": "A.tilted_check(budget_modules=%d)",
+             # Plan 61: the recognizer ladder carries a module budget (%d = budget).
+             "recognizer_ladder": "A.recognizer_ladder(budget=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1481,6 +1498,9 @@ ETA_MODEL = {
                 # (faithful + Hom(X,tauY)=0 + tilting/presented-End certificate per candidate);
                 # knit- and certificate-dominated, the same cost class as left_right_parts.
                 "tilted_check": 2.0,
+                # Plan 61: the recognizer ladder reads the P55 atlas + gl.dim + a second AR
+                # knit (weakly-shod SCC) + HH^1 (ada/Theorem B); a touch heavier than P55.
+                "recognizer_ladder": 2.5,
                 # Plan 59: string_homological KNITS the AR quiver + realizes/decomposes
                 # extensions (expensive, ar_quiver class); toupie is a small HH + a
                 # graph-shape scan (cheap).

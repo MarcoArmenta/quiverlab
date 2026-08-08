@@ -907,6 +907,53 @@ class Algebra:
         atlas = left_right_parts(self, budget=budget)
         return atlas.left_support, atlas.right_support
 
+    # -- the recognizer ladder (Plan 61 / R18) --------------------------------
+    def recognizer_ladder(self, budget=256):
+        """Classify this algebra against the Assem-school recognizer ladder --
+        quasi-tilted / shod / weakly-shod / laura / ada (Plan 61 / R18) -- off ONE
+        :meth:`left_right_parts` atlas + :meth:`global_dimension` (+ one AR knit for the
+        weakly-shod sweep). Returns a :class:`~quiverlab.modules.recognizers_ladder.RecognizerLadder`
+        with the five witnessed/certified rungs, the finite laura complement, and -- for ada
+        algebras over an algebraically closed field -- the ACLV-Theorem-B simple-connectedness
+        verdict off ``HH^1``. Complete iff representation-finite and not self-injective, else a
+        loud status (never a partial ladder)."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget)
+
+    def is_quasi_tilted(self, budget=256):
+        """True iff this algebra is quasi-tilted -- (QT1) gl.dim <= 2 and (QT2) every
+        indecomposable has pd <= 1 or id <= 1 (Happel-Reiten-Smalo); the ``quasi_tilted`` rung
+        of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("quasi_tilted")
+
+    def is_shod(self, budget=256):
+        """True iff this algebra is shod -- every indecomposable has pd <= 1 or id <= 1
+        (Coelho-Lanzilotta), equivalently ``ind A = L_A u R_A``; the ``shod`` rung of
+        :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("shod")
+
+    def is_weakly_shod(self, budget=256):
+        """True iff this algebra is weakly shod -- the lengths of irreducible-morphism paths
+        from an injective to a projective are bounded (Coelho-Lanzilotta); the ``weakly_shod``
+        rung of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("weakly_shod")
+
+    def is_laura(self, budget=256):
+        """True iff this algebra is laura -- ``ind A \\ (L_A u R_A)`` is finite (Assem-Coelho);
+        trivially True in representation-finite scope, with the finite complement reported by
+        :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("laura")
+
+    def is_ada(self, budget=256):
+        """True iff this algebra is ada -- every indecomposable projective and injective lies
+        in ``L_A u R_A`` (ACLV Def 2.1); the ``ada`` rung of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("ada")
+
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
         """True iff A is semisimple (Loewy length 1)."""

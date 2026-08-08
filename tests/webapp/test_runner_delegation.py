@@ -291,7 +291,31 @@ never hide behind one:
     ``modules.tilted.tilted_check_block``, so the Pyodide twin agrees
     (``tests/webapp/test_tilted_check_p60.py``). ``canonical_key`` is request-derived
     (schema-1 algebra-only, no ``module`` block; the budget carries in the compute
-    string, adding no request field)."""
+    string, adding no request field).
+  * 2026-08-07 (``recognizer_ladder_kA3`` ADDED, Plan 61 R18): a NEW fixture for the
+    ``recognizer_ladder`` ALGEBRA-level compute kind (schema v1, kA3 = 1->2->3 over QQ,
+    budget 256 -- the quasi-tilted/shod/weakly-shod/laura/ada ladder). Hereditary kA3 =>
+    all five verdicts ``True``, empty laura complement, gl.dim 1; the ada/HH^1 block
+    reports ``hh1_dim == 0`` with ``applicable == False`` and ``verdict == null`` because
+    QQ is NOT algebraically closed (ACLV Theorem B's hypothesis unmet -- no SC verdict off
+    CC). Pure ADDITION: every pre-existing entry was verified byte-identical BEFORE the
+    append (textual, existing bytes untouched); both runners share the library builder
+    (``modules.recognizers_ladder.recognizer_ladder_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_recognizer_ladder_p61.py`` /
+    ``tests/gui/test_recognizer_ladder_twin.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only, budget rides in the ``compute`` string, no new request
+    field).
+  * 2026-08-08 (``recognizer_ladder_kA3`` re-freeze, Plan 61 fix round -- honest gl.dim):
+    the ``recognizer_ladder`` block now carries ``gldim_exact`` alongside ``gldim`` (the
+    house style of the ``global_dimension`` / ``homological_profile`` blocks), so an
+    UNRESOLVED global dimension is presented as a certified lower bound, never a definite
+    value (the fix for ``NakayamaAlgebra(kupisch=[3,3,2])``, whose ``global_dimension``
+    returns ``value=32, exact=False``). kA3 is exact, so its block gains only
+    ``"gldim_exact": true``. Gated re-freeze: the regenerated blob was asserted
+    byte-identical to the old one after ADDING the single ``gldim_exact`` key (no other
+    field changed), and every OTHER golden entry was verified byte-identical BEFORE the
+    write. Both runners share the builder, so the twin stays byte-identical; the
+    ``canonical_key`` is unchanged (request-derived, no request-shape change)."""
 import json
 import pathlib
 
