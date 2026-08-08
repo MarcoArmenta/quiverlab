@@ -579,12 +579,12 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 960 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 550 | two independent implementations compute the same thing and match live |
+| Literature / theory pins | `-m oracle_literature` | 961 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 551 | two independent implementations compute the same thing and match live |
 | Self-certifying certificates | `-m oracle_selfcert` | 1177 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 205 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2321 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2323 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Counts as of the P56 merge (π₁ + strong simple connectivity, atop P51+P53+P55+P57+P58);
 sibling plans in the v0.2.0
 
