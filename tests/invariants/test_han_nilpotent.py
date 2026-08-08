@@ -10,6 +10,7 @@ import pytest
 from quiverlab.combinat.quiver import Quiver
 from quiverlab.fields import QQ
 from quiverlab.families.extension import arrow_removal_subalgebra
+from quiverlab.invariants.han import is_tensor_nilpotent
 
 lit = pytest.mark.oracle_literature
 selfcert = pytest.mark.oracle_selfcert
@@ -57,3 +58,48 @@ def test_relative_cycles_are_vertex_cycles():
     for w in ext.relative_cycles():
         toks = tuple(w.split("*"))
         assert Q.word_source(toks) == Q.word_target(toks)
+
+
+# --------------------------------------------------------------------------- #
+# Task I2: is_tensor_nilpotent -- capped semi-decision + certificate + witness
+# --------------------------------------------------------------------------- #
+@lit
+def test_ex53_tensor_nilpotent_index_2():
+    ext = arrow_removal_subalgebra(build_ex53(), ("a",))
+    tn = is_tensor_nilpotent(ext, cap=8)
+    assert tn.status == "nilpotent" and tn.index == 2
+    assert tn.route in ("J_interrupter", "no_relative_cycles", "direct_cap")
+
+
+@lit
+def test_ex55_not_tensor_nilpotent_witness():
+    ext = arrow_removal_subalgebra(build_ex55(), ("d",))
+    tn = is_tensor_nilpotent(ext, cap=8)
+    assert tn.status == "not_nilpotent"
+    assert tn.witness is not None                    # the surviving relative cycle
+
+
+@selfcert
+def test_certificate_forces_vanishing():
+    """J-interrupter route => (A/B)^{ox index} recomputed directly == 0."""
+    ext = arrow_removal_subalgebra(build_ex53(), ("a",))
+    tn = is_tensor_nilpotent(ext, cap=8)
+    assert ext.tensor_power_dim(tn.index) == 0 and ext.tensor_power_dim(tn.index - 1) != 0
+
+
+@selfcert
+def test_cap_returns_exactly_undecided_not_a_lie():
+    """The cap-only route sees 3 nonzero powers and CANNOT conclude non-nilpotency
+    (powers may grow before dying) -- it must return EXACTLY 'undecided'."""
+    ext = arrow_removal_subalgebra(build_ex55(), ("d",))
+    tn = is_tensor_nilpotent(ext, cap=3, use_certificate=False)
+    assert tn.status == "undecided"
+    assert tn.route == "direct_cap"
+
+
+@selfcert
+def test_cap_route_finds_nilpotent_when_a_power_vanishes():
+    """The naive cap route (no certificate) still concludes 'nilpotent' on Ex 5.3."""
+    ext = arrow_removal_subalgebra(build_ex53(), ("a",))
+    tn = is_tensor_nilpotent(ext, cap=8, use_certificate=False)
+    assert tn.status == "nilpotent" and tn.index == 2 and tn.route == "direct_cap"
