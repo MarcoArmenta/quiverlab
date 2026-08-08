@@ -552,3 +552,50 @@ def _lie_invariants_from_products(g):
     lcs = _series(c, m, dom, central=True)
     return dict(dim=m, solvable=ds[-1] == 0, nilpotent=lcs[-1] == 0,
                 derived_series_dims=ds, lower_central_dims=lcs)
+
+
+# ---------------------------------------------------------------------------
+# the runner block (all three tiers share this one builder)
+# ---------------------------------------------------------------------------
+def hh1_lie_block(A, *, budget=DEFAULT_MAXDIM):
+    """The JSON block for the ``hh1_lie`` compute kind (Plan 70). Reports the
+    invariants -- the bracket structure constants are NOT shipped (they explode and
+    are basis-dependent). An oversized / presentation-less refusal is a clean
+    ``{"error": ...}`` block, never a 500. Both runners share this builder, so the
+    blocks are byte-identical."""
+    refs = list(_REFERENCES)
+    try:
+        L = hh1_lie_structure(A, budget=budget)
+    except QuiverlabError as exc:
+        return {"kind": "hh1_lie", "status": "budget", "error": str(exc),
+                "references": refs}
+    note = L.note or ""
+    # RSS Ext-quiver self-cross-check (Task 4): when the criterion applies it must
+    # agree with the computed solvability (a loud self-cert), and the report says so.
+    if A.quiver is not None:
+        try:
+            cert = rss_solvable_certificate(A)
+        except QuiverlabError:
+            cert = None
+        if cert is not None and cert["solvable_by_criterion"]:
+            if not L.solvable:
+                raise QuiverlabError(
+                    "HH^1-Lie self-cert violated: the RSS Ext-quiver criterion (no loops, "
+                    "no parallel arrows) predicts solvable but the computed HH^1 is not")
+            note = (note + " " if note else "") + (
+                "RSS Ext-quiver criterion applies (no loops, no parallel arrows) and "
+                "confirms solvability.")
+    return {
+        "kind": "hh1_lie", "dim": L.dim, "dim_der": L.dim_der, "dim_inn": L.dim_inn,
+        "abelian": L.abelian, "perfect": L.perfect, "solvable": L.solvable,
+        "nilpotent": L.nilpotent,
+        "derived_series_dims": list(L.derived_series_dims),
+        "lower_central_dims": list(L.lower_central_dims),
+        "characteristic": L.characteristic,
+        "algebraically_closed": L.algebraically_closed,
+        "radical_dim": L.radical_dim, "levi_dim": L.levi_dim, "sl2_count": L.sl2_count,
+        "toral_rank": L.toral_rank, "levi_type": L.levi_type,
+        "semisimple": L.semisimple, "simple": L.simple,
+        "base_change_note": L.base_change_note, "char0_note": L.char0_note,
+        "status": L.status, "note": note or None, "references": refs,
+    }
