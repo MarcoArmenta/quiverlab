@@ -1045,6 +1045,22 @@ def compute_one(spec):
             from quiverlab.modules.quasihereditary import quasi_hereditary_block
             block = quasi_hereditary_block(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "fundamental_group":
+            # pi1(Q, I) + abelianization (Plan 56): an algebra-scalar kind (schema v1).
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # shared builder (invariants.coverings_block.fundamental_group_block) +
+            # `references`->citations.
+            from quiverlab.invariants.coverings_block import fundamental_group_block
+            block = fundamental_group_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "simply_connected":
+            # Three-valued simple connectivity + the R16 strongly-simply-connected
+            # certificate (Plan 56). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (invariants.coverings_block.simply_connected_block) + references->citations.
+            from quiverlab.invariants.coverings_block import simply_connected_block
+            block = simply_connected_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
             # library method returns a frozen result whose .blocks() IS the block
@@ -1066,6 +1082,23 @@ def compute_one(spec):
             # cross-runner contract holds byte-for-byte. Honest budget cap block.
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "string_homological":
+            # Homological string-algebra test (Plan 59 / R34, Suarez-Alvarez). Byte-
+            # identical to the server twin (quiverlab.hpc.spec._dispatch): SAME library
+            # block builder (modules.string_homological.string_homological_block) +
+            # `references`->citations. A rep-infinite / self-injective / presentation-
+            # less input returns an {"error": ...} block, never a raise.
+            from quiverlab.modules.string_homological import string_homological_block
+            block = string_homological_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "toupie":
+            # Toupie structure (Plan 59 / R35). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (families.toupie.toupie_block) -- recognizer + branch/direct-arrow counts +
+            # HH + char-0 sl_a lower bound -- + `references`->citations.
+            from quiverlab.families.toupie import toupie_block
+            block = toupie_block(A)
             block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
@@ -1282,6 +1315,13 @@ def python_snippet():
                              "A.dynkin_type(), A.form_type()]"),
              # Quasi-hereditary structure (Plan 47): a scalar kind, no %d.
              "quasi_hereditary": "A.is_quasi_hereditary()",
+             # Plan 59 recognizer batteries: two scalar algebra-only kinds, no %d.
+             "string_homological": ("homological_string_test(A)  "
+                                    "# from quiverlab.modules.string_homological"),
+             "toupie": "(is_toupie(A), toupie_block(A))  # from quiverlab.families.toupie",
+             # pi1 + simple connectivity (Plan 56): scalar kinds, no %d.
+             "fundamental_group": "A.fundamental_group()",
+             "simply_connected": "A.is_simply_connected()",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -1408,6 +1448,10 @@ ETA_MODEL = {
                 # Plan 47: quasi_hereditary builds Delta/Nabla + a gl.dim check +
                 # the greedy Delta-peel of each P(v); a few small resolutions.
                 "quasi_hereditary": 0.5,
+                # Plan 56: fundamental_group = a reduction system + block linear
+                # algebra + a small ZZ SNF; simply_connected additionally runs the
+                # convex-subset separation sweep (decompose per vertex per subset).
+                "fundamental_group": 0.5, "simply_connected": 2.0,
                 # Plan 45: the C4 tau-tilting engine BFSes the exchange graph via the
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
@@ -1415,7 +1459,11 @@ ETA_MODEL = {
                 # Plan 55: left/right parts = an AR knit + the N^2 Hom predecessor matrix +
                 # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
                 # the same cost class as tau_tilting.
-                "left_right_parts": 2.0},
+                "left_right_parts": 2.0,
+                # Plan 59: string_homological KNITS the AR quiver + realizes/decomposes
+                # extensions (expensive, ar_quiver class); toupie is a small HH + a
+                # graph-shape scan (cheap).
+                "string_homological": 2.0, "toupie": 0.5},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

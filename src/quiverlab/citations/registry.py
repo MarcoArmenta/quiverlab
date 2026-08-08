@@ -386,6 +386,17 @@ REGISTRY: dict = {r.key: r for r in [
        "Butler-Ringel: the string/band module classification and the hook/cohook "
        "description of the AR translate -- the ground truth for the string subsystem.",
        "modules"),
+    # --- Plan 59: R34 homological string test + R35 toupie algebras ---
+    _r("suarez_alvarez", "SuarezAlvarez2023", "algorithm",
+       "A simple homological characterization of string algebras of finite rep. type",
+       "Suarez-Alvarez: among rep-finite algebras, string <=> the middle term of EVERY "
+       "extension of indecomposables has <= 2 summands (all Ext^1 classes, not just AR "
+       "sequences) -- the homological string test.", "modules"),
+    _r("alsolotar_toupie", "ArtensteinLanzilottaSolotar2020", "family",
+       "Hochschild cohomology of toupie algebras",
+       "Artenstein-Lanzilotta-Solotar: toupie = unique source/sink + a parallel "
+       "branches; a-Kronecker HH^* = [1, a^2-1, 0, ..]; HH^1 contains sl_a (char 0), "
+       "a = # direct source->sink arrows.", "families", "hochschild"),
     _r("avella_geiss", "AvellaAlaminosGeiss2008", "algorithm",
        "Combinatorial derived invariants for gentle algebras",
        "The AG-invariant: a multiset of (n,m) pairs from permitted/forbidden threads; "
@@ -495,6 +506,49 @@ REGISTRY: dict = {r.key: r for r in [
        "King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the "
        "Plan-45 / C4 engine draws.",
        "tau-tilting", "stability"),
+    # --- Plan 56: pi1(Q,I) + strongly simply connected (coverings) ---
+    _r("assem_delapena", "AssemDelaPena1996", "foundation",
+       "The fundamental groups of a triangular algebra",
+       "The fundamental group pi1(Q,I) of a presentation and the Hom(pi1, k+) embedding "
+       "into HH^1 for triangular algebras -- the Plan-56 pi1 + Hurewicz foundation.",
+       "coverings", "pi1"),
+    _r("martinez_villa_delapena", "MartinezVillaDelaPena1983", "foundation",
+       "The universal cover of a quiver with relations",
+       "The original homotopy relation ~_I on walks (minimal relations glue parallel "
+       "paths) that quiverlab's pi1^ab computes by exact linear algebra on I/(rad.I + I.rad).",
+       "coverings", "pi1"),
+    _r("le_meur_pi1", "LeMeur2005", "foundation",
+       "The fundamental group of a triangular algebra without double bypasses",
+       "Thm 1.1: a char-0 triangular algebra with no double bypasses has a privileged "
+       "presentation whose pi1 surjects onto every other -- the Plan-56 no-bypass True route.",
+       "coverings", "pi1"),
+    _r("crs_hurewicz", "CibilsRedondoSolotar2010hurewicz", "foundation",
+       "Fundamental group of Schurian categories and the Hurewicz isomorphism",
+       "For a Schurian category the Hurewicz map Hom(pi1, k+) -> HH^1 is an isomorphism "
+       "-- the equality case of the Plan-56 Hom(pi1,k+) <= dim HH^1 cross-check.",
+       "coverings", "pi1"),
+    _r("crs_gradings", "CibilsRedondoSolotar2010gradings", "foundation",
+       "Connected gradings and the fundamental group",
+       "The intrinsic pi1 (inverse limit over connected gradings) and the oracle "
+       "pi1(k[x]/(x^p)) = Z x C_p in char p -- documents WHY the presentation group (Z) "
+       "is not the algebra invariant (Plan-56 intrinsic refusal).",
+       "coverings", "pi1"),
+    _r("crs_intrinsic", "CibilsRedondoSolotar2009intrinsic", "foundation",
+       "The intrinsic fundamental group of a linear category",
+       "The intrinsic fundamental group of a linear category -- the not-bounded-computable "
+       "invariant quiverlab refuses loudly in favour of the presentation pi1 (Plan 56).",
+       "coverings", "pi1"),
+    _r("briggs_ryd_tori", "BriggsRubioyDegrassi2023", "foundation",
+       "Maximal tori in HH^1 and the fundamental group",
+       "Every maximal torus of HH^1(A) is dual to some fundamental group of A -- the "
+       "maximal-torus refinement of the Plan-56 Hurewicz cross-check.",
+       "coverings", "pi1"),
+    _r("skowronski_ssc", "Skowronski1993", "foundation",
+       "Simply connected algebras and Hochschild cohomologies",
+       "A triangular algebra is strongly simply connected iff every full convex "
+       "subcategory satisfies the separation condition -- the Plan-56 R16 recognizer "
+       "(the P62 tame/wild gate).",
+       "coverings", "ssc"),
     _r("act_left_right", "ACT2004", "foundation",
        "The left and the right parts of a module category",
        "Assem-Coelho-Trepode: L_A / R_A via predecessor/successor closure of pd<=1 / id<=1, the "
