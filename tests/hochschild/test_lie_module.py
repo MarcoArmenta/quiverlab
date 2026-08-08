@@ -339,3 +339,66 @@ def test_gl2_two_dim_torus():
     assert _weight_entry(L, 1)["torus_rank"] == 2
     for n in range(3):
         assert sum(d for _, d in _weight_dims(L, n)) == L.hh_dims[n]
+
+
+# ---------------------------------------------------------------------------
+# Task 4: indecomposable Lie-module summands via decompose_representation
+# ---------------------------------------------------------------------------
+from quiverlab.modules.decompose import decompose, decompose_representation
+
+
+@selfcert
+def test_decompose_representation_matches_module_decompose():
+    """The matrix-level decompose_representation reproduces decompose(M) on a standard
+    module's action matrices (byte-stable: decompose(M) itself is UNCHANGED -- pinned)."""
+    A = _kron(QQ)
+    P1 = A.projective(1)
+    assert sorted(m.dim for m, mult in decompose(P1) for _ in range(mult)) == [3]  # P1 indec, dim 3
+    flat = decompose_representation(list(P1.action.values()), QQ)
+    assert sorted(s.dim for s in flat) == [3]                    # same summand dims
+
+
+@lit
+def test_kronecker_hh1_single_irreducible():
+    A = _kron(QQ)
+    L = lie_module_action(A, top=1)
+    s = L.summands[1]                                            # HH^1 summands
+    assert len(s) == 1 and s[0]["dim"] == 3                      # dim End=1 => irreducible adjoint L(2)
+
+
+@lit
+@pytest.mark.parametrize("n", [2, 3])
+def test_truncpoly_hh_n_indecomposable(n):
+    A = truncated_polynomial(3, field=QQ)
+    L = lie_module_action(A, top=3)
+    assert len(L.summands[n]) == 1                               # single uniserial indecomposable
+
+
+@lit
+def test_rad2_loops_multisummand():
+    """k[x,y]/(x,y)^2: HH^n (gl2-modules) split into >= 2 indecomposables (dim End = 2,2,6)."""
+    A = _rad2loops(QQ)
+    L = lie_module_action(A, top=2)
+    assert len(L.summands[1]) >= 2 and len(L.summands[2]) >= 2
+
+
+@selfcert
+def test_summands_reassemble_hh_n():
+    """Each degree's certified summands (dim x mult) reassemble dim HH^n."""
+    for A, top in [(_kron(QQ), 1), (truncated_polynomial(3, field=QQ), 3), (_rad2loops(QQ), 2)]:
+        L = lie_module_action(A, top=top)
+        for n in range(top + 1):
+            parts = L.summands[n]
+            assert isinstance(parts, list)
+            assert sum(p["dim"] * p["mult"] for p in parts) == L.hh_dims[n]
+
+
+@selfcert
+def test_summands_independent_of_char0_weight_gate():
+    """MAJOR-fix b: over char p > d_n the WEIGHTS are None (char-0 gate) but the SUMMAND
+    decomposition is still computed (decompose's own guard char > d_n)."""
+    A = truncated_polynomial(3, field=GF(7))                     # char 7 > d_n = 2
+    L = lie_module_action(A, top=2)
+    assert L.weights is None                                     # weight/torus char-0 gated
+    for n in range(1, 3):
+        assert sum(p["dim"] * p["mult"] for p in L.summands[n]) == L.hh_dims[n]

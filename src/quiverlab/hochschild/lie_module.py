@@ -428,6 +428,88 @@ def _simultaneous_weights(mats, dom, d):
     return result
 
 
+# ---------------------------------------------------------------------------
+# Task 4: indecomposable Lie-module summands (via decompose_representation) + iso grouping
+# ---------------------------------------------------------------------------
+def _rep_hom_space(g1, g2, dom, d):
+    """Basis of ``{X in M_d : X g1[i] = g2[i] X for all i}`` (intertwiners g1 -> g2)."""
+    rows = []
+    for a, b in zip(g1, g2):
+        for i in range(d):
+            for l in range(d):
+                row = [dom.zero()] * (d * d)
+                for k in range(d):
+                    row[i * d + k] = dom.add(row[i * d + k], a[k][l])
+                    row[k * d + l] = dom.sub(row[k * d + l], b[i][k])
+                if any(not dom.is_zero(x) for x in row):
+                    rows.append(row)
+    flats = nullspace(rows, dom) if rows else \
+        [[dom.one() if t == u else dom.zero() for t in range(d * d)] for u in range(d * d)]
+    return [[[v[i * d + j] for j in range(d)] for i in range(d)] for v in flats]
+
+
+def _rep_isomorphic(s1, s2, dom):
+    """Are the two :class:`RepSummand`-like ``(dim, gens)`` isomorphic? Certified by an
+    INVERTIBLE intertwiner (simultaneous similarity). Non-iso => no invertible element
+    (never a false positive); an undecidable case returns False (conservative -- may
+    over-count classes, never merges non-iso ones)."""
+    if s1["dim"] != s2["dim"]:
+        return False
+    d = s1["dim"]
+    if d == 0:
+        return True
+    homs = _rep_hom_space(s1["gens"], s2["gens"], dom, d)
+    if not homs:
+        return False
+    cands = list(homs)                                # singletons
+    for i in range(len(homs)):                        # + pairwise sums
+        for j in range(i + 1, len(homs)):
+            cands.append([[dom.add(homs[i][a][b], homs[j][a][b]) for b in range(d)]
+                          for a in range(d)])
+    return any(rank(X, dom) == d for X in cands)
+
+
+def _group_summands(flat, dom):
+    """Group a flat list of RepSummand into ``[{"dim", "label", "mult"}]`` by the exact
+    representation-iso certificate; distinct entries are pairwise non-isomorphic.
+    ``label`` is always ``None`` (never guessed)."""
+    groups = []                                       # [ {"dim","gens","mult"} ]
+    for s in flat:
+        entry = {"dim": s.dim, "gens": [list(map(list, g)) for g in s.gens]}
+        for g in groups:
+            if _rep_isomorphic(g, entry, dom):
+                g["mult"] += 1
+                break
+        else:
+            entry["mult"] = 1
+            groups.append(entry)
+    return [{"dim": g["dim"], "label": None, "mult": g["mult"]} for g in groups]
+
+
+def _summand_tables(per_degree, dom, budget):
+    """Per-degree indecomposable-summand decomposition, governed INDEPENDENTLY by
+    decompose's own char guard (``char 0 or char > d_n``). ``summands[n]`` is a list of
+    ``{"dim","label","mult"}`` parts, or ``{"error": note}`` where decompose refuses
+    (``char p <= d_n`` with no ``dim End = 1`` certificate) -- surfaced, never a crash
+    and never a guessed decomposition."""
+    from quiverlab.modules.decompose import decompose_representation
+    out = []
+    for pd in per_degree:
+        dn = len(pd["reps"])
+        if dn == 0:
+            out.append([])
+            continue
+        if not pd["rhos"]:                            # HH^1 = 0: trivial action, d_n lines
+            out.append([{"dim": 1, "label": None, "mult": dn}])
+            continue
+        try:
+            flat = decompose_representation(pd["rhos"], dom, budget=budget)
+            out.append(_group_summands(flat, dom))
+        except QuiverlabError as exc:
+            out.append({"error": str(exc)})
+    return out
+
+
 def _weight_tables(B, per_degree, torus, reps_hh1, dom):
     """Per-degree weight tables over ``k`` (char 0). Returns ``(tables, base_change_note)``:
     ``tables[n]`` is ``{"n", "torus_rank", "weights": [[ [str(lam)...], dim ]...] }`` where
@@ -597,6 +679,10 @@ def lie_module_action(A, top, *, budget=DEFAULT_MAXDIM, max_cells=4_000_000,
         torus, torus_provenance = _maximal_torus(c, fg["hh1_dim"], dom)
         weights, weight_base_change_note = _weight_tables(
             B, fg["per_degree"], torus, fg["reps_hh1"], dom)
+
+    # --- Task 4: indecomposable-summand decomposition (INDEPENDENT of the weight gate;
+    #     governed by decompose's own char guard char 0 or char > d_n) ---
+    summands = _summand_tables(fg["per_degree"], dom, budget)
 
     return HHLieModule(
         top=top, hh_dims=fg["hh_dims"], hh1_dim=fg["hh1_dim"], basis="der_inn/bar",

@@ -383,6 +383,173 @@ def decompose(M, budget=_DEFAULT_BUDGET):
     return [(g[0], g[1]) for g in groups]
 
 
+# ---------------------------------------------------------------------------
+# Matrix-level Krull-Schmidt on a representation {gens} (Plan 71): the SAME
+# Fitting-split + local-endomorphism certificate as ``decompose(M)``, but driven by
+# the DIRECTLY COMPUTED commutant of a generating set of matrices (no quiver). Used to
+# split HH^n as a Lie module over HH^1 (End = commutant = End_{HH^1}(HH^n)).
+# ``decompose(M)`` is UNCHANGED (byte-stable) -- this is a sibling sharing the leaf
+# helpers, not a re-plumb of the module path.
+# ---------------------------------------------------------------------------
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class RepSummand:
+    """A certified-indecomposable summand of a matrix representation: its dimension,
+    a basis (column vectors, in the ORIGINAL representation coordinates) of the
+    invariant subspace, and the restricted action matrices in that basis."""
+    dim: int
+    basis: tuple
+    gens: tuple
+
+
+def _rep_commutant(gens, d, dom):
+    """Basis of ``End = {X in M_d : X g = g X for all g in gens}`` (the commutant) as
+    ``d x d`` matrices. Empty ``gens`` -> all of ``M_d`` (the trivial representation)."""
+    rows = []
+    for g in gens:
+        for i in range(d):
+            for l in range(d):
+                row = [dom.zero()] * (d * d)
+                for k in range(d):
+                    row[i * d + k] = dom.add(row[i * d + k], g[k][l])
+                    row[k * d + l] = dom.sub(row[k * d + l], g[i][k])
+                if any(not dom.is_zero(x) for x in row):
+                    rows.append(row)
+    flats = (linalg.nullspace(rows, dom) if rows else
+             [[dom.one() if t == u else dom.zero() for t in range(d * d)]
+              for u in range(d * d)])
+    return [[[v[i * d + j] for j in range(d)] for i in range(d)] for v in flats]
+
+
+def _restrict_gens(gens, cols, dom, d):
+    """Restrict each ``g`` to the invariant subspace ``span(cols)`` (columns = ambient
+    vecs), in ``cols`` coordinates; loud if the subspace is not invariant."""
+    s = len(cols)
+    colsT = [[cols[j][r] for j in range(s)] for r in range(d)]
+    out = []
+    for g in gens:
+        rc = []
+        for j in range(s):
+            coeff = linalg.solve(colsT, lm.matvec(g, cols[j], dom), dom)
+            if coeff is None:
+                raise QuiverlabError(
+                    "decompose_representation: a Fitting kernel is not action-invariant "
+                    "(a bug -- report it)")
+            rc.append(coeff)
+        out.append([[rc[j][i] for j in range(s)] for i in range(s)])
+    return out
+
+
+def _rep_split(gens, phi, factors, d, dom):
+    """Split by a coprime min-poly factorization of the commuting endomorphism ``phi``
+    (``f`` = first factor to full multiplicity, ``g`` = the rest). Both kernels are
+    invariant (``f(phi), g(phi)`` commute with every ``g in gens``)."""
+    f = _poly_pow(factors[0][0], factors[0][1], dom)
+    g = [dom.one()]
+    for fc, mult in factors[1:]:
+        g = _poly_mul(g, _poly_pow(fc, mult, dom), dom)
+    Xcols = lm.kernel_columns(_poly_eval_matrix(f, phi, dom), dom)
+    Ycols = lm.kernel_columns(_poly_eval_matrix(g, phi, dom), dom)
+    assert Xcols and Ycols and len(Xcols) + len(Ycols) == d, (
+        "representation Fitting split failed the direct-sum dimension identity")
+    return ((Xcols, _restrict_gens(gens, Xcols, dom, d)),
+            (Ycols, _restrict_gens(gens, Ycols, dom, d)))
+
+
+def _rep_try_split(gens, End, d, dom, budget):
+    if not _factoring_supported(dom):
+        return None
+    for phi in _candidate_endomorphisms(End, dom, budget):
+        mp = _min_poly_coeffs(phi, dom)
+        if len(mp) <= 2:
+            continue
+        factors = _factor_min_poly(mp, dom)
+        if len(factors) >= 2:
+            return _rep_split(gens, phi, factors, d, dom)
+    return None
+
+
+def _rep_certify_local(End, d, dom):
+    """Certify ``End`` local (the representation is indecomposable) or RAISE loudly.
+    ``dim End = 1`` => a field => local (every char); else the trace-form radical under
+    ``char 0 or char > d`` (Dickson/CIW), loud otherwise -- the SAME guard as
+    ``decompose(M)``."""
+    r = len(End)
+    if r <= 1:
+        return True
+    char = dom.characteristic
+    if (char == 0) or (char > d):
+        if _trace_form_rank(End, dom) == 1:
+            return True
+        raise QuiverlabError(
+            "decompose_representation: End/rad has dimension > 1 and the bounded Fitting "
+            "search found no split -- cannot certify indecomposability within budget",
+            hint="enlarge budget, or crosscheck via GAP DirectSumDecomposition")
+    raise QuiverlabError(
+        f"decompose_representation: characteristic {char} <= dim {d} makes the trace-form "
+        "radical unreliable and no Fitting split was found -- cannot certify",
+        hint="recompute over characteristic 0 or > dim, or crosscheck via GAP")
+
+
+def _combine_cols(basis, coords, dom, D):
+    out = [dom.zero()] * D
+    for j, cj in enumerate(coords):
+        if dom.is_zero(cj):
+            continue
+        bj = basis[j]
+        for t in range(D):
+            out[t] = dom.add(out[t], dom.mul(cj, bj[t]))
+    return out
+
+
+def _rep_indecomposables(gens, basis, dom, budget, D):
+    """Flat list of certified-indecomposable :class:`RepSummand` whose direct sum is the
+    subspace ``span(basis)`` (columns in ORIGINAL coords; ``gens`` = restricted action).
+    Recurses on Fitting splits; certifies every leaf (loud otherwise)."""
+    d = len(basis)
+    if d == 0:
+        return []
+    End = _rep_commutant(gens, d, dom)
+    split = _rep_try_split(gens, End, d, dom, budget)
+    if split is not None:
+        (Xc, Xg), (Yc, Yg) = split
+        Xb = [_combine_cols(basis, xc, dom, D) for xc in Xc]
+        Yb = [_combine_cols(basis, yc, dom, D) for yc in Yc]
+        return (_rep_indecomposables(Xg, Xb, dom, budget, D)
+                + _rep_indecomposables(Yg, Yb, dom, budget, D))
+    _rep_certify_local(End, d, dom)
+    return [RepSummand(d, tuple(tuple(col) for col in basis),
+                       tuple(tuple(tuple(row) for row in g) for g in gens))]
+
+
+def decompose_representation(gens, domain, *, budget=_DEFAULT_BUDGET):
+    """Krull-Schmidt decomposition of the matrix representation generated by ``gens``
+    (a list of ``d x d`` matrices over ``domain``) into certified-indecomposable
+    :class:`RepSummand` summands whose direct sum is the whole space. ``End`` is the
+    DIRECTLY computed commutant of ``gens`` (so for the Plan-71 action matrices
+    ``{rho_n(D)}`` it IS ``End_{HH^1}(HH^n)``, making the summands the indecomposable
+    Lie-module summands). The SAME char guard as :func:`decompose` (``char 0 or char >
+    dim``; loud refusal at ``char p <= dim`` with no ``dim End = 1`` certificate).
+
+    ``gens`` must be non-empty (the dimension is read from ``gens[0]``); a trivial
+    (no-generator) representation should be handled by the caller."""
+    if not gens:
+        raise QuiverlabError(
+            "decompose_representation needs at least one generator matrix "
+            "(the dimension is read from gens[0])",
+            hint="a no-generator (trivial) representation is a direct sum of 1-dim "
+                 "modules -- handle that degenerate case in the caller")
+    d = len(gens[0])
+    # columns e_0, ..., e_{d-1} of the identity (the standard basis of the whole space)
+    basis = [[domain.one() if i == j else domain.zero() for i in range(d)]
+             for j in range(d)]
+    gens = [[[domain.coerce(x) if isinstance(x, int) else x for x in row] for row in g]
+            for g in gens]
+    return _rep_indecomposables(gens, basis, domain, budget, d)
+
+
 def is_indecomposable(M, budget=_DEFAULT_BUDGET):
     """True iff ``M`` is indecomposable, certified (End local); False iff a Fitting split
     exists. The zero module is NOT indecomposable (``False``). Raises loudly when neither
