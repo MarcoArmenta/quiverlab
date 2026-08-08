@@ -97,6 +97,7 @@ def cs_bracket_tables(A, top, max_cells):
     from quiverlab.resolutions_cs.homology import cs_hh_basis, _require_admissible
     from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
     from quiverlab.resolutions_cs.bracket import native_bracket
+    from quiverlab.resolutions_cs.homotopy_lifting import homotopy_lifting
 
     rs = reduction_system_of(A)
     _require_admissible(rs)
@@ -111,6 +112,18 @@ def cs_bracket_tables(A, top, max_cells):
             return []
         return _columns(res.matrix(out_n - 1, "coh"))
 
+    # DD1: one homotopy lifting per (degree, class index), reused across the whole
+    # row/column of every table instead of rebuilt per (i, j) pair. Canonical solve ->
+    # byte-identical to the uncached path (test_native_bracket_psi_cache_byte_identical).
+    _lift = {}
+
+    def lift(deg, idx):
+        obj = _lift.get((deg, idx))
+        if obj is None:
+            obj = homotopy_lifting(res, coh[deg][idx], deg)
+            _lift[(deg, idx)] = obj
+        return obj
+
     tables = {}
     for (p, q) in _pairs("bracket", top):
         out_n = p + q - 1
@@ -122,7 +135,9 @@ def cs_bracket_tables(A, top, max_cells):
         for i in range(dl):
             for j in range(dr):
                 coords = _class_coords(
-                    native_bracket(res, left[i], p, right[j], q), out_reps, img, dom)
+                    native_bracket(res, left[i], p, right[j], q,
+                                   psi_f=lift(p, i), psi_g=lift(q, j)),
+                    out_reps, img, dom)
                 for k in range(dout):
                     consts[k][i][j] = coords[k]
         tables[(p, q)] = ProductTable(

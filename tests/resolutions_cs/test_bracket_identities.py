@@ -29,6 +29,12 @@ pytestmark = [pytest.mark.oracle_selfcert]
 
 PRIMES = (32003, 5, 3)
 
+# NOTE (P51 review find): the ODD-exponent bracket sign `(−1)^{(p-1)(q-1)}` is pinned
+# SOLELY by the QuantumCI (2,4) → HH⁵ anchor in test_native_bracket.py — k[x]/x² and
+# k[x]/x³ are sign-BLIND at (2,2) (their odd-squared brackets are the zero class), and
+# the Jacobi/Poisson batteries below at degree-≤2 triples never reach a nontrivial
+# shifted sign. A SECOND odd-exponent fixture is a backlog item (DEEPER-ENGINES).
+
 
 def _res(rels, arrows, md, field):
     Q = Quiver([1], arrows)

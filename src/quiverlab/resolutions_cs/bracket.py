@@ -50,22 +50,27 @@ def _eval_cochain_on_pelt(res, eval_fn, pelt):
     return acc
 
 
-def native_bracket(res, f_vec, p, g_vec, q):
+def native_bracket(res, f_vec, p, g_vec, q, psi_f=None, psi_g=None):
     """The native CS Gerstenhaber bracket [f, g] of cochains f ∈ C^p, g ∈ C^q, as a
     coordinate vector over `res._basis(p+q-1, "coh")`:
     [f,g](σ) = f(ψ_g(σ)) − (−1)^{(p-1)(q-1)} g(ψ_f(σ)) for σ ∈ S_{p+q-1}.
 
-    Builds two homotopy liftings (cached on res via the shared CornerComplex /
-    TensorComplex).  No bar object -- any degree, any Domain.  Requires p, q >= 1
-    (ValueError otherwise -- degree-0 insertion out of scope)."""
+    Builds the two homotopy liftings ψ_f (of f, degree p) and ψ_g (of g, degree q)
+    unless PREBUILT ones are supplied via `psi_f`/`psi_g` — a table builder reuses
+    one lifting per class across a whole row/column instead of rebuilding it per pair
+    (DD1's "two ψ towers per class-pair, cached per class"; the canonical solve makes
+    the cache a pure byte-identical win).  No bar object -- any degree, any Domain.
+    Requires p, q >= 1 (ValueError otherwise -- degree-0 insertion out of scope)."""
     if p < 1 or q < 1:
         raise ValueError(
             f"the Gerstenhaber bracket needs p, q >= 1 (degree-0 insertion is out "
             f"of scope); got p={p}, q={q}")
     ar, dom = res.ar, res.dom
     n = p + q - 1
-    psi_f = homotopy_lifting(res, f_vec, p)     # ψ_f: P_n → P_{n-p+1} = P_q
-    psi_g = homotopy_lifting(res, g_vec, q)     # ψ_g: P_n → P_{n-q+1} = P_p
+    if psi_f is None:
+        psi_f = homotopy_lifting(res, f_vec, p)     # ψ_f: P_n → P_{n-p+1} = P_q
+    if psi_g is None:
+        psi_g = homotopy_lifting(res, g_vec, q)     # ψ_g: P_n → P_{n-q+1} = P_p
     f_at = _cochain_evaluator(res, f_vec, p)
     g_at = _cochain_evaluator(res, g_vec, q)
     sign = dom.one() if ((p - 1) * (q - 1)) % 2 == 0 else dom.neg(dom.one())

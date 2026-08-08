@@ -260,3 +260,53 @@ def test_native_bracket_over_qq_computes():
         for g in _cocycles(res, 2):
             br = native_bracket(res, f, 1, g, 2)
             assert len(br) == len(res._basis(2, "coh"))
+
+
+def test_native_bracket_psi_cache_byte_identical():
+    """A prebuilt lifting (the table builder's per-class cache, DD1) yields a
+    BYTE-identical bracket vector to the fresh internal build -- the canonical solve
+    makes caching a pure win (the before/after byte-identity the review asked for)."""
+    from quiverlab.resolutions_cs.homotopy_lifting import homotopy_lifting
+    res = _kx2()
+    f, g = _cocycles(res, 1)[0], _cocycles(res, 2)[0]
+    fresh = native_bracket(res, f, 1, g, 2)
+    pf, pg = homotopy_lifting(res, f, 1), homotopy_lifting(res, g, 2)
+    cached = native_bracket(res, f, 1, g, 2, psi_f=pf, psi_g=pg)
+    assert fresh == cached
+
+
+def test_bracket_gf4_smoke():
+    """Extension field GF(4) = GF(2^2): native_bracket + engine='cs' COMPUTE. The CS
+    bracket table names the field (basis cs/GF(2^2)), its per-bidegree dims match
+    cs_cohomology_dims, a nonzero structure constant exists, and the native bracket
+    descends (delta[f,g] = 0) -- the critic's extension-field coverage."""
+    from quiverlab.resolutions_cs.homology import cs_cohomology_dims
+    A = Quiver([1], {"x": (1, 1)}).algebra(relations=["x*x"], field=GF(4))
+    assert A.domain.name == "GF(2^2)"
+    hb = A.gerstenhaber_brackets(2, engine="cs")
+    assert hb.basis == "cs/GF(2^2)" and hb.window is None
+    hh = list(cs_cohomology_dims(A, 2).dims)
+    for (p, q), t in hb.tables.items():
+        assert t.dims == (hh[p], hh[q], hh[p + q - 1]), f"dims drift at {(p, q)}"
+    zero = str(A.domain.zero())
+    assert any(str(c) != zero for t in hb.tables.values()
+               for mat in t.constants for row in mat for c in row), \
+        "expected at least one nonzero GF(4) bracket structure constant"
+    # descent over GF(4), directly on the CS resolution (field-agnostic delta: the
+    # GF(p)-int _dcup helper can't multiply GF(4) tuples).
+    res = _res(["x*x"], {"x": (1, 1)}, 6, GF(4))
+    dom = res.dom
+
+    def _is_cocycle(vec, n):
+        for row in res.matrix(n, "coh"):
+            acc = dom.zero()
+            for j, m in enumerate(row):
+                acc = dom.add(acc, dom.mul(m, dom.coerce(vec[j])))
+            if not dom.is_zero(acc):
+                return False
+        return True
+
+    for f in _cocycles(res, 1):
+        for g in _cocycles(res, 2):
+            assert _is_cocycle(native_bracket(res, f, 1, g, 2), 2), \
+                "GF(4) bracket of cocycles must be a cocycle"

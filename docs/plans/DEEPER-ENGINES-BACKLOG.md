@@ -530,6 +530,13 @@ planned together even if delivered in slices.
   2026-08-06): v1 takes algebra B as a Dynkin type string or a preset pick;
   a free-form second canvas (and `derived_compare` on the index/family page)
   is the successor.
+- [ ] **A second odd-exponent bracket fixture** (Plan 51 critic find, 2026-08-07):
+  the odd-exponent bracket sign `(−1)^{(p-1)(q-1)}` is currently pinned by a SINGLE
+  non-vacuous anchor — QuantumCI (2,4) → HH⁵ (Δ₅, ~2 min, `slow`). k[x]/x² and
+  k[x]/x³ are sign-blind at (2,2) (odd-squared brackets vanish). Add a second,
+  ideally cheaper, algebra with a nonzero `[HH^even, HH^even]` bracket (a richer
+  even-degree HH — a preprojective / higher-QCI / group-algebra candidate) so the
+  odd-exponent sign has redundant coverage.
 - [ ] **Native Gerstenhaber bracket on minimal / Bardzell resolutions** (Plan 51
   follow-up, 2026-08-07): the CS-native bracket (`resolutions_cs/homotopy_lifting.py`
   + `bracket.py`) needs a diagonal Δ, which quiverlab ships only on the CS resolution.
