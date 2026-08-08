@@ -6,10 +6,17 @@ A silting object T satisfies Hom_{D^b}(T, T[n]) = 0 for all n > 0 (PRESILTING) a
 thick(T) = K^b(proj A) (GENERATION). This is WEAKER than tilting (which also needs the
 n < 0 vanishing); tilting => silting (AI Def 2.1). Presilting is DECIDED on the exact
 positive window (perfect => bounded => finite window; outside it hyper-Hom is provably
-the zero cochain group). Generation is three-valued: certified True on the tilting /
-2-term / local classes (where a completion theorem applies), else 'unknown' -- det(g_proj)
-= +-1 is NECESSARY (AI Thm 2.27) but NOT sufficient in general (thick subcategories are
-not K0-classified; Krah phantom, arXiv:2302.12502). The g-matrix is computed in the
+the zero cochain group). Generation is three-valued: certified True on the CERTIFIED
+classes -- a 2-term K0-basis object (IJY/AIR completion) incl. the regular object A (the
+"tilting (AI Ex 2.2)" rung fires only on ``is_tilting_complex(...).is_tilting is True``,
+itself certified-only), and a local indecomposable (AI Thm 2.26) -- else 'unknown'.
+det(g_proj) = +-1 is NECESSARY (AI Thm 2.27) but NOT sufficient in general: for a WIDE
+(non-2-term) rigid K0-basis object, "rigid + (#summands = rk K0) => generation" is exactly
+Rickard's rank QUESTION, still OPEN (thick subcategories are not K0-classified; Krah
+phantom, arXiv:2302.12502). Such an object falls through to the K0-basis-only rung and
+returns 'unknown' -- the SAME verdict ``is_tilting_complex`` gives it (Plan 67 fix round:
+the tilting rung and the K0-only rung are reconciled; neither certifies from bare K0). The
+g-matrix is computed in the
 PROJECTIVE basis K0(K^b proj A) = (+)_v Z[P_v] via ``derived.tilting.g_proj`` (Plan 67
 Task 0), NOT the composition-factor basis -- ``_chi`` gives det(Cartan . g) and is wrong
 on non-unimodular Cartan (self-injective/symmetric; Example 2.47).
@@ -28,7 +35,7 @@ from dataclasses import dataclass
 from quiverlab.errors import QuiverlabError
 from quiverlab.modules.complexes import hyper_hom_dims
 from quiverlab.derived.tilting import (is_tilting_complex, _direct_sum_complex, _span,
-                                       g_proj)
+                                       _is_two_term, g_proj)
 
 
 # --------------------------------------------------------------------------- #
@@ -53,19 +60,6 @@ def _positive_window(summands):
     n > max_i hi_i - min_j lo_j, so scanning [1, n_max] fully DECIDES presilting."""
     spans = [_span(T) for T in summands]
     return 1, max(hi for _, hi in spans) - min(lo for lo, _ in spans)
-
-
-def _is_two_term(summands):
-    """Every summand concentrated in two consecutive degrees, all up to ONE common shift
-    (2-term silting is defined up to shift). True for the empty/stalk cases."""
-    spans = [_span(T) for T in summands if T.degrees()]
-    if not spans:
-        return True
-    widths = {hi - lo for lo, hi in spans}
-    if not (widths <= {0, 1}):
-        return False
-    tops = {hi for _, hi in spans}
-    return max(tops) - min(tops) <= 1          # a common 2-window covers them
 
 
 def is_silting_object(summands):
@@ -93,7 +87,13 @@ def is_silting_object(summands):
     k0_basis = (len(g) == len(verts)) and det in (1, -1)
     # sufficiency ladder (see the module docstring / the plan sufficiency ruling)
     is_silting, why = False, ""
-    if is_tilting_complex(summands).is_tilting:     # is_tilting_complex now g_proj-routed
+    if is_tilting_complex(summands).is_tilting is True:   # `is True`: the tilting verifier
+        # is now itself three-valued -- is_tilting is True ONLY when generation is CERTIFIED
+        # (2-term/regular, IJY completion), "unknown" for a non-2-term rigid K0-basis object
+        # (Rickard's rank question, OPEN). We fire this rung on hard True ONLY; an "unknown"
+        # tilting verdict deliberately falls through to the K0-basis-only rung below, where
+        # it lands on the SAME honest "unknown" -- the two verifiers agree exactly in the
+        # Rickard-open regime (Plan 67 fix round: rung 1 and the K0-only rung reconciled).
         is_silting, why = True, "tilting (AI Ex 2.2)"
     elif presilting and _is_two_term(summands) and k0_basis:
         # IJY: a 2-term PRESILTING object whose #(distinct indec) summands == #simples is

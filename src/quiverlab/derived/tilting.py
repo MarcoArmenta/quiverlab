@@ -1,17 +1,30 @@
 """Tilting-complex verifier + End(T) as an algebra (Plan 43 / Rickard).
 
-``is_tilting_complex`` DECIDES (never semi-decides) two conditions on a list of
-perfect summands: (1) **rigidity** -- ``Hom_{D^b}(T, T[n]) = 0`` for all ``n != 0`` --
-scanned on the EXACT window outside which hyper-Hom is provably the zero cochain group
-(``n in [min lo_i - max hi_j, max hi_i - min lo_j]``), reported honestly; (2)
-**generation** of ``K^b(proj)`` -- the K0 g-matrix (rows = summand classes in the
-**projective** basis ``K0(K^b proj A) = (+)_v Z[P_v]`` via :func:`g_proj`, NOT the
-composition-factor basis) is square (``#summands = #simples``) and unimodular
-(``det = +-1``), so the classes are a ``Z``-basis of ``K0`` (AI Thm 2.27). ``T`` is a
-tilting complex iff both hold (Rickard). The projective basis is load-bearing: ``_chi``
-(the composition-factor Euler characteristic) gives ``det(Cartan . g_proj)`` and is a
-systematic false-negative on non-unimodular Cartan (self-injective/symmetric; Plan 67
-Task 0).
+``is_tilting_complex`` reports two conditions on a list of perfect summands.
+(1) **rigidity** -- ``Hom_{D^b}(T, T[n]) = 0`` for all ``n != 0`` -- is DECIDED
+(never semi-decided) on the EXACT window outside which hyper-Hom is provably the zero
+cochain group (``n in [min lo_i - max hi_j, max hi_i - min lo_j]``), reported honestly.
+(2) **generation** of ``K^b(proj)`` -- ``thick(T) = K^b(proj A)`` -- is honest
+**three-valued** (``TiltingReport.generation``), because the necessary K0 datum does NOT
+decide it in general. The K0 g-matrix (rows = summand classes in the **projective** basis
+``K0(K^b proj A) = (+)_v Z[P_v]`` via :func:`g_proj`, NOT the composition-factor basis)
+being square (``#summands = #simples``) and unimodular (``det = +-1``) means the classes
+are a ``Z``-basis of ``K0`` (AI Thm 2.27) -- this is **NECESSARY** for generation but
+**NOT sufficient**: whether ``rigid + (#summands = rk K0) => tilting`` holds is exactly
+**Rickard's rank QUESTION, still OPEN** (thick subcategories are not classified by K0 --
+Krah phantom, arXiv:2302.12502; partial answer Zhang for self-orthogonal tau-tilting
+modules of finite pd). So generation is CERTIFIED (``"certified"``) only where a
+completion theorem reaches: a **2-term** self-orthogonal K0-basis object is 2-term silting
+(Iyama-Joergensen-Yang / AIR) and, being two-sided rigid, tilting -- this covers the
+regular object ``A = (+)_v P_v`` (width 0) and every 2-term / APR tilt. A **wider**
+(non-2-term) rigid K0-basis object is Rickard-open (``"k0_necessary_only"``): the verifier
+does NOT independently build ``thick(T)``, so it honestly returns ``is_tilting = "unknown"``
+rather than a possibly-unsound hard ``True`` (Plan 67 fix round; the P43 shipped surface
+previously returned ``True`` here -- an affirmative answer to Rickard's open question).
+This mirrors ``derived/silting.py``'s K0-basis-only rung EXACTLY (both refuse to certify
+generation from bare K0). The projective basis is load-bearing: ``_chi`` (the
+composition-factor Euler characteristic) gives ``det(Cartan . g_proj)`` and is a systematic
+false-negative on non-unimodular Cartan (self-injective/symmetric; Plan 67 Task 0).
 
 ``end_algebra_of_complex`` builds ``End_{D^b}(T) = (+)_{i,j} Hom_{D^b}(T_i, T_j)`` as a
 structure-constant :class:`Algebra` -- the derived-equivalent algebra (Rickard) --
@@ -35,9 +48,18 @@ from quiverlab.modules.complexes import (ChainComplex, identity_chain_map,
 
 @dataclass
 class TiltingReport:
-    is_tilting: bool
+    is_tilting: object          # True | False | "unknown" (three-valued -- see the module
+                                # docstring / the `generation` field; "unknown" == rigid but
+                                # generation only K0-necessary, Rickard's rank question OPEN)
     rigid: bool                 # hyper_hom_dims(T, T)[n] == 0 for all n != 0 in window
-    generates: bool             # K0 g-matrix square & unimodular (det +-1)
+    generates: bool             # K0 g-matrix square & unimodular (det +-1) -- the Z-basis
+                                # of K0. NECESSARY for generation, NOT sufficient in general
+                                # (Rickard's rank question, OPEN); read `generation` for the
+                                # honest three-valued verdict.
+    generation: str             # "certified" (provable -- 2-term/regular, IJY completion) |
+                                # "k0_necessary_only" (rigid K0-basis but non-2-term:
+                                # Rickard-open, thick(T) not independently built) | "no"
+                                # (not a K0-basis at all)
     window: tuple               # (n_min, n_max): the EXACT rigidity-check range
     g_matrix: list              # rows = summand K0 classes in the PROJECTIVE basis
                                 # K0(K^b proj A) = (+)_v Z[P_v] via g_proj (Plan 67 Task 0)
@@ -51,6 +73,23 @@ class TiltingReport:
 def _span(cx):
     ds = cx.degrees()
     return (ds[0], ds[-1]) if ds else (0, 0)
+
+
+def _is_two_term(summands):
+    """The whole object is concentrated in two consecutive degrees up to ONE common shift
+    (2-term is defined up to shift): every summand's span has width <= 1 AND all their tops
+    fit a common 2-window. True for the empty/stalk cases. This is the hypothesis of the
+    Iyama-Joergensen-Yang / AIR 2-term completion theorem (a 2-term presilting K0-basis
+    object is silting), so it is exactly the boundary between CERTIFIED and Rickard-open
+    generation. Shared by ``derived/silting.py`` (imported there -- one source of truth)."""
+    spans = [_span(T) for T in summands if T.degrees()]
+    if not spans:
+        return True
+    widths = {hi - lo for lo, hi in spans}
+    if not (widths <= {0, 1}):
+        return False
+    tops = {hi for _, hi in spans}
+    return max(tops) - min(tops) <= 1          # a common 2-window covers them
 
 
 def _chi(cx, verts):
@@ -174,9 +213,15 @@ def _cochain_vec(f, X, Y, dom):
 def is_tilting_complex(summands):
     """Decide whether ``summands`` assemble a tilting complex (Rickard). Every summand
     must be a certified perfect complex (loud otherwise). Returns a
-    :class:`TiltingReport`; rigidity is decided on the EXACT reported window, generation
-    by ``Z``-unimodularity of the K0 g-matrix (a single object has ``generates=False`` --
-    a 2-term *silting* object need not be *tilting*; read ``.rigid`` + the g-vector)."""
+    :class:`TiltingReport`. Rigidity is DECIDED on the EXACT reported window. Generation
+    is honest **three-valued** (``.generation`` / ``.is_tilting``): the ``Z``-unimodular
+    K0 g-matrix (``.generates``) is only the NECESSARY K0-basis condition, so
+    ``is_tilting`` is ``True`` only when generation is CERTIFIED (2-term / regular, via the
+    IJY completion theorem), ``"unknown"`` when the object is rigid with a K0-basis but is
+    non-2-term (Rickard's rank question -- OPEN -- so generation is not independently
+    certified; never a possibly-unsound hard ``True``), and ``False`` otherwise. A single
+    object has ``generates=False`` -- a 2-term *silting* object need not be *tilting*; read
+    ``.rigid`` + the g-vector."""
     import sympy as sp
     from quiverlab.modules.complexes import hyper_hom_dims
     if not summands:
@@ -198,9 +243,28 @@ def is_tilting_complex(summands):
     # false-negative on non-unimodular Cartan (Plan 67 Task 0; AI Ex 2.2 / Thm 2.27).
     g = [g_proj(T, verts) for T in summands]
     det = int(sp.Matrix(g).det()) if len(g) == len(verts) else 0
-    generates = (len(g) == len(verts)) and det in (1, -1)
-    return TiltingReport(is_tilting=rigid and generates, rigid=rigid,
-                         generates=generates, window=(n_min, n_max),
+    generates = (len(g) == len(verts)) and det in (1, -1)   # K0-necessary (a Z-basis of K0)
+    # Generation is three-valued (honest). det = +-1 is NECESSARY but NOT sufficient in
+    # general -- "rigid + (#summands = rk K0) => tilting" is exactly Rickard's rank
+    # QUESTION, still OPEN (thick subcategories are not K0-classified; Krah phantom). It is
+    # CERTIFIED only where a completion theorem reaches THIS engine: a 2-term self-orthogonal
+    # K0-basis object is 2-term silting (IJY / AIR) and, being two-sided rigid, tilting --
+    # covering the regular object A (width 0) and every 2-term / APR tilt. A wider (non-2-
+    # term) rigid K0-basis object is Rickard-open ("k0_necessary_only") -- the verifier does
+    # NOT build thick(T), so is_tilting returns "unknown", NOT a possibly-unsound hard True.
+    # This mirrors derived/silting.py's K0-basis-only rung exactly (both refuse to certify
+    # generation from bare K0). Not a K0-basis at all => "no".
+    if not generates:
+        generation = "no"
+    elif _is_two_term(summands):
+        generation = "certified"
+    else:
+        generation = "k0_necessary_only"
+    is_tilting = (True if (rigid and generation == "certified")
+                  else ("unknown" if (rigid and generation == "k0_necessary_only")
+                        else False))
+    return TiltingReport(is_tilting=is_tilting, rigid=rigid, generates=generates,
+                         generation=generation, window=(n_min, n_max),
                          g_matrix=g, det=det)
 
 
