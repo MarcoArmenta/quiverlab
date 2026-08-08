@@ -64,3 +64,178 @@ def test_basis_provenance_tag():
     A = truncated_polynomial(2, field=QQ)
     L = lie_module_action(A, top=2)
     assert L.basis == "der_inn/bar"
+
+
+# ---------------------------------------------------------------------------
+# Task 2: the in-window Gerstenhaber-bracket sign arbiter (cross-engine)
+#
+# Comparison is BASIS-INDEPENDENT (the Plan-35 rule): the two engines use
+# different HH^1 and HH^n bases, so per-generator char-polys are NOT comparable;
+# the conjugation/recombination invariants of the whole representation are (dim
+# HH^n, dim of the associative envelope B_n = <rho_n(HH^1), I>, dim of the
+# commutant End_{HH^1}(HH^n)). Structure constants are never compared.
+# ---------------------------------------------------------------------------
+def _envelope_dim(gens, dom, d):
+    """dim of the unital associative subalgebra B = <gens, I> of M_d(k)."""
+    from quiverlab.fields.linalg import rank
+    from quiverlab.modules import linalg_mod as lm
+
+    def flat(M):
+        return [M[i][j] for i in range(d) for j in range(d)]
+    basis_vecs = [flat(lm.identity(d, dom))]
+    all_mats = [lm.identity(d, dom)]
+    r = rank(basis_vecs, dom)
+    i = 0
+    while i < len(all_mats):
+        M = all_mats[i]; i += 1
+        for g in gens:
+            P = lm.matmul(M, g, dom)
+            fv = flat(P)
+            rr = rank(basis_vecs + [fv], dom)
+            if rr > r:
+                basis_vecs.append(fv); r = rr; all_mats.append(P)
+    return r
+
+
+def _commutant_dim(gens, dom, d):
+    """dim of {X in M_d(k) : X g = g X for every g in gens}."""
+    from quiverlab.fields.linalg import nullspace
+    rows = []
+    for g in gens:
+        for i in range(d):
+            for l in range(d):
+                row = [dom.zero()] * (d * d)
+                for k in range(d):
+                    row[i * d + k] = dom.add(row[i * d + k], g[k][l])
+                    row[k * d + l] = dom.sub(row[k * d + l], g[i][k])
+                if any(not dom.is_zero(x) for x in row):
+                    rows.append(row)
+    return len(nullspace(rows, dom)) if rows else d * d
+
+
+def _action_invariants(L):
+    """{n: (dim HH^n, dim B_n, dim End)} off our HHLieModule (GF(p))."""
+    dom = GF(L.characteristic)
+    out = {}
+    for entry in L.action:
+        n, dn = entry["n"], entry["dim"]
+        if dn == 0:
+            continue
+        gens = [[[dom.coerce(int(g[i * dn + j])) for j in range(dn)] for i in range(dn)]
+                for g in entry["gens"]]
+        out[n] = (dn, _envelope_dim(gens, dom, dn), _commutant_dim(gens, dom, dn))
+    return out
+
+
+def _bracket_action_invariants(g):
+    """{n: (dim HH^n, dim B_n, dim End)} off the Plan-35 degree-(1,n) bracket tables:
+    the induced map [b_i, -] on HH^n is constants[k][i][j], one matrix per HH^1 gen."""
+    import re
+    dom = GF(int(re.search(r"GF\((\d+)\)", str(g.basis)).group(1)))
+    out = {}
+    for (p, n), t in g.tables.items():
+        if p != 1:
+            continue
+        dl, dr, dout = t.dims
+        if dr == 0:
+            continue
+        gens = [[[dom.coerce(int(t.constants[k][i][j])) for j in range(dr)]
+                 for k in range(dout)] for i in range(dl)]
+        out[n] = (dr, _envelope_dim(gens, dom, dr), _commutant_dim(gens, dom, dr))
+    return out
+
+
+@xeng
+@pytest.mark.parametrize("build,p", [("trunc4", 5), ("kron", 3)])
+def test_sign_arbiter_in_window(build, p):
+    """The field-general L_D route agrees IN-WINDOW over GF(p) with gerstenhaber_brackets
+    degree-(1,n) on BASIS-INDEPENDENT data (dim HH^n, dim B_n, dim End). The #1 sign
+    risk: p=1 collapses all Koszul signs, so L_D == the shipped (1,n) bracket."""
+    A = (truncated_polynomial(4, field=GF(p)) if build == "trunc4"
+         else _kron(GF(p)))
+    L = lie_module_action(A, top=2)
+    inv = _bracket_action_invariants(A.gerstenhaber_brackets(top=2))
+    mine = _action_invariants(L)
+    assert inv and all(mine[n] == inv[n] for n in inv)
+
+
+# --- the STRONG entry-wise check (strictly stronger than the induced-map arbiter) ---
+def _der_reps_on_engine_basis(A, E):
+    """Each Der/Inn rep of HH^1 as a 1-cochain over cochain_basis(E, 1) (int64/GF(p))."""
+    import numpy as np
+    from quiverlab.engine.scan3 import cochain_basis
+    from quiverlab.invariants.hh1_lie import derivations, inner_derivations, _hh1_reps
+    B = A.unit_adapted(); dom = B.domain; m = B.dim
+    reps = _hh1_reps(derivations(B), inner_derivations(B), dom)
+    b1 = cochain_basis(E, 1)
+    out = []
+    for Dflat in reps:
+        v = np.zeros(len(b1), dtype=np.int64)
+        for i, (w, j) in enumerate(b1):
+            v[i] = int(Dflat[j * m + w[0]]) % dom.p
+        out.append(v)
+    return out
+
+
+def _der_matrix_on_engine(E, Dc):
+    import numpy as np
+    from quiverlab.engine.scan3 import cochain_basis
+    m = E.m
+    idx1 = {g: i for i, g in enumerate(cochain_basis(E, 1))}
+    Dm = np.zeros((m, m), dtype=np.int64)
+    for r in E.R:
+        for j in range(m):
+            Dm[j, r] = int(Dc[idx1[((r,), j)]])
+    return Dm
+
+
+def _L_D_matrix_on_cochains(E, Dc, n):
+    """Our L_D (Plan 71 sec 1) as a matrix on the engine's degree-n cochain basis."""
+    import numpy as np
+    from quiverlab.engine.scan3 import cochain_basis
+    m = E.m
+    Dm = _der_matrix_on_engine(E, Dc)
+    bn = cochain_basis(E, n)
+    idx = {g: i for i, g in enumerate(bn)}
+    M = np.zeros((len(bn), len(bn)), dtype=np.int64)
+    for o, (w, jo) in enumerate(bn):
+        for s in range(m):                                  # term 1: D o g
+            c = int(Dm[jo, s])
+            if c:
+                M[o, idx[(w, s)]] += c
+        for i in range(n):                                  # term 2: - g o D
+            wi = w[i]
+            for k in E.R:
+                c = int(Dm[k, wi])
+                if c:
+                    wk = w[:i] + (k,) + w[i + 1:]
+                    M[o, idx[(wk, jo)]] -= c
+    return M
+
+
+def _cochain_basis_vectors(E, n):
+    import numpy as np
+    from quiverlab.engine.scan3 import cochain_basis
+    N = len(cochain_basis(E, n))
+    for c in range(N):
+        e = np.zeros(N, dtype=np.int64); e[c] = 1
+        yield e
+
+
+@xeng
+@pytest.mark.parametrize("build,p,n", [("trunc3", 7, 2), ("trunc3", 7, 3), ("kron", 5, 1)])
+def test_L_D_equals_circle_cochain_ENTRY_WISE(build, p, n):
+    """STRONG form: the L_D operator built on the engine's degree-n COCHAIN basis equals
+    the shipped Gerstenhaber bracket cochain-for-cochain over GF(p) -- the p=1 sign
+    collapse is exact, not just up to induced-map invariants. (Reaches into
+    engine.tt_calculus, as tests may -- the no-reach-into-engine rule is app/GUI code.)"""
+    from quiverlab.engine import tt_calculus as TT
+    from quiverlab.engine.adapter import to_engine
+    A = (truncated_polynomial(3, field=GF(p)) if build == "trunc3" else _kron(GF(p)))
+    E = to_engine(A.unit_adapted())
+    reps = _der_reps_on_engine_basis(A, E)
+    assert reps
+    for D in reps:
+        M = _L_D_matrix_on_cochains(E, D, n)
+        for f in _cochain_basis_vectors(E, n):
+            assert (((M @ f) % p) == (TT.gerstenhaber_bracket_cochain(E, 1, n, D, f) % p)).all()
