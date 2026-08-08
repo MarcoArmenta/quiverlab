@@ -77,6 +77,7 @@ _HEADINGS = {
     "tilting_check": "Tilting test",
     "orbit_geometry": "Orbit geometry",
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
+    "exceptional_sequences": "Exceptional sequences",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -627,6 +628,57 @@ def _radical_filtration_ss_html(b):
     if b.get("prose"):
         chunks.append("<p>%s</p>" % _esc(str(b["prose"])))
     return chunks
+
+
+def _exceptional_sequences_html(b):
+    """Exceptional sequences (Plan 65 / R27+R28): the CLASSICAL hereditary counts (braid-orbit
+    transitivity + the Dynkin closed form n!·hⁿ/|W|) and the TAU-exceptional signed count
+    n!·#sτt, each honest about applicability. Counts + status only -- the sequences themselves
+    explode (D₄ has 162 classical / 1200 signed)."""
+    def _kv(rows):
+        body = "".join("<tr><th>%s</th><td><b>%s</b></td></tr>"
+                       % (_esc(str(k)), _esc(str(v))) for k, v in rows)
+        return "<table class='ql-table'>%s</table>" % body
+
+    n = b.get("n")
+    dt = b.get("dynkin_type")
+    out = ["<p>Complete exceptional sequences of A in two independent readings: the "
+           "<b>classical</b> hereditary theory (an ordered tuple of rigid bricks, orthogonal "
+           "backward; the braid group B<sub>n</sub> acts transitively — Crawley–Boevey / "
+           "Ringel) and the <b>τ-exceptional</b> theory (Buan–Marsh signed sequences via the "
+           "Jasso τ-perpendicular reduction; #signed = n!·#sτt). Only counts are reported — "
+           "the sequences themselves explode.</p>"]
+    if dt:
+        out.append("<p>Dynkin type: <b>%s</b> (n = %s).</p>"
+                   % (_esc(str(dt)), _esc(str(n))))
+    cl = b.get("classical")
+    out.append("<p><b>Classical (hereditary, braid orbit).</b></p>")
+    if cl is None:
+        out.append("<p class='ql-note'>Not applicable — A is not hereditary.</p>")
+    else:
+        out.append(_kv([("#complete exceptional sequences", cl.get("count")),
+                        ("Dynkin closed form n!·hⁿ/|W|", cl.get("closed_form_count")),
+                        ("braid-orbit transitive", cl.get("transitive")),
+                        ("status", cl.get("status"))]))
+        if not cl.get("complete"):
+            out.append("<p class='ql-note'>The classical enumeration did not close (status: "
+                       "<b>%s</b>) — A is representation-infinite (an infinite braid orbit) or "
+                       "the budget was hit; no count is claimed.</p>"
+                       % _esc(str(cl.get("status"))))
+    tau = b.get("tau")
+    out.append("<p><b>τ-exceptional (signed, ordered sτ-tilt bijection).</b></p>")
+    if tau is None:
+        out.append("<p class='ql-note'>Not available — A is τ-tilting-infinite or the "
+                   "exchange graph did not close (no count is derived from a non-complete "
+                   "graph).</p>")
+    else:
+        out.append(_kv([("#signed τ-exceptional sequences (n!·#sτt)", tau.get("signed_count")),
+                        ("#support τ-tilting pairs (#sτt)", tau.get("stt_count")),
+                        ("status", tau.get("status"))]))
+    note = b.get("note")
+    if note:
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(note)))
+    return out
 
 
 def _ar_quiver_html(b):
@@ -1223,6 +1275,8 @@ def _block_html(kind, b, ctx=None):
         return _ext_algebra_html(b)
     if kind == "tau_tilting":
         return _tau_tilting_html(b)
+    if kind == "exceptional_sequences":
+        return _exceptional_sequences_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
     if kind == "derived_fingerprint":

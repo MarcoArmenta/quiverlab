@@ -277,6 +277,17 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
+    # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget caps the classical
+    # tuple search / the tau-tilting exchange graph -- not a homological degree -- so it
+    # bypasses the 'name:0..N' grammar (like tau_tilting / ar_quiver).
+    if s == "exceptional_sequences" or s.startswith("exceptional_sequences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(
+                f"exceptional_sequences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="exceptional_sequences", lo=None,
+                           hi=(int(b) if b else None))
     # radical_filtration + ar_invariants (Plan 57) are ALGEBRA kinds carrying a MODULE
     # BUDGET, not a degree range (parsed like ar_quiver): 'radical_filtration' /
     # 'radical_filtration:512' (and likewise ar_invariants). The budget caps the
@@ -1579,6 +1590,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = ar_quiver_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Exceptional sequences (Plan 65 / R27+R28): an ALGEBRA-level kind carrying an
+    # ENUMERATION BUDGET, not a degree range (parsed like tau_tilting / ar_quiver). One
+    # shared block dispatches BOTH halves -- classical hereditary (braid-orbit counts) and
+    # tau-exceptional (n!*#sTt), each honest about applicability; a presentation-less
+    # refusal is caught into an `error` field, never a 500. Both runners share
+    # tautilting.exceptional.exceptional_sequences_block, so the blocks are byte-identical.
+    if kind == "exceptional_sequences":
+        budget = item.hi if item.hi is not None else 100_000
+        from quiverlab.tautilting.exceptional import exceptional_sequences_block
+        block = exceptional_sequences_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET kind
     # like ar_quiver. Both runners share modules.radical.radical_filtration_block, so
     # the blocks are byte-identical. A char-scope refusal is caught into an `error`
@@ -2609,6 +2632,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
+             "exceptional_sequences":
+                 lambda it: ("A.exceptional_sequences(); A.tau_exceptional_sequences("
+                             "want_sequences=False)"),
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
              "tau": lambda it: "M.tau()",

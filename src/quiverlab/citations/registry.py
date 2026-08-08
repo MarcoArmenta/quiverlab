@@ -645,6 +645,38 @@ REGISTRY: dict = {r.key: r for r in [
        "Barot-Jimenez-Gonzalez-de la Pena: the combinatorics of critical / hypercritical unit "
        "forms and the search-box exposition underpinning Plan 62.",
        "tits", "tame_wild"),
+    _r("buan_marsh_tau_exceptional", "BuanMarsh2021", "algorithm",
+       "tau-exceptional sequences",
+       "Buan-Marsh: signed tau-exceptional sequences via the Jasso tau-perpendicular "
+       "reduction; bijection with ordered support tau-tilting modules (#signed = n!*#sTt) "
+       "-- the Plan-65 / R27 count oracle.",
+       "tau-tilting", "modules"),
+    _r("jasso_reduction", "Jasso2015", "foundation",
+       "Reduction of tau-tilting modules and torsion pairs",
+       "Jasso: the tau-perpendicular category J(U) ~ mod C(U), rank n-|U| (the DIJ "
+       "idempotent quotient) -- the recursion engine for tau-exceptional sequences.",
+       "tau-tilting"),
+    _r("crawley_boevey_exceptional", "CrawleyBoevey1993", "foundation",
+       "Exceptional sequences of representations of quivers",
+       "Crawley-Boevey: the braid group acts transitively on complete exceptional sequences "
+       "of a hereditary algebra (Ottawa 1992).",
+       "modules"),
+    _r("ringel_braid", "RingelBraid1994", "foundation",
+       "The braid group action on the set of exceptional sequences of a hereditary Artin algebra",
+       "Ringel: the braid B_n action on complete exceptional sequences (transitive), with the "
+       "sigma_i mutation constructions -- the case-(d) two-step module realization. Contemp. "
+       "Math. 171 (1994).",
+       "modules"),
+    _r("buan_hanson_marsh", "BuanHansonMarsh2024", "foundation",
+       "Mutation of tau-exceptional pairs and sequences",
+       "Buan-Hanson-Marsh: mutation transitivity proven only in rank 2 -- why enumeration at "
+       "rank >= 3 goes through the ordered-sTt bijection, not mutation-BFS.",
+       "tau-tilting"),
+    _r("obaid_dynkin_count", "Obaid2013", "foundation",
+       "The number of complete exceptional sequences for a Dynkin algebra",
+       "Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the "
+       "closed-form count oracle.",
+       "modules"),
 ]}
 
 

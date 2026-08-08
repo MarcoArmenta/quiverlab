@@ -82,8 +82,10 @@ def _max_degree(req: ComputeRequest) -> int:
         # Plan 60: `tilted_check` is likewise knit-heavy with a MODULE budget in `hi`.
         # Plan 61: `recognizer_ladder` carries a MODULE BUDGET too (not a degree), so it
         # joins the skip tuple beside left_right_parts.
+        # Plan 65: `exceptional_sequences` carries an ENUMERATION BUDGET (not a degree),
+        # so it joins the skip tuple -- sized on the algebra dimension, like tau_tilting.
         if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts", "tilted_check",
-                         "recognizer_ladder"):
+                         "recognizer_ladder", "exceptional_sequences"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

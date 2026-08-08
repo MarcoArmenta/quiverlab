@@ -52,6 +52,8 @@ ALL_KINDS = {
     "tilted_check",
     # Plan 62 (2026-08-08): Tits-form tame/wild certificate.
     "tame_wild",
+    # Plan 65 (2026-08-08): exceptional sequences (classical hereditary + tau-exceptional).
+    "exceptional_sequences",
 }
 
 

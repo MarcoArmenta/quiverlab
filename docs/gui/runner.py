@@ -174,6 +174,13 @@ def _parse_compute(spec):
             raise RequestError("ar_quiver budget must be a positive integer (got %r)"
                                % (spec,))
         return "ar_quiver", (int(rng) if rng else None)
+    # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
+    # 'exceptional_sequences' or 'exceptional_sequences:512'. Skips MAX_DEGREE like tau_tilting.
+    if name == "exceptional_sequences":
+        if rng and not rng.isdigit():
+            raise RequestError(
+                "exceptional_sequences budget must be a positive integer (got %r)" % (spec,))
+        return "exceptional_sequences", (int(rng) if rng else None)
     # radical_filtration + ar_invariants (Plan 57) carry a MODULE BUDGET, not a degree
     # range (parsed like ar_quiver -- skips MAX_DEGREE). NOTE: 'radical_filtration'
     # (the module-category radical rad^n(X,Y)) is DISTINCT from 'radical_filtration_ss'
@@ -1113,6 +1120,16 @@ def compute_one(spec):
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "exceptional_sequences":
+            # Exceptional sequences (Plan 65 / R27+R28): algebra-level, enumeration budget
+            # (not a degree). SAME shared library builder
+            # (tautilting.exceptional.exceptional_sequences_block) + references -> citations
+            # as the server twin (quiverlab.hpc.spec._dispatch), so the cross-runner contract
+            # holds byte-for-byte. Classical (if hereditary) + tau counts, honest status.
+            from quiverlab.tautilting.exceptional import exceptional_sequences_block
+            block = exceptional_sequences_block(
+                A, budget=top if top is not None else 100_000)
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "string_homological":
             # Homological string-algebra test (Plan 59 / R34, Suarez-Alvarez). Byte-
             # identical to the server twin (quiverlab.hpc.spec._dispatch): SAME library
@@ -1373,6 +1390,9 @@ def python_snippet():
              "connes_b": "A.connes_differentials(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 65: exceptional_sequences (classical + tau), a scalar kind, no %d.
+             "exceptional_sequences": ("(A.exceptional_sequences(), "
+                                       "A.tau_exceptional_sequences(want_sequences=False))"),
              # Plan 57: radical_filtration + ar_invariants carry a module budget.
              "radical_filtration": "A.radical_filtration(budget_modules=%d)",
              "ar_invariants": "A.ar_invariants(budget_modules=%d)",
@@ -1521,7 +1541,11 @@ ETA_MODEL = {
                 # weak positivity/nonnegativity (box/PSD/list) + the P56 simple/strong-
                 # simple-connectivity convex sweep -- the convex sweep dominates
                 # (simply_connected class), sized above the cheap scalars.
-                "tame_wild": 3.0},
+                "tame_wild": 3.0,
+                # Plan 65: exceptional_sequences KNITS the AR quiver + runs the braid-orbit
+                # BFS (classical) and the exchange-graph BFS (tau); knit- and BFS-dominated,
+                # the heavier ar_quiver/tame_wild cost class.
+                "exceptional_sequences": 3.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

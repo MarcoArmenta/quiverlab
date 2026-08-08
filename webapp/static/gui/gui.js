@@ -138,6 +138,9 @@
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
+    // ---- Plan 65: exceptional sequences (classical hereditary + tau-exceptional) ----
+    '  <label><input type="checkbox" id="qlgui-exceptional_sequences"> exceptional sequences, budget ' +
+    '<input type="number" id="qlgui-exceptional_sequences-budget" value="100000" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -267,6 +270,8 @@
    "tame_wild",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
+   // Plan 65: exceptional sequences (classical + tau, budget picker)
+   "exceptional_sequences", "exceptional_sequences-budget",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -903,6 +908,10 @@
     // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
     if (el.tau_tilting.checked)
       compute.push("tau_tilting:" + el["tau_tilting-budget"].value);
+    // Plan 65: exceptional_sequences carries an ENUMERATION BUDGET (not a degree), so it
+    // pushes "exceptional_sequences:<budget>" -- the single-int form both runners parse.
+    if (el.exceptional_sequences.checked)
+      compute.push("exceptional_sequences:" + el["exceptional_sequences-budget"].value);
     // Plan 41: AR-quiver knitting carries a BUDGET (max indecomposables), not a
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
@@ -2846,6 +2855,57 @@
     }
   }
 
+  // ---- Plan 65: the exceptional-sequences block (classical + tau counts) ----
+  function renderExceptionalSequences(div, b) {
+    div.appendChild(h("p", { text: "Complete exceptional sequences of A in two independent "
+      + "readings: the classical hereditary theory (an ordered tuple of rigid bricks; the "
+      + "braid group B_n acts transitively — Crawley–Boevey / Ringel) and the τ-exceptional "
+      + "theory (Buan–Marsh signed sequences via the Jasso τ-perpendicular reduction; "
+      + "#signed = n!·#sτt). Only counts are reported. n = " + b.n
+      + (b.dynkin_type ? ", Dynkin type " + b.dynkin_type : "") + "." }));
+    function countTable(rows) {
+      var tbl = h("table", { "class": "qlgui-table" });
+      rows.forEach(function (row) {
+        var tr = h("tr");
+        tr.appendChild(h("th", { text: row[0] }));
+        tr.appendChild(h("td", { text: String(row[1]) }));
+        tbl.appendChild(tr);
+      });
+      return tbl;
+    }
+    div.appendChild(h("p", { text: "Classical (hereditary, braid orbit):" }));
+    if (!b.classical) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Not applicable — A is not hereditary." }));
+    } else {
+      var c = b.classical;
+      div.appendChild(countTable([
+        ["#complete exceptional sequences", c.count],
+        ["Dynkin closed form n!·hⁿ/|W|", c.closed_form_count],
+        ["braid-orbit transitive", c.transitive],
+        ["status", c.status]]));
+      if (!c.complete)
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "The classical enumeration did not close (status: " + c.status + ") — A is "
+            + "representation-infinite (infinite braid orbit) or the budget was hit; no "
+            + "count is claimed." }));
+    }
+    div.appendChild(h("p", { text: "τ-exceptional (signed, ordered sτ-tilt bijection):" }));
+    if (!b.tau) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Not available — A is τ-tilting-infinite or the exchange graph did not close "
+          + "(no count is derived from a non-complete graph)." }));
+    } else {
+      var t = b.tau;
+      div.appendChild(countTable([
+        ["#signed τ-exceptional sequences (n!·#sτt)", t.signed_count],
+        ["#support τ-tilting pairs (#sτt)", t.stt_count],
+        ["status", t.status]]));
+    }
+    if (b.note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+  }
+
   // ---- Plan 45: the C4 tau-tilting block + the LIVE wall-and-chamber SVG ----
   function renderTauTilting(div, b) {
     div.appendChild(h("p", { text: "Support τ-tilting pairs (Adachi–Iyama–"
@@ -3432,6 +3492,8 @@
       }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
+    } else if (name === "exceptional_sequences") {
+      renderExceptionalSequences(div, b);
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -3997,7 +4059,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -4521,6 +4583,7 @@
     simply_connected: { cb: "simply_connected" },
     tame_wild: { cb: "tame_wild" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
+    exceptional_sequences: { cb: "exceptional_sequences", top: "exceptional_sequences-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },
     rad_top_soc: { cb: "rad_top_soc", mod: true },
     tau: { cb: "tau", mod: true },

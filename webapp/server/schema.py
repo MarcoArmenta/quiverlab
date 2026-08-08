@@ -428,6 +428,16 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
+    # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget is not a homological
+    # degree, so it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this form.
+    if s == "exceptional_sequences" or s.startswith("exceptional_sequences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(
+                f"exceptional_sequences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="exceptional_sequences", lo=None,
+                           hi=(int(b) if b else None))
     # left_right_parts carries a MODULE BUDGET, not a degree range (Plan 55): the budget caps
     # the knitted indecomposable universe, so it skips the 'name:0..N' grammar too -- server
     # and GUI/hpc agree on this special form.
