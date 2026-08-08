@@ -351,6 +351,12 @@ ported and wired in:
   invariant, not complete), and a `BrauerGraphAlgebra` constructor from a ribbon
   graph — with the algebra-only `strings` no-code block (census + bands + rep-type
   + AG).
+- **Skew-gentle algebras (R32).** The triple `(Q, I, Sp)` recognizer, the
+  characteristic-free idempotent-split constructor `SkewGentleAlgebra` (He–Zhou–Zhu /
+  Chen — dim-certified against the associated gentle algebra), special-string module
+  re-gluing, support τ-tilting via the engine (the orbifold model as the cross-check
+  oracle), and the brick-finite ⇔ representation-finite certificate (Demonet–Iyama–Jasso
+  ∘ Garcia–Lavoué, char ≠ 2) — with the no-code `skew_gentle` block.
 - **Tilting and constructions (C7).** tilting/cotilting + Bongartz completion,
   minimal add(M)-approximations, one-point extensions, repetitive slices,
   Jacobian algebras from a potential, and Gabriel-quiver recovery of any
