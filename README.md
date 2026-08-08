@@ -285,6 +285,13 @@ ported and wired in:
   crosscheck); **Koszulity** and the Yoneda Ext-algebra clickable in the no-code
   GUI; and, over GF(p), the **Nakayama** automorphism with the **Frobenius** and
   **symmetric** tests (loud `FieldError` off a prime field).
+- **Recognizer batteries (R34 + R35).** The **homological string-algebra test**
+  (Suárez-Álvarez: among representation-finite algebras, string ⇔ the middle term of
+  every extension of indecomposables has ≤ 2 summands — a three-valued semi-decision
+  that is a *discriminating* oracle against the syntactic recognizer, raising loudly on
+  a k̄-sound contradiction), and **toupie algebras** (`ToupieAlgebra` constructor +
+  connected-acyclic graph-shape recognizer + the `a`-Kronecker `HH^• = [1, a²−1, 0, …]`
+  closed form + the char-0 `sl_a ⊆ HH¹` inclusion), both clickable in the no-code GUI.
 - **Modules, scalar invariants, and the exact spectral layer.** Right A-modules
   with exact **Ext**, **Hom**, and minimal **projective resolutions**; the scalar
   invariants **Loewy length**, **center**, and **complexity** (GF(p); the last a
