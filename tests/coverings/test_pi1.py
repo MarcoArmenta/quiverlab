@@ -82,6 +82,24 @@ def test_disconnected_is_direct_sum():
     assert g.components == 2 and g.free_rank == 0               # two trees
 
 
+def test_torsion_pi1ab_triangular():
+    # END-TO-END TORSION pin (adjudicated Fix 2): a TRIANGULAR (acyclic) presentation
+    # whose pi1^ab has torsion. Two parallel arrows 1->2 and two parallel 2->3, with
+    # the two admissible binomial relations a*c - b*d and a*d - b*c. The minimal
+    # relations glue ac~bd and ad~bc separately; over the two non-tree generators {b,d}
+    # the integer SNF of [[-1,-1],[-1,1]] is diag(1,2) => pi1^ab = Z/2. This also
+    # exercises the char-divisibility branch of hom_to_additive_dim end-to-end (was
+    # only synthetic before): dim Hom(pi1, k+) = 1 over char 2, 0 over char 3.
+    Q = Quiver([1, 2, 3], {"a": (1, 2), "b": (1, 2), "c": (2, 3), "d": (2, 3)})
+    A = Q.algebra(relations=["a*c - b*d", "a*d - b*c"], field=GF(7))
+    g = fundamental_group(A)
+    assert g.free_rank == 0 and g.invariant_factors == (2,)   # pi1^ab = Z/2
+    assert g.abelianization_repr() == "Z/2"
+    assert g.hom_to_additive_dim(2) == 1                       # char 2 | 2
+    assert g.hom_to_additive_dim(3) == 0                       # char 3 does not divide 2
+    assert A.quiver.is_acyclic()                               # triangular
+
+
 def test_intrinsic_refused_loudly():
     A = truncated_polynomial(3, field=GF(7))
     with pytest.raises(QuiverlabError, match="intrinsic"):
