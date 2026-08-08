@@ -1130,6 +1130,16 @@ def compute_one(spec):
             from quiverlab.families.toupie import toupie_block
             block = toupie_block(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "tame_wild":
+            # Tits-form tame/wild certificate (Plan 62 / R19). Byte-identical to the
+            # server twin (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (invariants.tits_block.tame_wild_block) -- combinatorial Tits form + weak
+            # positivity/nonnegativity + the rep-finite/tame/wild verdict gated on the
+            # P56 certificate over char 0 -- + `references`->citations. A presentation-
+            # less / non-triangular input returns an {"error": ...} block, never a raise.
+            from quiverlab.invariants.tits_block import tame_wild_block
+            block = tame_wild_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
         _state["results"].append(dict(block, invariant=spec))
@@ -1352,6 +1362,8 @@ def python_snippet():
              # pi1 + simple connectivity (Plan 56): scalar kinds, no %d.
              "fundamental_group": "A.fundamental_group()",
              "simply_connected": "A.is_simply_connected()",
+             # Tits-form tame/wild certificate (Plan 62 / R19): a scalar kind, no %d.
+             "tame_wild": "A.tame_wild_certificate()",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -1504,7 +1516,12 @@ ETA_MODEL = {
                 # Plan 59: string_homological KNITS the AR quiver + realizes/decomposes
                 # extensions (expensive, ar_quiver class); toupie is a small HH + a
                 # graph-shape scan (cheap).
-                "string_homological": 2.0, "toupie": 0.5},
+                "string_homological": 2.0, "toupie": 0.5,
+                # Plan 62: tame_wild = the Tits form (P56 minimal-relation counts) +
+                # weak positivity/nonnegativity (box/PSD/list) + the P56 simple/strong-
+                # simple-connectivity convex sweep -- the convex sweep dominates
+                # (simply_connected class), sized above the cheap scalars.
+                "tame_wild": 3.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

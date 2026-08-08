@@ -838,6 +838,43 @@ class Algebra:
         from quiverlab.invariants.roots import positive_roots
         return positive_roots(self)
 
+    # -- combinatorial Tits form + tame/wild certificate (Plan 62 / R19) ------
+    def tits_form_combinatorial(self, d):
+        """The COMBINATORIAL Tits form q_A(d) = sum d_i^2 - sum_{arrows i->j} d_i
+        d_j + sum_{(i,j)} r_ij d_i d_j, r_ij = minimal_relation_counts (P56); it
+        truncates the Euler form at Ext^2 and is defined for every admissible
+        presentation (they coincide iff gl.dim <= 2). Distinct from tits_form
+        (Plan 38's homological Euler form). Field-free exact int (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import tits_form_combinatorial
+        return tits_form_combinatorial(self, d)
+
+    def is_weakly_positive(self, budget=3_000_000):
+        """Exact weak-positivity FormVerdict of the combinatorial Tits form
+        (Ovsienko's box-6, branch-and-bound; positive-definite / isotropic-radical
+        fast certificates). None only on budget, never a guessed True. A False
+        carries the exact witness d >= 0 with q(d) <= 0 (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import as_unit_form, is_weakly_positive
+        return is_weakly_positive(as_unit_form(self), budget=budget)
+
+    def is_weakly_nonnegative(self, budget=3_000_000):
+        """Exact weak-nonnegativity FormVerdict of the combinatorial Tits form,
+        decided by the classified hypercritical list (primary) + a sound witness
+        finder. A False is a FOUND witness d >= 0 with q(d) < 0; a True rests on the
+        positive-semidefinite certificate or recorded list completeness; else honest
+        None -- never a guessed True (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import as_unit_form, is_weakly_nonnegative
+        return is_weakly_nonnegative(as_unit_form(self), budget=budget)
+
+    def tame_wild_certificate(self, convex_budget=20000, search_budget=3_000_000):
+        """The Tits-form representation-type certificate: rep-finite / tame / wild
+        gated on the P56 strong-simple-connectivity certificate over a
+        characteristic-0 field (Bongartz 1984; Brustle-de la Pena-Skowronski 2011).
+        The form is always computed; off scope the verdict is None (P56's None
+        propagates, never a fabricated tame/wild) (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import tame_wild_certificate
+        return tame_wild_certificate(self, convex_budget=convex_budget,
+                                     search_budget=search_budget)
+
     # -- geometry of representations (Plan 49 / C8) ---------------------------
     def orbit_dimension(self, M):
         """dim of the GL(d)-orbit of the module M in Rep(Q, d):

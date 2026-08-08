@@ -50,6 +50,8 @@ ALL_KINDS = {
     "fundamental_group", "simply_connected",
     # Plan 60 (2026-08-07): the tilted-algebra recognizer (Liu-Skowroński).
     "tilted_check",
+    # Plan 62 (2026-08-08): Tits-form tame/wild certificate.
+    "tame_wild",
 }
 
 
