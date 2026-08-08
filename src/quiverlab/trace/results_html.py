@@ -78,6 +78,7 @@ _HEADINGS = {
     "injective_dimension": "Injective dimension of M",
     "tilting_check": "Tilting test",
     "orbit_geometry": "Orbit geometry",
+    "barcode": "Barcode / persistence diagram",
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
     "wall_chamber": "Wall-and-chamber structure via bricks: D(B) inequality systems + "
                     "g-cone chambers",
@@ -1499,6 +1500,8 @@ def _block_html(kind, b, ctx=None):
         return _decompose_html(b)
     if kind == "almost_split":
         return _almost_split_html(b)
+    if kind == "barcode":
+        return _barcode_html(b)
     if kind in ("ext", "tor"):
         op = "Ext^" if kind == "ext" else "Tor_"
         chunks = []
@@ -2175,6 +2178,78 @@ def _pmatrix(matrix):
         return "0"
     body = r" \\ ".join(" & ".join(str(x) for x in row) for row in rows)
     return r"\begin{pmatrix} %s \end{pmatrix}" % body
+
+
+def _barcode_html(b):
+    """The persistence/TDA barcode block (Plan 69 / R33): a one-line rep-theory framing,
+    an interval table (birth | death | multiplicity | essential | dim-vector), a simple
+    HTML bar diagram over the 1..n index axis (no new canvas), and -- for a commutative
+    ladder -- the AR-quiver-indexed generalized persistence diagram table."""
+    kind = b.get("kind", "persistence")
+    n = int(b.get("n") or 0)
+    field = b.get("field", "")
+    bars = b.get("bars") or []
+    out = []
+    if kind == "commutative_ladder":
+        out.append("<p>A persistence module on the commutative ladder "
+                   "<i>CL(%d) = A_%d &#9633; A_2</i> is a representation of this bound "
+                   "quiver; its <b>generalized persistence diagram</b> is the "
+                   "Krull&ndash;Schmidt decomposition indexed by the "
+                   "Auslander&ndash;Reiten quiver (Escolar&ndash;Hiraoka). Char-scoped: "
+                   "over %s (char 0 / char &gt; dim).</p>" % (n, n, _esc(field)))
+    else:
+        name = "zigzag module" if kind == "zigzag" else "persistence module"
+        out.append("<p>A %s over <i>A_%d</i> is a representation of the quiver "
+                   "<i>A_%d</i>; its <b>barcode</b> is the interval decomposition of "
+                   "<i>M</i> (Gabriel / Botnan&ndash;Crawley-Boevey), i.e. the support "
+                   "intervals of the Krull&ndash;Schmidt indecomposable summands. "
+                   "Field-robust over %s (interval modules are bricks). The filtration "
+                   "parameter is the discrete vertex index 1..%d; a top-reaching "
+                   "<i>forward</i> bar is <b>essential</b> (death = %d), never "
+                   "&infin;.</p>" % (name, n, n, _esc(field), n, n))
+    # (i) the interval table.
+    rows = ["<tr><th>birth</th><th>death</th><th>multiplicity</th>"
+            "<th>essential</th><th>dim vector</th></tr>"]
+    for bar in bars:
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                    % (_num(bar.get("birth")), _num(bar.get("death")),
+                       _num(bar.get("multiplicity")),
+                       "yes" if bar.get("essential") else "no",
+                       _esc(_dv(bar.get("dimvec") or {}))))
+    if len(rows) > 1:
+        out.append('<table class="ql-dims">%s</table>' % "".join(rows))
+    else:
+        out.append("<p class='ql-note'>no bars (the module is zero).</p>")
+    # (ii) a simple HTML bar diagram over the 1..n index axis (grey cells birth..death).
+    if n and bars:
+        diag = ["<tr><th></th>"]
+        for i in range(1, n + 1):
+            diag.append("<th>%d</th>" % i)
+        diag.append("</tr>")
+        for bi, bar in enumerate(bars):
+            birth, death = bar.get("birth"), bar.get("death")
+            cells = ["<th>[%s,%s]</th>" % (_num(birth), _num(death))]
+            for i in range(1, n + 1):
+                on = (isinstance(birth, int) and isinstance(death, int)
+                      and birth <= i <= death)
+                cells.append('<td style="background:%s">&nbsp;</td>'
+                             % ("#bbb" if on else "transparent"))
+            diag.append("<tr>%s</tr>" % "".join(cells))
+        out.append('<table class="ql-barcode">%s</table>' % "".join(diag))
+    # (iii) the CL AR-indexed generalized persistence diagram table.
+    if kind == "commutative_ladder" and b.get("diagram"):
+        drows = ["<tr><th>AR vertex</th><th>dim vector</th><th>multiplicity</th>"
+                 "<th>interval?</th></tr>"]
+        for e in b["diagram"]:
+            drows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                         % (_esc(str(e.get("ar_name"))),
+                            _esc(_dv(e.get("dimvec") or {})),
+                            _num(e.get("multiplicity")),
+                            "yes" if e.get("is_interval") else "no"))
+        out.append("<p><i>Generalized persistence diagram (indexed by the AR quiver of "
+                   "CL(%d)):</i></p>" % n)
+        out.append('<table class="ql-dims">%s</table>' % "".join(drows))
+    return out
 
 
 def _dv(dimvec):

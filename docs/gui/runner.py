@@ -38,7 +38,7 @@ _MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
@@ -543,6 +543,7 @@ _MOD_REFS = {
     "tilting_check": ["bongartz_tilting", "assem_book"],
     "orbit_geometry": ["voigt_rigidity", "kac_canonical",
                        "schofield_general_reps", "derksen_weyman_canonical"],
+    "barcode": ["escolar_hiraoka", "botnan_crawley_boevey", "gabriel", "assem_book"],
 }
 
 
@@ -742,6 +743,16 @@ def _module_block(name, top):
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return {"kind": name, "side": M.side, "summands": summands,
                 "iso_classes": len(summands), "citations": cites}
+    if name == "barcode":
+        # The persistence/TDA barcode (Plan 69 / R33). SAME shared core builder as the
+        # hpc spec dispatch (quiverlab.modules.barcode.barcode_block) + references ->
+        # citations, so the two runners emit byte-identical blocks (a refusal is an
+        # {"error": ...} block, never a raise).
+        from quiverlab.modules.barcode import barcode_block
+        block = barcode_block(A, M)
+        block["references"] = list(keys)
+        block["citations"] = cites
+        return block
     if name == "almost_split":
         # The almost-split sequence 0 -> tau M -> E -> M -> 0 for M indecomposable
         # non-projective (Plan 41). Byte-identical block shape to quiverlab.hpc.spec's
@@ -1517,6 +1528,7 @@ def python_snippet():
              "ext": "[A.ext(M, N, i) for i in range(%d + 1)]",
              "tor": "tor_dims(A, M, N, %d)  # from quiverlab.modules.tor",
              "decompose": "M.decompose()",
+             "barcode": "A.barcode(M)  # from quiverlab.modules.barcode import barcode",
              "almost_split": "M.almost_split_sequence()",
              "projective_resolution": "M.projective_resolution(%d).dimension_vectors()",
              "injective_resolution": "M.injective_resolution(%d).dimension_vectors()",
@@ -1600,6 +1612,10 @@ ETA_MODEL = {
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,
                 "tau": 0.1, "tau_minus": 0.1, "ext": 0.2, "tor": 0.2,
                 "decompose": 0.3, "almost_split": 0.3,
+                # Plan 69: barcode = decompose (cheap A_n/zigzag) OR a full AR knit
+                # (CL). The knit-heavy CL case is pushed off the instant tier by the
+                # estimator's classify() upgrade (reason="knit_heavy"), not this weight.
+                "barcode": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
                 "projective_dimension": 0.3, "injective_dimension": 0.3,
                 # Plan 44 / 49: single-module homological probes (tilting_check =

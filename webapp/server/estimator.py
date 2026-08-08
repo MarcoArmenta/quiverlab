@@ -157,6 +157,26 @@ def _fits_big(ops: int, max_deg: int, cfg: Config) -> bool:
     return ops <= cfg.big_ops_threshold and max_deg <= cfg.big_max_degree
 
 
+def _barcode_knit_heavy(req: ComputeRequest) -> bool:
+    """True iff the request asks for ``barcode`` AND its algebra is a commutative ladder
+    (Plan 69 / H2). A CL barcode runs a FULL AR knit (minutes even for a small algebra),
+    so it must not be served on the instant tier -- where artifacts are discarded and
+    ``capture_reps=False`` -- and is upgraded instant->queued in :func:`classify`. An
+    A_n/zigzag barcode only ``decompose``s (module-sized) -> ``False``, so it stays
+    instant-eligible (byte-identical classification to before). Built DEFENSIVELY -- an
+    unbuildable algebra returns ``False`` (its real error surfaces later as a clean 4xx),
+    because ``app.py``'s ``classify(...)`` is not wrapped."""
+    if not any(parse_compute_item(r).kind == "barcode" for r in req.compute):
+        return False
+    try:
+        from quiverlab.hpc.spec import build_algebra
+        A = build_algebra(req.algebra.model_dump())
+        from quiverlab.families.commutative_ladder import is_commutative_ladder
+        return bool(is_commutative_ladder(A)[0])
+    except Exception:
+        return False
+
+
 def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
     """Full tier decision WITH the honest numbers the warning UX shows.
     Returns {"tier", "reason", "estimate": {"cells", "minutes", "bytes",
@@ -185,6 +205,15 @@ def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
         # instant, but the canvas GUI sets ``tikz: true`` on EVERY compute, so
         # gating on it would force every GUI request to queue -- and the diagram is
         # cheap and user-drawn, unlike the report.
+        # Plan 69 (H2): a `barcode` request on a COMMUTATIVE LADDER runs a full AR knit
+        # (knit-heavy -- the same cost class as ar_quiver/string_homological), but it is
+        # a scalar module kind with no `hi` budget, so sizing_dim would size it purely on
+        # the small CL algebra dim and mislabel it instant. Unlike ar_quiver/
+        # string_homological (whose knit-heaviness the KNOWN LIMITATION above cannot
+        # catch), the CL barcode IS caught here and upgraded instant->queued; a plain
+        # A_n/zigzag barcode only decomposes (module-sized) and stays instant-eligible.
+        if _barcode_knit_heavy(req):
+            return {"tier": "queued", "reason": "knit_heavy", "estimate": est}
         if req.artifacts.pdf:
             return {"tier": "queued", "reason": "report_artifacts", "estimate": est}
         return {"tier": "instant", "reason": None, "estimate": est}

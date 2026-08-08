@@ -1475,5 +1475,90 @@
   },
   "canonical_key": "321e1d4c47e0723a698e8eb0fa6f18bd2b15e5416ed738691b243c1a29c001ce",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Buan-Marsh: signed tau-exceptional sequences via the Jasso tau-perpendicular reduction; bijection with ordered support tau-tilting modules (#signed = n!*#sTt) -- the Plan-65 / R27 count oracle.\", \"arxiv\": \"1802.01169\", \"arxiv_url\": \"https://arxiv.org/abs/1802.01169\", \"bibtex_key\": \"BuanMarsh2021\", \"doi\": \"10.1016/j.jalgebra.2021.05.001\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2021.05.001\", \"formatted\": \"Buan, Aslak Bakke; Marsh, Robert J. (2021). $tau$-exceptional sequences. J. Algebra 585, 36-68.\", \"key\": \"buan_marsh_tau_exceptional\", \"topic\": \"Algorithms\"}, {\"annotation\": \"Crawley-Boevey: the braid group acts transitively on complete exceptional sequences of a hereditary algebra (Ottawa 1992).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"CrawleyBoevey1993\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Crawley-Boevey, William (1993). Exceptional sequences of representations of quivers. Representations of algebras (Ottawa, ON, 1992) 14, 117-124.\", \"key\": \"crawley_boevey_exceptional\", \"topic\": \"Foundations\"}, {\"annotation\": \"Ringel: the braid B_n action on complete exceptional sequences (transitive), with the sigma_i mutation constructions -- the case-(d) two-step module realization. Contemp. Math. 171 (1994).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"RingelBraid1994\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Ringel, Claus Michael (1994). The braid group action on the set of exceptional sequences of a hereditary Artin algebra. Abelian group theory and related topics (Oberwolfach, 1993) 171, 339-352.\", \"key\": \"ringel_braid\", \"topic\": \"Foundations\"}, {\"annotation\": \"Jasso: the tau-perpendicular category J(U) ~ mod C(U), rank n-|U| (the DIJ idempotent quotient) -- the recursion engine for tau-exceptional sequences.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Jasso2015\", \"doi\": \"10.1093/imrn/rnu163\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnu163\", \"formatted\": \"Jasso, Gustavo (2015). Reduction of $tau$-tilting modules and torsion pairs. Int. Math. Res. Not. IMRN, 7190-7237.\", \"key\": \"jasso_reduction\", \"topic\": \"Foundations\"}, {\"annotation\": \"Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the closed-form count oracle.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Obaid2013\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Obaid, Mustafa A. A.; Nauman, S. Khalid; Al-Shammakh, Wafaa S. M.; Fakieh, Wafaa M.; Ringel, Claus Michael (2013). The number of complete exceptional sequences for a Dynkin algebra. Colloq. Math. 133, 197-210.\", \"key\": \"obaid_dynkin_count\", \"topic\": \"Foundations\"}, {\"annotation\": \"Adachi-Iyama-Reiten: support tau-tilting pairs, mutation, the exchange graph, g-vectors, and the bijection with functorially finite torsion classes -- the ground truth for the Plan-45 / C4 tau-tilting engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AIR2014\", \"doi\": \"10.1112/S0010437X13007422\", \"doi_url\": \"https://doi.org/10.1112/S0010437X13007422\", \"formatted\": \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\", \"key\": \"air_tau_tilting\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(7))\\nA.exceptional_sequences(); A.tau_exceptional_sequences(want_sequences=False)\", \"results\": {\"exceptional_sequences\": {\"citations\": [[\"BuanMarsh2021\", \"Buan, Aslak Bakke; Marsh, Robert J. (2021). $tau$-exceptional sequences. J. Algebra 585, 36-68.\"], [\"CrawleyBoevey1993\", \"Crawley-Boevey, William (1993). Exceptional sequences of representations of quivers. Representations of algebras (Ottawa, ON, 1992) 14, 117-124.\"], [\"RingelBraid1994\", \"Ringel, Claus Michael (1994). The braid group action on the set of exceptional sequences of a hereditary Artin algebra. Abelian group theory and related topics (Oberwolfach, 1993) 171, 339-352.\"], [\"Jasso2015\", \"Jasso, Gustavo (2015). Reduction of $tau$-tilting modules and torsion pairs. Int. Math. Res. Not. IMRN, 7190-7237.\"], [\"Obaid2013\", \"Obaid, Mustafa A. A.; Nauman, S. Khalid; Al-Shammakh, Wafaa S. M.; Fakieh, Wafaa M.; Ringel, Claus Michael (2013). The number of complete exceptional sequences for a Dynkin algebra. Colloq. Math. 133, 197-210.\"], [\"AIR2014\", \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"classical\": {\"closed_form_count\": 16, \"complete\": true, \"count\": 16, \"status\": \"complete\", \"transitive\": true}, \"dynkin_type\": \"A_3\", \"hereditary\": true, \"kind\": \"exceptional_sequences\", \"n\": 3, \"note\": null, \"references\": [\"buan_marsh_tau_exceptional\", \"crawley_boevey_exceptional\", \"ringel_braid\", \"jasso_reduction\", \"obaid_dynkin_count\", \"air_tau_tilting\", \"assem_book\"], \"tau\": {\"complete\": true, \"signed_count\": 84, \"status\": \"complete\", \"stt_count\": 14}}}}"
+ },
+ "barcode_a5": {
+  "body": {
+   "schema": 2,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ],
+     "c": [
+      3,
+      4
+     ],
+     "d": [
+      4,
+      5
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "module": {
+    "dims": {
+     "1": 1,
+     "2": 2,
+     "3": 1,
+     "4": 2,
+     "5": 1
+    },
+    "maps": {
+     "a": [
+      [
+       1
+      ],
+      [
+       0
+      ]
+     ],
+     "b": [
+      [
+       1,
+       1
+      ]
+     ],
+     "c": [
+      [
+       1
+      ],
+      [
+       0
+      ]
+     ],
+     "d": [
+      [
+       1,
+       1
+      ]
+     ]
+    }
+   },
+   "compute": [
+    "barcode"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3], \"c\": [3, 4], \"d\": [4, 5]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3, 4, 5]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Representation theory of the commutative ladder CL(n) = A_n [] A_2: rep-finite iff n <= 4 (the P69 scope boundary), with explicit AR quivers for n <= 4. TDA gloss: the generalized persistence diagram of a ladder persistence module is its AR-quiver-indexed Krull-Schmidt decomposition.\", \"arxiv\": \"1404.7588\", \"arxiv_url\": \"https://arxiv.org/abs/1404.7588\", \"bibtex_key\": \"EscolarHiraoka2016\", \"doi\": \"10.1007/s00454-015-9746-2\", \"doi_url\": \"https://doi.org/10.1007/s00454-015-9746-2\", \"formatted\": \"Escolar, Emerson G.; Hiraoka, Yasuaki (2016). Persistence Modules on Commutative Ladders of Finite Type. Discrete Comput. Geom. 55, 100-157.\", \"key\": \"escolar_hiraoka\", \"topic\": \"Foundations\"}, {\"annotation\": \"A pointwise-finite-dimensional persistence module over a totally ordered or zigzag poset decomposes uniquely into interval modules (Krull-Remak-Schmidt-Azumaya) -- the theorem that 'barcode = interval decomposition' is well-defined for A_n and zigzag lines.\", \"arxiv\": \"1811.08946\", \"arxiv_url\": \"https://arxiv.org/abs/1811.08946\", \"bibtex_key\": \"BotnanCrawleyBoevey2020\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Botnan, Magnus Bakke; Crawley-Boevey, William (2020). Decomposition of persistence modules. Proc. Amer. Math. Soc. 148, 4581-4596.\", \"key\": \"botnan_crawley_boevey\", \"topic\": \"Foundations\"}, {\"annotation\": \"Gabriel's theorem: the indecomposable representations of a type-A_n quiver are the interval (thin) modules = positive roots, each a brick (End = k) -- why the A_n / zigzag barcode is field-robust over every exact domain.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gabriel1972\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Gabriel, Peter (1972). Unzerlegbare Darstellungen I. Manuscripta Math. 6, 71-103.\", \"key\": \"gabriel\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3, 4, 5], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3), \\\"c\\\": (3, 4), \\\"d\\\": (4, 5)})\\nA = Q.algebra(relations=[], field=QQ)\\nM = A.module({1: 1, 2: 2, 3: 1, 4: 2, 5: 1}, {\\\"a\\\": [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]], \\\"b\\\": [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]], \\\"c\\\": [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]], \\\"d\\\": [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 0]]}, side=\\\"right\\\", name=\\\"M\\\")\\nfrom quiverlab.modules.barcode import barcode\\nbarcode(M)\", \"results\": {\"barcode\": {\"ar_status\": null, \"bars\": [{\"birth\": 1, \"death\": 5, \"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1, \"4\": 1, \"5\": 1}, \"essential\": true, \"multiplicity\": 1}, {\"birth\": 2, \"death\": 2, \"dimvec\": {\"2\": 1}, \"essential\": false, \"multiplicity\": 1}, {\"birth\": 4, \"death\": 4, \"dimvec\": {\"4\": 1}, \"essential\": false, \"multiplicity\": 1}], \"citations\": [[\"EscolarHiraoka2016\", \"Escolar, Emerson G.; Hiraoka, Yasuaki (2016). Persistence Modules on Commutative Ladders of Finite Type. Discrete Comput. Geom. 55, 100-157.\"], [\"BotnanCrawleyBoevey2020\", \"Botnan, Magnus Bakke; Crawley-Boevey, William (2020). Decomposition of persistence modules. Proc. Amer. Math. Soc. 148, 4581-4596.\"], [\"Gabriel1972\", \"Gabriel, Peter (1972). Unzerlegbare Darstellungen I. Manuscripta Math. 6, 71-103.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"diagram\": null, \"field\": \"QQ\", \"field_robust\": true, \"kind\": \"persistence\", \"n\": 5, \"references\": [\"escolar_hiraoka\", \"botnan_crawley_boevey\", \"gabriel\", \"assem_book\"]}}}",
+  "canonical_key": "edb62299887a3264071edb320191216ed0fea6505c94a2527a83c1348251486c"
  }
 }

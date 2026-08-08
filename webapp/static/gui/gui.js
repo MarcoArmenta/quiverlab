@@ -180,6 +180,7 @@
     '    <label><input type="checkbox" id="qlgui-projective_resolution"> proj.res 0..<select id="qlgui-pr-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-injective_resolution"> inj.res 0..<select id="qlgui-ir-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-decompose"> decompose</label>' +
+    '    <label><input type="checkbox" id="qlgui-barcode"> barcode</label>' +
     '    <label><input type="checkbox" id="qlgui-almost_split"> almost-split</label>' +
     '    <label><input type="checkbox" id="qlgui-tilting_check"> tilting?</label>' +
     '    <label><input type="checkbox" id="qlgui-orbit_geometry"> orbit geometry</label>' +
@@ -299,7 +300,7 @@
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
    "projective_dimension", "injective_dimension",
    "projective_resolution", "pr-top", "injective_resolution", "ir-top",
-   "decompose", "almost_split", "ext", "ext-top", "tor", "tor-top",
+   "decompose", "barcode", "almost_split", "ext", "ext-top", "tor", "tor-top",
    "decompose", "tilting_check", "orbit_geometry", "ext", "ext-top", "tor", "tor-top",
    "target", "target-mode", "target-side", "target-body", "target-note"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
@@ -446,7 +447,7 @@
     "projective_dimension", "injective_dimension",
     "projective_resolution", "injective_resolution", "decompose", "almost_split",
     "projective_resolution", "injective_resolution", "decompose", "tilting_check",
-    "orbit_geometry", "ext", "tor"];
+    "orbit_geometry", "barcode", "ext", "tor"];
 
   // Generic matrix-editor helpers over a module-state {dims, maps} + a side. Used
   // by BOTH the main module panel (S.module) and the second-argument editor
@@ -975,7 +976,7 @@
       module = moduleSpec();
       ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
        "projective_dimension", "injective_dimension", "decompose",
-       "tilting_check", "orbit_geometry"].forEach(function (k) {
+       "tilting_check", "orbit_geometry", "barcode"].forEach(function (k) {
         if (el[k].checked) compute.push(k);
       });
       if (el.projective_resolution.checked)
@@ -3416,6 +3417,79 @@
         " indecomposable summand(s):" }));
       div.appendChild(decompTable(b.summands));
       appendSummandMaps(div, b.summands);
+    } else if (name === "barcode") {
+      // Persistence/TDA barcode (Plan 69 / R33): rep-theory-first framing, an interval
+      // table + a simple HTML bar diagram over the 1..n index axis, and -- for a
+      // commutative ladder -- the AR-quiver-indexed generalized persistence diagram.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        var bkind = b.kind || "persistence";
+        var intro = (bkind === "commutative_ladder")
+          ? ("A persistence module on the commutative ladder CL(" + b.n + ") = A_" + b.n
+             + " □ A_2 is a representation of this bound quiver; its generalized "
+             + "persistence diagram is the Krull–Schmidt decomposition indexed by "
+             + "the Auslander–Reiten quiver (Escolar–Hiraoka). Char-scoped over "
+             + b.field + " (char 0 / char > dim).")
+          : ((bkind === "zigzag" ? "A zigzag module" : "A persistence module")
+             + " over A_" + b.n + " is a representation of the quiver A_" + b.n
+             + "; its barcode is the interval decomposition of M (Gabriel / "
+             + "Botnan–Crawley-Boevey). Field-robust over " + b.field
+             + " (interval modules are bricks); the filtration parameter is the discrete "
+             + "vertex index 1.." + b.n + ", a top-reaching forward bar is essential "
+             + "(death = " + b.n + "), never ∞.");
+        div.appendChild(h("p", { "class": "qlgui-hint", text: intro }));
+        var bhead = h("tr");
+        ["Birth", "Death", "multiplicity", "essential", "dim vector"].forEach(function (t) {
+          bhead.appendChild(h("th", { text: t }));
+        });
+        var btbl = h("table", {}, bhead);
+        (b.bars || []).forEach(function (bar) {
+          var tr = h("tr");
+          tr.appendChild(h("td", { text: String(bar.birth) }));
+          tr.appendChild(h("td", { text: String(bar.death) }));
+          tr.appendChild(h("td", { text: String(bar.multiplicity) }));
+          tr.appendChild(h("td", { text: bar.essential ? "yes" : "no" }));
+          tr.appendChild(h("td", { text: dvText(bar.dimvec || {}) }));
+          btbl.appendChild(tr);
+        });
+        div.appendChild(btbl);
+        if (b.n && (b.bars || []).length) {
+          var dhead = h("tr");
+          dhead.appendChild(h("th"));
+          for (var i = 1; i <= b.n; i++) dhead.appendChild(h("th", { text: String(i) }));
+          var dtbl = h("table", { "class": "qlgui-barcode" }, dhead);
+          b.bars.forEach(function (bar) {
+            var tr = h("tr");
+            tr.appendChild(h("th", { text: "[" + bar.birth + "," + bar.death + "]" }));
+            for (var j = 1; j <= b.n; j++) {
+              var on = (bar.birth <= j && j <= bar.death);
+              tr.appendChild(h("td", { style: "background:" + (on ? "#bbb" : "transparent") },
+                document.createTextNode(" ")));
+            }
+            dtbl.appendChild(tr);
+          });
+          div.appendChild(dtbl);
+        }
+        if (bkind === "commutative_ladder" && b.diagram) {
+          div.appendChild(h("p", { text: "Generalized persistence diagram (indexed by the "
+            + "AR quiver of CL(" + b.n + ")):" }));
+          var ghead = h("tr");
+          ["AR vertex", "dim vector", "multiplicity", "interval?"].forEach(function (t) {
+            ghead.appendChild(h("th", { text: t }));
+          });
+          var gtbl = h("table", {}, ghead);
+          b.diagram.forEach(function (e) {
+            var tr = h("tr");
+            tr.appendChild(h("td", { text: String(e.ar_name) }));
+            tr.appendChild(h("td", { text: dvText(e.dimvec || {}) }));
+            tr.appendChild(h("td", { text: String(e.multiplicity) }));
+            tr.appendChild(h("td", { text: e.is_interval ? "yes" : "no" }));
+            gtbl.appendChild(tr);
+          });
+          div.appendChild(gtbl);
+        }
+      }
     } else if (name === "almost_split") {
       // The almost-split (Auslander–Reiten) sequence 0 → τM → E → M → 0 (Plan 41);
       // an honest refusal for a projective / decomposable / undecidable input.
@@ -4308,7 +4382,7 @@
   [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
    el.projective_dimension, el.injective_dimension, el.decompose, el.almost_split,
    el.projective_dimension, el.injective_dimension, el.decompose, el.tilting_check,
-   el.orbit_geometry,
+   el.orbit_geometry, el.barcode,
    el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
    el["ext-top"], el["tor-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
@@ -4377,7 +4451,7 @@
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
-    {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
+    {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
   ];

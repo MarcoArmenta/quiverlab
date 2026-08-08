@@ -399,7 +399,18 @@ never hide behind one:
     (``tautilting.exceptional.exceptional_sequences_block``), so the Pyodide twin
     agrees (``tests/gui/test_exceptional_runner_twin_p65.py``). ``canonical_key`` is
     request-derived (schema-1 algebra-only, the budget rides in the ``compute``
-    string, no ``module`` block)."""
+    string, no ``module`` block).
+  * 2026-08-08 (``barcode_a5``): ADDED for Plan 69 (R33 persistence/TDA bridge) -- the
+    new ``barcode`` module-side compute kind. One entry: a schema-2 request drawing the
+    forward line ``A_5`` (1->2->3->4->5, QQ) with the filtration ``H_0`` module (dims
+    (1,2,1,2,1), Plan-26 per-arrow block maps) + ``compute: ["barcode"]``. The block is
+    the interval barcode ``{[1,5] essential, [2,2], [4,4]}`` (LIVE-VERIFIED). The 38
+    prior delegation asserts were confirmed byte-identical BEFORE the append (parse dev's
+    dict, append ``barcode_a5``, re-dump ``indent=1``, NEVER ``sort_keys``). Both runners
+    share the library core builder (``quiverlab.modules.barcode.barcode_block``), so the
+    Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
+    is request-derived (the ``module`` block canonicalizes through the Plan-25 key; no new
+    top-level request field)."""
 import json
 import pathlib
 

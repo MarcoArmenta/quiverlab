@@ -58,6 +58,8 @@ ALL_KINDS = {
     "tame_wild",
     # Plan 54 (2026-08-07): the Batalin-Vilkovisky operator Delta.
     "bv_operator",
+    # Plan 69 (2026-08-07): the persistence/TDA barcode module-side kind.
+    "barcode",
     # Plan 65 (2026-08-08): exceptional sequences (classical hereditary + tau-exceptional).
     "exceptional_sequences",
 }
