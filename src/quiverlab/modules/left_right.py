@@ -43,6 +43,14 @@ class LeftRightAtlas:
                any(r["index"] == index for r in self.right)
 
 
+@dataclass(frozen=True)
+class SupportAlgebra:
+    vertices: tuple            # e_lambda (or e_rho) -- the chosen quiver vertices
+    dim: int                   # dim_k A_lambda = sum_{x,y in e} hom_dim(P_x, P_y) = dim End(+ P_x)
+    algebra: object            # the presented induced-subquiver Algebra (None iff no vertices)
+    components: tuple          # tuple of {"vertices": (...), "algebra": Algebra} factors
+
+
 def _universe(A, budget):
     ar = A.ar_quiver(budget_modules=budget)
     U = [v["module"] for v in ar.vertices]
@@ -167,6 +175,154 @@ def _placement(A, U, L, R, *, kind):
     return place
 
 
+def _coeff_sign_mag(coeff):
+    """(sign in {+1,-1}, magnitude:str) for a Fraction or exact sympy coefficient, as a
+    combinat.relations grammar token (coefficient before the arrows, sign folded out)."""
+    from fractions import Fraction
+    if isinstance(coeff, Fraction):
+        neg = coeff < 0
+        return (-1 if neg else 1, str(-coeff if neg else coeff))
+    s = str(coeff)
+    if s.startswith("-"):
+        return (-1, s[1:])
+    return (1, s)
+
+
+def _relation_to_string(r):
+    """A parsed ``Relation`` (``.terms`` = ``((coeff, word), ...)``) back to a
+    combinat.relations grammar string: signs folded into ' + ' / ' - ' separators (a leading
+    '-' on a negative first term), coefficient before the arrows. Monomial relations (the
+    rad^2 truncation and every kA_n test) round-trip to just the path word."""
+    parts = []
+    for idx, (coeff, word) in enumerate(r.terms):
+        path = "*".join(word)
+        sign, mag = _coeff_sign_mag(coeff)
+        if idx == 0:
+            sep = "" if sign > 0 else "-"
+        else:
+            sep = " + " if sign > 0 else " - "
+        parts.append(f"{sep}{path}" if mag == "1" else f"{sep}{mag}*{path}")
+    return "".join(parts)
+
+
+def _relation_support(r, quiver):
+    """The set of vertices a relation touches (source of its first arrow, target of every
+    arrow, plus the parallel source/target endpoints)."""
+    vs = {r.source, r.target}
+    for _coeff, word in r.terms:
+        if word:
+            vs.add(quiver.source(word[0]))
+            for a in word:
+                vs.add(quiver.target(a))
+    return vs
+
+
+def _reachability(quiver):
+    """reach[a][b] iff there is a directed path a ->* b (reflexive-transitive) in ``quiver``."""
+    V = list(quiver.vertices)
+    idx = {v: i for i, v in enumerate(V)}
+    n = len(V)
+    reach = [[i == j for j in range(n)] for i in range(n)]
+    for (s, t) in quiver.arrows.values():
+        reach[idx[s]][idx[t]] = True
+    _transitive_closure(reach)
+    return V, idx, reach
+
+
+def _is_convex(A, verts):
+    """``verts`` is convex in A's quiver: every vertex on a directed path between two chosen
+    vertices is itself chosen (so the induced full subquiver loses/creates no relation)."""
+    V, idx, reach = _reachability(A.quiver)
+    vset = set(verts)
+    for x in verts:
+        for y in verts:
+            for z in V:
+                if z not in vset and reach[idx[x]][idx[z]] and reach[idx[z]][idx[y]]:
+                    return False
+    return True
+
+
+def _induced_subquiver_algebra(A, verts):
+    """The induced FULL subquiver on ``verts`` (arrows with both endpoints chosen) with the
+    restricted relations (those whose support lies inside ``verts``), presented over A's field
+    -- convexity guarantees no relation is lost or created."""
+    from quiverlab.combinat.quiver import Quiver
+    vset = set(verts)
+    new_arrows = {name: (s, t) for name, (s, t) in A.quiver.arrows.items()
+                  if s in vset and t in vset}
+    new_rels = [_relation_to_string(r) for r in (A.relations or [])
+                if _relation_support(r, A.quiver) <= vset]
+    B = Quiver(list(verts), new_arrows).algebra(relations=new_rels, field=A.domain)
+    return B, new_arrows
+
+
+def _quiver_components(verts, arrows):
+    """Connected components of the induced subquiver (UNDIRECTED adjacency), each a sorted
+    tuple of vertices, in first-appearance order over ``verts``."""
+    adj = {v: set() for v in verts}
+    for (s, t) in arrows.values():
+        adj[s].add(t)
+        adj[t].add(s)
+    seen = set()
+    comps = []
+    for start in verts:
+        if start in seen:
+            continue
+        stack = [start]
+        seen.add(start)
+        block = []
+        while stack:
+            v = stack.pop()
+            block.append(v)
+            for w in adj[v]:
+                if w not in seen:
+                    seen.add(w)
+                    stack.append(w)
+        comps.append(tuple(sorted(block, key=verts.index)))
+    return comps
+
+
+def _support_algebra(A, U, verts, *, projectives=True):
+    """A_lambda = End_A(+ P_x : x in e_lambda) ~= e_lambda A e_lambda, the induced full convex
+    subcategory (Task C). REFUSES loudly if A has no quiver presentation (before any vertex is
+    read). Certifies per instance: e_lambda convex, and the presented induced-subquiver dim ==
+    dim End (= sum_{x,y} hom_dim(gen_x, gen_y), cross-checked against end_algebra)."""
+    if A.quiver is None:
+        raise QuiverlabError(
+            "support algebra: A has no quiver presentation, so the induced subquiver "
+            "e A e cannot be built and the vertex projectives P_x are unavailable",
+            hint="feed a quiver-presented kQ/I (the GUI/webapp always do); a "
+                 "structure-constants-only algebra has no support-algebra presentation")
+    verts = sorted(verts)
+    if not verts:                                          # no projective/injective in the part
+        return SupportAlgebra(vertices=(), dim=0, algebra=None, components=())
+    build = A.projective if projectives else A.injective
+    gens = [build(x) for x in verts]
+    if not _is_convex(A, verts):
+        raise QuiverlabError(
+            f"support algebra: the support vertices {verts} are not convex in A's quiver "
+            "(a directed path between two of them leaves the set) -- the induced-subquiver "
+            "presentation would drop or invent relations", hint="report this presentation")
+    B, new_arrows = _induced_subquiver_algebra(A, verts)
+    from quiverlab.modules.endomorphism import end_algebra
+    from quiverlab.modules.morphism import direct_sum
+    end = sum(hom_dim(gens[i], gens[j])
+              for i in range(len(gens)) for j in range(len(gens)))   # = dim End(+ P_x)
+    D = direct_sum(*gens)[0] if len(gens) > 1 else gens[0]
+    ealg = end_algebra(D).dim                              # a 2nd, structure-constant dim End
+    if not (B.dim == end == ealg):
+        raise QuiverlabError(
+            f"support algebra certificate failed: presented induced-subquiver dim {B.dim}, "
+            f"sum_{{x,y}} hom_dim {end}, end_algebra dim {ealg} disagree -- a convexity or "
+            "relation-restriction bug", hint="report this presentation")
+    components = []
+    for comp_verts in _quiver_components(verts, new_arrows):
+        comp_alg, _ = _induced_subquiver_algebra(A, list(comp_verts))
+        components.append({"vertices": comp_verts, "algebra": comp_alg})
+    return SupportAlgebra(vertices=tuple(verts), dim=B.dim, algebra=B,
+                          components=tuple(components))
+
+
 def left_right_parts(A, *, budget=256):
     # Fast representation-infinite refusal (hereditary non-Dynkin): the projective-seeded
     # knit would run away on a rep-infinite algebra (a multi-minute hang before the module
@@ -194,11 +350,15 @@ def left_right_parts(A, *, budget=256):
     inj_place = _placement(A, U, L, R, kind="injective")
     ext_inj = _ext_injectives_left(U, L)                       # Task B
     ext_proj = _ext_projectives_right(U, R)                    # Task B
+    e_lambda = [v for v in A.quiver.vertices if proj_place[v] in ("L", "both")]
+    e_rho = [v for v in A.quiver.vertices if inj_place[v] in ("R", "both")]
+    left_support = _support_algebra(A, U, e_lambda, projectives=True)    # Task C
+    right_support = _support_algebra(A, U, e_rho, projectives=False)     # Task C
     return LeftRightAtlas(
         A, sel(L), sel(R), sel(L & R), sel(set(range(len(U))) - (L | R)),
         ext_injectives_left=sel(ext_inj), ext_projectives_right=sel(ext_proj),
+        left_support=left_support, right_support=right_support,
         projective_placement=proj_place, injective_placement=inj_place,
         universe_size=len(U), is_complete=True, status="complete", note=ar.note or "",
         pd_le_1=tuple(pd_ok), id_le_1=tuple(id_ok),
         _modules=tuple(U), _leq=tuple(tuple(r) for r in leq))
-    # left_support / right_support keep their None defaults here; Task C fills them.
