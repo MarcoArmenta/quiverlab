@@ -869,6 +869,17 @@ def compute_one(spec):
             from quiverlab.modules.homdims import homological_profile
             block = homological_profile(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "fractional_cy":
+            # Fractional Calabi-Yau dimension of the stable category (Plan 53 / R24): an
+            # ALGEBRA-level scalar kind (schema v1). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (modules.fractional_cy.fractional_cy_block) + references->citations. A
+            # non-self-injective input is caught INSIDE the builder into {"error": ...}
+            # (no `references` on that shape), never a crash.
+            from quiverlab.modules.fractional_cy import fractional_cy_block
+            block = fractional_cy_block(A)
+            if "references" in block:
+                block["citations"] = _citation_pairs(block["references"])
         elif name == "center":
             dim_z, basis = A.center()
             # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
@@ -1256,7 +1267,11 @@ ETA_MODEL = {
                 "center": 0.05, "global_dimension": 0.5,
                 # Plan 40: the C6 family aggregates gl.dim + finitistic + dominant +
                 # Gorenstein + Igusa-Todorov (several resolutions), so a bit heavier.
+                # Plan 53 added phidim/psidim (an AR knit) + LIT to the same block.
                 "homological_profile": 2.0,
+                # Plan 53: fractional_cy iterates nu/Omega on the simples with a bounded
+                # (m,ell) search -- a few small syzygy/Nakayama passes.
+                "fractional_cy": 3.0,
                 # module kinds (Plan 26): cheap dim-vector reads up to
                 # resolution/dimension probes that build syzygies to depth.
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,

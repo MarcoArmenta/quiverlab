@@ -1468,6 +1468,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = homological_profile(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Fractional Calabi-Yau dimension of the stable category (Plan 53 / R24): an
+    # ALGEBRA-level scalar kind (schema v1, NO module block -- the homological_profile
+    # precedent). One shared library builder (modules.fractional_cy.fractional_cy_block)
+    # drives BOTH this runner and the Pyodide twin (docs/gui/runner.py), byte-identical;
+    # a non-self-injective input is caught INSIDE the builder into {"error": ...} (a clean
+    # typed error entry, never a 500). The `tier` is always "weak-on-generators".
+    if kind == "fractional_cy":
+        from quiverlab.modules.fractional_cy import fractional_cy_block
+        block = fractional_cy_block(A)
+        if "references" in block:              # absent on the error-entry shape
+            block["citations"] = _citation_pairs(block["references"])
+        return block, None
     if kind == "center":
         dim_z, basis = A.center()
         keys = ["bar"]                     # Z(A) = HH^0(A) -- Hochschild's paper
@@ -2291,7 +2303,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "global_dimension": lambda it: "A.global_dimension()",
              "homological_profile": lambda it: ("A.global_dimension(), "
                  "A.finitistic_dimension_bounds(), A.dominant_dimension(), "
-                 "A.gorenstein_dimension()"),
+                 "A.gorenstein_dimension(), A.phi_dim(), A.psi_dim(), "
+                 "A.phi_spectrum(), A.finitistic_certificate()"),
+             "fractional_cy": lambda it: "A.fractional_calabi_yau_dimension()",
              "center": lambda it: "A.center()",
              "dimension": lambda it: "A.dim",
              "ext_algebra":

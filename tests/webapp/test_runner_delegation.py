@@ -192,7 +192,31 @@ never hide behind one:
     regenerated blob is byte-identical to its predecessor after mapping the
     version string back (asserted for all 18 before writing). ``canonical_key``
     values are UNCHANGED -- they are pinned against the frozen ``_V`` constant
-    below, deliberately decoupled from the live version."""
+    below, deliberately decoupled from the live version.
+  * 2026-08-07 (``homological_profile_kA2`` re-freeze, Plan 53 R23): the
+    ``homological_profile`` block gained FOUR strictly-additive keys -- ``phidim`` /
+    ``psidim`` (the Igusa-Todorov phi/psi-dimensions as ALGEBRA invariants), ``phi_spectrum``
+    (the phi-value set + gaps, Barrios-Mata-Rama), and ``lit`` (the Lat-Igusa-Todorov
+    finitistic certificate) -- plus three new ``references`` (``fernandes_lanzilotta_mendoza``
+    / ``barrios_mata`` / ``bravo_lanzilotta_mendoza_vivero``) with their resolved
+    ``citations``, and an extended ``reproduce`` snippet (``A.phi_dim()``,
+    ``A.psi_dim()``, ``A.phi_spectrum()``, ``A.finitistic_certificate()``). GATED
+    re-freeze: EVERY pre-existing block entry (``global_dimension`` / ``finitistic`` /
+    ``dominant`` / ``gorenstein`` / ``igusa_todorov``) was asserted byte-identical before
+    writing -- kA2 is HEREDITARY (gl.dim 1), so its ``finitistic`` entry is UNTOUCHED by
+    the Task-C LIT wiring (that flip only affects gl.dim=infinity LIT-family inputs). The
+    ``canonical_key`` is request-derived and UNCHANGED (the keys are additive, no request
+    field moved).
+  * 2026-08-07 (``homological_profile_kxx3`` + ``fractional_cy_kxx3`` ADDED, Plan 53):
+    two NEW fixtures over the self-injective ``k[x]/(x^3)`` (loop x, ``x*x*x`` = 0, GF(7)).
+    ``homological_profile_kxx3`` is the CROSS-RUNNER home of Task C's ``None -> 0``
+    ``finitistic`` flip (self-injective => ``finitistic.upper = 0``, ``note`` starts
+    ``"LIT"``, ``lit.family == "self-injective"``); ``fractional_cy_kxx3`` is the new
+    ``fractional_cy`` compute kind (stable CY dimension ``1/1``, weakly 1-CY, tier
+    ``weak-on-generators``). Pure ADDITION: every pre-existing entry was verified
+    byte-identical BEFORE the two were appended; both runners share the library builders
+    (``homological_profile`` / ``fractional_cy_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_phidim_fcy_gui_p53.py``). ``canonical_key`` is request-derived."""
 import json
 import pathlib
 
