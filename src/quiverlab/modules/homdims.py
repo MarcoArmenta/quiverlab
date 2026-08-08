@@ -155,6 +155,243 @@ def igusa_todorov_psi(M, budget=512, bound=64):
 
 
 # ---------------------------------------------------------------------------
+# phidim / psidim as ALGEBRA invariants (Plan 53 / R23a). Fernandes-Lanzilotta-
+# Mendoza (arXiv:1304.0754) + the survey (arXiv:2310.09283):
+#   phidim(A) = sup{ phi(M) : M in mod A },  psidim(A) = sup{ psi(M) };
+#   BOTH phi and psi are add-monotone (add M <= add N => phi(M) <= phi(N)); so for a
+#   representation-finite A with M0 = (+) all indecomposables, phidim(A) = phi(M0)
+#   (a SINGLE evaluation). Self-injective => phidim = psidim = 0 (Plan 40 phi==0).
+#   Honest: EXACT only when the AR-knit closes (indecomposable universe finite); else
+#   a certified LOWER bound over a finite subfamily (never a claimed sup).
+# ---------------------------------------------------------------------------
+@dataclass
+class PhiDim:
+    """The Igusa-Todorov phi-dimension of an algebra, honest (Plan 53). ``value`` is
+    the EXACT ``phidim`` when the indecomposable universe closed (``exact=True``) OR a
+    certified LOWER bound over a finite subfamily (``exact=False``, add-monotone) --
+    never a claimed sup. ``status``: ``"complete"`` (knit closed) / ``"budget"`` (knit
+    capped, soft-degraded lower bound) / ``"self-injective"`` (short-circuit to 0)."""
+    value: int
+    exact: bool
+    status: str
+
+    def __int__(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, PhiDim):
+            return ((self.value, self.exact, self.status)
+                    == (other.value, other.exact, other.status))
+        if isinstance(other, int):
+            return self.exact and self.value == other
+        return NotImplemented
+
+    __hash__ = None
+
+    def __repr__(self):
+        if self.exact:
+            return f"phidim = {self.value}"
+        return (f">= {self.value} (certified lower bound; the indecomposable universe "
+                f"did not close -- knit status {self.status})")
+
+
+@dataclass
+class PsiDim:
+    """The Igusa-Todorov psi-dimension of an algebra, honest (Plan 53) -- identical
+    shape to :class:`PhiDim` with ``psi`` in place of ``phi``."""
+    value: int
+    exact: bool
+    status: str
+
+    def __int__(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, PsiDim):
+            return ((self.value, self.exact, self.status)
+                    == (other.value, other.exact, other.status))
+        if isinstance(other, int):
+            return self.exact and self.value == other
+        return NotImplemented
+
+    __hash__ = None
+
+    def __repr__(self):
+        if self.exact:
+            return f"psidim = {self.value}"
+        return (f">= {self.value} (certified lower bound; the indecomposable universe "
+                f"did not close -- knit status {self.status})")
+
+
+def _dedup_by_iso(modules):
+    """De-duplicate ``modules`` up to isomorphism (dim/dim-vector prefilter, then the
+    exact ``is_isomorphic`` certificate). A repeated summand does not change phi/psi
+    (they read the ADD-closure), so dropping duplicates only saves the ``decompose``
+    cost on the ``direct_sum``. Loud when ``is_isomorphic`` is undecidable (unchanged)."""
+    reps = []
+    for X in modules:
+        if X.dim == 0:
+            continue
+        dvX = X.dimension_vector()
+        for R in reps:
+            if R.dim == X.dim and R.dimension_vector() == dvX and is_isomorphic(R, X):
+                break
+        else:
+            reps.append(X)
+    return reps
+
+
+def _phipsi_dim(A, fn, cls, *, budget_modules, phi_budget, phi_bound):
+    """Shared rep-finite phidim/psidim engine (Plan 53). ``fn`` = ``igusa_todorov_phi``
+    or ``igusa_todorov_psi``; ``cls`` = :class:`PhiDim` or :class:`PsiDim`.
+
+    Self-injective short-circuits to the exact ``0`` (Plan 40 phi==0 theorem) BEFORE any
+    knit -- ``knit_ar_quiver`` REFUSES self-injective input anyway. Otherwise knit the AR
+    quiver and branch on its honest semi-decision (M3, adversarial review -- error and
+    budget are NOT the same degrade):
+      * ``is_complete``  -> EXACT ``fn(+ all indecomposables)`` (add-monotonicity makes
+        the single evaluation the sup);
+      * ``status=="budget"`` -> SOFT degrade to the certified LOWER bound over the
+        discovered prefix U the simples (a genuine finite subfamily; add-monotone);
+      * ``status in {"error","unsupported"}`` -> RAISE loudly (a broken knit is a bug or
+        an unhandled input, never a certified partial answer)."""
+    from quiverlab.modules.ar import knit_ar_quiver
+    from quiverlab.modules.ext import is_selfinjective
+    from quiverlab.modules.morphism import direct_sum
+    if A.quiver is not None and is_selfinjective(A):
+        return cls(0, exact=True, status="self-injective")
+    ar = knit_ar_quiver(A, budget_modules=budget_modules)
+    if ar.status in ("error", "unsupported"):
+        raise QuiverlabError(
+            f"phi/psi-dim: the AR knit did not close honestly (status "
+            f"{ar.status!r}): {ar.note}",
+            hint="a knit error is a bug or an unhandled input -- a lower bound built on "
+                 "a broken knit is not certified")
+    if ar.is_complete:
+        mods = _dedup_by_iso([v["module"] for v in ar.vertices])
+        M0, _, _ = direct_sum(*mods)
+        return cls(fn(M0, budget=phi_budget, bound=phi_bound),
+                   exact=True, status="complete")
+    # status == "budget": the discovered prefix U the simples is a finite subfamily; its
+    # phi/psi is a rigorous LOWER bound (add-monotonicity), never a claimed sup.
+    fam = [v["module"] for v in ar.vertices]
+    fam += [A.simple(v) for v in A.quiver.vertices]
+    mods = _dedup_by_iso(fam)
+    M0, _, _ = direct_sum(*mods)
+    return cls(fn(M0, budget=phi_budget, bound=phi_bound),
+               exact=False, status="budget")
+
+
+def phi_dim(A, *, budget_modules=256, phi_budget=512, phi_bound=64):
+    """The Igusa-Todorov phi-dimension ``phidim(A) = sup{ phi(M) }`` as an ALGEBRA
+    invariant (Plan 53 / R23a; Fernandes-Lanzilotta-Mendoza arXiv:1304.0754).
+
+    EXACT for representation-finite ``A`` via the direct sum of ALL indecomposables
+    (add-monotonicity of phi makes the single evaluation the sup -- survey
+    arXiv:2310.09283); a certified LOWER bound when the AR knit caps at ``budget_modules``
+    (``status="budget"``); the exact ``0`` for self-injective ``A`` (Plan 40 phi==0).
+    Inherits ``decompose``'s loud char-caveat refusal (``char <= dim`` over GF(p)); a
+    genuine AR-knitting failure raises. Returns a :class:`PhiDim`.
+
+    REP-INFINITE INPUT (honest-scope, P53 critic): termination is governed by the AR
+    knit's budget semantics (``knit_ar_quiver``), whose inner almost-split loop is not
+    hard-step-capped -- so a large ``budget_modules`` on a representation-INFINITE algebra
+    can be SLOW before the budget trips. Pass an explicit SMALL ``budget_modules`` for
+    rep-infinite input; the returned lower bound is honest regardless. (A hard inner-loop
+    step cap is a named DEEPER-ENGINES-BACKLOG successor.)"""
+    return _phipsi_dim(A, igusa_todorov_phi, PhiDim, budget_modules=budget_modules,
+                       phi_budget=phi_budget, phi_bound=phi_bound)
+
+
+def psi_dim(A, *, budget_modules=256, phi_budget=512, phi_bound=64):
+    """The Igusa-Todorov psi-dimension ``psidim(A) = sup{ psi(M) }`` as an ALGEBRA
+    invariant (Plan 53 / R23a). Same rep-finite ⊕-of-all route + honest degrade as
+    :func:`phi_dim`, with ``psi`` in place of ``phi``. Same rep-infinite honest-scope
+    caveat (termination governed by the AR-knit budget; pass a small ``budget_modules``
+    for rep-infinite input). Returns a :class:`PsiDim`."""
+    return _phipsi_dim(A, igusa_todorov_psi, PsiDim, budget_modules=budget_modules,
+                       phi_budget=phi_budget, phi_bound=phi_bound)
+
+
+def _chain_selfcheck(A, bound=32):
+    """The standing chain ``findim(A) <= phidim(A) <= psidim(A) <= gldim(A)`` as a
+    self-certificate (Plan 53; survey arXiv:2310.09283). Checks every inequality whose
+    BOTH terms are exact/computed: ``findim.lower <= phidim <= psidim``, and (when
+    ``gldim`` is exact-finite) ``psidim <= gldim`` PLUS the collapse ``findim = phidim =
+    psidim = gldim`` (every module has finite pd, so phi = psi = pd). Returns a dict of
+    the computed terms and an ``ok`` flag (True iff every applicable inequality holds)."""
+    from quiverlab.modules.ext import global_dimension
+    fb = finitistic_dimension_bounds(A, bound=bound)
+    pd = phi_dim(A)
+    ps = psi_dim(A)
+    g = global_dimension(A, bound=bound)
+    ok = (fb.lower <= pd.value <= ps.value)
+    if g.exact:
+        ok = ok and (ps.value <= g.value)
+    # The STRONG collapse (all four EQUAL) is asserted ONLY when the finitistic bound is
+    # itself EXACT (P53 critic minor-fix): ``findim`` exact-finite <=> gl.dim exact-finite,
+    # and then every module has finite pd so phi = psi = pd = gl.dim. Gating on
+    # ``fb.exact`` (not merely ``g.exact``) means a merely-lower ``findim`` can never cry
+    # wolf -- a non-exact bound only ever has to satisfy the inequality chain above.
+    if fb.exact:
+        ok = ok and (fb.lower == pd.value == ps.value == g.value)
+    return {"ok": bool(ok), "findim_lower": fb.lower, "findim_exact": bool(fb.exact),
+            "phidim": pd.value, "psidim": ps.value, "gldim": g.value,
+            "gldim_exact": bool(g.exact)}
+
+
+# ---------------------------------------------------------------------------
+# The phi-spectrum + gaps (Plan 53 / R23b; Barrios-Mata-Rama arXiv:1810.12112)
+# ---------------------------------------------------------------------------
+@dataclass
+class PhiSpectrum:
+    """The phi-spectrum ``Spec_phi(A) = { phi(X) : X indecomposable }`` (Plan 53). For
+    representation-finite ``A`` (``complete=True``) this is a genuine spectrum with
+    ``gaps`` = the integers in ``(0, phidim)`` NOT attained by phi (0 and phidim are
+    always attained; Barrios-Mata-Rama: 1 and phidim-1 too when ``0 < phidim < oo``).
+    A partial spectrum (``complete=False``, knit capped) claims NO gaps -- a "gap" needs
+    a proven complete spectrum."""
+    values: "list"
+    gaps: "list"
+    phidim: int
+    complete: bool
+    status: str
+
+
+def phi_spectrum(A, *, budget_modules=256):
+    """The phi-spectrum of ``A`` (Plan 53 / R23b; Barrios-Mata-Rama arXiv:1810.12112):
+    the sorted distinct ``phi`` over the AR-knit indecomposables + its gaps.
+
+    Rep-finite (``knit`` closes): ``values = sorted({ phi(X) })``, ``phidim = max``,
+    ``gaps = [g in (0, phidim) if g not in values]`` (0 and phidim are always attained).
+    A capped knit degrades to ``complete=False``, ``gaps=[]`` (a partial spectrum claims
+    no gaps). Self-injective input has ``phidim = 0`` (Plan 40 phi==0) -- the spectrum is
+    ``[0]`` with no knit; a knit ``error``/``unsupported`` raises loudly (the phi_dim
+    contract). Inherits ``decompose``'s loud char-caveat refusal.
+
+    REP-INFINITE INPUT (honest-scope, P53 critic): as with :func:`phi_dim`, termination is
+    governed by the AR-knit budget semantics and can be slow before the budget trips; pass
+    a small ``budget_modules`` for rep-infinite input (the partial spectrum is honest)."""
+    from quiverlab.modules.ar import knit_ar_quiver
+    from quiverlab.modules.ext import is_selfinjective
+    if A.quiver is not None and is_selfinjective(A):
+        return PhiSpectrum([0], [], 0, complete=True, status="self-injective")
+    ar = knit_ar_quiver(A, budget_modules=budget_modules)
+    if ar.status in ("error", "unsupported"):
+        raise QuiverlabError(
+            f"phi_spectrum: the AR knit did not close honestly (status "
+            f"{ar.status!r}): {ar.note}",
+            hint="a knit error is a bug or an unhandled input, not a partial spectrum")
+    # The knit vertices are ALREADY one-per-indecomposable, so no dedup is needed.
+    values = sorted({igusa_todorov_phi(v["module"]) for v in ar.vertices})
+    phidim = max(values) if values else 0
+    if ar.is_complete:
+        gaps = [g for g in range(1, phidim) if g not in values]
+        return PhiSpectrum(values, gaps, phidim, complete=True, status="complete")
+    return PhiSpectrum(values, [], phidim, complete=False, status="budget")
+
+
+# ---------------------------------------------------------------------------
 # Dominant dimension (leading projective-injective coresolvents of the regular
 # module; self-injective => infinity)
 # ---------------------------------------------------------------------------
@@ -310,6 +547,110 @@ def tau_periodicity(M, max_period=12):
 
 
 # ---------------------------------------------------------------------------
+# Lat-Igusa-Todorov finitistic certificate (Plan 53 / R23c; Bravo-Lanzilotta-
+# Mendoza-Vivero arXiv:2002.07866). FOUR decidable families each emit a proof-
+# carrying certified finite findim upper bound; "no known decision procedure in
+# general" (NOT undecidable) elsewhere. This is what flips Plan 40's honest None.
+# ---------------------------------------------------------------------------
+@dataclass
+class LITCertificate:
+    """A Lat-Igusa-Todorov finitistic certificate (Plan 53). ``findim_upper`` is a
+    CERTIFIED finite ``findim`` upper bound from a decidable LIT family, or an honest
+    ``None`` (no known decision procedure in general). ``family`` names the decidable
+    family; ``proof`` is the proof-carrying justification (the theorem + the numbers)."""
+    findim_upper: "int | None"
+    family: "str | None"
+    proof: str
+
+    def __repr__(self):
+        if self.family is not None:
+            return f"findim(A) <= {self.findim_upper}  [{self.family}: {self.proof}]"
+        return ("no known decision procedure for a finite findim bound here "
+                "(A is not in a shipped LIT-decidable family)")
+
+
+def _lit_family4_bound(psi_D_of_V, n, known_findim=None):
+    """The LIT family-4 (finite one-sided ``id(A_A)``) proof-carrying bound
+    ``findim(A) <= psi_D(V) + n + 1`` (Bravo-Lanzilotta-Mendoza-Vivero 2002.07866;
+    R23c). DEMOTED machinery: family 4 fires only when families 1-3 fail yet
+    ``id(A_A) < infinity`` -- i.e. ``id(A_A)`` finite while ``id(_AA)`` infinite -- and
+    the bounded engine NEVER proves an injective dimension infinite, so this precondition
+    is not decidably reachable with shipped tools. Hence this combinator is NOT wired into
+    :func:`lit_finitistic_certificate` (which returns ``None`` there); it ships + is
+    unit-covered on constructed ``(D, n)`` data.
+
+    ``psi_D_of_V`` = the generalised Igusa-Todorov function ``psi_D`` evaluated on the
+    generators ``V`` of the subcategory ``D`` (# PIN: the exact ``psi_D``/``V`` are pinned
+    from 2002.07866 -- transcribed as inputs here, not recomputed, pending the
+    Asashiba-type transcription successor); ``n`` = the LIT datum. The ``+ n + 1``
+    constant is the record's; ARBITRATION safety gate (the Plan 40 rule -- never a bound
+    below a KNOWN exact findim): if ``known_findim`` is given and the bound would
+    undershoot it, RAISE loudly (a mis-transcribed constant is a bug, never clamped)."""
+    bound = int(psi_D_of_V) + int(n) + 1
+    if known_findim is not None and bound < known_findim:
+        raise QuiverlabError(
+            f"LIT family-4 bound {bound} < a known exact findim {known_findim}: the "
+            f"psi_D(V) + n + 1 constant is mis-transcribed for this datum",
+            hint="the record's + n + 1 must never undershoot the family-1/2 exact "
+                 "values; re-check the 2002.07866 statement, do not clamp")
+    return bound
+
+
+def lit_finitistic_certificate(A, bound=32):
+    """A Lat-Igusa-Todorov finitistic certificate for ``A`` (Plan 53 / R23c;
+    Bravo-Lanzilotta-Mendoza-Vivero arXiv:2002.07866): tries the FOUR decidable families
+    1->2->3->4 and returns the FIRST that applies (the sharpest is usually earliest).
+
+    1. **Self-injective** (``is_selfinjective``) -- ``D = mod A``, ``n = 0``; only
+       projectives have finite pd, so ``findim(A) = 0``.
+    2. **Iwanaga-Gorenstein** (``gorenstein_dimension`` both-sided finite) -- ``D =
+       Gproj(A)``; ``findim(A) = id(A_A) = id(_AA)`` = the Gorenstein dimension
+       ``max(right_id, left_id)`` (for finite gl.dim this equals ``gl.dim``).
+    3. **Finite phidim** (rep-finite, :func:`phi_dim` exact) -- the chain gives
+       ``findim(A) <= phidim(A)``, a certified finite bound.
+    4. **Finite one-sided id(A_A)** -- DEMOTED: not decidably reachable (the bounded
+       engine never proves an injective dimension infinite, so the "one-sided-finite,
+       not Gorenstein" precondition is not certifiable); the ``psi_D(V) + n + 1``
+       machinery ships as :func:`_lit_family4_bound` but is NOT wired here.
+
+    Returns a :class:`LITCertificate` with a finite ``findim_upper`` + ``family`` label +
+    ``proof``, or ``findim_upper=None``/``family=None`` ("no known decision procedure in
+    general" -- NOT undecidable). The family-3 :func:`phi_dim` probe degrades quietly if
+    it cannot be certified (char caveat / knit error) -- an uncertifiable phidim is not a
+    family-3 certificate."""
+    from quiverlab.modules.ext import is_selfinjective
+    # Family 1: self-injective => findim = 0.
+    if A.quiver is not None and is_selfinjective(A):
+        return LITCertificate(
+            0, "self-injective",
+            proof="self-injective (D = mod A, n = 0): only projectives have finite "
+                  "projective dimension, so findim(A) = 0 (2002.07866)")
+    # Family 2: Iwanaga-Gorenstein => findim = id(A_A) = id(_AA) = Gorenstein dimension.
+    gd = gorenstein_dimension(A, bound=bound)
+    if gd.is_gorenstein:                    # both-sided injective dimension finite
+        fd = max(gd.right_id, gd.left_id)
+        return LITCertificate(
+            fd, "gorenstein",
+            proof=f"Iwanaga-Gorenstein (D = Gproj A): findim(A) = id(A_A) = id(_AA) = "
+                  f"{fd}, the Gorenstein dimension (2002.07866)")
+    # Family 3: finite phidim (rep-finite) => findim <= phidim (the standing chain).
+    try:
+        pd = phi_dim(A)
+    except QuiverlabError:
+        pd = None                            # uncertifiable phidim is not a certificate
+    if pd is not None and pd.exact:
+        return LITCertificate(
+            pd.value, "finite-phidim",
+            proof=f"finite phi-dimension: findim(A) <= phidim(A) = {pd.value} (the "
+                  f"chain findim <= phidim; Fernandes-Lanzilotta-Mendoza 1304.0754)")
+    # Family 4: not decidably reachable (see _lit_family4_bound). Honest degrade.
+    return LITCertificate(
+        None, None,
+        proof="no known decision procedure for a finite findim bound here (A is not "
+              "in a shipped LIT-decidable family)")
+
+
+# ---------------------------------------------------------------------------
 # Finitistic-dimension bounds (rigorous lower; gl.dim upper when finite, honest
 # degrade otherwise)
 # ---------------------------------------------------------------------------
@@ -404,6 +745,19 @@ def finitistic_dimension_bounds(A, bound=32):
         assert upper >= lower, "finitistic lower bound exceeded gl.dim (bug)"
         return FinitisticBounds(lower, upper, exact=True,
                                 note="gl.dim exact and finite => findim = gl.dim")
+    # gl.dim not exact-finite: consult the LIT certificate BEFORE the honest degrade
+    # (Plan 53 / R23c). A decidable LIT family (self-injective / Iwanaga-Gorenstein /
+    # finite-phidim) supplies a CERTIFIED finite upper exactly where Plan 40 degraded to
+    # None; `exact` stays False (the exact=True flag is reserved for the gl.dim=findim
+    # collapse -- Plan 40's test pins it), and the mandatory upper >= lower gate holds.
+    cert = lit_finitistic_certificate(A, bound=bound)
+    if cert.findim_upper is not None:
+        if cert.findim_upper < lower:
+            raise QuiverlabError(
+                "finitistic upper bound < lower bound: the LIT certificate is "
+                "mis-implemented for this presentation")
+        return FinitisticBounds(lower, cert.findim_upper, exact=False,
+                                note=f"LIT [{cert.family}]: {cert.proof}")
     upper = _igusa_todorov_finitistic_upper(A, bound)   # int or None (None here)
     if upper is not None and upper < lower:
         raise QuiverlabError(                           # the mandated sanity gate
@@ -436,17 +790,47 @@ def _igusa_todorov_entry(A, bound):
         return {"error": str(exc)}
 
 
+def _phidim_profile_entry(A, fn, cls_name):
+    """phidim/psidim for the profile block, honest-noted; the decompose char-caveat
+    refusal (or a knit error) is caught into ``{"error": ...}`` (the Plan-40 IT-entry
+    precedent), never a silent omission."""
+    try:
+        d = _phipsi_dim(A, (igusa_todorov_phi if fn == "phi" else igusa_todorov_psi),
+                        (PhiDim if fn == "phi" else PsiDim),
+                        budget_modules=256, phi_budget=512, phi_bound=64)
+        return {"value": d.value, "exact": bool(d.exact), "status": d.status,
+                "text": str(d)}
+    except QuiverlabError as exc:
+        return {"error": str(exc)}
+
+
+def _phi_spectrum_profile_entry(A):
+    """The phi-spectrum for the profile block, honest-noted; the decompose char-caveat
+    (or a knit error) is caught into ``{"error": ...}``."""
+    try:
+        S = phi_spectrum(A)
+        return {"values": list(S.values), "gaps": list(S.gaps),
+                "complete": bool(S.complete), "status": S.status}
+    except QuiverlabError as exc:
+        return {"error": str(exc)}
+
+
 def homological_profile(A, bound=32):
-    """The whole C6 homological-dimension family as ONE block (Plan 40): global /
-    finitistic / dominant / Gorenstein dimensions + the Igusa-Todorov phi/psi of
-    ``(+)_v S_v``. Every entry carries its own honesty (exact/lower-bound/infinite/
-    undecided markers or a per-entry error). Returns the block minus ``citations``
-    (each runner resolves ``references`` to citation pairs)."""
+    """The whole C6 homological-dimension family as ONE block (Plan 40 + Plan 53):
+    global / finitistic / dominant / Gorenstein dimensions + the Igusa-Todorov phi/psi
+    of ``(+)_v S_v`` + (Plan 53, ADDITIVE keys) the phidim/psidim ALGEBRA invariants, the
+    phi-spectrum + gaps, and the Lat-Igusa-Todorov finitistic certificate. Every entry
+    carries its own honesty (exact/lower-bound/infinite/undecided markers or a per-entry
+    error). The Plan-53 keys are strictly ADDITIVE -- the block name is unchanged, so
+    canonical cache keys are unaffected and pre-P53 cached blocks (missing the four new
+    keys) replay under renderer tolerance. Returns the block minus ``citations`` (each
+    runner resolves ``references`` to citation pairs)."""
     from quiverlab.modules.ext import global_dimension
     g = global_dimension(A, bound=bound)
     fb = finitistic_dimension_bounds(A, bound=bound)
     dd = dominant_dimension(A, bound=bound)
     gd = gorenstein_dimension(A, bound=bound)
+    lit = lit_finitistic_certificate(A, bound=bound)
     return {
         "kind": "homological_profile",
         "global_dimension": {"text": str(g), "exact": bool(g.exact), "value": g.value},
@@ -457,5 +841,12 @@ def homological_profile(A, bound=32):
         "gorenstein": {"right_id": gd.right_id, "left_id": gd.left_id,
                        "is_gorenstein": gd.is_gorenstein, "text": str(gd)},
         "igusa_todorov": _igusa_todorov_entry(A, bound),
-        "references": ["igusa_todorov", "assem_book"],
+        # Plan 53 (R23a/b/c) -- additive keys:
+        "phidim": _phidim_profile_entry(A, "phi", "PhiDim"),
+        "psidim": _phidim_profile_entry(A, "psi", "PsiDim"),
+        "phi_spectrum": _phi_spectrum_profile_entry(A),
+        "lit": {"findim_upper": lit.findim_upper, "family": lit.family,
+                "proof": lit.proof},
+        "references": ["igusa_todorov", "assem_book", "fernandes_lanzilotta_mendoza",
+                       "barrios_mata", "bravo_lanzilotta_mendoza_vivero"],
     }

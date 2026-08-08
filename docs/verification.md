@@ -5,9 +5,8 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **3799 tests** (live-recounted 2026-08-07 at the Plan-64 merge — mid-merge-train,
-so the number folds in the sibling Wave-2/3 merges present on `dev`; collected with the
-`[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **4563 tests** (live-recounted 2026-08-07 at the Plan-64 merge onto dev's P65
+tip — +29 tests; collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Plan-48 marked-surface subsystem (marked surfaces →
 ideal triangulations → gentle Jacobian algebras; +70 tests), the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
@@ -155,6 +154,22 @@ carries a citations-registry key its bibliographic entry is the packaged
   guards the `is_symmetric` fix. Module Tor: the duality anchor
   `dim Tor_n(M,N) = dim Ext^n(M, DN)` on every case, the resolve-either-side
   balance, and vanishing laws (`tensor_product`/`assem_book`).
+- **The Plan-58 certified Coxeter spectral analysis** (2026-08-07; record R20).
+  On top of the shipped exact Coxeter/spectral primitives, `A.coxeter_spectral()`
+  is pinned to the record's oracle set: kA₂ = Φ₃ (finite Coxeter order 3), kA₄ = Φ₅
+  (order 5), kA₅ = Φ₂Φ₃Φ₆ (three cyclotomic factors); the 3-Kronecker χ = t²−7t+1
+  with ρ = M = (7+3√5)/2 as a **certified algebraic number** (minimal polynomial
+  [1,−7,1], rational isolating interval (6,7), one root outside the unit circle);
+  the m-Kronecker ladder x²−(m²−2)x+1; T_{2,3,7} = E₁₀ realizing **Lehmer's**
+  degree-10 polynomial (interval (1,2), the smallest known Salem number); and the
+  ADE/affine cyclotomic sweep (finite order = Coxeter number on Dynkin, `None`/Jordan
+  on the affine defect — the periodic ⊊ cyclotomic-type separation). Sources:
+  de la Peña, Adv. Math. 2014 (`dlPena2014mahler`) and 2013 arXiv:1310.1557
+  (`dlPena2013cyclotomic`), and de la Peña–Takane, Arch. Math. 55 (1990) 120–134
+  (`dlPenaTakane1990spectral`). The Lehmer dichotomy is reported as
+  **class-conditional documentation only** — quiverlab emits no verdict on the open
+  general Lehmer problem, and μ₀ is referenced by its minimal polynomial, never a
+  float.
 - **The Plan-31 trivial-extension presentation** (2026-07-26). The certified
   `kQ_T/I_T` build is pinned to classical special cases: `T(kA_n) ≅ kZ_n/J^{n+1}`
   (the symmetric Brauer star, verified n = 2, 3, 4 — dims 6/12/20, Loewy length
@@ -228,7 +243,13 @@ Some facts need no external oracle because the defining axioms are the gate:
   identity is checked entry-by-entry over the prime set `{32003, 2, 3, 5}`, with the
   fixtures chosen so the check is content-bearing rather than a vacuous `0 = 0` (the
   cup-Leibniz sign, for instance, is pinned on `GF(3)` where `±1` differ)
-  (`tests/hochschild/test_products_identities.py`, `test_connes_b.py`).
+  (`tests/hochschild/test_products_identities.py`, `test_connes_b.py`). **Plan 51**
+  extends this to the CS-**native** bracket (homotopy liftings, any exact Domain, past
+  the bar window): the defining equation (★), ψ consistency, descent, graded Jacobi,
+  the native Poisson/cup-Leibniz law, and off-GF(p) antisymmetry are all self-certified
+  class-level over GF primes AND QQ (`tests/resolutions_cs/test_homotopy_lifting.py`,
+  `test_native_bracket.py`, `test_bracket_identities.py`), and the sign is arbitrated
+  by the in-window native ≡ transported anchor (see the honest-scope section).
 - The module layer's functors self-certify: `(A^op)^op ≅ A`, `D∘D ≅ id`,
   `D(P_v` over `A^op) ≅ I_v`, and `τ⁻τM ≅ M` for non-projective indecomposables
   via an exact invertible-hom certificate (`tests/modules/test_opposite.py`,
@@ -302,6 +323,8 @@ independently re-derived as Bardzell chain counts (`6, 5, 2, 1, 0` on
 | minimal ≡ bar | minimal `A^e` vs bar | `{32003, 2, 3, 5}` | `tests/engine/` |
 | minimal-coh ≡ CS-coh | Hom-collapse vs CS cohomology | to depth 8 | `test_minimal_cohomology.py` |
 | bar-cup ≡ CS-cup | GF(p) bar/tt cup table vs the Domain-generic CS cup table (basis-independent: dims + flattened rank mod p) | GF(3/7), in-window | `test_products_identities.py` |
+| bar-bracket ≡ CS-bracket (Plan 51) | GF(p) bar/tt Gerstenhaber bracket table vs the CS homotopy-lifting bracket table (dims + flattened rank mod p) | GF(3/7), in-window | `test_products_identities.py` |
+| native ≡ transported bracket (Plan 51 — THE sign anchor) | the CS homotopy-lifting bracket vs the transported bar bracket, mod coboundary; the flipped sign breaks it; odd-exponent QCI (2,4)→HH⁵ non-vacuous | k[x]/x² GF(32003), QCI GF(5)/GF(3), GF(2) | `test_native_bracket.py`, `test_bracket_literature_p51.py` |
 
 Both differentials in each pair are built by disjoint code, so equal ranks and HH
 dimensions are a real cross-check, not a tautology. The engines are the bar complex
@@ -347,7 +370,7 @@ recompute independently and refuses to silently disagree
   (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
   square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (189 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (233 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -368,6 +391,7 @@ out of QPA scope, and raise loudly). Everything below is therefore covered by a
 | Feature QPA does not cover | Theory oracle that covers it |
 |---|---|
 | Cup / cap / Gerstenhaber bracket + the induced Connes `B` (Plan 35 — QPA 1.37 has **no** Hochschild product surface: no `CupProduct`/`HochschildCohomologyRing*`, confirmed by a live `NamesGVars()` sweep with zero `Hochschild`/`Cup` name; its `ExtAlgebraGenerators`/`YonedaProduct` is *module* Ext, not `HH^*(A)`) | the Gerstenhaber identity batteries (graded commutativity, associativity, Jacobi/antisymmetry, cup-Leibniz, cap module law `(z∩f)∩g = z∩(f∪g)`, `B²=0`, SBI rank consistency) + the `k[x]/(x²)` and QuantumCI-BGMS literature pins + the bar↔CS in-window cross-engine gate |
+| The BV operator `Δ` on `HH^*` (Plan 54 — QPA 1.37 exposes **no** BV / Δ surface: a fortiori, since it has no Hochschild product ring at all; confirmed by a live `NamesGVars()` sweep with zero `Batalin`/`Vilkovisky`/`BVOperator` name in `tests/qpa/test_bv_qpa.py`, an honest skip that FAILS if one ever appears) | `Δ²=0` + the seven-term relation `(7T)` + the perfect-pairing certificate + the twisted-Connes descent self-cert + **the decisive cross-engine arbiter** (the bracket recovered from Δ equals the independent Gerstenhaber bracket in-window, no Frobenius input) + the Tradler `k[x,y]/(x²,y²)` and BIKLZ `k[x]/(x^N)` literature pins |
 | Cyclic homology | Connes λ-complex second model + mixed-complex identities |
 | The Chouhy–Solotar resolution | CS ≡ bar, CS ≡ Bardzell, and the bank byte-level closed forms |
 | Deep degrees past the bar window | bank closed forms + cross-engine + closed-form/chain-count pins |
@@ -376,6 +400,7 @@ out of QPA scope, and raise loudly). Everything below is therefore covered by a
 | Distinct-module `Ext(M, N)`, `M ≠ N` | flagged post-v1; self-Ext is the confirmed QPA idiom |
 | **The Koszul verdict itself** (Plan 27 — QPA 1.37 has no `IsKoszul`/`KoszulDual`, confirmed by an exhaustive `NamesGVars()` sweep) | the G-quadratic certifier (Priddy PBW: confluent length-2-tip reduction system ⇒ Koszul) plus the generated-in-degree-1 falsifier and the Fröberg matrix identity `P(t)·C_A(−t)=I`; QPA validates every INPUT to the verdict — graded Ext dims and minimal-generator degrees (`ExtAlgebraGenerators`), quadraticity (`IsQuadraticIdeal`), and the quadratic perp (`QuadraticPerpOfPathAlgebraIdeal`) |
 | Yoneda relations-by-degree (QPA exposes generator counts, not a presentation) | theory battery: `E(k[x]/x²)=k[y]`, `E(k[x]/xⁿ)=k[y,z]/(y²)` (char-independent, pinned over GF(2)/GF(3)/GF(32003)/char 0), hereditary `E=kQ/J²` with `as_algebra()` round-trip, rad²=0 `E=kQ` path counts, quantum CI `dim Eⁿ=n+1` (= the CS chain count), commutative square `E≅A` self-hosting; the monomial Anick chain-count gate; byte-reproducible lift products (Plan-17-style canonicalization) |
+| **The Coxeter spectral surface** (Plan 58 — the Mahler measure, spectral radius, cyclotomic-type verdict, and Lehmer-class note: QPA 1.37 has **no** such surface — `Cyclotomic*` are GAP polynomial *constructors*, not algebra predicates; confirmed by a live `NamesGVars()` sweep in `tests/qpa/test_coxeter_spectral_qpa.py::test_qpa_has_no_spectral_surface`, which FAILS if one ever appears). QPA's `CoxeterPolynomial(A)` IS present and **is** crosschecked exactly (variable rename `x_1 → t`) — the foundation the spectral layer rests on. | literature pins (de la Peña 2014/2013 — `dlPena2014mahler`/`dlPena2013cyclotomic`; Lehmer/E₁₀) + cross-engine (the shipped exact `spectral_radius`/`mahler_measure` primitives) + self-cert (the minimal polynomial annihilates ρ/M, the Sturm rational interval brackets the root, ρ = M when exactly one root lies outside the circle) |
 
 ### Live Macaulay2 cross-check
 
@@ -445,25 +470,40 @@ Plan-35 product surface).
 | `fields/` (QQ, GF(p), GF(p^n), exact CC = QQ_I) | 41 | fast | exact-arithmetic axioms; base-change invariance |
 | `core/` + `combinat/` (Quiver, Algebra, relations, dispatch; the Plan-44 `basic.py` — `primitive_idempotents`/`basic_algebra`/`gabriel_quiver`/`presented_form`, the exact Wedderburn/trace-form recovery of a structure-constant algebra, batteried in `tests/families/test_gabriel_recovery.py`) | 43 | fast | structure-constant identities; left-to-right path law; the Gabriel-recovery certificates live in the deep `families/` bucket |
 | `groebner/` (overlap completion, admissibility) | 50 | fast | admissibility certificate; finiteness; lowering |
-| `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery; the Plan-35 product surface — `products.py`: cup/cap/bracket tables + the induced Connes `B`, `basis_reps.py`: the explicit-representatives capture, `cyclic_reps.py`: the wave-3b cyclic-homology explicit representatives, and `hh_reps.py`: the wave-3d plain-HH explicit representatives) | 103 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins; **the Gerstenhaber identity batteries** (graded-commutative + associative cup, antisymmetric bracket, cup-Leibniz, cap module law, `B²=0`, SBI rank) + the `k[x]/(x²)`/QuantumCI-BGMS product literature pins + the bar↔CS in-window cross-engine gate + **the explicit-reps self-certification** (every shipped product class satisfies `δ·v = 0` / `b·v = 0` from its shipped or note-rebuilt differential; hand-checked `k[x]/(x²)` labels; elision+rebuild path) + **the cyclic-homology explicit representatives** (every shipped HC class is a cycle of the (b,B) total complex — `D·v = 0` on both engines; GF(p)≡generic on prime 32003; hand-checked dual-numbers `HC_0 = A/[A,A]` + `Tot_2 = C_2 ⊕ C_0` column structure) + **the plain-HH explicit representatives** (the `hh_cohomology`/`hh_homology` dims blocks now carry per-degree reps over BOTH routes — the GF(p) bar and Chouhy-Solotar; every shipped vector annihilates its shipped differential; the `k[x]/(x²)` HH¹ `[x ↦ x]` = derivation `D(x)=x` hand-check ties the classical dictionary read-off to the captured representative) |
+| `hochschild/` (bar, cyclic; the Plan-34 auto→CS depth-fallback battery; the Plan-35 product surface — `products.py`: cup/cap/bracket tables + the induced Connes `B`, `basis_reps.py`: the explicit-representatives capture, `cyclic_reps.py`: the wave-3b cyclic-homology explicit representatives, and `hh_reps.py`: the wave-3d plain-HH explicit representatives) | 107 | fast | **the base bar oracle**; mixed-complex identities; dispatch-amendment pins; **the Gerstenhaber identity batteries** (graded-commutative + associative cup, antisymmetric bracket, cup-Leibniz, cap module law, `B²=0`, SBI rank) + the `k[x]/(x²)`/QuantumCI-BGMS product literature pins + the bar↔CS in-window cross-engine gate + **the explicit-reps self-certification** (every shipped product class satisfies `δ·v = 0` / `b·v = 0` from its shipped or note-rebuilt differential; hand-checked `k[x]/(x²)` labels; elision+rebuild path) + **the cyclic-homology explicit representatives** (every shipped HC class is a cycle of the (b,B) total complex — `D·v = 0` on both engines; GF(p)≡generic on prime 32003; hand-checked dual-numbers `HC_0 = A/[A,A]` + `Tot_2 = C_2 ⊕ C_0` column structure) + **the plain-HH explicit representatives** (the `hh_cohomology`/`hh_homology` dims blocks now carry per-degree reps over BOTH routes — the GF(p) bar and Chouhy-Solotar; every shipped vector annihilates its shipped differential; the `k[x]/(x²)` HH¹ `[x ↦ x]` = derivation `D(x)=x` hand-check ties the classical dictionary read-off to the captured representative) |
+| `hochschild/bv/` (Plan-54 R2 — the Batalin–Vilkovisky operator `Δ: HHⁿ → HHⁿ⁻¹` on a Frobenius / symmetric algebra with semisimple Nakayama automorphism: `hypothesis.py` the decidable ν gate (minpoly-squarefree semisimplicity + the symmetric anchor + loud BIKLZ-blocked / non-Frobenius refusals), `transport.py` the Frobenius perfect pairing `(†)` + the adjoint transport `Δ_n = (P_{n-1}ᵀ)⁻¹ Bᵀ P_nᵀ` (symmetric **and** semisimple-ν routes), `twist.py` the P52 twisted-homology adapter (the cross-plan `twisted_homology_classes` contract), `twisted_connes.py` the twisted Connes `B_σ` that descends to twisted homology, `bracket.py` the bracket recovered from Δ via the BV relation + the arbiter) | 52 | fast | **`oracle_selfcert`**: `Δ²=0`, the seven-term relation `(7T)` (Δ is a differential operator of order ≤ 2), the perfect-pairing certificate (`P_n` square + invertible in-window), the twisted-Connes DESCENT self-cert (`B_σ` carries twisted cycles to cycles — a loud refusal otherwise), **GF(2) served** (Δ²=0 + BV-relation mod 2 + pairing-invertibility; the sign is inherited from the odd-prime anchor, not char-2-determined). **`oracle_crossengine`** (the decisive gate): the bracket recovered from Δ via `(BV)` equals the INDEPENDENT `gerstenhaber_brackets` table-for-table in-window over ODD primes (3/5/32003) — no Frobenius input in the independent bracket — which also SELECTS the twist direction (`QuantumCI(q=2/3)` semisimple diagonal ν, the non-trivial-twist flagship). **`oracle_literature`**: the Tradler `k[x,y]/(x²,y²)` ([4,4,5,6]) anchor, the `k[x]/(x^N)` char-sensitivity (dim HH⁰=N; HHⁿ=N−1 if char∤N else N) in BOTH regimes, and the BIKLZ §3.2 `kZ₁/J^N` value oracle (the exact char-sensitive dims + the Δ-rank profile `rank Δ_odd = N−1, rank Δ_even = 0` that the §3.2 formulas force — basis-independent, live). QPA has NO BV surface (`tests/qpa/test_bv_qpa.py`, honest skip that FAILS on change) |
 | `engine/` (fast GF(p); minimal, Bardzell, periodic; TT-calculus; cyclic; Coxeter/Nakayama; Plan-29 literature/identity batteries) | 579 | deep | bar oracle; cross-engine; multi-prime; numba/pure parity; frozen QPA-literature values |
-| `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries; the Plan-35 Domain-generic CS product tables `products.py` — cup/cap on the CS basis over any exact Domain; the Plan-35 wave-3d `cs_hh_basis` 0-codomain fix) | 228 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization; the CS product unit-law + Domain-genericity self-cert; **the `cs_hh_basis` rep-count ≡ `cs_(co)homology_dims`** even when the top differential lands in a 0-dimensional space (the multi-vertex `kZ_3/J^2` witness — HH¹ = 1 with C² = 0 — that the old 0-row `nullspace` silently undercounted) |
+| `resolutions_cs/` (CS; comparison; diagonal; cup; cap; Plan-29 literature batteries; the Plan-35 Domain-generic CS product tables `products.py` — cup/cap on the CS basis over any exact Domain; the Plan-35 wave-3d `cs_hh_basis` 0-codomain fix; the Plan-51 native Gerstenhaber bracket — `homotopy_lifting.py` (the per-corner `D_corner` + the Negron–Witherspoon/Volkov tower ψ) + `bracket.py` (`native_bracket`) + `cs_bracket_tables`) | 275 | deep | CS ≡ bar, CS ≡ Bardzell; bank byte-level; literature pins; `d∘d=0` / order; Leibniz + cap identities (unit/module/transport anchors); canonicalization; the CS product unit-law + Domain-genericity self-cert; **the `cs_hh_basis` rep-count ≡ `cs_(co)homology_dims`** even when the top differential lands in a 0-dimensional space (the multi-vertex `kZ_3/J^2` witness — HH¹ = 1 with C² = 0 — that the old 0-row `nullspace` silently undercounted); **the Plan-51 bracket oracles** — `oracle_selfcert`: `D_corner` d²=0, the homotopy-lifting equation (★) exactly (GF(p)+QQ), ψ consistency at every built degree + the `CocycleError` guard, bracket descent, graded Jacobi, native Poisson/cup-Leibniz, off-GF(p) antisymmetry; `oracle_crossengine`: the in-window native ≡ transported bracket anchor (THE sign fix; QCI (2,4)→HH⁵ odd-exponent, flipped-sign breaks it) + bar ≡ CS bracket tables; `oracle_literature`: k[x]/xⁿ off-GF(p) zeros + `[α,β]≠0`, the QCI dims-line-up (self-cert, not a value), and the Oke §7 blocked-until-transcribed strict-xfail |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-39 C8 complex layer — `complexes.py` validated bounded `ChainComplex`/`ChainMap`, shift/truncation/homology, mapping cones + triangles + the derived-iso test, the Hom total complex `hyper_hom_dims`, and certified projective models `projective_model` + general `hyper_ext_dims`) | 317 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) + **the Plan-39 complex-layer oracles** — self-cert: `d∘d=0` refused at construction, the mapping-cone `d²=0` re-asserted under full validation, quasi-iso ⇔ cone acyclicity, shift/truncate degree+sign identities, and the Hom total-complex `δ∘δ=0` block-indexing certificate (the Weibel `−(−1)^n` sign is a documented convention — verified sign-independent for the dims: both `±` give isomorphic cochain complexes); cross-engine: stalk `hyper_hom_dims` ≡ module `Ext` degreewise (kA₃/(ab), all vertices), the resolution-augmentation quasi-iso, the Euler-characteristic triangle identity `χ(cone) = −χ(X)+χ(Y)`, the certified projective model (`projective_model` asserts `is_perfect` + `is_quasi_iso` before return — NEVER returns uncertified), and the sharpened two-term shift identity `hyper_ext([P₁→S₁])[n] = Ext^{n−1}(rad P₁, N)` (the derived-category source-shift arithmetic, replacing the plan's placeholder); live QPA Ch.10 (`qpa/`) |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-40 C6 homological-dimensions family — `homdims.py`: public `syzygy`/`cosyzygy` (byte-stable extraction from `minimal_resolution`), the Igusa–Todorov φ/ψ on the finite K₀, dominant + Gorenstein dimensions, Ω/τ-periodicity certificates, and finitistic-dimension bounds) | 322 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) + **the Plan-40 homological-dimensions oracles**: `oracle_selfcert` — the φ=ψ=pd identity for finite projective dimension, the Ω/τ-periodicity `is_isomorphic` certificates, and the decompose char-caveat propagation; `oracle_literature` — the Barrios–Mata truncated self-injective φ=ψ=0 closed form + projective additivity, the hereditary/self-injective dominant & Gorenstein values, and the cyclic-Nakayama period-from-Kupisch pins; `qpa` (`tests/qpa/test_homdims_qpa.py`) — live `GlobalDimensionOfAlgebra` / `DominantDimensionOfAlgebra` / `GorensteinDimensionOfAlgebra` agreement over kA₂ / kA₃(ab) / `line_abc_cde` / k[x]/(x³) (int or GAP `infinity`↔our infinite/unresolved marker) |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-41 C3 **Auslander–Reiten completion** — `ar.py`: the general chain-map lift, the Nakayama functor ν/ν⁻, stable Hom mod projectives, the End(M)-action on Ext¹, almost-split sequences `0 → τM → E → M → 0`, irreducible-map multiplicities `dim rad(M,N)/rad²`, and honest-semi-decision AR-quiver knitting) | 327 | deep | AR/duality literature pins (ASS2006, ARS1995); **the Plan-41 AR self-certification** (the chain-map lift asserts every square `d_n·φ_n = φ_{n-1}·d_n` and is byte-reproducible; ν tied to the trusted τ by `ker(νP₁→νP₀) ≅ τM` + `ν(P_v) ≅ I_v` / `ν⁻(I_v) ≅ P_v`; every almost-split sequence's class is identified by the **ARS socle theorem** — `soc_{End M} Ext¹(M,τM)` is a *simple* `End(M)`-module — pinned down computationally by the char-scoped trace-form `rad End(M)` (char 0 or char > dim M) plus the **socle-simplicity dimension certificate** `dim_k soc = dim_k End(M) − dim_k rad End(M)` (`= dim_k` the residue division algebra; refuses loudly if it fails); the exact (Yoneda + P37 SES) + non-split (P37 `is_split` False) + indecomposable-ends (Plan 30) checks are **necessary sanity checks, not sufficient** — they do NOT arbitrate the pick (over `k[x]/(x⁴)` with `M = k[x]/(x²)`, `dim Ext¹ = 2`, a non-socle class has an exact/non-split/indecomposable-ends extension whose middle is the *projective* `k[x]/(x⁴)`, not the true mesh middle `{1,3}` — the devil's-advocate non-brick regression, live-QPA-crosschecked)) + **the cross-engine AR formula** `dim Ext¹(M,N) = dim underline-Hom(τ⁻N, M)` + **literature Dynkin/Nakayama pins** (kA₂/kA₃/kA₄ = 3/6/10 indecomposables, D₄ = 12, the kA₃ mesh middle terms, Nakayama serial count) + **live QPA** `AlmostSplitSequence` middle-term (dim vector over QQ; summand multiset over GF(p)) and `PredecessorsOfModule`; **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) |
-| `derived/` (Plan-43 C8 **derived-category surface** — `homs.py`: reified hyper-Hom classes `hyper_hom_basis` (a basis of `H^n(Hom^•(X,Y))` as genuine chain maps `X → Y[n]`) + `ChainMap.then`; `tau.py`: the derived AR translate `τ_{D^b} = ν[−1]` / `τ⁻_{D^b}` on perfect complexes with the Happel finite-gl.dim gate; `_corner.py`: the shared corner-transpose `Hom_A(−,A)` (factored out of `duality._presentation_transpose`, imported by both); `tilting.py`: the tilting-complex verifier (rigidity on the exact window + K₀-unimodular generation) + `End(T)` as a structure-constant algebra + `corner_cartan_of_complex` + `two_term_silting_from_presentation`; `fingerprint.py` + `block.py`: the necessary-condition derived fingerprint) | 22 | deep | **self-cert** — `hyper_hom_basis` reifies genuine chain maps (`ChainMap(check=True)` on every coset representative) with count ≡ `hyper_hom_dims`; `τ_{D^b}` output `d∘d=0` (ChainComplex check) and the `τ⁻∘τ` round-trip is a degreewise quasi-iso; `End(T)` self-certified by `from_structure_constants(check=True)`; the tilting rigidity window reported honestly; **cross-engine** — `hyper_hom_basis` count ≡ module `Ext^n` on a projective-resolution source (kA₃/(ab), all vertices), and `τ_{D^b}` homology is concentrated in degree 0 and `≅` the trusted module `τ` over `kA_n`; **literature** — the K₀-action identity `χ(τ_{D^b}X) = c·χ(X)` with `c = −C·C⁻ᵀ` (the conjugate of P38's Coxeter matrix — same char poly, the dim-vector action), the kA₂ APR-tilt `P₁ ⊕ S₁` (tilting, `End(T)` = the reoriented A₂ = A^op, corner-Cartan `[[1,0],[1,1]]` — the theorem-anchored `End(A_A)=A` pin fixes the orientation), the D₄ vs A₄ Coxeter distinction and the 8-vertex cospectral-trees NON-distinction (the honest-scope demonstration); **live QPA** (`tests/qpa/test_derived_qpa.py`) — `τ_{D^b}` homology(0) vs `DTr(M)` (the documented module-level route: QPA's `TauOfComplex` on a `ProjectiveResolution` does not script through libgap — the P39 Ch.10 hazard, confirmed live) |
-| `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 115 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
+| `derived/` (Plan-43 C8 **derived-category surface** — `homs.py`: reified hyper-Hom classes `hyper_hom_basis` (a basis of `H^n(Hom^•(X,Y))` as genuine chain maps `X → Y[n]`) + `ChainMap.then`; `tau.py`: the derived AR translate `τ_{D^b} = ν[−1]` / `τ⁻_{D^b}` on perfect complexes with the Happel finite-gl.dim gate; `_corner.py`: the shared corner-transpose `Hom_A(−,A)` (factored out of `duality._presentation_transpose`, imported by both); `tilting.py`: the tilting-complex verifier (rigidity DECIDED on the exact window; generation is honest **three-valued** — see the Plan-67 fix-round note below: `is_tilting` is a hard `True` only when generation is CERTIFIED (2-term/regular, IJY completion), `"unknown"` for a non-2-term rigid K₀-basis object since `rigid + det(g_proj)=±1 ⇒ tilting` is Rickard's OPEN rank question) + `End(T)` as a structure-constant algebra + `corner_cartan_of_complex` + `two_term_silting_from_presentation`; `fingerprint.py` + `block.py`: the necessary-condition derived fingerprint) | 24 | deep | **self-cert** — `hyper_hom_basis` reifies genuine chain maps (`ChainMap(check=True)` on every coset representative) with count ≡ `hyper_hom_dims`; `τ_{D^b}` output `d∘d=0` (ChainComplex check) and the `τ⁻∘τ` round-trip is a degreewise quasi-iso; `End(T)` self-certified by `from_structure_constants(check=True)`; the tilting rigidity window reported honestly; the **three-valued generation** — `generation == "certified"` for the regular object + APR/2-term tilts (hard `True`), `"k0_necessary_only"` ⇒ `is_tilting == "unknown"` for a genuine width-2 rigid K₀-basis complex over `k[1→2→3]/(ab)` (that same object verifies `"unknown"` under `is_silting_object` — the tilting rung and the K₀-only rung reconciled); **cross-engine** — `hyper_hom_basis` count ≡ module `Ext^n` on a projective-resolution source (kA₃/(ab), all vertices), and `τ_{D^b}` homology is concentrated in degree 0 and `≅` the trusted module `τ` over `kA_n`; **literature** — the K₀-action identity `χ(τ_{D^b}X) = c·χ(X)` with `c = −C·C⁻ᵀ` (the conjugate of P38's Coxeter matrix — same char poly, the dim-vector action), the kA₂ APR-tilt `P₁ ⊕ S₁` (tilting, `End(T)` = the reoriented A₂ = A^op, corner-Cartan `[[1,0],[1,1]]` — the theorem-anchored `End(A_A)=A` pin fixes the orientation), the D₄ vs A₄ Coxeter distinction and the 8-vertex cospectral-trees NON-distinction (the honest-scope demonstration); **live QPA** (`tests/qpa/test_derived_qpa.py`) — `τ_{D^b}` homology(0) vs `DTr(M)` (the documented module-level route: QPA's `TauOfComplex` on a `ProjectiveResolution` does not script through libgap — the P39 Ch.10 hazard, confirmed live) |
+| `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries; the Plan-58 R20 **certified Coxeter spectral analysis** — `spectral.py::certify_real_algebraic`/`cyclotomic_factorization`/`off_circle_root_count` + `coxeter_spectral.py::coxeter_spectral`/`coxeter_spectral_block`) — `tests/invariants/test_coxeter_certified.py`, `test_coxeter_spectral.py`, `test_coxeter_spectral_literature.py` | 135 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity; **the Plan-58 certified-spectral oracles** — `oracle_selfcert`: the certificate's minpoly round-trips `sympy.minimal_polynomial` (the independent anchoring is the literature pins), the rational Sturm interval brackets the root and the index is consistent, the Φ_n labelling is exact, the **product-Mahler M ≠ ρ branch** (two roots outside the circle: χ = (t²−7t+1)(t²−14t+1), degree-4 minpoly [1,−98,243,−98,1], interval (95,96)), the deterministic complex-dominant gate refuses ρ/M without ever calling `minimal_polynomial` (the measured 121 s anti-hang), and a singular/absent Cartan refuses per-field (never a crash); `oracle_literature`: kA₂ = Φ₃ (order 3), kA₄ = Φ₅ (order 5), kA₅ = Φ₂Φ₃Φ₆, the 3-Kronecker ρ = M = (7+3√5)/2 (minpoly [1,−7,1], interval (6,7)), the m-Kronecker ladder x²−(m²−2)x+1, T_{2,3,7} = E₁₀ = **Lehmer** (minpoly = the degree-10 polynomial, interval (1,2)), and the ADE/affine cyclotomic sweep (finite Coxeter order = Coxeter number on Dynkin, None/Jordan on affine) — pins from de la Peña 2014/2013 (`dlPena2014mahler`/`dlPena2013cyclotomic`) + de la Peña–Takane 1990 (`dlPenaTakane1990spectral`); `oracle_crossengine`: the report's ρ/M match the shipped `spectral_radius`/`mahler_measure` primitives |
 | `invariants/geometry.py` (Plan-49 C8 — orbit dimension `dim O_M = Σ d_v² − dim End(M)`, Voigt rigidity `is_rigid`/`rigidity_codim`, the Kac `canonical_decomposition` over hereditary Dynkin, and the shared `orbit_geometry_block`) — `tests/invariants/test_geometry_orbit.py`, `test_geometry_canonical.py` | 21 | fast | **`oracle_selfcert`**: the orbit-dim identity `dim O_M = Σ d_v² − dim End(M)`, GF(p)↔QQ field parity, the canonical-decomposition sum-of-roots + per-instance rigidity certificate `Ext¹(G,G)=0`, the loud Euclidean-deferred / non-hereditary refusals. **`oracle_crossengine`**: the Voigt codim identity `dim Rep(Q,d) − dim O_M ≡ dim Ext¹(M,M)` on hereditary + the P38 `tits_form` tie; the canonical decomposition ≡ the Krull–Schmidt summands of the degeneration poset's maximum. **`oracle_literature`**: every Dynkin indecomposable is rigid (codim 0); `(2,1) = P₁ ⊕ S₁` over kA₂ (hand-derived Kac pin) |
 | `modules/degeneration.py` (Plan-49 C8 — the Zwara–Bongartz degeneration = hom order poset for representation-finite algebras, `DegenerationPoset`) — `tests/modules/test_degeneration.py` | 6 | deep | **`oracle_literature`**: kA₂ (1,1) = the 2-chain `S₁⊕S₂ <_deg P₁`; kA₃ (1,1,1) = the diamond (orbit dims `[0,1,1,2]`, 4 covers, two incomparable middles) — both hand-derived. **`oracle_selfcert`**: the hom-order is a partial order (reflexive/antisymmetric), orbit dim strictly increases up every cover, the per-class orbit dim ≡ `geometry.orbit_dimension`, and the honest semi-decision cap (rep-infinite / self-injective ⇒ `is_complete=False` with a loud `status`, never a partial poset) |
+| `modules/left_right.py` (Plan-55 R15 — the left/right parts `L_A`/`R_A` of the module category via the closed-under-predecessors pd/id ≤ 1 sweep on the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)`, the Ext-injectives of `add L_A` (+ dual Ext-projectives of `add R_A`), and the left/right support algebras `A_λ`/`A_ρ` as presented induced-convex-subquiver `Algebra`s with their connected-component factors; the P61-addendum per-indecomposable `pd_le_1`/`id_le_1` vectors) — `tests/modules/test_left_right_{parts,ext,support,oracles}.py`, `tests/qpa/test_left_right_qpa.py` | 24 + 2 qpa | deep + qpa | **`oracle_selfcert`** — `L_A` closed under predecessors / `R_A` under successors, intersection/complement consistency (`complement = U ∖ (L_A ∪ R_A)`), `gl.dim ≤ 1 ⇒ both parts total`; Ext-injectives ⊆ `L_A` and an injective in `L_A` is always Ext-injective; the support certificates — `e_λ`/`e_ρ` convex, hereditary ⇒ `A_λ = A_ρ = A` (connected), and the loud presentation-less refusal (structure-constants-only `A` ⇒ `QuiverlabError`, no fabricated quiver); the honest refusals — self-injective and **provably rep-infinite** (hereditary non-Dynkin, or rad²=0 with a non-Dynkin separated quiver — Gabriel, covering the 2-Kronecker and ACLV 2.2(c)) ⇒ `status="unsupported"` fast, any other rep-infinite input ⇒ the `budget_dim`-capped knit's `status="budget"`; the P61 `pd_le_1`/`id_le_1` index-alignment. **`oracle_literature`** — hereditary ⇒ `L_A = R_A = ind A`, empty complement (kA_n); **ACLV Example 2.2(b)** the rad²=0 linear-Nakayama A₅: `L_A = {S₁,S₂,P₂,P₃}`, `R_A = {S₄,S₅,P₄,P₅}`, `L_A ∩ R_A = ∅`, **complement = {S₃}** (pd 2, id 2 — the ada-with-non-empty-complement datum), `e_λ = {1,2,3}`, `e_ρ = {3,4,5}`, `gl.dim = 4`; kA_n Ext-injectives count = #injectives. **`oracle_crossengine`** — the Hom-nonzero transitive-closure predecessor relation ≡ the AR-quiver irreducible-map reachability closure (rad^∞ = 0, rep-finite); the ACLV duality `D R_A = L_{A^op}` / `D L_A = R_{A^op}` on the **proper-subset** A₅ (`\|R_A\| = 4` of 9, non-vacuous); the presented `A_λ` dim ≡ `end_algebra(⊕ P_x)` dim. **`qpa`** (`tests/qpa/test_left_right_qpa.py`) — the defining pd ≤ 1 / id ≤ 1 flags corroborated pointwise via QPA `ProjectiveResolution` / `InjDimensionOfModule` on the kA₃ indecomposables; a fail-if-appears `IsBoundGlobal` probe that trips if QPA ever ships a left/right-part or support-algebra verb |
+| `modules/recognizers_ladder.py` (Plan-61 R18 — the quasi-tilted / shod / weakly-shod / laura / ada recognizer ladder off the P55 atlas + `global_dimension` + one AR-SCC weakly-shod sweep, each rung a definite verdict with a witness-on-`False` and a certificate-on-`True`; the monotone-nesting + gl.dim theorem-gate self-certs; and — for ada algebras over an algebraically closed field — the shipped `HH¹` as a COMPLETE simple-connectedness oracle via ACLV Theorem B, gated on the new additive `Domain.is_algebraically_closed` flag) — `tests/modules/test_recognizer_ladder{,_hh1,_oracles}.py`, `tests/modules/test_ada_hh1_p56_agreement.py`, `tests/qpa/test_recognizer_ladder_qpa.py` | 28 + 4 qpa | deep + qpa | **`oracle_literature`** — **ACLV Example 2.2(b)** the rad²=0 linear-Nakayama A₅: `(quasi_tilted, shod, weakly_shod, laura, ada) = (False, False, True, True, True)`, `complement = {S₃}` (pd 2, id 2), `gl.dim = 4` — a full five-way discrimination on ONE fixture; hereditary `kA_n` ⇒ all five `True`, empty complement; **`weakly_shod = False` on `NakayamaAlgebra(kupisch=[3,2,2])`** (one non-trivial AR-SCC on an injective→projective route, verified live — the seam maximally exercised: ada/shod/quasi_tilted all `False`, laura `True`, gl.dim 3); the ada/HH¹ tree fixture over CC (ada, HH¹ = 0, simply connected — Theorem B); the **REAL Theorem-B `False` pin** — the "square" `kQ/(a·b, c·d)` on `1→2→4`, `1→3→4` over CC is rep-finite and quasi-tilted (hence ada, gl.dim 2, empty complement) yet has `dim HH¹ = 1` and `π₁ = ℤ`, so it is NOT simply connected and Theorem B returns `verdict = False` (verified live — a genuine rep-finite ada + HH¹ ≠ 0 instance, not only the synthetic helper branch); the alg-closed gate predicate on constructed algebras (`field=CC` ⇒ `True`; `QQ`/`GF(7)`/`QQi` ⇒ `False`, off `A.domain` never the `CC` sentinel). **`oracle_selfcert`** — the monotone nesting (`quasi_tilted ⇒ shod ⇒ weakly_shod ⇒ laura`, `quasi_tilted/shod ⇒ ada`, `ada ⇒ laura` in scope) + the **guard-RAISES** unit test (an inconsistent rung set is a loud `QuiverlabError`); the gl.dim theorem gates (`shod ⇒ gl.dim ≤ 3`, `quasi_tilted ⇒ gl.dim ≤ 2`) — exercised AT the `shod ⇒ gl.dim ≤ 3` boundary on the strict-shod rad²=0 linear A₄ (`shod` `True` at gl.dim exactly 3, `quasi_tilted` `False`), not merely vacuously below it; the **inexact-gl.dim honesty** on `NakayamaAlgebra(kupisch=[3,3,2])` (rep-finite so the ladder completes, but `global_dimension` returns `value=32, exact=False` — a certified lower bound; the block carries `gldim_exact=False` and NEVER presents 32 as a definite gl.dim, and every gl.dim-thresholded verdict — `quasi_tilted`/`shod`/`ada` — resolves to `False` by its own logic since an inexact value is always ≥ the resolution bound `≥ 32 > 3 > 2`, never by trusting a spurious finite number); the strict-weakly-shod `HH^{≥2} = 0` (survey §5.1) + Corollary 2.6 (`ada ⇒ gl.dim ≤ 4`, `pd ≤ 2 or id ≤ 1`); the pure `_theorem_b_verdict` gate-logic branches across the four `(ada, alg_closed)` corners (the end-to-end `False`-branch is the REAL `oracle_literature` pin above); the self-injective / rep-infinite (ACLV 2.2(c)) loud refusals — no partial ladder; a real non-ada witness (the triangle `1→2→3`+`1→3`, `a·b=0`). **`oracle_crossengine`** — the quasi-tilted two routes agree (HRS `gl.dim ≤ 2 ∧ complement = []` ≡ ACLV `every P_x ∈ L_A`); the shod two routes agree (complement-empty ≡ the QT2 `pd_le_1`/`id_le_1` sweep); the weakly-shod AR-SCC ≡ Hom-closure (`atlas._leq`) route (both `True` on the fixture, both `False` on `kupisch=[3,2,2]`); the **P56 `is_simply_connected` agreement** on the ada/CC members — exercised on BOTH a `True` member (the tree fixture / commutative square, P56 = P61 = simply connected) AND a `False` member (the "square" `kQ/(a·b, c·d)`, P56 `is_simply_connected = False` == P61 Theorem-B `verdict = False`, `dim HH¹ = 1`), and where P56 returns `None` (Adian-Rabin) Theorem B resolves it — the headline; live since the P56 merge. **`qpa`** (`tests/qpa/test_recognizer_ladder_qpa.py`) — QPA 1.37 has NO quasi-tilted/shod/weakly-shod/laura/ada verb (a NamesGVars + `IsBoundGlobal` fail-if-appears probe); the gl.dim theorem gates corroborated via `GlobalDimensionOfAlgebra` (kA₃ = 1, rad²=0 A₅ = 4) and the pointwise id datum behind the shod refusal via `InjDimensionOfModule(S₃) = 2` |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `strings/` (Plan-46 C5 gentle/string subsystem: reduced walks + σ/ε signs + string census + band detection; string/band module materialisation; string-τ by hooks/cohooks; the Avella-Alaminos–Geiss derived invariant; the `strings` block) — `tests/modules/test_strings_*.py`, `tests/invariants/test_ag_invariant.py` | 33 | deep + fast | Butler-Ringel `n(n+1)/2` interval count + Kronecker band existence (`oracle_literature`); string-τ ≡ engine τ + census count ≡ `knit_ar_quiver` vertex count (`oracle_crossengine`); `check_module` on every materialised string/band + permitted/forbidden thread partition of `Q_1` (`oracle_selfcert`); AAG-2008 pins reproduced verbatim (Nakaoka `arXiv:1811.00775` Example 2.15 = `{(3,2),(2,2),(0,3)}`) |
 | `families/brauer.py` (Plan-46 Brauer graph algebra constructor from a ribbon graph + multiplicities) — `tests/families/test_brauer.py` | 10 | deep | `dim = Σ_v m_v·val(v)²` per-instance certificate + `is_symmetric` (`oracle_literature`); Brauer-star ≡ symmetric Nakayama `NakayamaAlgebra(n, mn+1, cyclic=True)` byte-equal Cartan (`oracle_crossengine`) |
+| `modules/string_homological.py` (Plan-59 R34 — the homological string-algebra test `homological_string_test`, a three-valued semi-decision over the knitted indecomposables) — `tests/modules/test_string_homological_p59.py`, `test_string_homological_battery_p59.py`, `tests/qpa/test_string_homological_qpa.py` | 18 | deep + qpa | **`oracle_literature`**: `kD₄` (subspace) is not a string algebra with the live-verified 3-summand AR middle `E = P₁⊕P₂⊕P₃` (dim vector `{0:3,1:1,2:1,3:1}`), `kAₙ` never refutes (Suárez-Álvarez 2023). **`oracle_crossengine`** (the discriminating battery): a returned `not_string` (a ≥3-summand middle, k̄-sound) always has `is_string` False, and the refute side RAISES iff a ≥3 witness meets `is_string` True (one engine is a bug); the string side (kAₙ / gentle) never yields a false `not_string`, the non-string Dynkin side (kD₄/kD₅) always finds a witness. **`oracle_selfcert`**: every realized middle self-certifies (`baer_extension` cocycle + `ShortExactSequence` exactness) and the witness is a genuine ≥3 decomposition; rep-infinite / self-injective / presentation-less input refuses loudly. **`qpa`** (`tests/qpa/test_string_homological_qpa.py`): direct-session `IsSpecialBiserialAlgebra` parity on the R34 zoo + a standing `IsBoundGlobal` guard that FAILS if QPA ever ships a homological-string surface (it has none today) |
+| `families/toupie.py` (Plan-59 R35 — `ToupieAlgebra` presented `kQ/I` + `is_toupie` recognizer + branch/direct-arrow counts + HH oracle + char-0 `sl_a` lower bound) — `tests/families/test_toupie_p59.py`, `test_toupie_hh_p59.py` | 23 | deep | **`oracle_literature`**: the `a`-Kronecker `HH^• = [1, a²−1, 0, …]` recomputed over QQ (ALS 2020, char-independent) for `a ∈ {2,3,4}`; `dim sl_a = a²−1` with `a` = # direct source→sink arrows (char 0, ALS Thm 6.5). **`oracle_crossengine`**: toupie HH bar ≡ CS degreewise where bar survives (incl. the non-hereditary commutative `[2,2]` at `top=2`, full CS `[1,0,0,0,0]`); `is_toupie` ≡ hand quiver shape. **`oracle_selfcert`**: the relation-free dimension certificate `dim = 2 + Σ(lᵢ−1) + Σ lᵢ(lᵢ+1)/2`, the connected + acyclic + degree-pattern recognizer (rejects `kD₄` and the path ⊔ oriented-cycle trap), `branch_count = out_deg(source) == in_deg(sink)`, and loud refusals (bad branches, length-1 cross relation, presentation-less, off-char-0 `sl_a`) |
+| `modules/tilted.py` (Plan-60 R17 — the tilted-algebra recognizer `tilted_check` / `Algebra.is_tilted`: the Liu–Skowroński faithful-section criterion — a faithful section Σ with `Hom_A(X, τY) = 0` — certified by Ringel's slice theorem (Thm 1.9(2): `⊕Σ` a tilting A-module with `End_A(⊕Σ)` presented hereditary, then `A = End_H(D(S))`), with three theorem gates (hereditary ⇒ tilted; non-semisimple self-injective ⇒ not; `gl.dim > 2` ⇒ not) and the rep-finite exhaustive transversal search on the knitted `Γ_A`; the hereditary type from the section graph cross-checked with the recovered Gabriel quiver of `H`) — `tests/modules/test_tilted.py`, `test_tilted_reconstruct.py`, `test_tilted_oracles.py`, `test_tilted_p55_supports.py`, `tests/qpa/test_tilted_qpa.py` | 25 + 2 qpa | deep + qpa | **`oracle_literature`** — hereditary `kAₙ`/`kD₄` ⇒ tilted with the projective slice + Dynkin type; **rep-INFINITE hereditary (the Kronecker quiver `~A₁`, the acyclic non-commutative square `~A₃`) ⇒ tilted with the Euclidean type and the slice OMITTED, decided INSTANTLY from the Dynkin type of `A`'s own quiver — the AR knit is never built (bounded-runtime regression fence against the pre-fix hang)**; **`kA₃/rad²` ⇒ tilted, slice `{S₂,P₂,P₃}`, `End_A(S) = kA₃`, type `A₃`** (verified live); **`kZ₃/J²` (= cluster-tilted `A₃` = `Jac(3-cycle, αβγ)`) self-injective ⇒ not tilted** via Gate S (the knit REFUSES self-injective — the verdict comes from the theorem gate, a REAL not_tilted); `rad²=0 A₅` (gl.dim 4) ⇒ not tilted; **Liu's exact cut `P_b—S_b—P_a` of `kZ₃/J²` is sincere with `Hom(X, τY)=0` yet NOT faithful** — a STANDALONE `_is_faithful` demonstration (returns False; faithfulness cannot be weakened to sincereness — arXiv:1409.2054 Ex. after Thm 2.6), whereas the algebra `kZ₃/J²` itself is refuted by Gate S (self-injective), not by this faithfulness prune; the P55 fence flip — each `A_λ`/`A_ρ` support component of the ACLV-2.2(b) `rad²=0 A₅` is a tilted `kA₃/rad²` factor (products-of-tilted, ACLV Thm A). **`oracle_selfcert`** — Ringel Thm 1.9(2) two-way consistency (`⊕Σ` tilting AND presented `End_A(⊕Σ)` hereditary; `|Σ| = n`; the tilting-but-not-slice discriminator `A_A` of `kA₃/rad²`, a tilting module whose `End` has a relation, so NOT a slice); the theorem gates (self-injective `k[x]/(x³)` ⇒ not; the `gl.dim ≥ 3` lower-bound gate); the direct `_faithful_section_search` returns `None` on the rep-finite `rad²=0 A₅`; a **disconnected** `A` (`kA₂ ⊕ kA₂`) ⇒ not tilted (`reason="disconnected"`, up front) — tilted algebras are connected by definition (ASS2006), and the P55 support surface feeds the recognizer its connected components individually; the loud presentation-less refusal. **`oracle_crossengine`** — the reconstruction round-trip (`presented_form(End_A(S))` Gabriel type ≡ the section-graph type, loud on divergence; the checkable dim A / dim H invariants) and the gl.dim gate ≡ the direct search agreeing on `rad²=0 A₅`. **`qpa`** (`tests/qpa/test_tilted_qpa.py`) — QPA has NO tilted-algebra recognizer (fail-if-appears `IsBoundGlobal` probe); the slice module IS confirmed a tilting module by QPA's computational `TiltingModule(S, 1)` |
+| `skewgentle/` (Plan-68 R32 — the triple `(Q, I, Sp)` + `is_skew_gentle_triple` recognizer + `associated_gentle`; the char-free idempotent-split constructor `SkewGentleAlgebra` (Chen §3); special-string re-gluing `classify`/`skew_gentle_module`/`skew_gentle_indecomposables`; the `is_representation_finite`/`brick_finite_certificate`/`support_tau_tilting` certificate; the `skew_gentle` block) — `tests/families/test_skew_gentle_{triple,split}.py`, `tests/modules/test_skew_gentle_{modules,certificate,tau_tilting}.py`, `tests/qpa/test_skew_gentle_qpa.py` | 38 | deep + qpa | **`oracle_literature`**: `Sp = ∅` byte-reduces to the plain gentle algebra (dim + Cartan + arrows); the mesh example `1→a→2→b→3, Sp={2}` where gentleness FORCES `a·b ∈ I` (`dim A^g = 9` vs the zero-split's 8); Chen Cor 1.2(c) **indecomposable** selfinjective-iff; the geometric rank `|R| = |Q₀|+|Sp|` (HZZ §6, `k×k → 4`, the 7-vertex `= 8`); Garcia–Lavoué rep-finite/rep-infinite verdicts. **`oracle_crossengine`**: the loop-free string census is a documented STRICT SUBSET of the AR-quiver indecomposables (headline `1→2, Sp={2}`: `5` of `6`; mesh `1→a→2→b→3, Sp={2}`: `8` of `11`) with EVERY census module embedding in the AR list up to iso — two independent enumerations (string materialisation vs P41 AR knit) agree on the overlap, and the SUFFICIENCY oracle for the mesh relations is the full AR vertex count (`11`) + `46` τ-tilting pairs (both engine-self-derived, VERIFIED live — no external number exists); the geometric rank ≡ engine pair rank; the band-census route is a ONE-SIDED no-false-negative cross-check on rep-INFINITENESS (`find_bands(A^g)` may miss special bands — W4 — so the exchange-graph route is authoritative, NOT a full agreement oracle). **`oracle_selfcert`**: the dim law `dim(split) == dim(associated gentle)` (HZZ Lemma 1.5, a **NECESSARY** check); `n_split = |Q₀|+|Sp|`; the char-free split over QQ/GF(p)/GF(2); the H1 all-string vertex-label regression (`exchange_graph(split)` does not raise on `Q=[1,2], Sp={2}`); every materialised module passes `check_module` + is indecomposable, a named string materialises to its pinned dimension vector (`M(a⁻¹)` → `{1:1, 2⁺:1, 2⁻:0}`), a type-`p` string has two distinct forms; loud refusals (invalid triple, special vertex already looped, length-≠2 relation, dim-certificate failure). **`qpa`** (`tests/qpa/test_skew_gentle_qpa.py`): the split algebra's `Dimension`/`IsSelfinjectiveAlgebra` parity as a plain `kQ/I` (QPA has NO skew-gentle surface — the standing `IsBoundGlobal` guard FAILS if that changes) |
 | `surfaces/` (Plan-48 marked surfaces → ideal triangulations → gentle Jacobian algebras — `marked.py` `MarkedSurface`, `triangulation.py` `Triangulation` + fan/annulus/hexagon/once-punctured-torus, `qp.py` `quiver_of`/`potential_of`/`jacobian_of`, `flip.py` `flip`/`certify_flip_mutation`, `block.py` `surface_block`) — `tests/families/test_surfaces_*.py`, `tests/invariants/test_surfaces_arccount.py`, `tests/qpa/test_surfaces_qpa.py` | 70 | deep + fast + qpa | **`oracle_literature`**: the derived FST arc count `n = 6g−6+3(b+p)+Σkᵢ` on disc(n+3)→Aₙ / annulus(n,m)→n+m / once-punctured-torus→3, the FST admissibility exclusion list (monogon/digon/triangle, spheres with ≤3 punctures, once-punctured monogon), the hexagon-internal-triangle Jacobian `dim 6` (P44's pin), the disc-fan `kAₙ`, and the small annulus `C(2,1)` acyclic affine-`Ã₂`; **`oracle_crossengine`** (the P44+P46+P48 cross-subsystem tie): the disc-fan-`Aₙ` **orientation arbiter** (`quiver_of(fan((n+3))) = 1→2→…→n` exactly), `is_gentle(jacobian_of(T))` True across the disc/annulus/hexagon zoo (ABCP/LFS), flip ≡ Fomin–Zelevinsky matrix mutation on **every** interior arc, and `surface_block` AG invariant ≡ `strings.ag.ag_invariant`; **`oracle_selfcert`**: the two side-counting identities `3t=2n+c` / `p−n+t=χ`, the arc-adjacency + arc-count self-cert on every constructor (interior arcs in 2 triangles, boundary segments in 1), the self-folded refusal, and flip involution + `μₖ∘μₖ=id`; **`qpa`** (`tests/qpa/test_surfaces_qpa.py`): `IsGentleAlgebra`/`IsSpecialBiserialAlgebra` parity on the surface Jacobians + the standing `IsBoundGlobal` guard that FAILS if QPA ever ships a surface/triangulation constructor |
 | `modules/` (Ext, Hom, resolutions; `A^op`, `D`, τ/τ⁻, injectives, left/right sides; Plan-27 Yoneda Ext-algebra + Koszulity; Plan-29 Tor; Plan-30 Krull–Schmidt decomposition; the retained injective-coresolution differentials certified exact; the Plan-35 wave-3a explicit Ext/Tor representatives — `complex_reps.py`; the Plan-35 wave-3c Yoneda exact sequences — `yoneda.py`; the Plan-37 C1 categorical glue — `morphism.py` first-class `ModuleHom` + kernel/image/cokernel, `ses.py` short exact sequences + split test + pushout/pullback, `endomorphism.py` `End(M)` as an Algebra, `direct_sum`/`is_direct_summand`, and covers/envelopes + radical/socle series + composition factors on `Module`; the Plan-40 C6 homological-dimensions family — `homdims.py`: public `syzygy`/`cosyzygy` (byte-stable extraction from `minimal_resolution`), the Igusa–Todorov φ/ψ on the finite K₀, dominant + Gorenstein dimensions, Ω/τ-periodicity certificates, and finitistic-dimension bounds; the Plan-44 C7 slice — `approximations.py` minimal left/right add(M)-approximations and `tilting.py` `is_tilting_module`/`is_cotilting_module` + self-certified `bongartz_completion`) | 341 | deep | AR/duality literature pins (ASS2006); **the Plan-37 categorical-glue self-certification** (`ModuleHom` validates the intertwining relations at construction; kernel/image/cokernel certified by rank-nullity + the epi–mono factorization `f = epi∘mono` + `f∘iota = 0` = `proj∘f`; SES exactness = the rank identity `im f = ker g`; split ⇔ a section solves; pushout/pullback squares certified by their universal-square identities; `End(M)` self-certified by `from_structure_constants(check=True)` with the regular-module `End(A_A) ≅ A` Loewy oracle; biproduct identities `proj_i∘incl_i = id`, `Σ incl_i∘proj_i = id`); functorial self-certification (`D∘D`, `(A^op)^op`, `τ⁻τ`); live QPA τ/resolutions/inj-dim crosschecks; Yoneda 7-oracle battery (Priddy/Fröberg/Polishchuk–Positselski-cited) + monomial Anick gate + live `ExtAlgebraGenerators`/`IsQuadraticIdeal` crosschecks; **the explicit Ext/Tor self-certification** (every shipped class satisfies `δ·v = 0` (Ext cocycle) / `d·v = 0` (Tor cycle) from its shipped differential; hand-checked kA₂ `Ext¹(S₁,S₂)` + loop `Tor₀ = M ⊗ N` cokernel labels; rep-count ≡ engine dims) + **the Yoneda exact-sequence self-certification** (every `Ext^n(M,N)` class is CONSTRUCTED as an `n`-fold exact sequence `0 → N → Q → … → M → 0` — the pushout middle module + connecting maps — and its exactness is self-certified at every joint: each map an `A`-module map, ends injective/surjective, `im = ker` by rank; the kA₂ Baer pin `0 → S₂ → P₁ → S₁ → 0` verified by the library's OWN `is_isomorphic`/`identify_standard`; a non-cocycle is refused loudly; the multi-vertex `_tor_boundary` collapse pinned on a rad²=0 Nakayama) + **the Plan-40 homological-dimensions oracles**: `oracle_selfcert` — the φ=ψ=pd identity for finite projective dimension, the Ω/τ-periodicity `is_isomorphic` certificates, and the decompose char-caveat propagation; `oracle_literature` — the Barrios–Mata truncated self-injective φ=ψ=0 closed form + projective additivity, the hereditary/self-injective dominant & Gorenstein values, and the cyclic-Nakayama period-from-Kupisch pins; `qpa` (`tests/qpa/test_homdims_qpa.py`) — live `GlobalDimensionOfAlgebra` / `DominantDimensionOfAlgebra` / `GorensteinDimensionOfAlgebra` agreement over kA₂ / kA₃(ab) / `line_abc_cde` / k[x]/(x³) (int or GAP `infinity`↔our infinite/unresolved marker) |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`; the Plan-44 C7 constructions — `one_point.py` `OnePointExtension`, `repetitive.py` `repetitive_slice`, `jacobian.py` `Potential`/`JacobianAlgebra`/`cyclic_derivative`, and the Task-C Gabriel-recovery battery `test_gabriel_recovery.py` over `core/basic.py`) | 187 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins; **the Plan-44 construction oracles** — `oracle_literature`: the one-point Cartan block `[[1, dim-vector M],[0,C_A]]` + `pd(S_ω)=pd_A(M)+1`, `repetitive_slice` `copies=1==A` + the `dim==(2·copies−1)·dim A` slice certificate, the hand-derived Jacobian triangle `dim=6`, and the `M₂(k)→k` / `kA₂` Gabriel round-trip; `oracle_crossengine`: `Jac(3-cycle, abc) ≅ cyclic Nakayama kZ₃/J²` (dim + Cartan) and `presented_form(End(⊕P_v)) ` recovers `kA₃` (tied to P37 `regular_corner_dims`); `oracle_selfcert`: complete-orthogonal primitive idempotents + the per-instance dimension/multiplicativity recovery certificate, the cyclic-derivative identities, and the loud char/split + `NotFiniteDimensionalError` refusals |
 | `modules/quasihereditary.py` + `modules/recollement.py` (Plan-47 C-series: standard/costandard modules Δ(i)/∇(i), the quasi-heredity test `QHReport`, good-filtration multiplicities + BGG reciprocity, the characteristic tilting module + Ringel dual; `Recollement(A,S)` — the corner algebra `eAe`, the quotient `A/AeA`, and the six functors) — `tests/modules/test_quasihereditary_*.py`, `tests/modules/test_recollement.py` | 42 | deep | **`oracle_literature`** — Dlab–Ringel: `kA_n` natural-order Δ(i)=S_i / ∇(i)=[1..i], opposite-order Δ(i)=P(i); `kA_n` quasi-hereditary for BOTH orders; `k[x]/(x²)` NOT quasi-hereditary (loud note); Ringel: T = D(A) (natural) / T = A (opposite); the double-Ringel-dual Cartan Smith-form identity; **the discriminating NON-hereditary oracle** — the commutative square `1→2→4, 1→3→4, ab=cd` (gl.dim 2, every Δ simple) has T = D(A) (dim 9, dim-vector {1:4,2:2,3:2,4:1}), which the classical pd≤1 tilting certificate rejects and the single-pass `T(j)`-extension missed; the **`eAe`-vs-subquiver trap** (`kA₃`, S={1,3} → `eAe = kA₂` dim 3, NOT the subquiver `k×k` dim 2) + the worked `kA₃`, S={2} recollement. **`oracle_crossengine`** — BGG reciprocity `(P(i):Δ(j)) = [∇(j):S(i)]` across both orders. **`oracle_selfcert`** — top Δ(i)=S_i + [Δ(i):S(i)]=1 + socle ∇(i)=S_i; the greedy Δ-peel certificate (loud `certified=False` when no filtration); the characteristic-tilting arbiter — the genuine Ringel iteration lands in `F(Δ)∩F(∇)` (`Ext¹(Δ(j),T)=0` AND `Ext¹(T,∇(j))=0` for all j) with `is_tilting_module(T, n=gl.dim A)` (the exact global dimension, not the classical 1; gl.dim non-exact refuses loudly); the six-functor **adjunction dim identities** `dim Hom_A(j_!X,M)=dim Hom_{eAe}(X,j^*M)` etc., the counit isos `j^*j_!≅id`/`j^*j_*≅id`, and — through the ACTUAL functor outputs (each natural map a `ModuleHom` re-certified as an A-map) — BOTH BBD exact sequences: the counit `j_!j^*M → M → i_*i^*M → 0` (`im(counit)=ker(unit)`, unit epi) and the unit `0 → i_*i^!M → M → j_*j^*M` (mono, `im=ker`), over `kA₃`/the commutative square/`kA₅`/`kA₄`; the degenerate-`S` refusals (`S`=all → e=1, `S`=∅ → e=0); a `GF(2)` cell in each battery (Δ/∇/qh/recollement are char-clean). **QPA white space** — QPA has NO quasi-hereditary / recollement surface, so there is no `qpa` row here (stated in Honest scope) |
 | `tautilting/` (Plan-45 C4 τ-tilting engine — `rigid.py` g-vectors + τ-rigidity, `pairs.py` certified support τ-tilting pairs, `mutation.py` the 2-term silting exchange + `exchange_graph` BFS (`_twoterm.py` = the K^b(proj A) cone/cocone + minimal-complex reduction engine), `torsion.py` the torsion lattice + Hasse orientation + bricks/semibricks, `stability.py` King θ-stability + the wall-and-chamber fan, `green.py` maximal green sequences, `silting.py` the 2-term silting bridge, `block.py` the algebra-level payload) — `tests/modules/test_tau_tilting_*.py` | 34 | deep | **`oracle_literature`** — `#sτ-tilt(kA_n) = Catalan(n+1)` (2/5/14), exchange-graph n-regularity, the AIR **four-way count identity** `#sτ-tilt = #f.f. torsion = #2-term silting = #semibricks` on kA₂/kA₃, hereditary `τ-rigid ⇔ rigid`, kA₂ = 2 maximal green sequences, and the **non-thin gate** kZ₂/rad² (symmetric Nakayama, dim 4): FOUR pairwise-non-isomorphic bricks — S₁, S₂ and the two projective-injectives P₁, P₂ *both* of dim-vector (1,1) — six semibricks, and the four-way identity 6 = 6 = 6 = 6 (the identity a dim-vector-keyed brick count silently broke: bricks → 3, semibricks → 5); **`oracle_selfcert`** — `g^{P_v}=e_v` + additivity, the four-axiom pair certification, mutation is an **involution** swapping exactly one g-column, every chamber g-matrix unimodular (det ±1), the n=2 fan **tiles R²** by an exact angular sweep (no atan2), the **n=3 L1/octahedron unfolding sanity** (nondegenerate net triangles, one per chamber — a rendering check, NOT a 3D tiling certificate), the **iso-class wall labelling** (kZ₂/rad²'s two same-dim-vector (1,1) walls carry distinct P₁ vs P₂ labels — four brick iso-classes across the walls, never a first-dim-vector collapse), King θ-stability on the worked kA₂ example, unique Hasse source/sink, brick `end_dim=1`, semibrick Hom-orthogonality, and the **honest semi-decision contract** (the 2-Kronecker is τ-tilting-infinite → loud `status="budget"`); **`oracle_crossengine`** — pair ↔ `Gen(M)` torsion-class injectivity, the fan's wall brick-normals ⊥ the shared g-facet (King), and the **no-proactive-char-guard** pin (GF(2) kZ₂/rad² agrees with the certified QQ counts — char ≤ dim computes where every module is a brick/splits). The webapp/GUI cross-runner τ-tilting tests are UNMARKED (extras-gated dirs, Plan-32 ruling). **QPA cannot compare — there is no `qpa` battery for τ-tilting** (see the honest-scope section). |
 | `tautilting/congruence.py` (Plan-64 R26 lattice theory of torsion classes — the finite lattice `tors A` from the P45 oriented exchange graph, `Con(tors A)` via principal cover-congruences, the forcing order on bricks, canonical join representations, and the wide-subcategory poset via Enomoto's κ order = core label order; the algebra-level `congruences` no-code block) — `tests/modules/test_torsion_lattice.py`, `test_congruence_lattice.py`, `test_wide_subcategories.py` | 19 | deep | **`oracle_literature`** — the **kA₂ pentagon** (`tors kA₂` = N₅: 5 elements, semidistributive ✓, NOT modular, NOT distributive), `|tors kAₙ| = Catalan(n+1)` (5/14), `|Con(tors kA₂)| = 5` and the **kA₃ congruence lattice** `|Con(tors kA₃)| = 14`, the wide-subcategory counts (kA₂ → 5 ≅ **M₃**: 3 pairwise-incomparable atoms each covering ⊥ and covered by ⊤, rank histogram 1,3,1; kA₃ → 14 ≅ **NC(A₃)**: Whitney 1,6,6,1, 6 atoms, 6 coatoms, self-dual — Ingalls–Thomas `wide(kAₙ) ≅ NC(Aₙ)`), and the **τ-tilting-infinite honest refusal** (the 2-Kronecker emits NO lattice invariant); **`oracle_crossengine`** — **join-irreducibles ↔ bricks** (BCZ: lattice #join-irreducibles == P45 `bricks`, kA₂ → 3, kA₃ → 6), **canonical joins ↔ semibricks** (per-element down-cover label-sets == P45 `semibricks` as multisets, `#semibricks = |L|`), **#J(Con) = #bricks** (the forcing order lives on bricks, DIRRT); **`oracle_selfcert`** — `is_lattice` (unique join/meet per pair, loud `QuiverlabError` on violation — a DIRRT guarantee), `Con` distributive (Funayama–Nakayama, structural), the forcing-poset order-ideal count == `|Con|`, the **κ order == core label order** (Enomoto's theorem, asserted on every element — loud on mismatch), the `#J(Con) == #bricks` / `#join-irred == #bricks` internal gates, and the **kA₂ forcing DIRECTION** (the "V" `[(2,0),(2,1)]`: one brick forced-by two, ruling 4). Honest semi-decision STRICTER than a bounded region: certified complete iff `A` is τ-tilting-finite (DIJ); on a truncated exchange graph NO lattice invariant is emitted (`status="budget"`, all `None`). The webapp/GUI cross-runner `congruences` tests are UNMARKED (extras-gated dirs, Plan-32 ruling). **QPA cannot compare — no torsion-lattice/congruence/wide surface** (`tests/qpa/test_congruence_qpa.py` is an honest skip that FAILS if QPA ever ships one; the external cross-checks are the DIRRT/BCZ/Enomoto worked examples, not a live call). |
+| `tautilting/wallchamber.py` (Plan-63 R25 — the wall `D(B)` of every brick as an EXACT rational inequality system over the submodule dim-vectors `D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 ∀ N ⊆ B}` (BST 2019 / King 1994), chambers = the g-vector cones of the support τ-tilting pairs, walls grouped one-per-brick ISO-CLASS via `torsion.bricks` + `_edge_brick`, the rank ≤ 3 drawing (n=2 exact extreme rays, n=3 L1/octahedron-projected grouped facets), `_is_green_path`; the `wall_chamber` compute kind) — `tests/modules/test_wall_chamber_*.py`, `tests/qpa/test_wall_chamber_qpa.py` | 27 + 1 qpa | deep + qpa | **`oracle_literature`** — kA₂ = 5 chambers / 3 walls with `D(S₁)`/`D(S₂)` full lines and **`D(P₁)` a single RAY** (direction (1,−1); the record's headline; Kaipel–Treffinger Ex. 13 verbatim wall equations); **kZ₂/rad² = 6 chambers / 4 walls** — the two dim-(1,1) bricks P₁, P₂ on OPPOSITE half-rays (1,−1)/(−1,1) of the ONE line θ₁+θ₂=0 (BST Rem. 3.19; self-injective coverage, M3); the **cyclic rad²-Nakayama N₃²** (1→2→3→1 mod rad²) = **14 chambers** (Kaipel–Treffinger Ex. 15, engine-verified against the EXACT algebra — an earlier draft mis-transcribed it as the LINEAR 1→2→3/rad², which is 12); the DIJ brick-finite ⟺ τ-tilting-finite gate (the 2-Kronecker is brick-infinite → a bounded region, `status="budget"`, NO count); kA₂ = 2 maximal green sequences, each a monotone source→sink chamber path; the **D₄ star** (hereditary underlying type D₄, {1→2, 3→1, 4→1}) = **50 chambers / 12 walls** (Cat(D₄)=50 support τ-tilting modules, 12 positive roots = 12 bricks) — RECOVERED as complete despite a spurious exchange-engine `mutate` error, NEVER the false "τ-tilting-infinite" truncation (the fix-round pin; asserts the OUTCOME so it outlives Plan 65's mutate root fix). **`oracle_crossengine`** — `#chambers = #support τ-tilting` (hereditary kA₂=5, kA₃=14; fan vs exchange graph); **linear kA₃/rad² = 12** (NOT KT, NOT Catalan — an honest consistency value); the inequality-defined `D(B)` extreme rays ≡ the grouped exchange-edge facet vectors **as sets of primitive directions** (two independent constructions — genuine set equality per brick, not merely non-empty). **`oracle_selfcert`** — `is_full_hyperplane`/`codim`, `θ·dim B = 0` on every wall ray + every submodule inequality `θ·dim N ≤ 0` holds on every ray (the D(B) membership, tying the system to the shipped `is_theta_semistable`); the facets ↔ exchange-edges **bijection** (each facet a real edge between two distinct chambers, no drop/dup/invention); every n=3 wall ray lies in D(B) and carries an L1 projection; **counts consistency** `#walls == #bricks == len(torsion.bricks(A))` on a thin (kA₂) and a NON-thin (kZ₂/rad²) example — the (1,1) dim-vector key has multiplicity 2, which a dim-vector-merged grouping would collapse; the **status="error" vs "budget" distinction** (fix-round) — the n-regularity completeness certificate (every discovered chamber has exactly n neighbours ⇒ the graph is closed under mutation), a non-n-regular error graph refused LOUDLY as unreliable (never a bounded sub-fan), and a genuine budget cap reporting `num_walls=None` with the discovered groups under `partial_wall_groups`; the **n=1 degenerate wall** (`D(B)={0}` is a point ⇒ `is_full_hyperplane=False`, no rays, `num_walls=0`). The webapp/GUI cross-runner `wall_chamber` tests are UNMARKED (extras-gated dirs, Plan-32 ruling). **QPA cannot compare — there is no `qpa` battery for wall-and-chamber** (`tests/qpa/test_wall_chamber_qpa.py` is an honest `NamesGVars()` probe that SKIPS and FAILS if QPA ever ships one; #chambers = #support τ-tilting inherits no live QPA cross-check either — FD-Applet / DIJ tables are the named external checks). |
+| `derived/silting.py` (Plan-67 R30 **silting theory** on the P43 derived stack — the silting-object verifier `is_silting_object` (presilting = `Hom_{D^b}(T,T[n])=0` on the EXACT positive window `[1, n_max]`, weaker than tilting's `n≠0`; three-valued generation via the sufficiency ladder tilting/2-term-IJY/local/K0-basis-only/False), the co-t-structure dictionary `co_t_structure_of` (coheart `add(T)`, AI Prop 2.23(b)), single silting mutation `silting_mutate`/`silting_neighbors` (AI Def 2.34, one approximation triangle = the P45 `_twoterm` K^b(proj) minimal add-approx + cone/cocone + minimal-complex reduction, reused; the mutant is re-verified silting), the bounded-radius exploration `bounded_silting_exploration` (LOUD status, complete only for local), and `derived/block.py::silting_block` + the `silting` compute kind; **PLUS the Task-0 fix to `derived/tilting.py`** — `g_proj` computes the K₀ g-matrix in the PROJECTIVE basis `(+)_v Z[P_v]`, not the composition-factor basis, so `is_tilting_complex`'s generation leg is `det(g_proj)` not `det(Cartan·g_proj)` — a systematic P43 false-negative on non-unimodular Cartan; **PLUS the Plan-67 fix round (H1)** — `is_tilting_complex`'s generation is now honest three-valued (`generation` sibling field), reconciled with the silting K₀-only rung — see the honest-scope note) — `tests/modules/test_silting_verifier.py`, `test_silting_mutation.py`, `test_silting_exploration.py`, `test_silting_oracles.py`, `tests/qpa/test_silting_qpa.py` (+ the Task-0 regression AND the H1 three-valued-generation pins in `test_derived_tilting.py`) | 26 + 1 qpa | deep + qpa | **`oracle_selfcert`** — the Task-0 g_proj regression (`det g_proj = 1` for the regular object `A = ⊕P_v` over EVERY algebra, incl. the non-unimodular-Cartan AI Example 2.47 `det C = 0` and self-injective `kZ₃/J² det C = 2`); the presilting positive-window scan; the **silting-vs-tilting separation** (`P₂ ⊕ P₁[1]` over kA₂ is presilting + silting via the IJY 2-term rung but NOT tilting — nonzero `Hom_{D^b}(T,T[-1])`) and the **presilting-vs-silting separation** (`P₁` alone is presilting but `#summands ≠ #simples` ⇒ not silting); the **H1 three-valued-generation reconciliation** — a genuine width-2 rigid K₀-basis tilting complex over `k[1→2→3]/(ab)` returns `is_tilting == "unknown"` (generation `"k0_necessary_only"`, Rickard-open) AND `is_silting_object` returns `"unknown"` on the same input (the tilting rung and the K₀-only rung agree); every mutant re-verified **PRESILTING** (the decidable positive-window half, not full generation) + shares exactly `n-1` summand PROFILES (the fingerprint-ambiguity vs degeneration branches are distinct, loud); the `μ⁻∘μ⁺ = id` involution on kA₂ AND non-hereditary kZ₃/J² + a multi-vertex mutation chain; the `_cx_to_pc`/`_pc_to_cx` bridge round-trip on a non-2-term complex (degrees/dims/differentials byte-identical); `co_t_structure_of` refuses on non-silting input; the non-perfect-summand refusal. **`oracle_crossengine`** — the 2-term slice ≡ P45 τ-tilting is a REAL BIDIRECTIONAL check (H2): the SILTING engine INDEPENDENTLY enumerates the 2-term silting objects (BFS via `silting_mutate`+`is_silting_object`+a `g_proj` fingerprint in the canonical {0,1} window) and its SET of g-fingerprints equals P45's `exchange_graph` vertex set BOTH ways, the `silting_neighbors` edges equal the `exchange_graph` edges, pinned on kA₂ (5) AND the NON-hereditary self-injective kZ₃/J² (14); `End(μT)` underlying quiver ≡ Oppermann Thm 1.1 (Example 2.47 left mutation at vertex 1 → the single-arrow linear A₂, `dim End = 3`, corner-Cartan `[[1,0],[1,1]]` — the graded dg degrees are `# PIN`'d, the underlying (source,target) count is verified). **`oracle_literature`** — `k[x]/(x²)` silting = shifts (Thm 2.26, local-complete at radius 0); the kA₂ first mutation ring (Example 2.45); Example 2.47 cones (`X = cone(P₁→P₂)`); the local-complete vs kA₂-infinite exploration status. **QPA cannot compare — no `qpa` battery** (QPA 1.37 has no silting surface; `tests/qpa/test_silting_qpa.py` SKIPS and FAILS if one ever appears — see the honest-scope section). |
+| `modules/exceptional.py` (Plan-65 R28 — the CLASSICAL hereditary exceptional-sequence surface: `is_exceptional_module` (the BRICK criterion `end_dim=1 ∧ Ext¹=0`), `is_exceptional_sequence` (backward Hom/Ext orthogonality), `braid_mutation` σ_i by the canonical universal-extension / kernel / cokernel constructions (four cases incl. Ringel's case-(d) two-step), `exceptional_sequences` (backward-orthogonality DFS + braid-orbit BFS transitivity + the Obaid closed form), `c_matrix`) — `tests/modules/test_exceptional_classical.py` | (see class table) | deep | **`oracle_literature`** — the Dynkin CES counts `A_n = (n+1)^{n-1}` for `n=2,3,4,5` (3/16/125/1296) and `D_4 = 162`, `count == closed_form_count == n!·h^n/|W|` (Obaid et al.), and `#exceptional == #indec` on every Dynkin case (rigid bricks); **`oracle_crossengine`** — the braid-orbit BFS orbit size `==` the direct-enumeration count `==` the closed form (two independent enumerations agree, the transitivity certificate); **the c-matrix rows `⊆` the P45 wall normals** (every dim-vector of a CES term is a brick labelling an exchange-graph edge — the hereditary c-vector reading overlaps the P45 wall-and-chamber surface, `A₂`/`A₃`); **`oracle_selfcert`** — every `braid_mutation` output is again a complete CES (orthogonality re-checked) and `σ_i∘σ_i⁻¹ = id` (incl. the worked `σ₁(P₁,S₁)=(S₂,P₁)` on kA₂, H4); the finite-universe `is_isomorphic` cross-identification of `L_XY`; every enumerated module is a rigid brick (`is_exceptional_module`); the rep-infinite hereditary refusal (2-Kronecker → `status="budget"`, instant Gabriel gate — no infinite knit). Scope: `is_exceptional_module` certifies the BRICK criterion = exceptional over algebraically closed `k` and on the Dynkin/QQ battery (M3, honest-scope (i)). **QPA** (`tests/qpa/test_exceptional_qpa.py`) — the exceptional-SEQUENCE surface has NO QPA verb (a fail-if-appears `NamesGVars()` guard), so the sequence enumerators are theory/self-cert-oracled; but the exceptional-MODULE criterion IS QPA-anchored per indecomposable on the kA₃ zoo — `dim End_A(M) = 1` via QPA `HomOverAlgebra` (the brick half) AND `dim Ext¹_A(M,M) = 0` via QPA `ExtOverAlgebra` (the rigid half), both agreeing with our engine. |
+| `tautilting/exceptional.py` (Plan-65 R27 — the TAU-exceptional surface on the P45 engine: `tau_exceptional_objects` (indec τ-rigids + n shifted projectives), `tau_perpendicular_reduction` (the Jasso `C(U)`: sign-dispatched — τ-rigid `U` → the DIJ idempotent quotient `End(T_U)/⟨e_U⟩` built at the structure-constant level then presented; shifted `P_v[1]` → `A/⟨e_v⟩` with the tautological restriction), `is_tau_exceptional_sequence` (the recursive recognizer — tower or ambient), `tau_exceptional_sequences` (the ordered-sτ-tilt bijection `signed_count = n!·#sTt` + materialisation), `exceptional_sequences_block`) — `tests/modules/test_tau_exceptional.py` | (see class table) | deep | **`oracle_crossengine`** — the **materialised** τ-sequence count `len(sequences) == signed_count`, pairwise-distinct (per-level index disambiguates non-iso objects with equal dim-vector — `P₁`/`P₂` of `k(1↔2)/rad²`), each `is_tau_exceptional_sequence`, on `A₂`(10)/`A₃`(84)/the non-hereditary `k(1↔2)/rad²`(12) — the REAL check that `n!·#sτt` matches the enumerator (H1); the (a)↔(b) all-module-tower count `==` classical CES count on hereditary rep-finite (A₂=3, A₃=16, two independent enumerations); **the M-1 DEEP materialisation pins** — `kD₄` (subspace) signed `1200 = 4!·50` MATERIALISED with the all-module-tower count `162 = ` the classical CES count, and REORDER-INVARIANT (reversing the object enumeration at every level yields the same 1200 / 162), and `kA₄` signed `1008 = 4!·42` materialised pairwise-distinct where completion-multiplicity is real; **`oracle_selfcert`** — the formula identity `signed_count == n!·len(exchange_graph.vertices)` is SELF-CERT (tautological, NOT cross-engine — H1); `rk C(U) == n−|U|` **plus** the iso pin `C(S₁) ≅ kA₂` for `kA₃` (dim 3, connected — discriminates the correct completion from `k×k`, H5); **the H-1 completion-independence certificate** — `C(U)` as an ALGEBRA is completion-DEPENDENT (different tau-tilting completions give different dim/quiver, witnessed live on kD₄), but the enumeration invariant `#sTt(C(U))` is completion-INDEPENDENT (DIJ), self-certified across completions inside the reduction (loud raise on mismatch); **the H-2 tower chain check** — `_verify_tower` recomputes the reduction chain and rejects a forged tower (a hand-built `k×k` middle where the true reduction is `kA₂`: `#sTt` 4 ≠ 5), no longer trusting the rung labels; the shifted-projective reduction `C(P_v[1]) = A/⟨e_v⟩` (H2, incl. the recognized `(S₁,P₂[1])` sequence); the `status ∉ {"complete"}` loud refusal (M1 — the D₄ mixed star post-Task-0 completes to `signed=1200`); the τ-tilting-infinite loud refusal (Kronecker, instant). The webapp/GUI cross-runner `exceptional_sequences` tests are UNMARKED (extras-gated dirs). **QPA has NO τ-exceptional surface.** |
+| `modules/homdims.py` + `modules/fractional_cy.py` (Plan-53 R23/R24 — φdim/ψdim as ALGEBRA invariants + the φ-spectrum & gaps + Lat-Igusa-Todorov finitistic certificates; the stable-category fractional Calabi–Yau dimension of self-injective algebras) — `tests/modules/test_phidim.py`, `test_phi_spectrum.py`, `test_lit_certificate.py`, `test_fractional_cy.py`, `tests/qpa/test_phidim_fcy_qpa.py` | 18 + 9 qpa | deep + qpa | **`oracle_selfcert`** — the standing chain `findim ≤ φdim ≤ ψdim ≤ gldim` on computed terms + the `gldim`-finite collapse (all four equal); the Barrios–Mata–Rama endpoints `{0, 1, m−1, m} ⊆ Spec_φ` when `0 < φdim = m < ∞`; the LIT bound sits in `[findim_lower, gl.dim]`; the LIT `None → 0` self-injective flip of `finitistic_dimension_bounds`; the fractional-CY `Ω^{m+ℓ} ν^ℓ ≅ id` self-identity + the loud not-self-injective refusal + the decompose char-caveat propagation; the family-4 `ψ_𝒟(V)+n+1` machinery arbitration gate (never below a known findim). **`oracle_literature`** — kA₃/J² φdim=ψdim=2, hereditary kA₃ φdim=1, self-injective k[x]/(x⁴) φdim=0; `k[x]/(x^a)` stable CY (1,1) + dual-numbers shift-trivial (0,1) + `Π(A₃)` 2-CY (2,1) (Ivanov–Volkov / Geiß–Leclerc–Schröer). **`oracle_crossengine`** — φdim via ⊕-of-all ≡ `max φ` over the knit indecomposables; the ℓ=1 fractional-CY certificate `S ≅ Σⁿ` ≡ the Ivanov–Volkov integer form `Ω^{n+1} ≅ ν⁻¹` on the simples. **`qpa`** (`tests/qpa/test_phidim_fcy_qpa.py`) — the prerequisites the values rest on: `IsSelfinjectiveAlgebra` ↔ `is_selfinjective` (the fractional-CY scope gate), `IsSymmetricAlgebra` ↔ `is_symmetric` (ν=id ⇔ symmetric, the k[x]/(x^a) derivation), and `NthSyzygy` of the simple ↔ `Module.syzygy()` (the `Ω²≅id` fact behind (1,1)); the φdim/CY VALUE probe SKIPS honestly (QPA has no such surface) and FAILS if QPA ever ships one. |
+| `invariants/coverings.py` (Plan-56 R14/R16 — the presentation fundamental group π₁(Q,I) + π₁^ab by exact ℤ SNF, the Hom(π₁,k⁺)↪HH¹ Hurewicz bound, the three-valued `is_simply_connected`, the separation condition + `is_strongly_simply_connected` R16 recognizer that GATES P62, and `minimal_relation_counts` = the Tits-form rᵢⱼ; the `combinat/quiver.py` graph primitives) — `tests/coverings/*.py`, `tests/qpa/test_pi1_qpa.py` | 34 + 1 qpa | fast + qpa | **`oracle_literature`** — the CORRECTED commutative square (WITH the commutativity relation ⇒ π₁=1 / WITHOUT ⇒ ℤ), Le Meur Example 1 (monomial `⟨da⟩`⇒ℤ vs binomial `⟨da−dcb⟩`⇒0), trees/single-loop/multi-loop free ranks, the **two-independent-pairs discriminator** (a non-minimal generating set is NOT over-glued: π₁^ab=ℤ not 0 — the minimal relations are exact `I/(rad·I+I·rad)` linear algebra, never a greedy drop), the Zito example (simply connected but NOT strongly, separation fails at vertex 2), the star/deeper-tree/branching-source-in-a-non-tree separation discriminators (the corrected Qₐ = delete a + its transitive predecessor closure), the hereditary square genuinely NOT separated, and the loud intrinsic-π₁ refusal. **`oracle_crossengine`** — Hom(π₁,k⁺) ≤ dim HH¹ over the triangular zoo, equality on the Schurian square (the Hurewicz iso). **`oracle_selfcert`** — the graph primitives (spanning forest Betti number, components, induced subquiver), the annulus π₁^ab=ℤ (Betti of a 4-cycle), the `minimal_relation_counts` total == Σ block counts, and the char-caveat undecided path (decompose refusal ⇒ `undecided_char` ⇒ verdict None, never a mid-sweep raise). **`qpa`** (`tests/qpa/test_pi1_qpa.py`) — QPA 1.37 has NO fundamental-group / simple-connectivity surface (live `NamesGVars()` sweep); the probe SKIPS honestly and FAILS if QPA ever ships `FundamentalGroup`/`IsSimplyConnected`/`SeparationCondition`. |
+| `invariants/tits.py` + `invariants/_tits_lists.py` (Plan-62 R19 — the COMBINATORIAL Tits form `q_A = Σx_i² − Σ_{arrows} + Σ r_ij x_i x_j` with `r_ij` = the P56 `minimal_relation_counts` (the `I/(rad·I+I·rad)` count, cross-checked vs `dim Ext²(S_i,S_j)`); `is_weakly_positive` (Ovsienko box-6, positive-definite / isotropic-radical / Euclidean-restriction fast certificates + connected-support branch-and-bound); `is_weakly_nonnegative` (positive-SEMIdefinite/Euclidean True certificate — with `HYPERCRITICAL_COVERAGE` empty by design, PSD is the ONLY route to a `True`/tame verdict — + the classified hypercritical list — K3/T334/T245/**T237 the 10-variable refutation** — as the primary False route + a sound witness-finder, honest `None` outside coverage, NEVER a guessed True); `tame_wild_certificate` — the rep-finite/tame/wild trichotomy gated on the P56 strong-simple-connectivity certificate over an algebraically closed base field (the CC working domain, or — absent P61's `is_algebraically_closed` flag — any characteristic-0 field read by base change to the algebraic closure; `GF(p)`/`GF(p^n)` refused), P56's `None` propagated) — `tests/invariants/test_tits_form.py`, `test_weak_positivity.py`, `test_tits_lists.py`, `test_tame_wild.py`, `test_tame_wild_oracles.py`, `tests/qpa/test_tame_wild_qpa.py` | 44 + 9 qpa | fast + qpa | **`oracle_literature`** — the m-Kronecker ladder `q(1,1)=2−m` (1/2/≥3 = weakly positive / Euclidean isotropic / wild), the Dynkin trees rep-finite, the Euclidean trees (`~A_n`/`~D_n`/`~E_{6,7,8}`) weakly nonnegative not weakly positive with `q(radical)=0`, `T_{2,3,7}` wild with the SINCERE 10-vertex defect `(12,6,8,4,10,9,7,6,4,2)`, `q=−1` (the classified-list refutation of the `≤9`-variable cap), the Bongartz + Brüstle–de la Peña–Skowroński theorem verdicts (Dynkin→rep-finite, Euclidean→tame, `T_{2,3,7}`→wild). **`oracle_crossengine`** — `r_ij` (P56 count) == `dim Ext²(S_i,S_j)`; the combinatorial Tits Gram == P38's Euler symmetrization `E+Eᵀ` where both are defined (`gl.dim ≤ 2`); the AR-knit `is_complete` ⇒ `rep-finite` + `weakly_positive` (module-category enumeration vs quadratic-form arithmetic). **`oracle_selfcert`** — every `False` witness is exact and `≥ 0` with `q(witness) ≤ 0`/`< 0`, the budget→`None` honesty (no guessed True), the m-Kronecker form-layer split (not simply connected ⇒ verdict None), the non-CC form-computed/verdict-refused split, P56's `None` propagation, the relabelling-invariant hypercritical matcher, the **two-level verdict field gate** (P61's `is_algebraically_closed` flag when present, else `characteristic == 0` — pinned to hold on both the pre-P61 base and post-merge dev), the **honest base-change wording** (over QQ/QQ(i) the reason never fabricates "over an algebraically closed field"), and the **Bongartz-certain rep-infinite** surfacing (`certified == "rep_infinite"` when the form is not weakly positive on a simply connected algebra, `rep_type` staying `None` because tame-vs-wild is genuinely undecided). **`qpa`** (`tests/qpa/test_tame_wild_qpa.py`) — QPA 1.37 SHIPS a Tits-form surface: `IsWeaklyPositiveUnitForm`/`IsWeaklyNonnegativeUnitForm` of `TitsUnitFormOfAlgebra(A)` agree with our decisions on A5/E8/`~E8`/`T_{2,3,7}`/K2/K3/kA₃-rel (a real two-implementation oracle, incl. the `T_{2,3,7}` list-decided `wnn=False` confirmed independently); QPA has NO representation-type (tame/wild) VERDICT verb, so the verdict layer stays theory-oracled (a fail-if-appears probe). |
+| `modules/radical.py` + `modules/ar_invariants.py` (Plan-57 R37/R21 — the radical filtration of `mod A`: exact `dim rad^n(X,Y)` layers on the knitted indecomposables (route (ii), left-to-right composition), the nilpotency index of `rad(mod A)`, the `rad^∞ = 0 ⇔ representation-finite` (Auslander) gate; Liu's left/right degrees of irreducible maps (`fg ∈ rad^{m+2}`, corrected), sectional paths, the postprojective/preinjective/regular partition, directing modules, the representation-directed recognizer (`Γ_A` acyclic), the generalized-standard flag) — `tests/modules/test_radical_filtration.py`, `test_liu_degrees.py`, `test_ar_invariants.py`, `tests/qpa/test_radical_qpa.py` | 29 + 2 qpa | deep + qpa | **`oracle_selfcert`** — the descending filtration `rad^{n+1} ⊆ rad^n`, `rad^N = 0` while `rad^{N-1} ≠ 0`, composition closure, `rad^1 = Hom` off the diagonal (QQ↔GF(32003) parity); the Thm-1.3 `max_a{r_a+1}` index walk ≡ route-(ii) `nilpotency_index` (two readings of ONE knit); the **degree-vs-layer witness triple** externally asserted — a finite left degree returns `(Z, g)` with `g ∈ rad^d`, `g ∉ rad^{d+1}`, `g.then(f) ∈ rad^{d+2}` (the certified layer drop); the `d_r(f) ≡ d_l(Df)` opposite-algebra multiset symmetry; the partition totality; the honest semi-decision contract (self-injective ⇒ `status="unsupported"`, no verdict; budget ⇒ window-restricted layers, `nilpotency_index=None`, no `rad^∞` claim; never a false `representation_directed`). **`oracle_literature`** — `N(kA_n) = n` (Thm 1.5(a)), the `kA_3` layer table (total `dim rad^1 = 9`, `rad^2 = 3`, `N = 3`), `kA_3/J^2` index 3 (Thm 1.3 `max{2,3,2}`), the hand-derived `kA_2`/`kA_3` left+right degree tables by module name (mono ⇒ `d_l = ∞`, epi ⇒ `d_r = ∞` on directed `kA_n`), `kA_n`/`D_4` representation-directed with no regular modules and every indecomposable directing, sectional composites nonzero; the live-verified non-directed witness `NakayamaAlgebra(kupisch=[3,2,2])` (non-self-injective, 7 indecomposables, oriented `Γ_A` cycle) separating `representation_directed=False` from `generalized_standard=True`. **`oracle_crossengine`** — the genuinely independent route-(i) `ZA_n` mesh closed form (pure interval combinatorics on dimension vectors, no Hom/matmul) ≡ route-(ii) `dim rad^n(X,Y)` on `kA_3`/`kA_4`. **`qpa`** (`tests/qpa/test_radical_qpa.py`) — QPA has NO module-category-radical or degree surface (`RadicalOfModule` is the Jacobson radical of ONE module, not `rad(X,Y)`; no `LeftDegree`/`RightDegree`/`NilpotencyIndexOfRadical`): a fail-if-appears `IsBoundGlobal` probe, plus the one checkable slice `dim rad(X,Y) = dim Hom(X,Y)` (`X ≇ Y`) corroborated against `HomOverAlgebra`. |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality + **the renderer-return gate** (2026-08-06: every per-kind `*_html` helper in `results_html.py` must end in an explicit `return` — an AST scan plus a live `derived_fingerprint` render through `results_section`; regression for the fall-through that returned `None` and killed the whole worked-steps bundle for any request containing `derived_fingerprint`) |
@@ -553,19 +593,20 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 892 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 533 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1088 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 190 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 1086 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 639 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1352 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 234 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2142 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2737 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Recounted 2026-08-07 at the Plan-64 merge (torsion-lattice congruences / forcing / wide
-subcategories, R26): the 19 new engine tests add oracle_literature +10 (882 → 892),
-oracle_crossengine +5 (528 → 533), oracle_selfcert +4 (1084 → 1088), qpa +1 (189 → 190,
-the honest no-surface probe), union +20 (2122 → 2142); m2 unchanged. Live-collected from the
-`plan-64-torsion-lattice` branch (mid-merge-train honest).
+subcategories, R26) onto dev's P65 tip: the 19 new engine tests add oracle_literature +10
+(1076 → 1086), oracle_crossengine +5 (634 → 639), oracle_selfcert +4 (1348 → 1352), qpa +1
+(233 → 234, the honest no-surface probe), union +20 (2717 → 2737); m2 unchanged. Live-collected
+from the merged `plan-64-torsion-lattice` tree (mid-merge-train honest).
 
-Counts as of the P43 merge (the derived-category surface); sibling plans in the v0.2.0
+Counts as of the P65 merge (exceptional sequences R27+R28, after P67 silting / P54 BV / P68 skew-gentle / P63 wall-and-chamber);
+sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
 Collected 2026-08-05 (Plan 40, C6 homological-dimensions family; recounted from a live
@@ -619,6 +660,32 @@ verified precision and listed below as such.
   failure in the dedicated CI job under `QUIVERLAB_REQUIRE_M2=1`.
 - The `webapp/` and `docs/gui/` tiers are verified as software (plumbing,
   isolation, artifacts), not as mathematics — they compute nothing themselves.
+- **HH with bimodule coefficients + relative HH (Plan 52):**
+  - **`engine="fast"` refuses a coefficient loudly** — the GF(p) bar-basis
+    accelerator carries only `(m, T, unit)`; the regular bimodule is hard-wired, so
+    no coefficient object exists there. The refusal points at `bar` (any field) /
+    `cs` (presented). `engine="auto"` never routes fast with a coefficient.
+  - **Cyclic homology / Connes `B` with a coefficient is out of v1 scope** — Connes
+    `B` assumes the coefficient is `A` itself (it rotates the unit into bar slots);
+    a general `M` is P54's BV concern, not shipped here.
+  - **Relative HH is `B = kQ₀` only** — the vertex-relative (separable) case, exactly
+    the Lindell–Rubio y Degrassi setting, is IN scope (`relative_to="vertices"`); a
+    general / non-separable subalgebra `B` is **refused loudly** and is the recorded
+    Cibils-relative follow-up.
+  - **CS coefficients need a presentation** — a presentation-less structure-constant
+    algebra computes coefficients via `bar` only; CS refuses (as today) because it
+    cannot form a reduction system.
+  - **The minimal `A^e` coefficient path is GF(p) int64 only** (engine-internal, the
+    cross-check); off GF(p) the coefficient routes through `bar`/`cs`.
+  - **QPA has no HH-with-coefficients / relative-HH surface** (probed live via a
+    `NamesGVars()` sweep; `tests/qpa/test_coeff_qpa.py` skips honestly and FAILS if a
+    matching verb ever appears). The covering oracles are the internal identities +
+    the ported GF(p) bank + the CS/minimal cross-engine web + the literature pins.
+  - **The literature pins are BLOCKED-until-transcribed** — the gentle-`HH¹`
+    (1811.02211) and radical-square-zero relative-`HH¹` (2411.03080) values are
+    `xfail(strict=False)` until a concrete example is transcribed VERBATIM (value +
+    equation number); a fetch of the 2411.03080 ar5iv HTML errored out at
+    implementation time, so no number was fabricated.
 - **Gentle / string subsystem (Plan 46):**
   - For a **string** algebra the Butler–Ringel classification is complete **iff there
     are no bands** (rep-finite). When bands exist the algebra is rep-infinite and
@@ -689,6 +756,113 @@ verified precision and listed below as such.
   orientations, all 2-relation variants, CC and GF(32003)). The test pins the
   VERIFIED value and documents the discrepancy — no literature number is frozen
   against a live engine disagreement.
+- **Recognizer batteries (Plan 59):**
+  - **R34 is a SEMI-DECISION, not a decision.** `homological_string_test` returns a
+    definitive `not_string` (a ≥3-summand middle witnessed — k̄-sound and
+    field-independent, since a direct-sum decomposition base-changes up to k̄) OR
+    `string_over_ground_field` (a **finite ground field** exhaustive confirm that is
+    **INCONCLUSIVE w.r.t. the Suárez-Álvarez k̄ theorem** — over k̄ there may be more
+    indecomposables / non-rational classes a finite field cannot see) OR `inconclusive`.
+    There is **no bare `string` verdict**; the definitive k̄ "string" answer is the
+    decidable syntactic `is_string` (P38), which the test carries alongside. The **only**
+    loud raise is refute-side: a ≥3 witness meeting `is_string(A) is True` (one engine is
+    a bug). A `string_over_ground_field`-vs-`is_string` mismatch is a recorded
+    **k̄-gap** (`kbar_gap_note`), never raised. The alternative "middle-term-candidate"
+    confirm route is a **scoped non-goal** — realizability of a fixed `M'` as an extension
+    is an existence question over an infinite space, undecidable without algebraic-geometry
+    machinery the library does not have.
+  - **R34 char-scope.** The refute PIPELINE (`knit_ar_quiver` / `almost_split_sequence` /
+    `decompose`) leans on char 0 or char > dim (the trace-form radical + Fitting locality);
+    only the terminal split step is char-robust. So refute runs over **QQ** in practice
+    (small primes only on tiny algebras where char > dim holds throughout), and the
+    finite-field exhaustive confirm runs over **small primes with char > dim of the
+    middles**. A char-undecidable middle makes that instance `inconclusive`, never a guess.
+    Battery scope (perf): the AR knit is ~3 s/module and grows with dim, so the discriminating
+    battery pins `kD₄` + `kD₅` (both live-verified 3-summand meshes) and defers `kE₆`
+    (minutes to knit) — the mesh mechanism is identical.
+  - **R35 pins only the a-Kronecker HH from the literature.** `HH^• = [1, a²−1, 0, …]`
+    (ALS 2020) is the sole transcribable closed-form; ALS defers the general toupie HH
+    *dimensions* to prior work and gives bases/Gerstenhaber structure, so all other toupie
+    HH values are **cross-engine** (bar ≡ CS where bar survives). **Example 7.4.1 is
+    DEFERRED** (the quiver is a figure only and the stated vertex/arrow counts did not
+    reconcile in the P29 reconstruction — not pinned).
+  - **R35 `sl_a` is char 0 only, at the dimension level.** ALS Thm 6.5 gives
+    `HH¹(A) ⊇ sl_a` for `k = ℂ`, with `a` = the number of **direct source→sink arrows**
+    (NOT the branch count — verified: the commutative `[2,2]` toupie has 2 branches but
+    `HH¹ = 0`, i.e. `a_direct = 0`). `toupie_sl_a_lower_bound` returns `a²−1` and is
+    **hard-gated to char 0** (loud off it); the claim is `dim HH¹ ≥ a²−1` (equality on the
+    a-Kronecker), NOT a Lie-algebra summand decomposition of `HH¹`.
+  - **QPA has NO homological-string / toupie surface** (live `IsBoundGlobal` sweep): the
+    R34 crosscheck is a direct-session `IsSpecialBiserialAlgebra` parity, and a standing
+    guard FAILS if QPA ever ships one.
+- **Skew-gentle algebras (Plan 68 / R32):**
+  - **The triple `(Q, I, Sp)` is NOT admissible — the internal object is always the
+    split algebra.** `⟨εᵢ² − εᵢ⟩` contains `εᵢ ∈ rad \ rad²`, so a direct presentation
+    raises `AdmissibilityError` (VERIFIED). Every invariant is computed on the admissible
+    idempotent-split algebra `kQ̂/Î` (Chen §3), which is ISOMORPHIC to the skew-gentle
+    algebra. The **dim law** `dim(split) == dim(associated gentle)` (HZZ Lemma 1.5) is a
+    **NECESSARY** check that the split relations are right — NOT sufficient (a wrong
+    relation set can share the dim). The **SUFFICIENCY** oracle is the AR-quiver /
+    support-τ-tilting counts on the mesh example (`1→a→2→b→3, Sp={2}, a·b ∈ I`: dim 9 vs
+    the zero-split's 8, `11` AR vertices, `46` τ-tilting pairs — all VERIFIED live, and
+    all **engine-self-derived**: no external table pins the mesh `11`/`46`, so they are an
+    internal two-engine agreement (AR knit vs τ-tilting exchange graph), stated as such).
+  - **The brick-finite ⇔ rep-finite certificate is char ≠ 2 (Garcia–Lavoué Thm 3.1).**
+    Over char 2 the rep-finite UPGRADE is WITHHELD (`rep_finite is None`,
+    `scope = "char==2 (narrowed)"`); the τ-tilting-finiteness verdict is still computed on
+    the char-FREE split model over QQ (the exchange-graph BFS leans on
+    `is_isomorphic`/`decompose`, rigorous only char 0 / char > dim M, so it is NEVER run
+    over GF(2) — M3), while the split construction / dim law remain characteristic-free
+    (Chen). Batteries run over QQ (GF(32003) parity where cheap).
+  - **The classification / τ-tilting COUNTS also route through the char-free QQ model
+    (M3, the char-2 regression).** `skew_gentle_indecomposables` and `support_tau_tilting`
+    (hence the `skew_gentle` block's `num_indecomposables` / `tau_tilting.num_pairs`) are
+    presentation invariants and are computed over QQ regardless of the caller's field —
+    over GF(2) the P41 AR knit returns `is_complete=False` (`status='error'`, the char-2
+    `decompose` caveat), which must NOT be read as "rep-infinite". A regression pins the
+    GF(2) block reporting the SAME `6` indecomposables as QQ (not the incomplete loop-free
+    `5`-sample), with an explicit `classification.note` naming the char-free QQ model.
+  - **The recognizer decides the TRIPLE, not the iso-type.** `is_skew_gentle_triple`
+    reduces to gentleness of the associated gentle pair + the structural loop/Sp checks;
+    recognizing an arbitrary presented algebra as skew-gentle up to isomorphism is the
+    iso-problem and is NOT attempted (the `BrauerGraphAlgebra` honest-scope precedent).
+  - **The τ-tilting numeric counts are geometric (HZZ), not Chen.** The record cites "the
+    2212.06467 [Chen] example counts", but Chen's checkable content is HOMOLOGICAL
+    (selfinjective-iff, `K₀` rank, gl.dim-finite-iff); the numeric τ-tilting counts are
+    pinned from the geometric model (HZZ §6 rank + the `k×k → 4` hand case). Attribution
+    split, stated here by design — no enumerative Chen example is invented. The two
+    τ-tilting `oracle_literature` pins are **arithmetic-shaped** — the Boolean square
+    `k×k → 4 = 2×2` (the four generalized dissections) and the presentation-independent
+    rank `|R| = |Q₀|+|Sp|` (pinned `= 3` on `1→2, Sp={2}` and `= 8` on the 7-vertex line)
+    — not published enumerations; the mesh `46` τ-tilting pairs is **engine-self-derived**
+    (internal two-engine agreement with the AR count, no external number exists), labelled
+    `oracle_crossengine`, not `oracle_literature`.
+  - **The module string layer is a LOOP-FREE census, a documented STRICT SUBSET — NOT a
+    complete classification.** `classify` / `skew_gentle_module` enumerate the loop-free
+    `A^g`-walks (headline `5` of `6`, mesh `8` of `11`); the missing modules are the
+    symmetric / loop-traversal (mixed-eigenvalue) indecomposables (e.g. the projective
+    `P_1`), which the theory DOES describe (Garcia–Lavoué Table 1 / clan classification) —
+    so the incompleteness is in the implementation's loop-free enumeration, NOT the theory.
+    `skew_gentle_indecomposables` (the P41 AR quiver) is the AUTHORITATIVE enumeration and
+    the counts above are AR-authoritative; completing the symmetric-string enumeration is a
+    DEEPER-ENGINES-BACKLOG item (it also upgrades route 2 of the certificate to a full
+    special-band agreement oracle).
+  - **The band-census route (route 2) is a ONE-SIDED check, not a full cross-engine
+    agreement.** `find_bands(A^g)` may be INCOMPLETE for SPECIAL bands (bands touching
+    `Sp`), so a band FOUND certifies rep-INFINITE (sound, may only DOWNGRADE the verdict)
+    but "no-bands" does NOT by itself certify rep-finite — the exchange-graph route is
+    authoritative (W4). Extending route 2 to special bands is a backlog item.
+  - **QPA has NO skew-gentle surface** (live `IsBoundGlobal` sweep): the crosschecks are
+    on the split algebra as a plain `kQ/I` (`Dimension` / `IsSelfinjectiveAlgebra`), and a
+    standing guard FAILS if QPA ever ships a skew-gentle constructor/recognizer.
+  - **Plan-doc deviations (documented in the tests):** the plan's `_rep_infinite_triple`
+    (2-cycle with `{ab, ba}` + `Sp={1}`) is actually REP-FINITE (its split is AR-complete
+    with 10 indecomposables, verified live) and additionally trips a P45 `exchange_graph`
+    `status == 'error'`; the certificate battery uses the Kronecker `1⇉2` (the canonical
+    rep-infinite gentle algebra) instead. The plan's exact HZZ §6 seven-vertex arrow
+    reconstruction is NOT a valid triple (`is_skew_gentle_triple` False); the rank pin uses
+    a valid 7-vertex `Sp={1}` triple (linear `A₇`), which pins the same
+    presentation-independent rank `|R| = |Q₀|+|Sp| = 8`.
 - **QPA has no native Tor** (probed live): the module-Tor crosscheck computes
   `Ext^n(M, DN)` inside QPA by dimension-shifting through `NthSyzygy` and uses
   the duality identity as the bridge — plus quiverlab's own self-certifying
@@ -705,15 +879,144 @@ verified precision and listed below as such.
   associativity, Jacobi/antisymmetry, cup-Leibniz, the cap module law `(z∩f)∩g =
   z∩(f∪g)`, `B²=0`, and SBI rank consistency) and the **literature pins** on
   `k[x]/(x²)` (with the corrected dimension-2 degree-0) and the QuantumCI-BGMS cup
-  dims. Two scope facts are binding: (i) the **Gerstenhaber bracket is GF(p)-only and
-  window-bounded** — it is served on the bar/tt route (the result object records the
-  window), there is no CS route for it, and the degree-0 insertion action is out of
-  scope; the CS-native cup and cap tables compute over **any exact Domain** (the
-  bracket refuses on the CS route, `tests/resolutions_cs/test_products_cs.py`).
-  (ii) The **structure constants are basis-dependent** — they are read on the
+  dims. Two scope facts are binding: (i) **the Gerstenhaber bracket now goes native
+  on the Chouhy–Solotar resolution (Plan 51, 2026-08-07)** — the Negron–Witherspoon /
+  Volkov homotopy liftings deliver `[-,-]` over **any exact Domain, at any degree
+  (past the bar window)** for every quiver-presented algebra, exactly like the
+  CS-native cup and cap; over GF(p) in-window the bar/tt route is unchanged (the result
+  object records the window) and is the transported anchor. The only honest gap is a
+  **presentation-less structure-constants algebra off GF(p)** (the CS route needs a
+  presentation, same as cup/cap): it keeps only its in-window GF(p) transported
+  bracket, and closing that needs a minimal/Bardzell diagonal (recorded follow-up,
+  Plan 75 GHMS / a monomial diagonal). The degree-0 insertion action stays out of
+  scope. (ii) The **structure constants are basis-dependent** — they are read on the
   recorded HH basis (bar/GF(p) or the CS class basis), and each product object
   records which basis (`HHProducts.basis`); the cross-engine gate therefore compares
   only basis-independent data (dims and flattened rank), never the raw constants.
+- **The native bracket sign is ARBITRATED, not assumed (Plan 51).** The
+  `(−1)^{(p-1)(q-1)}` factor (Oke Thm 3.5 / Volkov / classical Gerstenhaber, matching
+  the transported route by construction) is FIXED by the in-window native ≡ transported
+  anchor over GF(p), which is a genuine cross-engine comparator (homotopy liftings vs
+  the bar circle product). It genuinely discriminates the sign: a flipped sign breaks
+  the anchor on a nonzero class (`test_flip_breaks_anchor_kx2`). CORRECTION to the
+  R1/plan brief: the plan named QuantumCI (2,2) as the odd-exponent discriminator, but
+  `HH³(QCI/GF5)=0` (dims `[2,2,1,0,2,4]`) makes the (2,2) bracket the zero class —
+  VACUOUS. The genuine non-vacuous odd-exponent anchor is **QuantumCI (2,4) → HH⁵**
+  (dim 4, `(p-1)(q-1)=3` odd): the class is nonzero, native ≡ transported, and the
+  flipped sign disagrees (`test_odd_exponent_sign_anchor_qci_2_4`, `slow`; needs Δ₅
+  ≈ 2 min). Graded antisymmetry is a consistency check (it forces the relative minus
+  between the two terms but not the overall exponent). The **Oke arXiv:2103.12331 §7
+  Koszul-quiver bracket tables are BLOCKED-until-transcribed** — a strict-`xfail` fence
+  (`test_oke_section7_koszul_bracket_tables`) that flips to a real assert only after
+  the PDF's quiver/relations/values are transcribed verbatim; the plan never fabricates
+  them, and the k[x]/xⁿ + QuantumCI + anchor oracles carry the burden meanwhile.
+- **The BV operator `Δ` on `HH^*` (Plan 54, R2):** (a) **GF(p), in-window in v1.**
+  The bracket arbiter that certifies correctness is itself GF(p)-window-bounded
+  (Plan 35), so v1 serves `Δ` over GF(p) in the bar window and refuses loudly off
+  GF(p) / past window (`engine="cs"` raises `"not available until P51"` — the P51
+  native past-window enhancer is an optional follow-up, never a silent fallback).
+  (b) **The general BIKLZ non-semisimple construction is refused** (`e ≥ 2`
+  self-injective Nakayama with non-semisimple ν, `char | ord ν`): the loud
+  BIKLZ-blocked refusal. The `e = 1` case `k[x]/(x^N)` is *symmetric* (ν = id), so its
+  char-sensitivity + the BIKLZ §3.2 Δ-value oracle are LIVE via the symmetric route
+  in every characteristic — nothing about the `e = 1` values is deferred. The BIKLZ
+  §3.2 value oracle asserts the char-sensitive dims + the basis-independent Δ-RANK
+  profile the formulas force (`rank Δ_odd = N−1`, `rank Δ_even = 0`); the exact
+  per-representative Δ entries are representative-dependent (a Plan non-goal) and are
+  pinned indirectly-but-rigorously by the cross-engine bracket arbiter. (c) **QPA has
+  NO BV surface** — the covering oracle is the theory battery (`Δ²=0` + the seven-term
+  relation + the perfect-pairing certificate + the derived-bracket == independent-
+  Gerstenhaber arbiter + the Tradler/BIKLZ literature pins). (d) **ν is defined only
+  up to inner automorphism**; the gate tests the concrete `nakayama_automorphism()`
+  representative, and the bracket arbiter is the per-instance CORRECTNESS GATE — but
+  note precisely what it certifies: it pins Δ **modulo cup-derivations** (the data the
+  BV relation `[a,b] = ε(Δ(a∪b) − Δa∪b − (−1)^p a∪Δb)` constrains) together with
+  `Δ²=0`, **not** every last coordinate (a Δ and a cup-derivation-shifted Δ are
+  indistinguishable to it). A wrong ν-representative fails the arbiter and refuses,
+  never returns a wrong Δ. The twist DIRECTION (ν vs ν⁻¹) is determined by the arbiter,
+  not assumed; on the flagship `QuantumCI(q=2)` the two directions even give different
+  twisted-homology dims, so the perfect-pairing dim-match already rejects ν⁻¹ and the
+  arbiter confirms ν. (e) **char 2 is SERVED** but its certification is `Δ²=0` + the BV
+  relation mod 2 + pairing invertibility, NOT sign-determination — the sign/transpose
+  convention is inherited from the odd-prime (3/5/32003) arbiter, applied uniformly.
+  (f) **The weakly-symmetric semisimple-ν "exterior class" is REFUSED loudly (engine
+  limitation, not a theorem gap).** The semisimple-ν route carries the ORDINARY twisted
+  Connes operator `B_σ = s∘N` (the naive norm-then-degeneracy), whose descent to twisted
+  homology is a PER-INSTANCE certified property, **NOT** a consequence of semisimplicity:
+  it holds only when the paracyclic defect `(1 − T)` (with `T = t_σ^{n+1}` the diagonal
+  σ-action) vanishes EXACTLY on the twisted cycle representatives. For a diagonal ν of
+  order 3/4 (the `QuantumCI(q)` instances) the reps are fixed by `T` on the nose and the
+  descent certifies; but for a weakly-symmetric ν of **order 2 acting by −1 on odd-degree
+  factors** — the exterior algebra `ExteriorAlgebra(2) = Λ(k²)` over GF(5)/GF(7), where
+  `ν = diag(1,−1,−1,1) = −id` — `B_σ` of a degree-2 cycle is a cycle only MODULO
+  boundaries, so the chain-level descent self-cert fires and `bv_operator` refuses
+  loudly rather than return a wrong Δ. LZZ (arXiv:1405.5325) guarantees `HH^*(Λ(k²))`
+  IS a BV algebra; the fix is the **general LZZ twisted Connes operator** (a per-class
+  correction solve `b·w = (1 − T)·z`, `B̃z = Bz − w`), which is **backlogged**
+  (DEEPER-ENGINES-BACKLOG). A fix-round bounded probe confirmed that no cheap
+  strengthening of `s∘N` (the `(1 − t)`-corrected forms, the sign-normalization variants,
+  or the norm over the paracyclic orbit of the correct order `r(n+1)`) recovers an exact
+  chain-level descent that ALSO reproduces the independent Gerstenhaber bracket: the only
+  variant passing the exterior descent (`s(1−t)N = s(1−T)`) gives the WRONG bracket there
+  and zeroes the QuantumCI Δ. **Presentation-dependence (pre-existing `is_symmetric`
+  behavior), stated plainly:** the SAME algebra Λ(k²) presented as `QuantumCI(q=−1)` is
+  detected `is_symmetric = True` and is SERVED via the symmetric (Tradler) route, whereas
+  presented as `ExteriorAlgebra(2)` it is detected non-symmetric and routes to the
+  refused semisimple-ν branch — same mathematics, different route/outcome, because
+  `is_symmetric` reads the concrete presentation's trace form. Pinned by
+  `tests/hochschild/test_bv_twisted.py` (the exterior refusal as a known boundary, and
+  the QuantumCI(−1)-symmetric-served vs ExteriorAlgebra(2)-refused contrast).
+- **Silting theory (Plan 67) is honestly scoped on five axes.** (i) The **silting
+  quiver can be infinite** — kA₂ already is (AI Example 2.45) — and
+  mutation-transitivity is proven only for **local / hereditary / canonical** algebras
+  (AI Thm 1.2; it FAILS for a symmetric algebra [AGI]). So `bounded_silting_exploration`
+  makes **no general BFS / enumeration claim**: it is a bounded-radius walk with a loud
+  `status` (`complete`/`radius`/`budget`) and `finite_class ∈ {"local", None}` —
+  certified **complete only for local**. There is deliberately **no `"two_term"`
+  finite_class**: a general mutation walk leaves the 2-term slice, so 2-term finiteness
+  is P45's and is cross-checked *directly* AND **bidirectionally** (Plan-67 fix round, H2):
+  the silting engine INDEPENDENTLY enumerates the 2-term slice (a `silting_mutate` BFS in
+  the canonical {0,1} window, dedup by `g_proj` fingerprint) and its SET of objects **and
+  its edges** equal P45's `exchange_graph` both ways — pinned on kA₂ (5) and the
+  non-hereditary self-injective kZ₃/J² (14) — never P45 re-verified against itself, and
+  never claimed by the walk. (ii)
+  **Generation is three-valued** — `is_silting` is `True` only on the tilting / 2-term
+  (IJY) / local classes, `"unknown"` on the K₀-basis-only case, `False` otherwise;
+  `det(g_proj) = ±1` in the **projective** K₀ basis `(+)_v Z[P_v]` is NECESSARY (AI Thm
+  2.27) but **not sufficient** in general (thick subcategories are not K₀-classified —
+  Krah phantom, `arXiv:2302.12502`), so a silent `True` is never emitted off the
+  decidable classes. The projective basis is load-bearing: the P43 `is_tilting_complex`
+  used the composition-factor χ (`det(Cartan·g_proj)`) and was a systematic
+  false-negative on non-unimodular Cartan (self-injective/symmetric; fixed in Task 0,
+  `g_proj`). **The same three-valued honesty now governs `is_tilting_complex` itself
+  (Plan-67 fix round, H1):** the P43 surface previously returned a hard `is_tilting = True`
+  whenever the object was two-sided rigid with `det(g_proj)=±1`, but
+  `rigid + (#summands = rk K₀) ⇒ tilting (generation)` is exactly **Rickard's rank
+  QUESTION — an OPEN problem** (only partial answers, e.g. Zhang for self-orthogonal
+  τ-tilting modules of finite pd). Generation is now CERTIFIED (`generation == "certified"`,
+  hard `True`) only where a completion theorem reaches — a **2-term** self-orthogonal
+  K₀-basis object is 2-term silting (IJY) and, two-sided rigid, tilting (covering the
+  regular object and every APR / 2-term tilt, all backward-compatible) — and a **wide**
+  (non-2-term) rigid K₀-basis object is Rickard-open (`"k0_necessary_only"` ⇒
+  `is_tilting == "unknown"`). This is the SAME bare-K₀ inference the silting K₀-only rung
+  refuses, so the tilting rung and the silting K₀-only rung now agree exactly in the
+  Rickard-open regime (a genuine width-2 rigid tilting complex over `k[1→2→3]/(ab)`
+  returns `"unknown"` under BOTH verifiers). (iii) The **co-t-structure is a documentation record** (coheart `add(T)` +
+  aisle/coaisle descriptor strings + references), NOT a computed subcategory — the aisles
+  are infinite; it refuses on non-silting input. (iv) `End(μT)` **vs Oppermann is verified
+  at the underlying-quiver level** (the degree-0 (source,target) arrow multiset — Example
+  2.47 left-at-vertex-1 → the single-arrow linear A₂); the full graded dg degree
+  bookkeeping (Oppermann Thm 1.1's rotation / composition / anti-composition arrows) is
+  **`# PIN`'d, out of the engine's scope**. (v) **QPA 1.37 has no silting surface** (a
+  live `NamesGVars()` sweep finds no `SiltingObjects`/`SiltingMutation`/`SiltingQuiver`);
+  `tests/qpa/test_silting_qpa.py` is an honest **skip** that FAILS loudly should a future
+  QPA ever grow one. Derived-discrete recognition is out of scope (no shipped
+  recognizer). The covering oracles are therefore the self-cert batteries (positive-window
+  presilting, mutant re-verification of PRESILTING + shares-`n−1`, the `μ⁻∘μ⁺` involution
+  on kA₂ AND non-hereditary kZ₃/J², the ChainComplex↔PComplex bridge round-trip, the H1
+  tilting↔silting three-valued reconciliation) + the AI/Oppermann literature pins + the
+  **bidirectional** P45 2-term cross-check (both set directions + edges, incl. the
+  non-hereditary kZ₃/J²).
 - **The delooping level (Plan 40, Task F) is DEFERRED, not shipped.** Gélinas's
   `dell(M) = inf{ n : Ωⁿ M is a direct summand of Ω^{n+1} N for SOME f.d. `N` }`
   (Gélinas, *Adv. Math.* 394, 2022 — cited as `gelinas_delooping`) has an
@@ -758,8 +1061,10 @@ verified precision and listed below as such.
   is ~290 s on kZ₂₀ and whose degree-2 cochain basis is 10.5M cells (over
   `max_cells`, forcing the CS route or OOM), so no product finishes the ~120 s
   probe box at any degree — confirmed directly by a **1500 s (25-minute)** in-process
-  `cup:0..2` probe on kZ₂₀ that timed out; and bracket/Connes `B` have no CS route at
-  all. Every trim and omission is recorded per-example in
+  `cup:0..2` probe on kZ₂₀ that timed out. The bracket now has a CS-native route too
+  (Plan 51), but at dim ≥ 220 its diagonal builds are just as far past the probe box,
+  and Connes `B` has no CS-diagonal route at all. Every trim and omission is recorded
+  per-example in
   `webapp/precomputed/manifest.yaml`; the four tractable examples carry the full
   surface (`tests/webapp/test_curated_reachability.py`).
 - **AR-quiver knitting is an honest SEMI-decision** (Plan 41, C3). `knit_ar_quiver`
@@ -977,10 +1282,12 @@ verified precision and listed below as such.
   figure-only example (never a pin); and Redondo–Román 2018 (also deferred above).
 - **Deciding derived equivalence is NOT algorithmic** (Plan 43, C8). The derived
   surface ships **verifiers** and **necessary-condition** invariants, never a
-  decider. `is_tilting_complex` decides rigidity (on the exact, honestly-reported
-  window outside which hyper-Hom is provably zero) and K₀-unimodular generation for
-  a *given* candidate — it does not search for tilting complexes; `End(T)` is the
-  Rickard derived-equivalent algebra of that candidate. `derived_fingerprint` /
+  decider. `is_tilting_complex` DECIDES rigidity (on the exact, honestly-reported
+  window outside which hyper-Hom is provably zero) but reports **generation** honest
+  three-valued for a *given* candidate — K₀-unimodularity (`det g_proj = ±1`) is
+  NECESSARY, certified sufficient only on the 2-term/regular class (IJY), else
+  `"unknown"` (Rickard's rank question is open); it does not search for tilting
+  complexes; `End(T)` is the Rickard derived-equivalent algebra of that candidate. `derived_fingerprint` /
   `compare_fingerprints` speak in **"distinguished / not distinguished by these
   invariants"** — never "(in)equivalent": equal fingerprints do **not** imply a
   derived equivalence, and the 8-vertex cospectral trees are the standing pinned
@@ -1034,6 +1341,212 @@ verified precision and listed below as such.
   the Δ-filtration multiplicities, and the entire `Recollement` (corner structure
   constants, `A/AeA`, six functors, adjunction dims) — is char-clean pure linear algebra,
   proved by a `GF(2)` cell in each battery.
+- **φdim / ψdim are EXACT only for representation-finite input** (Plan 53 R23a;
+  `docs/plans/2026-08-07-plan-53-invariants-phidim-fcy.md`). The ⊕-of-all-indecomposables
+  theorem (add-monotonicity) needs the AR knit to CLOSE (`knit_ar_quiver.is_complete`).
+  When the knit caps at budget, `phi_dim`/`psi_dim` return a **certified LOWER bound**
+  over the discovered prefix ∪ the simples (`exact=False`, `status="budget"`) — never a
+  claimed sup. A genuine knit **error** RAISES loudly (a lower bound on a broken knit is
+  not certified); only `status="budget"` degrades softly. Self-injective short-circuits to
+  the exact `0` (Plan-40 φ≡0) before any knit. **Rep-infinite termination is governed by
+  the AR knit's budget semantics** (P53 critic): the knit's inner almost-split loop is not
+  hard-step-capped, so a LARGE `budget_modules` on a representation-infinite algebra (e.g.
+  the 2-Kronecker) can be slow before the budget trips — pass an explicit SMALL
+  `budget_modules` for rep-infinite input (the lower bound is honest regardless). A hard
+  inner-loop step cap in `knit_ar_quiver` is a named DEEPER-ENGINES-BACKLOG successor.
+- **LIT finitistic certificates: no known decision procedure in general** (Plan 53 R23c) —
+  explicitly NOT "proven undecidable". Families 1–3 (self-injective / Iwanaga-Gorenstein /
+  finite-φdim) emit certified EXECUTING findim upper bounds; **family 4 (finite one-sided
+  `id(A_A)`) ships the `ψ_𝒟(V)+n+1` machinery + `# PIN` and is unit-covered on constructed
+  `(𝒟, n)` data, but has NO end-to-end executing test** — its "one-sided-finite, not
+  Gorenstein" precondition is not certifiable by the bounded engine, which never PROVES an
+  injective dimension infinite. The `finitistic_dimension_bounds` `None → certified` flip
+  happens exactly in the applicable families; elsewhere the honest `None` is preserved.
+- **Fractional Calabi–Yau is certified at the WEAK-ON-GENERATORS tier** (Plan 53 R24) —
+  tier 3 of three (strong = a functor isomorphism `S ≅ Σⁿ`; weak = object-wise on ALL
+  objects; weak-on-generators = object-wise on the non-projective simples + the `Ω^i ν^j`
+  orbit reps). This is a NECESSARY condition for the weak (hence strong) CY property, never
+  a functor isomorphism, and it can UNDER-report BOTH the numerator `m` (defined mod the
+  Σ-period, reported as `sigma_period`) AND the denominator `ℓ` (a spurious small `ℓ` may
+  pass on the generators while failing on a non-generator object). The `tier` field labels
+  every payload; "as functors" appears nowhere in what is certified. The tier-1 functorial
+  certificate `Ω^{n+1}_{Aᵉ}(A) ≅ (A^∨)_φ` (Ivanov–Volkov Thm 1.8, via the minimal `A^e`
+  engine) is the named successor. Complete only for finite-representation-type
+  self-injective algebras (periodicity); a rep-infinite self-injective input caps at
+  `status="budget"` (never "not fractionally CY").
+- **Ivanov–Volkov Table 1 is BLOCKED-until-transcribed** (Plan 53 R24). The full stable CY
+  dimensions of standard/nonstandard self-injective algebras of finite type are keyed by
+  Asashiba type `(Δ, f, t)`; mapping a type triple to a quiverlab presentation is
+  non-trivial and deferred. The fractional-CY acceptance rests on the two independently
+  solid pins — `k[x]/(x^a)` = (1,1) (self-derived from the Serre-functor formula) and
+  `Π(Δ)` = (2,1) (Geiß–Leclerc–Schröer) — plus the internal-consistency self-cert (one
+  `(m, ℓ)` for all generators) and the `ℓ=1 ≡` Ivanov–Volkov integer-form cross-check.
+- **QPA has NO φdim / ψdim / Igusa-Todorov-dimension / stable-Calabi-Yau surface** (Plan
+  53). `tests/qpa/test_phidim_fcy_qpa.py` scans `NamesGVars()` and SKIPS the value probe
+  honestly (FAILS if QPA ever ships one); the covering oracle for the VALUES is the
+  literature battery. What QPA DOES crosscheck live are the prerequisites the values rest
+  on — `IsSelfinjectiveAlgebra`, `IsSymmetricAlgebra` (ν=id ⇔ symmetric), and `NthSyzygy`
+  of the simples (the `Ω²≅id` fact behind (1,1)).
+- **The INTRINSIC fundamental group is refused loudly — not bounded-computable** (Plan 56
+  R14). `A.fundamental_group()` returns the PRESENTATION group π₁(Q,I) (walks mod the
+  relation-homotopy along a spanning tree) and its abelianization by exact ℤ Smith normal
+  form — always computable. `A.intrinsic_fundamental_group()` ALWAYS raises: the intrinsic
+  group (the inverse limit over connected gradings, Cibils–Redondo–Solotar arXiv:0906.3069)
+  is not bounded-computable in general. The char-p oracle π₁(k[x]/(xᵖ)) = ℤ × C_p is the
+  INTRINSIC group; the presentation group of the monomial loop is ℤ (which is what quiverlab
+  computes and pins) — the C_p torsion is invisible to any presentation, which is exactly
+  why the intrinsic group is refused rather than faked.
+- **`is_simply_connected` is three-valued and `None` is honest per Adian–Rabin** (Plan 56
+  R14). `True` is emitted ONLY via a decidable sufficient criterion (the underlying graph is
+  a tree; or triangular with no bypasses so π₁ is presentation-independent, Le Meur, and a
+  Tietze-lite substitution trivialises the presentation; or the R16 separation certificate
+  holds). `False` is emitted ONLY via a decidable witness (disconnected / oriented cycle /
+  nontrivial π₁^ab of the stored presentation). Otherwise the verdict is `None` — triviality
+  of a finitely presented group is undecidable, so a `True` is NEVER manufactured from a
+  failed search. The `Hom(π₁,k⁺) ↪ HH¹` bound is asserted for TRIANGULAR algebras only
+  (Assem–de la Peña; iso for Schurian, CRS) — the sweep excludes non-triangular zoo members,
+  whose π₁^ab is still emitted.
+- **The strongly-simply-connected / separation recognizer requires triangular input and is
+  char/budget-honest** (Plan 56 R16). `separation_condition` / `is_strongly_simply_connected`
+  RAISE loudly only on non-triangular top input. The Krull–Schmidt `decompose` of `rad P_a`
+  is rigorous only over char 0 or char > dim (Plan 30); a per-vertex refusal is CAUGHT as
+  `undecided_char` and the convex sweep maps it (and any budget overrun) to `verdict = None`
+  — NEVER a mid-sweep raise and NEVER a silent `True`. The oracles run over QQ / GF(32003)
+  where decompose decides. The separation subquiver convention is the CORRECTED one
+  (`Q_a` = delete `a` together with its transitive predecessor closure), so trees come out
+  separated — the star/deeper-tree/branching-source discriminators pin it.
+- **QPA has NO fundamental-group / simple-connectivity surface** (Plan 56).
+  `tests/qpa/test_pi1_qpa.py` sweeps `NamesGVars()` and SKIPS honestly (FAILS if QPA ever
+  ships `FundamentalGroup`/`IsSimplyConnected`/`SeparationCondition`); the covering oracles
+  are the Plan-56 literature/theory pins + the Hom(π₁,k⁺) ≤ dim HH¹ cross-engine bound.
+- **The Tits-form tame/wild verdict — five binding scope facts** (Plan 62 R19;
+  `docs/plans/2026-08-07-plan-62-tits-tame-wild.md`). (a) **The verdict layer requires an
+  algebraically closed base field.** The tame/wild dichotomy (Drozd) is an
+  algebraically-closed notion; the two theorems (Bongartz 1984; Brüstle–de la
+  Peña–Skowroński 2011) are over an algebraically closed field. The gate `_is_alg_closed`
+  reads the domain's `is_algebraically_closed` flag when present (P61 — `True` only on the
+  `CC` working domain; `QQ`, `QQ(i)` and every `GF(p)`/`GF(p^n)` are `False`) and otherwise
+  falls back to `characteristic == 0`. The combinatorial Tits form and the representation
+  type are FIELD-INDEPENDENT in characteristic 0, so a char-0 verdict is an honest base
+  change to the algebraic closure (`ℂ̄`), which fixes the quiver + relations and hence `q_A`;
+  a char-0 field that is not flagged closed (`QQ`, `QQ(i)`) is a refusal once the flag is
+  present, and the reason string NEVER calls such a field "algebraically closed". Over
+  `GF(p)`/`GF(p^n)` the FORM is still computed (field-free) and the verdict is refused. (The
+  earlier "`CC` and `QQ` collapse to one indistinguishable char-0 field" wording was wrong:
+  they are distinct domains — `CC` → `SympyExactDomain` flagged closed, `QQ` →
+  `RationalField` flagged not-closed — and P61's flag distinguishes even the entry-level
+  look-alikes `CC` ↔ `QQ(i)` by construction route.) (b) **The verdict is gated on the
+  P56 certificate:** the tame/wild axis needs `is_strongly_simply_connected().verdict is
+  True` (BdlPS); the rep-finite axis needs `is_simply_connected().verdict is True`
+  (Bongartz). P56's three-valued `None` (Adian–Rabin / budget / undecided_char)
+  **propagates** to a `None` verdict — never a fabricated type. (c) **The m-Kronecker ladder
+  exercises the FORM layer only** — the Kronecker quiver (`m ≥ 2`) is NOT simply connected
+  (`π₁^ab = ℤ^{m−1}`), so it is out of the verdict scope (`rep_type = None`,
+  `simply_connected = False`); it pins `is_weakly_positive`/`is_weakly_nonnegative`, not the
+  algebra verdict. (d) **Weak nonnegativity (the tame axis) is decided by an exact
+  positive-SEMIdefinite certificate + the classified hypercritical list**, NOT a guessed box.
+  Because `HYPERCRITICAL_COVERAGE` is EMPTY by design (the full non-tree hypercritical
+  transcription is not verified here), the ONLY route to a `True`/tame verdict shipped today
+  is the exact positive-SEMIdefinite (Euclidean) certificate (a PSD form provably has no
+  hypercritical restriction — a genuine completeness certificate); the list-completeness
+  route is present but dormant until the coverage set is populated. Outside PSD the verdict is
+  honest `None` ("hypercritical list partially transcribed"), never a guessed `True`. A
+  `False`/wild is always a FOUND exact witness (`q < 0`). The `≤ 9`-variable cap was REFUTED
+  by `T_{2,3,7}` (a 10-variable hypercritical form with the sincere large-entry defect
+  `(12,6,8,4,10,9,7,6,4,2)`), so NO universal support/entry cap is claimed; every bound is
+  read off the encoded list. Transcription-checked (covered) entries: the minimal wild trees
+  `T_{2,3,7}`/`T_{2,4,5}`/`T_{3,3,4}` and the 3-Kronecker (defects verified in exact integer
+  arithmetic); the full non-tree hypercritical list is `# PIN`ned/deferred. (e) **QPA has a
+  Tits-form FORM surface but NO representation-type VERDICT verb** (verified live, QPA 1.37):
+  `TitsUnitFormOfAlgebra` / `IsWeaklyPositiveUnitForm` / `IsWeaklyNonnegativeUnitForm` are
+  crosschecked exactly (`tests/qpa/test_tame_wild_qpa.py`, a genuine two-implementation
+  oracle for weak positivity/nonnegativity, incl. `T_{2,3,7}`); there is no
+  `IsTameAlgebra`/`IsWildAlgebra`/`RepresentationType` verb, so the rep-finite/tame/wild
+  VERDICT is theory-oracled (Bongartz; BdlPS) — a fail-if-appears probe guards the claim.
+  Distinct from P38's `form_type` (definiteness heuristic) — the two surfaces never share a
+  label (`form type (definiteness)` vs `representation type (certified)`).
+- **Exceptional sequences (classical + τ-exceptional) — ten binding scope facts** (Plan 65
+  R27+R28; `docs/plans/2026-08-07-plan-65-exceptional-sequences.md`). (a) **τ-exceptional
+  mutation transitivity is proven only in rank 2** (Buan–Hanson–Marsh arXiv:2402.10301) — so
+  the τ-exceptional enumeration goes through the **ordered-sτ-tilt bijection**, NOT a
+  mutation-BFS; the count `n!·#sτt` is the completeness certificate (the Buan–Marsh theorem +
+  P45's already-tested `exchange_graph`). (b) **The `n!` multiplier of the τ count is the
+  Buan–Marsh theorem.** The formula identity `signed_count == n!·#sτt` is SELF-CERT
+  (tautological — the code DEFINES `signed_count = n!·len(exchange_graph.vertices)`); the
+  genuine cross-check is the **materialised** enumeration (`len(sequences) == signed_count`,
+  pairwise-distinct, each recognized) on `A₂`(10)/`A₃`(84)/the non-hereditary `k(1↔2)/rad²`(12),
+  and — the M-1 deep pins where completion-multiplicity is real — `kD₄`(1200, reorder-invariant,
+  all-module count 162 = classical) and `kA₄`(1008). Corroboration: `A₂ = 10` also equals
+  Igusa–Todorov's `n!·#clusters`. (b′) **The reduction algebra `C(U)` is completion-DEPENDENT**
+  (H-1): different tau-tilting completions of the same τ-rigid `U` give `End(T_U)/⟨e_U⟩` of
+  different dim/quiver (live-proved on kD₄); only the category `J(U)`, hence `#sTt(C(U))`, is
+  completion-INDEPENDENT (DIJ) — and the enumeration relies ONLY on `#sTt`. The reduction picks
+  the first completion in BFS order and self-certifies `#sTt`-invariance across completions (a
+  loud raise otherwise); the returned algebra is one valid presentation, its `#sTt` the
+  trustworthy datum. The tower recognizer's H-2 chain check compares successors by this same
+  `#sTt` invariant. (c) **The (a)↔(b)
+  cross-check is hereditary-only, realized as a COUNT equality** — the number of all-module
+  (all-positive) τ-exceptional towers equals the classical CES count (A₂=3, A₃=16), two
+  independent enumerations agreeing; the termwise `is_isomorphic` lift of a deep reduction
+  tower to ambient A-modules needs the general τ-perpendicular object-lift `F` (the DIJ
+  equivalence `mod C(U) → J(U)`), which is the plan's scope boundary — the general case rests
+  on the count oracle `n!·#sτt`. (d) **Classical enumeration is Dynkin-only** (rep-infinite
+  hereditary ⇒ an infinite braid orbit — a loud `status="budget"` refusal via the instant
+  Gabriel gate, never an infinite knit); **τ enumeration is τ-tilting-finite-only** (loud
+  otherwise). (e) **Char scope:** batteries over QQ (a GF(p) parity spot-check only where
+  dim-vectors are distinct); `char ≤ dim` refuses loudly (the shipped
+  `decompose`/`is_isomorphic`/`presented_form` caveat). (f) **`#sτt` (hence the τ count) is
+  ORIENTATION-INDEPENDENT** — the generalized Catalan/cluster number of the Dynkin type
+  (live-verified `#sτt(A₃)=14` for three orientations, `#sτt(D₄)=50` for the subspace, source
+  and mixed stars); the individual sequences differ across orientations (different algebras),
+  the count does not. (g) **E-type Dynkin counts are literature-pinned** (Obaid et al.), not
+  brute-forced (`E₆ → 41472`, etc.); live-check only `A_{≤5}`/`D₄`. (h) **Citations resolved
+  (BibTeX-verified):** `BuanMarsh2021` note `arXiv:1802.01169` (the earlier `2011.02068` was a
+  WRONG id — a Coptic-NLP paper), `RingelBraid1994` = Contemp. Math. 171 (1994) 339–352 (venue
+  RESOLVED; the metaplan's "CMS Conf. Proc. 14" is Crawley-Boevey's), the distinct
+  `arXiv:2211.10428` noted separately (not shipped, not load-bearing). (i)
+  **`is_exceptional_module` implements the BRICK criterion** (`end_dim=1 ∧ Ext¹=0`) — M3: this
+  is `= exceptional` over algebraically closed `k` and on the Dynkin/QQ battery (every Dynkin
+  indec is a rigid brick), a SUFFICIENT test over non-alg-closed `k` (a non-brick exceptional
+  module with a larger division-ring `End` returns False — a scope-limited false negative,
+  never a false positive). (j) **The P45 `mutate` D₄-star defect** (M1, Task 0): a genuine
+  pre-existing defect (a spurious `status="error"` with the correct 50 vertices on the mixed
+  star `{1→2,3→1,4→1}`) is fixed here with a regression pin (`#sτt(D₄)=50`, `status="complete"`
+  on all three orientations); independently, the τ-side gate refuses ANY non-`"complete"` graph
+  loudly (never a count off it). **QPA has no exceptional-SEQUENCE surface** (a fail-if-appears
+  `NamesGVars()` guard, `tests/qpa/test_exceptional_qpa.py`), so the sequence enumerators are
+  theory/self-cert-oracled; the exceptional-MODULE criterion IS QPA-anchored per indecomposable
+  on the kA₃ zoo — `dim End_A(M)=1` via QPA `HomOverAlgebra` (brick) and `dim Ext¹_A(M,M)=0`
+  via QPA `ExtOverAlgebra` (rigid), both agreeing with our engine.
+- **The radical filtration of `mod A` + Liu degrees — six binding scope facts** (Plan 57
+  R37/R21; `docs/plans/2026-08-07-plan-57-degrees-radical-filtration.md`). (a) **Certified
+  only on the representation-finite (knit-complete) domain.** `radical_filtration` /
+  `ar_invariants` inherit P41's semi-decision contract exactly (`status ∈
+  {complete, budget, error, unsupported}`); the nilpotency index, `rad^∞ = 0`, the degrees
+  and every R21 invariant are certified iff the knit closes. (b) **Self-injective input is
+  refused** (`status="unsupported"`): `knit_ar_quiver` cannot knit a self-injective algebra
+  from its projectives, so cyclic Nakayama `kZ_n/J^ℓ` is out of scope — the Chaio-school
+  self-injective closed forms are cited as documentation, not computed. (c) **Rep-infinite
+  input yields window-restricted layers, NO verdict**: a budget-exhausted knit returns the
+  layers of the discovered subcategory (a lower bound on `rad(mod A)`, loudly labelled),
+  with `nilpotency_index=None` and no `rad^∞` claim. (d) **The `(rad^∞)²=0 ⇒ rep-finite`
+  battery (CMMS 1994) is a CLASS statement, not a per-instance decider**: `rad^∞` is not
+  computable on rep-infinite input (no complete knit), so we NEVER construct a rep-infinite
+  instance and "verify CMMS" — what is tested is that every rep-finite zoo algebra has a
+  finite nilpotency index (`rad^∞=0`, consistent with CMMS) and the honest discrimination
+  (a finite index on rep-finite input, `status="budget"/"unsupported"` on rep-infinite —
+  never a false finite index); CMMS-1996 cube-zero and Kerner–Skowroński 1991 are
+  documentation-only class pins. (e) **QPA cannot compare** the module-category radical or
+  the degrees: `RadicalOfModule` is the Jacobson radical of ONE module (`rad M`), not the
+  category radical `rad(X,Y)`, and there is no `LeftDegree`/`RightDegree`/
+  `NilpotencyIndexOfRadical` verb — `tests/qpa/test_radical_qpa.py` is a fail-if-appears
+  `IsBoundGlobal` probe; the one QPA-checkable slice is the layer-1 off-diagonal
+  `dim rad(X,Y) = dim Hom(X,Y)` via `HomOverAlgebra`. (f) **A general functorial mesh
+  engine + automatic standardness detection is DEFERRED (a named successor)**: route (i)
+  ships only as the `kA_n`/`D_4` `ZA_n` closed form (`_mesh_layer_dim`, pure interval
+  combinatorics) — the route-(i) ≡ route-(ii) agreement is asserted only on the standard
+  test set, and on a non-standard component (Riedtmann's char-2 examples) the two could
+  diverge; route (ii) exact linear algebra is the arbiter throughout.
 - **Stratifications beyond the quasi-hereditary case are a named successor** (Plan 47).
   This plan ships the quasi-hereditary highest-weight toolkit; general standardly
   stratified / properly stratified algebras and good-filtration *dimensions* past the
@@ -1081,6 +1594,152 @@ verified precision and listed below as such.
   / n=2 fan-tiling + n=3 per-chamber-unimodular unfolding-sanity / King certificates
   (self-cert), and the pair↔`Gen(M)` + fan-normal cross-checks (cross-engine). The external cross-checks NAMED (not run live) are the
   Demonet–Iyama–Jasso tables and Iyama's `fd-applet`; neither is wired as a live oracle.
+- **The Plan-63 wall-and-chamber structure via bricks — six binding scope facts.** (a) **The
+  wall `D(B)` is a polyhedral CONE, not a hyperplane normal** — the genuinely new object over
+  Plan 45, whose fan records only per-edge normals. `D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0
+  for every submodule N ⊆ B}` is cut from the shipped exact `stability._submodule_dimvecs`
+  reusing King's (submodule, ≤ 0) verbatim, so it is byte-consistent with the tested
+  `is_theta_semistable`. A simple brick gives the full hyperplane; a non-simple brick a proper
+  face (`D(P₁)` over kA₂ is a RAY). (b) **Certified COMPLETE iff brick-finite ⟺
+  τ-tilting-finite** (DIJ), decided by the Plan-45 exchange-graph BFS closing; on a
+  brick-infinite algebra (the 2-Kronecker) it returns a **bounded region** with
+  `complete=False`, `status="budget"`, a `truncation` note and NO count — each discovered
+  chamber/wall is exact, only totality is withheld (the P62 discipline; the discovered
+  wall-normal groups are counted under `partial_wall_groups`, `num_walls=None` — never
+  presented as a definitive wall count). **A spurious exchange-engine `mutate` error
+  (`status="error"`) is NEVER read as τ-tilting-infinite** (fix-round, adjudicated
+  2026-08-07): the P45 `mutate` can fail on one edge on some finite algebras (the D₄ star; the
+  ROOT is fixed by Plan 65 Task 0 in `mutation.py`, untouched here). Since every support
+  τ-tilting pair has exactly n mutations and each edge is rediscovered from its other endpoint,
+  an n-REGULAR non-budget-capped graph is provably CLOSED — so wall_chamber recomputes the
+  n-regularity certificate (it cannot read `eg.n_regular`, which `mutation.py` gates on
+  `is_complete`) and, if it holds, RECOVERS the full complete structure (`complete=True`, exact
+  counts, an honest `note` recording the provenance; the maximal-green-sequence count is omitted
+  rather than a false 0). If the certificate FAILS (a genuinely non-n-regular error graph) the
+  computation is refused LOUDLY as unreliable — never the "τ-tilting-infinite" text, never a
+  bounded sub-fan. This is a self-cert oracle (D₄ star recovered to 50/12; the loud path and the
+  certificate falsifiably tested). (c) **Walls are
+  grouped by brick ISO-CLASS, never by dim-vector** — kZ₂/rad²'s two non-isomorphic (1,1)
+  bricks P₁, P₂ stay separate (4 walls, not 3), via `torsion.bricks` + `_edge_brick` +
+  `is_isomorphic`. (d) **Rigorous over char 0 / char > dim** (QQ default; the brick /
+  `is_isomorphic` char caveat is inherited from Plan 45; off scope the loud `QuiverlabError`
+  propagates, surfaced as a clean typed error block, never a wrong wall set); bricks decide
+  over the algebraically-closed / char-0 base (`end_dim = 1`; the GF(pⁿ) proper-division-ring
+  caveat is honest-scope, inherited). (e) **The drawing is rank ≤ 3 only** — n = 2 the exact
+  extreme rays from the inequality system, n = 3 the grouped exchange-edge facet vectors
+  (each self-certified to lie in `D(B)`) L1/octahedron-projected; the DIRECT 2D extreme-ray
+  computation of an n = 3 wall cone (Fourier–Motzkin) is NOT done — the grouped facets are the
+  wall's rays in the complete fan and the `θ ∈ D(B)` self-cert proves membership; rank ≥ 4
+  gets the inequality tables (`render = "table"`). (f) **QPA CANNOT COMPARE** — there is no
+  wall-and-chamber / stability-fan surface in QPA 1.37 (`tests/qpa/test_wall_chamber_qpa.py`
+  is an honest `NamesGVars()` probe that skips and FAILS if one ever ships), and since QPA has
+  no support-τ-tilting surface either, `#chambers = #support τ-tilting` inherits no live QPA
+  cross-check — the named external checks are FD-Applet / Demonet–Iyama–Jasso tables.
+- **The Plan-55 left/right parts — five binding scope facts.** (a) **Representation-finite and
+  non-self-injective only.** `left_right_parts` is complete **iff** `A` is rep-finite and not
+  self-injective. A self-injective algebra (`k[x]/(xⁿ)`) is refused by the P41 knit with
+  `status="unsupported"`. A **provably** rep-infinite algebra is refused up front by a
+  shipped-theorem certificate, also `status="unsupported"`: the **2-Kronecker** by Gabriel's
+  Dynkin criterion on its hereditary quiver, and **ACLV Example 2.2(c)** (`1⇉2⇉3⇉4` bound by
+  rad²=0 — *mathematically ada* yet rep-infinite, and **non-hereditary** so the hereditary
+  route misses it) by Gabriel's **separated-quiver** criterion (rad²=0 whose separated quiver
+  is not a disjoint union of Dynkin diagrams). Both fire **instantly** — the knit's per-module
+  almost-split cost makes even a small `budget_dim` cap take minutes on 2.2(c) (measured ~120s
+  at `budget_dim=16`), so a fast sufficient certificate is required, not the budget route. Any
+  **other** rep-infinite input — not covered by the two certificates — falls through to the
+  `budget_dim`-capped knit (per-module dimension cap, default 64) and returns a loud
+  `status="budget"` in bounded time, never a partial atlas. `is_complete`/`status` mirror the
+  `ARQuiver` loud cap. (b) **The support-algebra build needs a quiver presentation.** A
+  structure-constants-only `A` (`A.quiver is None`) cannot present the induced subquiver, so
+  `_support_algebra` raises `QuiverlabError` up front — never a fabricated quiver (the
+  GUI/webapp always feed a quiver-presented `A`). (c) **Identification is QQ / char-0
+  decisive.** Every step that *locates* a module in the universe (`_index_in_U` for `τ⁻¹X` /
+  `P_x` / `I_x`) calls `is_isomorphic`, which is decisive over char 0 but **positive-only and
+  RAISES** over large GF(p)/GF(p^n) when it cannot exhibit an isomorphism; on an in-scope
+  algebra with two non-isomorphic indecomposables sharing a dimension vector this propagates a
+  **loud whole-compute refusal** — so the identification batteries run over **QQ**, and the
+  `GF(p)` route is used only where every indecomposable has a distinct dimension vector
+  (kA_n, the rad²=0 linear Nakayama), where the dim-vector prefilter never enters the
+  positive-only branch. Never a silent wrong part or support. (d) **The "product of tilted
+  algebras" property is REPORTED, not certified here.** `A_λ`/`A_ρ` are a product of
+  quasi-tilted algebras in general (tilted for ada — ACT [5](2.3) / ACLV Thm A); P55 ships the
+  connected-component factors and pins the per-factor *tiltedness* with a
+  `skipif(not hasattr(Algebra, "is_tilted"))`-guarded test (`test_support_components_are_tilted_PIN`)
+  that GENUINELY auto-activates into a real assert the moment **P60** ships `Algebra.is_tilted`
+  (no manual un-skip). (e) **QPA CANNOT COMPARE the left/right-part surface** — QPA
+  1.37 exposes no `L_A`/`R_A`/support-algebra verb (a fail-if-appears `IsBoundGlobal` probe is
+  the trip-wire), so the covering oracles are the ACLV literature pins + the predecessor-closure
+  / support / duality certificates; the *defining* pd ≤ 1 / id ≤ 1 flags ARE corroborated
+  pointwise by QPA `ProjectiveResolution` / `InjDimensionOfModule`.
+- **The Plan-61 recognizer ladder — six binding scope facts.** (a) **Representation-finite and
+  non-self-injective only** (inherited from P55/P41): `recognizer_ladder` is complete iff the
+  P55 atlas is, else a loud `status` and NO rungs — never a partial ladder. **ACLV Example
+  2.2(c)** (`1⇉2⇉3⇉4`, rad²=0) is the honest boundary oracle: *mathematically ada* yet refused
+  because rep-infinite (ada does NOT imply laura in general). (b) **`laura` is trivially `True`
+  in scope** — every rep-finite algebra is laura (finite `ind A` ⇒ finite complement), so the
+  useful datum is the reported finite complement; the interesting laura content is rep-infinite,
+  out of knit scope. (c) **Identification is QQ / char-0 decisive** — the weakly-shod injective/
+  projective location and the ada/quasi-tilted placements call `is_isomorphic`, positive-only
+  over large GF(p)/GF(pⁿ); a loud whole-compute refusal propagates, so the batteries run over
+  **QQ**. (d) **The ada/HH¹ Theorem-B verdict is emitted only over an algebraically closed
+  field** — gated on the new additive `A.domain.is_algebraically_closed` flag (`True` only on
+  the CC working domain; there is **no** `Algebra.field`, and QQi shares CC's `SympyExactDomain`
+  class, so the flag — never the class — is the sound predicate). Over QQ/GF(p)/GF(pⁿ)/QQi the
+  block reports `dim HH¹` + the theorem statement, **no verdict** (Theorem B's hypothesis
+  unmet). `dim HH¹` is char-0 field-independent (flat base change), so the number computed on
+  the exact working domain IS the ℂ statement; the alg-closed hypothesis controls the theorem's
+  *validity*, hence the gate is a declaration flag, not a recomputation. The Theorem-B
+  `False` branch has a **REAL pin**: the "square" `kQ/(a·b, c·d)` on `1→2→4`, `1→3→4` (both
+  length-2 routes killed) over CC is rep-finite and quasi-tilted (hence ada, gl.dim 2, empty
+  complement) yet has `dim HH¹ = 1` and `π₁ = ℤ`, so it is NOT simply connected and Theorem B
+  returns `verdict = False` — cross-agreeing with P56's `is_simply_connected = False` (both
+  `False`, verified live); the pure `_theorem_b_verdict` unit test keeps the gate logic covered
+  across all four `(ada, alg_closed)` corners. (e)
+  **`tilted ⇒ quasi-tilted`** is `# PIN`'d for **P60** — a skipped auto-flipping test that
+  becomes a real assert the moment P60 ships `Algebra.is_tilted`. (f) **QPA CANNOT COMPARE the
+  recognizer surface** — QPA 1.37 exposes no quasi-tilted/shod/weakly-shod/laura/ada verb (a
+  fail-if-appears `IsBoundGlobal` probe is the trip-wire); the gl.dim gates + the pointwise
+  pd/id ingredients ARE QPA-checked (`GlobalDimensionOfAlgebra` / `InjDimensionOfModule`).
+
+- **The Plan-60 tilted-algebra recognizer — five binding scope facts.** (a)
+  **Representation-finite + non-self-injective SEARCH scope; theorem gates extend it.**
+  `tilted_check` is a **complete** verdict iff a theorem gate fires (**H** hereditary ⇒ tilted,
+  including rep-infinite hereditary like the Kronecker quiver; **S** non-semisimple self-injective
+  ⇒ not tilted; **G** `gl.dim ≥ 3`, exact or a certified lower bound, ⇒ not tilted) **or** `A` is
+  rep-finite, non-self-injective, and the transversal enumeration finishes within
+  `budget_sections`. A **rep-infinite non-hereditary `gl.dim ≤ 2`** algebra is an honest
+  `verdict="unknown"` (`status="budget"`), and the **local criterion arXiv:1409.2054 (Thm 2.6 on
+  a locally-computed finite cut) is the documented, not-yet-implemented rep-infinite extension
+  path** (ledger: `docs/plans/DEEPER-ENGINES-BACKLOG.md`). **Rep-infinite hereditary is `tilted`
+  (Gate H) but its module-level slice is OMITTED** — Gate H reads the Dynkin type of `A`'s **own**
+  quiver first (finite ADE ⇒ rep-finite ⇒ the projective slice is knit-enumerable; Euclidean
+  `~…`/wild ⇒ rep-infinite), so for rep-infinite input the AR knit is **never built** (it would
+  not terminate) — the Kronecker quiver returns `tilted`/`~A₁` **instantly**; the postprojective
+  section exists but is not knit-enumerable, so the slice is omitted, not faked.
+  `is_complete`/`status` mirror the `ARQuiver` loud cap. **A disconnected `A` is refuted up front**
+  (`verdict="not_tilted"`, `reason="disconnected"`) — a tilted algebra is a connected End-algebra
+  over a connected hereditary algebra (ASS2006); the P55 support surface feeds the recognizer its
+  connected components individually, so the guard never fires there.
+  (b) **Needs a quiver presentation.** A structure-constants-only `A` (`A.quiver is None`) refuses
+  loudly with `QuiverlabError` (the GUI/webapp always feed a quiver-presented `A`). (c) **Char
+  scope is load-bearing.** The `Hom(X, τY)=0` / faithfulness / self-injective / hereditary checks
+  are **exact over every Domain**, but the Ringel certificate uses `is_tilting_module` (summand
+  count via `decompose`) and `presented_form` (Gabriel recovery) — **rigorous only over char 0 or
+  char > dim, LOUD otherwise** — and any module identification (`is_isomorphic`) is QQ/char-0
+  decisive, positive-only-and-raising over large GF(p). So the verdict batteries run over **QQ**;
+  a **`GF(32003)` parity check is kept only for `kAₙ`** (distinct dim-vectors, no `is_isomorphic`
+  raise). Never a silent wrong verdict over `char ≤ dim`. (d) **`A = End_H(D(S))` is
+  theorem-guaranteed, not certified by a bare iso.** quiverlab has no algebra-iso certifier, so on
+  a `tilted` verdict the report states `A = End_H(D(S))` as **Ringel-theorem-guaranteed** and
+  reports the checkable invariants (`dim A`, `dim H`, the section-graph type ≡ the recovered
+  Gabriel type of `H`, loud on divergence) — never a `≅` the engine did not check. (e) **QPA
+  CANNOT COMPARE the tilted-algebra recognizer** — QPA 1.37 exposes no `IsTiltedAlgebra` / slice
+  search (a fail-if-appears `IsBoundGlobal` probe is the trip-wire), so the covering oracles are
+  the Liu/Happel–Ringel/ASS literature pins + the Ringel-1.9(2) self-certificate; the slice module
+  IS confirmed a **tilting module** by QPA's computational `TiltingModule(S, 1)`. **Settled
+  correction:** the record's "cluster-tilted `A₃` ⇒ not tilted" and "`kZ₃/J²` ⇒ not tilted" are
+  the **same** self-injective algebra (the type-`A₃` non-hereditary cluster-tilted algebra
+  `Jac(3-cycle, αβγ)` IS `kZ₃/J²`), refuted by the same Gate S.
 
 - **The Plan-64 R26 torsion-lattice congruence surface — five binding scope facts.**
   (a) **Rigorous over char 0 / char > dim (QQ default).** The bricks, semibricks, the

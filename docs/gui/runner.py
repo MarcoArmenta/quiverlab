@@ -18,9 +18,12 @@ os.environ.setdefault("MPLBACKEND", "Agg")   # never let matplotlib probe for a 
 import quiverlab
 
 SCHEMA_VERSION = 1
-# The GUI tags requests carrying module / Ext / Tor blocks as schema 2 (the
-# webapp validator's rule); this runner's dispatch handles both identically.
-ACCEPTED_SCHEMAS = (1, 2)
+# The GUI tags requests carrying module / Ext / Tor blocks as schema 2, and a
+# Hochschild coefficient block (Plan 52) as schema 3; this runner's dispatch
+# handles all three identically.
+ACCEPTED_SCHEMAS = (1, 2, 3)
+# The Hochschild compute kinds that may carry a coefficient bimodule (Plan 52).
+_HH_COEFFICIENT_KINDS = frozenset({"hh_cohomology", "hh_homology"})
 MAX_DEGREE = 10
 # Depth to which projective dimension is probed before reporting "infinite"
 # (matches the library's injective_dimension(bound=32) default).
@@ -40,7 +43,7 @@ _MODULE_KINDS = frozenset({
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
           "module": None, "ext_target": None, "tor_target": None,
-          "algebra_b": None}
+          "algebra_b": None, "coefficients": None}
 
 
 class RequestError(Exception):
@@ -80,6 +83,12 @@ def _algebra_from_spec(alg):
     Shared by :func:`run_build` and :func:`random_module`."""
     kind = alg.get("kind")
     if kind == "family":
+        # SkewGentleAlgebra (Plan 68) is the ONE non-scalar constructor the no-code GUI
+        # builds client-side: a triple (Q, I, Sp) drawn on the canvas + special-loop
+        # picks. Every OTHER family stays the server tier. Byte-identical to the server
+        # build (quiverlab.hpc.spec._build_skew_gentle).
+        if alg.get("family") == "SkewGentleAlgebra":
+            return _skew_gentle_from_spec(alg)
         raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
                            "this GUI submits kind 'quiver' only")
     if kind != "quiver":
@@ -122,19 +131,52 @@ def _algebra_from_spec(alg):
     return Q.algebra(relations=relations, field=field)
 
 
+def _skew_gentle_from_spec(alg):
+    """Build the split algebra SkewGentleAlgebra(Q, I, Sp) from a GUI
+    ``family: SkewGentleAlgebra`` block with flattened triple params (vertices, arrows,
+    relations, special). Byte-identical to the server build
+    (quiverlab.hpc.spec._build_skew_gentle)."""
+    params = alg.get("params") or {}
+    verts = params.get("vertices")
+    if not (isinstance(verts, list) and verts and all(isinstance(v, int) for v in verts)):
+        raise RequestError("SkewGentleAlgebra.vertices must be a non-empty list of ints")
+    arrows_p = params.get("arrows") or {}
+    if not (isinstance(arrows_p, dict) and all(
+            isinstance(st, list) and len(st) == 2 and all(isinstance(x, int) for x in st)
+            for st in arrows_p.values())):
+        raise RequestError("SkewGentleAlgebra.arrows must map names to [source, target] pairs")
+    rels = params.get("relations", [])
+    if not (isinstance(rels, list) and all(isinstance(r, str) for r in rels)):
+        raise RequestError("SkewGentleAlgebra.relations must be a list of strings")
+    special = params.get("special", [])
+    if not (isinstance(special, list) and all(isinstance(v, int) for v in special)):
+        raise RequestError("SkewGentleAlgebra.special must be a list of vertex integers")
+    field = _field_from_spec(alg.get("field"))
+    from quiverlab.skewgentle.split import SkewGentleAlgebra
+    Q = quiverlab.Quiver(vertices=list(verts),
+                         arrows={k: (s, t) for k, (s, t) in arrows_p.items()})
+    return SkewGentleAlgebra(quiver=Q, relations=list(rels), special=set(special),
+                             field=field)
+
+
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
-                  module=None, ext_target=None, tor_target=None, algebra_b=None)
+                  module=None, ext_target=None, tor_target=None, algebra_b=None,
+                  coefficients=None)
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
         if req.get("schema") not in ACCEPTED_SCHEMAS:
-            raise RequestError("unsupported schema %r (this GUI speaks schema 1/2)"
+            raise RequestError("unsupported schema %r (this GUI speaks schema 1/2/3)"
                                % (req.get("schema"),))
         alg = req.get("algebra") or {}
         A = _algebra_from_spec(alg)
-        vertices, arrows = alg.get("vertices"), alg.get("arrows")
+        # For the family: SkewGentleAlgebra path the drawn quiver rides under params;
+        # the summary reports the ORIGINAL (Q, arrows), not the split.
+        _src = alg.get("params") if alg.get("kind") == "family" else alg
+        vertices = _src.get("vertices") or []
+        arrows = _src.get("arrows") or {}
         # Module blocks (Plan 26) ride alongside the algebra; the module itself is
         # built lazily in compute_one, so a relation-violating matrix surfaces as a
         # per-computation error (rendered on the page), never a build crash.
@@ -144,7 +186,8 @@ def run_build(request_json):
         _state.update(algebra=A, request=req, module=req.get("module"),
                       ext_target=req.get("ext_target"),
                       tor_target=req.get("tor_target"),
-                      algebra_b=req.get("algebra_b"))
+                      algebra_b=req.get("algebra_b"),
+                      coefficients=req.get("coefficients"))
         out = {"ok": True, "dim": A.dim, "n_vertices": len(vertices),
                "n_arrows": len(arrows), "algebra": repr(A).splitlines()[0]}
     except Exception as exc:
@@ -169,6 +212,24 @@ def _parse_compute(spec):
             raise RequestError("congruences budget must be a positive integer (got %r)"
                                % (spec,))
         return "congruences", (int(rng) if rng else None)
+    # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
+    # -- the exchange-graph pair budget, not a homological degree, so it skips MAX_DEGREE.
+    if name == "wall_chamber":
+        if rng and not rng.isdigit():
+            raise RequestError("wall_chamber budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "wall_chamber", (int(rng) if rng else None)
+    # silting carries a RADIUS,BUDGET pair, not a degree range (Plan 67): 'silting' or
+    # 'silting:3,64'. The top is the (radius, budget) tuple; neither is a homological
+    # degree, so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
+    if name == "silting":
+        if rng:
+            parts = rng.split(",")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise RequestError("silting suffix must be 'radius,budget' with positive "
+                                   "integers (got %r)" % (spec,))
+            return "silting", (int(parts[0]), int(parts[1]))
+        return "silting", None
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
     if name == "ar_quiver":
@@ -176,6 +237,50 @@ def _parse_compute(spec):
             raise RequestError("ar_quiver budget must be a positive integer (got %r)"
                                % (spec,))
         return "ar_quiver", (int(rng) if rng else None)
+    # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
+    # 'exceptional_sequences' or 'exceptional_sequences:512'. Skips MAX_DEGREE like tau_tilting.
+    if name == "exceptional_sequences":
+        if rng and not rng.isdigit():
+            raise RequestError(
+                "exceptional_sequences budget must be a positive integer (got %r)" % (spec,))
+        return "exceptional_sequences", (int(rng) if rng else None)
+    # radical_filtration + ar_invariants (Plan 57) carry a MODULE BUDGET, not a degree
+    # range (parsed like ar_quiver -- skips MAX_DEGREE). NOTE: 'radical_filtration'
+    # (the module-category radical rad^n(X,Y)) is DISTINCT from 'radical_filtration_ss'
+    # (the Loewy radical-series spectral sequence, a DIFFERENT object).
+    if name in ("radical_filtration", "ar_invariants"):
+        if rng and not rng.isdigit():
+            raise RequestError("%s budget must be a positive integer (got %r)"
+                               % (name, spec))
+        return name, (int(rng) if rng else None)
+    # left_right_parts carries a MODULE BUDGET, not a degree range (Plan 55): the budget caps
+    # the knitted universe, so it skips MAX_DEGREE (like ar_quiver / tau_tilting).
+    if name == "left_right_parts":
+        if rng and not rng.isdigit():
+            raise RequestError("left_right_parts budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "left_right_parts", (int(rng) if rng else None)
+    # tilted_check carries the KNIT budget (budget_modules), not a degree range (Plan 60): it
+    # skips MAX_DEGREE like ar_quiver / left_right_parts. budget_sections stays internal.
+    if name == "tilted_check":
+        if rng and not rng.isdigit():
+            raise RequestError("tilted_check budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tilted_check", (int(rng) if rng else None)
+    # recognizer_ladder carries a MODULE BUDGET, not a degree range (Plan 61): the budget caps
+    # the knitted universe, so it skips MAX_DEGREE (like left_right_parts / ar_quiver).
+    if name == "recognizer_ladder":
+        if rng and not rng.isdigit():
+            raise RequestError("recognizer_ladder budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "recognizer_ladder", (int(rng) if rng else None)
+    # skew_gentle carries a tau-tilting PAIR BUDGET, not a degree range (Plan 68):
+    # 'skew_gentle' or 'skew_gentle:512'. Skips MAX_DEGREE (like tau_tilting).
+    if name == "skew_gentle":
+        if rng and not rng.isdigit():
+            raise RequestError("skew_gentle budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "skew_gentle", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -279,6 +384,31 @@ def _build_module(A, mspec, name):
         raise RequestError("module: no vertex %r in the algebra" % (v,))
     dimvec, action = _full_matrices(A, mspec)
     return A.module(dimvec, action, side=mspec.get("side", "right"), name=name)
+
+
+def _build_coefficient(A, cspec):
+    """Build a Hochschild coefficient Bimodule from a request coefficient block
+    (Plan 52). None => the regular bimodule (no block emitted). Mirrors
+    quiverlab.hpc.spec._build_coefficient / _parse_coefficients."""
+    if cspec is None:
+        return None
+    from quiverlab.hochschild.coefficients import Bimodule
+    if not isinstance(cspec, dict):
+        raise RequestError("coefficients must be an object")
+    builtin = cspec.get("builtin")
+    if builtin is not None:
+        kind = builtin.get("kind") if isinstance(builtin, dict) else None
+        builder = {"regular": Bimodule.regular, "dual": Bimodule.dual,
+                   "twisted_nakayama": Bimodule.twisted_by_nakayama,
+                   "quotient_socle": Bimodule.mod_socle}.get(kind)
+        if builder is None:
+            raise RequestError("unknown coefficient builtin kind %r" % (kind,))
+        return builder(A)
+    dim, lm, rm = cspec.get("dim"), cspec.get("left_maps"), cspec.get("right_maps")
+    if dim is None or lm is None or rm is None:
+        raise RequestError("coefficients: needs a 'builtin' pick-list OR "
+                           "'dim'+'left_maps'+'right_maps'")
+    return Bimodule.from_actions(A, dim, lm, rm)
 
 
 def _random_module_core(A, dims, side, seed, tries):
@@ -787,22 +917,33 @@ def compute_one(spec):
                 raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
             method = (A.hochschild_cohomology if name == "hh_cohomology"
                       else A.hochschild_homology)
-            table = method(top, verbose=False, trace=_state["events"])
+            coeff = _build_coefficient(A, _state.get("coefficients"))   # Plan 52 (None=regular)
+            hh_kwargs = {"coefficients": coeff} if coeff is not None else {}
+            table = method(top, verbose=False, trace=_state["events"], **hh_kwargs)
+            keys = list(table.references)
+            if coeff is not None:              # Plan 52 coefficient provenance
+                for ckey in ("chaparro_schroll_solotar", "lindell_rubio_relative"):
+                    if ckey not in keys:
+                        keys.append(ckey)
             block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                      "engine": table.engine,
-                     "citations": _citation_pairs(table.references)}
+                     "citations": _citation_pairs(keys)}
+            if coeff is not None:
+                block["coefficients"] = coeff.describe()
             # Plan 35 wave 3d: capture the explicit HH^n / HH_n representatives alongside
             # the dims (basis_classes / chain_basis / differentials / inner_dims per
             # degree) from the SAME dims path -- key-for-key identical to the server twin
             # (quiverlab.hpc.spec._dispatch), so the cross-runner contract holds. None
-            # (dims-only) when no representative route applies.
-            from quiverlab.hochschild.hh_reps import hh_reps_blocks
-            try:                               # reps are ADDITIVE + best-effort: a
-                reps = hh_reps_blocks(A, name, top, list(table.dims), table.engine)
-            except Exception:                  # capture must NEVER break the dims block
-                reps = None
-            if reps:
-                block.update(reps)
+            # (dims-only) when no representative route applies. Skipped with a coefficient
+            # (reps are for the regular bimodule).
+            if coeff is None:
+                from quiverlab.hochschild.hh_reps import hh_reps_blocks
+                try:                           # reps are ADDITIVE + best-effort: a
+                    reps = hh_reps_blocks(A, name, top, list(table.dims), table.engine)
+                except Exception:              # capture must NEVER break the dims block
+                    reps = None
+                if reps:
+                    block.update(reps)
         elif name == "cyclic_homology":
             # Plan-35 follow-up: cyclic homology HC_0..HC_n (Connes (b, B) mixed
             # complex). Range kind; the block is key-for-key identical to the server
@@ -846,6 +987,55 @@ def compute_one(spec):
             from quiverlab.modules.ar import ar_quiver_block
             block = ar_quiver_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "radical_filtration":
+            # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET
+            # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.radical.radical_filtration_block). A
+            # char-scope refusal is caught into an `error` field, never a crash.
+            # NOTE: distinct from radical_filtration_ss (the Loewy radical-series
+            # spectral sequence, a DIFFERENT object).
+            from quiverlab.errors import QuiverlabError
+            from quiverlab.modules.radical import radical_filtration_block
+            try:
+                block = radical_filtration_block(A, budget=top if top is not None else 512)
+            except QuiverlabError as exc:
+                block = {"kind": "radical_filtration", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "ar_invariants":
+            # The AR-component invariants (Plan 57 / R21): Liu degrees, partition,
+            # directing, rep-directed recognizer. Same BUDGET-kind contract + shared
+            # builder (modules.ar_invariants.ar_invariants_block); byte-identical twin.
+            from quiverlab.errors import QuiverlabError
+            from quiverlab.modules.ar_invariants import ar_invariants_block
+            try:
+                block = ar_invariants_block(A, budget=top if top is not None else 512)
+            except QuiverlabError as exc:
+                block = {"kind": "ar_invariants", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "left_right_parts":
+            # Left/right parts (P55, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.left_right.left_right_parts_block) +
+            # references->citations.
+            from quiverlab.modules.left_right import left_right_parts_block
+            block = left_right_parts_block(A, budget=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "tilted_check":
+            # Tilted-algebra recognizer (Plan 60): an ALGEBRA-level KNIT-BUDGET kind (not a
+            # degree range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.tilted.tilted_check_block) + references->citations.
+            # budget_sections keeps its internal default 4096.
+            from quiverlab.modules.tilted import tilted_check_block
+            block = tilted_check_block(A, budget_modules=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "recognizer_ladder":
+            # The recognizer ladder (P61, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # shared builder (modules.recognizers_ladder.recognizer_ladder_block) +
+            # references->citations.
+            from quiverlab.modules.recognizers_ladder import recognizer_ladder_block
+            block = recognizer_ladder_block(A, budget=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -876,6 +1066,17 @@ def compute_one(spec):
             from quiverlab.modules.homdims import homological_profile
             block = homological_profile(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "fractional_cy":
+            # Fractional Calabi-Yau dimension of the stable category (Plan 53 / R24): an
+            # ALGEBRA-level scalar kind (schema v1). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (modules.fractional_cy.fractional_cy_block) + references->citations. A
+            # non-self-injective input is caught INSIDE the builder into {"error": ...}
+            # (no `references` on that shape), never a crash.
+            from quiverlab.modules.fractional_cy import fractional_cy_block
+            block = fractional_cy_block(A)
+            if "references" in block:
+                block["citations"] = _citation_pairs(block["references"])
         elif name == "center":
             dim_z, basis = A.center()
             # Basis entries are exact ints/rationals (sympy MPQ over CC) — not
@@ -906,6 +1107,14 @@ def compute_one(spec):
             # server twin: SAME library block builder + `references`->citations.
             from quiverlab.invariants.recognizers import recognizers_block
             block = recognizers_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "coxeter_spectral":
+            # Certified Coxeter spectral analysis (Plan 58 / R20). Byte-identical to
+            # the server twin (quiverlab.hpc.spec._dispatch): SAME library block
+            # builder (invariants.coxeter_spectral.coxeter_spectral_block) +
+            # `references`->citations.
+            from quiverlab.invariants.coxeter_spectral import coxeter_spectral_block
+            block = coxeter_spectral_block(A)
             block["citations"] = _citation_pairs(block["references"])
         elif name == "derived_fingerprint":
             # Derived fingerprint (Plan 43). Byte-identical to the server twin
@@ -943,9 +1152,25 @@ def compute_one(spec):
             from quiverlab.modules.quasihereditary import quasi_hereditary_block
             block = quasi_hereditary_block(A)
             block["citations"] = _citation_pairs(block["references"])
-        elif name in ("cup", "cap", "bracket", "connes_b"):
-            # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
-            # library method returns a frozen result whose .blocks() IS the block
+        elif name == "fundamental_group":
+            # pi1(Q, I) + abelianization (Plan 56): an algebra-scalar kind (schema v1).
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # shared builder (invariants.coverings_block.fundamental_group_block) +
+            # `references`->citations.
+            from quiverlab.invariants.coverings_block import fundamental_group_block
+            block = fundamental_group_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "simply_connected":
+            # Three-valued simple connectivity + the R16 strongly-simply-connected
+            # certificate (Plan 56). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (invariants.coverings_block.simply_connected_block) + references->citations.
+            from quiverlab.invariants.coverings_block import simply_connected_block
+            block = simply_connected_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name in ("cup", "cap", "bracket", "connes_b", "bv_operator"):
+            # HH product surface (Plan 35) + the BV operator (Plan 54: bv_operator).
+            # Each library method returns a frozen result whose .blocks() IS the block
             # dict (kind/top/engine + tables|matrices + references); we only add the
             # resolved citation pairs, exactly as the server twin does
             # (quiverlab.hpc.spec._dispatch). The block keeps `references` -- the
@@ -954,7 +1179,8 @@ def compute_one(spec):
                 raise RequestError("%s needs a range, e.g. '%s:0..4'" % (name, name))
             method = {"cup": A.cup_products, "cap": A.cap_products,
                       "bracket": A.gerstenhaber_brackets,
-                      "connes_b": A.connes_differentials}[name]
+                      "connes_b": A.connes_differentials,
+                      "bv_operator": A.bv_operator}[name]
             block = method(top).blocks()
             block["citations"] = _citation_pairs(block["references"])
         elif name == "tau_tilting":
@@ -972,6 +1198,82 @@ def compute_one(spec):
             # cross-runner contract holds byte-for-byte. Honest complete-iff block.
             from quiverlab.tautilting.congruence import congruences_block
             block = congruences_block(A, budget=top if top is not None else 512)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "wall_chamber":
+            # Wall-and-chamber structure via bricks (Plan 63 / R25): algebra-level, budget
+            # (not degree). SAME shared library builder
+            # (tautilting.wallchamber.wall_chamber_structure) + references -> citations as
+            # the server twin (quiverlab.hpc.spec._dispatch), byte-for-byte. Certified
+            # complete iff brick-finite <=> tau-tilting-finite, else an honest bounded region
+            # (status='budget', no count). The brick/is_isomorphic char caveat -> error block.
+            from quiverlab.tautilting.wallchamber import wall_chamber_structure
+            try:
+                block = wall_chamber_structure(A, budget=top if top is not None else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "wall_chamber", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "silting":
+            # Silting theory (Plan 67 / Aihara-Iyama): algebra-level, RADIUS,BUDGET pair
+            # (not a degree). SAME shared library builder (derived.block.silting_block) +
+            # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so
+            # the cross-runner contract holds byte-for-byte. A QuiverlabError refusal (the
+            # char-scope / presentation / verifier-edge path) is caught into an `error`
+            # field; a non-QuiverlabError bug is NOT swallowed here -- it surfaces loudly
+            # (the fail-fast house rule), so this narrows to "the typed refusals never
+            # crash the block", not "never a crash".
+            radius, budget = top if top is not None else (3, 64)
+            from quiverlab.derived.block import silting_block
+            try:
+                block = silting_block(A, radius=radius, budget=budget)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "silting", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "exceptional_sequences":
+            # Exceptional sequences (Plan 65 / R27+R28): algebra-level, enumeration budget
+            # (not a degree). SAME shared library builder
+            # (tautilting.exceptional.exceptional_sequences_block) + references -> citations
+            # as the server twin (quiverlab.hpc.spec._dispatch), so the cross-runner contract
+            # holds byte-for-byte. Classical (if hereditary) + tau counts, honest status.
+            from quiverlab.tautilting.exceptional import exceptional_sequences_block
+            block = exceptional_sequences_block(
+                A, budget=top if top is not None else 4096)   # sane DoS cap (Plan 65 H-3)
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "string_homological":
+            # Homological string-algebra test (Plan 59 / R34, Suarez-Alvarez). Byte-
+            # identical to the server twin (quiverlab.hpc.spec._dispatch): SAME library
+            # block builder (modules.string_homological.string_homological_block) +
+            # `references`->citations. A rep-infinite / self-injective / presentation-
+            # less input returns an {"error": ...} block, never a raise.
+            from quiverlab.modules.string_homological import string_homological_block
+            block = string_homological_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "toupie":
+            # Toupie structure (Plan 59 / R35). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (families.toupie.toupie_block) -- recognizer + branch/direct-arrow counts +
+            # HH + char-0 sl_a lower bound -- + `references`->citations.
+            from quiverlab.families.toupie import toupie_block
+            block = toupie_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "tame_wild":
+            # Tits-form tame/wild certificate (Plan 62 / R19). Byte-identical to the
+            # server twin (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (invariants.tits_block.tame_wild_block) -- combinatorial Tits form + weak
+            # positivity/nonnegativity + the rep-finite/tame/wild verdict gated on the
+            # P56 certificate over char 0 -- + `references`->citations. A presentation-
+            # less / non-triangular input returns an {"error": ...} block, never a raise.
+            from quiverlab.invariants.tits_block import tame_wild_block
+            block = tame_wild_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "skew_gentle":
+            # Skew-gentle world (Plan 68 / R32). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): the SAME library block builder
+            # (skewgentle.block.skew_gentle_block) reads the triple off the split
+            # algebra's construction marker -- recognizer + split shape + dim law +
+            # classification counts + support tau-tilting + rep-type certificate --
+            # + `references`->citations.
+            from quiverlab.skewgentle.block import skew_gentle_block
+            block = skew_gentle_block(A, budget=(top or 512))
             block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
@@ -1188,6 +1490,15 @@ def python_snippet():
                              "A.dynkin_type(), A.form_type()]"),
              # Quasi-hereditary structure (Plan 47): a scalar kind, no %d.
              "quasi_hereditary": "A.is_quasi_hereditary()",
+             # Plan 59 recognizer batteries: two scalar algebra-only kinds, no %d.
+             "string_homological": ("homological_string_test(A)  "
+                                    "# from quiverlab.modules.string_homological"),
+             "toupie": "(is_toupie(A), toupie_block(A))  # from quiverlab.families.toupie",
+             # pi1 + simple connectivity (Plan 56): scalar kinds, no %d.
+             "fundamental_group": "A.fundamental_group()",
+             "simply_connected": "A.is_simply_connected()",
+             # Tits-form tame/wild certificate (Plan 62 / R19): a scalar kind, no %d.
+             "tame_wild": "A.tame_wild_certificate()",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -1195,10 +1506,28 @@ def python_snippet():
              "cup": "A.cup_products(%d)", "cap": "A.cap_products(%d)",
              "bracket": "A.gerstenhaber_brackets(%d)",
              "connes_b": "A.connes_differentials(%d)",
+             "bv_operator": "A.bv_operator(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              # Plan 64: the congruences kind carries a pair budget (%d = budget).
              "congruences": "A.congruence_lattice(budget=%d)",
+             # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
+             "wall_chamber": "A.wall_chamber_structure(budget_pairs=%d)",
+             # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
+             # tmpl % top fills both %d).
+             "silting": "A.silting_exploration(radius=%d, budget=%d)",
+             # Plan 65: exceptional_sequences (classical + tau), a scalar kind, no %d.
+             "exceptional_sequences": ("(A.exceptional_sequences(), "
+                                       "A.tau_exceptional_sequences(want_sequences=False))"),
+             # Plan 57: radical_filtration + ar_invariants carry a module budget.
+             "radical_filtration": "A.radical_filtration(budget_modules=%d)",
+             "ar_invariants": "A.ar_invariants(budget_modules=%d)",
+             # Plan 55: the left/right parts kind carries a module budget (%d = budget).
+             "left_right_parts": "A.left_right_parts(budget=%d)",
+             # Plan 60: the tilted recognizer carries the knit budget (%d = budget_modules).
+             "tilted_check": "A.tilted_check(budget_modules=%d)",
+             # Plan 61: the recognizer ladder carries a module budget (%d = budget).
+             "recognizer_ladder": "A.recognizer_ladder(budget=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1270,10 +1599,19 @@ ETA_MODEL = {
     "bar":  {"alpha": 1.4622e-07, "p": 1.3},
     "fast": {"alpha": 5.3447e-07, "p": 1.1},
     "scalars": {"cartan": 0.01, "coxeter_polynomial": 0.2,
+                # Plan 58: coxeter_spectral is bimodal-but-fast -- real-dominant certifies
+                # sub-second (minpoly + Sturm interval), complex-dominant is REFUSED
+                # without computing (the deterministic _real_roots_suffice gate, never the
+                # measured 121 s minimal_polynomial hang), so 0.5 is honest in both branches.
+                "coxeter_spectral": 0.5,
                 "center": 0.05, "global_dimension": 0.5,
                 # Plan 40: the C6 family aggregates gl.dim + finitistic + dominant +
                 # Gorenstein + Igusa-Todorov (several resolutions), so a bit heavier.
+                # Plan 53 added phidim/psidim (an AR knit) + LIT to the same block.
                 "homological_profile": 2.0,
+                # Plan 53: fractional_cy iterates nu/Omega on the simples with a bounded
+                # (m,ell) search -- a few small syzygy/Nakayama passes.
+                "fractional_cy": 3.0,
                 # module kinds (Plan 26): cheap dim-vector reads up to
                 # resolution/dimension probes that build syzygies to depth.
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,
@@ -1302,6 +1640,10 @@ ETA_MODEL = {
                 # Plan 47: quasi_hereditary builds Delta/Nabla + a gl.dim check +
                 # the greedy Delta-peel of each P(v); a few small resolutions.
                 "quasi_hereditary": 0.5,
+                # Plan 56: fundamental_group = a reduction system + block linear
+                # algebra + a small ZZ SNF; simply_connected additionally runs the
+                # convex-subset separation sweep (decompose per vertex per subset).
+                "fundamental_group": 0.5, "simply_connected": 2.0,
                 # Plan 45: the C4 tau-tilting engine BFSes the exchange graph via the
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
@@ -1309,7 +1651,38 @@ ETA_MODEL = {
                 # Plan 64: congruences BFSes the exchange graph (as tau_tilting) and then
                 # runs the principal-congruence fixed points + the kappa/CLO build -- a bit
                 # heavier than tau_tilting alone.
-                "congruences": 3.0},
+                "congruences": 3.0,
+                # Plan 63: wall_chamber runs the tau_tilting exchange-graph BFS PLUS the
+                # per-brick submodule enumeration for each D(B) -- just above tau_tilting.
+                "wall_chamber": 2.5,
+                # Plan 67: silting = a bounded-radius BFS of the silting quiver via K^b
+                # Hom + minimal approximations + cone/reduce per step; the hyper-Hom passes
+                # dominate. Budget-capped honestly (complete only for local).
+                "silting": 1.5,
+                # Plan 55: left/right parts = an AR knit + the N^2 Hom predecessor matrix +
+                # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
+                # the same cost class as tau_tilting.
+                "left_right_parts": 2.0,
+                # Plan 60: tilted_check = an AR knit + a budget-capped transversal search
+                # (faithful + Hom(X,tauY)=0 + tilting/presented-End certificate per candidate);
+                # knit- and certificate-dominated, the same cost class as left_right_parts.
+                "tilted_check": 2.0,
+                # Plan 61: the recognizer ladder reads the P55 atlas + gl.dim + a second AR
+                # knit (weakly-shod SCC) + HH^1 (ada/Theorem B); a touch heavier than P55.
+                "recognizer_ladder": 2.5,
+                # Plan 59: string_homological KNITS the AR quiver + realizes/decomposes
+                # extensions (expensive, ar_quiver class); toupie is a small HH + a
+                # graph-shape scan (cheap).
+                "string_homological": 2.0, "toupie": 0.5,
+                # Plan 62: tame_wild = the Tits form (P56 minimal-relation counts) +
+                # weak positivity/nonnegativity (box/PSD/list) + the P56 simple/strong-
+                # simple-connectivity convex sweep -- the convex sweep dominates
+                # (simply_connected class), sized above the cheap scalars.
+                "tame_wild": 3.0,
+                # Plan 65: exceptional_sequences KNITS the AR quiver + runs the braid-orbit
+                # BFS (classical) and the exchange-graph BFS (tau); knit- and BFS-dominated,
+                # the heavier ar_quiver/tame_wild cost class.
+                "exceptional_sequences": 3.0},
 }
 _MAX_CELLS = 4_000_000        # the library's bar guard (frozen contract)
 _BUCKETS = (                  # (upper bound in seconds, id, label)

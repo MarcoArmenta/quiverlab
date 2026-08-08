@@ -21,6 +21,8 @@ from quiverlab.tautilting.congruence import (CongruenceLattice, TorsionLattice,
                                              wide_subcategories)
 from quiverlab.tautilting.torsion import (bricks, hasse_orientation, semibricks,
                                           torsion_class_data)
+from quiverlab.tautilting.wallchamber import (Wall, wall_chamber_structure,
+                                              wall_of_brick)
 
 __all__ = [
     "is_tau_rigid", "g_vector", "g_matrix",
@@ -33,4 +35,5 @@ __all__ = [
     "tau_tilting_block",
     "TorsionLattice", "CongruenceLattice", "WideSubcategoryPoset",
     "torsion_lattice", "congruence_lattice", "wide_subcategories", "congruences_block",
+    "Wall", "wall_of_brick", "wall_chamber_structure",
 ]

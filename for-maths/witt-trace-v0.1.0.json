@@ -1,0 +1,597 @@
+{
+  "citations": [
+    {
+      "formatted": "Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.",
+      "key": "ASS2006"
+    },
+    {
+      "formatted": "Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.",
+      "key": "Hochschild1945"
+    },
+    {
+      "formatted": "Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.",
+      "key": "LenzingdlPena2008spectral"
+    },
+    {
+      "formatted": "Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61.",
+      "key": "ChouhySolotar2015"
+    },
+    {
+      "formatted": "Connes, Alain (1985). Non-commutative differential geometry. Publications Math'ematiques de l'IH'ES 62, 41-144.",
+      "key": "Connes1985"
+    },
+    {
+      "formatted": "Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.",
+      "key": "Gerstenhaber1963"
+    }
+  ],
+  "events": [
+    {
+      "n_relations": 1,
+      "reason": "domain is a prime field; the exact mod-p rank engine applies",
+      "route": "hanlab fast GF(p) rank",
+      "type": "Dispatch"
+    },
+    {
+      "n_relations": 1,
+      "reason": "the fast GF(p) bar basis exceeded max_cells at this depth; auto reroutes to the Chouhy-Solotar resolution over the admissible presentation (exact, certified per instance)",
+      "route": "chouhy-solotar",
+      "type": "Dispatch"
+    },
+    {
+      "n_relations": 1,
+      "reason": "domain is a prime field; the exact mod-p rank engine applies",
+      "route": "hanlab fast GF(p) rank",
+      "type": "Dispatch"
+    },
+    {
+      "n_relations": 1,
+      "reason": "the fast GF(p) bar basis exceeded max_cells at this depth; auto reroutes to the Chouhy-Solotar resolution over the admissible presentation (exact, certified per instance)",
+      "route": "chouhy-solotar",
+      "type": "Dispatch"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 0,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 1,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 2,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 3,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 4,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 5,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 6,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 7,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 8,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 9,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 10,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 11,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "collapsed_dim": 3,
+      "corners": [
+        [
+          1,
+          1
+        ]
+      ],
+      "degree": 12,
+      "n_generators": 1,
+      "type": "ResolutionTerm"
+    },
+    {
+      "degree": 1,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 2,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 3,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 4,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 5,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 6,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 7,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 8,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 9,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 10,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 11,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 12,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "degree": 13,
+      "elided": false,
+      "field": "GF(3)",
+      "matrix": [
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      "ncols": 3,
+      "note": "",
+      "nrows": 3,
+      "rank": 0,
+      "side": "chain",
+      "type": "RankStep"
+    },
+    {
+      "dims": [
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3,
+        3
+      ],
+      "kind": "HH_",
+      "note": "",
+      "type": "ResultDims"
+    }
+  ],
+  "library_version": "0.1.0",
+  "quiverlab_trace_schema": 1,
+  "title": "HH_ of Algebra of dimension 3 over GF(3)"
+}

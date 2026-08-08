@@ -24,7 +24,16 @@ def mutate(pair, k):
     order, then support vertices in vertex order -- the g-matrix column order). Returns the
     UNIQUE other support tau-tilting pair sharing the almost-complete pair (``pair`` minus
     summand ``k``). Self-certified: the result validates (make_pair), its g-matrix swaps
-    exactly the k-th column, and ``mutate(mutate(pair, k), k')`` recovers ``pair``."""
+    exactly the k-th column, and ``mutate(mutate(pair, k), k')`` recovers ``pair``.
+
+    Robustness (Plan 65 Task 0 / M1): on some orientations (e.g. the D_4 mixed star
+    ``{1->2,3->1,4->1}``) the minimal ``add(U)``-approximation is not left/right-minimal, so
+    the mapping cone comes out as ``(the genuine new tau-tilting summand) (+) (copies of
+    existing pair summands, all in add(U))`` -- a DECOMPOSABLE module that ``make_pair``
+    rightly rejects. When the summand as produced fails to validate, split it into
+    indecomposables and arbitrate each piece by the SAME one-column g-key-swap + make_pair
+    certificate; the genuine neighbour is always among them. The clean (indecomposable) case
+    is byte-unchanged -- the split fallback only runs when the primary candidate fails."""
     A = pair.algebra
     verts = list(A.quiver.vertices)
     n = len(verts)
@@ -41,24 +50,55 @@ def mutate(pair, k):
         cls = tt.summand_class(new_summand)
         if cls[0] == "bad":
             continue
-        if cls[0] == "module":
-            mods = list(base_mods) + [cls[1]]
-            supp = base_supp
-        else:                                            # ("support", v)
-            mods = list(base_mods)
-            supp = base_supp | {cls[1]}
-        try:
-            cand = make_pair(A, mods, supp, check=True)
-        except QuiverlabError:
-            continue
-        cand_key = cand.g_key()
-        if (cand_key != pair_key and (pair_key - cand_key) == {target_col}
-                and len(cand_key - pair_key) == 1):
+        # Primary path (unchanged): try the summand exactly as produced.
+        cand = _try_exchange(A, base_mods, base_supp, cls, pair_key, target_col)
+        if cand is not None:
             return cand
+        # Fallback (Task 0 / M1): non-minimal approximation -> decomposable cone. Split and
+        # arbitrate each indecomposable piece by the one-column g-key-swap + validation.
+        for piece in _split_summand(cls):
+            cand = _try_exchange(A, base_mods, base_supp, piece, pair_key, target_col)
+            if cand is not None:
+                return cand
     raise QuiverlabError(
         f"mutate: no valid exchange found at summand {k} -- the 2-term silting cone/cocone "
         "produced no validating neighbour (report the pair + index)",
         hint="over char <= dim the decompose/is_isomorphic caveat can refuse; run over QQ")
+
+
+def _try_exchange(A, base_mods, base_supp, cls, pair_key, target_col):
+    """Assemble the candidate pair by swapping in the classified summand ``cls`` and return
+    it iff it validates (make_pair) and swaps EXACTLY the target g-column; else ``None``."""
+    if cls[0] == "module":
+        mods = list(base_mods) + [cls[1]]
+        supp = base_supp
+    else:                                                # ("support", v)
+        mods = list(base_mods)
+        supp = base_supp | {cls[1]}
+    try:
+        cand = make_pair(A, mods, supp, check=True)
+    except QuiverlabError:
+        return None
+    cand_key = cand.g_key()
+    if (cand_key != pair_key and (pair_key - cand_key) == {target_col}
+            and len(cand_key - pair_key) == 1):
+        return cand
+    return None
+
+
+def _split_summand(cls):
+    """The indecomposable candidate pieces of a (possibly non-minimal) cone summand ``cls``.
+    Only a DECOMPOSABLE module summand yields pieces (each indecomposable factor as its own
+    ``("module", Mi)``); an already-indecomposable module or a support shift yields ``[]``
+    (the primary path already tried it, so re-trying is pointless)."""
+    if cls[0] != "module":
+        return []
+    from quiverlab.modules.decompose import decompose
+    pieces = []
+    for entry in decompose(cls[1]):
+        Mi = entry[0] if isinstance(entry, tuple) else entry
+        pieces.append(("module", Mi))
+    return pieces if len(pieces) > 1 else []
 
 
 def wall_normal(pair_i, pair_j):

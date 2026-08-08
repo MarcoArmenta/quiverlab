@@ -90,6 +90,8 @@
     '  <label><input type="checkbox" id="qlgui-cap"> cap 0..<input type="number" id="qlgui-cap-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-bracket"> bracket 0..<input type="number" id="qlgui-bracket-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-connes_b"> Connes B 0..<input type="number" id="qlgui-connes_b-top" value="2" min="0"></label>' +
+    // Plan 54: the Batalin-Vilkovisky operator Delta (Frobenius / semisimple nu), right after Connes B.
+    '  <label><input type="checkbox" id="qlgui-bv_operator"> BV operator &Delta; 0..<input type="number" id="qlgui-bv_operator-top" value="2" min="0"></label>' +
     // Plan-35 follow-up: cyclic homology HC_0..HC_n (default 6), right after Connes B.
     '  <label><input type="checkbox" id="qlgui-cyclic_homology"> cyclic homology 0..<input type="number" id="qlgui-cyclic_homology-top" value="6" min="0"></label>' +
     // Plan-42: the Hochschild (b, B) spectral sequence (abutting to HC), right after cyclic homology.
@@ -98,8 +100,11 @@
     '  <label><input type="checkbox" id="qlgui-radical_filtration_ss"> radical-filtration SS 0..<input type="number" id="qlgui-radical_filtration_ss-top" value="4" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
+    // ---- Plan 58: certified Coxeter spectral analysis (Φ_n, certified ρ/M, Lehmer) ----
+    '  <label><input type="checkbox" id="qlgui-coxeter_spectral"> Coxeter spectral analysis</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
     '  <label><input type="checkbox" id="qlgui-homological_profile"> homological dimensions</label>' +
+    '  <label><input type="checkbox" id="qlgui-fractional_cy"> fractional Calabi–Yau (self-injective)</label>' +
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
     // ---- Plan 38: Yoneda Ext-algebra + Koszulity, and the recognizer batch ----
     '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
@@ -109,16 +114,48 @@
     '  <label><input type="checkbox" id="qlgui-derived_compare"> derived compare (with B)</label>' +
     // Plan-41: AR-quiver knitting (algebra-level; honest semi-decision + budget).
     '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
+    // Plan-57: radical filtration of mod A (rad^n(X,Y) + nilpotency index) and the
+    // AR-component invariants (Liu degrees, directing, rep-directed). Algebra-level,
+    // budget (max indecomposables). NOT the Loewy radical series (radical_filtration_ss).
+    '  <label><input type="checkbox" id="qlgui-radical_filtration"> radical filtration rad^n(X,Y) + nilpotency index, budget <input type="number" id="qlgui-radical_filtration-budget" value="512" min="1"></label>' +
+    '  <label><input type="checkbox" id="qlgui-ar_invariants"> AR-component invariants (Liu degrees, directing), budget <input type="number" id="qlgui-ar_invariants-budget" value="512" min="1"></label>' +
+    // Plan-55: left/right parts of the module category (algebra-level; honest semi-decision + budget).
+    '  <label><input type="checkbox" id="qlgui-left_right_parts"> left/right parts, budget <input type="number" id="qlgui-left_right_parts-budget" value="256" min="1"></label>' +
+    // Plan-60: tilted-algebra recognizer (algebra-level; honest semi-decision + knit budget).
+    '  <label><input type="checkbox" id="qlgui-tilted_check"> tilted-algebra check (Liu-Skowroński), budget <input type="number" id="qlgui-tilted_check-budget" value="256" min="1"></label>' +
+    // Plan-61: quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder + ada/HH^1 simple connectedness (algebra-level; budget).
+    '  <label><input type="checkbox" id="qlgui-recognizer_ladder"> recognizer ladder (quasi-tilted/shod/weakly-shod/laura/ada), budget <input type="number" id="qlgui-recognizer_ladder-budget" value="256" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
+    // ---- Plan 59: R34 homological string test + R35 toupie structure ----
+    '  <label><input type="checkbox" id="qlgui-string_homological"> homological string test</label>' +
+    '  <label><input type="checkbox" id="qlgui-toupie"> toupie structure</label>' +
+    // ---- Plan 68: skew-gentle triple (Q, I, Sp) -- mark special vertices, comma-sep ----
+    '  <label><input type="checkbox" id="qlgui-skew_gentle"> skew-gentle (Q, I, Sp); special vertices ' +
+    '<input type="text" id="qlgui-skew_gentle-special" placeholder="e.g. 2" size="6"></label>' +
     // ---- Plan 47: quasi-hereditary structure (natural order) ----
     '  <label><input type="checkbox" id="qlgui-quasi_hereditary"> quasi-hereditary (Δ/∇, natural order)</label>' +
+    // ---- Plan 56: pi1(Q,I) + simple connectivity ----
+    '  <label><input type="checkbox" id="qlgui-fundamental_group"> fundamental group &pi;&#8321;(Q,I)</label>' +
+    '  <label><input type="checkbox" id="qlgui-simply_connected"> simply connected (+ strongly)</label>' +
+    // ---- Plan 62: Tits-form tame/wild certificate ----
+    '  <label><input type="checkbox" id="qlgui-tame_wild"> tame / wild (Tits form)</label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
     // ---- Plan 64: torsion lattice + Con + forcing order + wide subcategories ----
     '  <label><input type="checkbox" id="qlgui-congruences"> torsion lattice / Con / wide, budget ' +
     '<input type="number" id="qlgui-congruences-budget" value="512" min="1"></label>' +
+    // ---- Plan 63: wall-and-chamber structure via bricks (D(B) inequality systems) ----
+    '  <label><input type="checkbox" id="qlgui-wall_chamber"> wall-and-chamber D(B), budget ' +
+    '<input type="number" id="qlgui-wall_chamber-budget" value="512" min="1"></label>' +
+    // ---- Plan 67: silting theory (verifier + mutation + bounded exploration) ----
+    '  <label><input type="checkbox" id="qlgui-silting"> silting: verifier + mutation + exploration, radius ' +
+    '<input type="number" id="qlgui-silting-radius" value="3" min="0"> budget ' +
+    '<input type="number" id="qlgui-silting-budget" value="64" min="1"></label>' +
+    // ---- Plan 65: exceptional sequences (classical hereditary + tau-exceptional) ----
+    '  <label><input type="checkbox" id="qlgui-exceptional_sequences"> exceptional sequences, budget ' +
+    '<input type="number" id="qlgui-exceptional_sequences-budget" value="4096" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -207,32 +244,59 @@
    // GitHub #3 / Plan-44: potential -> Jacobian algebra
    "potential", "potential-label", "potential-hint",
    "hhc", "hhc-top", "hhh", "hhh-top",
-   // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers
+   // Plan 35 HH product surface: cup / cap / bracket / connes_b + degree pickers;
+   // Plan 54: bv_operator (the BV operator Delta) right after connes_b.
    "cup", "cup-top", "cap", "cap-top", "bracket", "bracket-top",
-   "connes_b", "connes_b-top", "cyclic_homology", "cyclic_homology-top",
+   "connes_b", "connes_b-top", "bv_operator", "bv_operator-top",
+   "cyclic_homology", "cyclic_homology-top",
    // Plan 42: the Hochschild (b, B) spectral sequence + its degree picker
    "ss_hochschild", "ss_hochschild-top",
    // Plan 42: the radical-filtration spectral sequence + its degree picker
    "radical_filtration_ss", "radical_filtration_ss-top",
    // Plan 41: AR-quiver knitting (algebra-level, budget) ; Plan 43: derived compare + algebra B
    "ar_quiver", "ar_quiver-budget", "derived_compare",
+   // Plan 57: radical filtration + AR-component invariants (algebra-level, budget)
+   "radical_filtration", "radical_filtration-budget",
+   "ar_invariants", "ar_invariants-budget",
+   // Plan 55: left/right parts of the module category (algebra-level, budget)
+   "left_right_parts", "left_right_parts-budget",
+   // Plan 60: tilted-algebra recognizer (algebra-level, knit budget)
+   "tilted_check", "tilted_check-budget",
+   // Plan 61: quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder (algebra-level, budget)
+   "recognizer_ladder", "recognizer_ladder-budget",
    "algb", "algb-legend", "algb-mode", "algb-mode-label",
    "algb-type", "algb-type-wrap", "algb-type-label",
    "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
    "cartan",
-   "coxeter_polynomial", "global_dimension", "center",
+   "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
+   // Plan 53: fractional Calabi-Yau (self-injective; scalar kind)
+   "fractional_cy",
    // Plan 43: derived fingerprint (scalar kind)
    "derived_fingerprint",
    // Plan 46: gentle / string subsystem
    "strings",
+   // Plan 59: R34 homological string test + R35 toupie structure (scalar kinds)
+   "string_homological", "toupie",
+   // Plan 68: skew-gentle triple (Q, I, Sp) scalar kind + special-vertex picker
+   "skew_gentle", "skew_gentle-special",
    // Plan 47: quasi-hereditary structure (scalar kind)
    "quasi_hereditary",
+   // Plan 56: pi1(Q,I) + simple connectivity (scalar kinds)
+   "fundamental_group", "simply_connected",
+   // Plan 62: Tits-form tame/wild certificate (scalar kind)
+   "tame_wild",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
    // Plan 64: torsion lattice / Con / forcing / wide subcategories (budget picker)
    "congruences", "congruences-budget",
+   // Plan 63: wall-and-chamber structure via bricks (budget picker)
+   "wall_chamber", "wall_chamber-budget",
+   // Plan 67: silting theory (radius,budget picker)
+   "silting", "silting-radius", "silting-budget",
+   // Plan 65: exceptional sequences (classical + tau, budget picker)
+   "exceptional_sequences", "exceptional_sequences-budget",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -849,6 +913,9 @@
     if (el.cap.checked) compute.push("cap:0.." + el["cap-top"].value);
     if (el.bracket.checked) compute.push("bracket:0.." + el["bracket-top"].value);
     if (el.connes_b.checked) compute.push("connes_b:0.." + el["connes_b-top"].value);
+    // Plan 54: the BV operator Delta, immediately after connes_b -- do not reorder.
+    if (el.bv_operator.checked)
+      compute.push("bv_operator:0.." + el["bv_operator-top"].value);
     if (el.cyclic_homology.checked)
       compute.push("cyclic_homology:0.." + el["cyclic_homology-top"].value);
     // Plan 42: the (b, B) spectral sequence, right after cyclic homology.
@@ -859,9 +926,10 @@
       compute.push("radical_filtration_ss:0.." + el["radical_filtration_ss-top"].value);
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
-    ["cartan", "coxeter_polynomial", "global_dimension", "center",
-     "recognizers", "homological_profile", "derived_fingerprint",
-     "strings", "quasi_hereditary"].forEach(function (k) {
+    ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
+     "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
+     "strings", "string_homological", "toupie", "quasi_hereditary",
+     "fundamental_group", "simply_connected", "tame_wild"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
@@ -872,12 +940,45 @@
     // pushes "congruences:<budget>" -- the single-int form both runners parse.
     if (el.congruences.checked)
       compute.push("congruences:" + el["congruences-budget"].value);
+    // Plan 63: the wall-and-chamber kind carries a PAIR BUDGET too -- pushes
+    // "wall_chamber:<budget>", the single-int form both runners parse (like tau_tilting).
+    if (el.wall_chamber.checked)
+      compute.push("wall_chamber:" + el["wall_chamber-budget"].value);
+    // Plan 67: silting carries a RADIUS,BUDGET pair -> "silting:<radius>,<budget>".
+    if (el.silting.checked)
+      compute.push("silting:" + el["silting-radius"].value + "," +
+                   el["silting-budget"].value);
+    // Plan 65: exceptional_sequences carries an ENUMERATION BUDGET (not a degree), so it
+    // pushes "exceptional_sequences:<budget>" -- the single-int form both runners parse.
+    if (el.exceptional_sequences.checked)
+      compute.push("exceptional_sequences:" + el["exceptional_sequences-budget"].value);
     // Plan 41: AR-quiver knitting carries a BUDGET (max indecomposables), not a
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
       compute.push("ar_quiver:" + el["ar_quiver-budget"].value);
+    // Plan 57: radical_filtration + ar_invariants carry a MODULE BUDGET (like
+    // ar_quiver) -- the single-int form both runners parse.
+    if (el.radical_filtration.checked)
+      compute.push("radical_filtration:" + el["radical_filtration-budget"].value);
+    if (el.ar_invariants.checked)
+      compute.push("ar_invariants:" + el["ar_invariants-budget"].value);
+    // Plan 55: left/right parts carries a MODULE BUDGET (not a degree) -- the single-int
+    // form both runners parse (like ar_quiver / tau_tilting).
+    if (el.left_right_parts.checked)
+      compute.push("left_right_parts:" + el["left_right_parts-budget"].value);
+    // Plan 60: tilted_check carries the KNIT budget (budget_modules); budget_sections
+    // stays an internal default. Single-int form both runners parse.
+    if (el.tilted_check.checked)
+      compute.push("tilted_check:" + el["tilted_check-budget"].value);
+    // Plan 61: recognizer ladder carries a MODULE BUDGET (not a degree), like left_right_parts.
+    if (el.recognizer_ladder.checked)
+      compute.push("recognizer_ladder:" + el["recognizer_ladder-budget"].value);
     // Plan 43: derived_compare is algebra-level and needs a second algebra B.
     if (el.derived_compare.checked) compute.push("derived_compare");
+    // Plan 68: skew-gentle. The drawn quiver + relations + the special-vertex picks form
+    // the triple (Q, I, Sp); the request's algebra is REPLACED (below) by the split
+    // constructor family form so every compute runs on the admissible split algebra.
+    if (el.skew_gentle.checked) compute.push("skew_gentle");
     var module = null, extTarget = null, torTarget = null;
     if (el["mod-enable"].checked) {          // read live, independent of render timing
       module = moduleSpec();
@@ -899,22 +1000,46 @@
         torTarget = torTargetSpec();
       }
     }
-    // Schema tag is HONEST: module / Ext / Tor blocks are the schema-2 surface
-    // (the webapp validator refuses them under schema 1 -- found live when the
-    // ported canvas 422'd on every module request); plain algebra requests keep
-    // the schema-1 tag so their cache keys stay byte-stable.
-    var req = { schema: (module || extTarget || torTarget) ? 2 : 1,
+    // Plan 52: a Hochschild coefficient bimodule (D(A) / twisted _1A_nu / A/soc),
+    // chosen from the picklist. Only a NON-regular coefficient emits a block (and
+    // only alongside a Hochschild kind), so a coefficients-less request keeps its
+    // schema 1/2 tag and byte-identical cache key (conditional versioning).
+    var coeffKind = (el.coeff_kind && el.coeff_kind.value) || "regular";
+    var hasHH = compute.some(function (c) {
+      return c.indexOf("hh_cohomology") === 0 || c.indexOf("hh_homology") === 0; });
+    var coefficients = (hasHH && coeffKind !== "regular")
+      ? { builtin: { kind: coeffKind } } : null;
+    // Schema tag is HONEST: a coefficients block is the schema-3 surface; module /
+    // Ext / Tor blocks are schema 2 (the webapp validator refuses them under lower
+    // schemas); plain algebra requests keep schema 1 so their cache keys stay
+    // byte-stable.
+    var req = { schema: coefficients ? 3 : ((module || extTarget || torTarget) ? 2 : 1),
                 algebra: { kind: "quiver",
                            vertices: S.vertices.map(function (v) { return v.id; }),
                            arrows: arrows, relations: relations, field: field },
                 compute: compute,
                 artifacts: { pdf: el.trace.checked, tikz: true } };
+    if (coefficients) req.coefficients = coefficients;
     // GitHub #3 / Plan-44: a non-empty potential routes the quiver through the
     // Jacobian-algebra constructor. Only attached when typed, so a request with
     // no potential keeps its byte-identical cache key. The server refuses a
     // potential ALONGSIDE explicit relations (4xx) -- that stays the authority.
     var pot = (el.potential.value || "").trim();
     if (pot) req.algebra.potential = pot;
+    // Plan 68: when skew-gentle is requested, route the drawn quiver through the split
+    // constructor (family: SkewGentleAlgebra); the special-vertex picks are the Sp set
+    // (empty Sp is a valid triple -- byte-reduces to the plain gentle algebra). Only
+    // attached when the kind is checked, so an ordinary request's cache key is unchanged.
+    if (el.skew_gentle.checked) {
+      var special = (el["skew_gentle-special"].value || "")
+        .split(/[,\s]+/).filter(function (s) { return s.length; })
+        .map(function (s) { return parseInt(s, 10); })
+        .filter(function (v) { return !isNaN(v); });
+      req.algebra = { kind: "family", family: "SkewGentleAlgebra",
+                      params: { vertices: req.algebra.vertices, arrows: req.algebra.arrows,
+                                relations: req.algebra.relations, special: special },
+                      field: field };
+    }
     if (module) req.module = module;
     if (extTarget) req.ext_target = extTarget;
     if (torTarget) req.tor_target = torTarget;
@@ -1404,6 +1529,11 @@
         + "integer entries mod p and computes their exact rank by Gaussian "
         + "elimination mod p; every dimension follows by rank-nullity \u2014 nothing "
         + "numerical, no floating point.";
+    if (low.indexOf("homotopy lifting") !== -1)
+      return s + " \u2014 the Gerstenhaber bracket assembled from Negron\u2013"
+        + "Witherspoon / Volkov homotopy liftings on the Chouhy\u2013Solotar diagonal: "
+        + "a finite per-degree exact linear solve (canonical), no bar object, any exact "
+        + "field, past the bar window.";
     if (low.indexOf("chouhy") !== -1 || low.indexOf("solotar") !== -1)
       return s + " \u2014 the Chouhy\u2013Solotar projective bimodule resolution built "
         + "from the admissible presentation, certified per instance "
@@ -1709,7 +1839,8 @@
   // webapp families page carries the i18n twins block.*.title / products.zero).
   var PRODUCT_TITLE = { cup: "Cup product tables", cap: "Cap product tables",
                         bracket: "Gerstenhaber bracket tables",
-                        connes_b: "Connes differentials" };
+                        connes_b: "Connes differentials",
+                        bv_operator: "BV operator Δ" };
   var PRODUCT_OP = { cup: "\\cup", cap: "\\cap" };
   function coeffTerm(c, sym) {              // exact-string coeff -> "c \, sym" LaTeX
     return c === "1" ? sym : c + " \\, " + sym;   // matches trace.products._term
@@ -2646,6 +2777,10 @@
     if (name === "bracket" && b.window != null) {
       div.appendChild(h("p", { "class": "qlgui-hint",
         text: "served to degree window " + b.window + " (bar-transport bound)" }));
+    } else if (name === "bracket") {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "served natively on the Chouhy–Solotar resolution (homotopy "
+          + "liftings; any exact field, past the bar window)" }));
     }
     div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
@@ -2672,11 +2807,67 @@
     });
     div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
+  function renderBVOperator(div, b) {
+    // Plan 54: the Batalin-Vilkovisky operator Delta: HH^n -> HH^{n-1} for a
+    // Frobenius / symmetric algebra with semisimple Nakayama automorphism. Same
+    // matrix-family shape as connes_b (per-n `matrices` + `ranks`), on the recorded
+    // COHOMOLOGY basis.
+    div.appendChild(h("p", { text: PRODUCT_TITLE.bv_operator }));
+    div.appendChild(h("p", { "class": "qlgui-hint",
+      text: "Δ: HH^n → HH^{n-1} is the degree −1, square-zero BV operator whose "
+          + "defect from being a cup-derivation is the Gerstenhaber bracket. "
+          + "Each Δ_n is written on the recorded cohomology basis — rows index "
+          + "HH^{n-1}, columns index HH^n." }));
+    if (b.hypothesis)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "hypothesis: " + b.hypothesis }));
+    if (b.nakayama)
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Nakayama automorphism: " + (b.nakayama.inner
+          ? "inner (symmetric)" : "not inner")
+          + (b.nakayama.semisimple ? ", semisimple" : "") }));
+    var keys = Object.keys(b.matrices || {})
+      .map(Number).sort(function (a, c) { return a - c; });
+    keys.forEach(function (n) {
+      div.appendChild(h("p", { "class": "arithmatex",
+        text: "\\( \\Delta_{" + n + "} : HH^{" + n + "} \\to HH^{" + (n - 1) + "} \\)" }));
+      div.appendChild(matrixGrid(b.matrices[String(n)]));
+      div.appendChild(h("p", { text: "rank Δ_" + n + " = " + b.ranks[String(n)] }));
+    });
+    if (b.bracket_check && b.bracket_check.agrees)
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "arbiter: the bracket recovered from Δ equals the independently "
+            + "computed Gerstenhaber bracket over the served window (degrees ≤ "
+            + b.bracket_check.window + ", " + b.bracket_check.pairs_checked
+            + " pair(s) checked)." }));
+    div.appendChild(h("div", { "class": "qlgui-cites",
+      text: engineNote(b.basis ? ("bar/GF(p) recorded basis " + b.basis) : b.engine) }));
+  }
 
   function homProfileFinitistic(f) {
     if (f.exact) return "findim = " + f.lower + "  (" + f.note + ")";
     if (f.upper != null) return "findim in [" + f.lower + ", " + f.upper + "]  (" + f.note + ")";
     return "findim ≥ " + f.lower + "  (" + f.note + ")";
+  }
+
+  // Plan 53: the Lat-Igusa-Todorov finitistic row (a certified findim upper from a
+  // decidable family, or the honest "no known decision procedure" degrade).
+  function homProfileLit(lit) {
+    if (lit.family != null)
+      return "findim(A) ≤ " + lit.findim_upper + "  [" + lit.family + "]";
+    return lit.proof;
+  }
+
+  // Plan 53: the phidim/psidim algebra-invariant row (honest exact / lower-bound / error).
+  function homProfilePhi(entry) {
+    return entry.error ? "not computed: " + entry.error : entry.text;
+  }
+
+  // Plan 53: the phi-spectrum row (value set + gaps; a partial spectrum claims no gaps).
+  function homProfileSpectrum(sp) {
+    if (sp.error) return "not computed: " + sp.error;
+    var s = "{" + sp.values.join(", ") + "}";
+    if (!sp.complete) return s + "  (partial — not closed; no gaps claimed)";
+    return s + (sp.gaps.length ? "  (gaps: " + sp.gaps.join(", ") + ")" : "  (no gaps)");
   }
 
   function renderHomologicalProfile(div, b) {
@@ -2697,6 +2888,14 @@
       rows.push(["Igusa–Todorov of " + it.module,
                  "φ = " + it.phi + ",  ψ = " + it.psi]);
     }
+    // Plan 53 (additive keys) -- EACH behind a missing-key guard, so a pre-P53 cached
+    // block (which lacks these) renders the old four dimensions and never crashes (W3
+    // renderer tolerance; the additive-golden contract).
+    if (b.phidim) rows.push(["φdim (algebra invariant)", homProfilePhi(b.phidim)]);
+    if (b.psidim) rows.push(["ψdim (algebra invariant)", homProfilePhi(b.psidim)]);
+    if (b.phi_spectrum)
+      rows.push(["φ-spectrum (rep-finite)", homProfileSpectrum(b.phi_spectrum)]);
+    if (b.lit) rows.push(["Lat-Igusa-Todorov findim bound", homProfileLit(b.lit)]);
     var tbl = h("table", { "class": "qlgui-table" });
     rows.forEach(function (r) {
       var tr = h("tr");
@@ -2705,6 +2904,100 @@
       tbl.appendChild(tr);
     });
     div.appendChild(tbl);
+  }
+
+  // ---- Plan 53: the stable-category fractional Calabi-Yau block ----
+  function renderFractionalCY(div, b) {
+    if (b.error) {                          // non-self-injective: a clean typed message
+      div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      return;
+    }
+    div.appendChild(h("p", {},
+      h("b", { text: "Stable-category fractional Calabi–Yau dimension" })));
+    div.appendChild(h("p", { text: "S = Ω∘ν (Serre functor), Σ = Ω⁻¹ (suspension); "
+      + "fractionally CY of dimension m/ℓ ⇔ Sℓ ≅ Σᵐ (Ivanov–Volkov)." }));
+    if (b.status === "certified") {
+      var line = "stable CY dimension " + b.cy_dimension;
+      if (b.ell === 1) line += "  (weakly " + b.weakly_n_cy + "-CY, Ivanov–Volkov n = "
+        + b.weakly_n_cy + ")";
+      div.appendChild(h("p", {}, h("b", { text: line })));
+      var rows = [
+        ["(m, ℓ)", "(" + b.m + ", " + b.ell + ")"],
+        ["tier", b.tier]                    // ALWAYS weak-on-generators — never overstate
+      ];
+      if (b.sigma_period != null) rows.push(["Σ-period on generators", String(b.sigma_period)]);
+      var tbl = h("table", { "class": "qlgui-table" });
+      rows.forEach(function (r) {
+        var tr = h("tr");
+        tr.appendChild(h("th", { text: r[0] }));
+        tr.appendChild(h("td", { text: r[1] }));
+        tbl.appendChild(tr);
+      });
+      div.appendChild(tbl);
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "checked on: " + b.checked_on }));
+      (b.certificate || []).forEach(function (c) {
+        div.appendChild(h("p", { "class": "qlgui-hint", text: "S_" + c[0] + ":  " + c[1] }));
+      });
+    } else if (b.status === "shift-trivial") {
+      div.appendChild(h("p", { text: "The suspension Σ = Ω⁻¹ is trivial on the "
+        + "generators (radical-square-zero self-injective local); the CY dimension is "
+        + "degenerate, reported (m, ℓ) = (0, 1)." }));
+    } else {
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "Not certified within the "
+        + "(m, ℓ) search window — the generators were not Σ-periodic in budget (likely "
+        + "representation-infinite self-injective)." }));
+    }
+  }
+
+  // ---- Plan 65: the exceptional-sequences block (classical + tau counts) ----
+  function renderExceptionalSequences(div, b) {
+    div.appendChild(h("p", { text: "Complete exceptional sequences of A in two independent "
+      + "readings: the classical hereditary theory (an ordered tuple of rigid bricks; the "
+      + "braid group B_n acts transitively — Crawley–Boevey / Ringel) and the τ-exceptional "
+      + "theory (Buan–Marsh signed sequences via the Jasso τ-perpendicular reduction; "
+      + "#signed = n!·#sτt). Only counts are reported. n = " + b.n
+      + (b.dynkin_type ? ", Dynkin type " + b.dynkin_type : "") + "." }));
+    function countTable(rows) {
+      var tbl = h("table", { "class": "qlgui-table" });
+      rows.forEach(function (row) {
+        var tr = h("tr");
+        tr.appendChild(h("th", { text: row[0] }));
+        tr.appendChild(h("td", { text: String(row[1]) }));
+        tbl.appendChild(tr);
+      });
+      return tbl;
+    }
+    div.appendChild(h("p", { text: "Classical (hereditary, braid orbit):" }));
+    if (!b.classical) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Not applicable — A is not hereditary." }));
+    } else {
+      var c = b.classical;
+      div.appendChild(countTable([
+        ["#complete exceptional sequences", c.count],
+        ["Dynkin closed form n!·hⁿ/|W|", c.closed_form_count],
+        ["braid-orbit transitive", c.transitive],
+        ["status", c.status]]));
+      if (!c.complete)
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "The classical enumeration did not close (status: " + c.status + ") — A is "
+            + "representation-infinite (infinite braid orbit) or the budget was hit; no "
+            + "count is claimed." }));
+    }
+    div.appendChild(h("p", { text: "τ-exceptional (signed, ordered sτ-tilt bijection):" }));
+    if (!b.tau) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Not available — A is τ-tilting-infinite or the exchange graph did not close "
+          + "(no count is derived from a non-complete graph)." }));
+    } else {
+      var t = b.tau;
+      div.appendChild(countTable([
+        ["#signed τ-exceptional sequences (n!·#sτt)", t.signed_count],
+        ["#support τ-tilting pairs (#sτt)", t.stt_count],
+        ["status", t.status]]));
+    }
+    if (b.note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
   }
 
   // ---- Plan 45: the C4 tau-tilting block + the LIVE wall-and-chamber SVG ----
@@ -2857,6 +3150,71 @@
     }
   }
 
+  // ---- Plan 67: the silting block (verifier + mutation neighbours + exploration) ----
+  function renderSilting(div, b) {
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Silting is unavailable for this algebra: " + b.error }));
+      return;
+    }
+    div.appendChild(h("p", { text: "Silting objects of K^b(proj A) (Aihara–Iyama): "
+      + "presilting = Hom_{D^b}(T, T[n]) = 0 for n > 0 (weaker than tilting); silting also "
+      + "generates K^b(proj A). The silting quiver can be infinite and transitivity is "
+      + "proven only for local/hereditary/canonical (AI Thm 1.2), so the exploration is a "
+      + "bounded-radius walk with a loud status — never a general enumeration. n = "
+      + b.n + "." }));
+    var reg = b.regular || {};
+    var verdict = reg.is_silting === true ? "silting"
+      : (reg.is_silting === "unknown"
+         ? "presilting (generation undetermined within budget)" : "not silting");
+    var win = reg.window || [1, 0];
+    div.appendChild(h("p", { text: "The regular object A = ⊕ P_v is " + verdict + " ("
+      + (reg.generation_certified_by || "") + "; positive window [" + win[0] + ", "
+      + win[1] + "]; det g_proj = " + reg.det + " in the projective K0 basis)." }));
+    if (b.neighbors && b.neighbors.length) {
+      div.appendChild(h("p", { text: "Single-mutation neighbours (AI Def 2.34):" }));
+      var ul = h("ul");
+      b.neighbors.forEach(function (nb) {
+        if (nb.is_silting == null) {
+          ul.appendChild(h("li", { text: "summand " + nb.summand + ", " + nb.direction
+            + " mutation: not defined (approximation degenerates)" }));
+          return;
+        }
+        var k = nb.summand_dimvecs ? nb.summand_dimvecs.length : 0;
+        ul.appendChild(h("li", { text: "μ" + (nb.direction === "left" ? "+" : "−")
+          + " at summand " + nb.summand + " → a silting object with " + k
+          + " summands" }));
+      });
+      div.appendChild(ul);
+    }
+    var ex = b.exploration || {};
+    if (ex.status === "complete") {
+      div.appendChild(h("p", { text: "Bounded exploration: complete (finite class: "
+        + ex.finite_class + ") — the " + (ex.vertices || []).length
+        + " discovered vertex/vertices are ALL silting objects up to shift." }));
+    } else {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Bounded exploration: status " + ex.status + " (radius " + ex.radius
+          + ") — " + (ex.vertices || []).length + " silting objects found in the ball, "
+          + "but NOT the whole silting quiver (only local algebras certify "
+          + "completeness)." }));
+    }
+    if (ex.arrows && ex.arrows.length) {
+      var ue = h("ul");
+      ex.arrows.forEach(function (a) {
+        ue.appendChild(h("li", { text: a.from + " → " + a.to + " (" + a.direction
+          + " mutation)" }));
+      });
+      div.appendChild(ue);
+    }
+    if (b.co_t_structure) {
+      div.appendChild(h("p", { text: "Co-t-structure dictionary (AI Prop 2.23(b) / "
+        + "Jørgensen): the bounded co-t-structure with coheart add(T) — a documentation "
+        + "record, coheart of " + (b.co_t_structure.coheart || []).length
+        + " summand(s)." }));
+    }
+  }
+
   function renderWallAndChamber(div, fan) {
     // Exact fractions -> pixels happens HERE (the JS renderer is float-exempt); the
     // exact geometry never left Python. n=2 draws the g-vector rays from the origin;
@@ -2900,6 +3258,136 @@
     return i < 0 ? parseFloat(s) : parseFloat(s.slice(0, i)) / parseFloat(s.slice(i + 1));
   }
 
+  // ---- Plan 63: the wall-and-chamber block (D(B) inequality systems) + LIVE SVG ----
+  function renderWallChamber(div, b) {
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      return;
+    }
+    div.appendChild(h("p", { text: "Wall-and-chamber structure via bricks (Brüstle–Smith–"
+      + "Treffinger): each wall D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 for every submodule "
+      + "N ⊆ B} is the King θ-semistable locus of a brick B; the chambers are the g-vector "
+      + "cones of the support τ-tilting pairs. n = " + b.n + "." }));
+    if (!b.complete) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: b.truncation || ("The exchange graph did not close (status: " + b.status
+          + "); a bounded region of " + b.num_chambers + " chamber(s) is shown and no count "
+          + "is claimed (DIJ: brick-finite ⟺ τ-tilting-finite).") }));
+    }
+    if (b.note)                                    // Plan 63: n-regularity recovery provenance
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+    if (b.counts) {
+      div.appendChild(h("p", { text: "#chambers = #support τ-tilting = " + b.counts.chambers
+        + "; #walls = #bricks = " + b.counts.walls + "." }));
+    }
+    if (b.green_count != null)
+      div.appendChild(h("p", { text: "Maximal green sequences: " + b.green_count + "." }));
+    // chambers table (g-vector cones)
+    div.appendChild(h("p", { text: "Chambers (g-vector cones): " + b.num_chambers }));
+    var tbl = h("table", { "class": "qlgui-table" });
+    var hr = h("tr");
+    ["id", "pair (M, P)", "support", "g-matrix (columns = g-vectors)"].forEach(
+      function (t) { hr.appendChild(h("th", { text: t })); });
+    tbl.appendChild(hr);
+    (b.chambers || []).forEach(function (c) {
+      var tr = h("tr");
+      tr.appendChild(h("td", { text: String(c.id) }));
+      tr.appendChild(h("td", { text: (c.label || "") + (c.is_initial ? " (initial)" : "") }));
+      tr.appendChild(h("td", { text: JSON.stringify(c.support) }));
+      var gm = [], G = c.g_matrix || [], nc = G[0] ? G[0].length : 0;
+      for (var k = 0; k < nc; k++) {
+        var col = [];
+        for (var r = 0; r < G.length; r++) col.push(G[r][k]);
+        gm.push("(" + col.join(", ") + ")");
+      }
+      tr.appendChild(h("td", { text: gm.join("; ") }));
+      tbl.appendChild(tr);
+    });
+    div.appendChild(tbl);
+    // walls table (one D(B) per brick). Show the count of walls DISPLAYED: equals num_walls in
+    // the complete case, and stays honest when num_walls is null (partial/budget -- the group
+    // count lives under partial_wall_groups, not presented as a definitive wall count).
+    div.appendChild(h("p", { text: "Walls D(B), one per brick: "
+      + (b.num_walls != null ? b.num_walls : (b.walls || []).length) }));
+    var wt = h("table", { "class": "qlgui-table" });
+    var wh = h("tr");
+    ["brick", "dim-vector", "wall", "inequality system D(B)"].forEach(
+      function (t) { wh.appendChild(h("th", { text: t })); });
+    wt.appendChild(wh);
+    (b.walls || []).forEach(function (w) {
+      var tr = h("tr");
+      tr.appendChild(h("td", { text: w.brick_name || "—" }));
+      tr.appendChild(h("td", { text: dvText(w.brick_dimvec) }));
+      var shape = w.partial ? "hyperplane (bounded region)"
+        : (w.is_full_hyperplane ? "full line/hyperplane {θ·dim B = 0}" : "proper ray/face");
+      tr.appendChild(h("td", { text: shape }));
+      var eqs = "θ·" + JSON.stringify(w.equality) + " = 0";
+      var ins = (w.inequalities || []).map(function (d) {
+        return "θ·" + JSON.stringify(d) + " ≤ 0"; }).join("; ");
+      tr.appendChild(h("td", { text: ins ? (eqs + "; " + ins) : eqs }));
+      wt.appendChild(tr);
+    });
+    div.appendChild(wt);
+    // the LIVE wall-and-chamber SVG (rank <= 3) -- chambers + labeled brick-walls
+    if ((b.render === "fan2d" || b.render === "fan3d") && b.chambers && b.chambers.length)
+      renderWallChamberSVG(div, b);
+    else if (b.render === "table")
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Rank ≥ 4 (or single vertex): the fan is the inequality tables above "
+          + "(no 2D drawing)." }));
+  }
+
+  function renderWallChamberSVG(div, b) {
+    // Exact fractions -> pixels happens HERE (the JS renderer is float-exempt). The
+    // chamber g-cones are drawn faint; each brick-wall D(B) is overlaid as a labelled
+    // dark ray/line -- the visual difference from the Plan-45 fan.
+    var fs = h("fieldset", { "class": "qlgui-fieldset" });
+    fs.appendChild(h("legend", { text: "Wall-and-chamber structure"
+      + (b.render === "fan3d" ? " (L1/octahedron projection)" : "")
+      + (b.complete ? "" : " — bounded region (incomplete)") }));
+    var W = 360, C = W / 2, R = 150;
+    var svg = sv("svg", { viewBox: "0 0 " + W + " " + W, width: String(W), height: String(W) });
+    svg.appendChild(sv("line", { x1: "0", y1: String(C), x2: String(W), y2: String(C),
+      stroke: "#ccc" }));
+    svg.appendChild(sv("line", { x1: String(C), y1: "0", x2: String(C), y2: String(W),
+      stroke: "#ccc" }));
+    var colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+                  "#8c564b", "#e377c2", "#17becf"];
+    var toXY = function (fx, fy) { return [C + evalFrac(fx) * R, C - evalFrac(fy) * R]; };
+    (b.chambers || []).forEach(function (ch, i) {
+      var rays = (b.n === 3 && ch.net2d) ? ch.net2d : ch.rays;
+      var col = colors[i % colors.length];
+      (rays || []).forEach(function (ray) {
+        if (!ray) return;
+        var p = toXY(ray[0], ray[1]);
+        svg.appendChild(sv("line", { x1: String(C), y1: String(C),
+          x2: String(p[0]), y2: String(p[1]), stroke: col, "stroke-width": "1",
+          "stroke-opacity": "0.5" }));
+      });
+      if (ch.is_initial && rays && rays[0]) {
+        var q = toXY(rays[0][0], rays[0][1]);
+        svg.appendChild(sv("circle", { cx: String(q[0]), cy: String(q[1]), r: "3",
+          fill: col }));
+      }
+    });
+    (b.walls || []).forEach(function (w) {
+      var wrays = (b.n === 3 && w.net2d) ? w.net2d : w.rays;
+      if (!wrays) return;
+      wrays.forEach(function (ray) {
+        if (!ray) return;
+        var p = toXY(ray[0], ray[1]);
+        svg.appendChild(sv("line", { x1: String(C), y1: String(C),
+          x2: String(p[0]), y2: String(p[1]), stroke: "#222", "stroke-width": "2.5" }));
+        var txt = sv("text", { x: String(p[0]), y: String(p[1]), "font-size": "10",
+          fill: "#222" });
+        txt.textContent = w.brick_name || dvText(w.brick_dimvec);
+        svg.appendChild(txt);
+      });
+    });
+    fs.appendChild(svg);
+    div.appendChild(fs);
+  }
+
   function renderBlock(res) {
     var b = res.block, name = res.invariant.split(":")[0];
     var div = h("div", { "class": "qlgui-block" });
@@ -2910,6 +3398,11 @@
       var route = /cs|chouhy|solotar/.test(String(b.engine || "").toLowerCase())
         ? "cs" : "bar";
       div.appendChild(h("p", { "class": "qlgui-hint", text: hhTyping(name, route) }));
+      if (b.coefficients)                       // Plan 52: non-regular coefficient bimodule
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "coefficients: " + b.coefficients + " — Hochschild (co)homology "
+                + "with values in the A-bimodule " + b.coefficients
+                + " (not the regular bimodule A)." }));
       var head = h("tr"), row = h("tr");
       head.appendChild(h("th", { text: "n" }));
       row.appendChild(h("th", { text: sup ? "dim HH^n" : "dim HH_n" }));
@@ -2931,6 +3424,8 @@
       renderProductTables(div, name, b);
     } else if (name === "connes_b") {
       renderConnesB(div, b);
+    } else if (name === "bv_operator") {
+      renderBVOperator(div, b);
     } else if (name === "cyclic_homology") {
       // Plan-35 follow-up: HC is a homology-style subscript table HC_n, rendered
       // exactly like the HH dims tables above.
@@ -2978,6 +3473,8 @@
       div.appendChild(h("p", { text: b.text }));
     } else if (name === "homological_profile") {
       renderHomologicalProfile(div, b);
+    } else if (name === "fractional_cy") {
+      renderFractionalCY(div, b);
     } else if (name === "center") {
       div.appendChild(h("p", { "class": "arithmatex", text: "\\( \\dim Z(A) = " + b.dim + " \\)" }));
     } else if (name === "tau" || name === "tau_minus") {
@@ -3204,6 +3701,84 @@
       if (b.note) div.appendChild(h("p", { text: b.note }));
     } else if (name === "orbit_geometry") {
       renderOrbitGeometry(div, b);
+    } else if (name === "string_homological") {
+      // Plan 59 / R34: the three-valued verdict + the is_string arbiter + the >= 3
+      // -summand middle witness (a genuine extension of indecomposables).
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: "Verdict: " + b.verdict
+          + " · syntactic is_string: " + b.is_string }));
+        if (b.witness) {
+          var shw = b.witness;
+          var shE = Object.keys(shw.E_dimvec || {}).map(function (v) {
+            return v + ":" + shw.E_dimvec[v]; }).join(", ");
+          var shS = (shw.summand_dimvecs || []).map(function (d) {
+            return "{" + Object.keys(d).map(function (v) {
+              return v + ":" + d[v]; }).join(", ") + "}"; }).join(" ⊕ ");
+          div.appendChild(h("p", { text: "Witness: middle {" + shE + "} has "
+            + shw.summand_count + " summand(s)" + (shS ? " = " + shS : "")
+            + " — not a string algebra (k-bar-sound)." }));
+        }
+        if (b.kbar_gap_note) div.appendChild(h("p", { text: b.kbar_gap_note }));
+        if (b.reason) div.appendChild(h("p", { text: b.reason }));
+      }
+    } else if (name === "toupie") {
+      // Plan 59 / R35: recognizer + branch/direct-arrow counts + HH degree table +
+      // the char-0 sl_a lower bound.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (!b.is_toupie) {
+        div.appendChild(h("p", { text: "The algebra is not a toupie." }));
+      } else {
+        div.appendChild(h("p", { text: "Toupie: " + b.branch_count + " branch(es), "
+          + b.direct_arrow_count + " direct source→sink arrow(s)." }));
+        if (b.hh) {
+          var thHr = h("tr"); thHr.appendChild(h("th", { text: "n" }));
+          var thDr = h("tr"); thDr.appendChild(h("th", { text: "dim HH^n" }));
+          b.hh.forEach(function (d, n) {
+            thHr.appendChild(h("td", { text: String(n) }));
+            thDr.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, thHr, thDr));
+        }
+        if (b.sl_a) {
+          div.appendChild(h("p", { text: "sl_a ⊆ HH¹ (char 0): a = " + b.sl_a.a
+            + ", dim sl_a = " + b.sl_a.dim
+            + (b.sl_a.char0 ? "" : " (char ≠ 0 — inclusion not claimed)") }));
+        }
+        if (b.note) div.appendChild(h("p", { text: b.note }));
+      }
+    } else if (name === "skew_gentle") {
+      // Plan 68 / R32: recognizer + split shape + dim law + classification counts +
+      // support tau-tilting + brick-finite <=> rep-finite certificate.
+      if (!b.is_skew_gentle) {
+        div.appendChild(h("p", { text: b.note || "Not a skew-gentle algebra." }));
+      } else {
+        div.appendChild(h("p", { text: "Split algebra kQ̂/Î: "
+          + b.split.num_vertices + " vertices, " + b.split.num_arrows
+          + " arrows, dim " + b.split.dim + " (rank |Q₀|+|Sp| = " + b.rank + ")." }));
+        div.appendChild(h("p", { text: "Dimension law (HZZ Lemma 1.5): dim(split) = "
+          + b.dim_law.split_dim + ", dim(associated gentle) = " + b.dim_law.assoc_gentle_dim
+          + (b.dim_law.ok ? " — certified equal." : " — MISMATCH.") }));
+        var cl = b.classification || {};
+        div.appendChild(h("p", { text: "Special (type-p) strings: " + cl.num_special
+          + "; bands: " + (cl.has_bands ? "yes" : "no")
+          + (cl.num_indecomposables != null
+             ? "; indecomposables: " + cl.num_indecomposables : "") + "." }));
+        if (cl.note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: cl.note + "." }));
+        if (b.tau_tilting && b.tau_tilting.num_pairs != null)
+          div.appendChild(h("p", { text: "Support τ-tilting pairs: "
+            + b.tau_tilting.num_pairs
+            + (b.tau_tilting.complete ? " (complete)" : " (incomplete)") + "." }));
+        var rt = b.rep_type || {};
+        var rf = (rt.rep_finite === true) ? "representation-finite"
+          : (rt.rep_finite === false) ? "representation-infinite"
+          : "representation type withheld (" + rt.scope + ")";
+        div.appendChild(h("p", { text: "Representation type: " + rf
+          + " [" + rt.scope + "]." }));
+      }
     } else if (name === "quasi_hereditary") {
       // Plan 47: the quasi-heredity verdict + order-dependence note + per-index
       // certificates (End Δ(i)=k, P(i) Δ-filtered) + the standard-module dim vectors.
@@ -3241,10 +3816,104 @@
         });
         div.appendChild(stbl);
       }
+    } else if (name === "fundamental_group") {
+      // Plan 56: pi1(Q,I) abelianization (exact SNF) + finite presentation + the
+      // honest intrinsic-vs-presentation note.
+      var ab = b.abelianization || {};
+      var abtxt = ab.free_rank === 1 ? "Z" : (ab.free_rank > 1 ? "Z^" + ab.free_rank : "");
+      (ab.invariant_factors || []).forEach(function (d) {
+        abtxt += (abtxt ? " (+) " : "") + "Z/" + d;
+      });
+      if (!abtxt) abtxt = "0";
+      div.appendChild(h("p", { text: "Fundamental group π₁(Q,I): "
+        + (b.generators || []).length + " generator(s) (the non-tree arrows), "
+        + (b.relators || []).length + " relator(s)." }));
+      if ((b.generators || []).length)
+        div.appendChild(h("p", { text: "Generators: " + b.generators.join(", ") + "." }));
+      if ((b.relators || []).length)
+        div.appendChild(h("p", { text: "Relators: " + b.relators.join("; ") + "." }));
+      div.appendChild(h("p", { text: "Abelianization π₁^ab = " + abtxt
+        + ";  dim Hom(π₁, (k,+)) = " + b.hom_to_additive_dim
+        + " over " + b.components + " connected component(s)." }));
+      if (b.presentation_note)
+        div.appendChild(h("p", { "class": "qlgui-hint", text: b.presentation_note }));
+      if (b.intrinsic_note)
+        div.appendChild(h("p", { "class": "qlgui-hint", text: b.intrinsic_note }));
+    } else if (name === "simply_connected") {
+      // Plan 56: three-valued verdict + the R16 strongly-simply-connected certificate.
+      var scph = b.verdict === true ? "simply connected"
+        : b.verdict === false ? "not simply connected"
+        : "undecided (triviality of a finitely presented group is undecidable — Adian–Rabin)";
+      var scline = "Verdict: " + scph;
+      if (b.verdict === false && b.witness)
+        scline += " (witness: " + JSON.stringify(b.witness) + ")";
+      div.appendChild(h("p", { text: scline + "." }));
+      if (b.reason) div.appendChild(h("p", { "class": "qlgui-hint", text: b.reason }));
+      var st = b.strongly;
+      if (st) {
+        var stph = st.verdict === true
+          ? "strongly simply connected (separation holds on every full convex subcategory)"
+          : st.verdict === false ? "not strongly simply connected (separation fails)"
+          : "undecided (char/budget)";
+        var stline = "Strong simple connectivity (the P62 gate): " + stph;
+        if (st.verdict === false && st.witness)
+          stline += " (witness: " + JSON.stringify(st.witness) + ")";
+        div.appendChild(h("p", { text: stline + "." }));
+      }
+    } else if (name === "tame_wild") {
+      // Plan 62 / R19: the combinatorial Tits form + the theorem-gated rep-finite /
+      // tame / wild verdict (never confused with P38's form-type definiteness).
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        var certRepInf = (b.rep_type === null || b.rep_type === undefined)
+          && b.certified === "rep_infinite";
+        var twName = b.rep_type === "rep-finite" ? "representation-finite"
+          : b.rep_type === "tame" ? "tame"
+          : b.rep_type === "wild" ? "wild"
+          : certRepInf ? "representation-infinite (tame vs wild withheld)"
+          : "undecided";
+        var twline = "Representation type (certified): " + twName;
+        div.appendChild(h("p", { text: twline + "." }));
+        if ((b.rep_type === null || b.rep_type === undefined) && !certRepInf)
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: "Verdict withheld — " + (b.reason || "out of scope") }));
+        else if (b.reason)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.reason }));
+        // the two field-free form booleans + the exact witness
+        var wpph = b.weakly_positive === true ? "yes"
+          : b.weakly_positive === false ? "no" : "undecided";
+        var wnph = b.weakly_nonnegative === true ? "yes"
+          : b.weakly_nonnegative === false ? "no" : "undecided";
+        div.appendChild(h("p", { text: "Tits form: weakly positive — " + wpph
+          + "; weakly nonnegative — " + wnph + "." }));
+        if (b.witness)
+          div.appendChild(h("p", { text: "Witness d = " + JSON.stringify(b.witness)
+            + " with q_A(d) = " + b.witness_value + "." }));
+        // the P56 certificate trail (the gate for the verdict)
+        var sc = b.simply_connected, ssc = b.strongly_simply_connected;
+        var tri = function (v) { return v === true ? "yes" : v === false ? "no" : "undecided"; };
+        div.appendChild(h("p", { "class": "qlgui-hint",
+          text: "Certificate (Plan 56): simply connected — " + tri(sc)
+            + "; strongly simply connected — " + tri(ssc)
+            + "; base field admits the representation-type verdict — "
+            + (b.field_alg_closed ? "yes" : "no") + "." }));
+        // the integer Tits Gram matrix as an indexed grid
+        if (b.gram && b.gram.length)
+          div.appendChild(matrixGrid(b.gram));
+        if (b.scope_note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope_note }));
+      }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
     } else if (name === "congruences") {
       renderCongruences(div, b);
+    } else if (name === "wall_chamber") {
+      renderWallChamber(div, b);
+    } else if (name === "silting") {
+      renderSilting(div, b);
+    } else if (name === "exceptional_sequences") {
+      renderExceptionalSequences(div, b);
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -3304,6 +3973,230 @@
         div.appendChild(h("p", { text: "τ-orbits: " + b.tau_orbits.map(function (o) {
           return "{" + o.map(arLabel).join(", ") + "}"; }).join("  ") }));
       }
+    } else if (name === "radical_filtration") {
+      // Plan 57 / R37: the radical of the MODULE CATEGORY rad^n(X,Y) and its
+      // nilpotency index -- NOT the Loewy radical series (radical_filtration_ss).
+      // Honest semi-decision: verdict FIRST, then the layer profile; off-scope input
+      // shows the loud window/unsupported note, never a fake index.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (b.complete === true) {
+        div.appendChild(h("p", { text: "Representation-finite: " + b.num_indecomposables
+          + " indecomposable(s); nilpotency index N = " + b.nilpotency_index
+          + "; rad^∞(mod A) = 0 (Auslander); generalized standard: "
+          + (b.generalized_standard ? "yes" : "no") + "." }));
+        if ((b.layer_profile || []).length) {
+          var lfh = h("tr"), lfr = h("tr");
+          lfh.appendChild(h("th", { text: "n" }));
+          lfr.appendChild(h("th", { text: "Σ dim radⁿ" }));
+          b.layer_profile.forEach(function (d, idx) {
+            lfh.appendChild(h("th", { text: String(idx + 1) }));
+            lfr.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, lfh, lfr));
+        }
+      } else {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: (b.status === "unsupported")
+            ? "Not computed — " + (b.note || "input not eligible (self-injective).")
+            : "Window only (budget " + b.budget + " reached) — "
+              + (b.note || "") + " No nilpotency index or rad^∞ verdict." }));
+      }
+    } else if (name === "ar_invariants") {
+      // Plan 57 / R21: Liu degrees + directing / rep-directed recognizer + partition.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (b.complete === true) {
+        div.appendChild(h("p", { text: "Representation-directed: "
+          + (b.representation_directed ? "yes" : "no") + " (" + b.num_directing
+          + " of " + b.num_indecomposables + " directing); generalized standard: "
+          + (b.generalized_standard ? "yes" : "no") + "; nilpotency index N = "
+          + b.nilpotency_index + "; max sectional length = "
+          + b.max_sectional_length + "." }));
+        var pc = b.partition_counts || {};
+        var pcs = Object.keys(pc).map(function (k) { return k + ": " + pc[k]; }).join(", ");
+        if (pcs) div.appendChild(h("p", { text: "Partition — " + pcs + "." }));
+        if (b.partition_note)
+          div.appendChild(h("p", { text: b.partition_note }));
+        var dg = b.degrees || {}, dks = Object.keys(dg);
+        if (dks.length) {
+          var dgh = h("tr");
+          dgh.appendChild(h("th", { text: "irreducible map" }));
+          dgh.appendChild(h("th", { text: "dℓ" }));
+          dgh.appendChild(h("th", { text: "dᵣ" }));
+          var dgt = h("table", {}, dgh);
+          dks.forEach(function (k) {
+            var rec = dg[k];
+            dgt.appendChild(h("tr", {}, h("th", { text: k }),
+              h("td", { text: rec.d_l === null ? "∞" : String(rec.d_l) }),
+              h("td", { text: rec.d_r === null ? "∞" : String(rec.d_r) })));
+          });
+          div.appendChild(dgt);
+        }
+      } else {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: (b.status === "unsupported")
+            ? "Not computed — " + (b.note || "input not eligible (self-injective).")
+            : "Off scope (status " + b.status + ") — " + (b.note || "")
+              + " No directing/partition/degree verdict." }));
+      }
+    } else if (name === "left_right_parts") {
+      // Plan 55: the module-category atlas. Completeness/refusal status FIRST (an honest
+      // semi-decision: rep-finite non-self-injective only), then both parts named
+      // S_v/P_v/I_v, the complement (laura datum), the Ext-injectives / Ext-projectives,
+      // and the two support algebras with their component counts.
+      var lrDone = b.complete === true;
+      div.appendChild(h("p", { "class": lrDone ? "" : "qlgui-error",
+        text: lrDone
+          ? ("Module category: " + b.universe_size + " indecomposable(s); L_A has "
+             + (b.left || []).length + ", R_A has " + (b.right || []).length
+             + " (intersection " + (b.intersection || []).length + ", complement "
+             + (b.complement || []).length + ").")
+          : (b.status === "unsupported" || b.status === "error")
+            ? "Not computed — " + (b.error || b.note || "input not eligible "
+              + "(self-injective or not representation-finite)") + "."
+            : "Partial (budget reached — the algebra is likely representation-infinite; "
+              + "this is NOT the full atlas)." }));
+      if (lrDone) {
+        var lrName = function (recs) {
+          if (!recs || !recs.length) return "∅";
+          return recs.map(function (r) {
+            if (r.name) return r.name;
+            var dv = r.dimvec || {};
+            return "(" + Object.keys(dv).map(function (w) { return dv[w]; }).join(",") + ")";
+          }).join(", ");
+        };
+        div.appendChild(h("p", {}, h("b", { text: "Left part L_A: " }),
+          document.createTextNode(lrName(b.left))));
+        div.appendChild(h("p", {}, h("b", { text: "Right part R_A: " }),
+          document.createTextNode(lrName(b.right))));
+        div.appendChild(h("p", {}, h("b", { text: "Complement (ind A ∖ (L_A ∪ R_A)): " }),
+          document.createTextNode(lrName(b.complement))));
+        div.appendChild(h("p", {}, h("b", { text: "Ext-injectives of add L_A: " }),
+          document.createTextNode(lrName(b.ext_injectives_left))));
+        div.appendChild(h("p", {}, h("b", { text: "Ext-projectives of add R_A: " }),
+          document.createTextNode(lrName(b.ext_projectives_right))));
+        [["A_λ (left support)", b.left_support], ["A_ρ (right support)", b.right_support]]
+          .forEach(function (pair) {
+            var sa = pair[1];
+            if (!sa) return;
+            div.appendChild(h("p", {}, h("b", { text: pair[0] + ": " }),
+              document.createTextNode("vertices {" + (sa.vertices || []).join(", ")
+                + "}, dim " + sa.dim + ", " + (sa.components || []).length
+                + " connected component(s)")));
+          });
+      }
+    } else if (name === "tilted_check") {
+      // Plan 60: the tilted-algebra recognizer (Liu-Skowroński). Verdict + reason FIRST
+      // (an honest semi-decision: theorem gates or the rep-finite faithful-section
+      // search), then the hereditary type, the slice Sigma named S_v/P_v/I_v, the
+      // reconstructed H = End_A(S), and the Ringel reconstruction note. citesLine is
+      // appended globally at the end of renderBlock.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Tilted check not computed — " + b.error }));
+      } else {
+        var tcReason = {
+          "hereditary": "hereditary (A = End_A(A), the postprojective slice)",
+          "self_injective": "non-semisimple self-injective ⇒ gl.dim = ∞ ⇒ not tilted",
+          "gldim>2": "gl.dim > 2 (tilted ⇒ gl.dim ≤ 2)",
+          "faithful_section_found":
+            "a faithful section with Hom(X, τY)=0, certified a slice (Ringel Thm 1.9(2))",
+          "search_exhausted":
+            "no faithful section with Hom(X, τY)=0 (rep-finite, complete knit, budget-exhaustive)",
+          "budget": "the transversal enumeration exceeded the budget",
+          "unsupported": "the AR knit is out of scope (self-injective / rep-infinite)",
+          "error": "refused loudly"
+        };
+        var tcVerdict = { "tilted": "tilted", "not_tilted": "not tilted", "unknown": "unknown" };
+        div.appendChild(h("p", {}, h("b", { text: "A is " + (tcVerdict[b.verdict] || b.verdict) }),
+          document.createTextNode(" — " + (tcReason[b.reason] || b.reason) + ".")));
+        if (b.hereditary_type)
+          div.appendChild(h("p", {}, h("b", { text: "Hereditary type: " }),
+            document.createTextNode(b.hereditary_type)));
+        if (b.slice && b.slice.length) {
+          var tcNames = b.slice.map(function (r) {
+            if (r.name) return r.name;
+            var dv = r.dimvec || {};
+            return "(" + Object.keys(dv).map(function (w) { return dv[w]; }).join(",") + ")";
+          }).join(", ");
+          div.appendChild(h("p", {}, h("b", { text: "Slice Σ (S = ⊕Σ, a tilting A-module): " }),
+            document.createTextNode(tcNames)));
+        }
+        if (b.hereditary_algebra) {
+          var tcH = b.hereditary_algebra;
+          div.appendChild(h("p", {}, h("b", { text: "H = End_A(S) (presented, hereditary): " }),
+            document.createTextNode((tcH.vertices || []).length + " vertices, "
+              + Object.keys(tcH.arrows || {}).length + " arrows, dim " + tcH.dim)));
+        }
+        if (b.reconstruction && b.reconstruction.note)
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: b.reconstruction.note + " (dim A = " + b.reconstruction.dim_A
+              + ", dim H = " + b.reconstruction.dim_H + ")." }));
+        if (b.verdict === "unknown" && b.note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+      }
+    } else if (name === "recognizer_ladder") {
+      // Plan 61: the quasi-tilted/shod/weakly-shod/laura/ada ladder. Completeness/refusal
+      // status FIRST (rep-finite non-self-injective only), then a ✓/✗ verdict table with a
+      // witness per ✗, the finite laura complement, and the ada/HH^1 simple-connectedness line.
+      var rlDone = b.complete === true;
+      // An inexact gl.dim is a CERTIFIED LOWER BOUND (resolution not resolved within the
+      // depth bound), never a definite value -- state it honestly, never as a bare number.
+      var rlGldim = (b.gldim_exact === false)
+        ? ("≥ " + b.gldim + " (certified lower bound)")
+        : ("" + b.gldim);
+      div.appendChild(h("p", { "class": rlDone ? "" : "qlgui-error",
+        text: rlDone
+          ? ("Module category: " + b.universe_size + " indecomposable(s), global dimension "
+             + rlGldim + ".")
+          : (b.status === "unsupported" || b.status === "error")
+            ? "Not computed — " + (b.error || b.note || "input not eligible "
+              + "(self-injective or not representation-finite)") + "."
+            : "Partial (budget reached — the algebra is likely representation-infinite; "
+              + "this is NOT the full ladder)." }));
+      if (rlDone) {
+        var rlLabels = [["quasi_tilted", "quasi-tilted"], ["shod", "shod"],
+          ["weakly_shod", "weakly shod"], ["laura", "laura"], ["ada", "ada"]];
+        var rlTbl = h("table", {}, h("tr", {}, h("th", { text: "class" }),
+          h("th", { text: "verdict" }), h("th", { text: "witness" })));
+        rlLabels.forEach(function (pair) {
+          var rung = (b.ladder || {})[pair[0]] || {};
+          var wit = "";
+          if (pair[0] === "laura") {
+            wit = "complement size " + rung.complement_size;
+          } else if (rung.verdict === false && rung.witness) {
+            wit = Object.keys(rung.witness).map(function (k) {
+              return k + ": " + rung.witness[k]; }).join(", ");
+          }
+          rlTbl.appendChild(h("tr", {}, h("th", { text: pair[1] }),
+            h("td", { text: rung.verdict ? "✓" : "✗" }), h("td", { text: wit })));
+        });
+        div.appendChild(rlTbl);
+        var rlComp = b.complement || [];
+        var rlCompText = rlComp.length
+          ? rlComp.map(function (r) {
+              if (r.name) return r.name;
+              var dv = r.dimvec || {};
+              return "(" + Object.keys(dv).map(function (w) { return dv[w]; }).join(",") + ")";
+            }).join(", ")
+          : "∅ (this algebra is shod)";
+        div.appendChild(h("p", {}, h("b", { text: "Laura complement: " }),
+          document.createTextNode(rlCompText)));
+        var sc = b.simple_connectedness || {};
+        if (sc.applicable) {
+          div.appendChild(h("p", { text: sc.verdict === true
+            ? "Simple connectedness (ACLV Theorem B): dim HH¹(A) = " + sc.hh1_dim
+              + ", so A is simply connected and HH•(A) reduces to the base field."
+            : "Simple connectedness (ACLV Theorem B): dim HH¹(A) = " + sc.hh1_dim
+              + " ≠ 0, so A is not simply connected." }));
+        } else if (sc.hh1_dim !== null && sc.hh1_dim !== undefined) {
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: "dim HH¹(A) = " + sc.hh1_dim + ". " + (sc.note || "") }));
+        } else if (sc.note) {
+          div.appendChild(h("p", { "class": "qlgui-hint", text: sc.note }));
+        }
+      }
     } else if (name === "derived_compare") {
       // Plan 43: the two fingerprints side by side + the honest verdict. Equal
       // rows are a NECESSARY condition for derived equivalence, never a proof.
@@ -3349,6 +4242,62 @@
           text: "Incomparable (errored on one/both sides): "
             + b.incomparable_fields.join(", ") + "." }));
       if (b.scope) div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
+    } else if (name === "coxeter_spectral") {
+      // Plan 58 (R20): certified Coxeter spectral analysis -- Phi_n factorization,
+      // cyclotomic/order verdicts, outside-circle count, rho/M as certified algebraic
+      // numbers (minpoly + rational isolating interval), Lehmer-class footnote.
+      var errObj = function (v) { return v && typeof v === "object" && "error" in v; };
+      if (errObj(b.coxeter_polynomial)) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Coxeter polynomial unavailable — " + b.coxeter_polynomial.error }));
+      } else {
+        div.appendChild(h("p", { text: "Certified Coxeter spectral analysis" }));
+        div.appendChild(h("p", { "class": "arithmatex",
+          text: "\\[ \\chi(t) = " + (b.coxeter_latex || "") + " \\]" }));
+        div.appendChild(h("p", { text: "Cyclotomic factorization (Φ_n labels):" }));
+        var cxFacs = h("ul");
+        (b.factorization || []).forEach(function (f) {
+          var pow = f.multiplicity > 1 ? "^{" + f.multiplicity + "}" : "";
+          var lbl = (f.cyclotomic_index !== null && f.cyclotomic_index !== undefined)
+            ? "\\Phi_{" + f.cyclotomic_index + "}" + pow
+            : "\\text{(non-cyclotomic)}" + pow;
+          cxFacs.appendChild(h("li", { "class": "arithmatex",
+            text: "\\( " + lbl + " = " + f.latex + " \\)" }));
+        });
+        div.appendChild(cxFacs);
+        div.appendChild(h("p", { text: "Cyclotomic (all eigenvalues roots of unity): "
+          + (b.cyclotomic ? "yes" : "no") + "; quasi-unipotent: "
+          + (b.quasi_unipotent ? "yes" : "no") + "." }));
+        var cxOrd = b.coxeter_order, cxOrdTxt;
+        if (errObj(cxOrd)) cxOrdTxt = "not decided — " + cxOrd.error;
+        else if (cxOrd === null || cxOrd === undefined) cxOrdTxt = "infinite (∞)";
+        else cxOrdTxt = String(cxOrd);
+        div.appendChild(h("p", { text: "Coxeter order (Φ^m = I): " + cxOrdTxt
+          + (typeof b.coxeter_order_reason === "string"
+             ? " — " + b.coxeter_order_reason : "") + "." }));
+        div.appendChild(h("p", { text: "Roots strictly outside the unit circle: "
+          + b.outside_unit_circle_count + "." }));
+        var cxCert = function (label, c) {
+          if (errObj(c)) {
+            div.appendChild(h("p", { "class": "qlgui-hint",
+              text: label + ": not certified — " + c.error }));
+            return;
+          }
+          if (!c) return;
+          div.appendChild(h("p", { "class": "arithmatex",
+            text: "\\[ " + label + " = " + c.latex + " \\]" }));
+          div.appendChild(h("p", { "class": "qlgui-cites",
+            text: "minimal polynomial of degree " + c.degree
+              + ", isolating interval (" + c.interval[0] + ", " + c.interval[1] + ")"
+              + (c.is_rational ? " (rational)" : "") + "." }));
+        };
+        cxCert("\\rho\\ (\\text{spectral radius})", b.spectral_radius);
+        cxCert("M\\ (\\text{Mahler measure})", b.mahler_measure);
+        if (b.lehmer_class_note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.lehmer_class_note }));
+        if (b.scope)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
+      }
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -3443,12 +4392,14 @@
   el["rel-comm"].addEventListener("click", function () { applyRelPreset("comm"); });
   [el.field, el.p, el.n, el.hhc, el["hhc-top"], el.hhh, el["hhh-top"],
    el.cup, el["cup-top"], el.cap, el["cap-top"], el.bracket, el["bracket-top"],
-   el.connes_b, el["connes_b-top"],
+   el.connes_b, el["connes_b-top"], el.bv_operator, el["bv_operator-top"],
    el.cyclic_homology, el["cyclic_homology-top"],
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
-   el.coxeter_polynomial, el.global_dimension, el.center,
+   el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
-   el.homological_profile, el.strings, el.quasi_hereditary]
+   el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
+   el.fundamental_group, el.simply_connected, el.tame_wild,
+   el.skew_gentle, el["skew_gentle-special"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -3527,12 +4478,12 @@
   var THEMES =
   [
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
-    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
-    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences"]},
+    {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
+    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
-    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver"]}
+    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
   ];
   // QLGUI-THEMES-END
 
@@ -3781,6 +4732,23 @@
     pickCartChips.appendChild(pickCartEmpty);
     var opts = h("div", { "class": "qlcart-opts" });
     if (el.trace && el.trace.parentNode) opts.appendChild(el.trace.parentNode); // relocate the report toggle
+    // Plan 52: the Hochschild coefficient bimodule picklist. Default "regular"
+    // emits NO block (byte-stable request); the others carry a schema-3
+    // coefficients block. Read live in buildRequest via el.coeff_kind.
+    var coeffWrap = h("label", { "class": "qlcart-coeff" },
+      h("span", { text: pkTxt("coeff-label", "Coefficients") + ": " }));
+    var coeffSel = h("select", { id: "qlgui-coeff", "aria-label":
+      pkTxt("coeff-label", "Coefficients") });
+    [["regular", pkTxt("coeff-regular", "regular A")],
+     ["dual", pkTxt("coeff-dual", "dual D(A)")],
+     ["twisted_nakayama", pkTxt("coeff-twisted_nakayama", "twisted _1A_nu")],
+     ["quotient_socle", pkTxt("coeff-quotient_socle", "A/soc")]].forEach(function (o) {
+      coeffSel.appendChild(h("option", { value: o[0], text: o[1] }));
+    });
+    coeffSel.addEventListener("change", function () { if (S.onProbe) S.onProbe(); });
+    el.coeff_kind = coeffSel;
+    coeffWrap.appendChild(coeffSel);
+    opts.appendChild(coeffWrap);
     cart.appendChild(head); cart.appendChild(pickCartChips); cart.appendChild(opts);
     el.eta.parentNode.insertBefore(cart, el.eta);
 
@@ -3892,9 +4860,12 @@
     {"id": "cyclic_homology", "title": "Cyclic homology HC_•", "category": "hochschild", "keywords": ["cyclic", "cíclica", "cyclique", "循环同调", "HC", "connes"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cyclic_homology:0..4"]}},
     {"id": "connes_b", "title": "Connes differential B", "category": "hochschild", "keywords": ["connes", "differential", "diferencial", "différentielle", "B", "微分"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["connes_b:0..3"]}},
     {"id": "products", "title": "HH products: cup, cap, bracket", "category": "hochschild", "keywords": ["cup", "cap", "bracket", "gerstenhaber", "producto", "produit", "杯", "帽", "括号", "product"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cup:0..2", "cap:0..2", "bracket:0..2"]}},
+    {"id": "bv_operator", "title": "BV operator Δ (Frobenius / symmetric)", "category": "hochschild", "keywords": ["bv", "batalin", "vilkovisky", "delta", "frobenius", "nakayama", "BV算子"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["bv_operator:0..3"]}},
     {"id": "ss_hochschild", "title": "Hochschild (b,B) spectral sequence", "category": "hochschild", "keywords": ["spectral", "sequence", "espectral", "spectrale", "谱序列", "ss", "b,B", "abutment"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ss_hochschild:0..3"]}},
     {"id": "cartan_coxeter", "title": "Cartan matrix & Coxeter polynomial", "category": "invariants", "keywords": ["cartan", "coxeter", "matrix", "matriz", "matrice", "polynomial", "polinomio", "polynôme", "卡坦", "矩阵", "多项式"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cartan", "coxeter_polynomial"]}},
+    {"id": "coxeter_spectral", "title": "Coxeter spectral analysis (certified ρ/M, Φ_n)", "category": "invariants", "keywords": ["coxeter", "spectral", "mahler", "lehmer", "cyclotomic", "salem", "spectral radius", "espectral", "ciclotómico", "spectrale", "cyclotomique", "谱", "分圆", "谱半径", "pisot"], "example": {"vertices": [1, 2], "arrows": {"a0": [1, 2], "a1": [1, 2], "a2": [1, 2]}, "relations": [], "field": {"kind": "QQ"}, "compute": ["coxeter_spectral"]}},
     {"id": "homological_profile", "title": "Homological dimensions & global dimension", "category": "invariants", "keywords": ["homological", "dimension", "global", "gldim", "dimensión", "dimension", "同调维数", "全局维数", "findim", "gorenstein", "igusa", "todorov"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["homological_profile", "global_dimension"]}},
+    {"id": "fractional_cy", "title": "Fractional Calabi–Yau dimension (self-injective)", "category": "invariants", "keywords": ["fractional", "calabi", "yau", "calabi-yau", "cy", "stable", "serre", "nakayama", "self-injective", "selfinjective", "periodic", "calabi–yau", "分数", "卡拉比", "丘"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["fractional_cy"]}},
     {"id": "center", "title": "Center of the algebra Z(A)", "category": "invariants", "keywords": ["center", "centre", "centro", "中心", "Z(A)", "zentrum"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["center"]}},
     {"id": "recognizers", "title": "Recognizers & Dynkin type", "category": "invariants", "keywords": ["recognizers", "type", "dynkin", "tipo", "reconocedores", "reconnaisseurs", "hereditary", "nakayama", "识别", "类型", "gentle", "string"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers"]}},
     {"id": "ext_algebra", "title": "Ext-algebra & Koszulity", "category": "invariants", "keywords": ["ext", "koszul", "yoneda", "ext-algebra", "koszulity", "代数", "koszulidad", "koszulité"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ext_algebra:0..3"]}},
@@ -3903,10 +4874,14 @@
     {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
     {"id": "tau_tilting", "title": "τ-tilting: pairs, exchange graph, fan", "category": "tau-tilting", "keywords": ["tau-tilting", "tilting", "mutation", "torsion", "silting", "g-vector", "wall", "stability", "chamber", "inclinación", "basculement", "mutación", "倾斜", "突变", "brick", "semibrick", "fan"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["tau_tilting:512"]}},
     {"id": "congruences", "title": "Torsion lattice: Con, forcing, wide subcategories", "category": "tau-tilting", "keywords": ["torsion", "lattice", "congruence", "forcing", "wide", "wide subcategory", "core label order", "canonical join", "brick", "semidistributive", "pentagon", "dirrt", "enomoto", "retículo", "congruencia", "treillis", "congruence", "格", "同余", "宽子范畴"], "example": {"vertices": [1, 2], "arrows": {"a": [1, 2]}, "relations": [], "field": {"kind": "QQ"}, "compute": ["congruences:512"]}},
+    {"id": "left_right_parts", "title": "Left / right parts L_A, R_A + support algebras", "category": "structure", "keywords": ["left part", "right part", "L_A", "R_A", "support algebra", "laura", "ada", "quasi-tilted", "ext-injective", "complement", "assem", "coelho", "trepode", "parte izquierda", "parte derecha", "partie gauche", "partie droite", "álgebra soporte", "algèbre support", "左部", "右部", "支撑代数"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["left_right_parts:256"]}},
+    {"id": "tilted_check", "title": "Tilted-algebra recognizer (Liu-Skowroński)", "category": "structure", "keywords": ["tilted", "tilted algebra", "liu", "skowronski", "skowroński", "slice", "section", "hereditary", "End_H(T)", "ringel", "happel", "faithful section", "álgebra inclinada", "algèbre inclinée", "rebanada", "tranche", "hereditaria", "héréditaire", "倾斜代数", "倾斜", "遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a1": [2, 1], "a2": [3, 2]}, "relations": ["a2*a1"], "field": {"kind": "QQ"}, "compute": ["tilted_check:256"]}},
+    {"id": "recognizer_ladder", "title": "Recognizer ladder: quasi-tilted / shod / weakly-shod / laura / ada", "category": "structure", "keywords": ["quasi-tilted", "shod", "weakly shod", "laura", "ada", "recognizer", "simply connected", "simple connectedness", "HH^1", "happel", "reiten", "smalo", "coelho", "lanzilotta", "assem", "escalera", "échelle", "casi inclinada", "quasi-inclinée", "cuasi-inclinada", "simplemente conexo", "simplement connexe", "拟倾斜", "单连通", "识别阶梯"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["recognizer_ladder:256"]}},
     {"id": "module_basics", "title": "Module: dimension vector, rad/top/soc", "category": "modules", "keywords": ["module", "dimension vector", "radical", "top", "socle", "zócalo", "socle", "módulo", "module", "模块", "维数向量", "loewy"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["dimension_vector", "rad_top_soc"]}},
     {"id": "resolutions", "title": "Projective & injective resolutions", "category": "modules", "keywords": ["resolution", "projective", "injective", "resolución", "résolution", "proyectiva", "inyectiva", "projective", "injective", "分解", "投影", "内射", "pd", "id"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["projective_resolution:0..6", "injective_resolution:0..6", "projective_dimension", "injective_dimension"]}},
     {"id": "ext_tor", "title": "Ext & Tor between modules", "category": "modules", "keywords": ["ext", "tor", "extension", "extensión", "扩张", "torsion", "扭积", "yoneda"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}, "tor_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "left"}, "compute": ["ext:0..3", "tor:0..3"]}},
     {"id": "ar_theory", "title": "Auslander–Reiten: τ, τ⁻, almost-split", "category": "ar", "keywords": ["auslander", "reiten", "tau", "translate", "almost-split", "irreducible", "traslación", "translation", "转变", "几乎分裂", "ar-quiver"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["tau", "tau_minus", "almost_split"]}},
+    {"id": "radical_filtration", "title": "Radical filtration & AR-component invariants (Liu–Chaio)", "category": "ar", "keywords": ["radical", "filtration", "filtración", "filtration", "nilpotency", "index", "liu", "chaio", "degree", "grado", "degré", "sectional", "directing", "representation-directed", "generalized standard", "auslander", "rad^n", "根", "幂零指数", "radical de módulos"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["radical_filtration", "ar_invariants"]}},
     {"id": "decompose", "title": "Krull–Schmidt decomposition", "category": "modules", "keywords": ["decompose", "krull-schmidt", "indecomposable", "descomponer", "décomposer", "indescomponible", "分解", "不可分"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"dims": {"1": 1, "2": 1, "3": 0}, "maps": {"a": [[0]], "b": []}, "side": "right"}, "compute": ["decompose"]}},
     {"id": "orbit_geometry", "title": "Representation-variety orbit geometry", "category": "geometry", "keywords": ["orbit", "geometry", "variety", "voigt", "rigid", "degeneration", "kac", "órbita", "orbite", "geometría", "géométrie", "轨道", "几何", "rigidity"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["orbit_geometry"]}},
     {"id": "tilting_check", "title": "Tilting-module check", "category": "tau-tilting", "keywords": ["tilting", "bongartz", "cotilting", "inclinación", "basculant", "倾斜模块"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "projective", "vertex": 1}, "side": "right"}, "compute": ["tilting_check"]}}
@@ -4003,23 +4978,39 @@
     cap: { cb: "cap", top: "cap-top" },
     bracket: { cb: "bracket", top: "bracket-top" },
     connes_b: { cb: "connes_b", top: "connes_b-top" },
+    bv_operator: { cb: "bv_operator", top: "bv_operator-top" },
     cyclic_homology: { cb: "cyclic_homology", top: "cyclic_homology-top" },
     ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
     radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },
     ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
+    radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
+    ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
+    left_right_parts: { cb: "left_right_parts", top: "left_right_parts-budget", budget: true },
+    tilted_check: { cb: "tilted_check", top: "tilted_check-budget", budget: true },
+    recognizer_ladder: { cb: "recognizer_ladder", top: "recognizer_ladder-budget", budget: true },
     derived_compare: { cb: "derived_compare" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },
     coxeter_polynomial: { cb: "coxeter_polynomial" },
+    coxeter_spectral: { cb: "coxeter_spectral" },
     global_dimension: { cb: "global_dimension" },
     center: { cb: "center" },
     recognizers: { cb: "recognizers" },
     homological_profile: { cb: "homological_profile" },
+    fractional_cy: { cb: "fractional_cy" },
     derived_fingerprint: { cb: "derived_fingerprint" },
     strings: { cb: "strings" },
+    string_homological: { cb: "string_homological" },
+    toupie: { cb: "toupie" },
     quasi_hereditary: { cb: "quasi_hereditary" },
+    fundamental_group: { cb: "fundamental_group" },
+    simply_connected: { cb: "simply_connected" },
+    tame_wild: { cb: "tame_wild" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     congruences: { cb: "congruences", top: "congruences-budget", budget: true },
+    wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },
+    silting: { cb: "silting", top: "silting-budget", budget: true },
+    exceptional_sequences: { cb: "exceptional_sequences", top: "exceptional_sequences-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },
     rad_top_soc: { cb: "rad_top_soc", mod: true },
     tau: { cb: "tau", mod: true },

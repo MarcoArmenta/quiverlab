@@ -33,23 +33,37 @@ _HEADINGS = {
     "ss_hochschild": "Hochschild (b,B) spectral sequence",
     "radical_filtration_ss": "Radical-filtration spectral sequence",
     "ar_quiver": "Auslander–Reiten quiver",
+    "radical_filtration": "Radical filtration of mod A",
+    "ar_invariants": "AR-component invariants",
+    "left_right_parts": "Left / right parts",
+    "tilted_check": "Tilted-algebra check",
+    "recognizer_ladder": "Recognizer ladder",
     "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
     "cap": "Cap product tables",
     "bracket": "Gerstenhaber bracket tables",
     "connes_b": "Connes differentials",
+    "bv_operator": "BV operator Δ",
     "cartan": "Cartan matrix",
     "coxeter_polynomial": "Coxeter polynomial",
+    "coxeter_spectral": "Certified Coxeter spectral analysis",
     "global_dimension": "Global dimension",
     "homological_profile": "Homological dimensions",
+    "fractional_cy": "Fractional Calabi–Yau dimension",
     "center": "Centre",
     "dimension": "Dimension",
     "ext_algebra": "Yoneda Ext-algebra and Koszulity",
     "recognizers": "Structural recognizers and type",
     "derived_fingerprint": "Derived fingerprint",
     "strings": "Strings and bands",
+    "string_homological": "Homological string test",
+    "toupie": "Toupie structure",
+    "skew_gentle": "Skew-gentle algebra",
     "quasi_hereditary": "Quasi-hereditary structure",
+    "fundamental_group": "Fundamental group π₁(Q, I)",
+    "simply_connected": "Simple connectivity",
+    "tame_wild": "Representation type (tame / wild)",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -66,6 +80,10 @@ _HEADINGS = {
     "orbit_geometry": "Orbit geometry",
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
     "congruences": "Torsion lattice: Con(tors A), forcing order and wide subcategories",
+    "wall_chamber": "Wall-and-chamber structure via bricks: D(B) inequality systems + "
+                    "g-cone chambers",
+    "silting": "Silting: verifier, mutation neighbours, bounded exploration",
+    "exceptional_sequences": "Exceptional sequences",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -132,6 +150,10 @@ _ENGINE_GLOSS = (
                "integer entries mod p and computes their exact rank by Gaussian "
                "elimination mod p; every dimension follows by rank-nullity -- "
                "nothing numerical, no floating point"),
+    ("homotopy lifting", "the Gerstenhaber bracket assembled from Negron–Witherspoon "
+                         "/ Volkov homotopy liftings on the Chouhy–Solotar diagonal: a "
+                         "finite per-degree exact linear solve (canonical), no bar "
+                         "object, any exact field, past the bar window"),
     ("chouhy", "the Chouhy–Solotar projective bimodule resolution built from "
                "the admissible presentation, certified per instance "
                "(d∘d = 0 + the order gate)"),
@@ -419,6 +441,146 @@ def _congruences_html(b):
     return out
 
 
+def _wall_chamber_html(b):
+    """The Plan-63 wall-and-chamber block: the chambers (g-vector cones), the walls
+    D(B) as exact inequality systems (one per brick), the four counts + green count,
+    and the honest complete-iff-brick-finite status. Every wall D(B) = {theta :
+    theta.dim B = 0 and theta.dim N <= 0 for every submodule N <= B} (Brustle-Smith-
+    Treffinger 2019 / King 1994); a simple brick gives the full hyperplane, a non-simple
+    brick a proper face (e.g. D(P1) over kA2 is a ray)."""
+    out = ["<p>The wall-and-chamber structure of A via bricks (Brüstle–Smith–Treffinger). "
+           "Each wall D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 for every submodule N ⊆ B} is "
+           "the King θ-semistable locus of a brick B; the chambers are the g-vector cones of "
+           "the support τ-tilting pairs. The structure is a complete fan iff A is brick-finite "
+           "⟺ τ-tilting-finite (DIJ). n = %s.</p>" % _esc(str(b.get("n")))]
+    if not b.get("complete"):
+        out.append("<p class='ql-note'>%s</p>"
+                   % _esc(str(b.get("truncation")
+                              or ("The exchange graph did not close (status: %s); a bounded "
+                                  "region is shown and no count is claimed."
+                                  % b.get("status")))))
+    if b.get("note"):
+        # Plan 63 recovery provenance: completeness certified by n-regularity despite a
+        # mutation-engine error (honest -- the structure IS complete, only the note explains it)
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b.get("note"))))
+    counts = b.get("counts")
+    if counts:
+        out.append("<p>Counts: #chambers = #support τ-tilting = <b>%d</b>; "
+                   "#walls = #bricks = <b>%d</b>.</p>"
+                   % (counts.get("chambers"), counts.get("walls")))
+    if b.get("green_count") is not None:
+        out.append("<p>Maximal green sequences (directed maximal chains (A,0) → (0,A) of "
+                   "left mutations, read as monotone chamber paths): <b>%d</b>.</p>"
+                   % b["green_count"])
+    # chambers table (g-vector cones)
+    out.append("<p>Chambers (g-vector cones), %d in the region shown:</p>"
+               % b.get("num_chambers", 0))
+    rows = ["<tr><th>id</th><th>pair (M, P)</th><th>support</th>"
+            "<th>g-matrix (columns = g-vectors)</th></tr>"]
+    for c in (b.get("chambers") or []):
+        G = c.get("g_matrix") or []
+        gm = "; ".join("(" + ", ".join(str(G[r][col]) for r in range(len(G)))
+                       + ")" for col in range(len(G[0]) if G else 0))
+        star = " (initial)" if c.get("is_initial") else ""
+        rows.append("<tr><td>%d</td><td>%s%s</td><td>%s</td><td>%s</td></tr>"
+                    % (c["id"], _esc(str(c.get("label") or "")), star,
+                       _esc(str(c.get("support") or [])), _esc(gm)))
+    out.append("<table class='ql-wc-chambers'>%s</table>" % "".join(rows))
+    # walls table (one D(B) per brick). Count the walls SHOWN (len of the list): equals
+    # num_walls in the complete case, and stays honest in the partial/budget case where
+    # num_walls is None (the group count lives under partial_wall_groups).
+    out.append("<p>Walls D(B), one per brick, %d in the region shown:</p>"
+               % len(b.get("walls") or []))
+    wrows = ["<tr><th>brick</th><th>dim-vector</th><th>wall</th>"
+             "<th>inequality system D(B)</th></tr>"]
+    for w in (b.get("walls") or []):
+        if w.get("partial"):
+            shape = "hyperplane (bounded region)"
+        elif w.get("is_full_hyperplane"):
+            shape = "full line/hyperplane {θ·dim B = 0}"
+        else:
+            shape = "proper ray/face"
+        eqs = "θ·%s = 0" % (list(w.get("equality") or []),)
+        ins = "; ".join("θ·%s ≤ 0" % (list(d),) for d in (w.get("inequalities") or []))
+        system = (eqs + "; " + ins) if ins else eqs
+        wrows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                     % (_esc(str(w.get("brick_name") or "—")),
+                        _dv(w.get("brick_dimvec")), _esc(shape), _esc(system)))
+    out.append("<table class='ql-wc-walls'>%s</table>" % "".join(wrows))
+    return out
+
+
+def _silting_html(b):
+    """The Plan-67 silting block: the verifier verdict on the regular object, the
+    single-mutation neighbours, a bounded-radius exploration (loud status; complete only
+    for local) and the co-t-structure record. Honest three-valued / no-general-BFS scope."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Silting is unavailable for this algebra: %s</p>"
+                % _esc(str(b["error"]))]
+    out = ["<p>Silting objects of K<sup>b</sup>(proj A) (Aihara–Iyama): T is "
+           "<b>presilting</b> when Hom<sub>D<sup>b</sup></sub>(T, T[n]) = 0 for all n &gt; 0 "
+           "(weaker than tilting, which also needs n &lt; 0) and <b>silting</b> when it also "
+           "generates K<sup>b</sup>(proj A). The silting quiver can be infinite and "
+           "mutation-transitivity is proven only for local/hereditary/canonical algebras "
+           "(AI Thm 1.2), so the exploration below is a bounded-radius walk with a loud "
+           "status — never a general enumeration.</p>"]
+    reg = b.get("regular") or {}
+    verdict = {True: "silting", "unknown": "presilting (generation undetermined "
+               "within budget)", False: "not silting"}.get(reg.get("is_silting"),
+                                                            str(reg.get("is_silting")))
+    win = reg.get("window") or [1, 0]
+    out.append("<p>The regular object A = ⊕<sub>v</sub> P<sub>v</sub> is <b>%s</b> "
+               "(%s; presilting checked on the positive window [%s, %s]; "
+               "det g<sub>proj</sub> = %s in the projective K<sub>0</sub> basis).</p>"
+               % (_esc(verdict), _esc(str(reg.get("generation_certified_by") or "")),
+                  _esc(str(win[0])), _esc(str(win[1])), _esc(str(reg.get("det")))))
+    # single-mutation neighbours
+    nbrs = b.get("neighbors") or []
+    if nbrs:
+        lis = []
+        for nb in nbrs:
+            if nb.get("is_silting") is None:
+                lis.append("<li>summand %s, %s mutation: not defined (approximation "
+                           "degenerates)</li>" % (_esc(str(nb.get("summand"))),
+                                                  _esc(str(nb.get("direction")))))
+                continue
+            dv = nb.get("summand_dimvecs") or []
+            lis.append("<li>μ<sup>%s</sup> at summand %s → a silting object with %d "
+                       "summands</li>" % ("+" if nb.get("direction") == "left" else "−",
+                                          _esc(str(nb.get("summand"))), len(dv)))
+        out.append("<p>Single-mutation neighbours (AI Def 2.34, one approximation "
+                   "triangle each):</p>")
+        out.append("<ul class='ql-silting-nbrs'>%s</ul>" % "".join(lis))
+    # bounded exploration
+    ex = b.get("exploration") or {}
+    status = ex.get("status")
+    if status == "complete":
+        out.append("<p>Bounded exploration: <b>complete</b> (finite class: %s) — the %d "
+                   "discovered vertex/vertices are ALL silting objects up to shift.</p>"
+                   % (_esc(str(ex.get("finite_class"))), len(ex.get("vertices") or [])))
+    else:
+        out.append("<p class='ql-note'>Bounded exploration: status <b>%s</b> (radius %s) — "
+                   "%d silting objects were found in the ball, but this is NOT the whole "
+                   "silting quiver (no finiteness theorem applies to this algebra; only "
+                   "local algebras certify completeness).</p>"
+                   % (_esc(str(status)), _esc(str(ex.get("radius"))),
+                      len(ex.get("vertices") or [])))
+    arrows = ex.get("arrows") or []
+    if arrows:
+        lis = ["<li>%s → %s (%s mutation)</li>"
+               % (_esc(str(a.get("from"))), _esc(str(a.get("to"))),
+                  _esc(str(a.get("direction")))) for a in arrows]
+        out.append("<ul class='ql-silting-edges'>%s</ul>" % "".join(lis))
+    # co-t-structure record
+    ct = b.get("co_t_structure")
+    if ct:
+        out.append("<p>Co-t-structure dictionary (AI Prop 2.23(b) / Jørgensen): the "
+                   "bounded co-t-structure with coheart add(T) — a documentation record "
+                   "(the aisles are infinite), coheart of %d summand(s).</p>"
+                   % len(ct.get("coheart") or []))
+    return out
+
+
 def _recognizers_html(b):
     """The recognizer batch + type block: each flag as yes/no (or an honest
     per-flag 'not decided' when it refused), the Dynkin/Euclidean type and the
@@ -449,6 +611,66 @@ def _recognizers_html(b):
     else:
         out.append("<p>Form type: undefined (the Cartan matrix is not unimodular, "
                    "so the Euler/Tits form has no integral matrix here).</p>")
+    return out
+
+
+def _coxeter_spectral_html(b):
+    """Plan 58 (R20): the certified Coxeter spectral report -- the Phi_n-labelled ZZ[x]
+    factorization, the cyclotomic / quasi-unipotent / finite-order verdicts, the exact
+    outside-unit-circle count, and rho / M as certified algebraic numbers (minimal
+    polynomial + rational isolating interval) or an honest per-field refusal. Every field
+    that refused on this input is stated, never dropped."""
+    cp = b.get("coxeter_polynomial")
+    if isinstance(cp, dict) and "error" in cp:
+        return ["<p>Coxeter polynomial unavailable — %s</p>" % _esc(str(cp["error"]))]
+    out = []
+    if b.get("coxeter_latex"):
+        out.append(_math(r"\chi(t) = " + b["coxeter_latex"]))
+    facs = b.get("factorization") or []
+    if facs:
+        lis = []
+        for f in facs:
+            mult = f.get("multiplicity", 1)
+            pw = ("^{%d}" % mult) if isinstance(mult, int) and mult > 1 else ""
+            idx = f.get("cyclotomic_index")
+            lbl = (r"\Phi_{%d}%s" % (idx, pw)) if idx is not None \
+                else (r"\text{(non-cyclotomic)}%s" % pw)
+            lis.append("<li>%s</li>" % _math_inline("%s = %s" % (lbl, f.get("latex", ""))))
+        out.append("<p>Cyclotomic factorization (Φ_n labels):</p>")
+        out.append("<ul class='ql-flags'>%s</ul>" % "".join(lis))
+    out.append("<p>Cyclotomic (all eigenvalues roots of unity): <b>%s</b>; "
+               "quasi-unipotent: <b>%s</b>.</p>"
+               % ("yes" if b.get("cyclotomic") else "no",
+                  "yes" if b.get("quasi_unipotent") else "no"))
+    order = b.get("coxeter_order")
+    if isinstance(order, dict) and "error" in order:
+        otxt = "not decided — %s" % _esc(str(order["error"]))
+    elif order is None:
+        otxt = "infinite (∞)"
+    else:
+        otxt = _esc(str(order))
+    reason = b.get("coxeter_order_reason")
+    rtxt = " — %s" % _esc(str(reason)) if isinstance(reason, str) else ""
+    out.append("<p>Coxeter order (Φ<sup>m</sup> = I): <b>%s</b>%s.</p>" % (otxt, rtxt))
+    out.append("<p>Roots strictly outside the unit circle: <b>%s</b>.</p>"
+               % _esc(str(b.get("outside_unit_circle_count"))))
+    for label, key in ((r"\rho\ (\text{spectral radius})", "spectral_radius"),
+                       (r"M\ (\text{Mahler measure})", "mahler_measure")):
+        c = b.get(key)
+        if isinstance(c, dict) and "error" in c:
+            out.append("<p class='ql-note'>%s: not certified — %s</p>"
+                       % (_esc(key.replace("_", " ")), _esc(str(c["error"]))))
+        elif isinstance(c, dict) and "latex" in c:
+            out.append(_math("%s = %s" % (label, c["latex"])))
+            out.append("<p class='ql-note'>minimal polynomial of degree %s, isolating "
+                       "interval (%s, %s)%s.</p>"
+                       % (_esc(str(c.get("degree"))), _esc(str(c["interval"][0])),
+                          _esc(str(c["interval"][1])),
+                          " (rational)" if c.get("is_rational") else ""))
+    if b.get("lehmer_class_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["lehmer_class_note"])))
+    if b.get("scope"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["scope"])))
     return out
 
 
@@ -652,6 +874,57 @@ def _radical_filtration_ss_html(b):
     return chunks
 
 
+def _exceptional_sequences_html(b):
+    """Exceptional sequences (Plan 65 / R27+R28): the CLASSICAL hereditary counts (braid-orbit
+    transitivity + the Dynkin closed form n!·hⁿ/|W|) and the TAU-exceptional signed count
+    n!·#sτt, each honest about applicability. Counts + status only -- the sequences themselves
+    explode (D₄ has 162 classical / 1200 signed)."""
+    def _kv(rows):
+        body = "".join("<tr><th>%s</th><td><b>%s</b></td></tr>"
+                       % (_esc(str(k)), _esc(str(v))) for k, v in rows)
+        return "<table class='ql-table'>%s</table>" % body
+
+    n = b.get("n")
+    dt = b.get("dynkin_type")
+    out = ["<p>Complete exceptional sequences of A in two independent readings: the "
+           "<b>classical</b> hereditary theory (an ordered tuple of rigid bricks, orthogonal "
+           "backward; the braid group B<sub>n</sub> acts transitively — Crawley–Boevey / "
+           "Ringel) and the <b>τ-exceptional</b> theory (Buan–Marsh signed sequences via the "
+           "Jasso τ-perpendicular reduction; #signed = n!·#sτt). Only counts are reported — "
+           "the sequences themselves explode.</p>"]
+    if dt:
+        out.append("<p>Dynkin type: <b>%s</b> (n = %s).</p>"
+                   % (_esc(str(dt)), _esc(str(n))))
+    cl = b.get("classical")
+    out.append("<p><b>Classical (hereditary, braid orbit).</b></p>")
+    if cl is None:
+        out.append("<p class='ql-note'>Not applicable — A is not hereditary.</p>")
+    else:
+        out.append(_kv([("#complete exceptional sequences", cl.get("count")),
+                        ("Dynkin closed form n!·hⁿ/|W|", cl.get("closed_form_count")),
+                        ("braid-orbit transitive", cl.get("transitive")),
+                        ("status", cl.get("status"))]))
+        if not cl.get("complete"):
+            out.append("<p class='ql-note'>The classical enumeration did not close (status: "
+                       "<b>%s</b>) — A is representation-infinite (an infinite braid orbit) or "
+                       "the budget was hit; no count is claimed.</p>"
+                       % _esc(str(cl.get("status"))))
+    tau = b.get("tau")
+    out.append("<p><b>τ-exceptional (signed, ordered sτ-tilt bijection).</b></p>")
+    if tau is None:
+        out.append("<p class='ql-note'>Not available — A is τ-tilting-infinite or the "
+                   "exchange graph did not close (no count is derived from a non-complete "
+                   "graph).</p>")
+    else:
+        out.append(_kv([("#signed τ-exceptional sequences (n!·#sτt)", tau.get("signed_count")),
+                        ("#support τ-tilting pairs (#sτt)", tau.get("stt_count")),
+                        ("status", tau.get("status"))]))
+    note = b.get("note")
+    if note:
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(note)))
+    return out
+
+
 def _ar_quiver_html(b):
     """The Auslander–Reiten quiver block (wave 2): the completeness status, the
     indecomposables (name + dimension vector), the irreducible-map arrows with
@@ -693,6 +966,400 @@ def _ar_quiver_html(b):
     if orbits:
         otxt = "; ".join("{" + ", ".join(_num(x) for x in orbit) + "}" for orbit in orbits)
         chunks.append("<p>&tau;-orbits: %s.</p>" % otxt)
+    return chunks
+
+
+def _fundamental_group_html(b):
+    """The pi1(Q, I) block (Plan 56): the abelianization (exact SNF), the finite
+    presentation, the Hom(pi1, k+) count, and the honest intrinsic-vs-presentation note."""
+    out = []
+    if b.get("latex"):
+        out.append(_math(b["latex"]))
+    gens = b.get("generators") or []
+    rels = b.get("relators") or []
+    out.append("<p>Presentation: %d generator%s (the non-tree arrows), %d relator%s."
+               % (len(gens), "" if len(gens) == 1 else "s",
+                  len(rels), "" if len(rels) == 1 else "s"))
+    if gens:
+        out[-1] += " Generators: %s." % _esc(", ".join(str(x) for x in gens))
+    if rels:
+        out[-1] += " Relators: %s." % _esc("; ".join(str(x) for x in rels))
+    out[-1] += "</p>"
+    ab = b.get("abelianization") or {}
+    out.append("<p>Abelianization π₁<sup>ab</sup>: free rank %s, invariant factors %s. "
+               "dim<sub>k</sub> Hom(π₁, (k,+)) = %s over %d connected component%s.</p>"
+               % (_num(ab.get("free_rank")),
+                  _esc(str(ab.get("invariant_factors") or [])),
+                  _num(b.get("hom_to_additive_dim")), b.get("components", 1),
+                  "" if b.get("components", 1) == 1 else "s"))
+    if b.get("presentation_note"):
+        out.append("<p><em>%s.</em></p>" % _esc(str(b["presentation_note"])))
+    if b.get("intrinsic_note"):
+        out.append("<p class='ql-note'><em>%s</em></p>" % _esc(str(b["intrinsic_note"])))
+    return out
+
+
+def _sc_phrase(verdict, yes, no, undecided):
+    if verdict is True:
+        return yes
+    if verdict is False:
+        return no
+    return undecided
+
+
+def _simply_connected_html(b):
+    """The three-valued simple-connectivity block (Plan 56) + the R16 strongly-simply-
+    connected certificate. None is rendered honestly (Adian-Rabin undecidability)."""
+    out = []
+    verdict = b.get("verdict")
+    phrase = _sc_phrase(
+        verdict, "simply connected", "not simply connected",
+        "undecided (triviality of a finitely presented group is undecidable — "
+        "Adian–Rabin)")
+    out.append("<p>Verdict: <b>%s</b>." % _esc(phrase))
+    if verdict is False and b.get("witness"):
+        out[-1] += " Witness: %s." % _esc(str(b["witness"]))
+    out[-1] += "</p>"
+    if b.get("reason"):
+        out.append("<p><em>%s.</em></p>" % _esc(str(b["reason"])))
+    strong = b.get("strongly")
+    if isinstance(strong, dict):
+        sph = _sc_phrase(
+            strong.get("verdict"),
+            "strongly simply connected (separation holds on every full convex "
+            "subcategory)",
+            "not strongly simply connected (separation fails)",
+            "strong simple connectivity undecided (char/budget)")
+        out.append("<p>Strong simple connectivity (the P62 gate): <b>%s</b>." % _esc(sph))
+        if strong.get("verdict") is False and strong.get("witness"):
+            out[-1] += " Witness: %s." % _esc(str(strong["witness"]))
+        out[-1] += " (%s convex subcategories checked.)</p>" % _num(
+            strong.get("checked_convex"))
+    return out
+
+
+def _tame_wild_html(b):
+    """The Tits-form tame/wild certificate (Plan 62 / R19): the theorem-gated
+    rep-finite / tame / wild verdict (verdict withheld -> honest reason, never a
+    guessed type), the two field-free form booleans with the exact witness, the P56
+    certificate trail, the integer Tits Gram matrix, and the honest scope note. This
+    is P62's certified representation type -- kept distinct from P38's form-type
+    definiteness heuristic (never share a label)."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Tame/wild certificate not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = []
+    rep = b.get("rep_type")
+    name = {"rep-finite": "representation-finite", "tame": "tame",
+            "wild": "wild"}.get(rep)
+    if name is None:
+        if b.get("certified") == "rep_infinite":
+            out.append("<p>Representation type (certified): "
+                       "<b>representation-infinite</b> (tame vs wild withheld). %s</p>"
+                       % _esc(str(b.get("reason", ""))))
+        else:
+            out.append("<p>Representation type <b>undecided</b> — %s</p>"
+                       % _esc(str(b.get("reason", "out of scope"))))
+    else:
+        out.append("<p>Representation type (certified): <b>%s</b>. %s</p>"
+                   % (_esc(name), _esc(str(b.get("reason", "")))))
+    tri = lambda v: "yes" if v is True else "no" if v is False else "undecided"
+    out.append("<p>Tits form: weakly positive — <b>%s</b>; weakly nonnegative — "
+               "<b>%s</b>.</p>" % (tri(b.get("weakly_positive")),
+                                   tri(b.get("weakly_nonnegative"))))
+    if b.get("witness") is not None:
+        out.append("<p>Witness d = %s with q_A(d) = %s.</p>"
+                   % (_esc(str(b["witness"])), _num(b.get("witness_value"))))
+    out.append("<p><em>Certificate (Plan 56): simply connected — %s; strongly "
+               "simply connected — %s; base field admits the representation-type "
+               "verdict — %s.</em></p>"
+               % (tri(b.get("simply_connected")),
+                  tri(b.get("strongly_simply_connected")),
+                  "yes" if b.get("field_alg_closed") else "no"))
+    gram = b.get("gram")
+    if gram:
+        out.append(matrix_grid(gram, label="q_A"))
+    if b.get("scope_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["scope_note"])))
+    return out
+
+
+def _radical_filtration_html(b):
+    """The radical filtration of mod A (Plan 57 / R37): the completeness verdict, the
+    nilpotency index + rad^inf certificate, and the layer profile (sum_ij dim rad^n).
+    An honest window (budget) / self-injective (unsupported) block ships the loud note
+    and NO index -- never a fake verdict. Distinct from radical_filtration_ss (the
+    Loewy radical-series spectral sequence)."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Radical filtration not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    chunks = []
+    if b.get("complete"):
+        chunks.append(
+            "<p>The algebra is representation-finite: mod A has %s indecomposable(s); "
+            "the nilpotency index of rad(mod A) is <b>N = %s</b>, so "
+            "rad<sup>&infin;</sup>(mod A) = 0 (Auslander's certificate, with N the "
+            "finite witness), and every component is generalized standard: <b>%s</b>.</p>"
+            % (_num(b.get("num_indecomposables")), _num(b.get("nilpotency_index")),
+               "yes" if b.get("generalized_standard") else "no"))
+        prof = b.get("layer_profile") or []
+        if prof:
+            head = "".join("<th>%s</th>" % _num(n + 1) for n in range(len(prof)))
+            body = "".join("<td>%s</td>" % _num(d) for d in prof)
+            chunks.append(
+                "<table class='ql-table'><thead><tr><th>n</th>%s</tr></thead><tbody>"
+                "<tr><th>&Sigma; dim rad<sup>n</sup>(X,Y)</th>%s</tr></tbody></table>"
+                % (head, body))
+    else:
+        chunks.append("<p class='ql-note'>Not the category radical (status: %s) — %s</p>"
+                      % (_esc(str(b.get("status", "?"))), _esc(str(b.get("note") or
+                         "the knit did not close; no nilpotency index or rad^inf verdict"))))
+    return chunks
+
+
+def _ar_invariants_html(b):
+    """The AR-component invariants (Plan 57 / R21): the representation-directed verdict,
+    the postprojective/preinjective/regular partition, the generalized-standard flag,
+    and Liu's left/right degrees per irreducible map. Off-scope input ships the loud
+    note, never a false 'directed'."""
+    if b.get("error"):
+        return ["<p class='ql-note'>AR-component invariants not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Not computed (status: %s) — %s</p>"
+                % (_esc(str(b.get("status", "?"))), _esc(str(b.get("note") or
+                   "the knit did not close; no directing/partition/degree verdict")))]
+    chunks = ["<p>Representation-directed: <b>%s</b> (%s of %s indecomposables "
+              "directing); generalized standard: <b>%s</b>; nilpotency index N = %s; "
+              "maximal sectional-path length %s.</p>"
+              % ("yes" if b.get("representation_directed") else "no",
+                 _num(b.get("num_directing")), _num(b.get("num_indecomposables")),
+                 "yes" if b.get("generalized_standard") else "no",
+                 _num(b.get("nilpotency_index")), _num(b.get("max_sectional_length")))]
+    pc = b.get("partition_counts") or {}
+    if pc:
+        chunks.append("<p>Partition: %s.</p>"
+                      % _esc(", ".join("%s: %s" % (k, pc[k]) for k in sorted(pc))))
+    if b.get("partition_note"):                     # honest non-directed caveat
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["partition_note"])))
+    degs = b.get("degrees") or {}
+    if degs:
+        def _deg(v):
+            return "&infin;" if v is None else _num(v)
+        rows = "".join("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                       % (_esc(k), _deg(degs[k].get("d_l")), _deg(degs[k].get("d_r")))
+                       for k in sorted(degs))
+        chunks.append("<table class='ql-table'><thead><tr><th>irreducible map</th>"
+                      "<th>d<sub>&#8467;</sub></th><th>d<sub>r</sub></th></tr></thead>"
+                      "<tbody>%s</tbody></table>" % rows)
+    return chunks
+
+
+def _left_right_parts_html(b):
+    """The left/right parts atlas (Plan 55): both parts named S_v/P_v/I_v, the complement
+    (laura datum), the Ext-injectives of add L_A (and dual Ext-projectives of add R_A), and
+    the two support algebras with their connected-component counts. An honest refusal
+    (self-injective / rep-infinite / char-scope) is the library's loud message."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Left/right parts not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Incomplete (status: %s) — %s</p>"
+                % (_esc(str(b.get("status"))),
+                   _esc(str(b.get("note") or "the algebra is not representation-finite / "
+                        "the knit did not close (self-injective or rep-infinite)")))]
+
+    def _named(records):
+        if not records:
+            return "&empty;"
+        return ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {}))
+                         for r in records)
+
+    chunks = ["<p>The module category has %s indecomposables; L_A has %s and R_A has %s "
+              "(intersection %s, complement %s).</p>"
+              % (_num(b.get("universe_size")), _num(len(b.get("left") or [])),
+                 _num(len(b.get("right") or [])), _num(len(b.get("intersection") or [])),
+                 _num(len(b.get("complement") or [])))]
+    chunks.append("<p><b>Left part L<sub>A</sub></b>: %s.</p>" % _named(b.get("left")))
+    chunks.append("<p><b>Right part R<sub>A</sub></b>: %s.</p>" % _named(b.get("right")))
+    chunks.append("<p><b>Complement</b> (ind A &setminus; (L<sub>A</sub> &cup; "
+                  "R<sub>A</sub>)): %s.</p>" % _named(b.get("complement")))
+    chunks.append("<p><b>Ext-injectives of add L<sub>A</sub></b>: %s.</p>"
+                  % _named(b.get("ext_injectives_left")))
+    chunks.append("<p><b>Ext-projectives of add R<sub>A</sub></b>: %s.</p>"
+                  % _named(b.get("ext_projectives_right")))
+    for label, sa in (("A<sub>&lambda;</sub> (left support)", b.get("left_support")),
+                      ("A<sub>&rho;</sub> (right support)", b.get("right_support"))):
+        if sa is None:
+            continue
+        chunks.append("<p><b>%s</b>: vertices {%s}, dim %s, %s connected component(s).</p>"
+                      % (label, ", ".join(_esc(str(v)) for v in (sa.get("vertices") or [])),
+                         _num(sa.get("dim")), _num(len(sa.get("components") or []))))
+    return chunks
+
+
+_TILTED_VERDICT = {"tilted": "tilted", "not_tilted": "not tilted", "unknown": "unknown"}
+_TILTED_REASON = {
+    "hereditary": "hereditary (A = End_A(A), the postprojective slice)",
+    "self_injective": "non-semisimple self-injective &rArr; gl.dim = &infin; &rArr; not tilted",
+    "gldim>2": "gl.dim &gt; 2 (tilted &rArr; gl.dim &le; 2)",
+    "faithful_section_found": "a faithful section with Hom(X, &tau;Y)=0, certified a slice "
+                             "(Ringel Thm 1.9(2))",
+    "search_exhausted": "no faithful section with Hom(X, &tau;Y)=0 (rep-finite, complete knit, "
+                        "budget-exhaustive)",
+    "budget": "the transversal enumeration exceeded the budget",
+    "unsupported": "the AR knit is out of scope (self-injective / rep-infinite)",
+    "error": "refused loudly",
+}
+
+
+def _tilted_check_html(b):
+    """The tilted-algebra recognizer verdict (Plan 60): the verdict + reason, the slice
+    Sigma (named S_v/P_v/I_v), the hereditary type, and the reconstructed H = End_A(S). An
+    honest refusal (char-scope / rep-infinite) surfaces the library's loud message."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Tilted check not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    verdict = b.get("verdict")
+    chunks = ["<p>A is <b>%s</b> &mdash; %s.</p>"
+              % (_esc(_TILTED_VERDICT.get(verdict, str(verdict))),
+                 _TILTED_REASON.get(b.get("reason"), _esc(str(b.get("reason")))))]
+    if b.get("hereditary_type"):
+        chunks.append("<p>Hereditary type (the underlying Dynkin diagram of the slice): "
+                      "<b>%s</b>.</p>" % _esc(str(b["hereditary_type"])))
+    slc = b.get("slice") or []
+    if slc:
+        names = ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {})) for r in slc)
+        chunks.append("<p><b>Slice &Sigma;</b> (S = &oplus;&Sigma;, a tilting A-module): %s.</p>"
+                      % names)
+    hered = b.get("hereditary_algebra")
+    if hered:
+        chunks.append("<p><b>H = End<sub>A</sub>(S)</b> (presented, hereditary): "
+                      "%s vertices, %s arrows, dim %s.</p>"
+                      % (_num(len(hered.get("vertices") or [])),
+                         _num(len(hered.get("arrows") or {})), _num(hered.get("dim"))))
+    recon = b.get("reconstruction")
+    if recon:
+        chunks.append("<p class='ql-note'>%s (dim A = %s, dim H = %s).</p>"
+                      % (_esc(str(recon.get("note") or "")),
+                         _num(recon.get("dim_A")), _num(recon.get("dim_H"))))
+    if verdict == "unknown" and b.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return chunks
+
+
+_LADDER_LABELS = (
+    ("quasi_tilted", "quasi-tilted"), ("shod", "shod"), ("weakly_shod", "weakly shod"),
+    ("laura", "laura"), ("ada", "ada"))
+
+
+def _recognizer_ladder_html(b):
+    """The quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder (Plan 61 / R18): a
+    verdict table (with witness-per-False), the finite laura complement, and the ada/HH^1
+    simple-connectedness paragraph (ACLV Theorem B). An honest refusal (self-injective /
+    rep-infinite / char-scope) is the library's loud status/message -- never a partial ladder."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Recognizer ladder not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Incomplete (status: %s) — %s</p>"
+                % (_esc(str(b.get("status"))),
+                   _esc(str(b.get("note") or "the algebra is not representation-finite / "
+                        "the knit did not close (self-injective or rep-infinite)")))]
+    gldim_txt = _num(b.get("gldim"))
+    if b.get("gldim") is not None and b.get("gldim_exact") is False:
+        # An inexact global dimension is a CERTIFIED LOWER BOUND (the resolution did not
+        # terminate within the depth bound), never a definite value -- state it honestly.
+        gldim_txt = "&ge; %s (certified lower bound)" % _num(b.get("gldim"))
+    chunks = ["<p>Module category: %s indecomposable(s), global dimension %s.</p>"
+              % (_num(b.get("universe_size")), gldim_txt)]
+    ladder = b.get("ladder") or {}
+    rows = ["<tr><th>class</th><th>verdict</th><th>witness</th></tr>"]
+    for key, label in _LADDER_LABELS:
+        rung = ladder.get(key) or {}
+        verdict = rung.get("verdict")
+        mark = "&#10003;" if verdict else "&#10007;"          # check / cross
+        wit = ""
+        if verdict is False and key != "laura":
+            w = rung.get("witness")
+            if w:
+                wit = _esc(", ".join("%s: %s" % (wk, w[wk]) for wk in w))
+        if key == "laura":
+            wit = "complement size %s" % _num(rung.get("complement_size"))
+        rows.append("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                    % (_esc(label), mark, wit))
+    chunks.append("<table class='ql-table'>%s</table>" % "".join(rows))
+    comp = b.get("complement") or []
+    if comp:
+        names = ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {})) for r in comp)
+        chunks.append("<p><b>Laura complement</b> (ind A &setminus; (L<sub>A</sub> &cup; "
+                      "R<sub>A</sub>)): %s.</p>" % names)
+    else:
+        chunks.append("<p><b>Laura complement</b>: &empty; (this algebra is shod).</p>")
+    sc = b.get("simple_connectedness") or {}
+    if sc.get("applicable"):
+        if sc.get("verdict") is True:
+            chunks.append("<p><b>Simple connectedness</b> (ACLV Theorem B): dim HH<sup>1</sup>"
+                          "(A) = %s, so A is <b>simply connected</b> and HH<sup>*</sup>(A) "
+                          "reduces to the base field.</p>" % _num(sc.get("hh1_dim")))
+        else:
+            chunks.append("<p><b>Simple connectedness</b> (ACLV Theorem B): dim HH<sup>1</sup>"
+                          "(A) = %s &ne; 0, so A is <b>not</b> simply connected.</p>"
+                          % _num(sc.get("hh1_dim")))
+    elif sc.get("hh1_dim") is not None:
+        chunks.append("<p><b>Simple connectedness</b>: dim HH<sup>1</sup>(A) = %s. %s</p>"
+                      % (_num(sc.get("hh1_dim")), _esc(str(sc.get("note") or ""))))
+    elif sc.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(sc.get("note"))))
+    return chunks
+
+
+def _string_homological_html(b):
+    """The homological string-algebra test (Plan 59 / R34): the three-valued verdict, the
+    syntactic is_string arbiter, and -- on a refutation -- the >= 3-summand middle witness
+    (a genuine extension of indecomposables), plus the k-bar-gap / inconclusive note."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Homological string test not run: %s</p>"
+                % _esc(str(b["error"]))]
+    chunks = ["<p>Verdict: <b>%s</b>. Syntactic <code>is_string</code>: %s "
+              "(the decidable k-bar arbiter).</p>"
+              % (_esc(str(b.get("verdict"))), _esc(str(b.get("is_string"))))]
+    w = b.get("witness")
+    if w:
+        summ = " &oplus; ".join(_dv(d) for d in (w.get("summand_dimvecs") or []))
+        chunks.append("<p>Witness: an extension of indecomposables whose middle term "
+                      "(dim vector %s) has %s indecomposable summands%s &mdash; so A is "
+                      "not a string algebra (k-bar-sound).</p>"
+                      % (_esc(_dv(w.get("E_dimvec") or {})), _num(w.get("summand_count")),
+                         (" = " + summ) if summ else ""))
+    if b.get("kbar_gap_note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["kbar_gap_note"])))
+    if b.get("reason"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["reason"])))
+    return chunks
+
+
+def _toupie_html(b):
+    """The toupie structure block (Plan 59 / R35): the recognizer verdict, the branch /
+    direct-arrow counts, the Hochschild cohomology row and the char-0 sl_a lower bound."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Toupie structure not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("is_toupie"):
+        return ["<p>The algebra is <b>not</b> a toupie.</p>"]
+    chunks = ["<p>A toupie with <b>%s</b> branches (%s direct source&rarr;sink arrows).</p>"
+              % (_num(b.get("branch_count")), _num(b.get("direct_arrow_count")))]
+    if b.get("hh") is not None:
+        chunks.append(_dims_table("dim HH^n", b.get("hh")))
+    sl = b.get("sl_a")
+    if sl:
+        tail = ("" if sl.get("char0")
+                else " (characteristic &ne; 0 &mdash; the inclusion is not claimed)")
+        chunks.append("<p>sl_a &sube; HH&sup1; (ALS Thm 6.5, char 0): a = %s (direct "
+                      "arrows), dim sl_a = %s%s.</p>"
+                      % (_num(sl.get("a")), _num(sl.get("dim")), tail))
+    if b.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
     return chunks
 
 
@@ -751,6 +1418,47 @@ def _strings_html(b):
     return out
 
 
+def _skew_gentle_html(b):
+    """The skew-gentle block (Plan 68 / R32): the recognizer verdict, the split-quiver
+    shape, the HZZ Lemma 1.5 dim law, the special-string classification counts, support
+    tau-tilting, and the brick-finite <=> rep-finite certificate."""
+    if not b.get("is_skew_gentle"):
+        return ["<p>The algebra is <b>not</b> skew-gentle: %s</p>"
+                % _esc(str(b.get("note", "no construction marker")))]
+    sp = b.get("split") or {}
+    out = ["<p>Split algebra kQ&#770;/I&#770; (Chen &sect;3): <b>%s</b> vertices, %s "
+           "arrows, dim <b>%s</b> (rank |Q&#8320;|+|Sp| = %s).</p>"
+           % (_num(sp.get("num_vertices")), _num(sp.get("num_arrows")),
+              _num(sp.get("dim")), _num(b.get("rank")))]
+    dl = b.get("dim_law") or {}
+    out.append("<p>Dimension law (HZZ Lemma 1.5): dim(split) = %s, dim(associated "
+               "gentle) = %s &mdash; %s.</p>"
+               % (_num(dl.get("split_dim")), _num(dl.get("assoc_gentle_dim")),
+                  "certified equal" if dl.get("ok") else "<b>MISMATCH</b>"))
+    cl = b.get("classification") or {}
+    ni = cl.get("num_indecomposables")
+    out.append("<p>Special (type-p) strings: <b>%s</b>; bands: %s%s.</p>"
+               % (_num(cl.get("num_special")),
+                  "yes" if cl.get("has_bands") else "no",
+                  ("; indecomposables: <b>%s</b>" % _num(ni)) if ni is not None else ""))
+    if cl.get("note"):
+        out.append("<p class='ql-note'>%s.</p>" % _esc(str(cl["note"])))
+    tt = b.get("tau_tilting") or {}
+    if tt.get("num_pairs") is not None:
+        out.append("<p>Support &tau;-tilting pairs: <b>%s</b> (%s).</p>"
+                   % (_num(tt.get("num_pairs")),
+                      "complete" if tt.get("complete") else "incomplete"))
+    rt = b.get("rep_type") or {}
+    rf = rt.get("rep_finite")
+    verdict = ("representation-finite" if rf is True
+               else "representation-infinite" if rf is False
+               else "representation type withheld")
+    out.append("<p>Representation type (brick-finite &hArr; rep-finite, "
+               "Garcia&ndash;Lavou&eacute; Thm 3.1): <b>%s</b> [%s].</p>"
+               % (verdict, _esc(str(rt.get("scope")))))
+    return out
+
+
 def _block_html(kind, b, ctx=None):
     if kind in ("hh_cohomology", "hh_homology"):
         sup = kind == "hh_cohomology"
@@ -759,8 +1467,14 @@ def _block_html(kind, b, ctx=None):
             route_of_engine)
         # Typing statement at the TOP of the section (Marco 2026-07-31): exactly what
         # the engine computes and what the bar-bracket / tensor notation means.
-        chunks = [hh_typing_html(kind, route_of_engine(b.get("engine"))),
-                  _dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or [])]
+        chunks = [hh_typing_html(kind, route_of_engine(b.get("engine")))]
+        if b.get("coefficients"):
+            # Plan 52: HH(A, M) with a non-regular coefficient bimodule M. State it.
+            chunks.append("<p class='ql-note'>coefficients: %s — Hochschild "
+                          "(co)homology with values in the A-bimodule %s (not the "
+                          "regular bimodule A).</p>"
+                          % (_esc(b["coefficients"]), _esc(b["coefficients"])))
+        chunks.append(_dims_table("dim HH%sn" % ("^" if sup else "_"), b.get("dims") or []))
         if b.get("engine"):
             chunks.append(_engine_note(b["engine"]))
         chunks.extend(_dictionary_framing_html(kind, b.get("dims") or []))
@@ -814,16 +1528,30 @@ def _block_html(kind, b, ctx=None):
         return _radical_filtration_ss_html(b)
     if kind == "ar_quiver":
         return _ar_quiver_html(b)
+    if kind == "radical_filtration":
+        return _radical_filtration_html(b)
+    if kind == "ar_invariants":
+        return _ar_invariants_html(b)
+    if kind == "left_right_parts":
+        return _left_right_parts_html(b)
+    if kind == "tilted_check":
+        return _tilted_check_html(b)
+    if kind == "recognizer_ladder":
+        return _recognizer_ladder_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]
         return [_math("C = " + b["latex"])] if b.get("latex") else []
     if kind == "coxeter_polynomial":
         return [_math(r"\chi(t) = " + b["latex"])] if b.get("latex") else []
+    if kind == "coxeter_spectral":
+        return _coxeter_spectral_html(b)
     if kind == "global_dimension":
         return ["<p>%s</p>" % _esc(str(b.get("text", "")))]
     if kind == "homological_profile":
         return _homological_profile_html(b)
+    if kind == "fractional_cy":
+        return _fractional_cy_html(b)
     if kind == "center":
         return [_math(r"\dim Z(A) = %s" % _num(b.get("dim")))]
     if kind == "dimension":
@@ -834,6 +1562,12 @@ def _block_html(kind, b, ctx=None):
         return _tau_tilting_html(b)
     if kind == "congruences":
         return _congruences_html(b)
+    if kind == "wall_chamber":
+        return _wall_chamber_html(b)
+    if kind == "silting":
+        return _silting_html(b)
+    if kind == "exceptional_sequences":
+        return _exceptional_sequences_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
     if kind == "derived_fingerprint":
@@ -842,8 +1576,20 @@ def _block_html(kind, b, ctx=None):
         return _derived_compare_html(b)
     if kind == "strings":
         return _strings_html(b)
+    if kind == "string_homological":
+        return _string_homological_html(b)
+    if kind == "toupie":
+        return _toupie_html(b)
+    if kind == "skew_gentle":
+        return _skew_gentle_html(b)
     if kind == "quasi_hereditary":
         return _quasi_hereditary_html(b)
+    if kind == "fundamental_group":
+        return _fundamental_group_html(b)
+    if kind == "simply_connected":
+        return _simply_connected_html(b)
+    if kind == "tame_wild":
+        return _tame_wild_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":
@@ -890,6 +1636,8 @@ def _block_html(kind, b, ctx=None):
         return _product_tables_html(kind, b, ctx)
     if kind == "connes_b":
         return _connes_b_html(b)
+    if kind == "bv_operator":
+        return _bv_operator_html(b)
     if kind in ("projective_resolution", "injective_resolution"):
         return _resolution_html(kind, b)
     if kind in ("projective_dimension", "injective_dimension"):
@@ -1162,9 +1910,83 @@ def _homological_profile_html(b):
         ("Gorenstein", (b.get("gorenstein") or {}).get("text", "")),
         ("Igusa–Todorov φ/ψ", it_text),
     ]
+    # Plan 53 (additive keys) -- EACH behind a missing-key guard (W3 renderer tolerance):
+    # a pre-P53 cached block lacks these; render only what is present, never crash.
+    pd_e = b.get("phidim")
+    if pd_e is not None:
+        rows.append(("φdim (algebra invariant)",
+                     ("not computed: %s" % pd_e["error"]) if pd_e.get("error")
+                     else pd_e.get("text", "")))
+    ps_e = b.get("psidim")
+    if ps_e is not None:
+        rows.append(("ψdim (algebra invariant)",
+                     ("not computed: %s" % ps_e["error"]) if ps_e.get("error")
+                     else ps_e.get("text", "")))
+    sp = b.get("phi_spectrum")
+    if sp is not None:
+        rows.append(("φ-spectrum (rep-finite)", _phi_spectrum_text(sp)))
+    lit = b.get("lit")
+    if lit is not None:
+        rows.append(("Lat-Igusa-Todorov findim bound", _lit_text(lit)))
     body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(lab), _esc(str(val)))
                    for lab, val in rows)
     return ['<table class="ql-table">%s</table>' % body]
+
+
+def _phi_spectrum_text(sp):
+    if sp.get("error"):
+        return "not computed: %s" % sp["error"]
+    s = "{%s}" % ", ".join(str(v) for v in sp.get("values", []))
+    if not sp.get("complete"):
+        return s + "  (partial — not closed; no gaps claimed)"
+    gaps = sp.get("gaps") or []
+    return s + ("  (gaps: %s)" % ", ".join(str(g) for g in gaps) if gaps
+                else "  (no gaps)")
+
+
+def _lit_text(lit):
+    if lit.get("family") is not None:
+        return "findim(A) ≤ %s  [%s]" % (_num(lit.get("findim_upper")), lit["family"])
+    return lit.get("proof", "")
+
+
+def _fractional_cy_html(b):
+    """The stable-category fractional Calabi–Yau dimension (Plan 53 / R24): S = Ω∘ν,
+    Σ = Ω⁻¹, the Ivanov–Volkov criterion, and the HONEST weak-on-generators (tier-3)
+    scope. A non-self-injective input renders the loud refusal message."""
+    if b.get("error"):
+        return ["<p>%s</p>" % _esc(b["error"])]
+    out = ["<p>Serre functor S = Ω∘ν, suspension Σ = Ω⁻¹; fractionally CY of "
+           "dimension m/ℓ ⇔ Sℓ ≅ Σᵐ (Ivanov–Volkov).</p>"]
+    if b.get("status") == "certified":
+        head = "stable CY dimension %s" % _esc(str(b.get("cy_dimension")))
+        if b.get("ell") == 1:
+            head += " (weakly %s-CY, Ivanov–Volkov n = %s)" % (
+                _num(b.get("weakly_n_cy")), _num(b.get("weakly_n_cy")))
+        out.append("<p><b>%s</b></p>" % head)
+        rows = [("(m, ℓ)", "(%s, %s)" % (_num(b.get("m")), _num(b.get("ell")))),
+                ("tier", b.get("tier", ""))]
+        if b.get("sigma_period") is not None:
+            rows.append(("Σ-period on generators", _num(b.get("sigma_period"))))
+        body = "".join("<tr><th>%s</th><td>%s</td></tr>" % (_esc(str(l)), _esc(str(v)))
+                       for l, v in rows)
+        out.append('<table class="ql-table">%s</table>' % body)
+        out.append("<p class=\"ql-hint\">Certified at the weak-on-generators tier "
+                   "(object-wise on the simples + orbit reps — a NECESSARY condition "
+                   "for the weak (hence strong) CY property, never a functor "
+                   "isomorphism; can under-report both m and ℓ). checked on: %s</p>"
+                   % _esc(str(b.get("checked_on", ""))))
+    elif b.get("status") == "shift-trivial":
+        out.append("<p>The suspension Σ = Ω⁻¹ is trivial on the generators "
+                   "(radical-square-zero self-injective local); the CY dimension is "
+                   "degenerate, reported (m, ℓ) = (0, 1).</p>")
+    else:
+        out.append("<p class=\"ql-hint\">Not certified within the (m, ℓ) search window "
+                   "— the generators were not Σ-periodic in budget (likely "
+                   "representation-infinite self-injective).</p>")
+    return out
+
+
 def _almost_split_html(b):
     """The almost-split sequence 0 → τM → E → M → 0 (Plan 41): τM as a full
     representation, then E's Krull–Schmidt summands (standard summands named, others
@@ -1349,6 +2171,11 @@ def _product_tables_html(kind, b, ctx=None):
                    "bar-route computation certifies; a cell beyond it is marked "
                    "—. The bracket is computed entirely on the bar (co)chain "
                    "route.</p>" % _num(b.get("window")))
+    elif kind == "bracket":
+        out.append("<p class='ql-note'>the Gerstenhaber bracket is computed natively "
+                   "on the Chouhy–Solotar resolution by the Negron–Witherspoon / "
+                   "Volkov homotopy liftings — no bar object, any exact field, at any "
+                   "degree (past the bar window).</p>")
     if b.get("engine"):
         out.append(_engine_note(b["engine"]))
     return out
@@ -1380,6 +2207,40 @@ def _connes_b_html(b):
                    % (n, _num(ranks.get(key))))
     if b.get("engine"):
         out.append(_engine_note(b["engine"]))
+    return out
+
+
+def _bv_operator_html(b):
+    """bv_operator (Plan 54): the BV operator legend + hypothesis/Nakayama provenance,
+    then one induced grid ``Delta_n : HH^n -> HH^{n-1}`` per degree with its rank, and
+    the in-window bracket-arbiter statement. Cohomology basis (rows index HH^{n-1},
+    columns HH^n)."""
+    from quiverlab.trace.products import notation_legend
+    out = ["<p class='ql-note'>%s</p>"
+           % _esc(notation_legend("bv_operator", "", b.get("basis")))]
+    if b.get("hypothesis"):
+        out.append("<p class='ql-note'>Hypothesis: %s.</p>" % _esc(b["hypothesis"]))
+    nak = b.get("nakayama") or {}
+    if nak:
+        out.append("<p class='ql-note'>Nakayama automorphism: %s%s.</p>" % (
+            "inner (symmetric)" if nak.get("inner") else "not inner",
+            ", semisimple" if nak.get("semisimple") else ""))
+    matrices = b.get("matrices") or {}
+    ranks = b.get("ranks") or {}
+    for key in sorted(matrices, key=lambda s: int(s)):
+        n = int(key)
+        out.append('<p class="ql-mlabel">%s</p>'
+                   % _math_inline(r"\Delta_{%d} : HH^{%d} \to HH^{%d}"
+                                  % (n, n, n - 1)))
+        out.append(matrix_grid(matrices[key], label="Delta_{%d}" % n))
+        out.append("<p class='ql-note'>induced rank Δ_%d = %s</p>"
+                   % (n, _num(ranks.get(key))))
+    chk = b.get("bracket_check") or {}
+    if chk.get("agrees"):
+        out.append("<p class='ql-note'>Arbiter: the bracket recovered from Δ equals "
+                   "the independently computed Gerstenhaber bracket over the served "
+                   "window (degrees ≤ %s, %s pair(s) checked).</p>"
+                   % (_num(chk.get("window")), _num(chk.get("pairs_checked"))))
     return out
 
 

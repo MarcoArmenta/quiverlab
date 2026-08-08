@@ -86,7 +86,7 @@
    "schema": 1
   },
   "canonical_key": "3d1e8bfd6e471e6486f4bae5951ddd55759dd08722546b7c5a36b6aa368bd4af",
-  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The Igusa-Todorov functions phi/psi on the finite K0 + syzygy operator (phi = pd for finite projective dimension) -- quiverlab's Plan-40 IT engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"IgusaTodorov2005\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\", \"key\": \"igusa_todorov\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(7))\\nA.global_dimension(), A.finitistic_dimension_bounds(), A.dominant_dimension(), A.gorenstein_dimension()\", \"results\": {\"homological_profile\": {\"citations\": [[\"IgusaTodorov2005\", \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"dominant\": {\"exact\": true, \"infinite\": false, \"text\": \"dom.dim = 1\", \"value\": 1}, \"finitistic\": {\"exact\": true, \"lower\": 1, \"note\": \"gl.dim exact and finite => findim = gl.dim\", \"upper\": 1}, \"global_dimension\": {\"exact\": true, \"text\": \"gl.dim = 1 (exact)\", \"value\": 1}, \"gorenstein\": {\"is_gorenstein\": true, \"left_id\": 1, \"right_id\": 1, \"text\": \"Gorenstein: right inj.dim 1, left inj.dim 1\"}, \"igusa_todorov\": {\"module\": \"(+)_v S_v\", \"phi\": 1, \"psi\": 1}, \"kind\": \"homological_profile\", \"references\": [\"igusa_todorov\", \"assem_book\"]}}}"
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The Igusa-Todorov functions phi/psi on the finite K0 + syzygy operator (phi = pd for finite projective dimension) -- quiverlab's Plan-40 IT engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"IgusaTodorov2005\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\", \"key\": \"igusa_todorov\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}, {\"annotation\": \"phidim(A) = sup phi(M) as an algebra invariant + derived-equivalence invariance of its finiteness -- the Plan-53 phidim/psidim ground truth.\", \"arxiv\": \"1304.0754\", \"arxiv_url\": \"https://arxiv.org/abs/1304.0754\", \"bibtex_key\": \"FernandesLanzilottaMendoza2015\", \"doi\": \"10.1007/s10468-014-9504-9\", \"doi_url\": \"https://doi.org/10.1007/s10468-014-9504-9\", \"formatted\": \"Fernandes, Sonia; Lanzilotta, Marcelo; Mendoza, Octavio (2015). The $Phi$-dimension: a new homological measure. Algebras and Representation Theory 18, 463-476.\", \"key\": \"fernandes_lanzilotta_mendoza\", \"topic\": \"Foundations\"}, {\"annotation\": \"Closed forms for the phi/psi-dimension of truncated path algebras kQ/J^k (via kQ/J^2) -- the Plan-40 Igusa-Todorov literature oracle.\", \"arxiv\": \"1707.04774\", \"arxiv_url\": \"https://arxiv.org/abs/1707.04774\", \"bibtex_key\": \"BarriosMataRama2020\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Barrios, Marcos; Mata, Gustavo; Rama, Gustavo (2020). The Igusa-Todorov $phi$ function for truncated path algebras. Algebras and Representation Theory 23, 1051-1063.\", \"key\": \"barrios_mata\", \"topic\": \"Families\"}, {\"annotation\": \"The LIT algebras + the proof-carrying finitistic bound psi_D(V) + n + 1 -- the Plan-53 LIT finitistic certificate.\", \"arxiv\": \"2002.07866\", \"arxiv_url\": \"https://arxiv.org/abs/2002.07866\", \"bibtex_key\": \"BravoLanzilottaMendozaVivero2021\", \"doi\": \"10.1016/j.jalgebra.2021.03.038\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2021.03.038\", \"formatted\": \"Bravo, Diego; Lanzilotta, Marcelo; Mendoza, Octavio; Vivero, Jos'e (2021). Generalised Igusa-Todorov functions and Lat-Igusa-Todorov algebras. Journal of Algebra 580, 63-83.\", \"key\": \"bravo_lanzilotta_mendoza_vivero\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(7))\\nA.global_dimension(), A.finitistic_dimension_bounds(), A.dominant_dimension(), A.gorenstein_dimension(), A.phi_dim(), A.psi_dim(), A.phi_spectrum(), A.finitistic_certificate()\", \"results\": {\"homological_profile\": {\"citations\": [[\"IgusaTodorov2005\", \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"], [\"FernandesLanzilottaMendoza2015\", \"Fernandes, Sonia; Lanzilotta, Marcelo; Mendoza, Octavio (2015). The $Phi$-dimension: a new homological measure. Algebras and Representation Theory 18, 463-476.\"], [\"BarriosMataRama2020\", \"Barrios, Marcos; Mata, Gustavo; Rama, Gustavo (2020). The Igusa-Todorov $phi$ function for truncated path algebras. Algebras and Representation Theory 23, 1051-1063.\"], [\"BravoLanzilottaMendozaVivero2021\", \"Bravo, Diego; Lanzilotta, Marcelo; Mendoza, Octavio; Vivero, Jos'e (2021). Generalised Igusa-Todorov functions and Lat-Igusa-Todorov algebras. Journal of Algebra 580, 63-83.\"]], \"dominant\": {\"exact\": true, \"infinite\": false, \"text\": \"dom.dim = 1\", \"value\": 1}, \"finitistic\": {\"exact\": true, \"lower\": 1, \"note\": \"gl.dim exact and finite => findim = gl.dim\", \"upper\": 1}, \"global_dimension\": {\"exact\": true, \"text\": \"gl.dim = 1 (exact)\", \"value\": 1}, \"gorenstein\": {\"is_gorenstein\": true, \"left_id\": 1, \"right_id\": 1, \"text\": \"Gorenstein: right inj.dim 1, left inj.dim 1\"}, \"igusa_todorov\": {\"module\": \"(+)_v S_v\", \"phi\": 1, \"psi\": 1}, \"kind\": \"homological_profile\", \"lit\": {\"family\": \"gorenstein\", \"findim_upper\": 1, \"proof\": \"Iwanaga-Gorenstein (D = Gproj A): findim(A) = id(A_A) = id(_AA) = 1, the Gorenstein dimension (2002.07866)\"}, \"phi_spectrum\": {\"complete\": true, \"gaps\": [], \"status\": \"complete\", \"values\": [0, 1]}, \"phidim\": {\"exact\": true, \"status\": \"complete\", \"text\": \"phidim = 1\", \"value\": 1}, \"psidim\": {\"exact\": true, \"status\": \"complete\", \"text\": \"psidim = 1\", \"value\": 1}, \"references\": [\"igusa_todorov\", \"assem_book\", \"fernandes_lanzilotta_mendoza\", \"barrios_mata\", \"bravo_lanzilotta_mendoza_vivero\"]}}}"
  },
  "module_basic": {
   "body": {
@@ -720,6 +720,761 @@
   },
   "canonical_key": "4493557b79b1ad3943676314fccf4ea6e035d02041e1a124a0ae757b37357c59",
   "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2], \"a2\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Voigt's lemma: Ext^1(M,M) = 0 => the orbit of M is open (rigid => open orbit); the codim = dim Ext^1(M,M) equality on hereditary algebras.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Voigt1977\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Voigt, Detlef (1977). Induzierte Darstellungen in der Theorie der endlichen, algebraischen Gruppen. Springer 592.\", \"key\": \"voigt_rigidity\", \"topic\": \"Foundations\"}, {\"annotation\": \"Kac's roots, Schur roots, and the canonical decomposition of a dimension vector -- the ground truth for Plan 49's canonical_decomposition.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Kac1980\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Kac, Victor G. (1980). Infinite root systems, representations of graphs and invariant theory. Inventiones Mathematicae 56, 57-92.\", \"key\": \"kac_canonical\", \"topic\": \"Foundations\"}, {\"annotation\": \"Schofield's generic hom/ext and the general-representation identities hom - ext = <a,b> underlying the canonical decomposition.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Schofield1992\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Schofield, Aidan (1992). General representations of quivers. Proceedings of the London Mathematical Society. Third Series 65, 46-64.\", \"key\": \"schofield_general_reps\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Derksen-Weyman recursive algorithm for the canonical decomposition (Plan 49 ships the Dynkin case; Euclidean/wild is the named deferral).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"DerksenWeyman2002\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Derksen, Harm; Weyman, Jerzy (2002). On the canonical decomposition of quiver representations. Compositio Mathematica 133, 245-265.\", \"key\": \"derksen_weyman_canonical\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a1\\\": (1, 2), \\\"a2\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(32003))\\nM = A.simple(2, side=\\\"right\\\")\", \"results\": {\"orbit_geometry\": {\"canonical_decomposition\": [{\"multiplicity\": 1, \"name\": \"S_2\", \"root\": [0, 1, 0]}], \"canonical_of\": \"dimension_vector\", \"citations\": [[\"Voigt1977\", \"Voigt, Detlef (1977). Induzierte Darstellungen in der Theorie der endlichen, algebraischen Gruppen. Springer 592.\"], [\"Kac1980\", \"Kac, Victor G. (1980). Infinite root systems, representations of graphs and invariant theory. Inventiones Mathematicae 56, 57-92.\"], [\"Schofield1992\", \"Schofield, Aidan (1992). General representations of quivers. Proceedings of the London Mathematical Society. Third Series 65, 46-64.\"], [\"DerksenWeyman2002\", \"Derksen, Harm; Weyman, Jerzy (2002). On the canonical decomposition of quiver representations. Compositio Mathematica 133, 245-265.\"]], \"codim_semantics\": \"hereditary\", \"dim_vector\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"end_dim\": 1, \"ext1_self\": 0, \"group_dim\": 1, \"hereditary\": true, \"kind\": \"orbit_geometry\", \"latex\": \"\\\\dim \\\\mathcal{O}_M = \\\\sum_v d_v^2 - \\\\dim_k \\\\operatorname{End}_A(M)\", \"orbit_dim\": 0, \"references\": [\"voigt_rigidity\", \"kac_canonical\", \"schofield_general_reps\", \"derksen_weyman_canonical\"], \"rep_variety_dim\": 0, \"rigid\": true, \"side\": \"right\"}}}"
+ },
+ "homological_profile_kxx3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "relations": [
+     "x*x*x"
+    ],
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 7
+    }
+   },
+   "compute": [
+    "homological_profile"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x*x*x\"], \"vertices\": [1]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The Igusa-Todorov functions phi/psi on the finite K0 + syzygy operator (phi = pd for finite projective dimension) -- quiverlab's Plan-40 IT engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"IgusaTodorov2005\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\", \"key\": \"igusa_todorov\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}, {\"annotation\": \"phidim(A) = sup phi(M) as an algebra invariant + derived-equivalence invariance of its finiteness -- the Plan-53 phidim/psidim ground truth.\", \"arxiv\": \"1304.0754\", \"arxiv_url\": \"https://arxiv.org/abs/1304.0754\", \"bibtex_key\": \"FernandesLanzilottaMendoza2015\", \"doi\": \"10.1007/s10468-014-9504-9\", \"doi_url\": \"https://doi.org/10.1007/s10468-014-9504-9\", \"formatted\": \"Fernandes, Sonia; Lanzilotta, Marcelo; Mendoza, Octavio (2015). The $Phi$-dimension: a new homological measure. Algebras and Representation Theory 18, 463-476.\", \"key\": \"fernandes_lanzilotta_mendoza\", \"topic\": \"Foundations\"}, {\"annotation\": \"Closed forms for the phi/psi-dimension of truncated path algebras kQ/J^k (via kQ/J^2) -- the Plan-40 Igusa-Todorov literature oracle.\", \"arxiv\": \"1707.04774\", \"arxiv_url\": \"https://arxiv.org/abs/1707.04774\", \"bibtex_key\": \"BarriosMataRama2020\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Barrios, Marcos; Mata, Gustavo; Rama, Gustavo (2020). The Igusa-Todorov $phi$ function for truncated path algebras. Algebras and Representation Theory 23, 1051-1063.\", \"key\": \"barrios_mata\", \"topic\": \"Families\"}, {\"annotation\": \"The LIT algebras + the proof-carrying finitistic bound psi_D(V) + n + 1 -- the Plan-53 LIT finitistic certificate.\", \"arxiv\": \"2002.07866\", \"arxiv_url\": \"https://arxiv.org/abs/2002.07866\", \"bibtex_key\": \"BravoLanzilottaMendozaVivero2021\", \"doi\": \"10.1016/j.jalgebra.2021.03.038\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2021.03.038\", \"formatted\": \"Bravo, Diego; Lanzilotta, Marcelo; Mendoza, Octavio; Vivero, Jos'e (2021). Generalised Igusa-Todorov functions and Lat-Igusa-Todorov algebras. Journal of Algebra 580, 63-83.\", \"key\": \"bravo_lanzilotta_mendoza_vivero\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x*x'], field=GF(7))\\nA.global_dimension(), A.finitistic_dimension_bounds(), A.dominant_dimension(), A.gorenstein_dimension(), A.phi_dim(), A.psi_dim(), A.phi_spectrum(), A.finitistic_certificate()\", \"results\": {\"homological_profile\": {\"citations\": [[\"IgusaTodorov2005\", \"Igusa, Kiyoshi; Todorov, Gordana (2005). On the finitistic global dimension conjecture for Artin algebras. Representations of algebras and related topics 45, 201-204.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"], [\"FernandesLanzilottaMendoza2015\", \"Fernandes, Sonia; Lanzilotta, Marcelo; Mendoza, Octavio (2015). The $Phi$-dimension: a new homological measure. Algebras and Representation Theory 18, 463-476.\"], [\"BarriosMataRama2020\", \"Barrios, Marcos; Mata, Gustavo; Rama, Gustavo (2020). The Igusa-Todorov $phi$ function for truncated path algebras. Algebras and Representation Theory 23, 1051-1063.\"], [\"BravoLanzilottaMendozaVivero2021\", \"Bravo, Diego; Lanzilotta, Marcelo; Mendoza, Octavio; Vivero, Jos'e (2021). Generalised Igusa-Todorov functions and Lat-Igusa-Todorov algebras. Journal of Algebra 580, 63-83.\"]], \"dominant\": {\"exact\": false, \"infinite\": true, \"text\": \"dom.dim = infinity (self-injective; every injective coresolvent of A is projective)\", \"value\": null}, \"finitistic\": {\"exact\": false, \"lower\": 0, \"note\": \"LIT [self-injective]: self-injective (D = mod A, n = 0): only projectives have finite projective dimension, so findim(A) = 0 (2002.07866)\", \"upper\": 0}, \"global_dimension\": {\"exact\": false, \"text\": \">= 32 (certified lower bound; not resolved within depth 32)\", \"value\": 32}, \"gorenstein\": {\"is_gorenstein\": true, \"left_id\": 0, \"right_id\": 0, \"text\": \"Gorenstein: right inj.dim 0, left inj.dim 0\"}, \"igusa_todorov\": {\"module\": \"(+)_v S_v\", \"phi\": 0, \"psi\": 0}, \"kind\": \"homological_profile\", \"lit\": {\"family\": \"self-injective\", \"findim_upper\": 0, \"proof\": \"self-injective (D = mod A, n = 0): only projectives have finite projective dimension, so findim(A) = 0 (2002.07866)\"}, \"phi_spectrum\": {\"complete\": true, \"gaps\": [], \"status\": \"self-injective\", \"values\": [0]}, \"phidim\": {\"exact\": true, \"status\": \"self-injective\", \"text\": \"phidim = 0\", \"value\": 0}, \"psidim\": {\"exact\": true, \"status\": \"self-injective\", \"text\": \"psidim = 0\", \"value\": 0}, \"references\": [\"igusa_todorov\", \"assem_book\", \"fernandes_lanzilotta_mendoza\", \"barrios_mata\", \"bravo_lanzilotta_mendoza_vivero\"]}}}",
+  "canonical_key": "5daab9f2d6eba9a330c82a5f33c471bb1ea1751a70309a2e29af2bd74dd0ee03"
+ },
+ "fractional_cy_kxx3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "relations": [
+     "x*x*x"
+    ],
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 7
+    }
+   },
+   "compute": [
+    "fractional_cy"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x*x*x\"], \"vertices\": [1]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The Serre functor S = Omega.nu, suspension Sigma = Omega^{-1}, and the criterion Omega^{n+1} ~ nu^{-1} -- the Plan-53 fractional-CY ground truth (Table 1 deferred).\", \"arxiv\": \"1212.2619\", \"arxiv_url\": \"https://arxiv.org/abs/1212.2619\", \"bibtex_key\": \"IvanovVolkov2012\", \"doi\": \"10.1016/j.jalgebra.2014.04.025\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2014.04.025\", \"formatted\": \"Ivanov, Sergei O.; Volkov, Yury (2014). Stable Calabi-Yau dimension of self-injective algebras of finite type. Journal of Algebra 413, 72-99.\", \"key\": \"ivanov_volkov\", \"topic\": \"Families\"}, {\"annotation\": \"Introduced the stable Calabi-Yau dimension of a self-injective algebra as the weak CY dimension of mod-bar A -- the Plan-53 fractional-CY foundation.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ErdmannSkowronski2006\", \"doi\": \"10.2969/jmsj/1145287094\", \"doi_url\": \"https://doi.org/10.2969/jmsj/1145287094\", \"formatted\": \"Erdmann, Karin; Skowro'nski, Andrzej (2006). The stable Calabi-Yau dimension of tame symmetric algebras. Journal of the Mathematical Society of Japan 58, 97-128.\", \"key\": \"erdmann_skowronski_scy\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x*x'], field=GF(7))\\nA.fractional_calabi_yau_dimension()\", \"results\": {\"fractional_cy\": {\"certificate\": [[\"1\", \"Omega^{2} nu^{1} ~ id\"]], \"checked_on\": \"simples + Omega/nu-orbit reps (object-wise on a generating set; anchored by literature + one (m,ell) for all generators; can under-report m AND ell)\", \"citations\": [[\"IvanovVolkov2012\", \"Ivanov, Sergei O.; Volkov, Yury (2014). Stable Calabi-Yau dimension of self-injective algebras of finite type. Journal of Algebra 413, 72-99.\"], [\"ErdmannSkowronski2006\", \"Erdmann, Karin; Skowro'nski, Andrzej (2006). The stable Calabi-Yau dimension of tame symmetric algebras. Journal of the Mathematical Society of Japan 58, 97-128.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"cy_dimension\": \"1/1\", \"ell\": 1, \"kind\": \"fractional_cy\", \"m\": 1, \"references\": [\"ivanov_volkov\", \"erdmann_skowronski_scy\", \"assem_book\"], \"sigma_period\": 2, \"status\": \"certified\", \"text\": \"stable CY dimension 1/1 (weak-on-generators); weakly 1-CY\", \"tier\": \"weak-on-generators\", \"weakly_n_cy\": 1}}}",
+  "canonical_key": "7b83535ad7d39827a55c3e8835a24de4f6b3e21ef9ed84b52d2029ede4f934bd"
+ },
+ "bracket_native_qq": {
+  "body": {
+   "schema": 2,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "relations": [
+     "x*x"
+    ],
+    "field": {
+     "kind": "QQ",
+     "n": 1
+    }
+   },
+   "compute": [
+    "bracket:0..2"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [\"x*x\"], \"vertices\": [1]}, \"json_guide\": [{\"note\": \"list of tables. For \\u03b1_i^p [-,-] \\u03b1_j^q find the table whose degrees == [p, q]; constants[k][i][j] is the coefficient of the k-th output class; dims == [dl, dr, dout].\", \"object\": \"bracket product tables\", \"path\": \"results.bracket.tables\"}, {\"note\": \"side coh, list; entry j is class j -- .terms is the labelled term-sum, .vector is the sparse coordinate vector [[index, coeff], ...] over the ordered basis in the matching chain_basis entry. Sibling keys are the other degrees.\", \"object\": \"the operand/output classes in degree 0\", \"path\": \"results.bracket.basis_classes[\\\"coh\\\"][\\\"0\\\"]\"}, {\"note\": \"the ordered basis element labels the .vector indices point into.\", \"object\": \"ordered basis of degree 0\", \"path\": \"results.bracket.chain_basis[\\\"coh\\\"][\\\"0\\\"]\"}, {\"note\": \"the (co)boundary whose kernel/quotient gives this degree; .rows is the exact matrix (or elided with a rebuild note past the recorder cap).\", \"object\": \"annihilating differential in degree 0\", \"path\": \"results.bracket.differentials[\\\"coh\\\"][\\\"0\\\"]\"}], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The graded Lie bracket making HH^* a Gerstenhaber algebra.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"bracket\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The definitional source of the cup product and Gerstenhaber bracket.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"gerstenhaber\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Gerstenhaber bracket computed directly on a non-bar resolution (with Volkov2019), transported onto bar representatives.\", \"arxiv\": \"1406.0036\", \"arxiv_url\": \"https://arxiv.org/abs/1406.0036\", \"bibtex_key\": \"NegronWitherspoon2016\", \"doi\": \"10.4310/HHA.2016.v18.n1.a14\", \"doi_url\": \"https://doi.org/10.4310/HHA.2016.v18.n1.a14\", \"formatted\": \"Negron, Cris; Witherspoon, Sarah (2016). An alternate approach to the Lie bracket on Hochschild cohomology. Homology, Homotopy and Applications 18, 265-285.\", \"key\": \"bracket_liftings\", \"topic\": \"Algorithms\"}, {\"annotation\": \"A bracket formula valid on any projective bimodule resolution (companion to Negron-Witherspoon).\", \"arxiv\": \"1610.05741\", \"arxiv_url\": \"https://arxiv.org/abs/1610.05741\", \"bibtex_key\": \"Volkov2019\", \"doi\": \"10.1017/S0013091518000901\", \"doi_url\": \"https://doi.org/10.1017/S0013091518000901\", \"formatted\": \"Volkov, Yury (2019). Gerstenhaber bracket on the Hochschild cohomology via an arbitrary resolution. Proceedings of the Edinburgh Mathematical Society. Series II 62, 817-836.\", \"key\": \"bracket_liftings_volkov\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The general kQ/I bimodule resolution from a reduction system -- quiverlab's Chouhy-Solotar engine for non-monomial algebras.\", \"arxiv\": \"1406.2300\", \"arxiv_url\": \"https://arxiv.org/abs/1406.2300\", \"bibtex_key\": \"ChouhySolotar2015\", \"doi\": \"10.1016/j.jalgebra.2015.02.019\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2015.02.019\", \"formatted\": \"Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61.\", \"key\": \"chouhy_solotar\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The homotopy-lifting bracket formulation quiverlab's native CS bracket implements (Plan 51); source of the section-7 Koszul-quiver worked tables.\", \"arxiv\": \"2103.12331\", \"arxiv_url\": \"https://arxiv.org/abs/2103.12331\", \"bibtex_key\": \"Oke2021\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Oke, Femi Emmanuel (2021). Bracket structure on Hochschild cohomology of Koszul quiver algebras using homotopy liftings. Communications in Algebra.\", \"key\": \"oke_koszul\", \"topic\": \"Algorithms\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x'], field=QQ)\\nA.gerstenhaber_brackets(2)\", \"results\": {\"bracket\": {\"basis\": \"cs/QQ\", \"basis_classes\": {\"coh\": {\"0\": [{\"degree\": 0, \"kind\": \"cochain\", \"terms\": [[\"1\", [], \"e_1\"]], \"vector\": [[0, \"1\"]]}, {\"degree\": 0, \"kind\": \"cochain\", \"terms\": [[\"1\", [], \"x\"]], \"vector\": [[1, \"1\"]]}], \"1\": [{\"degree\": 1, \"kind\": \"cochain\", \"terms\": [[\"1\", [\"x\"], \"x\"]], \"vector\": [[1, \"1\"]]}], \"2\": [{\"degree\": 2, \"kind\": \"cochain\", \"terms\": [[\"1\", [\"x\\u00b7x\"], \"e_1\"]], \"vector\": [[0, \"1\"]]}]}}, \"chain_basis\": {\"coh\": {\"0\": [\"e_1\", \"x\"], \"1\": [\"[x -> e_1]\", \"[x -> x]\"], \"2\": [\"[x\\u00b7x -> e_1]\", \"[x\\u00b7x -> x]\"]}}, \"citations\": [[\"Gerstenhaber1963\", \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\"], [\"NegronWitherspoon2016\", \"Negron, Cris; Witherspoon, Sarah (2016). An alternate approach to the Lie bracket on Hochschild cohomology. Homology, Homotopy and Applications 18, 265-285.\"], [\"Volkov2019\", \"Volkov, Yury (2019). Gerstenhaber bracket on the Hochschild cohomology via an arbitrary resolution. Proceedings of the Edinburgh Mathematical Society. Series II 62, 817-836.\"], [\"ChouhySolotar2015\", \"Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61.\"], [\"Oke2021\", \"Oke, Femi Emmanuel (2021). Bracket structure on Hochschild cohomology of Koszul quiver algebras using homotopy liftings. Communications in Algebra.\"]], \"differentials\": {\"coh\": {\"0\": {\"rows\": [[\"0\", \"0\"], [\"0\", \"0\"]], \"shape\": [2, 2]}, \"1\": {\"rows\": [[\"0\", \"0\"], [\"2\", \"0\"]], \"shape\": [2, 2]}, \"2\": {\"rows\": [[\"0\", \"0\"], [\"0\", \"0\"]], \"shape\": [2, 2]}}}, \"engine\": \"Chouhy-Solotar native diagonal (homotopy lifting)\", \"kind\": \"bracket\", \"references\": [\"bracket\", \"gerstenhaber\", \"bracket_liftings\", \"bracket_liftings_volkov\", \"chouhy_solotar\", \"oke_koszul\"], \"tables\": [{\"constants\": [[[\"0\"]]], \"degrees\": [1, 1], \"dims\": [1, 1, 1], \"out_degree\": 1}, {\"constants\": [[[\"-2\"]]], \"degrees\": [1, 2], \"dims\": [1, 1, 1], \"out_degree\": 2}, {\"constants\": [[[\"2\"]]], \"degrees\": [2, 1], \"dims\": [1, 1, 1], \"out_degree\": 2}], \"top\": 2}}}",
+  "canonical_key": "4e751f0c1e3bbc704b4b43aae3558940b5be945e4d2030e727c5fd5f750411ee"
+ },
+ "coxeter_spectral_3kronecker_qq": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2
+    ],
+    "arrows": {
+     "a0": [
+      1,
+      2
+     ],
+     "a1": [
+      1,
+      2
+     ],
+     "a2": [
+      1,
+      2
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "coxeter_spectral"
+   ]
+  },
+  "canonical_key": "60e093b9fb32597a55c845959497bdc7b6ff54e896fc42eaca8b232ad89d0a64",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a0\": [1, 2], \"a1\": [1, 2], \"a2\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"de la Pena's class-conditional Mahler-measure dichotomy for accessible algebras (M = 1 or M >= mu_0, mu_0 = Lehmer's number) -- the Plan-58 Lehmer-class documentation note (shares the dlPena2014mahler eprint with the Plan-29 delapena_mahler oracle key).\", \"arxiv\": \"1310.1910\", \"arxiv_url\": \"https://arxiv.org/abs/1310.1910\", \"bibtex_key\": \"dlPena2014mahler\", \"doi\": null, \"doi_url\": null, \"formatted\": \"de la Pe na, Jos'e Antonio (2014). On the Mahler measure of the Coxeter polynomial of an algebra. Advances in Mathematics.\", \"key\": \"dlPena2014mahler\", \"topic\": \"Foundations\"}, {\"annotation\": \"de la Pena's separation of periodic (finite-order) Coxeter transformations from merely cyclotomic-type (quasi-unipotent) ones -- the Plan-58 quasi-unipotent / finite-order verdict.\", \"arxiv\": \"1310.1557\", \"arxiv_url\": \"https://arxiv.org/abs/1310.1557\", \"bibtex_key\": \"dlPena2013cyclotomic\", \"doi\": null, \"doi_url\": null, \"formatted\": \"de la Pe na, Jos'e Antonio (2013). Algebras whose Coxeter polynomials are products of cyclotomic polynomials.\", \"key\": \"dlPena2013cyclotomic\", \"topic\": \"Foundations\"}, {\"annotation\": \"de la Pena-Takane: reality of the dominant Coxeter eigenvalue on the wild-hereditary locus -- the Plan-58 real-dominant spectral-radius foundation (Arch. Math. 55 (1990) 120-134).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"dlPenaTakane1990spectral\", \"doi\": null, \"doi_url\": null, \"formatted\": \"de la Pe na, Jos'e Antonio; Takane, Martha (1990). Spectral properties of Coxeter transformations and applications. Archiv der Mathematik 55, 120-134.\", \"key\": \"dlPenaTakane1990spectral\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and Happel's trace identity -- the spectral-invariant oracle.\", \"arxiv\": \"0805.1018\", \"arxiv_url\": \"https://arxiv.org/abs/0805.1018\", \"bibtex_key\": \"LenzingdlPena2008spectral\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\", \"key\": \"lenzing_delapena_spectral\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a0\\\": (1, 2), \\\"a1\\\": (1, 2), \\\"a2\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.coxeter_spectral()\", \"results\": {\"coxeter_spectral\": {\"citations\": [[\"dlPena2014mahler\", \"de la Pe na, Jos'e Antonio (2014). On the Mahler measure of the Coxeter polynomial of an algebra. Advances in Mathematics.\"], [\"dlPena2013cyclotomic\", \"de la Pe na, Jos'e Antonio (2013). Algebras whose Coxeter polynomials are products of cyclotomic polynomials.\"], [\"dlPenaTakane1990spectral\", \"de la Pe na, Jos'e Antonio; Takane, Martha (1990). Spectral properties of Coxeter transformations and applications. Archiv der Mathematik 55, 120-134.\"], [\"LenzingdlPena2008spectral\", \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"coxeter_latex\": \"t^{2} - 7 t + 1\", \"coxeter_order\": null, \"coxeter_order_reason\": \"not quasi-unipotent: some eigenvalue has modulus > 1 (\\u03c1 > 1), so the Coxeter transformation has infinite order\", \"coxeter_polynomial\": \"t**2 - 7*t + 1\", \"cyclotomic\": false, \"factorization\": [{\"cyclotomic_index\": null, \"factor\": \"t**2 - 7*t + 1\", \"latex\": \"t^{2} - 7 t + 1\", \"multiplicity\": 1}], \"kind\": \"coxeter_spectral\", \"latex\": \"\\\\begin{aligned} \\\\chi(t) &= t^{2} - 7 t + 1 \\\\\\\\ \\\\text{cyclotomic} &= \\\\text{no} \\\\\\\\ \\\\text{Coxeter order} &= \\\\infty \\\\\\\\ \\\\#\\\\{\\\\,|z|>1\\\\,\\\\} &= 1 \\\\\\\\ \\\\rho &= \\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2} \\\\\\\\ M &= \\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2} \\\\end{aligned}\", \"lehmer_class_note\": \"de la Pe\\u00f1a (arXiv:1310.1910): for an accessible algebra, M(\\u03c7) is either 1 or \\u2265 \\u03bc\\u2080, where \\u03bc\\u2080 is the Mahler measure of Lehmer's polynomial -- the algebraic number whose minimal polynomial is t^10 + t^9 - t^7 - t^6 - t^5 - t^4 - t^3 + t + 1 (the smallest known Salem number). quiverlab does not decide accessibility and does not rule on the open general Lehmer problem; this documents the class-conditional dichotomy only.\", \"mahler_measure\": {\"degree\": 2, \"interval\": [\"6\", \"7\"], \"is_rational\": false, \"latex\": \"\\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2}\", \"minpoly\": [1, -7, 1], \"root_index\": 1, \"value\": \"3*sqrt(5)/2 + 7/2\"}, \"outside_unit_circle_count\": 1, \"quasi_unipotent\": false, \"references\": [\"dlPena2014mahler\", \"dlPena2013cyclotomic\", \"dlPenaTakane1990spectral\", \"lenzing_delapena_spectral\", \"assem_book\"], \"scope\": \"exact spectral analysis of the Coxeter polynomial \\u03c7 = charpoly(-C^{-T}C); \\u03c1 and M are certified algebraic numbers (minimal polynomial + rational isolating interval). The finite/tame/wild reading is a theorem on the hereditary locus (see form_type).\", \"spectral_radius\": {\"degree\": 2, \"interval\": [\"6\", \"7\"], \"is_rational\": false, \"latex\": \"\\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2}\", \"minpoly\": [1, -7, 1], \"root_index\": 1, \"value\": \"3*sqrt(5)/2 + 7/2\"}}}}"
+ },
+ "radical_filtration_kA3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a1": [
+      1,
+      2
+     ],
+     "a2": [
+      2,
+      3
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "GF",
+     "p": 32003,
+     "n": 1
+    }
+   },
+   "compute": [
+    "radical_filtration"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2], \"a2\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Chaio-Liu: rep-finiteness through the infinite radical; the nilpotency of rad(mod A) in the rep-finite case is the maximal depth of composites -- the theorem behind Plan 57's nilpotency index and rad^inf=0 gate.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ChaioLiu2013\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Chaio, Claudia; Liu, Shiping (2013). A note on the radical of a module category. Communications in Algebra 41, 4419-4424.\", \"key\": \"chaio_liu_radical\", \"topic\": \"Foundations\"}, {\"annotation\": \"Liu's left/right degrees of irreducible morphisms and their control of the AR-quiver shape -- the R21 degree theory Plan 57 computes on the knit.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu1992degrees\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\", \"key\": \"liu_degrees\", \"topic\": \"Foundations\"}, {\"annotation\": \"CMMS: (rad^inf)^2 = 0 implies representation-finite -- the class oracle justifying Plan 57's finite-nilpotency-index rep-finiteness certificate (documented, not a per-instance decider off the rep-finite domain).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"CMMS1994radsq\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Coelho, Fl'avio U.; Marcos, Eduardo N.; Merklen, H'ector A.; Skowro'nski, Andrzej (1994). Module categories with infinite radical square zero are of finite type. Communications in Algebra 22, 4511-4517.\", \"key\": \"cmms_radsq\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a1\\\": (1, 2), \\\"a2\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(32003))\\nA.radical_filtration(budget_modules=512)\", \"results\": {\"radical_filtration\": {\"budget\": 512, \"citations\": [[\"ChaioLiu2013\", \"Chaio, Claudia; Liu, Shiping (2013). A note on the radical of a module category. Communications in Algebra 41, 4419-4424.\"], [\"Liu1992degrees\", \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\"], [\"CMMS1994radsq\", \"Coelho, Fl'avio U.; Marcos, Eduardo N.; Merklen, H'ector A.; Skowro'nski, Andrzej (1994). Module categories with infinite radical square zero are of finite type. Communications in Algebra 22, 4511-4517.\"]], \"complete\": true, \"generalized_standard\": true, \"kind\": \"radical_filtration\", \"latex\": \"\\\\operatorname{rad}^{n}(X,Y)\\\\ \\\\text{and}\\\\ N=\\\\min\\\\{n:\\\\operatorname{rad}^n=0\\\\}\", \"layer_profile\": [9, 3], \"nilpotency_index\": 3, \"note\": \"representation-finite: the knit closed on 6 indecomposables, so rad^inf(mod A) = 0 (Auslander) with nilpotency index N = 3 the finite witness\", \"num_indecomposables\": 6, \"rad_infinity_zero\": true, \"references\": [\"chaio_liu_radical\", \"liu_degrees\", \"cmms_radsq\"], \"status\": \"complete\", \"vertices\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}]}}}",
+  "canonical_key": "ed0aeb788b3bd3eb7f63630537558e601a7f540c5d9a240cae48fa5624f71605"
+ },
+ "ar_invariants_kA3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a1": [
+      1,
+      2
+     ],
+     "a2": [
+      2,
+      3
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "GF",
+     "p": 32003,
+     "n": 1
+    }
+   },
+   "compute": [
+    "ar_invariants"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2], \"a2\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Liu's left/right degrees of irreducible morphisms and their control of the AR-quiver shape -- the R21 degree theory Plan 57 computes on the knit.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu1992degrees\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\", \"key\": \"liu_degrees\", \"topic\": \"Foundations\"}, {\"annotation\": \"Liu's component classification (sectional paths, semistable/directed components) underlying Plan 57's partition and rep-directed recognizer.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu1993semistable\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Liu, Shiping (1993). Semi-stable components of an Auslander-Reiten quiver. Journal of the London Mathematical Society. Second Series 47, 405-416.\", \"key\": \"liu_semistable\", \"topic\": \"Foundations\"}, {\"annotation\": \"Ringel LNM 1099: directing modules, the postprojective/regular/preinjective trichotomy -- the R21 component-invariant reference.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Ringel1984tame\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Ringel, Claus Michael (1984). Tame Algebras and Integral Quadratic Forms. Springer 1099.\", \"key\": \"ringel_tame\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a1\\\": (1, 2), \\\"a2\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(32003))\\nA.ar_invariants(budget_modules=512)\", \"results\": {\"ar_invariants\": {\"budget\": 512, \"citations\": [[\"Liu1992degrees\", \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\"], [\"Liu1993semistable\", \"Liu, Shiping (1993). Semi-stable components of an Auslander-Reiten quiver. Journal of the London Mathematical Society. Second Series 47, 405-416.\"], [\"Ringel1984tame\", \"Ringel, Claus Michael (1984). Tame Algebras and Integral Quadratic Forms. Springer 1099.\"]], \"complete\": true, \"degrees\": {\"0->3\": {\"d_l\": 2, \"d_r\": null, \"finite_l\": true, \"finite_r\": false}, \"1->0\": {\"d_l\": null, \"d_r\": 2, \"finite_l\": false, \"finite_r\": true}, \"1->4\": {\"d_l\": 1, \"d_r\": null, \"finite_l\": true, \"finite_r\": false}, \"2->1\": {\"d_l\": null, \"d_r\": 1, \"finite_l\": false, \"finite_r\": true}, \"3->5\": {\"d_l\": 1, \"d_r\": null, \"finite_l\": true, \"finite_r\": false}, \"4->3\": {\"d_l\": null, \"d_r\": 1, \"finite_l\": false, \"finite_r\": true}}, \"generalized_standard\": true, \"kind\": \"ar_invariants\", \"latex\": \"d_\\\\ell,\\\\ d_r\\\\ \\\\text{(Liu)},\\\\ \\\\text{postproj/preinj/regular},\\\\ \\\\text{directing},\\\\ \\\\Gamma_A\\\\ \\\\text{acyclic}\", \"max_sectional_length\": 2, \"nilpotency_index\": 3, \"note\": \"representation-finite: 6 indecomposables; representation-directed=True (Gamma_A acyclic), generalized standard (rad^inf = 0, witness N = 3)\", \"num_directing\": 6, \"num_indecomposables\": 6, \"partition\": {\"0\": \"postprojective\", \"1\": \"postprojective\", \"2\": \"postprojective\", \"3\": \"postprojective\", \"4\": \"postprojective\", \"5\": \"postprojective\"}, \"partition_counts\": {\"postprojective\": 6}, \"references\": [\"liu_degrees\", \"liu_semistable\", \"ringel_tame\"], \"representation_directed\": true, \"status\": \"complete\", \"vertices\": [{\"name\": \"P_1\"}, {\"name\": \"P_2\"}, {\"name\": \"S_3\"}, {\"name\": \"I_2\"}, {\"name\": \"S_2\"}, {\"name\": \"S_1\"}]}}}",
+  "canonical_key": "7cde6b023d185f8a6b8d4fa75803e9fa790c5d24731e911ec48632b0657fad98"
+ },
+ "left_right_parts_kA3": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2,
+     3
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "left_right_parts:256"
+   ],
+   "schema": 1
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Assem-Coelho-Trepode: L_A / R_A via predecessor/successor closure of pd<=1 / id<=1, the Ext-injective criterion tau^{-1}X notin L_A, and the support algebra A_lambda = End of the projectives in L_A -- the ground truth for Plan 55.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ACT2004\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Assem, Ibrahim; Coelho, Fl'avio U.; Trepode, Sonia (2004). The left and the right parts of a module category. Journal of Algebra 281, 518-534.\", \"key\": \"act_left_right\", \"topic\": \"Foundations\"}, {\"annotation\": \"Assem-Castonguay-Lanzilotta-Vargas: A_lambda / A_rho are products of tilted algebras for ada algebras (quasi-tilted in general), D L_A = R_{A^op}, and the laura complement ind A minus (L_A u R_A) -- non-empty even for ada; feeds P60 (tilted) and P61 (laura/ada).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ACLV2011\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Assem, Ibrahim; Castonguay, Diane; Lanzilotta, Marcelo; Vargas, Rosana R. S. (2011). Algebras determined by their supports.\", \"key\": \"aclv_supports\", \"topic\": \"Foundations\"}, {\"annotation\": \"Alvares-Assem-Castonguay-Vargas survey of the left/right parts, supports, and the quasi-tilted/laura/ada organisation of mod A -- Plan 55's secondary reference.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AACV2021\", \"doi\": \"10.1007/s40863-021-00241-4\", \"doi_url\": \"https://doi.org/10.1007/s40863-021-00241-4\", \"formatted\": \"Alvares, Edson Ribeiro; Assem, Ibrahim; Castonguay, Diane; Vargas, Rosana R. S. (2022). Organising the module category. S ao Paulo Journal of Mathematical Sciences 16, 62-82.\", \"key\": \"organising_module_category\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.left_right_parts(budget=256)\", \"results\": {\"left_right_parts\": {\"citations\": [[\"ACT2004\", \"Assem, Ibrahim; Coelho, Fl'avio U.; Trepode, Sonia (2004). The left and the right parts of a module category. Journal of Algebra 281, 518-534.\"], [\"ACLV2011\", \"Assem, Ibrahim; Castonguay, Diane; Lanzilotta, Marcelo; Vargas, Rosana R. S. (2011). Algebras determined by their supports.\"], [\"AACV2021\", \"Alvares, Edson Ribeiro; Assem, Ibrahim; Castonguay, Diane; Vargas, Rosana R. S. (2022). Organising the module category. S ao Paulo Journal of Mathematical Sciences 16, 62-82.\"]], \"complement\": [], \"complete\": true, \"ext_injectives_left\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"ext_projectives_right\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}], \"injective_placement\": {\"1\": \"both\", \"2\": \"both\", \"3\": \"both\"}, \"intersection\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"kind\": \"left_right_parts\", \"left\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"left_support\": {\"components\": [{\"vertices\": [1, 2, 3]}], \"dim\": 6, \"vertices\": [1, 2, 3]}, \"n\": 3, \"note\": null, \"projective_placement\": {\"1\": \"both\", \"2\": \"both\", \"3\": \"both\"}, \"references\": [\"act_left_right\", \"aclv_supports\", \"organising_module_category\"], \"right\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"right_support\": {\"components\": [{\"vertices\": [1, 2, 3]}], \"dim\": 6, \"vertices\": [1, 2, 3]}, \"status\": \"complete\", \"universe_size\": 6}}}",
+  "canonical_key": "40456312e8999019e5edbf724ef63dcab3f032ce2dd7e0b70fde3b73537935ef"
+ },
+ "hh_cohomology_dual_kA2": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "GF",
+     "p": 5
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "coefficients": {
+    "builtin": {
+     "kind": "dual"
+    }
+   },
+   "compute": [
+    "hh_cohomology:0..3"
+   ],
+   "schema": 3
+  },
+  "canonical_key": "5a7bb0f044fa52a620228608ce390ff0a9aab2d08f4dec6e6d0c42c9941c7023",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [{\"note\": \"list; dim HH in degree n is dims[n].\", \"object\": \"Hochschild cohomology dimensions\", \"path\": \"results.hh_cohomology.dims\"}], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Hochschild1945\", \"doi\": \"10.2307/1969145\", \"doi_url\": \"https://doi.org/10.2307/1969145\", \"formatted\": \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\", \"key\": \"bar\", \"topic\": \"Foundations\"}, {\"annotation\": \"Determines HH^1(A, M) with different coefficients for gentle algebras via ribbon-graph combinatorics -- the Plan-52 gentle HH^1-with-coefficients provenance (numeric pin BLOCKED-until-transcribed).\", \"arxiv\": \"1811.02211\", \"arxiv_url\": \"https://arxiv.org/abs/1811.02211\", \"bibtex_key\": \"ChaparroSchrollSolotar2020\", \"doi\": \"10.1016/j.jalgebra.2020.04.008\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2020.04.008\", \"formatted\": \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea (2020). On the Lie algebra structure of the first Hochschild cohomology of gentle algebras and Brauer graph algebras. Journal of Algebra 558, 293-326.\", \"key\": \"chaparro_schroll_solotar\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Lie-algebra structure of the first RELATIVE (vertex-relative, E = kQ_0) Hochschild cohomology, with radical-square-zero computations -- the Plan-52 relative HH provenance (numeric pin BLOCKED-until-transcribed).\", \"arxiv\": \"2411.03080\", \"arxiv_url\": \"https://arxiv.org/abs/2411.03080\", \"bibtex_key\": \"LindellRubio2024\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lindell, Jonathan; Rubio y Degrassi, Lleonard (2024). On the first relative Hochschild cohomology and the contracted fundamental group. arXiv preprint.\", \"key\": \"lindell_rubio_relative\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(5))\\nA.hochschild_cohomology(3)\", \"results\": {\"hh_cohomology\": {\"citations\": [[\"Hochschild1945\", \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\"], [\"ChaparroSchrollSolotar2020\", \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea (2020). On the Lie algebra structure of the first Hochschild cohomology of gentle algebras and Brauer graph algebras. Journal of Algebra 558, 293-326.\"], [\"LindellRubio2024\", \"Lindell, Jonathan; Rubio y Degrassi, Lleonard (2024). On the first relative Hochschild cohomology and the contracted fundamental group. arXiv preprint.\"]], \"coefficients\": \"D(A)\", \"dims\": [2, 0, 0, 0], \"engine\": \"normalized bar complex\", \"kind\": \"HH^\", \"references\": [\"bar\", \"chaparro_schroll_solotar\", \"lindell_rubio_relative\"], \"top\": 3}}}"
+ },
+ "string_homological_kD4": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      0
+     ],
+     "b": [
+      2,
+      0
+     ],
+     "c": [
+      3,
+      0
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "string_homological"
+   ],
+   "schema": 1
+  },
+  "canonical_key": "e51fdc740f4162b5a6115101f6897c6737c3187086564014c7f63d68433fe635",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 0], \"b\": [2, 0], \"c\": [3, 0]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [0, 1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Suarez-Alvarez: among rep-finite algebras, string <=> the middle term of EVERY extension of indecomposables has <= 2 summands (all Ext^1 classes, not just AR sequences) -- the homological string test.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"SuarezAlvarez2023\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Su'arez-'Alvarez, Mariano (). A Simple Homological Characterization of String Algebras of Finite Representation Type. Algebras and Representation Theory 26}, number = {5}, pages = {1759--1772}, year = {2023.\", \"key\": \"suarez_alvarez\", \"topic\": \"Algorithms\"}, {\"annotation\": \"Butler-Ringel: the string/band module classification and the hook/cohook description of the AR translate -- the ground truth for the string subsystem.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ButlerRingel1987\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\", \"key\": \"butler_ringel\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[0, 1, 2, 3], arrows={\\\"a\\\": (1, 0), \\\"b\\\": (2, 0), \\\"c\\\": (3, 0)})\\nA = Q.algebra(relations=[], field=QQ)\\nfrom quiverlab.modules.string_homological import homological_string_test\\nhomological_string_test(A)\", \"results\": {\"string_homological\": {\"checked\": {\"classes\": 0, \"field\": \"QQ\", \"n_indec\": 12, \"route\": [\"ar\"]}, \"citations\": [[\"SuarezAlvarez2023\", \"Su'arez-'Alvarez, Mariano (). A Simple Homological Characterization of String Algebras of Finite Representation Type. Algebras and Representation Theory 26}, number = {5}, pages = {1759--1772}, year = {2023.\"], [\"ButlerRingel1987\", \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"is_string\": false, \"kbar_gap_note\": null, \"reason\": null, \"references\": [\"suarez_alvarez\", \"butler_ringel\", \"assem_book\"], \"verdict\": \"not_string\", \"witness\": {\"E_dimvec\": {\"0\": 3, \"1\": 1, \"2\": 1, \"3\": 1}, \"X\": {\"0\": 2, \"1\": 1, \"2\": 1, \"3\": 1}, \"Y\": {\"0\": 1, \"1\": 0, \"2\": 0, \"3\": 0}, \"class\": \"ar_socle\", \"coeffs\": null, \"summand_count\": 3, \"summand_dimvecs\": [{\"0\": 1, \"1\": 1, \"2\": 0, \"3\": 0}, {\"0\": 1, \"1\": 0, \"2\": 1, \"3\": 0}, {\"0\": 1, \"1\": 0, \"2\": 0, \"3\": 1}]}}}}"
+ },
+ "toupie_a_kronecker": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      1,
+      2
+     ],
+     "c": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "toupie"
+   ],
+   "schema": 1
+  },
+  "canonical_key": "9c47537101c39d38885f55e38369ee3d69067ffb6ab3bfb8f29a226844e407f0",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [1, 2], \"c\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Artenstein-Lanzilotta-Solotar: toupie = unique source/sink + a parallel branches; a-Kronecker HH^* = [1, a^2-1, 0, ..]; HH^1 contains sl_a (char 0), a = # direct source->sink arrows.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ArtensteinLanzilottaSolotar2020\", \"doi\": \"10.1007/s10468-019-09854-y\", \"doi_url\": \"https://doi.org/10.1007/s10468-019-09854-y\", \"formatted\": \"Artenstein, Dalia; Lanzilotta, Marcelo; Solotar, Andrea (). Gerstenhaber structure on Hochschild cohomology of toupie algebras. Algebras and Representation Theory 23}, number = {2}, pages = {421--456}, year = {2020.\", \"key\": \"alsolotar_toupie\", \"topic\": \"Families\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (1, 2), \\\"c\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nfrom quiverlab.families.toupie import is_toupie, toupie_block\\nis_toupie(A), toupie_block(A)\", \"results\": {\"toupie\": {\"branch_count\": 3, \"citations\": [[\"ArtensteinLanzilottaSolotar2020\", \"Artenstein, Dalia; Lanzilotta, Marcelo; Solotar, Andrea (). Gerstenhaber structure on Hochschild cohomology of toupie algebras. Algebras and Representation Theory 23}, number = {2}, pages = {421--456}, year = {2020.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"direct_arrow_count\": 3, \"hh\": [1, 8, 0, 0, 0], \"hh_top\": 4, \"is_toupie\": true, \"note\": null, \"references\": [\"alsolotar_toupie\", \"assem_book\"], \"sl_a\": {\"a\": 3, \"char0\": true, \"dim\": 8}}}}"
+ },
+ "fundamental_group_square_gf7": {
+  "body": {
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      4
+     ],
+     "c": [
+      1,
+      3
+     ],
+     "d": [
+      3,
+      4
+     ]
+    },
+    "relations": [
+     "a*b - c*d"
+    ],
+    "field": {
+     "kind": "GF",
+     "p": 7,
+     "n": 1
+    }
+   },
+   "compute": [
+    "fundamental_group"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 4], \"c\": [1, 3], \"d\": [3, 4]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"a*b - c*d\"], \"vertices\": [1, 2, 3, 4]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The fundamental group pi1(Q,I) of a presentation and the Hom(pi1, k+) embedding into HH^1 for triangular algebras -- the Plan-56 pi1 + Hurewicz foundation.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AssemDelaPena1996\", \"doi\": \"10.1080/00927879608825561\", \"doi_url\": \"https://doi.org/10.1080/00927879608825561\", \"formatted\": \"Assem, Ibrahim; de la Pe na, Jos'e Antonio (1996). The fundamental groups of a triangular algebra. Communications in Algebra 24, 187-208.\", \"key\": \"assem_delapena\", \"topic\": \"Foundations\"}, {\"annotation\": \"The original homotopy relation ~_I on walks (minimal relations glue parallel paths) that quiverlab's pi1^ab computes by exact linear algebra on I/(rad.I + I.rad).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"MartinezVillaDelaPena1983\", \"doi\": \"10.1016/0022-4049(83)90064-0\", \"doi_url\": \"https://doi.org/10.1016/0022-4049(83)90064-0\", \"formatted\": \"Mart'inez-Villa, Roberto; de la Pe na, Jos'e Antonio (1983). The universal cover of a quiver with relations. Journal of Pure and Applied Algebra 30, 277-292.\", \"key\": \"martinez_villa_delapena\", \"topic\": \"Foundations\"}, {\"annotation\": \"For a Schurian category the Hurewicz map Hom(pi1, k+) -> HH^1 is an isomorphism -- the equality case of the Plan-56 Hom(pi1,k+) <= dim HH^1 cross-check.\", \"arxiv\": \"1010.6296\", \"arxiv_url\": \"https://arxiv.org/abs/1010.6296\", \"bibtex_key\": \"CibilsRedondoSolotar2010hurewicz\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Fundamental group of Schurian categories and the Hurewicz isomorphism. arXiv preprint.\", \"key\": \"crs_hurewicz\", \"topic\": \"Foundations\"}, {\"annotation\": \"The intrinsic pi1 (inverse limit over connected gradings) and the oracle pi1(k[x]/(x^p)) = Z x C_p in char p -- documents WHY the presentation group (Z) is not the algebra invariant (Plan-56 intrinsic refusal).\", \"arxiv\": \"0906.3069\", \"arxiv_url\": \"https://arxiv.org/abs/0906.3069\", \"bibtex_key\": \"CibilsRedondoSolotar2010gradings\", \"doi\": \"10.2140/ant.2010.4.625\", \"doi_url\": \"https://doi.org/10.2140/ant.2010.4.625\", \"formatted\": \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Connected gradings and the fundamental group. Algebra & Number Theory 4, 625-648.\", \"key\": \"crs_gradings\", \"topic\": \"Foundations\"}, {\"annotation\": \"Every maximal torus of HH^1(A) is dual to some fundamental group of A -- the maximal-torus refinement of the Plan-56 Hurewicz cross-check.\", \"arxiv\": \"2109.03704\", \"arxiv_url\": \"https://arxiv.org/abs/2109.03704\", \"bibtex_key\": \"BriggsRubioyDegrassi2023\", \"doi\": \"10.1093/imrn/rnac059\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnac059\", \"formatted\": \"Briggs, Benjamin; Rubio y Degrassi, Lleonard (2023). Maximal tori in $HH^1$ and the fundamental group. International Mathematics Research Notices 2023, 5538-5568.\", \"key\": \"briggs_ryd_tori\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3, 4], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 4), \\\"c\\\": (1, 3), \\\"d\\\": (3, 4)})\\nA = Q.algebra(relations=['a*b - c*d'], field=GF(7))\\nA.fundamental_group()\", \"results\": {\"fundamental_group\": {\"abelianization\": {\"free_rank\": 0, \"invariant_factors\": []}, \"citations\": [[\"AssemDelaPena1996\", \"Assem, Ibrahim; de la Pe na, Jos'e Antonio (1996). The fundamental groups of a triangular algebra. Communications in Algebra 24, 187-208.\"], [\"MartinezVillaDelaPena1983\", \"Mart'inez-Villa, Roberto; de la Pe na, Jos'e Antonio (1983). The universal cover of a quiver with relations. Journal of Pure and Applied Algebra 30, 277-292.\"], [\"CibilsRedondoSolotar2010hurewicz\", \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Fundamental group of Schurian categories and the Hurewicz isomorphism. arXiv preprint.\"], [\"CibilsRedondoSolotar2010gradings\", \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Connected gradings and the fundamental group. Algebra & Number Theory 4, 625-648.\"], [\"BriggsRubioyDegrassi2023\", \"Briggs, Benjamin; Rubio y Degrassi, Lleonard (2023). Maximal tori in $HH^1$ and the fundamental group. International Mathematics Research Notices 2023, 5538-5568.\"]], \"components\": 1, \"generators\": [\"d\"], \"hom_to_additive_dim\": 0, \"intrinsic_note\": \"The INTRINSIC fundamental group (the inverse limit over connected gradings) is not bounded-computable and is NOT reported here: e.g. the presentation pi1(k[x]/(x^p)) = Z differs from the intrinsic pi1 = Z x C_p in characteristic p (Cibils-Redondo-Solotar). quiverlab reports the PRESENTATION group pi1(Q, I).\", \"kind\": \"fundamental_group\", \"latex\": \"\\\\pi_1^{\\\\mathrm{ab}} = 0\", \"presentation_note\": \"presentation invariant of (Q, I); NOT of the algebra A\", \"references\": [\"assem_delapena\", \"martinez_villa_delapena\", \"crs_hurewicz\", \"crs_gradings\", \"briggs_ryd_tori\"], \"relators\": [\"d^-1\"]}}}",
+  "canonical_key": "9b96ddc88eb51d87b46e3c6e04cfee0056fd213d5f03f2bfe791ba7d86b484b9"
+ },
+ "simply_connected_zito": {
+  "body": {
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "arrows": {
+     "al": [
+      1,
+      2
+     ],
+     "be": [
+      2,
+      3
+     ],
+     "ga": [
+      3,
+      5
+     ],
+     "de": [
+      2,
+      4
+     ],
+     "ep": [
+      4,
+      5
+     ]
+    },
+    "relations": [
+     "al*be*ga - al*de*ep"
+    ],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "simply_connected"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"al\": [1, 2], \"be\": [2, 3], \"de\": [2, 4], \"ep\": [4, 5], \"ga\": [3, 5]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [\"al*be*ga - al*de*ep\"], \"vertices\": [1, 2, 3, 4, 5]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}, {\"annotation\": \"A triangular algebra is strongly simply connected iff every full convex subcategory satisfies the separation condition -- the Plan-56 R16 recognizer (the P62 tame/wild gate).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Skowronski1993\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Skowro'nski, Andrzej (1993). Simply connected algebras and Hochschild cohomologies. Representations of Algebras (Ottawa, ON, 1992) 14, 431-447.\", \"key\": \"skowronski_ssc\", \"topic\": \"Foundations\"}, {\"annotation\": \"Thm 1.1: a char-0 triangular algebra with no double bypasses has a privileged presentation whose pi1 surjects onto every other -- the Plan-56 no-bypass True route.\", \"arxiv\": \"math/0503302\", \"arxiv_url\": \"https://arxiv.org/abs/math/0503302\", \"bibtex_key\": \"LeMeur2005\", \"doi\": \"10.1016/j.crma.2005.07.005\", \"doi_url\": \"https://doi.org/10.1016/j.crma.2005.07.005\", \"formatted\": \"Le Meur, Patrick (2005). The fundamental group of a triangular algebra without double bypasses. Comptes Rendus Math'ematique. Acad'emie des Sciences. Paris 341, 211-216.\", \"key\": \"le_meur_pi1\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3, 4, 5], arrows={\\\"al\\\": (1, 2), \\\"be\\\": (2, 3), \\\"ga\\\": (3, 5), \\\"de\\\": (2, 4), \\\"ep\\\": (4, 5)})\\nA = Q.algebra(relations=['al*be*ga - al*de*ep'], field=QQ)\\nA.is_simply_connected()\", \"results\": {\"simply_connected\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"], [\"Skowronski1993\", \"Skowro'nski, Andrzej (1993). Simply connected algebras and Hochschild cohomologies. Representations of Algebras (Ottawa, ON, 1992) 14, 431-447.\"], [\"LeMeur2005\", \"Le Meur, Patrick (2005). The fundamental group of a triangular algebra without double bypasses. Comptes Rendus Math'ematique. Acad'emie des Sciences. Paris 341, 211-216.\"]], \"kind\": \"simply_connected\", \"reason\": \"triangular with no bypasses (pi1 is presentation-independent, Le Meur) and the presentation trivialises (R3)\", \"references\": [\"assem_book\", \"skowronski_ssc\", \"le_meur_pi1\"], \"strongly\": {\"checked_convex\": 17, \"reason\": \"[2, 3, 4, 5]@vertex 2 fails\", \"verdict\": false, \"witness\": {\"convex_subset\": [2, 3, 4, 5], \"summand_supports\": [[3, 5], [4, 5]], \"vertex\": 2}}, \"verdict\": true, \"witness\": null}}}",
+  "canonical_key": "edf2f84f64899ef9a9d245f2c42a9ed5dfbda20914a099e98da38802e87f7eb9"
+ },
+ "tilted_check_kA3": {
+  "body": {
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "tilted_check:256"
+   ],
+   "schema": 1
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Liu (independently with Skowronski): A is tilted iff Gamma_A has a faithful generalized-standard component with a section -- the criterion Plan 60 searches for. Venue verified (Arch. Math. 61 (1993) 12-19).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu1993\", \"doi\": \"10.1007/BF01258050\", \"doi_url\": \"https://doi.org/10.1007/BF01258050\", \"formatted\": \"Liu, Shiping (1993). Tilted algebras and generalized standard Auslander-Reiten components. Archiv der Mathematik 61, 12-19.\", \"key\": \"liu_tilted_1993\", \"topic\": \"Foundations\"}, {\"annotation\": \"Liu: A is tilted iff Gamma_A contains a FAITHFUL CUT Delta with Hom(X, tau Y)=0 (Thm 2.6); the cut is a finite/local object (weakly convex), the documented rep-infinite extension path. Ringel's slice theorem (Thm 1.9(2)) is the reconstruction certificate Plan 60 uses.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu2014\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Liu, Shiping (2014). Another characterization of tilted algebras.\", \"key\": \"liu_another_2014\", \"topic\": \"Foundations\"}, {\"annotation\": \"Happel-Ringel: the origin of tilted algebras A = End_H(T) (H hereditary, T tilting); tilted => gl.dim <= 2 -- the theorem gate Plan 60 uses to refute high-gl.dim algebras.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"HappelRingel1982\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Happel, Dieter; Ringel, Claus Michael (1982). Tilted algebras. Transactions of the American Mathematical Society 274, 399-443.\", \"key\": \"happel_ringel_tilted\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.tilted_check(budget_modules=256)\", \"results\": {\"tilted_check\": {\"citations\": [[\"Liu1993\", \"Liu, Shiping (1993). Tilted algebras and generalized standard Auslander-Reiten components. Archiv der Mathematik 61, 12-19.\"], [\"Liu2014\", \"Liu, Shiping (2014). Another characterization of tilted algebras.\"], [\"HappelRingel1982\", \"Happel, Dieter; Ringel, Claus Michael (1982). Tilted algebras. Transactions of the American Mathematical Society 274, 399-443.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"complete\": true, \"hereditary_algebra\": {\"arrows\": {\"a\": [\"1\", \"2\"], \"b\": [\"2\", \"3\"]}, \"dim\": 6, \"relations\": [], \"vertices\": [\"1\", \"2\", \"3\"]}, \"hereditary_type\": \"A_3\", \"kind\": \"tilted_check\", \"n\": 3, \"note\": \"hereditary: slice = the indecomposable projectives (A_A), End_A(A_A) hereditary\", \"reason\": \"hereditary\", \"reconstruction\": {\"dim_A\": 6, \"dim_H\": 6, \"note\": \"hereditary: H = A, T = A_A is a tilting A-module, End_A(A_A) is hereditary\", \"type\": \"A_3\"}, \"references\": [\"liu_tilted_1993\", \"liu_another_2014\", \"happel_ringel_tilted\", \"assem_book\"], \"slice\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}], \"slice_dimvec\": {\"1\": 1, \"2\": 2, \"3\": 3}, \"status\": \"complete\", \"verdict\": \"tilted\"}}}",
+  "canonical_key": "525a7f51b49df88ee295a5486340c476ab8cf217e6d276834486a56878fe183d"
+ },
+ "recognizer_ladder_kA3": {
+  "body": {
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "recognizer_ladder:256"
+   ],
+   "schema": 1
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Happel-Reiten-Smalo: quasi-tilted = (QT1) gl.dim <= 2 AND (QT2) every indec pd<=1 or id<=1; QT2 alone => gl.dim <= 3. The definitional ground truth for Plan 61's quasi-tilted rung.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"HRS1996\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Happel, Dieter; Reiten, Idun; Smalo, Sverre O. (1996). Tilting in Abelian Categories and Quasitilted Algebras. American Mathematical Society 120.\", \"key\": \"hrs_quasitilted\", \"topic\": \"Foundations\"}, {\"annotation\": \"Coelho-Lanzilotta: shod = every indec pd<=1 or id<=1 (=> gl.dim <= 3); weakly shod = bounded irreducible-morphism paths from an injective to a projective (WSA). Plan 61's shod + weakly-shod rungs.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"CL2003weaklyshod\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Coelho, Fl'avio U.; Lanzilotta, Marcelo A. (2003). Weakly shod algebras. Journal of Algebra 265, 379-403.\", \"key\": \"coelho_lanzilotta_weakly_shod\", \"topic\": \"Foundations\"}, {\"annotation\": \"Assem-Coelho: laura = ind A minus (L_A u R_A) is finite. Plan 61's laura rung (trivially true in representation-finite scope; the finite complement is the reported datum).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AC2003laura\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Assem, Ibrahim; Coelho, Fl'avio U. (2003). Two-sided gluings of tilted algebras. Journal of Algebra 269, 456-479.\", \"key\": \"assem_coelho_laura\", \"topic\": \"Foundations\"}, {\"annotation\": \"Assem-Castonguay-Lanzilotta-Vargas: A_lambda / A_rho are products of tilted algebras for ada algebras (quasi-tilted in general), D L_A = R_{A^op}, and the laura complement ind A minus (L_A u R_A) -- non-empty even for ada; feeds P60 (tilted) and P61 (laura/ada).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ACLV2011\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Assem, Ibrahim; Castonguay, Diane; Lanzilotta, Marcelo; Vargas, Rosana R. S. (2011). Algebras determined by their supports.\", \"key\": \"aclv_supports\", \"topic\": \"Foundations\"}, {\"annotation\": \"Smith: the almost-laura generalisation of laura algebras -- context for the laura landscape; Plan 61 cites it for the class, not for the elementary rep-finite triviality.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Smith2007almostlaura\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Smith, David (2007). Almost laura algebras.\", \"key\": \"smith_almost_laura\", \"topic\": \"Foundations\"}, {\"annotation\": \"Bordino-Fernandez-Trepode: the quiver-with-relations structure of quasitilted algebras -- a secondary reference on Plan 61's quasi-tilted rung.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"BFT2017quasitilted\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Bordino, Natalia; Fern'andez, Elsa; Trepode, Sonia (2017). On the quiver with relations of a quasitilted algebra and applications. Communications in Algebra 45, 4050-4061.\", \"key\": \"bft_quasitilted_quiver\", \"topic\": \"Foundations\"}, {\"annotation\": \"Alvares-Assem-Castonguay-Vargas survey of the left/right parts, supports, and the quasi-tilted/laura/ada organisation of mod A -- Plan 55's secondary reference.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AACV2021\", \"doi\": \"10.1007/s40863-021-00241-4\", \"doi_url\": \"https://doi.org/10.1007/s40863-021-00241-4\", \"formatted\": \"Alvares, Edson Ribeiro; Assem, Ibrahim; Castonguay, Diane; Vargas, Rosana R. S. (2022). Organising the module category. S ao Paulo Journal of Mathematical Sciences 16, 62-82.\", \"key\": \"organising_module_category\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.recognizer_ladder(budget=256)\", \"results\": {\"recognizer_ladder\": {\"citations\": [[\"HRS1996\", \"Happel, Dieter; Reiten, Idun; Smalo, Sverre O. (1996). Tilting in Abelian Categories and Quasitilted Algebras. American Mathematical Society 120.\"], [\"CL2003weaklyshod\", \"Coelho, Fl'avio U.; Lanzilotta, Marcelo A. (2003). Weakly shod algebras. Journal of Algebra 265, 379-403.\"], [\"AC2003laura\", \"Assem, Ibrahim; Coelho, Fl'avio U. (2003). Two-sided gluings of tilted algebras. Journal of Algebra 269, 456-479.\"], [\"ACLV2011\", \"Assem, Ibrahim; Castonguay, Diane; Lanzilotta, Marcelo; Vargas, Rosana R. S. (2011). Algebras determined by their supports.\"], [\"Smith2007almostlaura\", \"Smith, David (2007). Almost laura algebras.\"], [\"BFT2017quasitilted\", \"Bordino, Natalia; Fern'andez, Elsa; Trepode, Sonia (2017). On the quiver with relations of a quasitilted algebra and applications. Communications in Algebra 45, 4050-4061.\"], [\"AACV2021\", \"Alvares, Edson Ribeiro; Assem, Ibrahim; Castonguay, Diane; Vargas, Rosana R. S. (2022). Organising the module category. S ao Paulo Journal of Mathematical Sciences 16, 62-82.\"]], \"complement\": [], \"complete\": true, \"gldim\": 1, \"gldim_exact\": true, \"kind\": \"recognizer_ladder\", \"ladder\": {\"ada\": {\"certificate\": {\"all_injectives_in_union\": true, \"all_projectives_in_union\": true}, \"verdict\": true, \"witness\": null}, \"laura\": {\"complement_size\": 0, \"verdict\": true}, \"quasi_tilted\": {\"certificate\": {\"aclv_every_projective_in_left\": true, \"complement_size\": 0, \"gldim\": 1, \"gldim_le_2\": true}, \"verdict\": true, \"witness\": null}, \"shod\": {\"certificate\": {\"complement_size\": 0, \"qt2_every_indec_pd_or_id\": true}, \"verdict\": true, \"witness\": null}, \"weakly_shod\": {\"certificate\": {\"directed\": true, \"universe_size\": 6}, \"verdict\": true, \"witness\": null}}, \"n\": 3, \"note\": null, \"references\": [\"hrs_quasitilted\", \"coelho_lanzilotta_weakly_shod\", \"assem_coelho_laura\", \"aclv_supports\", \"smith_almost_laura\", \"bft_quasitilted_quiver\", \"organising_module_category\"], \"simple_connectedness\": {\"applicable\": false, \"field_algebraically_closed\": false, \"hh1_dim\": 0, \"note\": \"ACLV Theorem B (Assem-Castonguay-Lanzilotta-Vargas, arXiv:1102.1188): for an ada algebra over an algebraically closed field, A is simply connected if and only if HH^1(A) = 0; moreover, when this holds, the Hochschild cohomology ring HH^*(A) reduces to the base field. This field is not algebraically closed, so no simple-connectedness verdict is emitted; recompute over CC for the Theorem-B conclusion.\", \"theorem\": \"ACLV Theorem B (Assem-Castonguay-Lanzilotta-Vargas, arXiv:1102.1188): for an ada algebra over an algebraically closed field, A is simply connected if and only if HH^1(A) = 0; moreover, when this holds, the Hochschild cohomology ring HH^*(A) reduces to the base field.\", \"verdict\": null}, \"status\": \"complete\", \"universe_size\": 6}}}",
+  "canonical_key": "3a917560c33dcf30b99556e4c2e3d9b7caac23f0c89a14071277b82e71184cfc"
+ },
+ "tame_wild_a5_cc": {
+  "body": {
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "arrows": {
+     "a1": [
+      1,
+      2
+     ],
+     "a2": [
+      2,
+      3
+     ],
+     "a3": [
+      3,
+      4
+     ],
+     "a4": [
+      4,
+      5
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "CC"
+    }
+   },
+   "compute": [
+    "tame_wild"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2], \"a2\": [2, 3], \"a3\": [3, 4], \"a4\": [4, 5]}, \"field\": {\"kind\": \"CC\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3, 4, 5]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Bongartz: a simply connected algebra is representation-finite iff its Tits form is weakly positive (iff it has no critical convex subcategory) -- the Plan-62 rep-finite axis of the tame/wild trichotomy.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Bongartz1984\", \"doi\": \"10.1007/BF01455993\", \"doi_url\": \"https://doi.org/10.1007/BF01455993\", \"formatted\": \"Bongartz, Klaus (1984). A criterion for finite representation type. Mathematische Annalen 269, 1-12.\", \"key\": \"bongartz_criterion\", \"topic\": \"Foundations\"}, {\"annotation\": \"Bruestle-de la Pena-Skowronski: a strongly simply connected algebra over an algebraically closed field is tame iff its Tits form is weakly nonnegative -- the Plan-62 tame axis (the theorem gated on the P56 strong-simple-connectivity certificate).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"BrustleDlPSkowronski2011\", \"doi\": \"10.1016/j.aim.2010.07.007\", \"doi_url\": \"https://doi.org/10.1016/j.aim.2010.07.007\", \"formatted\": \"Br\\\"ustle, Thomas; de la Pe na, Jos'e Antonio; Skowro'nski, Andrzej (2011). Tame algebras and Tits quadratic forms. Advances in Mathematics 226, 887-951.\", \"key\": \"bdps_tame_tits\", \"topic\": \"Foundations\"}, {\"annotation\": \"Kasjan-Skowronski (arXiv:1905.06028): the tame/wild dichotomy statements Plan 62 consumes for strongly simply connected algebras (companion source to BdlPS).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"KasjanSkowronski2019\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Kasjan, Stanislaw; Skowro'nski, Andrzej (2019). On the tame-wild dichotomy for strongly simply connected algebras.\", \"key\": \"kasjan_skowronski\", \"topic\": \"Foundations\"}, {\"annotation\": \"Ovsienko: every positive root of a weakly positive unit form has coordinates <= 6 -- the cited complete decision behind Plan-62 weak positivity (the box-6 branch-and-bound).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Ovsienko1978\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Ovsienko, Sergeui A. (1978). Integral weakly positive forms. Schur Matrix Problems and Quadratic Forms, 3-17.\", \"key\": \"ovsienko_forms\", \"topic\": \"Foundations\"}, {\"annotation\": \"von Hohne: the classified hypercritical unit forms driving the Plan-62 weak-nonnegativity decision (the primary route; NOT bounded to <= 9 variables -- T_{2,3,7} is a 10-variable hypercritical form).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"vonHohne1996\", \"doi\": \"10.1112/plms/s3-73.1.47\", \"doi_url\": \"https://doi.org/10.1112/plms/s3-73.1.47\", \"formatted\": \"von H\\\"ohne, Hans-Joachim (1996). On weakly non-negative unit forms and tame algebras. Proceedings of the London Mathematical Society (3) 73, 47-67.\", \"key\": \"vonhohne_wnn\", \"topic\": \"Foundations\"}, {\"annotation\": \"Barot-Jimenez-Gonzalez-de la Pena: the combinatorics of critical / hypercritical unit forms and the search-box exposition underpinning Plan 62.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"BarotJimenezDlP2019\", \"doi\": \"10.1007/978-3-030-05627-8\", \"doi_url\": \"https://doi.org/10.1007/978-3-030-05627-8\", \"formatted\": \"Barot, Michael; Jim'enez Gonz'alez, Jes'us Arturo; de la Pe na, Jos'e Antonio (2019). Quadratic Forms: Combinatorics and Numerical Results. Springer 25.\", \"key\": \"bjp_quadratic_forms\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, CC\\n\\nQ = Quiver(vertices=[1, 2, 3, 4, 5], arrows={\\\"a1\\\": (1, 2), \\\"a2\\\": (2, 3), \\\"a3\\\": (3, 4), \\\"a4\\\": (4, 5)})\\nA = Q.algebra(relations=[], field=CC)\\nA.tame_wild_certificate()\", \"results\": {\"tame_wild\": {\"certified\": null, \"citations\": [[\"Bongartz1984\", \"Bongartz, Klaus (1984). A criterion for finite representation type. Mathematische Annalen 269, 1-12.\"], [\"BrustleDlPSkowronski2011\", \"Br\\\"ustle, Thomas; de la Pe na, Jos'e Antonio; Skowro'nski, Andrzej (2011). Tame algebras and Tits quadratic forms. Advances in Mathematics 226, 887-951.\"], [\"KasjanSkowronski2019\", \"Kasjan, Stanislaw; Skowro'nski, Andrzej (2019). On the tame-wild dichotomy for strongly simply connected algebras.\"], [\"Ovsienko1978\", \"Ovsienko, Sergeui A. (1978). Integral weakly positive forms. Schur Matrix Problems and Quadratic Forms, 3-17.\"], [\"vonHohne1996\", \"von H\\\"ohne, Hans-Joachim (1996). On weakly non-negative unit forms and tame algebras. Proceedings of the London Mathematical Society (3) 73, 47-67.\"], [\"BarotJimenezDlP2019\", \"Barot, Michael; Jim'enez Gonz'alez, Jes'us Arturo; de la Pe na, Jos'e Antonio (2019). Quadratic Forms: Combinatorics and Numerical Results. Springer 25.\"]], \"field_alg_closed\": true, \"gram\": [[2, -1, 0, 0, 0], [-1, 2, -1, 0, 0], [0, -1, 2, -1, 0], [0, 0, -1, 2, -1], [0, 0, 0, -1, 2]], \"is_unit_form\": true, \"kind\": \"tame_wild\", \"labels\": [\"1\", \"2\", \"3\", \"4\", \"5\"], \"latex\": \"q_A(x) = x_{1}^{2} + x_{2}^{2} + x_{3}^{2} + x_{4}^{2} + x_{5}^{2} - x_{1}x_{2} - x_{2}x_{3} - x_{3}x_{4} - x_{4}x_{5}\", \"minimal_relation_counts\": {}, \"reason\": \"weakly positive => representation-finite (Bongartz 1984); strongly simply connected, verdict read by base change to the algebraic closure (the Tits form is field-independent in characteristic 0).\", \"references\": [\"bongartz_criterion\", \"bdps_tame_tits\", \"kasjan_skowronski\", \"ovsienko_forms\", \"vonhohne_wnn\", \"bjp_quadratic_forms\"], \"rep_type\": \"rep-finite\", \"scope_note\": \"The combinatorial Tits form q_A and its weak positivity / weak nonnegativity are field-free integer arithmetic. The representation-type verdict requires an algebraically closed base field (quiverlab's CC domain; over a characteristic-0 field it is read by base change to the algebraic closure, the Tits form being field-independent in characteristic 0 -- GF(p)/GF(p^n) is refused) and is gated on the P56 certificate: rep-finite <=> weakly positive for a SIMPLY connected algebra (Bongartz 1984); tame <=> weakly nonnegative for a STRONGLY simply connected algebra (Brustle-de la Pena-Skowronski 2011), decided here by the exact positive-semidefinite (Euclidean) certificate. wild = a found d >= 0 with q_A(d) < 0. Off scope the form is still computed and the verdict is None.\", \"simply_connected\": true, \"strong_certificate\": {\"checked_convex\": 15, \"reason\": \"all convex separated\", \"verdict\": true}, \"strongly_simply_connected\": true, \"weakly_nonnegative\": true, \"weakly_positive\": true, \"witness\": null, \"witness_value\": null}}}",
+  "canonical_key": "6612954f4ead68ace1a1b7b50e2aadc4ff11bdb3d2bc3ebc1d961bdb97e03707"
+ },
+ "bv_operator_kxx3": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 7
+    },
+    "kind": "quiver",
+    "relations": [
+     "x*x*x"
+    ],
+    "vertices": [
+     1
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "bv_operator:0..2"
+   ],
+   "schema": 2
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x*x*x\"], \"vertices\": [1]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The symmetric-algebra BV operator Delta on HH^* induced by a symmetric, invariant, nondegenerate inner product -- quiverlab's symmetric (nu-inner) BV route (Plan 54).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Tradler2008\", \"doi\": \"10.5802/aif.2417\", \"doi_url\": \"https://doi.org/10.5802/aif.2417\", \"formatted\": \"Tradler, Thomas (2008). The Batalin-Vilkovisky algebra on Hochschild cohomology induced by infinity inner products. Annales de l'Institut Fourier 58, 2351-2379.\", \"key\": \"bv_tradler\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The Frobenius-algebra BV operator under the semisimple-nu hypothesis -- quiverlab's semisimple-nu / twisted BV route (Plan 54).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"LambreZhouZimmermann2016\", \"doi\": \"10.1016/j.jalgebra.2015.09.018\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2015.09.018\", \"formatted\": \"Lambre, Thierry; Zhou, Guodong; Zimmermann, Alexander (2016). The Hochschild cohomology ring of a Frobenius algebra with semisimple Nakayama automorphism is a Batalin-Vilkovisky algebra. Journal of Algebra 446, 103-131.\", \"key\": \"bv_lzz\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The BV differential under ord(nu) coprime to char k (over GF(p): the squarefree-minpoly / p does not divide ord(nu) phrasing recorded in quiverlab's provenance) -- Plan 54.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Volkov2016bv\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Volkov, Yury (2016). BV-differential on Hochschild cohomology of Frobenius algebras.\", \"key\": \"bv_volkov\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The self-injective Nakayama BV structure; Sec 3.2 (e=1) gives the explicit k[x]/(x^N) Delta values that back quiverlab's char-sensitivity + Delta-rank literature oracle (Plan 54).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"BianItagakiKouLyuZhou2026\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Bian, Xiaojun; Itagaki, Tomohiro; Kou, Cuili; Lyu, Junjun; Zhou, Guodong (2026). The Hochschild cohomology ring of a self-injective Nakayama algebra is a Batalin-Vilkovisky algebra.\", \"key\": \"bv_biklz\", \"topic\": \"Algorithms\"}, {\"annotation\": \"Connes' B-operator and the SBI sequence -- quiverlab's cyclic homology.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Connes1985\", \"doi\": \"10.1007/BF02698807\", \"doi_url\": \"https://doi.org/10.1007/BF02698807\", \"formatted\": \"Connes, Alain (1985). Non-commutative differential geometry. Publications Math'ematiques de l'IH'ES 62, 41-144.\", \"key\": \"cyclic\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The graded Lie bracket making HH^* a Gerstenhaber algebra.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"bracket\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The associative cup product on HH^* (Gerstenhaber-algebra structure).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"cup\", \"topic\": \"Algorithms\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x*x'], field=GF(7))\\nA.bv_operator(2)\", \"results\": {\"bv_operator\": {\"basis\": \"bar/GF(7)\", \"bracket_check\": {\"agrees\": true, \"engine\": \"hanlab engine (F_p fast rank)\", \"pairs_checked\": 1, \"window\": 1}, \"citations\": [[\"Tradler2008\", \"Tradler, Thomas (2008). The Batalin-Vilkovisky algebra on Hochschild cohomology induced by infinity inner products. Annales de l'Institut Fourier 58, 2351-2379.\"], [\"LambreZhouZimmermann2016\", \"Lambre, Thierry; Zhou, Guodong; Zimmermann, Alexander (2016). The Hochschild cohomology ring of a Frobenius algebra with semisimple Nakayama automorphism is a Batalin-Vilkovisky algebra. Journal of Algebra 446, 103-131.\"], [\"Volkov2016bv\", \"Volkov, Yury (2016). BV-differential on Hochschild cohomology of Frobenius algebras.\"], [\"BianItagakiKouLyuZhou2026\", \"Bian, Xiaojun; Itagaki, Tomohiro; Kou, Cuili; Lyu, Junjun; Zhou, Guodong (2026). The Hochschild cohomology ring of a self-injective Nakayama algebra is a Batalin-Vilkovisky algebra.\"], [\"Connes1985\", \"Connes, Alain (1985). Non-commutative differential geometry. Publications Math'ematiques de l'IH'ES 62, 41-144.\"], [\"Gerstenhaber1963\", \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\"]], \"derived_bracket\": {\"basis\": \"bar/GF(7)\", \"engine\": \"BV-derived (from Delta via the BV relation)\", \"kind\": \"bracket\", \"references\": [\"bracket\", \"gerstenhaber\", \"bv_lzz\"], \"tables\": [{\"constants\": [[[\"0\", \"3\"], [\"4\", \"0\"]], [[\"0\", \"0\"], [\"0\", \"0\"]]], \"degrees\": [1, 1], \"dims\": [2, 2, 2], \"out_degree\": 1}], \"top\": 2, \"window\": 1}, \"hh_dims\": [3, 2, 2], \"hypothesis\": \"symmetric (Tradler AIF 2008)\", \"kind\": \"bv_operator\", \"matrices\": {\"1\": [[\"0\", \"1\"], [\"1\", \"0\"], [\"0\", \"0\"]], \"2\": [[\"0\", \"0\"], [\"0\", \"0\"]]}, \"nakayama\": {\"inner\": true, \"matrix\": [[\"1\", \"0\", \"0\"], [\"0\", \"1\", \"0\"], [\"0\", \"0\", \"1\"]], \"order\": 1, \"semisimple\": true}, \"ranks\": {\"1\": 2, \"2\": 0}, \"references\": [\"bv_tradler\", \"bv_lzz\", \"bv_volkov\", \"bv_biklz\", \"cyclic\", \"bracket\", \"cup\"], \"top\": 2, \"window\": 2}}}",
+  "canonical_key": "35301eec10cf2ec84bb58fb4598b835853d226c1536d1acd1a0c2469df789299"
+ },
+ "skew_gentle_arrow_sp2": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "family",
+    "family": "SkewGentleAlgebra",
+    "params": {
+     "vertices": [
+      1,
+      2
+     ],
+     "arrows": {
+      "a": [
+       1,
+       2
+      ]
+     },
+     "relations": [],
+     "special": [
+      2
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "skew_gentle"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "e7d57a7d2e784f0854d4a9219a5167a84362bc9018591a967e066e27bfc664f4",
+  "result_json": "{\"algebra\": {\"family\": \"SkewGentleAlgebra\", \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"family\", \"params\": {\"arrows\": {\"a\": [1, 2]}, \"relations\": [], \"special\": [2], \"vertices\": [1, 2]}}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"He-Zhou-Zhu: the skew-gentle triple (Q,Sp,I), the idempotent specialization eps^2=eps, the split/doubled quiver, and support tau-tilting via the orbifold model -- the primary skew-gentle source.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"HeZhouZhu2020\", \"doi\": null, \"doi_url\": null, \"formatted\": \"He, Ping; Zhou, Yu; Zhu, Bin (). A geometric model for the module category of a skew-gentle algebra. arXiv preprint.\", \"key\": \"he_zhou_zhu\", \"topic\": \"Families\"}, {\"annotation\": \"Chen: the char-free idempotent split construction (sec 3), the selfinjective classification (Sp=empty & gentle selfinjective), the K-theory/dim relation, and Gorensteinness -- the split constructor's binding source, valid in char 2.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Chen2022skewgentle\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Chen, Yiping (). A characteristic free approach to skew-gentle algebras. arXiv preprint.\", \"key\": \"chen_skew_gentle\", \"topic\": \"Families\"}, {\"annotation\": \"Amiot: skew-gentle as Z2-skew-group of a gentle algebra; the orbifold/double-cover geometric model backing the geometric-vs-engine tau-tilting cross-check.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Amiot2021skewgentle\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Amiot, Claire (). Indecomposable objects in the derived category of a skew-gentle algebra using orbifolds. arXiv preprint (ICRA 2020 proceedings).\", \"key\": \"amiot_skew_gentle\", \"topic\": \"Algorithms\"}, {\"annotation\": \"Garcia-Lavoue Thm 3.1 (char != 2): brick-finite <=> rep-finite for skew-gentle -- composed with DIJ (brick-finite <=> tau-tilting-finite) gives the rep-type certificate.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"GarciaLavoue2026\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Garcia, Monica; Lavou'e, L'ea (). Brick-finite skew-gentle algebras are representation-finite. arXiv preprint.\", \"key\": \"garcia_lavoue\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"import quiverlab as ql\\nfrom quiverlab.fields import QQ\\n# built via the webapp family 'SkewGentleAlgebra'; see docs\\nfrom quiverlab.skewgentle import skew_gentle_block\\n# A is the split algebra SkewGentleAlgebra(Q, I, Sp)\\nskew_gentle_block(A)\", \"results\": {\"skew_gentle\": {\"citations\": [[\"HeZhouZhu2020\", \"He, Ping; Zhou, Yu; Zhu, Bin (). A geometric model for the module category of a skew-gentle algebra. arXiv preprint.\"], [\"Chen2022skewgentle\", \"Chen, Yiping (). A characteristic free approach to skew-gentle algebras. arXiv preprint.\"], [\"Amiot2021skewgentle\", \"Amiot, Claire (). Indecomposable objects in the derived category of a skew-gentle algebra using orbifolds. arXiv preprint (ICRA 2020 proceedings).\"], [\"GarciaLavoue2026\", \"Garcia, Monica; Lavou'e, L'ea (). Brick-finite skew-gentle algebras are representation-finite. arXiv preprint.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"classification\": {\"has_bands\": false, \"note\": \"indecomposables and support tau-tilting counted on the characteristic-free split model over QQ (a presentation invariant); decompose / is_isomorphic are rigorous over char 0\", \"num_indecomposables\": 6, \"num_special\": 2, \"status\": \"complete\"}, \"dim_law\": {\"assoc_gentle_dim\": 5, \"ok\": true, \"split_dim\": 5}, \"is_skew_gentle\": true, \"kind\": \"skew_gentle\", \"rank\": 3, \"references\": [\"he_zhou_zhu\", \"chen_skew_gentle\", \"amiot_skew_gentle\", \"garcia_lavoue\", \"assem_book\"], \"rep_type\": {\"rep_finite\": true, \"scope\": \"char!=2\", \"status\": \"complete\"}, \"split\": {\"dim\": 5, \"num_arrows\": 2, \"num_vertices\": 3}, \"tau_tilting\": {\"complete\": true, \"num_pairs\": 14, \"status\": \"complete\"}, \"triple\": {\"arrows\": {\"a\": [1, 2]}, \"relations\": [], \"special\": [2], \"vertices\": [1, 2]}}}}"
+ },
+ "wall_chamber_kA2": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "wall_chamber:512"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Brustle-Smith-Treffinger: the wall D(M) = {theta : M theta-semistable} (Def 3.1-3.3), chambers <-> support tau-tilting pairs (Thm 1.2 / Cor 3.29), one wall = many facets (Rem 3.19) -- the ground truth for Plan 63. NB walls=D(brick) is DIJ, not BST.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"BST2019\", \"doi\": \"10.1016/j.aim.2019.106746\", \"doi_url\": \"https://doi.org/10.1016/j.aim.2019.106746\", \"formatted\": \"Br\\\"ustle, Thomas; Smith, David; Treffinger, Hipolito (2019). Wall and chamber structure for finite-dimensional algebras. Advances in Mathematics 354, 106746.\", \"key\": \"brustle_smith_treffinger\", \"topic\": \"Foundations\"}, {\"annotation\": \"DIJ: tau-tilting-finiteness <=> finite g-fan <=> finitely many bricks; the counting identities and the wall-and-chamber / g-vector fan (Plan 45 / C4).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"DIJ2019\", \"doi\": \"10.1093/imrn/rnx135\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnx135\", \"formatted\": \"Demonet, Laurent; Iyama, Osamu; Jasso, Gustavo (2019). $tau$-tilting finite algebras, bricks, and $g$-vectors. International Mathematics Research Notices 2019, 852-892.\", \"key\": \"demonet_iyama_jasso\", \"topic\": \"Foundations\"}, {\"annotation\": \"Asai: semibricks <-> functorially finite torsion classes <-> support tau-tilting modules (Thm 1.3 / Prop 1.6) -- the brick/semibrick INDEXING that labels walls and chambers (Plan 63). Contains no g-vector/fan/wall/chamber content -- do not cite for the geometry.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Asai2020\", \"doi\": \"10.1093/imrn/rny150\", \"doi_url\": \"https://doi.org/10.1093/imrn/rny150\", \"formatted\": \"Asai, Sota (2020). Semibricks. International Mathematics Research Notices 2020, 4993-5054.\", \"key\": \"asai_semibricks\", \"topic\": \"Foundations\"}, {\"annotation\": \"King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the Plan-45 / C4 engine draws.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"King1994\", \"doi\": \"10.1093/qmath/45.4.515\", \"doi_url\": \"https://doi.org/10.1093/qmath/45.4.515\", \"formatted\": \"King, A. D. (1994). Moduli of representations of finite-dimensional algebras. The Quarterly Journal of Mathematics. Oxford. Second Series 45, 515-530.\", \"key\": \"king_stability\", \"topic\": \"Foundations\"}, {\"annotation\": \"Kaipel-Treffinger: the definition + torsion-class/tau-tilting relationship, with the worked kA2 (Ex 13: D(P1) a ray) and cyclic rad^2-Nakayama N3^2 (Ex 15: 14 chambers) examples -- Plan 63 literature oracles.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"KT2023\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Kaipel, Maximilian; Treffinger, Hipolito (2023). Wall-and-chamber structures for finite-dimensional algebras and $tau$-tilting theory.\", \"key\": \"kaipel_treffinger\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.wall_chamber_structure(budget_pairs=512)\", \"results\": {\"wall_chamber\": {\"chambers\": [{\"g_matrix\": [[1, 0], [0, 1]], \"id\": 0, \"is_initial\": true, \"label\": \"(P1(+)S2,{})\", \"rays\": [[\"1\", \"0\"], [\"0\", \"1\"]], \"support\": []}, {\"g_matrix\": [[0, -1], [1, 0]], \"id\": 1, \"is_initial\": false, \"label\": \"(S2,{1})\", \"rays\": [[\"0\", \"1\"], [\"-1\", \"0\"]], \"support\": [1]}, {\"g_matrix\": [[1, 1], [0, -1]], \"id\": 2, \"is_initial\": false, \"label\": \"(P1(+)S1,{})\", \"rays\": [[\"1\", \"0\"], [\"1\", \"-1\"]], \"support\": []}, {\"g_matrix\": [[-1, 0], [0, -1]], \"id\": 3, \"is_initial\": false, \"label\": \"(0,{1,2})\", \"rays\": [[\"-1\", \"0\"], [\"0\", \"-1\"]], \"support\": [1, 2]}, {\"g_matrix\": [[1, 0], [-1, -1]], \"id\": 4, \"is_initial\": false, \"label\": \"(S1,{2})\", \"rays\": [[\"1\", \"-1\"], [\"0\", \"-1\"]], \"support\": [2]}], \"citations\": [[\"BST2019\", \"Br\\\"ustle, Thomas; Smith, David; Treffinger, Hipolito (2019). Wall and chamber structure for finite-dimensional algebras. Advances in Mathematics 354, 106746.\"], [\"DIJ2019\", \"Demonet, Laurent; Iyama, Osamu; Jasso, Gustavo (2019). $tau$-tilting finite algebras, bricks, and $g$-vectors. International Mathematics Research Notices 2019, 852-892.\"], [\"Asai2020\", \"Asai, Sota (2020). Semibricks. International Mathematics Research Notices 2020, 4993-5054.\"], [\"King1994\", \"King, A. D. (1994). Moduli of representations of finite-dimensional algebras. The Quarterly Journal of Mathematics. Oxford. Second Series 45, 515-530.\"], [\"KT2023\", \"Kaipel, Maximilian; Treffinger, Hipolito (2023). Wall-and-chamber structures for finite-dimensional algebras and $tau$-tilting theory.\"]], \"complete\": true, \"counts\": {\"bricks\": 3, \"chambers\": 5, \"s_tau_tilt\": 5, \"walls\": 3}, \"green_count\": 2, \"kind\": \"wall_chamber\", \"n\": 2, \"num_chambers\": 5, \"num_walls\": 3, \"references\": [\"brustle_smith_treffinger\", \"demonet_iyama_jasso\", \"asai_semibricks\", \"king_stability\", \"kaipel_treffinger\"], \"render\": \"fan2d\", \"status\": \"complete\", \"truncation\": null, \"walls\": [{\"brick_dimvec\": {\"1\": 1, \"2\": 0}, \"brick_name\": \"S1\", \"codim\": 1, \"equality\": [1, 0], \"facets\": [[0, 1], [3, 4]], \"id\": 0, \"inequalities\": [], \"is_full_hyperplane\": true, \"rays\": [[\"0\", \"-1\"], [\"0\", \"1\"]]}, {\"brick_dimvec\": {\"1\": 0, \"2\": 1}, \"brick_name\": \"S2\", \"codim\": 1, \"equality\": [0, 1], \"facets\": [[0, 2], [1, 3]], \"id\": 1, \"inequalities\": [], \"is_full_hyperplane\": true, \"rays\": [[\"1\", \"0\"], [\"-1\", \"0\"]]}, {\"brick_dimvec\": {\"1\": 1, \"2\": 1}, \"brick_name\": \"P1\", \"codim\": 1, \"equality\": [1, 1], \"facets\": [[2, 4]], \"id\": 2, \"inequalities\": [[0, 1]], \"is_full_hyperplane\": false, \"rays\": [[\"1\", \"-1\"]]}]}}}",
+  "canonical_key": "d2656f8c9c210e1755be5eba6258e9f4cfa71822e1c3bb4d2fb7f9d43cf59c81"
+ },
+ "silting_local": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "field": {
+     "kind": "GF",
+     "n": 1,
+     "p": 32003
+    },
+    "kind": "quiver",
+    "relations": [
+     "x*x"
+    ],
+    "vertices": [
+     1
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "silting:2,64"
+   ],
+   "schema": 1
+  },
+  "canonical_key": "3e84622452b312d3ae1fba5940a3de9e98663f4668640ce59c5ea04cccd6389a",
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [\"x*x\"], \"vertices\": [1]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Aihara-Iyama: silting/presilting objects (Hom(T,T[>0])=0 + generation), silting mutation via one approximation triangle, the silting quiver = Hasse quiver, and transitivity for local/hereditary/canonical -- the ground truth for Plan 67.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AiharaIyama2012\", \"doi\": \"10.1112/jlms/jdr055\", \"doi_url\": \"https://doi.org/10.1112/jlms/jdr055\", \"formatted\": \"Aihara, Takuma; Iyama, Osamu (2012). Silting mutation in triangulated categories. Journal of the London Mathematical Society 85, 633-668.\", \"key\": \"aihara_iyama_silting\", \"topic\": \"Foundations\"}, {\"annotation\": \"Oppermann: the quiver of the derived endomorphism ring of a left/right silting mutation -- the End(muT) quiver-mutation rule (Plan 67 oracle).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Oppermann2017\", \"doi\": \"10.1016/j.aim.2016.11.030\", \"doi_url\": \"https://doi.org/10.1016/j.aim.2016.11.030\", \"formatted\": \"Oppermann, Steffen (2017). Quivers for silting mutation. Advances in Mathematics 307, 684-714.\", \"key\": \"oppermann_silting_quivers\", \"topic\": \"Foundations\"}, {\"annotation\": \"Jorgensen's survey: bounded co-t-structures <-> silting subcategories via coheart = add(silting) -- the co-t-structure dictionary reference (Plan 67).\", \"arxiv\": \"1603.09379\", \"arxiv_url\": \"https://arxiv.org/abs/1603.09379\", \"bibtex_key\": \"Jorgensen2016cotstructures\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Jorgensen, Peter (2016). Co-t-structures: the first decade.\", \"key\": \"jorgensen_cotstructures\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x'], field=GF(32003))\\nA.silting_exploration(radius=2, budget=64)\", \"results\": {\"silting\": {\"citations\": [[\"AiharaIyama2012\", \"Aihara, Takuma; Iyama, Osamu (2012). Silting mutation in triangulated categories. Journal of the London Mathematical Society 85, 633-668.\"], [\"Oppermann2017\", \"Oppermann, Steffen (2017). Quivers for silting mutation. Advances in Mathematics 307, 684-714.\"], [\"Jorgensen2016cotstructures\", \"Jorgensen, Peter (2016). Co-t-structures: the first decade.\"]], \"co_t_structure\": {\"aisle\": \"T_M^{<=0} = { X : Hom_{D^b}(T, X[>0]) = 0 }  (AI Def 2.12)\", \"bounded\": true, \"coaisle\": \"^perp(T_M^{<=0})  (AI Prop 2.23(b) torsion pair)\", \"coheart\": [{\"dimvecs\": {\"0\": {\"1\": 2}}}], \"coheart_is_addT\": true, \"references\": [\"aihara_iyama_silting\", \"jorgensen_cotstructures\"]}, \"exploration\": {\"arrows\": [], \"finite_class\": \"local\", \"radius\": 0, \"status\": \"complete\", \"vertices\": [{\"is_initial\": true, \"key\": \"((0, ((1, 2),)),)\", \"silting\": true}]}, \"kind\": \"silting\", \"n\": 1, \"neighbors\": [{\"direction\": \"left\", \"is_silting\": true, \"summand\": 0, \"summand_dimvecs\": [{\"1\": {\"1\": 2}}]}, {\"direction\": \"right\", \"is_silting\": true, \"summand\": 0, \"summand_dimvecs\": [{\"-1\": {\"1\": 2}}]}], \"references\": [\"aihara_iyama_silting\", \"oppermann_silting_quivers\", \"jorgensen_cotstructures\"], \"regular\": {\"det\": 1, \"g_matrix\": [[1]], \"generation_certified_by\": \"tilting (AI Ex 2.2)\", \"is_presilting\": true, \"is_silting\": true, \"k0_basis\": true, \"window\": [1, 0]}, \"scope\": \"silting objects in K^b(proj A) (Aihara-Iyama): presilting is DECIDED on the exact positive window Hom_{D^b}(T, T[n>0]) = 0; generation is three-valued -- True on the tilting / 2-term / local classes, else 'unknown' (det(g_proj) = +-1 in the projective K0 basis is necessary but NOT sufficient; thick subcategories are not K0-classified, Krah phantom). The silting quiver can be INFINITE (kA2 already is) and transitivity is proven only for local / hereditary / canonical (AI Thm 1.2), so the exploration is bounded-radius with a loud status -- certified complete ONLY for local, never a general enumeration. The co-t-structure is a documentation record (coheart add(T)), not a computed subcategory.\"}}}"
+ },
+ "exceptional_sequences_kA3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "GF",
+     "p": 7,
+     "n": 1
+    }
+   },
+   "compute": [
+    "exceptional_sequences:512"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "321e1d4c47e0723a698e8eb0fa6f18bd2b15e5416ed738691b243c1a29c001ce",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Buan-Marsh: signed tau-exceptional sequences via the Jasso tau-perpendicular reduction; bijection with ordered support tau-tilting modules (#signed = n!*#sTt) -- the Plan-65 / R27 count oracle.\", \"arxiv\": \"1802.01169\", \"arxiv_url\": \"https://arxiv.org/abs/1802.01169\", \"bibtex_key\": \"BuanMarsh2021\", \"doi\": \"10.1016/j.jalgebra.2021.05.001\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2021.05.001\", \"formatted\": \"Buan, Aslak Bakke; Marsh, Robert J. (2021). $tau$-exceptional sequences. J. Algebra 585, 36-68.\", \"key\": \"buan_marsh_tau_exceptional\", \"topic\": \"Algorithms\"}, {\"annotation\": \"Crawley-Boevey: the braid group acts transitively on complete exceptional sequences of a hereditary algebra (Ottawa 1992).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"CrawleyBoevey1993\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Crawley-Boevey, William (1993). Exceptional sequences of representations of quivers. Representations of algebras (Ottawa, ON, 1992) 14, 117-124.\", \"key\": \"crawley_boevey_exceptional\", \"topic\": \"Foundations\"}, {\"annotation\": \"Ringel: the braid B_n action on complete exceptional sequences (transitive), with the sigma_i mutation constructions -- the case-(d) two-step module realization. Contemp. Math. 171 (1994).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"RingelBraid1994\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Ringel, Claus Michael (1994). The braid group action on the set of exceptional sequences of a hereditary Artin algebra. Abelian group theory and related topics (Oberwolfach, 1993) 171, 339-352.\", \"key\": \"ringel_braid\", \"topic\": \"Foundations\"}, {\"annotation\": \"Jasso: the tau-perpendicular category J(U) ~ mod C(U), rank n-|U| (the DIJ idempotent quotient) -- the recursion engine for tau-exceptional sequences.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Jasso2015\", \"doi\": \"10.1093/imrn/rnu163\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnu163\", \"formatted\": \"Jasso, Gustavo (2015). Reduction of $tau$-tilting modules and torsion pairs. Int. Math. Res. Not. IMRN, 7190-7237.\", \"key\": \"jasso_reduction\", \"topic\": \"Foundations\"}, {\"annotation\": \"Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the closed-form count oracle.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Obaid2013\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Obaid, Mustafa A. A.; Nauman, S. Khalid; Al-Shammakh, Wafaa S. M.; Fakieh, Wafaa M.; Ringel, Claus Michael (2013). The number of complete exceptional sequences for a Dynkin algebra. Colloq. Math. 133, 197-210.\", \"key\": \"obaid_dynkin_count\", \"topic\": \"Foundations\"}, {\"annotation\": \"Adachi-Iyama-Reiten: support tau-tilting pairs, mutation, the exchange graph, g-vectors, and the bijection with functorially finite torsion classes -- the ground truth for the Plan-45 / C4 tau-tilting engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AIR2014\", \"doi\": \"10.1112/S0010437X13007422\", \"doi_url\": \"https://doi.org/10.1112/S0010437X13007422\", \"formatted\": \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\", \"key\": \"air_tau_tilting\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(7))\\nA.exceptional_sequences(); A.tau_exceptional_sequences(want_sequences=False)\", \"results\": {\"exceptional_sequences\": {\"citations\": [[\"BuanMarsh2021\", \"Buan, Aslak Bakke; Marsh, Robert J. (2021). $tau$-exceptional sequences. J. Algebra 585, 36-68.\"], [\"CrawleyBoevey1993\", \"Crawley-Boevey, William (1993). Exceptional sequences of representations of quivers. Representations of algebras (Ottawa, ON, 1992) 14, 117-124.\"], [\"RingelBraid1994\", \"Ringel, Claus Michael (1994). The braid group action on the set of exceptional sequences of a hereditary Artin algebra. Abelian group theory and related topics (Oberwolfach, 1993) 171, 339-352.\"], [\"Jasso2015\", \"Jasso, Gustavo (2015). Reduction of $tau$-tilting modules and torsion pairs. Int. Math. Res. Not. IMRN, 7190-7237.\"], [\"Obaid2013\", \"Obaid, Mustafa A. A.; Nauman, S. Khalid; Al-Shammakh, Wafaa S. M.; Fakieh, Wafaa M.; Ringel, Claus Michael (2013). The number of complete exceptional sequences for a Dynkin algebra. Colloq. Math. 133, 197-210.\"], [\"AIR2014\", \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"classical\": {\"closed_form_count\": 16, \"complete\": true, \"count\": 16, \"status\": \"complete\", \"transitive\": true}, \"dynkin_type\": \"A_3\", \"hereditary\": true, \"kind\": \"exceptional_sequences\", \"n\": 3, \"note\": null, \"references\": [\"buan_marsh_tau_exceptional\", \"crawley_boevey_exceptional\", \"ringel_braid\", \"jasso_reduction\", \"obaid_dynkin_count\", \"air_tau_tilting\", \"assem_book\"], \"tau\": {\"complete\": true, \"signed_count\": 84, \"status\": \"complete\", \"stt_count\": 14}}}}"
  },
  "congruences_kA2": {
   "body": {

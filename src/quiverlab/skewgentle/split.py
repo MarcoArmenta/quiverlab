@@ -1,0 +1,194 @@
+"""The idempotent-split skew-gentle algebra ``kQ_hat/I_hat`` (Plan 68, Chen 2212.06467
+sec 3; HZZ 2004.11136 Def 1.3 / Rmk 1.4).
+
+The triple's ideal ``<eps^2 - eps>`` is NON-admissible (it contains ``eps`` in
+``rad \\ rad^2``), so we present the split (basic, idempotents refined) algebra instead.
+By HZZ Rmk 1.4, ``{e_j | j not special} ∪ {e_i - eps_i, eps_i | i special}`` is a
+complete set of primitive orthogonal idempotents, so the skew-gentle algebra
+``A = kQ^sp/<I, eps^2 - eps>`` is ISOMORPHIC to the split algebra ``kQ_hat/I_hat``
+obtained by refining those idempotents (Chen sec 3):
+
+* each special vertex ``i`` splits into two copies ``i+, i-``;
+* each ordinary arrow ``a : s -> t`` splits over ``S(s) x S(t)`` (the endpoints'
+  copies), where ``S(v) = {str(v)}`` for an ordinary ``v`` and ``{v+, v-}`` for a
+  special one;
+* the special loops ``eps_i`` become the vertex splitting -- NO arrow;
+* a length-2 path ``a*b`` in ``I`` through an ORDINARY middle vertex lifts to a ZERO
+  relation on each lifted copy; through a SPECIAL middle vertex it lifts to a
+  COMMUTATIVE MESH relation ``ap*pb - am*mb`` identifying the two composites through
+  ``i+`` and ``i-`` (gentleness FORCES ``a*b`` in ``I`` at a special middle vertex).
+
+Per-instance dimension-certified ``dim(split) == dim(associated gentle)`` (HZZ Lemma
+1.5) -- a NECESSARY check.  Characteristic-free (``eps_i, e_i - eps_i`` are orthogonal
+idempotents in every characteristic -- Chen's whole point; char 2 works).  Float-free
+/ exact: the split algebra is a genuine ``kQ/I`` with integer / exact-field data.
+
+All vertex labels are STRINGS (H1): P45's ``exchange_graph`` labels each pair with
+``sorted(pair.support)``, which raises ``TypeError`` on a mix of ``int`` and ``str``
+labels, so an ordinary vertex becomes ``str(v)`` and a special one ``"{v}+"``/``"{v}-"``.
+Arrow copy names are IDENTIFIER-SAFE (W3: ``Quiver`` rejects ``a+``): a source-copy
+prefix (``p``/``m``/``""``) and a target-copy suffix (``p``/``m``/``""``) around the
+original name (``a`` / ``ap`` / ``pa`` / ``pam`` ...)."""
+from __future__ import annotations
+
+from quiverlab.combinat.quiver import Quiver
+from quiverlab.errors import NotFiniteDimensionalError, QuiverlabError
+from quiverlab.skewgentle.triple import (SkewGentleTriple, _relation_tokens,
+                                         associated_gentle)
+
+_CITATIONS = ("he_zhou_zhu", "chen_skew_gentle", "amiot_skew_gentle", "assem_book")
+
+
+def _copies(v, special):
+    """``S(v)``: an ordinary vertex becomes ``str(v)``, a special one ``"{v}+"`` /
+    ``"{v}-"`` -- ALL strings (H1)."""
+    return (f"{v}+", f"{v}-") if v in special else (str(v),)
+
+
+def _prefix(src, sc, special):
+    """The identifier-safe source-copy prefix of an arrow copy."""
+    if src not in special:
+        return ""
+    return "p" if sc.endswith("+") else "m"
+
+
+def _suffix(tgt, tc, special):
+    """The identifier-safe target-copy suffix of an arrow copy."""
+    if tgt not in special:
+        return ""
+    return "p" if tc.endswith("+") else "m"
+
+
+def _copy_name(a, src, tgt, sc, tc, special):
+    """Identifier-safe deterministic name for the copy of arrow ``a`` from source-copy
+    ``sc`` to target-copy ``tc``: ``prefix + a + suffix`` (``a`` / ``ap`` / ``pa`` /
+    ``pam`` ...)."""
+    return f"{_prefix(src, sc, special)}{a}{_suffix(tgt, tc, special)}"
+
+
+def split_quiver(triple):
+    """``(Q_hat, relations, meta)`` -- the Chen sec-3 split (see module docstring).
+
+    ``meta`` records the vertex/arrow split maps for ``modules.py`` and ``block.py``:
+    ``arrow_split[a]`` is the list of ``(copy_name, src_copy, tgt_copy)`` for arrow
+    ``a``; ``vertex_copies[v]`` is ``S(v)``; ``special`` is the sorted special set."""
+    Q, Sp = triple.quiver, triple.special
+
+    verts = []
+    for v in Q.vertices:
+        verts.extend(_copies(v, Sp))
+
+    arrows, arrow_split = {}, {}
+    for a, (s, t) in Q.arrows.items():
+        pieces = []
+        for sc in _copies(s, Sp):
+            for tc in _copies(t, Sp):
+                nm = _copy_name(a, s, t, sc, tc, Sp)
+                if nm in arrows:
+                    raise QuiverlabError(
+                        f"split_quiver: arrow copy name collision {nm!r} "
+                        f"(from arrow {a!r})",
+                        hint="two arrow copies claimed the same identifier -- rename "
+                             "the original arrows to avoid the p/m prefix collision")
+                arrows[nm] = (sc, tc)
+                pieces.append((nm, sc, tc))
+        arrow_split[a] = pieces
+
+    Qhat = Quiver(verts, arrows)
+    rels = _relations(triple, arrow_split)
+    meta = {"arrow_split": arrow_split,
+            "vertex_copies": {v: _copies(v, Sp) for v in Q.vertices},
+            "special": sorted(Sp, key=repr)}
+    return Qhat, rels, meta
+
+
+def _in_ideal_pairs(triple):
+    """The set of ordered length-2 monomial generators ``(a, b)`` of ``I`` (for a
+    monomial ideal generated by length-2 paths, a length-2 path lies in ``I`` iff it is
+    one of these generators)."""
+    pairs = set()
+    for rel in triple.relations:
+        toks = _relation_tokens(rel)
+        if len(toks) == 2:
+            pairs.add((toks[0], toks[1]))
+    return pairs
+
+
+def _relations(triple, arrow_split):
+    """Zero relations (ordinary middle, ``a*b`` in ``I``) + commutative mesh relations
+    (special middle vertex, where gentleness forces ``a*b`` in ``I``)."""
+    Q, Sp = triple.quiver, triple.special
+    in_ideal = _in_ideal_pairs(triple)
+    rels = []
+
+    for a, (asrc, atgt) in Q.arrows.items():
+        for b, (bsrc, btgt) in Q.arrows.items():
+            if atgt != bsrc:                       # a*b must be composable
+                continue
+            m = atgt                               # the middle vertex
+            if m in Sp:
+                # special middle: gentleness forces a*b in I -> commutative mesh.
+                # For each (source copy of a, target copy of b), identify the two
+                # composites through m+ and m-.
+                mp, mm = f"{m}+", f"{m}-"
+                for sc in _copies(asrc, Sp):
+                    for tc in _copies(btgt, Sp):
+                        ap = _copy_name(a, asrc, m, sc, mp, Sp)   # a : sc -> m+
+                        am = _copy_name(a, asrc, m, sc, mm, Sp)   # a : sc -> m-
+                        pb = _copy_name(b, m, btgt, mp, tc, Sp)   # b : m+ -> tc
+                        mb = _copy_name(b, m, btgt, mm, tc, Sp)   # b : m- -> tc
+                        rels.append(f"{ap}*{pb} - {am}*{mb}")
+            elif (a, b) in in_ideal:
+                # ordinary middle, a*b in I -> zero relation on each lifted copy.
+                mstr = str(m)
+                a_copies = [nm for (nm, _sc, tc) in arrow_split[a] if tc == mstr]
+                b_copies = [nm for (nm, sc, _tc) in arrow_split[b] if sc == mstr]
+                for ac in a_copies:
+                    for bc in b_copies:
+                        rels.append(f"{ac}*{bc}")
+    return rels
+
+
+def SkewGentleAlgebra(triple=None, *, quiver=None, relations=(), special=(), field=None):
+    """The idempotent-split skew-gentle algebra ``kQ_hat/I_hat`` (admissible).
+
+    Accepts either a ``SkewGentleTriple`` (positional) or the ``(quiver, relations,
+    special)`` pieces (the GUI path).  VALIDATES the triple first (loud), then:
+
+    * ``Sp = empty`` short-circuits to the plain gentle presentation
+      ``quiver.algebra(relations, field)`` -- BYTE-IDENTICAL to the plain gentle algebra
+      (the strongest self-cert for the no-special case);
+    * otherwise builds the split presentation and CERTIFIES ``dim == dim(associated
+      gentle)`` (HZZ Lemma 1.5, a NECESSARY check; loud ``QuiverlabError`` otherwise).
+
+    Tags ``A._skew_gentle_triple`` / ``A._skew_gentle_meta`` / ``A._family_citations``."""
+    if triple is None:
+        triple = SkewGentleTriple.make(quiver, relations, special)
+    triple.validate()                              # loud on a broken triple
+
+    if not triple.special:                         # Sp = empty: plain gentle, verbatim
+        A = triple.quiver.algebra(relations=list(triple.relations), field=field)
+        A._skew_gentle_triple = triple
+        A._family_citations = ("he_zhou_zhu", "chen_skew_gentle", "assem_book")
+        return A
+
+    Qhat, rels, meta = split_quiver(triple)
+    Ag = associated_gentle(triple, field=field)
+    bound = Ag.loewy_length() + 2
+    try:
+        A = Qhat.algebra(relations=rels, field=field, degree_bound=bound)
+    except NotFiniteDimensionalError:
+        # a genuine skew-gentle algebra IS finite-dimensional; a too-tight bound is the
+        # only honest cause -- widen once to a dimension-safe bound.
+        A = Qhat.algebra(relations=rels, field=field, degree_bound=Ag.dim + 2)
+
+    if A.dim != Ag.dim:                            # HZZ Lemma 1.5 -- NECESSARY check
+        raise QuiverlabError(
+            f"SkewGentleAlgebra: split dim {A.dim} != associated-gentle dim {Ag.dim} "
+            "(HZZ Lemma 1.5) -- the split arrows/relations are wrong",
+            hint="check the Chen sec-3 mesh relations at special middle vertices")
+
+    A._skew_gentle_triple = triple
+    A._skew_gentle_meta = meta
+    A._family_citations = _CITATIONS
+    return A

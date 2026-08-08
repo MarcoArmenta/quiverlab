@@ -29,11 +29,36 @@ def test_structure_constants_off_gfp_refuse():
         B.cup_products(2)
 
 
-def test_bracket_refuses_off_gfp():
+def test_bracket_serves_off_gfp_presented():
+    # Plan 51: a quiver-presented algebra over QQ now gets the CS-native bracket
+    # (the homotopy-lifting route), where Plan 35 raised QuiverlabError.
+    Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
+    A = Q.algebra(relations=["x*x*x"], field=QQ)
+    hb = A.gerstenhaber_brackets(2)
+    assert hb.kind == "bracket"
+    assert hb.basis == "cs/QQ"
+    assert hb.window is None
+    assert hb.engine == "Chouhy-Solotar native diagonal (homotopy lifting)"
+    for t in hb.tables.values():                    # exact-string constants (no floats)
+        for mat in t.constants:
+            for row in mat:
+                assert all(isinstance(c, str) for c in row)
+
+
+def test_bracket_refuses_presentationless_off_gfp():
+    # the CS route needs a presentation; a structure-constants algebra off GF(p) keeps
+    # only its in-window GF(p) transported bracket (DD2 honest gap).
+    B = ql.Algebra.from_structure_constants(
+        [[[1, 0], [0, 1]], [[0, 1], [0, 0]]], unit=[1, 0], field=QQ)
+    with pytest.raises(QuiverlabError):
+        B.gerstenhaber_brackets(2)
+
+
+def test_bracket_engine_bar_off_gfp_refuses():
     Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
     A = Q.algebra(relations=["x*x*x"], field=QQ)
     with pytest.raises(QuiverlabError):
-        A.gerstenhaber_brackets(2)
+        A.gerstenhaber_brackets(2, engine="bar")   # bar tt facade is GF(p)-only
 
 
 def test_unknown_engine_refuses():

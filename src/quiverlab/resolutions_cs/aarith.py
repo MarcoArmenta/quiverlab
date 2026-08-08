@@ -47,3 +47,16 @@ class AArith:
         el, er = self._vertex_idem[left], self._vertex_idem[right]
         return [j for j in range(self.A.dim)
                 if self.A.multiply(el, self.A.multiply(self.A._basis_vec(j), er)) == self.A._basis_vec(j)]
+
+    def corner_M(self, M, o, t, side):
+        """M-basis indices p with m_p in the M-corner (Plan 52): side="hom" ->
+        e_t M e_o; side="coh" -> e_o M e_t. The coefficient's grading, read off its
+        left/right idempotent actions (in A's own basis, which is the AArith basis)."""
+        left, right = (t, o) if side == "hom" else (o, t)
+        el, er = self._vertex_idem[left], self._vertex_idem[right]
+        out = []
+        for p in range(M.dim_M):
+            ep = M._unit_vec(p)
+            if M.right_apply(er, M.left_apply(el, ep)) == ep:   # e_left ▷ m_p ◁ e_right
+                out.append(p)
+        return out

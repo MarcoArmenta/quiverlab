@@ -83,10 +83,11 @@ MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
 _MODULE_TRACE_KINDS = frozenset({
     "projective_resolution", "injective_resolution", "ext", "tau", "tau_minus",
 })
-# HH product surface (Plan 35): cup / cap / bracket / connes_b. Each backs a
-# worked-steps chapter (quiverlab.trace.products) when a products request asks for
-# ``artifacts.pdf`` and no HH/module trace already claimed the bundle.
-PRODUCT_KINDS = frozenset({"cup", "cap", "bracket", "connes_b"})
+# HH product surface (Plan 35): cup / cap / bracket / connes_b, plus the BV operator
+# (Plan 54: bv_operator). Each backs a worked-steps chapter (quiverlab.trace.products)
+# when a products request asks for ``artifacts.pdf`` and no HH/module trace already
+# claimed the bundle.
+PRODUCT_KINDS = frozenset({"cup", "cap", "bracket", "connes_b", "bv_operator"})
 
 # Honest labels for ``meta["pdf"]`` (the request flag is still named ``pdf``; the
 # worked-steps report is now HTML + JSON, PDF/TeX output having been removed).
@@ -197,6 +198,27 @@ class ModuleSpec:
     side: str = "right"
 
 
+# Plan 52: the Hochschild compute kinds that may carry a coefficient bimodule.
+HH_COEFFICIENT_KINDS = frozenset({"hh_cohomology", "hh_homology"})
+
+_COEFFICIENT_BUILTINS = ("regular", "dual", "twisted_nakayama", "quotient_socle")
+
+
+@dataclass(frozen=True)
+class CoefficientBuiltin:
+    kind: str
+
+
+@dataclass(frozen=True)
+class CoefficientSpec:
+    """A Hochschild coefficient A-bimodule (Plan 52, schema v3): a ``builtin`` named
+    bimodule OR the explicit ``dim``/``left_maps``/``right_maps`` form."""
+    builtin: CoefficientBuiltin | None = None
+    dim: int | None = None
+    left_maps: dict | None = None
+    right_maps: dict | None = None
+
+
 @dataclass(frozen=True)
 class HpcConfig:
     checkpoint_dir: str | None = None
@@ -227,6 +249,7 @@ class ComputeRequest:
     hpc: HpcConfig | None
     raw_algebra: dict            # verbatim echo for the result envelope
     algebra_b: Any = None        # wave 2: the SECOND algebra for derived_compare (opt.)
+    coefficients: CoefficientSpec | None = None   # v3 (Plan 52): the M in HH(A, M)
 
 
 # --------------------------------------------------------------------------- #
@@ -255,6 +278,26 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"congruences budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
+    # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or
+    # 'wall_chamber:512' -- the exchange-graph pair budget, not a degree range.
+    if s == "wall_chamber" or s.startswith("wall_chamber:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"wall_chamber budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="wall_chamber", lo=None, hi=(int(b) if b else None))
+    # silting carries a RADIUS,BUDGET pair (Plan 67), not a degree range: 'silting' or
+    # 'silting:3,64'. lo = exploration radius, hi = vertex budget (None => defaults). Both
+    # are enumeration bounds, not homological degrees, so this bypasses the degree grammar.
+    if s == "silting" or s.startswith("silting:"):
+        _, _, rb = s.partition(":")
+        radius = budget = None
+        if rb:
+            parts = rb.split(",")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise SpecError("silting suffix must be 'radius,budget' with positive "
+                                f"integers (got {s!r})")
+            radius, budget = int(parts[0]), int(parts[1])
+        return ComputeItem(kind="silting", lo=radius, hi=budget)
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget caps the knitted indecomposable universe -- not a
     # homological degree -- so it bypasses the 'name:0..N' grammar (like tau_tilting).
@@ -263,6 +306,61 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
+    # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget caps the classical
+    # tuple search / the tau-tilting exchange graph -- not a homological degree -- so it
+    # bypasses the 'name:0..N' grammar (like tau_tilting / ar_quiver).
+    if s == "exceptional_sequences" or s.startswith("exceptional_sequences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(
+                f"exceptional_sequences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="exceptional_sequences", lo=None,
+                           hi=(int(b) if b else None))
+    # radical_filtration + ar_invariants (Plan 57) are ALGEBRA kinds carrying a MODULE
+    # BUDGET, not a degree range (parsed like ar_quiver): 'radical_filtration' /
+    # 'radical_filtration:512' (and likewise ar_invariants). The budget caps the
+    # knitted indecomposable universe, so it bypasses the 'name:0..N' degree grammar.
+    # NOTE: 'radical_filtration' (the module-category radical rad^n(X,Y)) is DISTINCT
+    # from 'radical_filtration_ss' (the Loewy radical-series spectral sequence).
+    for _kind in ("radical_filtration", "ar_invariants"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SpecError(
+                    f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
+    # left_right_parts carries a MODULE BUDGET, not a degree range (Plan 55): the budget
+    # caps the knitted indecomposable universe, so it bypasses the 'name:0..N' grammar too.
+    if s == "left_right_parts" or s.startswith("left_right_parts:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"left_right_parts budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="left_right_parts", lo=None, hi=(int(b) if b else None))
+    # tilted_check (Plan 60) is an ALGEBRA kind carrying the KNIT budget (budget_modules), not a
+    # degree range: 'tilted_check' / 'tilted_check:256'. The transversal cap budget_sections is
+    # an internal knob (default 4096), not exposed via the compute string.
+    if s == "tilted_check" or s.startswith("tilted_check:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"tilted_check budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tilted_check", lo=None, hi=(int(b) if b else None))
+    # recognizer_ladder (Plan 61) is an ALGEBRA kind carrying a MODULE BUDGET (parsed like
+    # left_right_parts): 'recognizer_ladder' / 'recognizer_ladder:256'. Not a homological
+    # degree, so it bypasses the 'name:0..N' grammar.
+    if s == "recognizer_ladder" or s.startswith("recognizer_ladder:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"recognizer_ladder budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="recognizer_ladder", lo=None, hi=(int(b) if b else None))
+    # skew_gentle carries a tau-tilting PAIR BUDGET, not a degree range (Plan 68):
+    # 'skew_gentle' or 'skew_gentle:512'. hi = the budget (None => default). Bypasses the
+    # 'name:0..N' degree grammar (like tau_tilting).
+    if s == "skew_gentle" or s.startswith("skew_gentle:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"skew_gentle budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_gentle", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -333,7 +431,8 @@ def resolve_references(keys) -> list:
 def _iter_families():
     for info in ql.families():
         name = info.name
-        if name in ("zoo", "BrauerGraphAlgebra"):   # non-scalar constructors
+        if name in ("zoo", "BrauerGraphAlgebra", "ToupieAlgebra",
+                    "SkewGentleAlgebra"):                            # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -476,6 +575,53 @@ def _lift_builtin_side(data: dict) -> dict:
                 raise SpecError(f"conflicting side: builtin.side={inner!r} vs side={outer!r}")
             data = {**data, "builtin": b, "side": inner}
     return data
+
+
+def _parse_coefficients(data) -> CoefficientSpec:
+    """Validate a Hochschild coefficient block (Plan 52). ``builtin`` names a library
+    bimodule; the explicit form is ``dim`` + ``left_maps`` + ``right_maps`` (one
+    exact-entry matrix per generator per side). Mirrors schema.py::CoefficientSpec."""
+    if not isinstance(data, dict):
+        raise SpecError("coefficients must be an object")
+    builtin = data.get("builtin")
+    dim = data.get("dim")
+    left_maps = data.get("left_maps")
+    right_maps = data.get("right_maps")
+    if builtin is not None:
+        if dim is not None or left_maps is not None or right_maps is not None:
+            raise SpecError("coefficients: give either a 'builtin' pick-list OR "
+                            "'dim'+'left_maps'+'right_maps', not both")
+        if not isinstance(builtin, dict):
+            raise SpecError("coefficients.builtin must be an object")
+        bkind = builtin.get("kind")
+        if bkind not in _COEFFICIENT_BUILTINS:
+            raise SpecError(f"coefficients.builtin.kind must be one of {_COEFFICIENT_BUILTINS}")
+        return CoefficientSpec(builtin=CoefficientBuiltin(bkind))
+    if dim is None or left_maps is None or right_maps is None:
+        raise SpecError("coefficients: needs a 'builtin' pick-list OR the explicit "
+                        "'dim' + 'left_maps' + 'right_maps'")
+    if not isinstance(dim, int) or isinstance(dim, bool) or dim < 0:
+        raise SpecError("coefficients: 'dim' must be a non-negative integer")
+    for name, maps in (("left_maps", left_maps), ("right_maps", right_maps)):
+        if not isinstance(maps, dict):
+            raise SpecError(f"coefficients.{name} must be an object mapping generator -> matrix")
+        for arrow, mat in maps.items():
+            if not isinstance(mat, list):
+                raise SpecError(f"coefficients {name}[{arrow!r}] must be a matrix")
+            width = None
+            for row in mat:
+                if not isinstance(row, list):
+                    raise SpecError(f"coefficients {name}[{arrow!r}] must be a matrix (list of rows)")
+                if width is None:
+                    width = len(row)
+                elif len(row) != width:
+                    raise SpecError(f"coefficients {name}[{arrow!r}] is not rectangular")
+                for x in row:
+                    if not _valid_entry(x):
+                        raise SpecError(
+                            f"coefficients {name}[{arrow!r}] has a non-exact entry {x!r}; "
+                            "entries must be integers or exact strings like '1/2' (never floats)")
+    return CoefficientSpec(dim=int(dim), left_maps=dict(left_maps), right_maps=dict(right_maps))
 
 
 def _parse_module(data, what: str, max_total_dim: int | None = _MAX_MODULE_DIM) -> ModuleSpec:
@@ -640,8 +786,8 @@ def parse_request(data) -> ComputeRequest:
     if not isinstance(data, dict):
         raise SpecError("request must be a mapping (object)")
     schema_version = data.get("schema", 1)
-    if schema_version not in (1, 2):
-        raise SpecError(f"unsupported schema version {schema_version}; this tool speaks v1/v2")
+    if schema_version not in (1, 2, 3):
+        raise SpecError(f"unsupported schema version {schema_version}; this tool speaks v1/v2/v3")
     if "algebra" not in data:
         raise SpecError("request needs an 'algebra' block")
     algebra = _parse_algebra(data["algebra"])
@@ -667,9 +813,18 @@ def parse_request(data) -> ComputeRequest:
     tor_target = _parse_tor_target(data.get("tor_target"), module_cap)
 
     if (module is not None or ext_target is not None or tor_target is not None) \
-            and schema_version != 2:
-        raise SpecError("a 'module'/'ext_target'/'tor_target' block requires schema 2")
+            and schema_version < 2:
+        raise SpecError("a 'module'/'ext_target'/'tor_target' block requires schema >= 2")
+    coefficients = (_parse_coefficients(data["coefficients"])
+                    if data.get("coefficients") is not None else None)
     kinds = {it.kind for it in items}
+    if coefficients is not None:
+        if schema_version < 3:
+            raise SpecError("a 'coefficients' block requires schema 3")
+        bad = sorted(kinds - HH_COEFFICIENT_KINDS)
+        if bad:
+            raise SpecError("a 'coefficients' block only applies to Hochschild kinds "
+                            f"(hh_cohomology / hh_homology); got {bad}")
     if kinds & MODULE_KINDS and module is None:
         need = sorted(kinds & MODULE_KINDS)
         raise SpecError(f"module compute kind(s) {need} require a 'module' block")
@@ -696,7 +851,8 @@ def parse_request(data) -> ComputeRequest:
                           compute=list(compute), artifacts=artifacts,
                           module=module, ext_target=ext_target,
                           tor_target=tor_target, hpc=hpc,
-                          raw_algebra=data["algebra"], algebra_b=algebra_b)
+                          raw_algebra=data["algebra"], algebra_b=algebra_b,
+                          coefficients=coefficients)
 
 
 # --------------------------------------------------------------------------- #
@@ -789,6 +945,7 @@ _SYNTHETIC_FAMILY_PARAMS = {
     "CornerAlgebra": {"base", "vertices"},
     "OppositeAlgebra": {"base"},
     "MarkedSurface": {"preset"},
+    "SkewGentleAlgebra": {"vertices", "arrows", "relations", "special"},
 }
 
 _SURFACE_PRESETS = ("disc_fan_A3", "annulus_C22", "hexagon_internal")
@@ -909,12 +1066,73 @@ def _build_synthetic(spec):
         return _build_marked_surface(params.get("preset"), field)
     if name == "BrauerGraphAlgebra":
         return _build_brauer(params, field)
+    if name == "SkewGentleAlgebra":
+        return _build_skew_gentle(params, field)
     raise ComputeError("CatalogError", f"no synthetic builder for {name!r}")
+
+
+def _build_skew_gentle(params, field):
+    """SkewGentleAlgebra from flattened triple params: ``vertices`` (list of vertex
+    integers), ``arrows`` (``{name: [source, target]}``), ``relations`` (length-2
+    monomial strings), and ``special`` (the Sp vertex list).  Routes to the split
+    constructor, which validates the triple + certifies the dim law (loud
+    ``QuiverlabError`` propagates as a clean error)."""
+    verts_p = params.get("vertices")
+    if not (isinstance(verts_p, list) and verts_p
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in verts_p)):
+        raise ComputeError(
+            "CatalogError",
+            "SkewGentleAlgebra.vertices must be a non-empty list of vertex integers, "
+            "e.g. [1, 2]")
+    arrows_p = params.get("arrows") or {}
+    if not isinstance(arrows_p, dict):
+        raise ComputeError(
+            "CatalogError",
+            "SkewGentleAlgebra.arrows must map names to [source, target] pairs, "
+            "e.g. {\"a\": [1, 2]}")
+    arrows = {}
+    for nm, st in arrows_p.items():
+        if not (isinstance(st, (list, tuple)) and len(st) == 2
+                and all(isinstance(x, int) and not isinstance(x, bool) for x in st)):
+            raise ComputeError(
+                "CatalogError",
+                "SkewGentleAlgebra.arrows must map names to [source, target] pairs")
+        arrows[nm] = (st[0], st[1])
+    rels_p = params.get("relations", [])
+    if not (isinstance(rels_p, list) and all(isinstance(r, str) for r in rels_p)):
+        raise ComputeError("CatalogError",
+                           "SkewGentleAlgebra.relations must be a list of strings")
+    special_p = params.get("special", [])
+    if not (isinstance(special_p, list)
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in special_p)):
+        raise ComputeError(
+            "CatalogError",
+            "SkewGentleAlgebra.special must be a list of vertex integers (the special "
+            "vertices Sp), e.g. [2]")
+    from quiverlab.skewgentle.split import SkewGentleAlgebra as _SGA
+    return _SGA(quiver=ql.Quiver(vertices=list(verts_p), arrows=arrows),
+                relations=list(rels_p), special=set(special_p), field=field)
 
 
 # --------------------------------------------------------------------------- #
 # Top-level entry point (ported from runner.run_spec, byte-stable)
 # --------------------------------------------------------------------------- #
+
+def _build_coefficient(A, spec):
+    """Build the library :class:`quiverlab.hochschild.coefficients.Bimodule` from a
+    validated CoefficientSpec (Plan 52). Its own loud QuiverlabErrors (not Frobenius,
+    non-path-type, relation-violating actions, floats) propagate as clean 4xx."""
+    from quiverlab.hochschild.coefficients import Bimodule
+    if spec.builtin is not None:
+        kind = spec.builtin.kind
+        return {
+            "regular": Bimodule.regular,
+            "dual": Bimodule.dual,
+            "twisted_nakayama": Bimodule.twisted_by_nakayama,
+            "quotient_socle": Bimodule.mod_socle,
+        }[kind](A)
+    return Bimodule.from_actions(A, spec.dim, spec.left_maps, spec.right_maps)
+
 
 def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
         result_max_bytes: int | None = None, *, result_schema: int | None = None,
@@ -961,6 +1179,8 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
             ql.verbose = False
         try:
             A = build_algebra(req.algebra)
+            if req.coefficients is not None:      # Plan 52: HH(A, M) coefficient bimodule
+                hh_kwargs = {**hh_kwargs, "coefficients": _build_coefficient(A, req.coefficients)}
             M = (_build_module(A, req.module, "M")
                  if any(it.kind in MODULE_KINDS for it in items) else None)
             # ext/tor CONSUME their target, so those items build it unconditionally
@@ -1271,7 +1491,8 @@ def _product_object(A, kind, top):
     inputs (``A``, ``kind``, ``top``); the report re-derives, it does not cache."""
     method = {"cup": A.cup_products, "cap": A.cap_products,
               "bracket": A.gerstenhaber_brackets,
-              "connes_b": A.connes_differentials}[kind]
+              "connes_b": A.connes_differentials,
+              "bv_operator": A.bv_operator}[kind]
     return method(top)
 
 
@@ -1349,6 +1570,7 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
                                f"{kind} needs a degree range, e.g. '{kind}:0..4'")
         method = (A.hochschild_cohomology if kind == "hh_cohomology"
                   else A.hochschild_homology)
+        coeff = hh_kwargs.get("coefficients")     # Plan 52 (None = regular bimodule)
         table = method(top, verbose=False, trace=events, **hh_kwargs)
         keys = list(table.references)
         # Credit the resolution that actually computed the table: the engine
@@ -1358,16 +1580,22 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         for marker, ckey in (("chouhy", "chouhy_solotar"), ("bardzell", "bardzell")):
             if marker in eng and ckey not in keys:
                 keys.append(ckey)
+        if coeff is not None:                     # Plan 52 coefficient provenance
+            for ckey in ("chaparro_schroll_solotar", "lindell_rubio_relative"):
+                if ckey not in keys:
+                    keys.append(ckey)
         block = {"kind": table.kind, "top": top, "dims": list(table.dims),
                  "engine": table.engine, "references": keys,
                  "citations": _citation_pairs(keys)}
+        if coeff is not None:
+            block["coefficients"] = coeff.describe()
         # Plan 35 wave 3d: capture the explicit HH^n / HH_n representatives alongside the
         # dims (basis_classes / chain_basis / differentials / inner_dims per degree),
         # from the SAME dims path (GF(p) bar or Chouhy-Solotar). Additive block fields;
         # None (dims-only) when no representative route applies. Byte-identical Pyodide
         # twin (docs/gui/runner.py). The reader can read off HH^0's centre, HH^1's
         # derivations, HH^2's deformation cochain, HH_0's commutator residues.
-        if capture_reps:                       # skipped by the instant tier (report-only
+        if capture_reps and coeff is None:     # reps are for the regular bimodule only
             from quiverlab.hochschild.hh_reps import hh_reps_blocks
             try:                               # data + a cold-JIT cost over its wall net)
                 reps = hh_reps_blocks(A, kind, top, list(table.dims), table.engine)
@@ -1455,6 +1683,21 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
                     "citations": _citation_pairs(keys)}, None
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Wall-and-chamber structure via bricks (Plan 63 / R25): an ALGEBRA-level kind
+    # carrying a PAIR BUDGET, parsed like tau_tilting. Walls D(B) as exact inequality
+    # systems + chambers = g-cones; certified complete iff brick-finite <=> tau-tilting-
+    # finite (DIJ), else an honest bounded region (status='budget', no count). Both runners
+    # share tautilting.wallchamber.wall_chamber_structure, so the blocks are byte-identical.
+    # The brick / is_isomorphic char caveat is caught into an `error` field (never a 500).
+    if kind == "wall_chamber":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.wallchamber import wall_chamber_structure
+        try:
+            block = wall_chamber_structure(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "wall_chamber", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # AR quiver (P41, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
     # degree range ('ar_quiver' / 'ar_quiver:512', parsed like tau_tilting). Honest
     # semi-decision -- complete iff rep-finite, else status='budget' (partial, labelled)
@@ -1464,6 +1707,79 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         budget = item.hi if item.hi is not None else 512
         from quiverlab.modules.ar import ar_quiver_block
         block = ar_quiver_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Exceptional sequences (Plan 65 / R27+R28): an ALGEBRA-level kind carrying an
+    # ENUMERATION BUDGET, not a degree range (parsed like tau_tilting / ar_quiver). One
+    # shared block dispatches BOTH halves -- classical hereditary (braid-orbit counts) and
+    # tau-exceptional (n!*#sTt), each honest about applicability; a presentation-less
+    # refusal is caught into an `error` field, never a 500. Both runners share
+    # tautilting.exceptional.exceptional_sequences_block, so the blocks are byte-identical.
+    if kind == "exceptional_sequences":
+        budget = item.hi if item.hi is not None else 4096   # sane DoS cap (Plan 65 H-3)
+        from quiverlab.tautilting.exceptional import exceptional_sequences_block
+        block = exceptional_sequences_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
+    # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET kind
+    # like ar_quiver. Both runners share modules.radical.radical_filtration_block, so
+    # the blocks are byte-identical. A char-scope refusal is caught into an `error`
+    # field, never a 500. NOTE: distinct from radical_filtration_ss (the Loewy
+    # radical-series spectral sequence, a DIFFERENT object).
+    if kind == "radical_filtration":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.modules.radical import radical_filtration_block
+        try:
+            block = radical_filtration_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "radical_filtration", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
+    # The AR-component invariants (Plan 57 / R21): Liu degrees, partition, directing,
+    # rep-directed recognizer. Same BUDGET-kind contract + shared library builder
+    # (modules.ar_invariants.ar_invariants_block); byte-identical twin.
+    if kind == "ar_invariants":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.modules.ar_invariants import ar_invariants_block
+        try:
+            block = ar_invariants_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "ar_invariants", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
+    # Left/right parts (P55, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
+    # degree range ('left_right_parts' / 'left_right_parts:256'). The module-category atlas --
+    # both parts + complement + Ext-injectives + the two support algebras. Honest
+    # semi-decision (complete iff rep-finite non-self-injective, else status='budget'/
+    # 'unsupported'); a char-scope identification refusal is an `error` field, never a 500.
+    # Both runners share left_right.left_right_parts_block, so the blocks are byte-identical.
+    if kind == "left_right_parts":
+        budget = item.hi if item.hi is not None else 256
+        from quiverlab.modules.left_right import left_right_parts_block
+        block = left_right_parts_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Tilted-algebra recognizer (Plan 60): an ALGEBRA-level kind carrying the KNIT budget
+    # (budget_modules); budget_sections keeps its internal default 4096. Verdict + slice +
+    # hereditary type + Ringel reconstruction. Honest semi-decision; a char-scope
+    # (presented_form / is_isomorphic) refusal is an `error` field, never a 500. Both runners
+    # share modules.tilted.tilted_check_block, so the blocks are byte-identical.
+    if kind == "tilted_check":
+        budget = item.hi if item.hi is not None else 256
+        from quiverlab.modules.tilted import tilted_check_block
+        block = tilted_check_block(A, budget_modules=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # The recognizer ladder (P61, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not
+    # a degree range ('recognizer_ladder' / 'recognizer_ladder:256'). Five witnessed/certified
+    # rungs (quasi-tilted/shod/weakly-shod/laura/ada), the laura complement, and the ada/HH^1
+    # simple-connectedness block. Honest semi-decision (complete iff rep-finite
+    # non-self-injective); a char-scope identification refusal is an `error` field, never a 500.
+    # Both runners share recognizers_ladder.recognizer_ladder_block, byte-identical.
+    if kind == "recognizer_ladder":
+        budget = item.hi if item.hi is not None else 256
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder_block
+        block = recognizer_ladder_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
@@ -1495,6 +1811,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = homological_profile(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Fractional Calabi-Yau dimension of the stable category (Plan 53 / R24): an
+    # ALGEBRA-level scalar kind (schema v1, NO module block -- the homological_profile
+    # precedent). One shared library builder (modules.fractional_cy.fractional_cy_block)
+    # drives BOTH this runner and the Pyodide twin (docs/gui/runner.py), byte-identical;
+    # a non-self-injective input is caught INSIDE the builder into {"error": ...} (a clean
+    # typed error entry, never a 500). The `tier` is always "weak-on-generators".
+    if kind == "fractional_cy":
+        from quiverlab.modules.fractional_cy import fractional_cy_block
+        block = fractional_cy_block(A)
+        if "references" in block:              # absent on the error-entry shape
+            block["citations"] = _citation_pairs(block["references"])
+        return block, None
     if kind == "center":
         dim_z, basis = A.center()
         keys = ["bar"]                     # Z(A) = HH^0(A) -- Hochschild's paper
@@ -1524,6 +1852,25 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = derived_fingerprint_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Silting theory (Plan 67 / Aihara-Iyama): an ALGEBRA-level kind carrying a
+    # RADIUS,BUDGET pair (parsed like tau_tilting's budget). Verifier verdict on the
+    # regular object + single-mutation neighbours + a bounded-radius exploration (loud
+    # status, complete only for local) + the co-t-structure record. Both runners share
+    # derived.block.silting_block, so the blocks are byte-identical. A QuiverlabError
+    # refusal (the char-scope / presentation / verifier-edge path) is caught into an
+    # `error` field; a non-QuiverlabError bug is NOT swallowed here -- it surfaces loudly
+    # (the fail-fast house rule), so this narrows to "the typed refusals never 500", not
+    # "never a 500".
+    if kind == "silting":
+        radius = item.lo if item.lo is not None else 3
+        budget = item.hi if item.hi is not None else 64
+        from quiverlab.derived.block import silting_block
+        try:
+            block = silting_block(A, radius=radius, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "silting", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # Derived-fingerprint COMPARISON of two algebras (P43 compare_fingerprints, wave 2):
     # a scalar kind needing the second algebra B (parse_request required algebra_b, and
     # run() built it into B). The verdict is HONEST -- "distinguished by <field>" /
@@ -1543,6 +1890,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     if kind == "recognizers":
         from quiverlab.invariants.recognizers import recognizers_block
         block = recognizers_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Certified Coxeter spectral analysis (Plan 58 / R20): an algebra-scalar kind
+    # (schema v1, NO module block -- the recognizers/derived_fingerprint precedent):
+    # exact ZZ[x] cyclotomic factorization with Phi_n labels, cyclotomic /
+    # quasi-unipotent verdict + finite Coxeter order, outside-unit-circle count, and
+    # rho / M as CERTIFIED ALGEBRAIC NUMBERS (or a per-field loud refusal). Shared
+    # builder (invariants.coxeter_spectral.coxeter_spectral_block) drives both runners
+    # byte-identically.
+    if kind == "coxeter_spectral":
+        from quiverlab.invariants.coxeter_spectral import coxeter_spectral_block
+        block = coxeter_spectral_block(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Quasi-hereditary structure (Plan 47): an algebra-scalar kind (schema v1, NO module
@@ -1566,17 +1925,72 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     # (kind/top/engine/basis/tables/window or hh_dims/matrices/ranks + references);
     # the only addition here is the resolved citation pairs, exactly as the other
     # kinds do above. No hh_trace (products are their own tables, not an HH run).
-    if kind in ("cup", "cap", "bracket", "connes_b"):
+    if kind in ("cup", "cap", "bracket", "connes_b", "bv_operator"):
         top = item.hi
         if top is None:
             raise ComputeError("SchemaError",
                                f"{kind} needs a degree range, e.g. '{kind}:0..4'")
         method = {"cup": A.cup_products, "cap": A.cap_products,
                   "bracket": A.gerstenhaber_brackets,
-                  "connes_b": A.connes_differentials}[kind]
+                  "connes_b": A.connes_differentials,
+                  "bv_operator": A.bv_operator}[kind]
         block = method(top).blocks()
         keys = list(block["references"])
         block["citations"] = _citation_pairs(keys)
+        return block, None
+    # Homological string-algebra test (Plan 59 / R34): an algebra-only scalar kind
+    # (Suarez-Alvarez). Shared builder (string_homological.string_homological_block);
+    # a rep-infinite / self-injective / presentation-less input -> {"error": ...},
+    # never a 500 (the recognizers-block per-flag precedent). Byte-identical twin.
+    if kind == "string_homological":
+        from quiverlab.modules.string_homological import string_homological_block
+        block = string_homological_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Toupie structure (Plan 59 / R35): an algebra-only scalar kind. Shared builder
+    # (families.toupie.toupie_block): recognizer + branch/direct-arrow counts + HH
+    # (engine="cs",auto_cs) + the char-0 sl_a lower bound. A non-toupie / presentation-
+    # less input returns a labelled block, never a 500. Byte-identical twin.
+    if kind == "toupie":
+        from quiverlab.families.toupie import toupie_block
+        block = toupie_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Skew-gentle world (Plan 68 / R32): an algebra-scalar kind driven by the TRIPLE
+    # carried on the split algebra (A._skew_gentle_triple). Shared builder
+    # (skewgentle.block.skew_gentle_block): recognizer verdict + split shape + dim law
+    # (HZZ Lemma 1.5) + special-string classification counts + support tau-tilting +
+    # brick-finite <=> rep-finite certificate. A bare algebra without the marker reports
+    # is_skew_gentle=False + a note, never a 500. Byte-identical twin (docs/gui/runner.py).
+    if kind == "skew_gentle":
+        from quiverlab.skewgentle.block import skew_gentle_block
+        block = skew_gentle_block(A, budget=(item.hi or 512))
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # pi1(Q, I) + simple connectivity (Plan 56): algebra-scalar kinds (schema v1, NO
+    # module block -- the recognizers/strings precedent). Shared builders drive both
+    # runners byte-identically; the simply_connected kind carries the R16 strongly-
+    # simply-connected certificate (the P62 consumable).
+    if kind == "fundamental_group":
+        from quiverlab.invariants.coverings_block import fundamental_group_block
+        block = fundamental_group_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    if kind == "simply_connected":
+        from quiverlab.invariants.coverings_block import simply_connected_block
+        block = simply_connected_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Tits-form tame/wild certificate (Plan 62 / R19): an algebra-scalar kind (schema
+    # v1, NO module block -- the coverings/recognizers precedent). Shared builder
+    # (invariants.tits_block.tame_wild_block): the combinatorial Tits form + weak
+    # positivity/nonnegativity + the rep-finite/tame/wild verdict gated on the P56
+    # certificate over char 0. A presentation-less / non-triangular input -> {"error":
+    # ...}, never a 500. Byte-identical twin.
+    if kind == "tame_wild":
+        from quiverlab.invariants.tits_block import tame_wild_block
+        block = tame_wild_block(A)
+        block["citations"] = _citation_pairs(block["references"])
         return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
 
@@ -2306,6 +2720,21 @@ def _snippet(req: ComputeRequest, A) -> str:
              "ar_quiver":
                  lambda it: ("A.ar_quiver(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
+             "radical_filtration":
+                 lambda it: ("A.radical_filtration(budget_modules="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "ar_invariants":
+                 lambda it: ("A.ar_invariants(budget_modules="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "left_right_parts":
+                 lambda it: ("A.left_right_parts("
+                             f"budget={it.hi if it.hi is not None else 256})"),
+             "tilted_check":
+                 lambda it: ("A.tilted_check(budget_modules="
+                             f"{it.hi if it.hi is not None else 256})"),
+             "recognizer_ladder":
+                 lambda it: ("A.recognizer_ladder("
+                             f"budget={it.hi if it.hi is not None else 256})"),
              "derived_compare":
                  lambda it: ("from quiverlab.derived import compare_fingerprints, "
                              "derived_fingerprint\n"
@@ -2314,11 +2743,14 @@ def _snippet(req: ComputeRequest, A) -> str:
                              f"{it.hi if it.hi is not None else 4}), "
                              f"derived_fingerprint(B, {it.hi if it.hi is not None else 4}))"),
              "coxeter_polynomial": lambda it: "A.coxeter_polynomial()",
+             "coxeter_spectral": lambda it: "A.coxeter_spectral()",
              "cartan": lambda it: "A.cartan_matrix()",
              "global_dimension": lambda it: "A.global_dimension()",
              "homological_profile": lambda it: ("A.global_dimension(), "
                  "A.finitistic_dimension_bounds(), A.dominant_dimension(), "
-                 "A.gorenstein_dimension()"),
+                 "A.gorenstein_dimension(), A.phi_dim(), A.psi_dim(), "
+                 "A.phi_spectrum(), A.finitistic_certificate()"),
+             "fractional_cy": lambda it: "A.fractional_calabi_yau_dimension()",
              "center": lambda it: "A.center()",
              "dimension": lambda it: "A.dim",
              "ext_algebra":
@@ -2327,6 +2759,8 @@ def _snippet(req: ComputeRequest, A) -> str:
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),
              "quasi_hereditary": lambda it: "A.is_quasi_hereditary()",
+             "fundamental_group": lambda it: "A.fundamental_group()",
+             "simply_connected": lambda it: "A.is_simply_connected()",
              "derived_fingerprint":
                  lambda it: ("from quiverlab.derived import derived_fingerprint; "
                              f"derived_fingerprint(A, {it.hi if it.hi is not None else 4})"),
@@ -2335,16 +2769,37 @@ def _snippet(req: ComputeRequest, A) -> str:
                                     "from quiverlab.strings.ag import ag_invariant\n"
                                     "enumerate_strings(A), find_bands(A), "
                                     "ag_invariant(A)"),
+             "string_homological":
+                 lambda it: ("from quiverlab.modules.string_homological import "
+                             "homological_string_test\nhomological_string_test(A)"),
+             "toupie": lambda it: ("from quiverlab.families.toupie import is_toupie, "
+                                   "toupie_block\nis_toupie(A), toupie_block(A)"),
+             "tame_wild": lambda it: "A.tame_wild_certificate()",
+             "skew_gentle": lambda it: (
+                 "from quiverlab.skewgentle import skew_gentle_block\n"
+                 "# A is the split algebra SkewGentleAlgebra(Q, I, Sp)\n"
+                 "skew_gentle_block(A)"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
              "connes_b": lambda it: f"A.connes_differentials({it.hi})",
+             "bv_operator": lambda it: f"A.bv_operator({it.hi})",
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
              "congruences":
                  lambda it: ("A.congruence_lattice(budget="
                              f"{it.hi if it.hi is not None else 512})"),
+             "wall_chamber":
+                 lambda it: ("A.wall_chamber_structure(budget_pairs="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "silting":
+                 lambda it: ("A.silting_exploration(radius="
+                             f"{it.lo if it.lo is not None else 3}, "
+                             f"budget={it.hi if it.hi is not None else 64})"),
+             "exceptional_sequences":
+                 lambda it: ("A.exceptional_sequences(); A.tau_exceptional_sequences("
+                             "want_sequences=False)"),
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
              "tau": lambda it: "M.tau()",

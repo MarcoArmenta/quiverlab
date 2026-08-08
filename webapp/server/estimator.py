@@ -72,7 +72,25 @@ def _max_degree(req: ComputeRequest) -> int:
         # ar_quiver/tau_tilting budget can be mislabelled "instant" even though the knit
         # may run long before it hits the budget cap. The wall-clock/memory caps still
         # bound it once running; a budget-aware sizing heuristic is the open backlog fix.
-        if item.kind in ("tau_tilting", "ar_quiver", "congruences"):
+        # SAME limitation for the Plan-59 `string_homological` kind: it KNITS the AR
+        # quiver identically (measured >7 min churn at the default knit budget on the
+        # small rep-INFINITE 2-Kronecker), yet it is a scalar kind with no budget in
+        # `hi`, so it is sized purely on the algebra dimension (below) -- a small
+        # rep-infinite algebra can likewise be mislabelled "instant" until the
+        # wall-clock cap bounds the knit. (`toupie` is a small HH + graph scan, not
+        # knit-heavy, so it is not in this caveat.)
+        # wall_chamber's `hi` is a PAIR BUDGET too (Plan 63), sized on sizing_dim like
+        # tau_tilting -- not a degree.
+        # Plan 60: `tilted_check` is likewise knit-heavy with a MODULE budget in `hi`.
+        # Plan 61: `recognizer_ladder` carries a MODULE BUDGET too (not a degree), so it
+        # joins the skip tuple beside left_right_parts.
+        # Plan 67: `silting` carries a RADIUS,BUDGET pair in (lo, hi) -- enumeration
+        # bounds, not homological degrees -- so it joins the skip tuple (sized on A.dim).
+        # Plan 65: `exceptional_sequences` carries an ENUMERATION BUDGET (not a degree).
+        # Plan 64: `congruences` carries a PAIR BUDGET (like tau_tilting), not a degree.
+        if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts",
+                         "tilted_check", "recognizer_ladder", "silting",
+                         "exceptional_sequences", "congruences"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)
@@ -87,6 +105,17 @@ def _module_dim(mspec) -> int:
     if mspec is None or mspec.builtin is not None or mspec.dims is None:
         return 0
     return sum(int(n) for n in mspec.dims.values())
+
+
+def _coefficient_dim(req) -> int:
+    """The declared dimension of an EXPLICIT coefficient bimodule (Plan 52). The bar
+    cochain basis is dim_M*(m-1)^n, so a big explicit coefficient over a SMALL algebra
+    drives a cost quadratic in dim_M and must size the job off the instant tier. A
+    builtin coefficient is bounded by dim A (already in the max), so it adds nothing."""
+    spec = getattr(req, "coefficients", None)
+    if spec is None or spec.builtin is not None or spec.dim is None:
+        return 0
+    return int(spec.dim)
 
 
 def _algebra_b_dim(req: ComputeRequest) -> int:
@@ -116,7 +145,7 @@ def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     algebra, so every existing family/quiver request classifies exactly as before
     (Plan 26/30 + wave 2)."""
     return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
-               _module_dim(req.tor_target), _algebra_b_dim(req))
+               _module_dim(req.tor_target), _coefficient_dim(req), _algebra_b_dim(req))
 
 
 # Heuristic throughput used to turn the op estimate into a human "minutes"

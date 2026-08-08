@@ -1,0 +1,304 @@
+"""Skew-gentle module classification via special-string re-gluing (Plan 68; He-Zhou-Zhu
+2004.11136, Garcia-Lavoue 2601.01744 Table 1, Crawley-Boevey / Geiss-de la Pena).
+
+The indecomposable modules of a skew-gentle algebra ``A`` are the indecomposables of the
+(isomorphic) split algebra ``A_hat = kQ_hat/I_hat`` (``split.py``).  This module offers
+two views, and they are NOT equal -- one is a documented strict subset of the other:
+
+* ``classify`` / ``skew_gentle_module`` -- the **loop-free string census**.  ``classify``
+  runs the P46 string/band census on the **associated gentle algebra** ``A^g`` (nilpotent
+  loops), keeps the walks that do NOT use a special loop as a letter (the LOOP-FREE
+  ``A^g``-walks), and TYPES each ``(r, s) in {u, p}^2`` by whether its endpoints sit at a
+  special vertex (Garcia-Lavoue sec 2.1).  A ``p``-endpoint re-glues into its two ``+/-``
+  forms -- which in the split model are literally the two split vertices ``i+``/``i-`` --
+  so a walk has ``2^{#special endpoints}`` split incarnations (characteristic-free,
+  sidestepping the classical char != 2 ``k[T]/(T^2-1)`` split).
+
+  (A loop-free walk NEVER has a special vertex as an internal node: at a special
+  vertex the loop occupies one in- and one out-slot, so there is at most one other
+  in-arrow ``a`` and one other out-arrow ``b``, and gentleness forces ``a*b in I`` --
+  a length-2 path that a valid walk cannot traverse.  Special vertices thus appear only
+  as walk ENDPOINTS, and the ``+/-`` choice is made exactly there.)
+
+  This census is a **documented STRICT SUBSET of the indecomposables**, NOT a complete
+  classification: live it yields 5 of the 6 indecomposables on the headline example
+  (``1 --a--> 2, Sp = {2}``) and 8 of the 11 on the mesh example.  The missing modules
+  are the **loop-traversal / mixed-eigenvalue** ones -- e.g. the projective ``P_1`` of
+  the headline, on which the split idempotent mixes the ``+/-`` eigenvalues along a path.
+  No LOOP-FREE ``A^g``-walk produces them; the SYMMETRIC / loop-traversal string
+  enumeration (Garcia-Lavoue Table 1 / the clan classification) that WOULD produce them
+  is not implemented (a DEEPER-ENGINES-BACKLOG item).  ``skew_gentle_indecomposables`` is
+  the authoritative enumeration.
+
+* ``skew_gentle_indecomposables`` is the **AUTHORITATIVE** enumeration: ALL indecomposable
+  modules of the split algebra, via the P41 AR quiver (count == AR vertex count on a
+  rep-finite instance -- the sufficiency oracle for the split relations).  It is a
+  SUPERSET of the loop-free string census above.  It runs over the char-FREE split model
+  (QQ), where ``is_isomorphic`` / ``decompose`` are rigorous -- the count is a
+  presentation invariant, so it does not depend on the caller's field (M3, mirroring the
+  certificate).  If the AR quiver is not authoritative over QQ (a genuine budget cap, a
+  self-injective input, or another loud AR status -- NOT a silent read of "rep-infinite"),
+  it falls back to the loop-free string census -- a sound but possibly PARTIAL sample.
+
+``skew_gentle_module`` materialises the string module of a chosen form ON the split
+algebra (via the P46 ``_materialise`` self-certificate, which does not require the split
+to be a string algebra), so it works on the non-monomial mesh split too.  Char caveat:
+``is_indecomposable`` / ``is_isomorphic`` are rigorous over QQ / char > dim M, so the
+enumeration runs over QQ.  Float-free / exact."""
+from __future__ import annotations
+
+import itertools
+from dataclasses import dataclass
+
+from quiverlab.errors import QuiverlabError
+from quiverlab.fields import QQ
+from quiverlab.modules import linalg_mod as lm
+from quiverlab.skewgentle.split import SkewGentleAlgebra, _copy_name
+from quiverlab.skewgentle.triple import SkewGentleTriple, associated_gentle
+from quiverlab.strings.modules import _materialise
+from quiverlab.strings.walks import (_is_trivial, enumerate_strings, find_bands,
+                                     letter_source, letter_target)
+
+
+_SPLIT_CACHE = {}
+
+
+def _split_algebra(triple, field):
+    """The split algebra for ``(triple, field)``, memoised so repeated materialisations
+    (e.g. the two forms of a special string) live over the SAME algebra object -- else
+    ``is_isomorphic`` refuses them as "over different algebras" (mirrors the
+    ``string_signs`` id-cache)."""
+    key = (id(triple), repr(field))
+    hit = _SPLIT_CACHE.get(key)
+    if hit is not None and hit[0] is triple:
+        return hit[1]
+    A = SkewGentleAlgebra(triple, field=field)
+    _SPLIT_CACHE[key] = (triple, A)
+    return A
+
+
+@dataclass(frozen=True)
+class SkewGentleString:
+    """A classified admissible walk of the associated gentle algebra.
+
+    ``walk`` is the ``A^g`` walk; ``type`` is ``(r, s) in {u, p}^2`` (``p`` = endpoint
+    at a special vertex); ``is_band`` flags a cyclic walk; ``forms`` lists the split
+    incarnations (each a mapping ``{endpoint node index: '+'|'-'}`` over the special
+    endpoints -- ``2^{#special endpoints}`` of them, one empty form for a ``(u,u)``
+    string)."""
+    walk: tuple
+    type: tuple
+    is_band: bool
+    forms: tuple
+
+
+def _uses_special_loop(walk, loop_names) -> bool:
+    return any(nm in loop_names for (nm, _d) in walk)
+
+
+def _node_vertices(Q_sp, walk):
+    """The original vertices ``z_0..z_n`` visited by ``walk`` (a trivial walk yields the
+    single vertex)."""
+    if _is_trivial(walk):
+        return [walk[0][1]]
+    verts = [letter_source(Q_sp, walk[0])]
+    for ell in walk:
+        verts.append(letter_target(Q_sp, ell))
+    return verts
+
+
+def _endpoint_positions(walk):
+    """The node indices that are walk endpoints: ``(0,)`` for a trivial walk, else the
+    two extremes ``(0, len(walk))``."""
+    return (0,) if _is_trivial(walk) else (0, len(walk))
+
+
+def _classify_walk(Q_sp, walk, special, is_band):
+    """Build a ``SkewGentleString``: type ``(r, s)`` from the endpoints, forms from the
+    ``+/-`` choices at special endpoints."""
+    node_verts = _node_vertices(Q_sp, walk)
+    positions = _endpoint_positions(walk)
+    # r from the first node, s from the last node (they coincide for a trivial walk).
+    r = "p" if node_verts[positions[0]] in special else "u"
+    s = "p" if node_verts[positions[-1]] in special else "u"
+    special_positions = [p for p in positions if node_verts[p] in special]
+    if special_positions:
+        forms = tuple(dict(zip(special_positions, signs))
+                      for signs in itertools.product(("+", "-"),
+                                                     repeat=len(special_positions)))
+    else:
+        forms = ({},)                               # one form, no +/- choice
+    return SkewGentleString(walk=tuple(walk), type=(r, s), is_band=is_band, forms=forms)
+
+
+def classify(triple, max_length=8, budget=4096):
+    """The LOOP-FREE ``A^g``-walk census of the associated gentle algebra, typed and
+    re-glued (see the module docstring).
+
+    Returns a list of ``SkewGentleString`` (strings first, then bands).  This is the
+    string layer of the classification and, at the module level, a documented STRICT
+    SUBSET of the indecomposables (headline 5 of 6, mesh 8 of 11): the loop-traversal /
+    mixed-eigenvalue modules have NO loop-free ``A^g``-walk and are not produced here --
+    the symmetric-string enumeration that would produce them is not implemented (a
+    backlog item).  ``skew_gentle_indecomposables`` is the authoritative enumeration.
+    (Completeness at the STRING level is inherited from ``enumerate_strings`` -- complete
+    iff the algebra is string-rep-finite -- but that is NOT the same as classifying every
+    indecomposable MODULE of the skew-gentle algebra.)
+    """
+    Ag = associated_gentle(triple)
+    Q_sp = Ag.quiver
+    loops = set(triple.loop_names.values())
+    census = enumerate_strings(Ag, max_length=max_length, budget=budget)
+    bands = find_bands(Ag, max_length=max_length)
+    out = []
+    for walk in census.walks:
+        if _uses_special_loop(walk, loops):
+            continue                                # not an admissible string
+        out.append(_classify_walk(Q_sp, walk, triple.special, is_band=False))
+    for band in bands:
+        if _uses_special_loop(band, loops):
+            continue
+        out.append(_classify_walk(Q_sp, band, triple.special, is_band=True))
+    return out
+
+
+def _lift_walk(triple, walk, form):
+    """Lift an ``A^g`` walk to a walk on the split quiver, choosing the ``+/-`` copy at
+    each special endpoint per the ``form`` assignment (``{node index: sign}``)."""
+    Q, Sp = triple.quiver, triple.special
+    Q_sp = associated_gentle(triple).quiver
+    node_verts = _node_vertices(Q_sp, walk)
+
+    def node_copy(i):
+        v = node_verts[i]
+        if v not in Sp:
+            return str(v)
+        if i not in form:
+            raise QuiverlabError(
+                f"skew_gentle_module: special vertex {v!r} at node {i} is not an "
+                "endpoint of this walk -- admissible walks touch special vertices only "
+                "at their ends",
+                hint="the walk crosses a special vertex internally; this should not "
+                     "arise for an admissible (loop-free) string")
+        return f"{v}{form[i]}"
+
+    if _is_trivial(walk):
+        return ((None, node_copy(0)),)
+
+    split_walk = []
+    for i, (a, d) in enumerate(walk):
+        s0, t0 = Q.source(a), Q.target(a)
+        if d > 0:                                   # direct: node i = source(a)
+            csrc, ctgt = node_copy(i), node_copy(i + 1)
+        else:                                       # inverse: node i = target(a)
+            ctgt, csrc = node_copy(i), node_copy(i + 1)
+        nm = _copy_name(a, s0, t0, csrc, ctgt, Sp)
+        split_walk.append((nm, d))
+    return tuple(split_walk)
+
+
+def _materialise_split_walk(A_split, split_walk, name):
+    """Materialise + self-certify the string module of ``split_walk`` on the split
+    algebra (mirrors ``strings.string_module``'s core, but via ``_materialise`` so it
+    works on the non-monomial mesh split too)."""
+    Q, dom = A_split.quiver, A_split.domain
+    if _is_trivial(split_walk):
+        verts = [split_walk[0][1]]
+    else:
+        verts = [letter_source(Q, split_walk[0])]
+        for ell in split_walk:
+            verts.append(letter_target(Q, ell))
+    n = len(verts)
+    action = {a: lm.zeros(n, n, dom) for a in Q.arrows}
+    if not _is_trivial(split_walk):
+        for i, (nm, d) in enumerate(split_walk):
+            if nm is None:
+                continue
+            if d > 0:
+                action[nm][i + 1][i] = dom.one()
+            else:
+                action[nm][i][i + 1] = dom.one()
+    return _materialise(A_split, verts, action, name)
+
+
+def _form_name(walk, form):
+    parts = [nm if d > 0 else f"{nm}^-1" for nm, d in walk]
+    base = "M(e_%s)" % walk[0][1] if _is_trivial(walk) else "M(" + " ".join(parts) + ")"
+    if form:
+        tag = ",".join(f"{i}{s}" for i, s in sorted(form.items()))
+        return f"{base}[{tag}]"
+    return base
+
+
+def skew_gentle_module(triple, sgstring, form=0, field=None):
+    """Materialise the split-algebra module for the chosen ``form`` of a classified
+    (non-band) LOOP-FREE-census string.  ``form`` is an integer index into
+    ``sgstring.forms``.  Uses the split copies ``i+``/``i-`` as the two forms of a special
+    string; self-certifies via ``check_module`` (inside ``_materialise``).
+
+    This materialises a member of the loop-free string census -- a documented strict
+    subset of the indecomposables (see the module docstring); it never produces a
+    loop-traversal / mixed-eigenvalue module.  ``skew_gentle_indecomposables`` is the
+    authoritative enumeration."""
+    if isinstance(triple, tuple):                   # (quiver, relations, special) tuple
+        triple = SkewGentleTriple.make(*triple)
+    if sgstring.is_band:
+        raise QuiverlabError(
+            "skew_gentle_module: band materialisation needs an eigenvalue + the special-"
+            "band re-gluing (a backlog item); use band_module on the split directly",
+            hint="pass a non-band SkewGentleString, or enumerate via "
+                 "skew_gentle_indecomposables (AR route)")
+    if not 0 <= form < len(sgstring.forms):
+        raise QuiverlabError(
+            f"skew_gentle_module: form index {form} out of range "
+            f"(0..{len(sgstring.forms) - 1})",
+            hint="a (u,u) string has one form; a special string has two per p-end")
+    A = _split_algebra(triple, field)
+    split_walk = _lift_walk(triple, sgstring.walk, sgstring.forms[form])
+    return _materialise_split_walk(A, split_walk, _form_name(sgstring.walk,
+                                                            sgstring.forms[form]))
+
+
+def _string_census_modules(triple, max_length=8, budget=4096):
+    """The loop-free ``A^g``-walk census, materialised on the char-free (QQ) split model.
+
+    A documented STRICT SUBSET of the indecomposables (headline 5 of 6, mesh 8 of 11):
+    it misses the loop-traversal / mixed-eigenvalue modules (e.g. the projective ``P_1``
+    of the headline).  Every module lives over the SAME cached QQ split algebra as the AR
+    route, so the two enumerations are directly ``is_isomorphic``-comparable."""
+    if isinstance(triple, tuple):
+        triple = SkewGentleTriple.make(*triple)
+    mods = []
+    for s in classify(triple, max_length=max_length, budget=budget):
+        if s.is_band:
+            continue
+        for f in range(len(s.forms)):
+            mods.append(skew_gentle_module(triple, s, form=f, field=QQ))
+    return mods
+
+
+def skew_gentle_indecomposables(triple, max_length=8, budget=4096, field=None):
+    """All indecomposable modules of the skew-gentle algebra, materialised on the split
+    algebra.
+
+    AUTHORITATIVE route: the indecomposables of the split algebra via the P41 AR quiver.
+    The enumeration runs over the char-FREE split model (QQ), where ``is_isomorphic`` /
+    ``decompose`` are rigorous -- the count is a presentation invariant, so it does NOT
+    depend on the caller's ``field`` (M3, exactly as the certificate routes its counts;
+    the ``field`` argument is accepted for API symmetry and does not change the answer).
+    On a rep-finite instance ``ar.status == "complete"`` -- count == AR vertex count, each
+    ``is_indecomposable``.
+
+    Otherwise (a genuine budget cap, a self-injective input, or another loud AR status --
+    we do NOT silently read "AR not complete" as "rep-infinite") we fall back to the
+    loop-free string census (``_string_census_modules``): a sound but possibly PARTIAL
+    sample of the indecomposables (a documented strict subset -- see the module
+    docstring), NOT a claim that the algebra is representation-infinite."""
+    if isinstance(triple, tuple):
+        triple = SkewGentleTriple.make(*triple)
+    A = _split_algebra(triple, QQ)                   # char-free model (mirror certificate)
+    from quiverlab.modules.ar import knit_ar_quiver
+    ar = knit_ar_quiver(A)
+    if ar.status == "complete":
+        return [rec["module"] for rec in ar.vertices]
+    return _string_census_modules(triple, max_length=max_length, budget=budget)

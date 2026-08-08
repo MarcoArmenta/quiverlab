@@ -22,13 +22,15 @@ from webapp.server.i18n import LANGS, catalog
 ROOT = Path(__file__).resolve().parents[2]
 GUI_JS = ROOT / "webapp" / "static" / "gui" / "gui.js"
 
-# The full compute-kind surface the picker must cover (19 algebra + 14 module).
+# The full compute-kind surface the picker must cover (24 algebra + 14 module).
 ALL_KINDS = {
     "hh_cohomology", "hh_homology", "cup", "cap", "bracket", "cyclic_homology",
     "connes_b", "ss_hochschild", "cartan", "coxeter_polynomial",
+    # Plan 58 (2026-08-07): certified Coxeter spectral analysis.
+    "coxeter_spectral",
     "global_dimension", "homological_profile", "center", "recognizers",
     "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint",
-    "tau_tilting", "dimension_vector", "rad_top_soc", "tau", "tau_minus",
+    "tau_tilting", "silting", "dimension_vector", "rad_top_soc", "tau", "tau_minus",
     "projective_dimension", "injective_dimension", "projective_resolution",
     "injective_resolution", "decompose", "almost_split", "tilting_check",
     "orbit_geometry", "ext", "tor",
@@ -36,6 +38,30 @@ ALL_KINDS = {
     "radical_filtration_ss", "ar_quiver", "derived_compare",
     # Plan 64 (2026-08-07): torsion-lattice congruences / forcing / wide subcategories.
     "congruences",
+    # Plan 53 (2026-08-07): the stable-category fractional Calabi-Yau dimension.
+    "fractional_cy",
+    # Plan 57 (2026-08-07): the radical filtration of mod A + AR-component invariants.
+    "radical_filtration", "ar_invariants",
+    # Plan 55 (2026-08-07): the left/right parts + support algebras.
+    "left_right_parts",
+    # Plan 61 (2026-08-07): the quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder.
+    "recognizer_ladder",
+    # Plan 59 (2026-08-07): the R34 homological string test + R35 toupie structure.
+    "string_homological", "toupie",
+    # Plan 68 (2026-08-07): the skew-gentle triple (Q, I, Sp).
+    "skew_gentle",
+    # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
+    "fundamental_group", "simply_connected",
+    # Plan 63 (2026-08-07): wall-and-chamber structure via bricks (D(B) inequality systems).
+    "wall_chamber",
+    # Plan 60 (2026-08-07): the tilted-algebra recognizer (Liu-Skowroński).
+    "tilted_check",
+    # Plan 62 (2026-08-08): Tits-form tame/wild certificate.
+    "tame_wild",
+    # Plan 54 (2026-08-07): the Batalin-Vilkovisky operator Delta.
+    "bv_operator",
+    # Plan 65 (2026-08-08): exceptional sequences (classical hereditary + tau-exceptional).
+    "exceptional_sequences",
 }
 
 
@@ -67,9 +93,11 @@ def test_marco_taxonomy_pins():
     # Marco: cup, cap, bracket belong to Hochschild (not the cyclic block).
     for k in ("hh_cohomology", "hh_homology", "cup", "cap", "bracket"):
         assert k in by_id["hochschild"], k
-    # Marco: keep the rest in cyclic; the radical-filtration SS joins it (wave 2).
+    # Marco: keep the rest in cyclic; the radical-filtration SS joins it (wave 2),
+    # and the BV operator Delta joins it beside Connes B (Plan 54).
     assert set(by_id["cyclic"]) == {
-        "cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"}
+        "cyclic_homology", "connes_b", "bv_operator", "ss_hochschild",
+        "radical_filtration_ss"}
     # ar_quiver is algebra-level but sits in the AR theme; derived_compare in structure.
     assert "ar_quiver" in by_id["module_ar"]
     assert "derived_compare" in by_id["structure"]

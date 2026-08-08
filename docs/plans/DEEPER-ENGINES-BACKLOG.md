@@ -365,6 +365,30 @@ planned together even if delivered in slices.
 
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
+- [ ] **Rep-infinite tilted recognizer via the local cut criterion** (added by Plan 60,
+  R17). P60 (`modules/tilted.py`) decides tiltedness on the **representation-finite**
+  complete knit (plus the hereditary/self-injective/`gl.dim>2` theorem gates); a
+  rep-infinite non-hereditary `gl.dim ≤ 2` algebra returns an honest `verdict="unknown"`
+  (`status="budget"`). The documented extension is **Liu, arXiv:1409.2054 Thm 2.6**: `A`
+  is tilted iff `Γ_A` contains a **faithful cut** `Δ` with `Hom_A(X, τY)=0` — a
+  *finite/local* object (weakly convex), checkable in a bounded AR-neighbourhood **without
+  the full knit**. Plus **Thm 2.7's tilted-quotient algebras** `B = A/ann(Δ)` (a genuine
+  extension: tilted quotients of a non-tilted `A`; P60 accepts only faithful `Δ`, so
+  `ann(Δ)=0` and `B=A`). Deferred from P60 v1; P80 reconciles.
+- [ ] **Complete the skew-gentle symmetric / loop-traversal string enumeration**
+  (Plan 68 fix round, 2026-08-08): the string layer `classify` / `skew_gentle_module`
+  is currently a **loop-free `A^g`-walk census**, a documented STRICT SUBSET of the
+  indecomposables at the module level (headline 5 of 6, mesh 8 of 11). The missing
+  modules are the **symmetric / loop-traversal** (mixed-eigenvalue) ones — e.g. the
+  projective `P_1` of the headline, on which the split idempotent mixes the `+/-`
+  eigenvalues along a path — which the theory DOES describe (Garcia–Lavoué Table 1 / the
+  clan classification), so the incompleteness is in the implementation's loop-free
+  enumeration, NOT the theory. Implement the symmetric-string / loop-traversal walks so
+  the STRING layer classifies ALL indecomposables (today `skew_gentle_indecomposables`
+  is authoritative via the P41 AR quiver, and the count stays AR-authoritative). This
+  also lets route 2 of the certificate (the associated-gentle band census) extend to
+  SPECIAL bands (W4), upgrading it from a one-sided rep-infinite check to a full
+  agreement oracle.
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
   Plan 20, 2026-07-24, branch `plan-20-native-cs-cup`**
   (`2026-07-24-plan-20-native-cs-cup.md`). A comparison-lifted diagonal
@@ -530,6 +554,62 @@ planned together even if delivered in slices.
   2026-08-06): v1 takes algebra B as a Dynkin type string or a preset pick;
   a free-form second canvas (and `derived_compare` on the index/family page)
   is the successor.
+- [ ] **Knit budget promptness** (P53 critic find, 2026-08-07): thread a hard
+  step cap into `knit_ar_quiver`'s inner almost-split loop so a `budget_modules`
+  cap terminates PROMPTLY on representation-infinite input. Today the budget
+  bounds the discovered-module COUNT but not the per-module almost-split work, so
+  `phi_dim`/`psi_dim`/`phi_spectrum` on a rep-infinite algebra (e.g. the
+  2-Kronecker) can run minutes before the budget trips (critic measured >5 min at
+  `budget_modules=12`). P53 documents the limitation (loud small-budget advice in
+  the docstrings + the verification honest-scope entry); this backlog item is the
+  actual fix (a `max_steps`/deadline in the BFS inner loop, honest `status="budget"`
+  on trip).
+- [ ] **A second odd-exponent bracket fixture** (Plan 51 critic find, 2026-08-07):
+  the odd-exponent bracket sign `(−1)^{(p-1)(q-1)}` is currently pinned by a SINGLE
+  non-vacuous anchor — QuantumCI (2,4) → HH⁵ (Δ₅, ~2 min, `slow`). k[x]/x² and
+  k[x]/x³ are sign-blind at (2,2) (odd-squared brackets vanish). Add a second,
+  ideally cheaper, algebra with a nonzero `[HH^even, HH^even]` bracket (a richer
+  even-degree HH — a preprojective / higher-QCI / group-algebra candidate) so the
+  odd-exponent sign has redundant coverage.
+- [ ] **Native Gerstenhaber bracket on minimal / Bardzell resolutions** (Plan 51
+  follow-up, 2026-08-07): the CS-native bracket (`resolutions_cs/homotopy_lifting.py`
+  + `bracket.py`) needs a diagonal Δ, which quiverlab ships only on the CS resolution.
+  A presentation-less **structure-constants** algebra therefore gets no native bracket
+  off GF(p) today (it keeps only the in-window GF(p) transported bracket). Closing that
+  gap needs a diagonal on the minimal `A^e` resolution (rides on **Plan 75 — GHMS
+  comultiplicative minimal resolution**, which is exactly Oke's own Koszul carrier) and
+  a smaller monomial diagonal on the Bardzell resolution. Both engines accept
+  structure-constants input, so the follow-up is what makes the native bracket reach
+  presentation-less algebras. Deps: Plan 75 GHMS / a Bardzell diagonal.
+- [ ] **P52 explicit two-sided bimodule matrix editor** (deferred to P80, DD5):
+  the Plan-52 coefficient GUI ships the BUILTIN named bimodules
+  (regular / dual / twisted `{}_1A_ν` / `A/soc`) as a pick-list. The EXPLICIT
+  `{dim, left_maps, right_maps}` form (one exact-entry matrix per generator per
+  side) is accepted by the library + server, but its CANVAS matrix editor is
+  deferred: the Plan-26 module editor is one-sided (a right-module action per
+  arrow), whereas a bimodule needs BOTH a left and a right action per generator.
+  P80 adds the two-sided grid editor.
+- [ ] **General LZZ twisted Connes operator `B_σ`** (Plan 54 fix-round find,
+  2026-08-08): the semisimple-ν BV route carries the NAIVE twisted Connes operator
+  `B_σ = s∘N`, whose descent to twisted homology is a per-instance certified property
+  (the paracyclic defect `(1 − T)` must vanish EXACTLY on the cycle reps), NOT a
+  consequence of semisimplicity. It holds on the diagonal-ν `QuantumCI(q)` instances
+  but FAILS on the **weakly-symmetric "exterior class"** — `ExteriorAlgebra(2) = Λ(k²)`
+  over GF(5)/GF(7), ν = diag(1,−1,−1,1) = −id of order 2 — where `B_σ` of a degree-2
+  cycle is a cycle only MODULO boundaries; P54 currently REFUSES this class loudly
+  (`bv_operator` raises the descent self-cert). LZZ (arXiv:1405.5325) guarantees
+  `HH^*(Λ(k²))` is a BV algebra; the close-out is the **general LZZ operator** — a
+  per-class correction solve `b·w = (1 − T)·z`, `B̃z = Bz − w`, making `B_σ` a genuine
+  chain map to homology (analogous to the Plan-20 diagonal lift-solve). A fix-round
+  bounded probe confirmed no cheap strengthening of `s∘N` (the `(1 − t)`-corrected
+  forms, sign-normalization variants, or the norm over the paracyclic orbit of order
+  `r(n+1)`) works: the only variant passing the exterior chain-level descent
+  (`s(1−t)N = s(1−T)`) gives the WRONG bracket there and zeroes the QuantumCI Δ. NB: a
+  strict chain-map well-definedness gate (`B` carries boundaries to boundaries) is NOT
+  a viable interim narrowing — the naive `B_σ` fails it even on the served QuantumCI
+  route (a boundary can map to a cycle with nonzero homology class), so the cycle-leg
+  descent self-cert + the downstream bracket arbiter remain the correctness gates until
+  the general operator lands.
 
 ## Done (this backlog's history)
 

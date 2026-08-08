@@ -50,7 +50,18 @@
       data-hp-findim="{{ t('block.homprofile.findim') }}"
       data-hp-domdim="{{ t('block.homprofile.domdim') }}"
       data-hp-goren="{{ t('block.homprofile.gorenstein') }}"
-      data-hp-igusa="{{ t('block.homprofile.igusa') }}">
+      data-hp-igusa="{{ t('block.homprofile.igusa') }}"
+      data-hp-phidim="{{ t('block.homprofile.phidim') }}"
+      data-hp-psidim="{{ t('block.homprofile.psidim') }}"
+      data-hp-spectrum="{{ t('block.homprofile.spectrum') }}"
+      data-hp-lit="{{ t('block.homprofile.lit') }}"
+      data-fcy-title="{{ t('block.fcy.title') }}"
+      data-fcy-criterion="{{ t('block.fcy.criterion') }}"
+      data-fcy-pair="{{ t('block.fcy.pair') }}"
+      data-fcy-tier="{{ t('block.fcy.tier') }}"
+      data-fcy-sigma-period="{{ t('block.fcy.sigma_period') }}"
+      data-fcy-shift-trivial="{{ t('block.fcy.shift_trivial') }}"
+      data-fcy-budget="{{ t('block.fcy.budget') }}">
   <label for="family">{{ t("form.family") }}</label>
   <select id="family" name="family">
     {% for f in catalog.families %}<option value="{{ f.name }}">{{ f.name }}</option>{% endfor %}
@@ -74,13 +85,17 @@
   <label><input type="checkbox" name="compute" value="cyclic_homology:0..6"> {{ t("inv.cyclic_homology") }}</label>
   <label><input type="checkbox" name="compute" value="ss_hochschild:0..4"> {{ t("inv.ss_hochschild") }}</label>
   <label><input type="checkbox" name="compute" value="coxeter_polynomial"> {{ t("inv.coxeter") }}</label>
+  <label><input type="checkbox" name="compute" value="coxeter_spectral"> {{ t("inv.coxeter_spectral") }}</label>
   <label><input type="checkbox" name="compute" value="cartan"> {{ t("inv.cartan") }}</label>
   <label><input type="checkbox" name="compute" value="global_dimension"> {{ t("inv.gldim") }}</label>
   <label><input type="checkbox" name="compute" value="homological_profile"> {{ t("inv.homological_profile") }}</label>
+  <label><input type="checkbox" name="compute" value="fractional_cy"> {{ t("inv.fractional_cy") }}</label>
   <label><input type="checkbox" name="compute" value="center"> {{ t("inv.center") }}</label>
   <label><input type="checkbox" name="compute" value="ext_algebra:0..6"> {{ t("inv.ext_algebra") }}</label>
   <label><input type="checkbox" name="compute" value="recognizers"> {{ t("inv.recognizers") }}</label>
   <label><input type="checkbox" name="compute" value="strings"> {{ t("inv.strings") }}</label>
+  <label><input type="checkbox" name="compute" value="string_homological"> {{ t("inv.string_homological") }}</label>
+  <label><input type="checkbox" name="compute" value="toupie"> {{ t("inv.toupie") }}</label>
   <label><input type="checkbox" name="compute" value="quasi_hereditary"> {{ t("inv.quasi_hereditary") }}</label>
   <label><input type="checkbox" name="pdf" value="1"> {{ t("form.pdf") }}</label>
   <button type="submit">{{ t("form.compute") }}</button>

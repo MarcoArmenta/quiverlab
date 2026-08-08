@@ -114,3 +114,53 @@ def tikz_fan(fan):
                              % (_coord(x), _coord(y)))
     lines.append(r"\end{tikzpicture}")
     return "\n".join(lines) + "\n"
+
+
+def tikz_wall_chamber(b):
+    """The Plan-63 wall-and-chamber structure as TikZ (the report's static twin of the GUI
+    SVG): the chamber g-vector rays drawn faint, plus each brick-wall D(B) overlaid as a
+    labelled dark ray/line (n=2 the exact extreme rays; n=3 the pre-projected octahedron-net
+    facet rays). Float-free (pgf evaluates {p/q}). An honest note when the region is
+    budget-capped only for the chambers, but walls are still drawn if present; a
+    render='table' (n not in {2,3}) block returns the honest no-drawing note."""
+    n = b.get("n")
+    lines = [r"\begin{tikzpicture}[>=stealth, scale=2]"]
+    if b.get("render") not in ("fan2d", "fan3d") or not b.get("chambers"):
+        lines.append(r"  \node {fan not drawn (n not in \{2,3\}, or nothing found)};")
+        lines.append(r"\end{tikzpicture}")
+        return "\n".join(lines) + "\n"
+    use3 = (n == 3)
+    seen = set()
+    for ch in b["chambers"]:
+        rays = (ch.get("net2d") or []) if use3 else ch.get("rays", [])
+        for ray in rays:
+            if ray is None:
+                continue
+            x, y = Fraction(ray[0]), Fraction(ray[1])
+            if (x, y) in seen or (x == 0 and y == 0):
+                continue
+            seen.add((x, y))
+            lines.append(r"  \draw[->, gray!50] (0,0) -- (%s, %s);"
+                         % (_coord(x), _coord(y)))
+    for w in (b.get("walls") or []):
+        wrays = (w.get("net2d") or []) if use3 else (w.get("rays") or [])
+        bd = w.get("brick_dimvec") or {}
+        lab = w.get("brick_name") or (",".join(str(bd[k]) for k in sorted(bd, key=str)))
+        for ray in wrays:
+            if ray is None:
+                continue
+            x, y = Fraction(ray[0]), Fraction(ray[1])
+            if x == 0 and y == 0:
+                continue
+            lines.append(r"  \draw[->, very thick] (0,0) -- (%s, %s);"
+                         % (_coord(x), _coord(y)))
+            lines.append(r"  \node[font=\tiny] at (%s, %s) {$%s$};"
+                         % (_coord(x), _coord(y), _esc_tex(lab)))
+    lines.append(r"\end{tikzpicture}")
+    return "\n".join(lines) + "\n"
+
+
+def _esc_tex(s):
+    """Minimal TeX escaping for a wall label (dim-vector string or brick name)."""
+    return str(s).replace("\\", r"\textbackslash{}").replace("_", r"\_").replace(
+        "{", r"\{").replace("}", r"\}").replace("$", r"\$")

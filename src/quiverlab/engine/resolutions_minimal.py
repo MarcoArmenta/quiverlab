@@ -856,12 +856,24 @@ def _corner_contracted_degree(eng, ctx, gens_n, tags_n, tags_nm1, p):
 
 
 def minimal_homology_dims(A, N, primes=(32003,), max_term_dim=20000,
-                          max_transient_bytes=None):
+                          max_transient_bytes=None, coefficients=None):
     """dim HH_n(A; F_p) for n=0..N, each prime in `primes`, via the minimal A^e
     resolution (rebuilt per prime).  Returns {p: [dim HH_0, ..., dim HH_M]} where
     M = N unless a budget (term-dim cap or `max_transient_bytes` peak-memory guard)
     truncated the build earlier (then the list is shorter and exact up to its last
-    entry; HH at the truncation degree is omitted because d_{n+1} is unknown there)."""
+    entry; HH at the truncation degree is omitted because d_{n+1} is unknown there).
+
+    Plan 52: with a coefficient Bimodule ``coefficients`` (GF(p), built over a
+    quiver-presented quiverlab Algebra) this computes ``dim HH_n(A, M)`` -- the
+    Plan-16 covariance generalized (P3): homology ``b·w·a`` on ``e_w M e_v``.
+    ARG ASYMMETRY (Plan 52): ``A`` is an ENGINE algebra when ``coefficients=None``
+    (the existing callers) but the PUBLIC ``quiverlab.core.Algebra`` when
+    ``coefficients=M`` -- the coefficient path converts it via ``to_engine`` and
+    builds ``M``'s actions against it (a mismatch is refused loudly in
+    ``_coeff_prepare``)."""
+    if coefficients is not None:
+        return _minimal_homology_dims_coeff(A, N, primes, coefficients,
+                                            max_term_dim, max_transient_bytes)
     out = {}
     for p in primes:
         rks, cols, eng, trunc = minimal_resolution(
@@ -971,14 +983,23 @@ def _corner_cohomology_degree(eng, ctx, gens_n, tags_n, tags_nm1, p):
 
 
 def minimal_cohomology_dims(A, N, primes=(32003,), max_term_dim=20000,
-                            max_transient_bytes=None):
+                            max_transient_bytes=None, coefficients=None):
     """dim HH^n(A; F_p) for n=0..N via Hom_{A^e}(-, A) on the SAME minimal A^e
     resolution the homology side uses (rebuilt per prime).  Returns
     {p: [dim HH^0, ..., dim HH^M]} with M = N unless a budget truncated the build
     at degree t (then the list stops at t-1 and is exact: delta^t needs the
     unknown d_{t+1}).  Corner path (multi-vertex): the cochain block of a
     generator tagged (v, w) is e_v A e_w -- the homology dict cornerA[(i, j)] =
-    e_j A e_i read with the tag SWAPPED."""
+    e_j A e_i read with the tag SWAPPED.
+
+    Plan 52: with a coefficient Bimodule ``coefficients`` (GF(p), quiver-presented)
+    this computes ``dim HH^n(A, M)`` -- cohomology ``a·w·b`` on the SWAPPED corner
+    ``e_v M e_w`` (P3). ARG ASYMMETRY (Plan 52): ``A`` is an ENGINE algebra when
+    ``coefficients=None`` but the PUBLIC ``quiverlab.core.Algebra`` when
+    ``coefficients=M`` (see ``minimal_homology_dims``)."""
+    if coefficients is not None:
+        return _minimal_cohomology_dims_coeff(A, N, primes, coefficients,
+                                              max_term_dim, max_transient_bytes)
     out = {}
     for p in primes:
         rks, cols, eng, trunc = minimal_resolution(
@@ -1027,3 +1048,269 @@ def hochschild_dimension(A, N, p=32003, max_term_dim=20000, max_transient_bytes=
     pd = max(nonzero) if nonzero else 0
     terminated = any(rks.get(n, 0) == 0 for n in range(1, N + 2)) and trunc is None
     return pd, terminated
+
+
+# ===========================================================================
+# Plan 52: coefficient-aware collapse (dim HH_*(A, M) / HH^*(A, M) over GF(p)).
+# The RESOLUTION of A over A^e is coefficient-independent; only the collapse
+# swaps the "full copy of A" (dim m) / "corner e_j A e_i" for "full copy of M"
+# (dim dim_M) / "corner e_j M e_i", and the two structure-constant multiplications
+# for M's left/right actions (P3). The Plan-16 covariance + SWAPPED-tag block
+# accounting are UNTOUCHED. These functions run ONLY when a coefficient is given;
+# the regular (coefficients=None) path above is byte-identical.
+# ===========================================================================
+def _coeff_fbasis_actions(M, eng, p):
+    """M's actions as int64 tensors in the engine's f-basis (unit at index t = 1).
+    In A's own basis f_j = e_j for j != t and f_t = 1 (the unit); the unit acts as
+    the identity, so Lint/Rint = M's A-basis actions with index t replaced by I."""
+    L, R = M.engine_actions(p)                 # row convention, A's own basis, mod p
+    t = eng.A.t
+    dm = M.dim_M
+    L = L.copy()
+    R = R.copy()
+    L[t] = np.eye(dm, dtype=np.int64)
+    R[t] = np.eye(dm, dtype=np.int64)
+    return L, R
+
+
+def _corner_M(ctx, Lint, Rint, dim_M, p):
+    """cornerM[(i, j)] = e_j M e_i (a (dim_M, d) basis), the M-analogue of
+    ctx.cornerA (image of m |-> eps_j . m . eps_i over an M-basis)."""
+    cornerM = {}
+    for i in ctx.vertices:
+        epsi = ctx.idem[i]
+        for j in ctx.vertices:
+            epsj = ctx.idem[j]
+            cols = []
+            for c in range(dim_M):
+                ec = np.zeros(dim_M, dtype=np.int64)
+                ec[c] = 1
+                left = np.zeros(dim_M, dtype=np.int64)      # e_j . m_c
+                for a in np.nonzero(epsj)[0]:
+                    left = (left + int(epsj[a]) * (ec @ Lint[a])) % p
+                res = np.zeros(dim_M, dtype=np.int64)       # (e_j . m_c) . e_i
+                for b in np.nonzero(epsi)[0]:
+                    res = (res + int(epsi[b]) * (left @ Rint[b])) % p
+                if np.any(res % p):
+                    cols.append(res % p)
+            cornerM[(i, j)] = _independent_columns(cols, p, dim_M)
+    return cornerM
+
+
+def _coeff_contracted_degree(eng, Lint, Rint, dim_M, gens_n, r_nm1, p):
+    """Homology collapse M (x)_{A^e} d_n (single-vertex / free path): coefficient a
+    full copy of M (dim dim_M); w |-> sum cf (e_vv . w) . e_uu = b·w·a."""
+    m, m2 = eng.m, eng.m2
+    r_n = len(gens_n)
+    M = np.zeros((dim_M * r_nm1, dim_M * r_n), dtype=np.int64)
+    for j, g in enumerate(gens_n):
+        for s0 in range(dim_M):
+            col = j * dim_M + s0
+            for blk in range(r_nm1):
+                w = g[blk * m2:(blk + 1) * m2]
+                acc = np.zeros(dim_M, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        out = (Lint[vv][s0] @ Rint[uu]) % p       # (e_vv . m_s0) . e_uu
+                        acc = (acc + cf * out) % p
+                M[blk * dim_M:(blk + 1) * dim_M, col] = (
+                    M[blk * dim_M:(blk + 1) * dim_M, col] + acc) % p
+    return M
+
+
+def _coeff_cohomology_degree(eng, Lint, Rint, dim_M, gens_n, r_nm1, p):
+    """Cohomology collapse Hom_{A^e}(d_n, M) (single-vertex): w |-> sum cf
+    (e_uu . w) . e_vv = a·w·b (the covariance flip of the homology side)."""
+    m, m2 = eng.m, eng.m2
+    r_n = len(gens_n)
+    M = np.zeros((dim_M * r_n, dim_M * r_nm1), dtype=np.int64)
+    for j, g in enumerate(gens_n):
+        for blk in range(r_nm1):
+            w = g[blk * m2:(blk + 1) * m2]
+            for s0 in range(dim_M):
+                col = blk * dim_M + s0
+                acc = np.zeros(dim_M, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        out = (Lint[uu][s0] @ Rint[vv]) % p       # (e_uu . m_s0) . e_vv
+                        acc = (acc + cf * out) % p
+                M[j * dim_M:(j + 1) * dim_M, col] = (
+                    M[j * dim_M:(j + 1) * dim_M, col] + acc) % p
+    return M
+
+
+def _coeff_corner_contracted_degree(eng, cornerM, Lint, Rint, dim_M,
+                                    gens_n, tags_n, tags_nm1, p):
+    """Corner homology collapse with a coefficient: blocks are e_w M e_v corners
+    (cornerM), the collapse (e_vv . alpha) . e_uu, reconstructed in the target
+    block's M-corner basis (loud on failure)."""
+    m, m2 = eng.m, eng.m2
+    row_offs, off = [], 0
+    for tg in tags_nm1:
+        row_offs.append(off)
+        off += cornerM[tg].shape[1]
+    nrows = off
+    cols_out = []
+    for g, tg in zip(gens_n, tags_n):
+        Bcol = cornerM[tg]                            # e_w M e_v, tag (v, w)
+        for c in range(Bcol.shape[1]):
+            alpha = Bcol[:, c]
+            col = np.zeros(nrows, dtype=np.int64)
+            for blk, tgp in enumerate(tags_nm1):
+                w = g[blk * m2:(blk + 1) * m2]
+                acc = np.zeros(dim_M, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        out = ((alpha @ Lint[vv]) % p @ Rint[uu]) % p   # (e_vv ▷ alpha) ◁ e_uu
+                        acc = (acc + cf * out) % p
+                x = _solve_in_span(cornerM[tgp], acc, p)
+                assert x is not None, "corner M contraction image left its corner (bug)"
+                col[row_offs[blk]:row_offs[blk] + x.shape[0]] = x
+            cols_out.append(col)
+    if not cols_out:
+        return np.zeros((nrows, 0), dtype=np.int64)
+    return np.stack(cols_out, axis=1) % p
+
+
+def _coeff_corner_cohomology_degree(eng, cornerM, Lint, Rint, dim_M,
+                                    gens_n, tags_n, tags_nm1, p):
+    """Corner cohomology collapse with a coefficient: blocks are the SWAPPED-tag
+    corners e_v M e_w = cornerM[(w, v)], the collapse (e_uu . alpha) . e_vv."""
+    m, m2 = eng.m, eng.m2
+    row_offs, off = [], 0
+    for tg in tags_n:
+        row_offs.append(off)
+        off += cornerM[(tg[1], tg[0])].shape[1]
+    nrows = off
+    cols_out = []
+    for blk, tgp in enumerate(tags_nm1):
+        Bcol = cornerM[(tgp[1], tgp[0])]              # e_v M e_w for source tag (v, w)
+        for c in range(Bcol.shape[1]):
+            alpha = Bcol[:, c]
+            col = np.zeros(nrows, dtype=np.int64)
+            for j, (g, tg) in enumerate(zip(gens_n, tags_n)):
+                w = g[blk * m2:(blk + 1) * m2]
+                acc = np.zeros(dim_M, dtype=np.int64)
+                for uu in range(m):
+                    for vv in range(m):
+                        cf = w[uu * m + vv]
+                        if cf % p == 0:
+                            continue
+                        out = ((alpha @ Lint[uu]) % p @ Rint[vv]) % p   # (e_uu ▷ alpha) ◁ e_vv
+                        acc = (acc + cf * out) % p
+                x = _solve_in_span(cornerM[(tg[1], tg[0])], acc, p)
+                assert x is not None, "corner M cochain image left its corner (bug)"
+                col[row_offs[j]:row_offs[j] + x.shape[0]] = x
+            cols_out.append(col)
+    if not cols_out:
+        return np.zeros((nrows, 0), dtype=np.int64)
+    return np.stack(cols_out, axis=1) % p
+
+
+def _coeff_prepare(A, primes, M):
+    """Validate the coefficient path (GF(p), quiver-presented, prime match) and
+    return the engine algebra."""
+    from quiverlab.core.algebra import Algebra as CoreAlgebra
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.fields.primefield import PrimeField
+    if not isinstance(A, CoreAlgebra):
+        raise QuiverlabError(
+            "the minimal-engine coefficient path needs a quiverlab Algebra (to build "
+            "the coefficient against)", hint="pass ql.Quiver(...).algebra(...)")
+    if not isinstance(M.domain, PrimeField):
+        raise QuiverlabError(
+            "the minimal A^e engine is GF(p) int64; a coefficient must be over GF(p)",
+            hint="use engine='bar' or engine='cs' off GF(p)")
+    pM = M.domain.p
+    for p in primes:
+        if p != pM:
+            raise QuiverlabError(
+                f"coefficient prime {pM} does not match requested prime {p}",
+                hint="the minimal coefficient path runs at the coefficient's field")
+    from quiverlab.engine.adapter import to_engine
+    return to_engine(A)
+
+
+def _minimal_homology_dims_coeff(A, N, primes, M, max_term_dim, max_transient_bytes):
+    eng_alg = _coeff_prepare(A, primes, M)
+    dim_M = M.dim_M
+    out = {}
+    for p in primes:
+        rks, cols, eng, trunc = minimal_resolution(
+            eng_alg, N, p, max_term_dim=max_term_dim, max_transient_bytes=max_transient_bytes)
+        Lint, Rint = _coeff_fbasis_actions(M, eng, p)
+        last = (trunc - 1) if trunc is not None else N
+        dims = []
+        ctx = getattr(eng, "corner_ctx", None)
+        if ctx is not None:
+            cornerM = _corner_M(ctx, Lint, Rint, dim_M, p)
+            tags = eng.corner_tags
+            Dbar = {n: _coeff_corner_contracted_degree(
+                        eng, cornerM, Lint, Rint, dim_M, cols.get(n, []) or [],
+                        tags.get(n, []), tags.get(n - 1, []), p)
+                    for n in range(1, N + 2)}
+            for n in range(0, last + 1):
+                dimn = sum(cornerM[tg].shape[1] for tg in tags.get(n, []))
+                rn = rank_mod_p(Dbar[n], p) if (n >= 1 and rks.get(n, 0) > 0) else 0
+                rnp1 = rank_mod_p(Dbar[n + 1], p) if rks.get(n + 1, 0) > 0 else 0
+                dims.append(int(dimn - rn - rnp1))
+        else:
+            Dbar = {n: _coeff_contracted_degree(eng, Lint, Rint, dim_M,
+                                                cols.get(n, []) or [], rks.get(n - 1, 0), p)
+                    for n in range(1, N + 2)}
+            for n in range(0, last + 1):
+                dimn = dim_M * rks.get(n, 0)
+                rn = rank_mod_p(Dbar[n], p) if (n >= 1 and rks.get(n, 0) > 0) else 0
+                rnp1 = rank_mod_p(Dbar[n + 1], p) if rks.get(n + 1, 0) > 0 else 0
+                dims.append(int(dimn - rn - rnp1))
+        out[p] = dims
+    return out
+
+
+def _minimal_cohomology_dims_coeff(A, N, primes, M, max_term_dim, max_transient_bytes):
+    eng_alg = _coeff_prepare(A, primes, M)
+    dim_M = M.dim_M
+    out = {}
+    for p in primes:
+        rks, cols, eng, trunc = minimal_resolution(
+            eng_alg, N, p, max_term_dim=max_term_dim, max_transient_bytes=max_transient_bytes)
+        Lint, Rint = _coeff_fbasis_actions(M, eng, p)
+        last = (trunc - 1) if trunc is not None else N
+        dims = []
+        ctx = getattr(eng, "corner_ctx", None)
+        if ctx is not None:
+            cornerM = _corner_M(ctx, Lint, Rint, dim_M, p)
+            tags = eng.corner_tags
+            D = {n: _coeff_corner_cohomology_degree(
+                     eng, cornerM, Lint, Rint, dim_M, cols.get(n, []) or [],
+                     tags.get(n, []), tags.get(n - 1, []), p)
+                 for n in range(1, N + 2)}
+            for n in range(0, last + 1):
+                dimn = sum(cornerM[(tg[1], tg[0])].shape[1] for tg in tags.get(n, []))
+                rn = (rank_mod_p(D[n + 1], p)
+                      if rks.get(n + 1, 0) > 0 and rks.get(n, 0) > 0 else 0)
+                rnm1 = (rank_mod_p(D[n], p)
+                        if n >= 1 and rks.get(n, 0) > 0 and rks.get(n - 1, 0) > 0 else 0)
+                dims.append(int(dimn - rn - rnm1))
+        else:
+            D = {n: _coeff_cohomology_degree(eng, Lint, Rint, dim_M,
+                                             cols.get(n, []) or [], rks.get(n - 1, 0), p)
+                 for n in range(1, N + 2)}
+            for n in range(0, last + 1):
+                dimn = dim_M * rks.get(n, 0)
+                rn = (rank_mod_p(D[n + 1], p)
+                      if rks.get(n + 1, 0) > 0 and rks.get(n, 0) > 0 else 0)
+                rnm1 = (rank_mod_p(D[n], p)
+                        if n >= 1 and rks.get(n, 0) > 0 and rks.get(n - 1, 0) > 0 else 0)
+                dims.append(int(dimn - rn - rnm1))
+        out[p] = dims
+    return out
