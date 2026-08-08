@@ -265,6 +265,7 @@
   "pick.kind.derived_fingerprint": "导出指纹",
   "pick.kind.tau_tilting": "τ-倾斜与墙腔扇形",
   "pick.kind.congruences": "扭理想格：同余、强迫序与宽子范畴",
+  "pick.kind.tau_cluster": "τ-团簇态射范畴与图像群",
   "pick.kind.wall_chamber": "经由砖的墙腔结构 D(B)",
   "pick.kind.dimension_vector": "维数向量",
   "pick.kind.rad_top_soc": "根基、顶与基座",

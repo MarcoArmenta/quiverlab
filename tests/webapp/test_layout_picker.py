@@ -64,6 +64,8 @@ ALL_KINDS = {
     "exceptional_sequences",
     # Plan 70 (2026-08-08): HH^1 as a Lie algebra (Der/Inn, solvable/Levi).
     "hh1_lie",
+    # Plan 66 (2026-08-08): tau-cluster morphism category W(A) + picture group.
+    "tau_cluster",
 }
 
 

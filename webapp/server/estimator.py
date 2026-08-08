@@ -92,9 +92,12 @@ def _max_degree(req: ComputeRequest) -> int:
         # homological degree -- sized on the algebra dimension (sizing_dim), so a big
         # algebra routes off the instant tier while the dim-220 Nakayama examples get an
         # honest budget refusal (the tau_tilting/products-omission precedent).
+        # Plan 66: `tau_cluster` carries a PAIR BUDGET too (the exchange graph + the wide
+        # poset + a reduction/sub-g-fan per object) -- knit-heavier than `congruences`, sized
+        # on sizing_dim (A.dim), not a degree.
         if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts",
                          "tilted_check", "recognizer_ladder", "silting",
-                         "exceptional_sequences", "congruences", "hh1_lie"):
+                         "exceptional_sequences", "congruences", "hh1_lie", "tau_cluster"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

@@ -265,6 +265,7 @@
   "pick.kind.derived_fingerprint": "Empreinte dérivée",
   "pick.kind.tau_tilting": "τ-tilting et éventail de murs et chambres",
   "pick.kind.congruences": "Treillis de torsion : Con, forçage et sous-catégories larges",
+  "pick.kind.tau_cluster": "Catégorie des morphismes τ-cluster et groupe d'images",
   "pick.kind.wall_chamber": "murs et chambres D(B) via briques",
   "pick.kind.dimension_vector": "Vecteur de dimension",
   "pick.kind.rad_top_soc": "Radical, tête et socle",

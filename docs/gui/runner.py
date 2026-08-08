@@ -212,6 +212,14 @@ def _parse_compute(spec):
             raise RequestError("congruences budget must be a positive integer (got %r)"
                                % (spec,))
         return "congruences", (int(rng) if rng else None)
+    # tau_cluster carries a PAIR BUDGET, not a degree range (Plan 66): 'tau_cluster' or
+    # 'tau_cluster:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    # Server twin: quiverlab.hpc.spec parses the same form.
+    if name == "tau_cluster":
+        if rng and not rng.isdigit():
+            raise RequestError("tau_cluster budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tau_cluster", (int(rng) if rng else None)
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
@@ -1216,6 +1224,24 @@ def compute_one(spec):
                 block = {"kind": "congruences", "error": str(exc),
                          "references": list(_CONG_KEYS)}
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "tau_cluster":
+            # tau-cluster morphism category W(A) + picture group (Plan 66 / R29):
+            # algebra-level, pair budget (not degree). SAME shared library builder
+            # (tautilting.cluster_morphism.tau_cluster_block) + references -> citations as the
+            # server twin (quiverlab.hpc.spec._dispatch), so the cross-runner contract holds
+            # byte-for-byte -- INCLUDING the char-caveat / tau-tilting-infinite error path: a
+            # QuiverlabError refusal is caught into the SAME {"kind","error","references"} shape
+            # spec.py returns (the congruences-branch pattern). Objects = #wide (ties P64), the
+            # Hanson-Igusa classifying-space cube complex + K(pi,1) verdict + the picture group,
+            # certified complete iff A is tau-tilting-finite. Honest complete-iff block.
+            from quiverlab.tautilting.cluster_morphism import _REFERENCES as _TCL_KEYS
+            from quiverlab.tautilting.cluster_morphism import tau_cluster_block
+            try:
+                block = tau_cluster_block(A, budget=top if top is not None else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "tau_cluster", "error": str(exc),
+                         "references": list(_TCL_KEYS)}
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "hh1_lie":
             # HH^1 as a Lie algebra (Plan 70 / R11): algebra-level, DIM budget (not
             # degree). SAME shared library builder (invariants.hh1_lie.hh1_lie_block) +
@@ -1537,6 +1563,9 @@ def python_snippet():
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              # Plan 64: the congruences kind carries a pair budget (%d = budget).
              "congruences": "A.congruence_lattice(budget=%d)",
+             # Plan 66: the tau_cluster kind carries a pair budget (%d = budget); the block
+             # also builds A.picture_group(budget=...) with the same budget.
+             "tau_cluster": "A.tau_cluster_category(budget=%d)",
              # Plan 70: HH^1 as a Lie algebra, a scalar algebra-only kind, no %d.
              "hh1_lie": "A.hh1_lie_structure()",
              # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
@@ -1680,6 +1709,10 @@ ETA_MODEL = {
                 # runs the principal-congruence fixed points + the kappa/CLO build -- a bit
                 # heavier than tau_tilting alone.
                 "congruences": 3.0,
+                # Plan 66: tau_cluster BFSes the exchange graph, builds the wide poset AND a
+                # reduction / sub-g-fan per object (the closed-star enumeration + the
+                # picture-group Ext scan) -- heavier than congruences.
+                "tau_cluster": 4.0,
                 # Plan 70: hh1_lie runs the Der/Inn Leibniz null space (d^2 unknowns /
                 # d^3 equations, ~ d^5.4 over QQ) + the bracket/series/Killing; budget-
                 # capped honestly at dim 48. The same cost class as tau_tilting.
