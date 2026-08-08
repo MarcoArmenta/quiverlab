@@ -3823,8 +3823,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}

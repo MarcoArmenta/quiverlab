@@ -1753,6 +1753,8 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     if kind == "toupie":
         from quiverlab.families.toupie import toupie_block
         block = toupie_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # pi1(Q, I) + simple connectivity (Plan 56): algebra-scalar kinds (schema v1, NO
     # module block -- the recognizers/strings precedent). Shared builders drive both
     # runners byte-identically; the simply_connected kind carries the R16 strongly-
