@@ -327,6 +327,15 @@ discriminating battery; degree-vs-layer consistency with R21 (an irreducible
 map of finite left degree d forces the predicted rad-layer drop). Size M.
 Deps: AR knitting, Hom, R21 degrees.
 
+> **2026-08-07 (P57, citation-grouping correction):** the nilpotency-index
+> formula (Thm 1.3 `index = max_a{r_a+1}`, Thm 1.5(a) `index(kA_n)=n`) source is
+> **arXiv:2003.04189 (Chaio–Guazzelli, *On the nilpotency index of the radical of
+> a module category*, JPAA)**, DISTINCT from the degree paper **arXiv:1704.03933
+> (ART 2019, *Degrees of Irreducible Morphisms over Perfect Fields*)** which
+> supplies only the left/right degree definition (with the corrected membership
+> `fg ∈ rad^{m+2}`, the `∈` direction). Add 2003.04189 to R37's anchors. Shipped
+> by Plan 57 (`modules/radical.py`, `modules/ar_invariants.py`).
+
 **R22 — Cluster-tilted algebras: relation-extension constructor + local-slice
 recognizer.** [C-scout P6; keep]
 Object: Ĉ = C ⋉ Ext²_C(DC, C) (reuse the Plan-31 ⋉ machinery + Ext engine —
