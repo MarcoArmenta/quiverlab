@@ -17,6 +17,7 @@ from quiverlab.tautilting.stability import (is_theta_semistable, is_theta_stable
                                             wall_and_chamber_fan)
 from quiverlab.tautilting.torsion import (bricks, hasse_orientation, semibricks,
                                           torsion_class_data)
+from quiverlab.tautilting.wallchamber import Wall, wall_of_brick
 
 __all__ = [
     "is_tau_rigid", "g_vector", "g_matrix",
@@ -27,4 +28,5 @@ __all__ = [
     "maximal_green_sequences",
     "two_term_silting", "silting_count",
     "tau_tilting_block",
+    "Wall", "wall_of_brick",
 ]
