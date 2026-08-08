@@ -297,6 +297,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"left_right_parts budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="left_right_parts", lo=None, hi=(int(b) if b else None))
+    # skew_gentle carries a tau-tilting PAIR BUDGET, not a degree range (Plan 68):
+    # 'skew_gentle' or 'skew_gentle:512'. hi = the budget (None => default). Bypasses the
+    # 'name:0..N' degree grammar (like tau_tilting).
+    if s == "skew_gentle" or s.startswith("skew_gentle:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"skew_gentle budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_gentle", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -367,7 +375,8 @@ def resolve_references(keys) -> list:
 def _iter_families():
     for info in ql.families():
         name = info.name
-        if name in ("zoo", "BrauerGraphAlgebra", "ToupieAlgebra"):   # non-scalar constructors
+        if name in ("zoo", "BrauerGraphAlgebra", "ToupieAlgebra",
+                    "SkewGentleAlgebra"):                            # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -880,6 +889,7 @@ _SYNTHETIC_FAMILY_PARAMS = {
     "CornerAlgebra": {"base", "vertices"},
     "OppositeAlgebra": {"base"},
     "MarkedSurface": {"preset"},
+    "SkewGentleAlgebra": {"vertices", "arrows", "relations", "special"},
 }
 
 _SURFACE_PRESETS = ("disc_fan_A3", "annulus_C22", "hexagon_internal")
@@ -1000,7 +1010,52 @@ def _build_synthetic(spec):
         return _build_marked_surface(params.get("preset"), field)
     if name == "BrauerGraphAlgebra":
         return _build_brauer(params, field)
+    if name == "SkewGentleAlgebra":
+        return _build_skew_gentle(params, field)
     raise ComputeError("CatalogError", f"no synthetic builder for {name!r}")
+
+
+def _build_skew_gentle(params, field):
+    """SkewGentleAlgebra from flattened triple params: ``vertices`` (list of vertex
+    integers), ``arrows`` (``{name: [source, target]}``), ``relations`` (length-2
+    monomial strings), and ``special`` (the Sp vertex list).  Routes to the split
+    constructor, which validates the triple + certifies the dim law (loud
+    ``QuiverlabError`` propagates as a clean error)."""
+    verts_p = params.get("vertices")
+    if not (isinstance(verts_p, list) and verts_p
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in verts_p)):
+        raise ComputeError(
+            "CatalogError",
+            "SkewGentleAlgebra.vertices must be a non-empty list of vertex integers, "
+            "e.g. [1, 2]")
+    arrows_p = params.get("arrows") or {}
+    if not isinstance(arrows_p, dict):
+        raise ComputeError(
+            "CatalogError",
+            "SkewGentleAlgebra.arrows must map names to [source, target] pairs, "
+            "e.g. {\"a\": [1, 2]}")
+    arrows = {}
+    for nm, st in arrows_p.items():
+        if not (isinstance(st, (list, tuple)) and len(st) == 2
+                and all(isinstance(x, int) and not isinstance(x, bool) for x in st)):
+            raise ComputeError(
+                "CatalogError",
+                "SkewGentleAlgebra.arrows must map names to [source, target] pairs")
+        arrows[nm] = (st[0], st[1])
+    rels_p = params.get("relations", [])
+    if not (isinstance(rels_p, list) and all(isinstance(r, str) for r in rels_p)):
+        raise ComputeError("CatalogError",
+                           "SkewGentleAlgebra.relations must be a list of strings")
+    special_p = params.get("special", [])
+    if not (isinstance(special_p, list)
+            and all(isinstance(v, int) and not isinstance(v, bool) for v in special_p)):
+        raise ComputeError(
+            "CatalogError",
+            "SkewGentleAlgebra.special must be a list of vertex integers (the special "
+            "vertices Sp), e.g. [2]")
+    from quiverlab.skewgentle.split import SkewGentleAlgebra as _SGA
+    return _SGA(quiver=ql.Quiver(vertices=list(verts_p), arrows=arrows),
+                relations=list(rels_p), special=set(special_p), field=field)
 
 
 # --------------------------------------------------------------------------- #
@@ -1753,6 +1808,17 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     if kind == "toupie":
         from quiverlab.families.toupie import toupie_block
         block = toupie_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Skew-gentle world (Plan 68 / R32): an algebra-scalar kind driven by the TRIPLE
+    # carried on the split algebra (A._skew_gentle_triple). Shared builder
+    # (skewgentle.block.skew_gentle_block): recognizer verdict + split shape + dim law
+    # (HZZ Lemma 1.5) + special-string classification counts + support tau-tilting +
+    # brick-finite <=> rep-finite certificate. A bare algebra without the marker reports
+    # is_skew_gentle=False + a note, never a 500. Byte-identical twin (docs/gui/runner.py).
+    if kind == "skew_gentle":
+        from quiverlab.skewgentle.block import skew_gentle_block
+        block = skew_gentle_block(A, budget=(item.hi or 512))
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # pi1(Q, I) + simple connectivity (Plan 56): algebra-scalar kinds (schema v1, NO
@@ -2545,6 +2611,10 @@ def _snippet(req: ComputeRequest, A) -> str:
                              "homological_string_test\nhomological_string_test(A)"),
              "toupie": lambda it: ("from quiverlab.families.toupie import is_toupie, "
                                    "toupie_block\nis_toupie(A), toupie_block(A)"),
+             "skew_gentle": lambda it: (
+                 "from quiverlab.skewgentle import skew_gentle_block\n"
+                 "# A is the split algebra SkewGentleAlgebra(Q, I, Sp)\n"
+                 "skew_gentle_block(A)"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
