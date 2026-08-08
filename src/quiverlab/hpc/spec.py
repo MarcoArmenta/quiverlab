@@ -1563,6 +1563,20 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         keys = list(block["references"])
         block["citations"] = _citation_pairs(keys)
         return block, None
+    # pi1(Q, I) + simple connectivity (Plan 56): algebra-scalar kinds (schema v1, NO
+    # module block -- the recognizers/strings precedent). Shared builders drive both
+    # runners byte-identically; the simply_connected kind carries the R16 strongly-
+    # simply-connected certificate (the P62 consumable).
+    if kind == "fundamental_group":
+        from quiverlab.invariants.coverings_block import fundamental_group_block
+        block = fundamental_group_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    if kind == "simply_connected":
+        from quiverlab.invariants.coverings_block import simply_connected_block
+        block = simply_connected_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
 
 
@@ -2314,6 +2328,8 @@ def _snippet(req: ComputeRequest, A) -> str:
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),
              "quasi_hereditary": lambda it: "A.is_quasi_hereditary()",
+             "fundamental_group": lambda it: "A.fundamental_group()",
+             "simply_connected": lambda it: "A.is_simply_connected()",
              "derived_fingerprint":
                  lambda it: ("from quiverlab.derived import derived_fingerprint; "
                              f"derived_fingerprint(A, {it.hi if it.hi is not None else 4})"),

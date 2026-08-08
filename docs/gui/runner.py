@@ -947,6 +947,22 @@ def compute_one(spec):
             from quiverlab.modules.quasihereditary import quasi_hereditary_block
             block = quasi_hereditary_block(A)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "fundamental_group":
+            # pi1(Q, I) + abelianization (Plan 56): an algebra-scalar kind (schema v1).
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # shared builder (invariants.coverings_block.fundamental_group_block) +
+            # `references`->citations.
+            from quiverlab.invariants.coverings_block import fundamental_group_block
+            block = fundamental_group_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "simply_connected":
+            # Three-valued simple connectivity + the R16 strongly-simply-connected
+            # certificate (Plan 56). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (invariants.coverings_block.simply_connected_block) + references->citations.
+            from quiverlab.invariants.coverings_block import simply_connected_block
+            block = simply_connected_block(A)
+            block["citations"] = _citation_pairs(block["references"])
         elif name in ("cup", "cap", "bracket", "connes_b"):
             # HH product surface (Plan 35): cup / cap / bracket / connes_b. Each
             # library method returns a frozen result whose .blocks() IS the block
@@ -1184,6 +1200,9 @@ def python_snippet():
                              "A.dynkin_type(), A.form_type()]"),
              # Quasi-hereditary structure (Plan 47): a scalar kind, no %d.
              "quasi_hereditary": "A.is_quasi_hereditary()",
+             # pi1 + simple connectivity (Plan 56): scalar kinds, no %d.
+             "fundamental_group": "A.fundamental_group()",
+             "simply_connected": "A.is_simply_connected()",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -1300,6 +1319,10 @@ ETA_MODEL = {
                 # Plan 47: quasi_hereditary builds Delta/Nabla + a gl.dim check +
                 # the greedy Delta-peel of each P(v); a few small resolutions.
                 "quasi_hereditary": 0.5,
+                # Plan 56: fundamental_group = a reduction system + block linear
+                # algebra + a small ZZ SNF; simply_connected additionally runs the
+                # convex-subset separation sweep (decompose per vertex per subset).
+                "fundamental_group": 0.5, "simply_connected": 2.0,
                 # Plan 45: the C4 tau-tilting engine BFSes the exchange graph via the
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.

@@ -216,7 +216,18 @@ never hide behind one:
     ``weak-on-generators``). Pure ADDITION: every pre-existing entry was verified
     byte-identical BEFORE the two were appended; both runners share the library builders
     (``homological_profile`` / ``fractional_cy_block``), so the Pyodide twin agrees
-    (``tests/webapp/test_phidim_fcy_gui_p53.py``). ``canonical_key`` is request-derived."""
+    (``tests/webapp/test_phidim_fcy_gui_p53.py``). ``canonical_key`` is request-derived.
+  * 2026-08-07 (``fundamental_group_square_gf7`` + ``simply_connected_zito`` ADDED,
+    Plan 56): two NEW fixtures for the algebra-scalar compute kinds
+    ``fundamental_group`` (the commutative square WITH the commutativity relation over
+    GF(7) -- pi1^ab = 0) and ``simply_connected`` (the Zito example over QQ -- simply
+    connected True, strongly-simply-connected False at vertex 2). Both are schema v1
+    (they act on the algebra block, no new request block), so every pre-existing entry
+    is byte-identical (verified by re-dumping the goldens dict byte-for-byte before
+    appending). Both runners share the library builders
+    (``invariants.coverings_block.fundamental_group_block`` / ``simply_connected_block``),
+    so the Pyodide twin agrees (``tests/webapp/test_coverings_exposure_p56.py::
+    test_twin_parity``). ``canonical_key`` is request-derived."""
 import json
 import pathlib
 

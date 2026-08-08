@@ -36,6 +36,8 @@ ALL_KINDS = {
     "radical_filtration_ss", "ar_quiver", "derived_compare",
     # Plan 53 (2026-08-07): the stable-category fractional Calabi-Yau dimension.
     "fractional_cy",
+    # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
+    "fundamental_group", "simply_connected",
 }
 
 
