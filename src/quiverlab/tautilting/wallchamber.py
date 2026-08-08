@@ -329,12 +329,14 @@ def _is_green_path(eg, orient, seq):
     if last["summand_dimvecs"] or set(last["support"]) != set(verts):
         return False                                  # the sink must be the terminal (0, A)
     for t in range(len(seq) - 1):
-        i, j = seq[t], seq[t + 1]
-        e = (min(i, j), max(i, j))
+        a, b = seq[t], seq[t + 1]
+        e = (min(a, b), max(a, b))
         if e not in eg.arrows:
             return False                              # not an exchange edge
-        down = i if orient[e] == "down" else j
-        if down != i:
+        # hasse_orientation keys on (min,max): "down" => min is the higher (downward source);
+        # "up" => max is. The green step must go DOWNWARD out of seq[t].
+        source = e[0] if orient[e] == "down" else e[1]
+        if source != a:
             return False                              # the step goes UP, not down
     return True
 
