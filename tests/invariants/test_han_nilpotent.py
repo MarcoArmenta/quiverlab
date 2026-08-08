@@ -8,11 +8,13 @@ relative cycle with no ``J``-interrupter). Composition left-to-right.
 import pytest
 
 from quiverlab.combinat.quiver import Quiver
-from quiverlab.fields import QQ
+from quiverlab.fields import GF, QQ
+from quiverlab.families import truncated_polynomial
 from quiverlab.families.extension import arrow_removal_subalgebra
 from quiverlab.invariants.han import is_tensor_nilpotent
 
 lit = pytest.mark.oracle_literature
+xeng = pytest.mark.oracle_crossengine
 selfcert = pytest.mark.oracle_selfcert
 
 
@@ -103,3 +105,42 @@ def test_cap_route_finds_nilpotent_when_a_power_vanishes():
     ext = arrow_removal_subalgebra(build_ex53(), ("a",))
     tn = is_tensor_nilpotent(ext, cap=8, use_certificate=False)
     assert tn.status == "nilpotent" and tn.index == 2 and tn.route == "direct_cap"
+
+
+# --------------------------------------------------------------------------- #
+# Task III3: CLMS Ex. 5.4 -- rad is E-tensor-nilpotent iff Q is acyclic
+# (E = kQ_0 vertex subalgebra: new_arrows = ALL arrows, so B = kQ_0, A/B = rad A)
+# --------------------------------------------------------------------------- #
+@lit
+def test_ex54_acyclic_rad_is_E_nilpotent():
+    """Linear A_3 is ACYCLIC: rad is E-tensor-nilpotent (CLMS Ex. 5.4)."""
+    A3 = Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(relations=[], field=QQ)
+    ext = arrow_removal_subalgebra(A3, ("a", "b"))    # B = kQ_0
+    assert ext.dim_B == 3                             # E = k^3 (the vertices)
+    tn = is_tensor_nilpotent(ext, cap=8)
+    assert tn.status == "nilpotent"
+
+
+@lit
+def test_ex54_cyclic_rad_is_not_E_nilpotent():
+    """A loop (oriented cycle) is CYCLIC: rad is NOT E-tensor-nilpotent -- the loop
+    survives every tensor power (CLMS Ex. 5.4)."""
+    loop = truncated_polynomial(2, field=QQ)          # k[x]/(x^2), one loop x
+    ext = arrow_removal_subalgebra(loop, ("x",))      # B = kQ_0 = k
+    assert ext.dim_B == 1
+    tn = is_tensor_nilpotent(ext, cap=8)
+    assert tn.status == "not_nilpotent"
+
+
+@xeng
+def test_relative_homology_equals_absolute_over_kQ0():
+    """E = kQ_0 is separable, so HH_*(A|E) = absolute HH_*(A) (cross-checks the CLMS
+    relative bar complex against the shipped HH engine on acyclic A_3)."""
+    from quiverlab.hochschild.jacobi_zariski import relative_homology
+    A3 = Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(relations=[], field=GF(32003))
+    ext = arrow_removal_subalgebra(A3, ("a", "b"))
+    rh = relative_homology(ext, 4).dims
+    abs_hh = A3.hochschild_homology(4, verbose=False).dims
+    # HH_0(kA_3) = k^3 (the three vertices; no oriented cycles). Three independent
+    # routes agree: the fast engine, relative.py's E-relative route, and my complex.
+    assert rh == abs_hh == [3, 0, 0, 0, 0]
