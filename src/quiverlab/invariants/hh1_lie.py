@@ -477,3 +477,78 @@ def is_solvable_hh1(A, *, budget=DEFAULT_MAXDIM):
 def is_nilpotent_hh1(A, *, budget=DEFAULT_MAXDIM):
     """Is ``HH^1(A)`` a nilpotent Lie algebra? Any exact field."""
     return _field_general(A, budget)["nilpotent"]
+
+
+# ---------------------------------------------------------------------------
+# Task 4: the RSS Ext-quiver criterion + the Gerstenhaber cross-engine oracle
+# ---------------------------------------------------------------------------
+def rss_solvable_certificate(A):
+    """The RSS 1903.12145 Ext-quiver solvability criterion (arbitrary characteristic):
+    if the Gabriel quiver has NO loops (``Ext^1(S,S) = 0``) and NO parallel arrows
+    (``dim Ext^1(S,T) <= 1``) then ``HH^1(A)`` is SOLVABLE. A pure quiver predicate.
+
+    Returns ``{solvable_by_criterion, has_loops, has_parallel, note}``. When the
+    criterion is silent (loops or parallel arrows present) ``solvable_by_criterion``
+    is ``None`` (the criterion is one-directional -- its failure says nothing).
+    Loud refusal on a structure-constant-only algebra (no Gabriel quiver)."""
+    if A.quiver is None:
+        raise QuiverlabError(
+            "rss_solvable_certificate needs the Gabriel quiver -- a structure-constant-only "
+            "algebra has no Ext-quiver to test",
+            hint="build the algebra from a quiver (kQ/I)")
+    # A.quiver IS the Gabriel quiver for an admissible presentation (its arrows are the
+    # Ext^1(S_i, S_j) basis); read loops / parallel arrows off it directly -- a pure
+    # quiver predicate over ANY characteristic (unlike gabriel_quiver()'s char-sensitive
+    # basic-ization).
+    gq = A.quiver
+    pair_count, has_loops, has_parallel = {}, False, False
+    for name in gq.arrows:
+        s, t = gq.source(name), gq.target(name)
+        if s == t:
+            has_loops = True
+        else:
+            pair_count[(s, t)] = pair_count.get((s, t), 0) + 1
+            if pair_count[(s, t)] >= 2:
+                has_parallel = True
+    applies = (not has_loops) and (not has_parallel)
+    if applies:
+        note = ("RSS 1903.12145: no loops and no parallel arrows in the Gabriel quiver "
+                "(Ext^1(S,S) = 0, dim Ext^1(S,T) <= 1) => HH^1 is solvable, in any "
+                "characteristic")
+    else:
+        reasons = ([("loops (Ext^1(S,S) != 0)")] if has_loops else []) + \
+                  ([("parallel arrows (dim Ext^1(S,T) > 1)")] if has_parallel else [])
+        note = ("the RSS no-loops/no-parallel criterion does not apply (" +
+                " and ".join(reasons) + "); it is silent -- HH^1 may or may not be solvable")
+    return {"solvable_by_criterion": True if applies else None,
+            "has_loops": has_loops, "has_parallel": has_parallel, "note": note}
+
+
+def _lie_invariants_from_products(g):
+    """Read the HH^1 Lie algebra off a Plan-35 ``HHProducts`` degree-(1,1) bracket
+    table and derive the BASIS-INDEPENDENT invariants (dim, solvable, nilpotent, the
+    derived-series dims). The Gerstenhaber bracket route is GF(p) in-window (Plan 35 /
+    P51); the field is recovered from the products' basis provenance (``bar/GF(p)``).
+    Structure constants are NOT compared across engines (basis-dependent, Plan-35 rule)."""
+    import re
+
+    from quiverlab.fields import GF
+
+    t = g.tables.get((1, 1))
+    if t is None:
+        raise QuiverlabError(
+            "HH^1-Lie cross-engine: the products object has no degree-(1,1) bracket table")
+    match = re.search(r"GF\((\d+)\)", str(g.basis) or "")
+    if match is None:
+        raise QuiverlabError(
+            f"HH^1-Lie cross-engine: cannot read the field from basis {g.basis!r} "
+            f"(the Gerstenhaber bracket route is GF(p))")
+    dom = GF(int(match.group(1)))
+    consts, m = t.constants, t.dims[0]
+    # c[i][j][k] = coeff of basis element k in [b_i, b_j] (ProductTable: constants[k][i][j])
+    c = [[[dom.coerce(int(consts[k][i][j])) for k in range(m)] for j in range(m)]
+         for i in range(m)]
+    ds = _series(c, m, dom, central=False)
+    lcs = _series(c, m, dom, central=True)
+    return dict(dim=m, solvable=ds[-1] == 0, nilpotent=lcs[-1] == 0,
+                derived_series_dims=ds, lower_central_dims=lcs)

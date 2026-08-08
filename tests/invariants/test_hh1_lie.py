@@ -7,7 +7,8 @@ from quiverlab.combinat.quiver import Quiver
 from quiverlab.families import truncated_polynomial
 from quiverlab.errors import QuiverlabError
 from quiverlab.invariants.hh1_lie import (
-    derivations, inner_derivations, hh1_lie_structure,
+    derivations, inner_derivations, hh1_lie_structure, rss_solvable_certificate,
+    _lie_invariants_from_products,
 )
 
 xeng = pytest.mark.oracle_crossengine
@@ -176,3 +177,64 @@ def test_gf4_non_prime_field_arithmetic():
     A = truncated_polynomial(3, field=GF(4))
     L = hh1_lie_structure(A)
     assert L.dim == 2 == A.hochschild_cohomology(top=2).dims[1] and L.solvable is True
+
+
+# -------------------------------------------------------------------- Task 4
+from quiverlab.families import RadicalSquareZero
+
+
+@lit
+@pytest.mark.parametrize("Q,field", [
+    ({"a": (1, 2), "b": (2, 1)}, QQ),               # k(1<->2)/rad^2 (no loops, no parallel)
+])
+def test_rss_criterion_positive(Q, field):
+    A = RadicalSquareZero(Quiver([1, 2], Q), field=field)
+    cert = rss_solvable_certificate(A)
+    assert cert["solvable_by_criterion"] is True
+    assert hh1_lie_structure(A).solvable is True    # criterion not vacuous: HH^1 != 0 here
+
+
+@lit
+def test_rss_criterion_3cycle_any_char():
+    for field in (QQ, GF(3), GF(5)):
+        A = RadicalSquareZero(Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3), "c": (3, 1)}), field=field)
+        assert rss_solvable_certificate(A)["solvable_by_criterion"] is True
+        assert hh1_lie_structure(A).solvable is True
+
+
+@selfcert
+def test_rss_criterion_kronecker_not_covered():
+    A = _kron()                                     # parallel arrows
+    cert = rss_solvable_certificate(A)
+    assert cert["solvable_by_criterion"] in (False, None) and cert["has_parallel"] is True
+    assert hh1_lie_structure(A).solvable is False   # sl2 (correctly not solvable)
+
+
+@selfcert
+def test_rss_criterion_presentation_less_refused():
+    from quiverlab.core.algebra import Algebra
+    # a structure-constant-only algebra (no Gabriel quiver): loud refusal, but the
+    # field-general HH^1-Lie block still computes.
+    T = [[[1, 0], [0, 1]], [[0, 1], [0, 0]]]      # k[x]/x^2 raw structure constants
+    A = Algebra.from_structure_constants(T, unit=[1, 0], field=QQ, check=True)
+    assert A.quiver is None
+    with pytest.raises(QuiverlabError):
+        rss_solvable_certificate(A)
+    assert hh1_lie_structure(A).dim == 1          # still computes field-generally
+
+
+@xeng
+@pytest.mark.parametrize("factory", ["truncpoly4_gf5", "kron_gf3"])
+def test_gerstenhaber_bracket_agrees(factory):
+    """The degree-(1,1) gerstenhaber_brackets route (Plan 35/P51, in-window over GF(p))
+    agrees with the Der/Inn commutator on BASIS-INDEPENDENT data (dim, solvable,
+    nilpotent, derived-series dims). Structure constants are NOT compared."""
+    if factory == "truncpoly4_gf5":
+        A = truncated_polynomial(4, field=GF(5))                  # dim HH^1 = 3, solvable
+    else:
+        A = _kron(GF(3))                                          # sl2
+    L = hh1_lie_structure(A)
+    g = A.gerstenhaber_brackets(top=2)                            # in-window degree (1,1)
+    inv = _lie_invariants_from_products(g)
+    assert inv["dim"] == L.dim and inv["solvable"] == L.solvable and inv["nilpotent"] == L.nilpotent
+    assert inv["derived_series_dims"] == L.derived_series_dims
