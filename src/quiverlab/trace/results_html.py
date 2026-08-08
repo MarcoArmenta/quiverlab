@@ -35,6 +35,7 @@ _HEADINGS = {
     "ar_quiver": "Auslander–Reiten quiver",
     "radical_filtration": "Radical filtration of mod A",
     "ar_invariants": "AR-component invariants",
+    "left_right_parts": "Left / right parts",
     "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
@@ -736,6 +737,49 @@ def _ar_invariants_html(b):
     return chunks
 
 
+def _left_right_parts_html(b):
+    """The left/right parts atlas (Plan 55): both parts named S_v/P_v/I_v, the complement
+    (laura datum), the Ext-injectives of add L_A (and dual Ext-projectives of add R_A), and
+    the two support algebras with their connected-component counts. An honest refusal
+    (self-injective / rep-infinite / char-scope) is the library's loud message."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Left/right parts not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Incomplete (status: %s) — %s</p>"
+                % (_esc(str(b.get("status"))),
+                   _esc(str(b.get("note") or "the algebra is not representation-finite / "
+                        "the knit did not close (self-injective or rep-infinite)")))]
+
+    def _named(records):
+        if not records:
+            return "&empty;"
+        return ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {}))
+                         for r in records)
+
+    chunks = ["<p>The module category has %s indecomposables; L_A has %s and R_A has %s "
+              "(intersection %s, complement %s).</p>"
+              % (_num(b.get("universe_size")), _num(len(b.get("left") or [])),
+                 _num(len(b.get("right") or [])), _num(len(b.get("intersection") or [])),
+                 _num(len(b.get("complement") or [])))]
+    chunks.append("<p><b>Left part L<sub>A</sub></b>: %s.</p>" % _named(b.get("left")))
+    chunks.append("<p><b>Right part R<sub>A</sub></b>: %s.</p>" % _named(b.get("right")))
+    chunks.append("<p><b>Complement</b> (ind A &setminus; (L<sub>A</sub> &cup; "
+                  "R<sub>A</sub>)): %s.</p>" % _named(b.get("complement")))
+    chunks.append("<p><b>Ext-injectives of add L<sub>A</sub></b>: %s.</p>"
+                  % _named(b.get("ext_injectives_left")))
+    chunks.append("<p><b>Ext-projectives of add R<sub>A</sub></b>: %s.</p>"
+                  % _named(b.get("ext_projectives_right")))
+    for label, sa in (("A<sub>&lambda;</sub> (left support)", b.get("left_support")),
+                      ("A<sub>&rho;</sub> (right support)", b.get("right_support"))):
+        if sa is None:
+            continue
+        chunks.append("<p><b>%s</b>: vertices {%s}, dim %s, %s connected component(s).</p>"
+                      % (label, ", ".join(_esc(str(v)) for v in (sa.get("vertices") or [])),
+                         _num(sa.get("dim")), _num(len(sa.get("components") or []))))
+    return chunks
+
+
 def _strings_html(b):
     """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
     census + band presence + honest rep-type + (gentle) AG invariant."""
@@ -858,6 +902,8 @@ def _block_html(kind, b, ctx=None):
         return _radical_filtration_html(b)
     if kind == "ar_invariants":
         return _ar_invariants_html(b)
+    if kind == "left_right_parts":
+        return _left_right_parts_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]

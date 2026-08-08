@@ -40,6 +40,8 @@ ALL_KINDS = {
     "fractional_cy",
     # Plan 57 (2026-08-07): the radical filtration of mod A + AR-component invariants.
     "radical_filtration", "ar_invariants",
+    # Plan 55 (2026-08-07): the left/right parts + support algebras.
+    "left_right_parts",
 }
 
 

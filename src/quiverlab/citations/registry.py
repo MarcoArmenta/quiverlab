@@ -482,6 +482,21 @@ REGISTRY: dict = {r.key: r for r in [
        "King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the "
        "Plan-45 / C4 engine draws.",
        "tau-tilting", "stability"),
+    _r("act_left_right", "ACT2004", "foundation",
+       "The left and the right parts of a module category",
+       "Assem-Coelho-Trepode: L_A / R_A via predecessor/successor closure of pd<=1 / id<=1, the "
+       "Ext-injective criterion tau^{-1}X notin L_A, and the support algebra A_lambda = End of "
+       "the projectives in L_A -- the ground truth for Plan 55.", "recognizer"),
+    _r("aclv_supports", "ACLV2011", "foundation",
+       "Algebras determined by their supports",
+       "Assem-Castonguay-Lanzilotta-Vargas: A_lambda / A_rho are products of tilted algebras for "
+       "ada algebras (quasi-tilted in general), D L_A = R_{A^op}, and the laura complement "
+       "ind A minus (L_A u R_A) -- non-empty even for ada; feeds P60 (tilted) and P61 (laura/ada).",
+       "recognizer"),
+    _r("organising_module_category", "AACV2021", "foundation",
+       "Organising the module category",
+       "Alvares-Assem-Castonguay-Vargas survey of the left/right parts, supports, and the "
+       "quasi-tilted/laura/ada organisation of mod A -- Plan 55's secondary reference.", "survey"),
 ]}
 
 

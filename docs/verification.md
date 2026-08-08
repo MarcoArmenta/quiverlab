@@ -478,6 +478,7 @@ Plan-35 product surface).
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries; the Plan-58 R20 **certified Coxeter spectral analysis** — `spectral.py::certify_real_algebraic`/`cyclotomic_factorization`/`off_circle_root_count` + `coxeter_spectral.py::coxeter_spectral`/`coxeter_spectral_block`) — `tests/invariants/test_coxeter_certified.py`, `test_coxeter_spectral.py`, `test_coxeter_spectral_literature.py` | 135 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity; **the Plan-58 certified-spectral oracles** — `oracle_selfcert`: the certificate's minpoly round-trips `sympy.minimal_polynomial` (the independent anchoring is the literature pins), the rational Sturm interval brackets the root and the index is consistent, the Φ_n labelling is exact, the **product-Mahler M ≠ ρ branch** (two roots outside the circle: χ = (t²−7t+1)(t²−14t+1), degree-4 minpoly [1,−98,243,−98,1], interval (95,96)), the deterministic complex-dominant gate refuses ρ/M without ever calling `minimal_polynomial` (the measured 121 s anti-hang), and a singular/absent Cartan refuses per-field (never a crash); `oracle_literature`: kA₂ = Φ₃ (order 3), kA₄ = Φ₅ (order 5), kA₅ = Φ₂Φ₃Φ₆, the 3-Kronecker ρ = M = (7+3√5)/2 (minpoly [1,−7,1], interval (6,7)), the m-Kronecker ladder x²−(m²−2)x+1, T_{2,3,7} = E₁₀ = **Lehmer** (minpoly = the degree-10 polynomial, interval (1,2)), and the ADE/affine cyclotomic sweep (finite Coxeter order = Coxeter number on Dynkin, None/Jordan on affine) — pins from de la Peña 2014/2013 (`dlPena2014mahler`/`dlPena2013cyclotomic`) + de la Peña–Takane 1990 (`dlPenaTakane1990spectral`); `oracle_crossengine`: the report's ρ/M match the shipped `spectral_radius`/`mahler_measure` primitives |
 | `invariants/geometry.py` (Plan-49 C8 — orbit dimension `dim O_M = Σ d_v² − dim End(M)`, Voigt rigidity `is_rigid`/`rigidity_codim`, the Kac `canonical_decomposition` over hereditary Dynkin, and the shared `orbit_geometry_block`) — `tests/invariants/test_geometry_orbit.py`, `test_geometry_canonical.py` | 21 | fast | **`oracle_selfcert`**: the orbit-dim identity `dim O_M = Σ d_v² − dim End(M)`, GF(p)↔QQ field parity, the canonical-decomposition sum-of-roots + per-instance rigidity certificate `Ext¹(G,G)=0`, the loud Euclidean-deferred / non-hereditary refusals. **`oracle_crossengine`**: the Voigt codim identity `dim Rep(Q,d) − dim O_M ≡ dim Ext¹(M,M)` on hereditary + the P38 `tits_form` tie; the canonical decomposition ≡ the Krull–Schmidt summands of the degeneration poset's maximum. **`oracle_literature`**: every Dynkin indecomposable is rigid (codim 0); `(2,1) = P₁ ⊕ S₁` over kA₂ (hand-derived Kac pin) |
 | `modules/degeneration.py` (Plan-49 C8 — the Zwara–Bongartz degeneration = hom order poset for representation-finite algebras, `DegenerationPoset`) — `tests/modules/test_degeneration.py` | 6 | deep | **`oracle_literature`**: kA₂ (1,1) = the 2-chain `S₁⊕S₂ <_deg P₁`; kA₃ (1,1,1) = the diamond (orbit dims `[0,1,1,2]`, 4 covers, two incomparable middles) — both hand-derived. **`oracle_selfcert`**: the hom-order is a partial order (reflexive/antisymmetric), orbit dim strictly increases up every cover, the per-class orbit dim ≡ `geometry.orbit_dimension`, and the honest semi-decision cap (rep-infinite / self-injective ⇒ `is_complete=False` with a loud `status`, never a partial poset) |
+| `modules/left_right.py` (Plan-55 R15 — the left/right parts `L_A`/`R_A` of the module category via the closed-under-predecessors pd/id ≤ 1 sweep on the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)`, the Ext-injectives of `add L_A` (+ dual Ext-projectives of `add R_A`), and the left/right support algebras `A_λ`/`A_ρ` as presented induced-convex-subquiver `Algebra`s with their connected-component factors; the P61-addendum per-indecomposable `pd_le_1`/`id_le_1` vectors) — `tests/modules/test_left_right_{parts,ext,support,oracles}.py`, `tests/qpa/test_left_right_qpa.py` | 24 + 2 qpa | deep + qpa | **`oracle_selfcert`** — `L_A` closed under predecessors / `R_A` under successors, intersection/complement consistency (`complement = U ∖ (L_A ∪ R_A)`), `gl.dim ≤ 1 ⇒ both parts total`; Ext-injectives ⊆ `L_A` and an injective in `L_A` is always Ext-injective; the support certificates — `e_λ`/`e_ρ` convex, hereditary ⇒ `A_λ = A_ρ = A` (connected), and the loud presentation-less refusal (structure-constants-only `A` ⇒ `QuiverlabError`, no fabricated quiver); the honest refusals — self-injective and **provably rep-infinite** (hereditary non-Dynkin, or rad²=0 with a non-Dynkin separated quiver — Gabriel, covering the 2-Kronecker and ACLV 2.2(c)) ⇒ `status="unsupported"` fast, any other rep-infinite input ⇒ the `budget_dim`-capped knit's `status="budget"`; the P61 `pd_le_1`/`id_le_1` index-alignment. **`oracle_literature`** — hereditary ⇒ `L_A = R_A = ind A`, empty complement (kA_n); **ACLV Example 2.2(b)** the rad²=0 linear-Nakayama A₅: `L_A = {S₁,S₂,P₂,P₃}`, `R_A = {S₄,S₅,P₄,P₅}`, `L_A ∩ R_A = ∅`, **complement = {S₃}** (pd 2, id 2 — the ada-with-non-empty-complement datum), `e_λ = {1,2,3}`, `e_ρ = {3,4,5}`, `gl.dim = 4`; kA_n Ext-injectives count = #injectives. **`oracle_crossengine`** — the Hom-nonzero transitive-closure predecessor relation ≡ the AR-quiver irreducible-map reachability closure (rad^∞ = 0, rep-finite); the ACLV duality `D R_A = L_{A^op}` / `D L_A = R_{A^op}` on the **proper-subset** A₅ (`\|R_A\| = 4` of 9, non-vacuous); the presented `A_λ` dim ≡ `end_algebra(⊕ P_x)` dim. **`qpa`** (`tests/qpa/test_left_right_qpa.py`) — the defining pd ≤ 1 / id ≤ 1 flags corroborated pointwise via QPA `ProjectiveResolution` / `InjDimensionOfModule` on the kA₃ indecomposables; a fail-if-appears `IsBoundGlobal` probe that trips if QPA ever ships a left/right-part or support-algebra verb |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `strings/` (Plan-46 C5 gentle/string subsystem: reduced walks + σ/ε signs + string census + band detection; string/band module materialisation; string-τ by hooks/cohooks; the Avella-Alaminos–Geiss derived invariant; the `strings` block) — `tests/modules/test_strings_*.py`, `tests/invariants/test_ag_invariant.py` | 33 | deep + fast | Butler-Ringel `n(n+1)/2` interval count + Kronecker band existence (`oracle_literature`); string-τ ≡ engine τ + census count ≡ `knit_ar_quiver` vertex count (`oracle_crossengine`); `check_module` on every materialised string/band + permitted/forbidden thread partition of `Q_1` (`oracle_selfcert`); AAG-2008 pins reproduced verbatim (Nakaoka `arXiv:1811.00775` Example 2.15 = `{(3,2),(2,2),(0,3)}`) |
 | `families/brauer.py` (Plan-46 Brauer graph algebra constructor from a ribbon graph + multiplicities) — `tests/families/test_brauer.py` | 10 | deep | `dim = Σ_v m_v·val(v)²` per-instance certificate + `is_symmetric` (`oracle_literature`); Brauer-star ≡ symmetric Nakayama `NakayamaAlgebra(n, mn+1, cyclic=True)` byte-equal Cartan (`oracle_crossengine`) |
@@ -577,13 +578,13 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 926 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 543 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1159 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 202 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 935 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 547 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1170 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 204 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2260 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
-Counts as of the P57 merge (radical filtration + Liu degrees, atop P51+P53+P58);
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2286 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+Counts as of the P55 merge (the left/right-parts substrate, atop P51+P53+P57+P58);
 sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
@@ -1199,6 +1200,42 @@ verified precision and listed below as such.
   / n=2 fan-tiling + n=3 per-chamber-unimodular unfolding-sanity / King certificates
   (self-cert), and the pair↔`Gen(M)` + fan-normal cross-checks (cross-engine). The external cross-checks NAMED (not run live) are the
   Demonet–Iyama–Jasso tables and Iyama's `fd-applet`; neither is wired as a live oracle.
+- **The Plan-55 left/right parts — five binding scope facts.** (a) **Representation-finite and
+  non-self-injective only.** `left_right_parts` is complete **iff** `A` is rep-finite and not
+  self-injective. A self-injective algebra (`k[x]/(xⁿ)`) is refused by the P41 knit with
+  `status="unsupported"`. A **provably** rep-infinite algebra is refused up front by a
+  shipped-theorem certificate, also `status="unsupported"`: the **2-Kronecker** by Gabriel's
+  Dynkin criterion on its hereditary quiver, and **ACLV Example 2.2(c)** (`1⇉2⇉3⇉4` bound by
+  rad²=0 — *mathematically ada* yet rep-infinite, and **non-hereditary** so the hereditary
+  route misses it) by Gabriel's **separated-quiver** criterion (rad²=0 whose separated quiver
+  is not a disjoint union of Dynkin diagrams). Both fire **instantly** — the knit's per-module
+  almost-split cost makes even a small `budget_dim` cap take minutes on 2.2(c) (measured ~120s
+  at `budget_dim=16`), so a fast sufficient certificate is required, not the budget route. Any
+  **other** rep-infinite input — not covered by the two certificates — falls through to the
+  `budget_dim`-capped knit (per-module dimension cap, default 64) and returns a loud
+  `status="budget"` in bounded time, never a partial atlas. `is_complete`/`status` mirror the
+  `ARQuiver` loud cap. (b) **The support-algebra build needs a quiver presentation.** A
+  structure-constants-only `A` (`A.quiver is None`) cannot present the induced subquiver, so
+  `_support_algebra` raises `QuiverlabError` up front — never a fabricated quiver (the
+  GUI/webapp always feed a quiver-presented `A`). (c) **Identification is QQ / char-0
+  decisive.** Every step that *locates* a module in the universe (`_index_in_U` for `τ⁻¹X` /
+  `P_x` / `I_x`) calls `is_isomorphic`, which is decisive over char 0 but **positive-only and
+  RAISES** over large GF(p)/GF(p^n) when it cannot exhibit an isomorphism; on an in-scope
+  algebra with two non-isomorphic indecomposables sharing a dimension vector this propagates a
+  **loud whole-compute refusal** — so the identification batteries run over **QQ**, and the
+  `GF(p)` route is used only where every indecomposable has a distinct dimension vector
+  (kA_n, the rad²=0 linear Nakayama), where the dim-vector prefilter never enters the
+  positive-only branch. Never a silent wrong part or support. (d) **The "product of tilted
+  algebras" property is REPORTED, not certified here.** `A_λ`/`A_ρ` are a product of
+  quasi-tilted algebras in general (tilted for ada — ACT [5](2.3) / ACLV Thm A); P55 ships the
+  connected-component factors and pins the per-factor *tiltedness* with a
+  `skipif(not hasattr(Algebra, "is_tilted"))`-guarded test (`test_support_components_are_tilted_PIN`)
+  that GENUINELY auto-activates into a real assert the moment **P60** ships `Algebra.is_tilted`
+  (no manual un-skip). (e) **QPA CANNOT COMPARE the left/right-part surface** — QPA
+  1.37 exposes no `L_A`/`R_A`/support-algebra verb (a fail-if-appears `IsBoundGlobal` probe is
+  the trip-wire), so the covering oracles are the ACLV literature pins + the predecessor-closure
+  / support / duality certificates; the *defining* pd ≤ 1 / id ≤ 1 flags ARE corroborated
+  pointwise by QPA `ProjectiveResolution` / `InjDimensionOfModule`.
 
 ### v0.2.0 GUI-deferral ledger
 

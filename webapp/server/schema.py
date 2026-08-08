@@ -363,6 +363,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # left_right_parts carries a MODULE BUDGET, not a degree range (Plan 55): the budget caps
+    # the knitted indecomposable universe, so it skips the 'name:0..N' grammar too -- server
+    # and GUI/hpc agree on this special form.
+    if s == "left_right_parts" or s.startswith("left_right_parts:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"left_right_parts budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="left_right_parts", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SchemaError(f"unparseable compute item {s!r}")
