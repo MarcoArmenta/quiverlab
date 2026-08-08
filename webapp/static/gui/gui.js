@@ -119,6 +119,8 @@
     '  <label><input type="checkbox" id="qlgui-ar_invariants"> AR-component invariants (Liu degrees, directing), budget <input type="number" id="qlgui-ar_invariants-budget" value="512" min="1"></label>' +
     // Plan-55: left/right parts of the module category (algebra-level; honest semi-decision + budget).
     '  <label><input type="checkbox" id="qlgui-left_right_parts"> left/right parts, budget <input type="number" id="qlgui-left_right_parts-budget" value="256" min="1"></label>' +
+    // Plan-60: tilted-algebra recognizer (algebra-level; honest semi-decision + knit budget).
+    '  <label><input type="checkbox" id="qlgui-tilted_check"> tilted-algebra check (Liu-Skowroński), budget <input type="number" id="qlgui-tilted_check-budget" value="256" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
     // ---- Plan 59: R34 homological string test + R35 toupie structure ----
@@ -234,6 +236,8 @@
    "ar_invariants", "ar_invariants-budget",
    // Plan 55: left/right parts of the module category (algebra-level, budget)
    "left_right_parts", "left_right_parts-budget",
+   // Plan 60: tilted-algebra recognizer (algebra-level, knit budget)
+   "tilted_check", "tilted_check-budget",
    "algb", "algb-legend", "algb-mode", "algb-mode-label",
    "algb-type", "algb-type-wrap", "algb-type-label",
    "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
@@ -905,6 +909,10 @@
     // form both runners parse (like ar_quiver / tau_tilting).
     if (el.left_right_parts.checked)
       compute.push("left_right_parts:" + el["left_right_parts-budget"].value);
+    // Plan 60: tilted_check carries the KNIT budget (budget_modules); budget_sections
+    // stays an internal default. Single-int form both runners parse.
+    if (el.tilted_check.checked)
+      compute.push("tilted_check:" + el["tilted_check-budget"].value);
     // Plan 43: derived_compare is algebra-level and needs a second algebra B.
     if (el.derived_compare.checked) compute.push("derived_compare");
     var module = null, extTarget = null, torTarget = null;
@@ -3541,6 +3549,56 @@
                 + " connected component(s)")));
           });
       }
+    } else if (name === "tilted_check") {
+      // Plan 60: the tilted-algebra recognizer (Liu-Skowroński). Verdict + reason FIRST
+      // (an honest semi-decision: theorem gates or the rep-finite faithful-section
+      // search), then the hereditary type, the slice Sigma named S_v/P_v/I_v, the
+      // reconstructed H = End_A(S), and the Ringel reconstruction note. citesLine is
+      // appended globally at the end of renderBlock.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Tilted check not computed — " + b.error }));
+      } else {
+        var tcReason = {
+          "hereditary": "hereditary (A = End_A(A), the postprojective slice)",
+          "self_injective": "non-semisimple self-injective ⇒ gl.dim = ∞ ⇒ not tilted",
+          "gldim>2": "gl.dim > 2 (tilted ⇒ gl.dim ≤ 2)",
+          "faithful_section_found":
+            "a faithful section with Hom(X, τY)=0, certified a slice (Ringel Thm 1.9(2))",
+          "search_exhausted":
+            "no faithful section with Hom(X, τY)=0 (rep-finite, complete knit, budget-exhaustive)",
+          "budget": "the transversal enumeration exceeded the budget",
+          "unsupported": "the AR knit is out of scope (self-injective / rep-infinite)",
+          "error": "refused loudly"
+        };
+        var tcVerdict = { "tilted": "tilted", "not_tilted": "not tilted", "unknown": "unknown" };
+        div.appendChild(h("p", {}, h("b", { text: "A is " + (tcVerdict[b.verdict] || b.verdict) }),
+          document.createTextNode(" — " + (tcReason[b.reason] || b.reason) + ".")));
+        if (b.hereditary_type)
+          div.appendChild(h("p", {}, h("b", { text: "Hereditary type: " }),
+            document.createTextNode(b.hereditary_type)));
+        if (b.slice && b.slice.length) {
+          var tcNames = b.slice.map(function (r) {
+            if (r.name) return r.name;
+            var dv = r.dimvec || {};
+            return "(" + Object.keys(dv).map(function (w) { return dv[w]; }).join(",") + ")";
+          }).join(", ");
+          div.appendChild(h("p", {}, h("b", { text: "Slice Σ (S = ⊕Σ, a tilting A-module): " }),
+            document.createTextNode(tcNames)));
+        }
+        if (b.hereditary_algebra) {
+          var tcH = b.hereditary_algebra;
+          div.appendChild(h("p", {}, h("b", { text: "H = End_A(S) (presented, hereditary): " }),
+            document.createTextNode((tcH.vertices || []).length + " vertices, "
+              + Object.keys(tcH.arrows || {}).length + " arrows, dim " + tcH.dim)));
+        }
+        if (b.reconstruction && b.reconstruction.note)
+          div.appendChild(h("p", { "class": "qlgui-hint",
+            text: b.reconstruction.note + " (dim A = " + b.reconstruction.dim_A
+              + ", dim H = " + b.reconstruction.dim_H + ")." }));
+        if (b.verdict === "unknown" && b.note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+      }
     } else if (name === "derived_compare") {
       // Plan 43: the two fingerprints side by side + the honest verdict. Equal
       // rows are a NECESSARY condition for derived equivalence, never a proof.
@@ -3823,7 +3881,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "fundamental_group", "simply_connected", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts", "tilted_check"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -4216,6 +4274,7 @@
     {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
     {"id": "tau_tilting", "title": "τ-tilting: pairs, exchange graph, fan", "category": "tau-tilting", "keywords": ["tau-tilting", "tilting", "mutation", "torsion", "silting", "g-vector", "wall", "stability", "chamber", "inclinación", "basculement", "mutación", "倾斜", "突变", "brick", "semibrick", "fan"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["tau_tilting:512"]}},
     {"id": "left_right_parts", "title": "Left / right parts L_A, R_A + support algebras", "category": "structure", "keywords": ["left part", "right part", "L_A", "R_A", "support algebra", "laura", "ada", "quasi-tilted", "ext-injective", "complement", "assem", "coelho", "trepode", "parte izquierda", "parte derecha", "partie gauche", "partie droite", "álgebra soporte", "algèbre support", "左部", "右部", "支撑代数"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["left_right_parts:256"]}},
+    {"id": "tilted_check", "title": "Tilted-algebra recognizer (Liu-Skowroński)", "category": "structure", "keywords": ["tilted", "tilted algebra", "liu", "skowronski", "skowroński", "slice", "section", "hereditary", "End_H(T)", "ringel", "happel", "faithful section", "álgebra inclinada", "algèbre inclinée", "rebanada", "tranche", "hereditaria", "héréditaire", "倾斜代数", "倾斜", "遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a1": [2, 1], "a2": [3, 2]}, "relations": ["a2*a1"], "field": {"kind": "QQ"}, "compute": ["tilted_check:256"]}},
     {"id": "module_basics", "title": "Module: dimension vector, rad/top/soc", "category": "modules", "keywords": ["module", "dimension vector", "radical", "top", "socle", "zócalo", "socle", "módulo", "module", "模块", "维数向量", "loewy"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["dimension_vector", "rad_top_soc"]}},
     {"id": "resolutions", "title": "Projective & injective resolutions", "category": "modules", "keywords": ["resolution", "projective", "injective", "resolución", "résolution", "proyectiva", "inyectiva", "projective", "injective", "分解", "投影", "内射", "pd", "id"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["projective_resolution:0..6", "injective_resolution:0..6", "projective_dimension", "injective_dimension"]}},
     {"id": "ext_tor", "title": "Ext & Tor between modules", "category": "modules", "keywords": ["ext", "tor", "extension", "extensión", "扩张", "torsion", "扭积", "yoneda"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}, "tor_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "left"}, "compute": ["ext:0..3", "tor:0..3"]}},
@@ -4324,6 +4383,7 @@
     radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
     ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
     left_right_parts: { cb: "left_right_parts", top: "left_right_parts-budget", budget: true },
+    tilted_check: { cb: "tilted_check", top: "tilted_check-budget", budget: true },
     derived_compare: { cb: "derived_compare" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },

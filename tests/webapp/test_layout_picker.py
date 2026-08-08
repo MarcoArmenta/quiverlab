@@ -46,6 +46,8 @@ ALL_KINDS = {
     "string_homological", "toupie",
     # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
     "fundamental_group", "simply_connected",
+    # Plan 60 (2026-08-07): the tilted-algebra recognizer (Liu-Skowroński).
+    "tilted_check",
 }
 
 

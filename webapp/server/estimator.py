@@ -79,7 +79,8 @@ def _max_degree(req: ComputeRequest) -> int:
         # rep-infinite algebra can likewise be mislabelled "instant" until the
         # wall-clock cap bounds the knit. (`toupie` is a small HH + graph scan, not
         # knit-heavy, so it is not in this caveat.)
-        if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts"):
+        # Plan 60: `tilted_check` is likewise knit-heavy with a MODULE budget in `hi`.
+        if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts", "tilted_check"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

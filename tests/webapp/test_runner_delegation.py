@@ -280,7 +280,18 @@ never hide behind one:
     (the append is textual, existing bytes untouched); both runners share the library
     builders (``string_homological_block`` / ``toupie_block``), so the Pyodide twin
     agrees (``tests/gui/test_recognizer_runner_twin_p59.py``). ``canonical_key`` is
-    request-derived (schema-1 algebra-only, no ``module`` block)."""
+    request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-07 (``tilted_check_kA3`` ADDED, Plan 60 R17): a NEW fixture for the
+    ``tilted_check`` ALGEBRA-level compute kind (schema v1, kA3 = 1->2->3 over QQ,
+    ``compute == ["tilted_check:256"]``). The block is ``verdict == "tilted"``,
+    ``reason == "hereditary"``, ``hereditary_type == "A_3"`` with the certified
+    projective slice + the self-referential reconstruction. Pure ADDITION: every
+    pre-existing entry was verified byte-identical BEFORE the append (added/removed/
+    changed check == {tilted_check_kA3}/{}/[]); both runners share the library builder
+    ``modules.tilted.tilted_check_block``, so the Pyodide twin agrees
+    (``tests/webapp/test_tilted_check_p60.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only, no ``module`` block; the budget carries in the compute
+    string, adding no request field)."""
 import json
 import pathlib
 

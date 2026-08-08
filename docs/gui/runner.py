@@ -190,6 +190,13 @@ def _parse_compute(spec):
             raise RequestError("left_right_parts budget must be a positive integer (got %r)"
                                % (spec,))
         return "left_right_parts", (int(rng) if rng else None)
+    # tilted_check carries the KNIT budget (budget_modules), not a degree range (Plan 60): it
+    # skips MAX_DEGREE like ar_quiver / left_right_parts. budget_sections stays internal.
+    if name == "tilted_check":
+        if rng and not rng.isdigit():
+            raise RequestError("tilted_check budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tilted_check", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -929,6 +936,14 @@ def compute_one(spec):
             from quiverlab.modules.left_right import left_right_parts_block
             block = left_right_parts_block(A, budget=top if top is not None else 256)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "tilted_check":
+            # Tilted-algebra recognizer (Plan 60): an ALGEBRA-level KNIT-BUDGET kind (not a
+            # degree range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.tilted.tilted_check_block) + references->citations.
+            # budget_sections keeps its internal default 4096.
+            from quiverlab.modules.tilted import tilted_check_block
+            block = tilted_check_block(A, budget_modules=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -1336,6 +1351,8 @@ def python_snippet():
              "ar_invariants": "A.ar_invariants(budget_modules=%d)",
              # Plan 55: the left/right parts kind carries a module budget (%d = budget).
              "left_right_parts": "A.left_right_parts(budget=%d)",
+             # Plan 60: the tilted recognizer carries the knit budget (%d = budget_modules).
+             "tilted_check": "A.tilted_check(budget_modules=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1460,6 +1477,10 @@ ETA_MODEL = {
                 # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
                 # the same cost class as tau_tilting.
                 "left_right_parts": 2.0,
+                # Plan 60: tilted_check = an AR knit + a budget-capped transversal search
+                # (faithful + Hom(X,tauY)=0 + tilting/presented-End certificate per candidate);
+                # knit- and certificate-dominated, the same cost class as left_right_parts.
+                "tilted_check": 2.0,
                 # Plan 59: string_homological KNITS the AR quiver + realizes/decomposes
                 # extensions (expensive, ar_quiver class); toupie is a small HH + a
                 # graph-shape scan (cheap).

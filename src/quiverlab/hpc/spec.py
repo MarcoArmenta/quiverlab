@@ -297,6 +297,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"left_right_parts budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="left_right_parts", lo=None, hi=(int(b) if b else None))
+    # tilted_check (Plan 60) is an ALGEBRA kind carrying the KNIT budget (budget_modules), not a
+    # degree range: 'tilted_check' / 'tilted_check:256'. The transversal cap budget_sections is
+    # an internal knob (default 4096), not exposed via the compute string.
+    if s == "tilted_check" or s.startswith("tilted_check:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"tilted_check budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tilted_check", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -1601,6 +1609,17 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = left_right_parts_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Tilted-algebra recognizer (Plan 60): an ALGEBRA-level kind carrying the KNIT budget
+    # (budget_modules); budget_sections keeps its internal default 4096. Verdict + slice +
+    # hereditary type + Ringel reconstruction. Honest semi-decision; a char-scope
+    # (presented_form / is_isomorphic) refusal is an `error` field, never a 500. Both runners
+    # share modules.tilted.tilted_check_block, so the blocks are byte-identical.
+    if kind == "tilted_check":
+        budget = item.hi if item.hi is not None else 256
+        from quiverlab.modules.tilted import tilted_check_block
+        block = tilted_check_block(A, budget_modules=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -2506,6 +2525,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "left_right_parts":
                  lambda it: ("A.left_right_parts("
                              f"budget={it.hi if it.hi is not None else 256})"),
+             "tilted_check":
+                 lambda it: ("A.tilted_check(budget_modules="
+                             f"{it.hi if it.hi is not None else 256})"),
              "derived_compare":
                  lambda it: ("from quiverlab.derived import compare_fingerprints, "
                              "derived_fingerprint\n"

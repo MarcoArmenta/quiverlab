@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-3537_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-3540_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 3537 tests over the
+Every shipped feature is unit tested (the suite is 3540 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -298,6 +298,15 @@ ported and wired in:
   a k̄-sound contradiction), and **toupie algebras** (`ToupieAlgebra` constructor +
   connected-acyclic graph-shape recognizer + the `a`-Kronecker `HH^• = [1, a²−1, 0, …]`
   closed form + the char-0 `sl_a ⊆ HH¹` inclusion), both clickable in the no-code GUI.
+- **Tilted-algebra recognizer (R17, Liu–Skowroński).** `A.tilted_check()` /
+  `A.is_tilted()` decide whether `A ≅ End_H(T)` (`H` hereditary, `T` tilting) by a
+  **faithful-section search** on the AR quiver (a section Σ with `Hom_A(X, τY) = 0`),
+  returning the **slice** `Σ`, the **reconstructed hereditary type**, and a **Ringel
+  slice-theorem certificate** (`⊕Σ` a tilting `A`-module with `End_A(⊕Σ)` presented
+  hereditary); three theorem gates (hereditary ⇒ tilted; non-semisimple self-injective
+  ⇒ not; `gl.dim > 2` ⇒ not) extend and speed the verdict, and every answer is a
+  certified `tilted`/`not_tilted` or an honest `unknown` (rep-finite non-self-injective
+  search scope) — no-code in the browser via the `tilted_check` compute kind.
 - **Modules, scalar invariants, and the exact spectral layer.** Right A-modules
   with exact **Ext**, **Hom**, and minimal **projective resolutions**; the scalar
   invariants **Loewy length**, **center**, and **complexity** (GF(p); the last a
