@@ -1385,6 +1385,28 @@ class Algebra:
         from quiverlab.invariants.frobenius import is_weakly_symmetric_generic
         return is_weakly_symmetric_generic(self)
 
+    def hh1_lie_structure(self, budget=None, require_char0=False):
+        """HH^1(A) = Der(A)/Inn(A) as a Lie algebra (Plan 70 / R11): dimension,
+        bracket structure constants, derived / lower-central series, and the
+        solvable / nilpotent / abelian / perfect verdicts over ANY exact field;
+        over characteristic 0 also the solvable radical, Levi decomposition,
+        sl2-count and toral rank. Field-general via the algebra's own structure
+        constants -- no resolution. Loud over budget."""
+        from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, hh1_lie_structure
+        return hh1_lie_structure(
+            self, budget=DEFAULT_MAXDIM if budget is None else budget,
+            require_char0=require_char0)
+
+    def is_solvable_hh1(self, budget=None):
+        """Is HH^1(A) a solvable Lie algebra? Any exact field (Plan 70)."""
+        from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, is_solvable_hh1
+        return is_solvable_hh1(self, budget=DEFAULT_MAXDIM if budget is None else budget)
+
+    def is_nilpotent_hh1(self, budget=None):
+        """Is HH^1(A) a nilpotent Lie algebra? Any exact field (Plan 70)."""
+        from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, is_nilpotent_hh1
+        return is_nilpotent_hh1(self, budget=DEFAULT_MAXDIM if budget is None else budget)
+
     def tor(self, M, N, n):
         """dim Tor_n^A(M, N) for a RIGHT A-module M and a LEFT A-module N (Plan 29).
 
