@@ -1195,9 +1195,18 @@ def compute_one(spec):
             # Torsion-lattice congruences (Plan 64): algebra-level, pair budget (not degree).
             # SAME shared library builder (tautilting.congruence.congruences_block) +
             # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so the
-            # cross-runner contract holds byte-for-byte. Honest complete-iff block.
+            # cross-runner contract holds byte-for-byte -- INCLUDING the char-caveat error path:
+            # a QuiverlabError refusal (rigorous over char 0 / char > dim) is caught into the
+            # SAME {"kind","error","references"} shape spec.py returns (the silting-branch
+            # pattern), so the two runners' error paths are byte-identical; a non-QuiverlabError
+            # bug surfaces loudly (fail-fast). Honest complete-iff block.
+            from quiverlab.tautilting.congruence import _CITATIONS as _CONG_KEYS
             from quiverlab.tautilting.congruence import congruences_block
-            block = congruences_block(A, budget=top if top is not None else 512)
+            try:
+                block = congruences_block(A, budget=top if top is not None else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "congruences", "error": str(exc),
+                         "references": list(_CONG_KEYS)}
             block["citations"] = _citation_pairs(block["references"])
         elif name == "wall_chamber":
             # Wall-and-chamber structure via bricks (Plan 63 / R25): algebra-level, budget

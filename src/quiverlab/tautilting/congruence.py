@@ -104,6 +104,10 @@ class WideSubcategoryPoset:
     elements: tuple          # the distinct core-label representatives (one per wide subcategory)
     order: dict              # id -> frozenset(ids <= it) (inclusion order among them)
     labels: tuple            # per element: the brick-label set (its "simple objects"), aligned w/ elements
+    core_labels: tuple       # per element: the CORE LABEL SET (frozenset of join-irreducible ids),
+    #                          aligned w/ elements -- the ORDER's foundation: the poset TOP (mod A)
+    #                          has the FULL brick set, the BOTTOM (0) the empty set (pins direction,
+    #                          which the self-dual M3/NC(A3)/M4 label histograms alone cannot).
     size: int                # #wide
     constructions_agree: bool  # kappa order == core label order (Enomoto; self-cert)
     is_complete: bool
@@ -495,7 +499,7 @@ def wide_subcategories(A, *, budget=512) -> WideSubcategoryPoset:
     eg, data = _wide_data(A, budget)
     if data is None:
         return WideSubcategoryPoset(
-            algebra=A, elements=(), order={}, labels=(), size=None,
+            algebra=A, elements=(), order={}, labels=(), core_labels=(), size=None,
             constructions_agree=False, is_complete=False, status=eg.status,
             note=_INCOMPLETE_NOTE.format(status=eg.status, budget=budget))
     n, cls, labels = data["n"], data["cls"], data["labels"]
@@ -515,7 +519,8 @@ def wide_subcategories(A, *, budget=512) -> WideSubcategoryPoset:
     order = {x: frozenset(y for y in nodes if cls[y] <= cls[x]) for x in nodes}
     return WideSubcategoryPoset(
         algebra=A, elements=tuple(nodes), order=order,
-        labels=tuple(labels[x] for x in nodes), size=len(nodes),
+        labels=tuple(labels[x] for x in nodes),
+        core_labels=tuple(cls[x] for x in nodes), size=len(nodes),
         constructions_agree=True, is_complete=True, status="complete", note="")
 
 

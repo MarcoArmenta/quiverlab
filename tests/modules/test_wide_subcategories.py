@@ -33,6 +33,31 @@ def test_kappa_order_equals_core_label_order():
     assert W.constructions_agree is True
 
 
+@selfcert
+def test_wide_poset_direction_top_is_modA_bottom_is_zero():
+    # DIRECTION PIN (self-dual-immune). Every shipped wide-poset fixture -- kA2 -> M3,
+    # kA3 -> NC(A3), kZ2/rad2 -> M4 -- is SELF-DUAL, so a dual flip of the poset would pass
+    # every count / structural test. Tie the ORDER to the CORE LABEL SET: the poset TOP is
+    # mod A (whose CLS is the FULL brick set) and the BOTTOM is the zero subcategory (empty
+    # CLS). A flipped poset would carry the full brick set at the ORDER-bottom -> this FAILS.
+    # Checked on kA2 (thin) AND the NON-thin kZ2/rad2 (symmetric Nakayama, 4 bricks, M4).
+    fixtures = [
+        Quiver([1, 2], {"a": (1, 2)}).algebra(relations=[], field=QQ),                # kA2
+        Quiver([1, 2], {"a": (1, 2), "b": (2, 1)}).algebra(                           # kZ2/rad2
+            relations=["a*b", "b*a"], field=QQ),
+    ]
+    for A in fixtures:
+        W = wide_subcategories(A)
+        nbricks = len(torsion_lattice(A).join_irreducibles)
+        idx = {e: k for k, e in enumerate(W.elements)}
+        bot = [e for e in W.elements if set(W.order[e]) - {e} == set()]
+        top = [e for e in W.elements if set(W.order[e]) == set(W.elements)]
+        assert len(bot) == 1 and len(top) == 1                # unique order-extremes
+        assert W.core_labels[idx[bot[0]]] == frozenset()      # 0 subcat: EMPTY core-label set
+        assert len(W.core_labels[idx[top[0]]]) == nbricks     # mod A: the FULL brick set (#bricks)
+        assert nbricks > 0 and len(top) == 1
+
+
 # --- poset helpers: W.order[e] = frozenset of elements <= e (down-set incl. e), matching the
 #     TorsionLattice.order convention (id -> frozenset(ids <= it)). --------------------------
 def _strict_below(W, e):
