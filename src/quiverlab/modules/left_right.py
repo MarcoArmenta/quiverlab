@@ -122,6 +122,30 @@ def _index_in_U(U, M):
     return None
 
 
+def _ext_injectives_left(U, left_idx):
+    """{ i in L_A : tau^{-1} U[i] = 0  OR  tau^{-1} U[i] notin L_A } -- the Ext-injectives of
+    add L_A (ACT/[13](3.4): X Ext-injective in add L_A  <=>  tau^{-1}X notin L_A). tau^{-1}X = 0
+    IS the injective edge (an injective in L_A is always Ext-injective). QQ-scope (M1)."""
+    out = set()
+    for i in left_idx:
+        Y = U[i].tau_minus()
+        if Y.dim == 0 or _index_in_U(U, Y) not in left_idx:
+            out.add(i)
+    return out
+
+
+def _ext_projectives_right(U, right_idx):
+    """The dual: { i in R_A : tau U[i] = 0  OR  tau U[i] notin R_A } -- the Ext-projectives of
+    add R_A (X Ext-projective in add R_A  <=>  tau X notin R_A). tau X = 0 is the projective
+    edge (a projective in R_A is always Ext-projective). QQ-scope (M1)."""
+    out = set()
+    for i in right_idx:
+        Y = U[i].tau()
+        if Y.dim == 0 or _index_in_U(U, Y) not in right_idx:
+            out.add(i)
+    return out
+
+
 def _placement(A, U, L, R, *, kind):
     """{v: "both"|"L"|"R"|"neither"} for the standard projectives (kind="projective") or
     injectives (kind="injective") of A, by locating P_v / I_v in the universe U and reading
@@ -168,11 +192,13 @@ def left_right_parts(A, *, budget=256):
     sel = lambda S: [recs[i] for i in sorted(S)]
     proj_place = _placement(A, U, L, R, kind="projective")
     inj_place = _placement(A, U, L, R, kind="injective")
+    ext_inj = _ext_injectives_left(U, L)                       # Task B
+    ext_proj = _ext_projectives_right(U, R)                    # Task B
     return LeftRightAtlas(
         A, sel(L), sel(R), sel(L & R), sel(set(range(len(U))) - (L | R)),
+        ext_injectives_left=sel(ext_inj), ext_projectives_right=sel(ext_proj),
         projective_placement=proj_place, injective_placement=inj_place,
         universe_size=len(U), is_complete=True, status="complete", note=ar.note or "",
         pd_le_1=tuple(pd_ok), id_le_1=tuple(id_ok),
         _modules=tuple(U), _leq=tuple(tuple(r) for r in leq))
-    # ext_injectives_left / ext_projectives_right and left_support / right_support keep their
-    # ()/None defaults here; Task B and Task C fill them (M3: no forward reference).
+    # left_support / right_support keep their None defaults here; Task C fills them.
