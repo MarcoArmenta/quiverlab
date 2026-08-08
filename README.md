@@ -401,6 +401,15 @@ ported and wired in:
   for `kA_n`) — every enumeration budget-capped with the honest
   complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
   drawn no-code in the browser for n = 2, 3** — the C4 flagship.
+- **Exceptional sequences (R27+R28).** The classical hereditary theory — an
+  orthogonality recognizer, **braid mutation** `σ_i` (universal-extension / kernel /
+  cokernel constructions), the Crawley-Boevey / Ringel **braid-orbit transitivity**
+  certificate, and the Dynkin closed-form counts `#CES = n!·hⁿ/|W|` (`A_n = (n+1)^{n-1}`,
+  `D_4 = 162`) — and **Buan–Marsh τ-exceptional sequences** via the **Jasso
+  τ-perpendicular reduction** and the ordered-support-τ-tilt bijection
+  `#signed = n!·#sτt` (materialised + cross-checked). Hereditary-only / Dynkin-only for
+  the classical side, τ-tilting-finite-only for the τ side, loud otherwise. Clickable via
+  `exceptional_sequences`.
 - **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
   left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
   the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —
