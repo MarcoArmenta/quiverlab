@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-4618_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-4658_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 4618 tests over the
+Every shipped feature is unit tested (the suite is 4658 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -405,6 +405,14 @@ ported and wired in:
   **wide-subcategory poset** (Enomoto's core label order = κ order) — one click via the
   `congruences` compute kind, certified complete iff `A` is τ-tilting-finite. kA₂ =
   the pentagon N₅ / M₃; kA₃ = the 14-element `Con` / NC(A₃) wide poset.
+- **The τ-cluster morphism category `W(A)` (Buan–Marsh; Hanson–Igusa, P66).** Its
+  objects (= the wide subcategories), its rank-graded morphisms, the **cube-complex
+  classifying space** with the `K(π,1)` verdict for Nakayama / hereditary-Dynkin algebras,
+  and the **picture-group presentation** (generators = bricks, relations per rank-2 wide,
+  abelianization by exact SNF) — one click via `tau_cluster`, certified complete iff
+  τ-tilting-finite. kA₂ = 3 generators + 1 pentagon relation, face vector `(5,11,5)`; kA₃ =
+  6 generators, 4 atom + 2 commutation, `(14,49,49,14)` — distinct from kZ₃/rad²'s
+  `(14,48,48,14)` on the same coarse counts.
 - **Wall-and-chamber structure via bricks (Brüstle–Smith–Treffinger, P63).** The wall
   `D(B)` of every brick as an **exact rational inequality system** over the submodule
   dim-vectors (`D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 for every N ⊆ B}`), the chambers
