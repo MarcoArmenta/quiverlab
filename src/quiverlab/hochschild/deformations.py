@@ -579,3 +579,213 @@ def _canonical_radical_direction(A):
                 continue
             return {r: p}, A_alpha
     return None, None
+
+
+# ---------------------------------------------------------------------------
+# Task 4: the B(A)[1] L-infinity companion -- rad^2=0 dg-Lie certificate
+# (unconditional) + the FEASIBILITY-GATED char-0 Bardzell l_3 (deferred, see below)
+# ---------------------------------------------------------------------------
+def _is_monomial(A):
+    if A.relations is None:
+        return False
+    return all(getattr(r, "is_monomial", False) for r in A.relations)
+
+
+def dg_lie_certificate(A):
+    """rad^2 = 0 (monomial) => l_{>=3} == 0, i.e. B(A) is a genuine dg-Lie algebra (RRB).
+    A DECIDABLE structural check (rad^2 = 0 iff dim A = |Q_0| + |Q_1|), the one exact
+    l_{>=3} claim v1 ships -- UNCONDITIONALLY. Returns:
+      * True  -- monomial with rad^2 = 0 (kZ_n/J^2): B(A) is dg-Lie, l_{>=3} == 0;
+      * False -- monomial with rad^2 != 0 (QuantumCI(0)): honest L-infinity, NOT dg-Lie;
+      * None  -- non-monomial (outside RRB's B(A) scope) or presentation-less.
+    (The dg-Lie interpretation is a char-0 theorem; the rad^2=0 fact is structural.)"""
+    if A.quiver is None or not _is_monomial(A):
+        return None
+    rsz = _rad_square_zero(A)
+    if rsz is None:
+        return None
+    return bool(rsz)
+
+
+# --- FEASIBILITY SPIKE OUTCOME (Task 4 Step 1, recorded here + in the plan Change log) ---
+# The bounded spike assessed implementing RRB's l_3 homotopy-transfer formula on a char-0
+# Bardzell complex (arXiv:2008.08122). The field-free Bardzell substrate IS reusable over
+# QQ (confirmed), but RRB's l_3 requires the FULL homotopy-transfer machinery (the explicit
+# contracting homotopy of Bardzell's complex + the transferred tree-summed bracket) -- a
+# whole plan's worth of research-grade engine work, beyond one plan (the DECISION-2 freeze
+# condition). Per the DECISION, v1 ships:
+#   (a) dg_lie_certificate (rad^2=0 => l_{>=3}=0) -- UNCONDITIONAL, above;
+#   (b) the induced-l_2 == CS-bracket MODEL-INDEPENDENCE THEOREM STATEMENT (section 4,
+#       L-infinity-quasi-iso invariance; rrb_linfty_bardzell) -- CITED, not computed (no
+#       B(A) l_2 adapter is built, so there is nothing to compute against; a computed
+#       crossengine self-cert is explicitly gated behind the un-built spike, M1 ruling);
+#   (c) a LEDGERED deferral of the general l_3/l_4 (DEEPER-ENGINES-BACKLOG.md, P80 reconciles).
+# l4 is NEVER claimed zero ("l_n=0 for n>=5" is a sufficient collapse condition, not
+# automatic -- honest L-infinity).
+_L3_DEFERRAL_NOTE = (
+    "the char-0 Bardzell l_3 (RRB, arXiv:2008.08122) is DEFERRED: RRB's homotopy-transfer "
+    "l_3 formula is beyond one plan (a full contracting-homotopy + tree-summed transfer on "
+    "Bardzell's complex). v1 ships the rad^2=0 dg-Lie certificate (l_{>=3}=0, unconditional) "
+    "and the induced-l_2 == CS-bracket model-independence theorem statement (section 4, "
+    "cited, not computed -- no B(A) l_2 adapter). l_4 is NEVER claimed zero (honest "
+    "L-infinity). The general l_3/l_4 is ledgered (DEEPER-ENGINES-BACKLOG.md, P80).")
+
+_MODEL_INDEPENDENCE_NOTE = (
+    "B(A)'s transferred l_2 induces the Gerstenhaber bracket on HH (the L-infinity "
+    "quasi-isomorphism B(A) ~ C(A) is a theorem, rrb_linfty_bardzell section 4); this is "
+    "stated as the model-independence THEOREM, cited -- not a computed check, since no "
+    "B(A) l_2 adapter is built in v1.")
+
+
+def l3_bracket(A, *, budget=DEFORM_MAXDIM):
+    """The feasibility-gated char-0 Bardzell l_3 on B(A)[1] (monomial A, RRB). In v1 this
+    is DEFERRED (see the spike outcome): returns an L3Report with status='deferred' and the
+    honest note (never a fabricated l_3). Loud QuiverlabError on the scope boundary --
+    non-monomial A (RRB's B(A) L-infinity is monomial) or characteristic != 0."""
+    _require_presented(A, "l3_bracket")
+    if not _is_monomial(A):
+        raise QuiverlabError(
+            "l3_bracket: RRB's B(A) L-infinity structure is defined for MONOMIAL algebras "
+            "only; this algebra is non-monomial",
+            hint="the deformation FUNCTOR (HH^2 / obstruction / MC) is served over any "
+                 "admissible presentation via obstruction_map / maurer_cartan")
+    if A.domain.characteristic != 0:
+        raise QuiverlabError(
+            "l3_bracket: RRB's L-infinity structure is a characteristic-0 theory "
+            "(this algebra is over %s)" % A.domain.name)
+    dg = dg_lie_certificate(A)
+    return L3Report(
+        status="deferred", monomial=True, rad_square_zero=_rad_square_zero(A), dg_lie=dg,
+        note=_L3_DEFERRAL_NOTE + (
+            " (This algebra IS rad^2=0 monomial, so l_{>=3}=0 by the dg-Lie certificate -- "
+            "the deferral concerns the GENERAL monomial l_3, not this collapsed case.)"
+            if dg else ""),
+        references=tuple(["rrb_linfty_bardzell", "mrrs_mc_gentle"]))
+
+
+def _l3_status(A, dg, char):
+    """The l3_status string for the report/block: honest scope + spike outcome."""
+    if A.quiver is None or not _is_monomial(A):
+        return "n/a (non-monomial)"
+    if char != 0:
+        return "n/a (char p)"
+    if dg is True:
+        return "dg_lie"          # rad^2=0 => l_{>=3}=0 (unconditional certificate)
+    return "deferred"            # honest L-infinity; the general l_3 is ledgered
+
+
+# ---------------------------------------------------------------------------
+# the full report + the runner block
+# ---------------------------------------------------------------------------
+_BASE_CHANGE_NOTE = (
+    "RRRV's presentation of A_alpha by quiver and relations holds over an algebraically "
+    "closed field; the build here is per-instance certified (flat: dim A_alpha = dim A).")
+
+
+def deformation_structure(A, *, budget=DEFORM_MAXDIM, engine="auto",
+                          max_cells=4_000_000):
+    """The full formal-deformation report (frozen Deformations). Char 0: infinitesimal
+    HH^2, the primary obstruction [alpha,alpha] in HH^3 (+ witness), the MRRS nilpotent
+    verdict, the MC description + certified order, the rad^2=0 dg-Lie certificate + l_3
+    status, and a canonical radical A_alpha (display-only) with its Ext-algebra summary.
+    Char p: the field-general HH^2/HH^3 dims + a char0_note (the deformation interpretation
+    is char-0 gated); the expensive obstruction bracket is skipped (its verdict is a char-0
+    notion). Loud on oversize / presentation-less."""
+    _require_presented(A, "deformation_structure")
+    _require_budget(A, budget, "deformation_structure")
+    dom = A.domain
+    char = dom.characteristic
+    window_note = ("MC truncation order is bounded by the `order` parameter of "
+                   "maurer_cartan (default 2 -- the primary obstruction); the native CS "
+                   "bracket has no degree window.")
+
+    if char != 0:
+        table = A.hochschild_cohomology(3, engine=engine, max_cells=max_cells)
+        return Deformations(
+            characteristic=char, hh2_dim=table[2], hh3_dim=table[3],
+            basis="cs/%s" % dom.name, unobstructed=None, obstruction_witness=None,
+            nilpotent_regime=None,
+            mc_description="the Maurer-Cartan / L-infinity interpretation is "
+                           "characteristic-0 gated; only the field-general HH^2 / HH^3 "
+                           "dimensions are reported here.",
+            mc_order_certified=1, dg_lie=None, l3_status="n/a (char p)",
+            a_alpha=None, ext_algebra_summary=None, base_change_note=None,
+            char0_note=_char0_note(A), window_note=None, status="complete",
+            note="field-general HH block (characteristic %d); "
+                 "the deformation theory is char-0." % char,
+            references=tuple(_DEFORM_REFERENCES))
+
+    # char 0: the full report
+    data = _obstruction_data(A, max_cells=max_cells)
+    unobstructed, witness, _ = _verdict(data)
+    hh2, hh3 = data["hh2_dim"], data["hh3_dim"]
+    nilpotent = is_l_infinity_nilpotent(A)
+    if nilpotent is True:
+        z2 = data["res"].dim_C(2, "coh") - _rank(data["res"].matrix(2, "coh"), dom)
+        mc_desc = ("MC = Z^2 (all %d 2-cocycles integrate; nilpotent regime, MRRS Thm 5.4 "
+                   "-- every infinitesimal deformation is unobstructed)" % z2)
+        mc_order = 2
+    elif hh2 == 0:
+        mc_desc = ("MC = {0}: HH^2 = 0, no nontrivial infinitesimal deformations")
+        mc_order = 2
+    elif unobstructed:
+        mc_desc = ("unobstructed at second order: the primary obstruction [alpha,alpha] "
+                   "vanishes on all of HH^2 (a second-order lift exists for every direction)")
+        mc_order = 2
+    else:
+        mc_desc = ("obstructed: some direction has [alpha,alpha] != 0 in HH^3 and does not "
+                   "lift past first order (witness %s); directions with a vanishing "
+                   "self-bracket still lift" % witness)
+        mc_order = 1
+    dg = dg_lie_certificate(A)
+    l3_status = _l3_status(A, dg, char)
+    direction, A_alpha = _canonical_radical_direction(A)
+    a_alpha = None
+    ext_summary = None
+    if A_alpha is not None:
+        a_alpha = {
+            "quiver": {"vertices": list(A_alpha.quiver.vertices),
+                       "arrows": {n: [s, t] for n, (s, t) in A_alpha.quiver.arrows.items()}},
+            "relations": [str(r) for r in A_alpha.relations],
+            "direction": dict(direction), "t": "1", "flat": True}
+        try:
+            ext_summary = _ext_summary(A_alpha.ext_algebra(3))
+        except QuiverlabError:
+            ext_summary = None
+    return Deformations(
+        characteristic=0, hh2_dim=hh2, hh3_dim=hh3, basis="cs/%s" % dom.name,
+        unobstructed=unobstructed, obstruction_witness=witness,
+        nilpotent_regime=nilpotent, mc_description=mc_desc, mc_order_certified=mc_order,
+        dg_lie=dg, l3_status=l3_status, a_alpha=a_alpha, ext_algebra_summary=ext_summary,
+        base_change_note=(_BASE_CHANGE_NOTE if a_alpha else None), char0_note=None,
+        window_note=window_note, status="complete",
+        note=(_MODEL_INDEPENDENCE_NOTE + " " + _L3_DEFERRAL_NOTE
+              if l3_status == "deferred" else _MODEL_INDEPENDENCE_NOTE),
+        references=tuple(_DEFORM_REFERENCES + _BRACKET_REFERENCES))
+
+
+def deformations_block(A, *, budget=DEFORM_MAXDIM):
+    """The JSON block for the `deformations` compute kind (Plan 78), shared by all three
+    tiers (byte-identical). The raw bracket constants are NOT shipped (they explode and are
+    basis-dependent); the block reports HH^2/HH^3, the obstruction verdict + witness, the
+    nilpotent verdict, the MC description, the dg-Lie certificate + l_3 status, and the
+    display-only presented A_alpha. A char-p / oversize / presentation-less refusal is a
+    clean {"error": ...} block, never a 500."""
+    refs = list(_DEFORM_REFERENCES)
+    try:
+        D = deformation_structure(A, budget=budget)
+    except QuiverlabError as exc:
+        return {"kind": "deformations", "status": "budget", "error": str(exc),
+                "references": refs}
+    return {
+        "kind": "deformations", "characteristic": D.characteristic,
+        "hh2_dim": D.hh2_dim, "hh3_dim": D.hh3_dim,
+        "unobstructed": D.unobstructed, "obstruction_witness": D.obstruction_witness,
+        "nilpotent_regime": D.nilpotent_regime, "mc_description": D.mc_description,
+        "mc_order_certified": D.mc_order_certified, "dg_lie": D.dg_lie,
+        "l3_status": D.l3_status, "a_alpha": D.a_alpha,
+        "ext_algebra_summary": D.ext_algebra_summary,
+        "base_change_note": D.base_change_note, "char0_note": D.char0_note,
+        "window_note": D.window_note, "status": D.status, "note": D.note,
+        "references": refs,
+    }

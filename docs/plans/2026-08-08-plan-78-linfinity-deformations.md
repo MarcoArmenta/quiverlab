@@ -1147,6 +1147,31 @@ applies. (e) I did **not** re-run the whole suite — no `src/` changed; the pla
   + feasibility-gated char-0 Bardzell ℓ₃** with live numbers. Five citations verified (RRR = three
   authors; two journal refs confirmed). Real obstruction pinned (`QuantumCI(0)`). Task-4 spike
   outcome (truncated ℓ₃ shipped vs ledgered) **TO BE RECORDED HERE at implementation.**
+- **2026-08-08 — IMPLEMENTED** (branch `plan-78-linfinity-deformations`, off `dev` tip
+  `cf62a14` which carries BOTH the P70 `hh1_lie.py` and P71 `lie_module.py` code merges —
+  so the Task-5 GUI dependency is satisfied, not merely doc-committed as the plan feared).
+  Tasks 1–6 delivered on `C(A)` via CS-over-ℚ exactly as decided. **Live-verified on the
+  implementation engine:** `HH²(k[x]/x²)/ℚ=1`; `QuantumCI(0)/ℚ` obstruction `HH²=3, HH³=5`,
+  **unobstructed=False**, diagonal-all-zero + combination witness `a_0+a_2` (the "author's
+  basis" of Pin 2 — a re-confirmation that the diagonal pattern is basis-dependent and
+  correctly NOT pinned), **18.4 s** (matches the 18.1 s benchmark ±20%); `QuantumCI(0)/GF(5)`
+  obstruction **2.7 s**; `deformed_algebra(QuantumCI(0),{'x*y':'y*x'})` = `QuantumCI(-1)` flat,
+  `HH=[4,4,5,6]`; the unit direction relays `RelationError`, a length-1 perturbation relays
+  `AdmissibilityError`, a non-flat radical is refused.
+- **2026-08-08 — TASK-4 FEASIBILITY SPIKE OUTCOME: ℓ₃ FROZEN / LEDGERED (no `ℓ_{≥3}`
+  shipped) — the DECISION-2 freeze branch.** The bounded spike confirmed the field-free
+  Bardzell substrate IS reusable over ℚ, but RRB's `ℓ₃` homotopy-transfer formula
+  (`rrb_linfty_bardzell` §concrete computations) requires the FULL transfer machinery (the
+  explicit contracting homotopy of Bardzell's complex + the tree-summed transferred bracket)
+  — **beyond one plan**, the plan's own freeze condition. Per the DECISION, v1 ships: (a) the
+  **rad²=0 dg-Lie certificate** (`ℓ_{≥3}≡0`, unconditional — `dg_lie_certificate`: `kZ_n/J²`
+  True, `QuantumCI(0)` False); (b) the induced-`ℓ₂` ≡ CS-bracket **model-independence theorem
+  statement** (§4, cited, NOT a computed self-cert — no `B(A)` `ℓ₂` adapter, M1 ruling); (c) a
+  **ledgered deferral** of the general `ℓ₃`/`ℓ₄` in `DEEPER-ENGINES-BACKLOG.md` (P80). `ℓ₄` is
+  **never claimed zero** (honest L∞). `l3_bracket` returns `status="deferred"` and refuses
+  non-monomial / char-p loudly. **This is a complete, honest v1 outcome, not a gap** (Open
+  risk 5 / Acceptance §5). The deformation FUNCTOR (HH²/obstruction/MC/`A_α`/Ext-algebra) is
+  complete on the DGLA `C(A)` — the frozen piece is the small-model `B(A)` enrichment only.
 - **2026-08-08 — critic NEEDS WORK → fix round applied** (adjudicated all-valid; every touched
   number RE-RUN LIVE this round on the worktree engine, single run wall-clock ±20%):
   - **H1 (MAJOR) — bracket cost re-benchmarked; driver is HH-richness, not dim.** New live table
