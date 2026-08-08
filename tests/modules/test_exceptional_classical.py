@@ -132,6 +132,58 @@ def test_braid_mutation_output_module_exceptional_a3():
         assert is_exceptional_module(A, E) is True
 
 
+# --------------------------------------------------------------------------- #
+# Task B3: Dynkin enumeration + braid-orbit transitivity + closed-form count
+# --------------------------------------------------------------------------- #
+@lit
+@pytest.mark.parametrize("n,expected", [(2, 3), (3, 16), (4, 125), (5, 1296)])  # (n+1)^(n-1)
+def test_dynkin_An_ces_count(n, expected):
+    # counts live-verified (QQ): A2/3/4/5 = 3/16/125/1296; A5 count leg ~ a few seconds.
+    A = linear_path_algebra(n, field=QQ)
+    rep = A.exceptional_sequences()
+    assert rep.is_complete and rep.count == expected
+    assert rep.closed_form_count == expected          # n! h^n / |W|
+    assert rep.dynkin_type == f"A_{n}"
+    if n <= 4:
+        assert rep.transitive is True                 # braid-orbit BFS reached them all
+
+
+@lit
+@pytest.mark.slow   # opt-in: A5 braid-orbit transitivity certificate (heavier leg)
+def test_dynkin_A5_transitive_optin():
+    A = linear_path_algebra(5, field=QQ)
+    rep = A.exceptional_sequences(budget=100_000, transitive=True)
+    assert rep.count == 1296 and rep.closed_form_count == 1296
+    assert rep.transitive is True                      # opt-in via transitive=True
+
+
+@lit
+def test_dynkin_D4_ces_count():
+    A = Quiver([1, 2, 3, 4], {"a": (2, 1), "b": (3, 1), "c": (4, 1)}).algebra(field=QQ)  # subspace D4
+    rep = A.exceptional_sequences()
+    assert rep.is_complete and rep.count == 162 and rep.closed_form_count == 162
+    assert rep.transitive is True
+    assert rep.dynkin_type == "D_4"
+
+
+@selfcert
+def test_exceptional_count_equals_num_indecomposables_dynkin():
+    """#exceptional = #indecomposable on Dynkin (every Dynkin indec is a rigid brick)."""
+    for n in (2, 3, 4):
+        A = linear_path_algebra(n, field=QQ)
+        indecs = A.ar_quiver().vertices
+        exc = [m for m in (v["module"] for v in indecs)
+               if is_exceptional_module(A, m)]
+        assert len(exc) == len(indecs)
+
+
+@selfcert
+def test_rep_infinite_hereditary_refused():
+    Kron = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(field=QQ)   # 2-Kronecker (tame)
+    rep = Kron.exceptional_sequences(budget=200)
+    assert rep.is_complete is False and rep.status in ("budget", "unsupported")
+
+
 @selfcert
 def test_non_hereditary_refused():
     from quiverlab.errors import QuiverlabError

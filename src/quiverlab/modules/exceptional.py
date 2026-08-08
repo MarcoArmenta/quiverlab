@@ -30,6 +30,7 @@ c-matrices are integer matrices, counts ``int``, verdicts ``bool``/``str``.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from math import factorial
 
 from quiverlab.errors import QuiverlabError
 from quiverlab.modules.ext import ext
@@ -355,3 +356,185 @@ def braid_mutation(A, seq, i, *, direction="left", _universe=None):
         return seq[:i] + [Y, R] + seq[i + 2:]
     raise QuiverlabError(
         f'braid_mutation: direction must be "left" or "right", got {direction!r}')
+
+
+# --------------------------------------------------------------------------- #
+# Task B3: Dynkin enumeration + braid-orbit transitivity + closed-form count
+# --------------------------------------------------------------------------- #
+@dataclass
+class ExcSeqReport:
+    """The classical exceptional-sequence report of a hereditary algebra (Plan 65 / R28)."""
+    algebra: object
+    n: int
+    dynkin_type: str | None                 # "A_3" | "D_4" | ... (None off ADE)
+    sequences: list = field(default_factory=list)   # [[Module, ...], ...] complete CES
+    count: int = 0
+    closed_form_count: int | None = None    # n! * h^n / |W| where the type is classified
+    transitive: bool | None = None          # braid-orbit BFS from seq[0] reached all `count`
+    is_complete: bool = False               # False iff budget-capped / rep-infinite
+    status: str = "unsupported"             # "complete" | "budget" | "unsupported" | "error"
+    note: str = ""
+
+
+_COX_WEYL_E = {6: (12, 51840), 7: (18, 2903040), 8: (30, 696729600)}
+
+
+def _coxeter_and_weyl(dt):
+    """``(h, |W|)`` (Coxeter number, Weyl group order) for a finite ADE type, else None."""
+    kind, k = dt
+    if kind == "A":
+        return k + 1, factorial(k + 1)
+    if kind == "D":
+        return 2 * k - 2, (2 ** (k - 1)) * factorial(k)
+    if kind == "E":
+        return _COX_WEYL_E.get(k)
+    return None
+
+
+def _closed_form_count(dt):
+    """``#CES = n! * h^n / |W|`` (Obaid et al.) for a finite ADE type, else None."""
+    if not dt or dt[0] not in ("A", "D", "E"):
+        return None
+    hw = _coxeter_and_weyl(dt)
+    if hw is None:
+        return None
+    h, weyl = hw
+    n = dt[1]
+    num = factorial(n) * (h ** n)
+    if num % weyl != 0:                                   # never: the count is an integer
+        raise QuiverlabError("closed-form CES count is not integral (type table bug)")
+    return num // weyl
+
+
+def _dvt(M):
+    dv = M.dimension_vector()
+    return tuple(dv[w] for w in sorted(dv))
+
+
+_AUTO_TRANSITIVE_MAX = 300      # auto-compute the orbit certificate only up to this count
+
+
+def exceptional_sequences(A, *, budget=100_000, transitive="auto"):
+    """Enumerate the complete classical exceptional sequences of a **hereditary
+    representation-finite** ``A`` (Plan 65 / R28). Primary enumeration is a direct
+    backward-orthogonality search over the finite exceptional-indecomposable universe (the
+    counts are genuine oracles); the braid-orbit BFS under ``sigma_i^{+-1}`` from one
+    sequence provides the Crawley-Boevey / Ringel **transitivity certificate**; the Dynkin
+    closed form ``n! * h^n / |W|`` (Obaid et al.) is the literature cross-check.
+
+    ``transitive``: ``"auto"`` computes the orbit certificate iff ``count <=
+    _AUTO_TRANSITIVE_MAX`` (so ``A_5 = 1296`` is skipped by default -- the opt-in gate);
+    ``True`` forces it (the slow ``A_5`` leg); ``False`` skips it.
+
+    Scope: hereditary only (loud refusal); representation-infinite hereditary -> the braid
+    orbit is infinite, an honest ``status="budget"`` report, never a guessed count."""
+    _require_hereditary(A)
+    from quiverlab.invariants.dynkin_type import dynkin_type, is_connected
+    verts = list(A.quiver.vertices)
+    n = len(verts)
+    dt = dynkin_type(A.quiver)
+    is_ade = bool(dt and dt[0] in ("A", "D", "E"))
+    dtype_str = f"{dt[0]}_{dt[1]}" if is_ade else None
+    cf = _closed_form_count(dt)
+
+    _infinite = (
+        "representation-infinite hereditary algebra: the set of complete exceptional "
+        "sequences is infinite (infinitely many exceptional preprojectives); "
+        "enumeration is Dynkin (rep-finite) only")
+    # Gabriel: a CONNECTED hereditary kQ is rep-finite iff Q is Dynkin (ADE). A connected
+    # non-Dynkin hereditary algebra is rep-INFINITE -- refuse instantly, never knit an
+    # infinite AR quiver (the 2-Kronecker would otherwise burn the budget slowly).
+    if not is_ade:
+        if is_connected(A.quiver):
+            return ExcSeqReport(A, n, dtype_str, [], 0, cf, None, False, "budget", _infinite)
+        arq = A.ar_quiver(budget_modules=min(max(budget, 16), 256))
+    else:
+        arq = A.ar_quiver()
+    if not arq.is_complete:
+        return ExcSeqReport(A, n, dtype_str, [], 0, cf, None, False, "budget", _infinite)
+    universe = [v["module"] for v in arq.vertices]
+    exc = [M for M in universe if end_dim(M) == 1 and ext(A, M, M, 1) == 0]
+    m = len(exc)
+    # Hom/Ext cache among the exceptional indecomposables (O(1) DFS orthogonality lookups)
+    HOM = [[hom_dim(exc[a], exc[b]) for b in range(m)] for a in range(m)]
+    EXT = [[ext(A, exc[a], exc[b], 1) for b in range(m)] for a in range(m)]
+
+    # direct backward-orthogonality DFS over length-n tuples (i<j: Hom(E_j,E_i)=Ext=0)
+    seqs_idx = []
+    state = {"examined": 0, "truncated": False}
+
+    def dfs(cur):
+        if state["truncated"]:
+            return
+        if len(cur) == n:
+            seqs_idx.append(tuple(cur))
+            return
+        for b in range(m):
+            state["examined"] += 1
+            if state["examined"] > budget:
+                state["truncated"] = True
+                return
+            ok = True
+            for a_pos in cur:
+                if HOM[b][a_pos] != 0 or EXT[b][a_pos] != 0:
+                    ok = False
+                    break
+            if ok:
+                cur.append(b)
+                dfs(cur)
+                cur.pop()
+
+    dfs([])
+    if state["truncated"]:
+        return ExcSeqReport(
+            A, n, dtype_str, [], 0, cf, None, False, "budget",
+            f"enumeration exceeded the tuple budget ({budget}); increase budget")
+    count = len(seqs_idx)
+    sequences = [[exc[b] for b in tup] for tup in seqs_idx]
+
+    # braid-orbit transitivity certificate (from one sequence, close under sigma_i^{+-1})
+    trans = None
+    want = (transitive is True) or (transitive == "auto" and 0 < count <= _AUTO_TRANSITIVE_MAX)
+    if want and count > 0:
+        trans = _braid_orbit_size(A, sequences[0], universe, n) == count
+
+    note = ""
+    if cf is not None and count != cf:
+        note = (f"count {count} != closed form {cf} -- a bug in enumeration or the type "
+                f"table (report this)")
+    return ExcSeqReport(A, n, dtype_str, sequences, count, cf, trans, True, "complete", note)
+
+
+def _braid_orbit_size(A, start, universe, n):
+    """The size of the braid orbit of ``start`` under the braid generators (BFS, deduped by
+    the tuple of dim-vectors -- for Dynkin, dim vectors determine the indecomposables).
+
+    LEFT mutations alone close the orbit: each ``sigma_i`` restricts to a permutation of the
+    finite complete-exceptional-sequence set, so ``sigma_i^{-1}`` is a positive power of
+    ``sigma_i`` and forward-only BFS reaches every element the full braid group does. Results
+    are memoized by ``(sequence-key, i)`` so each edge is built once."""
+    def key(s):
+        return tuple(_dvt(E) for E in s)
+
+    memo = {}
+
+    def step(s, ks, i):
+        mk = (ks, i)
+        t = memo.get(mk)
+        if t is None:
+            t = braid_mutation(A, s, i, direction="left", _universe=universe)
+            memo[mk] = t
+        return t
+
+    k0 = key(start)
+    seen = {k0}
+    frontier = [(start, k0)]
+    while frontier:
+        s, ks = frontier.pop()
+        for i in range(n - 1):
+            t = step(s, ks, i)
+            kt = key(t)
+            if kt not in seen:
+                seen.add(kt)
+                frontier.append((t, kt))
+    return len(seen)

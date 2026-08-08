@@ -561,6 +561,15 @@ class Algebra:
         from quiverlab.tautilting.mutation import exchange_graph
         return exchange_graph(self, budget_pairs=budget_pairs)
 
+    def exceptional_sequences(self, budget=100_000, transitive="auto"):
+        """The complete classical exceptional sequences of this **hereditary** algebra
+        (Plan 65 / R28): the backward-orthogonality enumeration, the braid-orbit
+        transitivity certificate, and the Dynkin closed-form count ``n! h^n / |W|``.
+        Hereditary + representation-finite scope; loud refusal otherwise. Returns an
+        :class:`~quiverlab.modules.exceptional.ExcSeqReport`."""
+        from quiverlab.modules.exceptional import exceptional_sequences
+        return exceptional_sequences(self, budget=budget, transitive=transitive)
+
     def is_tilting_module(self, T, n=1):
         """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
         ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,
