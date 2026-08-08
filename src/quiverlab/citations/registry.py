@@ -510,6 +510,25 @@ REGISTRY: dict = {r.key: r for r in [
        "Organising the module category",
        "Alvares-Assem-Castonguay-Vargas survey of the left/right parts, supports, and the "
        "quasi-tilted/laura/ada organisation of mod A -- Plan 55's secondary reference.", "survey"),
+    # Plan 60 (R17): the tilted-algebra recognizer via the Liu-Skowronski faithful section.
+    _r("liu_tilted_1993", "Liu1993", "foundation",
+       "Tilted algebras and generalized standard Auslander-Reiten components",
+       "Liu (independently with Skowronski): A is tilted iff Gamma_A has a faithful "
+       "generalized-standard component with a section -- the criterion Plan 60 searches for. "
+       "Venue verified (Arch. Math. 61 (1993) 12-19).",
+       "recognizer"),
+    _r("liu_another_2014", "Liu2014", "foundation",
+       "Another characterization of tilted algebras (arXiv:1409.2054)",
+       "Liu: A is tilted iff Gamma_A contains a FAITHFUL CUT Delta with Hom(X, tau Y)=0 "
+       "(Thm 2.6); the cut is a finite/local object (weakly convex), the documented "
+       "rep-infinite extension path. Ringel's slice theorem (Thm 1.9(2)) is the "
+       "reconstruction certificate Plan 60 uses.",
+       "recognizer"),
+    _r("happel_ringel_tilted", "HappelRingel1982", "foundation",
+       "Tilted algebras",
+       "Happel-Ringel: the origin of tilted algebras A = End_H(T) (H hereditary, T tilting); "
+       "tilted => gl.dim <= 2 -- the theorem gate Plan 60 uses to refute high-gl.dim algebras.",
+       "recognizer"),
 ]}
 
 

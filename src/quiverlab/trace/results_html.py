@@ -36,6 +36,7 @@ _HEADINGS = {
     "radical_filtration": "Radical filtration of mod A",
     "ar_invariants": "AR-component invariants",
     "left_right_parts": "Left / right parts",
+    "tilted_check": "Tilted-algebra check",
     "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
@@ -780,6 +781,56 @@ def _left_right_parts_html(b):
     return chunks
 
 
+_TILTED_VERDICT = {"tilted": "tilted", "not_tilted": "not tilted", "unknown": "unknown"}
+_TILTED_REASON = {
+    "hereditary": "hereditary (A = End_A(A), the postprojective slice)",
+    "self_injective": "non-semisimple self-injective &rArr; gl.dim = &infin; &rArr; not tilted",
+    "gldim>2": "gl.dim &gt; 2 (tilted &rArr; gl.dim &le; 2)",
+    "faithful_section_found": "a faithful section with Hom(X, &tau;Y)=0, certified a slice "
+                             "(Ringel Thm 1.9(2))",
+    "search_exhausted": "no faithful section with Hom(X, &tau;Y)=0 (rep-finite, complete knit, "
+                        "budget-exhaustive)",
+    "budget": "the transversal enumeration exceeded the budget",
+    "unsupported": "the AR knit is out of scope (self-injective / rep-infinite)",
+    "error": "refused loudly",
+}
+
+
+def _tilted_check_html(b):
+    """The tilted-algebra recognizer verdict (Plan 60): the verdict + reason, the slice
+    Sigma (named S_v/P_v/I_v), the hereditary type, and the reconstructed H = End_A(S). An
+    honest refusal (char-scope / rep-infinite) surfaces the library's loud message."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Tilted check not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    verdict = b.get("verdict")
+    chunks = ["<p>A is <b>%s</b> &mdash; %s.</p>"
+              % (_esc(_TILTED_VERDICT.get(verdict, str(verdict))),
+                 _TILTED_REASON.get(b.get("reason"), _esc(str(b.get("reason")))))]
+    if b.get("hereditary_type"):
+        chunks.append("<p>Hereditary type (the underlying Dynkin diagram of the slice): "
+                      "<b>%s</b>.</p>" % _esc(str(b["hereditary_type"])))
+    slc = b.get("slice") or []
+    if slc:
+        names = ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {})) for r in slc)
+        chunks.append("<p><b>Slice &Sigma;</b> (S = &oplus;&Sigma;, a tilting A-module): %s.</p>"
+                      % names)
+    hered = b.get("hereditary_algebra")
+    if hered:
+        chunks.append("<p><b>H = End<sub>A</sub>(S)</b> (presented, hereditary): "
+                      "%s vertices, %s arrows, dim %s.</p>"
+                      % (_num(len(hered.get("vertices") or [])),
+                         _num(len(hered.get("arrows") or {})), _num(hered.get("dim"))))
+    recon = b.get("reconstruction")
+    if recon:
+        chunks.append("<p class='ql-note'>%s (dim A = %s, dim H = %s).</p>"
+                      % (_esc(str(recon.get("note") or "")),
+                         _num(recon.get("dim_A")), _num(recon.get("dim_H"))))
+    if verdict == "unknown" and b.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return chunks
+
+
 def _strings_html(b):
     """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
     census + band presence + honest rep-type + (gentle) AG invariant."""
@@ -910,6 +961,8 @@ def _block_html(kind, b, ctx=None):
         return _ar_invariants_html(b)
     if kind == "left_right_parts":
         return _left_right_parts_html(b)
+    if kind == "tilted_check":
+        return _tilted_check_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]

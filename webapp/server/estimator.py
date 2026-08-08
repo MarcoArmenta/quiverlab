@@ -72,7 +72,7 @@ def _max_degree(req: ComputeRequest) -> int:
         # ar_quiver/tau_tilting budget can be mislabelled "instant" even though the knit
         # may run long before it hits the budget cap. The wall-clock/memory caps still
         # bound it once running; a budget-aware sizing heuristic is the open backlog fix.
-        if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts"):
+        if item.kind in ("tau_tilting", "ar_quiver", "left_right_parts", "tilted_check"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)
