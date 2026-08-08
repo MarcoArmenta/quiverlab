@@ -575,6 +575,26 @@ class Algebra:
         from quiverlab.modules.tilting import bongartz_completion
         return bongartz_completion(T)
 
+    def tilted_check(self, budget_modules=256, budget_sections=4096):
+        """A :class:`~quiverlab.modules.tilted.TiltedReport` deciding whether this algebra
+        is tilted -- ``A = End_H(T)`` for a hereditary ``H`` and a tilting ``H``-module
+        ``T`` (Plan 60 / R17) -- by the Liu-Skowronski faithful-section criterion on the
+        AR quiver, certified by Ringel's slice theorem. Theorem gates (hereditary =>
+        tilted; non-semisimple self-injective => not; gl.dim > 2 => not) then a rep-finite
+        exhaustive search; two budgets: the knit cap ``budget_modules`` and the transversal
+        cap ``budget_sections`` (a product of orbit sizes). Char 0 / char > dim."""
+        from quiverlab.modules.tilted import tilted_check
+        return tilted_check(self, budget_modules=budget_modules,
+                            budget_sections=budget_sections)
+
+    def is_tilted(self, budget_modules=256, budget_sections=4096) -> bool:
+        """``True`` iff this algebra is tilted (Plan 60); the Boolean shorthand for
+        ``bool(self.tilted_check(...))``. An honest ``unknown`` verdict (rep-infinite
+        non-hereditary / budget-tripped) returns ``False`` -- read ``tilted_check`` for the
+        status when the distinction matters."""
+        return bool(self.tilted_check(budget_modules=budget_modules,
+                                      budget_sections=budget_sections))
+
     # -- quasi-hereditary structure + recollements (Plan 47) ------------------
     def standard_modules(self, order=None):
         """The standard modules ``Delta(i)`` for the given vertex ``order`` (dict
