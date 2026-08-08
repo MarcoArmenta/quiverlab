@@ -280,7 +280,20 @@ never hide behind one:
     (the append is textual, existing bytes untouched); both runners share the library
     builders (``string_homological_block`` / ``toupie_block``), so the Pyodide twin
     agrees (``tests/gui/test_recognizer_runner_twin_p59.py``). ``canonical_key`` is
-    request-derived (schema-1 algebra-only, no ``module`` block)."""
+    request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-07 (``recognizer_ladder_kA3`` ADDED, Plan 61 R18): a NEW fixture for the
+    ``recognizer_ladder`` ALGEBRA-level compute kind (schema v1, kA3 = 1->2->3 over QQ,
+    budget 256 -- the quasi-tilted/shod/weakly-shod/laura/ada ladder). Hereditary kA3 =>
+    all five verdicts ``True``, empty laura complement, gl.dim 1; the ada/HH^1 block
+    reports ``hh1_dim == 0`` with ``applicable == False`` and ``verdict == null`` because
+    QQ is NOT algebraically closed (ACLV Theorem B's hypothesis unmet -- no SC verdict off
+    CC). Pure ADDITION: every pre-existing entry was verified byte-identical BEFORE the
+    append (textual, existing bytes untouched); both runners share the library builder
+    (``modules.recognizers_ladder.recognizer_ladder_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_recognizer_ladder_p61.py`` /
+    ``tests/gui/test_recognizer_ladder_twin.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only, budget rides in the ``compute`` string, no new request
+    field)."""
 import json
 import pathlib
 

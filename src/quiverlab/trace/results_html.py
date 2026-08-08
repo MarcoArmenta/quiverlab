@@ -36,6 +36,7 @@ _HEADINGS = {
     "radical_filtration": "Radical filtration of mod A",
     "ar_invariants": "AR-component invariants",
     "left_right_parts": "Left / right parts",
+    "recognizer_ladder": "Recognizer ladder",
     "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
@@ -853,6 +854,67 @@ def _left_right_parts_html(b):
     return chunks
 
 
+_LADDER_LABELS = (
+    ("quasi_tilted", "quasi-tilted"), ("shod", "shod"), ("weakly_shod", "weakly shod"),
+    ("laura", "laura"), ("ada", "ada"))
+
+
+def _recognizer_ladder_html(b):
+    """The quasi-tilted/shod/weakly-shod/laura/ada recognizer ladder (Plan 61 / R18): a
+    verdict table (with witness-per-False), the finite laura complement, and the ada/HH^1
+    simple-connectedness paragraph (ACLV Theorem B). An honest refusal (self-injective /
+    rep-infinite / char-scope) is the library's loud status/message -- never a partial ladder."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Recognizer ladder not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Incomplete (status: %s) — %s</p>"
+                % (_esc(str(b.get("status"))),
+                   _esc(str(b.get("note") or "the algebra is not representation-finite / "
+                        "the knit did not close (self-injective or rep-infinite)")))]
+    chunks = ["<p>Module category: %s indecomposable(s), global dimension %s.</p>"
+              % (_num(b.get("universe_size")), _num(b.get("gldim")))]
+    ladder = b.get("ladder") or {}
+    rows = ["<tr><th>class</th><th>verdict</th><th>witness</th></tr>"]
+    for key, label in _LADDER_LABELS:
+        rung = ladder.get(key) or {}
+        verdict = rung.get("verdict")
+        mark = "&#10003;" if verdict else "&#10007;"          # check / cross
+        wit = ""
+        if verdict is False and key != "laura":
+            w = rung.get("witness")
+            if w:
+                wit = _esc(", ".join("%s: %s" % (wk, w[wk]) for wk in w))
+        if key == "laura":
+            wit = "complement size %s" % _num(rung.get("complement_size"))
+        rows.append("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                    % (_esc(label), mark, wit))
+    chunks.append("<table class='ql-table'>%s</table>" % "".join(rows))
+    comp = b.get("complement") or []
+    if comp:
+        names = ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {})) for r in comp)
+        chunks.append("<p><b>Laura complement</b> (ind A &setminus; (L<sub>A</sub> &cup; "
+                      "R<sub>A</sub>)): %s.</p>" % names)
+    else:
+        chunks.append("<p><b>Laura complement</b>: &empty; (this algebra is shod).</p>")
+    sc = b.get("simple_connectedness") or {}
+    if sc.get("applicable"):
+        if sc.get("verdict") is True:
+            chunks.append("<p><b>Simple connectedness</b> (ACLV Theorem B): dim HH<sup>1</sup>"
+                          "(A) = %s, so A is <b>simply connected</b> and HH<sup>*</sup>(A) "
+                          "reduces to the base field.</p>" % _num(sc.get("hh1_dim")))
+        else:
+            chunks.append("<p><b>Simple connectedness</b> (ACLV Theorem B): dim HH<sup>1</sup>"
+                          "(A) = %s &ne; 0, so A is <b>not</b> simply connected.</p>"
+                          % _num(sc.get("hh1_dim")))
+    elif sc.get("hh1_dim") is not None:
+        chunks.append("<p><b>Simple connectedness</b>: dim HH<sup>1</sup>(A) = %s. %s</p>"
+                      % (_num(sc.get("hh1_dim")), _esc(str(sc.get("note") or ""))))
+    elif sc.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(sc.get("note"))))
+    return chunks
+
+
 def _string_homological_html(b):
     """The homological string-algebra test (Plan 59 / R34): the three-valued verdict, the
     syntactic is_string arbiter, and -- on a refutation -- the >= 3-summand middle witness
@@ -1032,6 +1094,8 @@ def _block_html(kind, b, ctx=None):
         return _ar_invariants_html(b)
     if kind == "left_right_parts":
         return _left_right_parts_html(b)
+    if kind == "recognizer_ladder":
+        return _recognizer_ladder_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]
