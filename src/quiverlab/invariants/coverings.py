@@ -184,13 +184,19 @@ def _relation_data(A, base=None):
     minimal_relation_counts: minimal relations of I by exact I/(rad.I + I.rad)
     linear algebra, plus the spanning forest and generators."""
     _require_quiver(A, "fundamental_group")
-    from quiverlab.resolutions_cs.build import reduction_system_of
     quiver = A.quiver
+    tree, parent = quiver.spanning_forest(root=base)
+    generators = tuple(sorted(set(quiver.arrows) - tree))
+    # Hereditary short-circuit: a relation-free (I = 0) presentation has NO minimal
+    # relations, so pi1 is free on the Betti generators -- skip loewy_length + the
+    # reduction system + the block linear algebra entirely (a valid built kQ/I with
+    # relations == [] is hereditary, hence acyclic and finite-dimensional).
+    if not A.relations:
+        return _RelationData(quiver, frozenset(tree), parent, generators, (), {})
+    from quiverlab.resolutions_cs.build import reduction_system_of
     dom = A.domain
     rs = reduction_system_of(A)
     N = A.loewy_length()
-    tree, parent = quiver.spanning_forest(root=base)
-    generators = tuple(sorted(set(quiver.arrows) - tree))
 
     paths = _paths_between(quiver, N) if N >= 2 else {}
     W = {blk: _block_W(ps, rs, dom) for blk, ps in paths.items()}
