@@ -30,6 +30,7 @@ from dataclasses import dataclass
 from quiverlab.errors import QuiverlabError
 from quiverlab.fields.linalg import nullspace, rank, solve
 from quiverlab.hochschild.bar import coboundary_matrix, _cochain_basis
+from quiverlab.modules import linalg_mod as lm
 from quiverlab.invariants.hh1_lie import (
     DEFAULT_MAXDIM,
     _hh1_reps,
@@ -174,6 +175,308 @@ def _mat_equal(X, Y, dom):
 
 
 # ---------------------------------------------------------------------------
+# Task 3: char-0 maximal torus of HH^1 + weight decomposition of HH^n
+#   (NET-NEW code -- P70 provides NONE of this. Cartan subalgebra (de Graaf
+#    Engel/Fitting) -> ad-semisimple part -> radical-toral extension ->
+#    rational simultaneous diagonalization; each step self-certified.)
+# ---------------------------------------------------------------------------
+def _identity_vecs(m, dom):
+    return [[dom.one() if i == j else dom.zero() for j in range(m)] for i in range(m)]
+
+
+def _ad_matrix(c, m, dom, x):
+    """``ad_x`` on ``HH^1`` as an ``m x m`` matrix (col ``j`` = ``[x, e_j]``):
+    ``(ad_x)[k][j] = sum_i x[i] c[i][j][k]``."""
+    M = [[dom.zero()] * m for _ in range(m)]
+    for i in range(m):
+        xi = x[i]
+        if dom.is_zero(xi):
+            continue
+        ci = c[i]
+        for j in range(m):
+            cij = ci[j]
+            for k in range(m):
+                if not dom.is_zero(cij[k]):
+                    M[k][j] = dom.add(M[k][j], dom.mul(xi, cij[k]))
+    return M
+
+
+def _combine(basis, coords, dom, d):
+    out = [dom.zero()] * d
+    for j, cj in enumerate(coords):
+        if dom.is_zero(cj):
+            continue
+        bj = basis[j]
+        for t in range(d):
+            out[t] = dom.add(out[t], dom.mul(cj, bj[t]))
+    return out
+
+
+def _restrict(M, basis, dom, d):
+    """Matrix of ``M`` (``d x d``) restricted to the invariant subspace ``span(basis)``
+    (columns = ambient vecs), in ``basis`` coordinates; loud if not invariant."""
+    s = len(basis)
+    colsT = [[basis[j][r] for j in range(s)] for r in range(d)]
+    out_cols = []
+    for j in range(s):
+        Mb = lm.matvec(M, basis[j], dom)
+        coeff = solve(colsT, Mb, dom)
+        if coeff is None:
+            raise QuiverlabError("HH-Lie-module torus: subspace is not invariant "
+                                 "(a bug in the simultaneous diagonalization)")
+        out_cols.append(coeff)
+    return [[out_cols[j][i] for j in range(s)] for i in range(s)]
+
+
+def _is_nilpotent_mat(M, dom):
+    P = M
+    for _ in range(len(M) - 1):
+        P = lm.matmul(P, M, dom)
+    return all(dom.is_zero(P[i][j]) for i in range(len(P)) for j in range(len(P)))
+
+
+def _min_poly_factors(M, dom):
+    """Factor the minimal polynomial of ``M`` over ``dom`` -> ``[(factor, mult)]``
+    (ascending-coeff monic factors). Reuses the decompose char-0/GF(p) factoring."""
+    from quiverlab.modules.decompose import _factor_min_poly, _min_poly_coeffs
+    return _factor_min_poly(_min_poly_coeffs(M, dom), dom)
+
+
+def _is_ad_semisimple(c, m, dom, x):
+    """Is ``ad_x`` semisimple over ``k`` (diagonalizable) -- min poly squarefree AND
+    split into linear factors? (``ad_x = 0`` counts: min poly ``x``, one linear factor.)"""
+    ad = _ad_matrix(c, m, dom, x)
+    if all(dom.is_zero(ad[i][j]) for i in range(m) for j in range(m)):
+        return True
+    for fac, mult in _min_poly_factors(ad, dom):
+        if mult > 1 or len(fac) != 2:            # repeated (nilpotent part) or non-linear
+            return False
+    return True
+
+
+# --- de Graaf Cartan subalgebra via the Engel / Fitting-null recursion ---
+def _subalgebra_ad(c, m, dom, x, sub):
+    """``ad_x`` restricted to the subalgebra ``span(sub)`` (``sub`` = ambient coord vecs),
+    as a matrix in ``sub`` coordinates; loud if ``sub`` is not ``ad_x``-stable."""
+    s = len(sub)
+    subT = [[sub[j][r] for j in range(s)] for r in range(m)]
+    cols = []
+    for j in range(s):
+        w = [dom.zero()] * m                     # [x, sub[j]] in ambient coords
+        bj = sub[j]
+        for a in range(m):
+            xa = x[a]
+            if dom.is_zero(xa):
+                continue
+            ca = c[a]
+            for b in range(m):
+                bb = bj[b]
+                if dom.is_zero(bb):
+                    continue
+                f = dom.mul(xa, bb)
+                cab = ca[b]
+                for k in range(m):
+                    if not dom.is_zero(cab[k]):
+                        w[k] = dom.add(w[k], dom.mul(f, cab[k]))
+        coeff = solve(subT, w, dom)
+        if coeff is None:
+            raise QuiverlabError("HH-Lie-module Cartan: bracket left the subalgebra "
+                                 "(a bug in the Engel recursion)")
+        cols.append(coeff)
+    return [[cols[j][i] for j in range(s)] for i in range(s)]
+
+
+def _find_nonnilpotent(c, m, dom, sub):
+    """An element ``x in span(sub)`` (ambient coords) with ``ad_x|_sub`` NOT nilpotent,
+    or ``None`` (``span(sub)`` is nilpotent -> a Cartan). Deterministic ladder: basis
+    elements, then small integer combinations (an exact field is infinite / large)."""
+    s = len(sub)
+    ladders = list(_identity_vecs(s, dom))
+    for a in range(s):                           # pairwise sums
+        for b in range(a + 1, s):
+            ladders.append([dom.add(dom.one() if t == a else dom.zero(),
+                                    dom.one() if t == b else dom.zero()) for t in range(s)])
+    ladders.append([dom.coerce(t + 1) for t in range(s)])   # coefficient ladder
+    for coeff in ladders:
+        x = _combine(sub, coeff, dom, m)
+        if not _is_nilpotent_mat(_subalgebra_ad(c, m, dom, x, sub), dom):
+            return x
+    return None
+
+
+def _fitting_null(c, m, dom, x, sub):
+    """Generalized 0-eigenspace of ``ad_x`` within ``span(sub)`` (a subalgebra
+    containing a Cartan), returned as ambient coord vectors."""
+    s = len(sub)
+    adsub = _subalgebra_ad(c, m, dom, x, sub)
+    P = adsub
+    for _ in range(s - 1):
+        P = lm.matmul(P, adsub, dom)
+    return [_combine(sub, v, dom, m) for v in nullspace(P, dom)]
+
+
+def _cartan_subalgebra(c, m, dom):
+    """A Cartan subalgebra of ``HH^1`` (ambient coord basis) by the Engel/Fitting
+    recursion. Self-cert: the result is nilpotent (no non-nilpotent element) -- the
+    loop exits exactly then."""
+    if m == 0:
+        return []
+    sub = _identity_vecs(m, dom)
+    while True:
+        x = _find_nonnilpotent(c, m, dom, sub)
+        if x is None:
+            return sub
+        sub = _fitting_null(c, m, dom, x, sub)
+
+
+def _commutes(c, m, dom, x, y):
+    for k in range(m):
+        s = dom.zero()
+        for i in range(m):
+            if dom.is_zero(x[i]):
+                continue
+            for j in range(m):
+                if not dom.is_zero(y[j]) and not dom.is_zero(c[i][j][k]):
+                    s = dom.add(s, dom.mul(dom.mul(x[i], y[j]), c[i][j][k]))
+        if not dom.is_zero(s):
+            return False
+    return True
+
+
+def _independent(vecs, dom):
+    return rank(vecs, dom) == len(vecs)
+
+
+def _maximal_torus(c, m, dom):
+    """A maximal ad-diagonalizable abelian subalgebra ``t`` of ``HH^1`` (ambient coord
+    basis) and a provenance string. Route: the ad-semisimple part of a Cartan
+    subalgebra, then a greedy radical-toral extension by ad-semisimple ``HH^1`` basis
+    elements commuting with the current torus (the ``k[x]/x^n`` grading ``x d`` -- a
+    radical toral element P70 scoped OUT -- is captured here). Self-cert: ``t`` is
+    abelian and every generator is ad-semisimple."""
+    if m == 0:
+        return [], "trivial (HH^1 = 0)"
+    H = _cartan_subalgebra(c, m, dom)
+    torus = []
+    for h in H:                                  # ad-semisimple part of the Cartan
+        if _is_ad_semisimple(c, m, dom, h) and all(_commutes(c, m, dom, h, t) for t in torus) \
+                and _independent(torus + [h], dom):
+            torus.append(h)
+    for e in _identity_vecs(m, dom):             # radical-toral greedy extension
+        if _is_ad_semisimple(c, m, dom, e) and all(_commutes(c, m, dom, e, t) for t in torus) \
+                and _independent(torus + [e], dom):
+            torus.append(e)
+    # self-cert: abelian + each ad-semisimple
+    for a in range(len(torus)):
+        for b in range(len(torus)):
+            if not _commutes(c, m, dom, torus[a], torus[b]):
+                raise QuiverlabError("HH-Lie-module torus self-cert failed: not abelian")
+    prov = (f"maximal torus (dim {len(torus)}) = the ad-semisimple part of a Cartan "
+            "subalgebra of HH^1 + radical-toral extension; basis-dependent (the "
+            "normalization of each generator is a choice -- weight LABELS are provenance, "
+            "the P70 sl2-triple NON-NORMATIVE precedent)")
+    return torus, prov
+
+
+def _rational_eigenspaces(M, dom, s):
+    """Full eigenspaces of the ``s x s`` matrix ``M`` over ``k``: ``[(lam, [ker vecs])]``
+    for each rational eigenvalue, or ``("anisotropic", None)`` if a factor is non-linear
+    (eigenvalue outside ``k``), or ``("nonsemisimple", None)`` if not diagonalizable
+    (a repeated min-poly factor -- eigenspace dims would not fill ``s``)."""
+    if s == 0:
+        return []
+    facs = _min_poly_factors(M, dom)
+    out = []
+    for fac, mult in facs:
+        if len(fac) != 2:
+            return ("anisotropic", None)
+        if mult > 1:
+            return ("nonsemisimple", None)
+        # root of a1*x + a0 = -a0/a1 (the factor may be non-monic over QQ, e.g. 2x-1)
+        lam = dom.neg(dom.mul(fac[0], dom.inv(fac[1])))
+        E = [[dom.sub(M[i][j], lam if i == j else dom.zero()) for j in range(s)]
+             for i in range(s)]
+        out.append((lam, nullspace(E, dom)))
+    return out
+
+
+def _simultaneous_weights(mats, dom, d):
+    """Simultaneous eigenspace decomposition of the commuting family ``mats`` on
+    ``k^d``: ``{weight-tuple (Domain elts): dim}``, or ``("anisotropic"|"nonsemisimple",
+    None)`` on the honest fallbacks. ``d = 0`` -> ``{}``."""
+    if d == 0:
+        return {}
+    spaces = [([], _identity_vecs(d, dom))]      # (weight prefix, ambient basis of subspace)
+    for M in mats:
+        new = []
+        for wt, basis in spaces:
+            s = len(basis)
+            if s == 0:
+                continue
+            eig = _rational_eigenspaces(_restrict(M, basis, dom, d), dom, s)
+            if isinstance(eig, tuple) and eig[0] in ("anisotropic", "nonsemisimple"):
+                return eig
+            for lam, kervecs in eig:
+                amb = [_combine(basis, v, dom, d) for v in kervecs]
+                if amb:
+                    new.append((wt + [lam], amb))
+        spaces = new
+    result = {}
+    for wt, basis in spaces:
+        key = tuple(wt)
+        result[key] = result.get(key, 0) + len(basis)
+    return result
+
+
+def _weight_tables(B, per_degree, torus, reps_hh1, dom):
+    """Per-degree weight tables over ``k`` (char 0). Returns ``(tables, base_change_note)``:
+    ``tables[n]`` is ``{"n", "torus_rank", "weights": [[ [str(lam)...], dim ]...] }`` where
+    weights split rationally, else a per-degree note; ``base_change_note`` is set when an
+    anisotropic torus is met (P70 base-change precedent -- no fabricated split)."""
+    m = len(reps_hh1)
+    tables = []
+    base_change_note = None
+    for n, pd in enumerate(per_degree):
+        reps, image, rhos = pd["reps"], pd["image"], pd["rhos"]
+        dn = len(reps)
+        entry = {"n": n, "torus_rank": len(torus)}
+        if dn == 0 or not torus:
+            entry["weights"] = ([[[], dn]] if dn else [])
+            tables.append(entry)
+            continue
+        mats = []                                # rho_n(h) for each torus generator h
+        for h in torus:
+            R = [[dom.zero()] * dn for _ in range(dn)]
+            for i in range(m):
+                hi = h[i]
+                if dom.is_zero(hi):
+                    continue
+                Ri = rhos[i]
+                for a in range(dn):
+                    for b in range(dn):
+                        if not dom.is_zero(Ri[a][b]):
+                            R[a][b] = dom.add(R[a][b], dom.mul(hi, Ri[a][b]))
+            mats.append(R)
+        w = _simultaneous_weights(mats, dom, dn)
+        if isinstance(w, tuple):                 # ("anisotropic"|"nonsemisimple", None)
+            entry["weights"] = None
+            if w[0] == "anisotropic":
+                entry["note"] = ("a torus eigenvalue lies outside the base field -- "
+                                 "weights are unavailable over k (base change to k-bar "
+                                 "needed); no fabricated split")
+                base_change_note = ("some HH^n carries an anisotropic torus action; its "
+                                    "weights split only over the algebraic closure "
+                                    "(P70 base-change precedent -- no fabricated split)")
+            else:
+                entry["note"] = ("a torus generator does not act semisimply on this HH^n "
+                                 "(a repeated eigenvalue) -- weights are not read")
+        else:
+            entry["weights"] = [[[dom.to_str(l) for l in wt], dim] for wt, dim in w.items()]
+        tables.append(entry)
+    return tables, base_change_note
+
+
+# ---------------------------------------------------------------------------
 # the public primitive + the report
 # ---------------------------------------------------------------------------
 def lie_derivative_on_hh(A, D, n, *, max_cells=4_000_000):
@@ -282,12 +585,18 @@ def lie_module_action(A, top, *, budget=DEFAULT_MAXDIM, max_cells=4_000_000,
             "characteristic, and the indecomposable-summand decomposition follows "
             "decompose's own char guard (char 0 or char > dim HH^n) INDEPENDENTLY.")
 
-    # Task 3 (weights) + Task 4 (summands) fill these; None over char p (weights) /
-    # where decompose refuses (summands). Placeholders here keep the Task-1 slice green.
     weights = None
     torus_provenance = None
     weight_base_change_note = None
     summands = None
+
+    # --- Task 3: char-0 weight / torus decomposition (loud char-p gate) ---
+    if dom.characteristic == 0 and fg["hh1_dim"] > 0:
+        from quiverlab.invariants.hh1_lie import _bracket_constants
+        c = _bracket_constants(fg["reps_hh1"], fg["Inn"], dom, B.dim)
+        torus, torus_provenance = _maximal_torus(c, fg["hh1_dim"], dom)
+        weights, weight_base_change_note = _weight_tables(
+            B, fg["per_degree"], torus, fg["reps_hh1"], dom)
 
     return HHLieModule(
         top=top, hh_dims=fg["hh_dims"], hh1_dim=fg["hh1_dim"], basis="der_inn/bar",

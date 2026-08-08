@@ -239,3 +239,103 @@ def test_L_D_equals_circle_cochain_ENTRY_WISE(build, p, n):
         M = _L_D_matrix_on_cochains(E, D, n)
         for f in _cochain_basis_vectors(E, n):
             assert (((M @ f) % p) == (TT.gerstenhaber_bracket_cochain(E, 1, n, D, f) % p)).all()
+
+
+# ---------------------------------------------------------------------------
+# Task 3: char-0 weight / torus decomposition (assert the basis-independent PATTERN,
+# never the literal integers -- a scalar-doubled torus generator sends {-2,0,2} to
+# {-4,0,4}; the reproducible content is the distinct-weight count + PATTERN + per-weight
+# dims, the P70 sl2-triple NON-NORMATIVE precedent.)
+# ---------------------------------------------------------------------------
+from fractions import Fraction
+from quiverlab.errors import QuiverlabError
+
+
+def _weight_entry(L, n):
+    return next(e for e in L.weights if e["n"] == n)
+
+
+def _weights_at(L, n):
+    """The DISTINCT scalar weights at degree n (a rank-<=1 torus: kK2, k[x]/x^n) as
+    Fractions -- the normalization-free PATTERN input."""
+    ws = _weight_entry(L, n)["weights"]
+    out = []
+    for lam, _dim in ws:
+        out.append(Fraction(lam[0]) if lam else Fraction(0))
+    return out
+
+
+def _weight_dims(L, n):
+    return [(tuple(lam), d) for lam, d in _weight_entry(L, n)["weights"]]
+
+
+def _is_sl2_string(ws):                       # symmetric {-c, 0, c}, c != 0, each mult 1
+    s = sorted(ws)
+    c = -s[0]
+    return len(s) == 3 and c != 0 and s == [-c, 0, c]
+
+
+def _is_equal_gap(ws):                         # arithmetic progression, common difference != 0
+    s = sorted(set(ws))
+    diffs = {b - a for a, b in zip(s, s[1:])}
+    return len(s) < 2 or (len(diffs) == 1 and 0 not in diffs)
+
+
+@lit
+def test_kronecker_hh1_is_sl2_string():
+    A = _kron(QQ)                                     # HH^1 = adjoint sl2
+    L = lie_module_action(A, top=1)
+    assert _is_sl2_string(_weights_at(L, 1))          # PATTERN, normalization-free
+    assert set(_weights_at(L, 0)) == {0}              # HH^0 trivial L(0), one weight 0
+    assert all(d == 1 for _, d in _weight_dims(L, 1))  # each weight multiplicity 1
+
+
+@lit
+@pytest.mark.parametrize("n", [2, 3])
+def test_truncpoly_equal_gap_weights(n):
+    """k[x]/x^n: each HH^m has an equal-gap weight progression (the gap is
+    normalization-dependent, so assert equal-gap, NOT gap==1)."""
+    A = truncated_polynomial(n, field=QQ)
+    L = lie_module_action(A, top=2)
+    for m in (1, 2):
+        assert _is_equal_gap(_weights_at(L, m))       # PATTERN, not a literal gap
+
+
+@lit
+def test_dual_numbers_weight_ladder():
+    """k[x]/x^2: the cleanest weight ladder -- one weight per degree, an equal-gap
+    ladder across degrees (each HH^{>=1} is a 1-dim weight space)."""
+    A = truncated_polynomial(2, field=QQ)
+    L = lie_module_action(A, top=4)
+    for m in range(1, 5):
+        assert len(_weights_at(L, m)) == 1            # a single weight per degree
+
+
+@selfcert
+def test_weights_gated_char_p_but_action_computed():
+    """WEIGHTS are char-0-gated (loud); the field-general action is still computed."""
+    A = truncated_polynomial(3, field=GF(3))          # W_1 in char 3
+    L = lie_module_action(A, top=2)
+    assert L.module_axiom_ok is True                  # field-general part still computed
+    assert L.weights is None and L.char0_note          # WEIGHTS gated + explained
+    with pytest.raises(QuiverlabError):
+        lie_module_action(A, top=2, require_char0=True)  # the weight/torus accessor raises
+
+
+@selfcert
+def test_weight_spaces_sum_to_dim():
+    A = truncated_polynomial(3, field=QQ)
+    L = lie_module_action(A, top=3)
+    for n in range(4):
+        assert sum(d for _, d in _weight_dims(L, n)) == L.hh_dims[n]
+
+
+@selfcert
+def test_gl2_two_dim_torus():
+    """k[x,y]/(x,y)^2: HH^1 = gl2, a 2-dim torus -> weights are 2-tuples; the adjoint
+    HH^1 carries the gl2 root pattern (+-1 off-diagonal, 0 with multiplicity)."""
+    A = _rad2loops(QQ)
+    L = lie_module_action(A, top=2)
+    assert _weight_entry(L, 1)["torus_rank"] == 2
+    for n in range(3):
+        assert sum(d for _, d in _weight_dims(L, n)) == L.hh_dims[n]
