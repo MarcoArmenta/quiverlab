@@ -86,3 +86,31 @@ def test_two_term_silting_from_presentation():
     cx, rep = two_term_silting_from_presentation(A.simple(1))
     assert set(cx.degrees()) <= {0, 1} and cx.is_perfect()
     assert rep.rigid                                 # a 2-term silting object is rigid
+
+
+@selfcert
+def test_regular_object_is_tilting_over_nonunimodular_cartan():
+    # Plan 67 Task 0 regression. The g-matrix must live in K0(K^b proj) = (+)_v Z[P_v],
+    # the PROJECTIVE basis -- NOT the composition-factor basis: the regular object
+    # A = (+)_v P_v is a tilting complex over EVERY algebra (AI Ex 2.2). The old _chi
+    # g-matrix gave det(Cartan) and FAILED here (det C = 0 / 2) -- a systematic
+    # false-negative on non-unimodular Cartan. The kA_n suite above only exercises
+    # UNIMODULAR Cartan (hereditary, det C = 1), where _chi and g_proj COINCIDE
+    # (det _chi = det C . det g_proj = 1 . det g_proj) -- which is exactly why the bug
+    # survived P43's green suite.
+    import sympy as sp
+    from quiverlab import GF, NakayamaAlgebra, Quiver
+    from quiverlab.fields import QQ
+    # Example 2.47: 1 <=> 2 with ab = ba = 0; det Cartan = 0 (NON-unimodular).
+    A = Quiver([1, 2], {"a": (1, 2), "b": (2, 1)}).algebra(
+        relations=["a*b", "b*a"], field=QQ)
+    assert int(sp.Matrix(A.cartan_matrix()).det()) == 0            # non-unimodular
+    T = [ChainComplex.stalk(A.projective(v), 0) for v in A.quiver.vertices]
+    rep = is_tilting_complex(T)
+    assert rep.is_tilting is True and rep.generates is True and rep.det in (1, -1)
+    # self-injective Nakayama kZ3/J2: det Cartan = 2.
+    B = NakayamaAlgebra([2, 2, 2], cyclic=True, field=GF(32003))
+    assert int(sp.Matrix(B.cartan_matrix()).det()) == 2
+    TB = [ChainComplex.stalk(B.projective(v), 0) for v in B.quiver.vertices]
+    repB = is_tilting_complex(TB)
+    assert repB.is_tilting is True and repB.det in (1, -1)

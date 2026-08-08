@@ -4,10 +4,14 @@
 perfect summands: (1) **rigidity** -- ``Hom_{D^b}(T, T[n]) = 0`` for all ``n != 0`` --
 scanned on the EXACT window outside which hyper-Hom is provably the zero cochain group
 (``n in [min lo_i - max hi_j, max hi_i - min lo_j]``), reported honestly; (2)
-**generation** of ``K^b(proj)`` -- the K0 g-matrix (rows = summand Euler characteristics
-in ``K0 = Z^{#vertices}``) is square (``#summands = #simples``) and unimodular
-(``det = +-1``), so the classes are a ``Z``-basis of ``K0``. ``T`` is a tilting complex
-iff both hold (Rickard).
+**generation** of ``K^b(proj)`` -- the K0 g-matrix (rows = summand classes in the
+**projective** basis ``K0(K^b proj A) = (+)_v Z[P_v]`` via :func:`g_proj`, NOT the
+composition-factor basis) is square (``#summands = #simples``) and unimodular
+(``det = +-1``), so the classes are a ``Z``-basis of ``K0`` (AI Thm 2.27). ``T`` is a
+tilting complex iff both hold (Rickard). The projective basis is load-bearing: ``_chi``
+(the composition-factor Euler characteristic) gives ``det(Cartan . g_proj)`` and is a
+systematic false-negative on non-unimodular Cartan (self-injective/symmetric; Plan 67
+Task 0).
 
 ``end_algebra_of_complex`` builds ``End_{D^b}(T) = (+)_{i,j} Hom_{D^b}(T_i, T_j)`` as a
 structure-constant :class:`Algebra` -- the derived-equivalent algebra (Rickard) --
@@ -35,8 +39,10 @@ class TiltingReport:
     rigid: bool                 # hyper_hom_dims(T, T)[n] == 0 for all n != 0 in window
     generates: bool             # K0 g-matrix square & unimodular (det +-1)
     window: tuple               # (n_min, n_max): the EXACT rigidity-check range
-    g_matrix: list              # rows = summand K0 classes chi (Euler char per vertex)
-    det: int
+    g_matrix: list              # rows = summand K0 classes in the PROJECTIVE basis
+                                # K0(K^b proj A) = (+)_v Z[P_v] via g_proj (Plan 67 Task 0)
+                                # -- NOT the composition-factor basis (see g_proj below)
+    det: int                    # det(g_proj) -- unimodularity in the projective K0 basis
 
 
 # --------------------------------------------------------------------------- #
@@ -48,12 +54,51 @@ def _span(cx):
 
 
 def _chi(cx, verts):
-    """The K0 class chi(cx) = sum_n (-1)^n dim-vec(cx_n) in Z^{#vertices}."""
+    """The K0 class chi(cx) = sum_n (-1)^n dim-vec(cx_n) in the COMPOSITION-FACTOR basis
+    K0(mod A) = (+)_v Z[S_v] (dim-vec = the class in that basis). This is NOT the basis in
+    which generation of K^b(proj A) is decided -- use :func:`g_proj` (the PROJECTIVE basis)
+    for that. Kept only for reference / debugging; it has no consumer in ``src`` (Plan 67
+    Task 0 replaced its use in ``is_tilting_complex``). ``chi = C . g_proj`` where ``C`` is
+    the Cartan matrix, so ``det(chi) = det(C) . det(g_proj)`` -- equal to ``det(g_proj)``
+    ONLY when ``det C = +-1`` (hereditary etc.), which is why the P43 bug survived a green
+    kA_n suite but was a systematic false-negative on non-unimodular Cartan."""
     out = [0] * len(verts)
     for n in cx.degrees():
         dv = cx.term(n).dimension_vector()
         for i, v in enumerate(verts):
             out[i] += (-1) ** n * dv.get(v, 0)
+    return out
+
+
+def g_proj(cx, verts):
+    """K0 class of a perfect complex in the PROJECTIVE basis of
+    ``K0(K^b proj A) = (+)_v Z[P_v]``:
+    ``g_proj(cx)[v] = sum_n (-1)^n . (multiplicity of P_v in cx.term(n))``.
+
+    The multiplicity of ``P_v`` in a projective ``Q`` is ``dim_k (top Q)_v``
+    (``top(P_v^{m}) = S_v^{m}``). Uses the ``_proj_vertices`` provenance when present
+    (``from_projective_resolution`` / ``_direct_sum_complex`` / cone-mutants carry it);
+    else it reads the multiplicity from the TOP of each term -- so it is correct for a bare
+    ``ChainComplex.stalk(A.projective(v))`` (which carries NO provenance).
+
+    This is the correct g-matrix for deciding generation of ``K^b(proj A)`` (AI Thm 2.27:
+    the summand K0 classes are a Z-basis iff ``det g_proj = +-1``). ``_chi`` (the
+    composition-factor Euler characteristic) equals ``Cartan . g_proj`` and is WRONG on
+    non-unimodular Cartan (self-injective/symmetric; AI Example 2.47, ``det C = 0``) --
+    Plan 67 Task 0."""
+    idx = {v: i for i, v in enumerate(verts)}
+    out = [0] * len(verts)
+    prov = getattr(cx, "_proj_vertices", None)
+    for n in cx.degrees():
+        if prov is not None and n in prov:
+            mult = {}
+            for v in prov[n]:
+                mult[v] = mult.get(v, 0) + 1
+        else:
+            mult = cx.term(n).top().dimension_vector()
+        for v, m in mult.items():
+            if v in idx:
+                out[idx[v]] += (-1) ** n * m
     return out
 
 
@@ -148,7 +193,10 @@ def is_tilting_complex(summands):
     Tsum = _direct_sum_complex(summands)
     hh = hyper_hom_dims(Tsum, Tsum, n_min, n_max)
     rigid = all(hh.get(n, 0) == 0 for n in range(n_min, n_max + 1) if n != 0)
-    g = [_chi(T, verts) for T in summands]
+    # generation is decided in the PROJECTIVE K0 basis (+)_v Z[P_v] via g_proj -- NOT the
+    # composition-factor basis _chi, which is det(Cartan . g_proj) and a systematic
+    # false-negative on non-unimodular Cartan (Plan 67 Task 0; AI Ex 2.2 / Thm 2.27).
+    g = [g_proj(T, verts) for T in summands]
     det = int(sp.Matrix(g).det()) if len(g) == len(verts) else 0
     generates = (len(g) == len(verts)) and det in (1, -1)
     return TiltingReport(is_tilting=rigid and generates, rigid=rigid,
