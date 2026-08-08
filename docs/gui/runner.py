@@ -212,6 +212,17 @@ def _parse_compute(spec):
             raise RequestError("wall_chamber budget must be a positive integer (got %r)"
                                % (spec,))
         return "wall_chamber", (int(rng) if rng else None)
+    # silting carries a RADIUS,BUDGET pair, not a degree range (Plan 67): 'silting' or
+    # 'silting:3,64'. The top is the (radius, budget) tuple; neither is a homological
+    # degree, so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
+    if name == "silting":
+        if rng:
+            parts = rng.split(",")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise RequestError("silting suffix must be 'radius,budget' with positive "
+                                   "integers (got %r)" % (spec,))
+            return "silting", (int(parts[0]), int(parts[1]))
+        return "silting", None
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
     if name == "ar_quiver":
@@ -1179,6 +1190,22 @@ def compute_one(spec):
             except quiverlab.QuiverlabError as exc:
                 block = {"kind": "wall_chamber", "error": str(exc)}
             block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "silting":
+            # Silting theory (Plan 67 / Aihara-Iyama): algebra-level, RADIUS,BUDGET pair
+            # (not a degree). SAME shared library builder (derived.block.silting_block) +
+            # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so
+            # the cross-runner contract holds byte-for-byte. A QuiverlabError refusal (the
+            # char-scope / presentation / verifier-edge path) is caught into an `error`
+            # field; a non-QuiverlabError bug is NOT swallowed here -- it surfaces loudly
+            # (the fail-fast house rule), so this narrows to "the typed refusals never
+            # crash the block", not "never a crash".
+            radius, budget = top if top is not None else (3, 64)
+            from quiverlab.derived.block import silting_block
+            try:
+                block = silting_block(A, radius=radius, budget=budget)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "silting", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "string_homological":
             # Homological string-algebra test (Plan 59 / R34, Suarez-Alvarez). Byte-
             # identical to the server twin (quiverlab.hpc.spec._dispatch): SAME library
@@ -1452,6 +1479,9 @@ def python_snippet():
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
              "wall_chamber": "A.wall_chamber_structure(budget_pairs=%d)",
+             # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
+             # tmpl % top fills both %d).
+             "silting": "A.silting_exploration(radius=%d, budget=%d)",
              # Plan 57: radical_filtration + ar_invariants carry a module budget.
              "radical_filtration": "A.radical_filtration(budget_modules=%d)",
              "ar_invariants": "A.ar_invariants(budget_modules=%d)",
@@ -1584,6 +1614,10 @@ ETA_MODEL = {
                 # Plan 63: wall_chamber runs the tau_tilting exchange-graph BFS PLUS the
                 # per-brick submodule enumeration for each D(B) -- just above tau_tilting.
                 "wall_chamber": 2.5,
+                # Plan 67: silting = a bounded-radius BFS of the silting quiver via K^b
+                # Hom + minimal approximations + cone/reduce per step; the hyper-Hom passes
+                # dominate. Budget-capped honestly (complete only for local).
+                "silting": 1.5,
                 # Plan 55: left/right parts = an AR knit + the N^2 Hom predecessor matrix +
                 # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
                 # the same cost class as tau_tilting.

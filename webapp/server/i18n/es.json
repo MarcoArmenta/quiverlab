@@ -309,5 +309,12 @@
   "pick.coeff_regular": "regular A",
   "pick.coeff_dual": "dual D(A)",
   "pick.coeff_twisted_nakayama": "torcido _1A_nu",
-  "pick.coeff_quotient_socle": "A/zocalo"
+  "pick.coeff_quotient_socle": "A/zocalo",
+  "inv.silting": "Teoría de silting (verificador, mutación, exploración)",
+  "block.silting.title": "Silting: verificador, vecinos de mutación, exploración acotada",
+  "block.silting.scope": "presilting en la ventana positiva + generación de tres valores; el carcaj de silting puede ser infinito (exploración de radio acotado, completa solo para álgebras locales) — nunca una enumeración general",
+  "block.silting.status_complete": "completa (local)",
+  "block.silting.status_radius": "limitada por radio (no todo el carcaj de silting)",
+  "block.silting.status_budget": "limitada por presupuesto (no todo el carcaj de silting)",
+  "pick.kind.silting": "Teoría de silting"
 }

@@ -277,6 +277,19 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"wall_chamber budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="wall_chamber", lo=None, hi=(int(b) if b else None))
+    # silting carries a RADIUS,BUDGET pair (Plan 67), not a degree range: 'silting' or
+    # 'silting:3,64'. lo = exploration radius, hi = vertex budget (None => defaults). Both
+    # are enumeration bounds, not homological degrees, so this bypasses the degree grammar.
+    if s == "silting" or s.startswith("silting:"):
+        _, _, rb = s.partition(":")
+        radius = budget = None
+        if rb:
+            parts = rb.split(",")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise SpecError("silting suffix must be 'radius,budget' with positive "
+                                f"integers (got {s!r})")
+            radius, budget = int(parts[0]), int(parts[1])
+        return ComputeItem(kind="silting", lo=radius, hi=budget)
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget caps the knitted indecomposable universe -- not a
     # homological degree -- so it bypasses the 'name:0..N' grammar (like tau_tilting).
@@ -1789,6 +1802,25 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = derived_fingerprint_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Silting theory (Plan 67 / Aihara-Iyama): an ALGEBRA-level kind carrying a
+    # RADIUS,BUDGET pair (parsed like tau_tilting's budget). Verifier verdict on the
+    # regular object + single-mutation neighbours + a bounded-radius exploration (loud
+    # status, complete only for local) + the co-t-structure record. Both runners share
+    # derived.block.silting_block, so the blocks are byte-identical. A QuiverlabError
+    # refusal (the char-scope / presentation / verifier-edge path) is caught into an
+    # `error` field; a non-QuiverlabError bug is NOT swallowed here -- it surfaces loudly
+    # (the fail-fast house rule), so this narrows to "the typed refusals never 500", not
+    # "never a 500".
+    if kind == "silting":
+        radius = item.lo if item.lo is not None else 3
+        budget = item.hi if item.hi is not None else 64
+        from quiverlab.derived.block import silting_block
+        try:
+            block = silting_block(A, radius=radius, budget=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "silting", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # Derived-fingerprint COMPARISON of two algebras (P43 compare_fingerprints, wave 2):
     # a scalar kind needing the second algebra B (parse_request required algebra_b, and
     # run() built it into B). The verdict is HONEST -- "distinguished by <field>" /
@@ -2708,6 +2740,10 @@ def _snippet(req: ComputeRequest, A) -> str:
              "wall_chamber":
                  lambda it: ("A.wall_chamber_structure(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
+             "silting":
+                 lambda it: ("A.silting_exploration(radius="
+                             f"{it.lo if it.lo is not None else 3}, "
+                             f"budget={it.hi if it.hi is not None else 64})"),
              "dimension_vector": lambda it: "M.dimension_vector()",
              "rad_top_soc": lambda it: "M.radical(), M.top(), M.socle()",
              "tau": lambda it: "M.tau()",

@@ -309,5 +309,12 @@
   "pick.coeff_regular": "regulier A",
   "pick.coeff_dual": "dual D(A)",
   "pick.coeff_twisted_nakayama": "tordu _1A_nu",
-  "pick.coeff_quotient_socle": "A/socle"
+  "pick.coeff_quotient_socle": "A/socle",
+  "inv.silting": "Théorie du silting (vérificateur, mutation, exploration)",
+  "block.silting.title": "Silting : vérificateur, voisins de mutation, exploration bornée",
+  "block.silting.scope": "presilting sur la fenêtre positive + génération à trois valeurs ; le carquois de silting peut être infini (exploration à rayon borné, complète seulement pour les algèbres locales) — jamais une énumération générale",
+  "block.silting.status_complete": "complète (locale)",
+  "block.silting.status_radius": "limitée par le rayon (pas tout le carquois de silting)",
+  "block.silting.status_budget": "limitée par le budget (pas tout le carquois de silting)",
+  "pick.kind.silting": "Théorie du silting"
 }

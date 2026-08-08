@@ -309,5 +309,12 @@
   "pick.coeff_regular": "regular A",
   "pick.coeff_dual": "dual D(A)",
   "pick.coeff_twisted_nakayama": "twisted _1A_nu",
-  "pick.coeff_quotient_socle": "A/soc"
+  "pick.coeff_quotient_socle": "A/soc",
+  "inv.silting": "Silting theory (verifier, mutation, exploration)",
+  "block.silting.title": "Silting: verifier, mutation neighbours, bounded exploration",
+  "block.silting.scope": "presilting on the positive window + three-valued generation; the silting quiver can be infinite (bounded-radius exploration, complete only for local) — never a general enumeration",
+  "block.silting.status_complete": "complete (local)",
+  "block.silting.status_radius": "radius-limited (not the whole silting quiver)",
+  "block.silting.status_budget": "budget-capped (not the whole silting quiver)",
+  "pick.kind.silting": "Silting theory"
 }

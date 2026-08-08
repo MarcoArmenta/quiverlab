@@ -146,6 +146,10 @@
     // ---- Plan 63: wall-and-chamber structure via bricks (D(B) inequality systems) ----
     '  <label><input type="checkbox" id="qlgui-wall_chamber"> wall-and-chamber D(B), budget ' +
     '<input type="number" id="qlgui-wall_chamber-budget" value="512" min="1"></label>' +
+    // ---- Plan 67: silting theory (verifier + mutation + bounded exploration) ----
+    '  <label><input type="checkbox" id="qlgui-silting"> silting: verifier + mutation + exploration, radius ' +
+    '<input type="number" id="qlgui-silting-radius" value="3" min="0"> budget ' +
+    '<input type="number" id="qlgui-silting-budget" value="64" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----
@@ -281,6 +285,8 @@
    "tau_tilting", "tau_tilting-budget",
    // Plan 63: wall-and-chamber structure via bricks (budget picker)
    "wall_chamber", "wall_chamber-budget",
+   // Plan 67: silting theory (radius,budget picker)
+   "silting", "silting-radius", "silting-budget",
    "trace", "compute",
    "cancel", "print", "report-html", "report-json", "tikz", "json", "snippet", "config", "results", "eta",
    // Plan 26 module panel + Plan 30 (tor / decompose / second-argument editor)
@@ -924,6 +930,10 @@
     // "wall_chamber:<budget>", the single-int form both runners parse (like tau_tilting).
     if (el.wall_chamber.checked)
       compute.push("wall_chamber:" + el["wall_chamber-budget"].value);
+    // Plan 67: silting carries a RADIUS,BUDGET pair -> "silting:<radius>,<budget>".
+    if (el.silting.checked)
+      compute.push("silting:" + el["silting-radius"].value + "," +
+                   el["silting-budget"].value);
     // Plan 41: AR-quiver knitting carries a BUDGET (max indecomposables), not a
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
@@ -2978,6 +2988,71 @@
       renderWallAndChamber(div, b.fan);
   }
 
+  // ---- Plan 67: the silting block (verifier + mutation neighbours + exploration) ----
+  function renderSilting(div, b) {
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Silting is unavailable for this algebra: " + b.error }));
+      return;
+    }
+    div.appendChild(h("p", { text: "Silting objects of K^b(proj A) (Aihara–Iyama): "
+      + "presilting = Hom_{D^b}(T, T[n]) = 0 for n > 0 (weaker than tilting); silting also "
+      + "generates K^b(proj A). The silting quiver can be infinite and transitivity is "
+      + "proven only for local/hereditary/canonical (AI Thm 1.2), so the exploration is a "
+      + "bounded-radius walk with a loud status — never a general enumeration. n = "
+      + b.n + "." }));
+    var reg = b.regular || {};
+    var verdict = reg.is_silting === true ? "silting"
+      : (reg.is_silting === "unknown"
+         ? "presilting (generation undetermined within budget)" : "not silting");
+    var win = reg.window || [1, 0];
+    div.appendChild(h("p", { text: "The regular object A = ⊕ P_v is " + verdict + " ("
+      + (reg.generation_certified_by || "") + "; positive window [" + win[0] + ", "
+      + win[1] + "]; det g_proj = " + reg.det + " in the projective K0 basis)." }));
+    if (b.neighbors && b.neighbors.length) {
+      div.appendChild(h("p", { text: "Single-mutation neighbours (AI Def 2.34):" }));
+      var ul = h("ul");
+      b.neighbors.forEach(function (nb) {
+        if (nb.is_silting == null) {
+          ul.appendChild(h("li", { text: "summand " + nb.summand + ", " + nb.direction
+            + " mutation: not defined (approximation degenerates)" }));
+          return;
+        }
+        var k = nb.summand_dimvecs ? nb.summand_dimvecs.length : 0;
+        ul.appendChild(h("li", { text: "μ" + (nb.direction === "left" ? "+" : "−")
+          + " at summand " + nb.summand + " → a silting object with " + k
+          + " summands" }));
+      });
+      div.appendChild(ul);
+    }
+    var ex = b.exploration || {};
+    if (ex.status === "complete") {
+      div.appendChild(h("p", { text: "Bounded exploration: complete (finite class: "
+        + ex.finite_class + ") — the " + (ex.vertices || []).length
+        + " discovered vertex/vertices are ALL silting objects up to shift." }));
+    } else {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "Bounded exploration: status " + ex.status + " (radius " + ex.radius
+          + ") — " + (ex.vertices || []).length + " silting objects found in the ball, "
+          + "but NOT the whole silting quiver (only local algebras certify "
+          + "completeness)." }));
+    }
+    if (ex.arrows && ex.arrows.length) {
+      var ue = h("ul");
+      ex.arrows.forEach(function (a) {
+        ue.appendChild(h("li", { text: a.from + " → " + a.to + " (" + a.direction
+          + " mutation)" }));
+      });
+      div.appendChild(ue);
+    }
+    if (b.co_t_structure) {
+      div.appendChild(h("p", { text: "Co-t-structure dictionary (AI Prop 2.23(b) / "
+        + "Jørgensen): the bounded co-t-structure with coheart add(T) — a documentation "
+        + "record, coheart of " + (b.co_t_structure.coheart || []).length
+        + " summand(s)." }));
+    }
+  }
+
   function renderWallAndChamber(div, fan) {
     // Exact fractions -> pixels happens HERE (the JS renderer is float-exempt); the
     // exact geometry never left Python. n=2 draws the g-vector rays from the origin;
@@ -3671,6 +3746,8 @@
       renderTauTilting(div, b);
     } else if (name === "wall_chamber") {
       renderWallChamber(div, b);
+    } else if (name === "silting") {
+      renderSilting(div, b);
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -4237,7 +4314,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "silting", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -4764,6 +4841,7 @@
     tame_wild: { cb: "tame_wild" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },
+    silting: { cb: "silting", top: "silting-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },
     rad_top_soc: { cb: "rad_top_soc", mod: true },
     tau: { cb: "tau", mod: true },

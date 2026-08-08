@@ -81,6 +81,7 @@ _HEADINGS = {
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
     "wall_chamber": "Wall-and-chamber structure via bricks: D(B) inequality systems + "
                     "g-cone chambers",
+    "silting": "Silting: verifier, mutation neighbours, bounded exploration",
 }
 
 _TARGET_ROLE = {"ext_target": "the Ext target", "tor_target": "the Tor target"}
@@ -406,6 +407,74 @@ def _wall_chamber_html(b):
                      % (_esc(str(w.get("brick_name") or "—")),
                         _dv(w.get("brick_dimvec")), _esc(shape), _esc(system)))
     out.append("<table class='ql-wc-walls'>%s</table>" % "".join(wrows))
+def _silting_html(b):
+    """The Plan-67 silting block: the verifier verdict on the regular object, the
+    single-mutation neighbours, a bounded-radius exploration (loud status; complete only
+    for local) and the co-t-structure record. Honest three-valued / no-general-BFS scope."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Silting is unavailable for this algebra: %s</p>"
+                % _esc(str(b["error"]))]
+    out = ["<p>Silting objects of K<sup>b</sup>(proj A) (Aihara–Iyama): T is "
+           "<b>presilting</b> when Hom<sub>D<sup>b</sup></sub>(T, T[n]) = 0 for all n &gt; 0 "
+           "(weaker than tilting, which also needs n &lt; 0) and <b>silting</b> when it also "
+           "generates K<sup>b</sup>(proj A). The silting quiver can be infinite and "
+           "mutation-transitivity is proven only for local/hereditary/canonical algebras "
+           "(AI Thm 1.2), so the exploration below is a bounded-radius walk with a loud "
+           "status — never a general enumeration.</p>"]
+    reg = b.get("regular") or {}
+    verdict = {True: "silting", "unknown": "presilting (generation undetermined "
+               "within budget)", False: "not silting"}.get(reg.get("is_silting"),
+                                                            str(reg.get("is_silting")))
+    win = reg.get("window") or [1, 0]
+    out.append("<p>The regular object A = ⊕<sub>v</sub> P<sub>v</sub> is <b>%s</b> "
+               "(%s; presilting checked on the positive window [%s, %s]; "
+               "det g<sub>proj</sub> = %s in the projective K<sub>0</sub> basis).</p>"
+               % (_esc(verdict), _esc(str(reg.get("generation_certified_by") or "")),
+                  _esc(str(win[0])), _esc(str(win[1])), _esc(str(reg.get("det")))))
+    # single-mutation neighbours
+    nbrs = b.get("neighbors") or []
+    if nbrs:
+        lis = []
+        for nb in nbrs:
+            if nb.get("is_silting") is None:
+                lis.append("<li>summand %s, %s mutation: not defined (approximation "
+                           "degenerates)</li>" % (_esc(str(nb.get("summand"))),
+                                                  _esc(str(nb.get("direction")))))
+                continue
+            dv = nb.get("summand_dimvecs") or []
+            lis.append("<li>μ<sup>%s</sup> at summand %s → a silting object with %d "
+                       "summands</li>" % ("+" if nb.get("direction") == "left" else "−",
+                                          _esc(str(nb.get("summand"))), len(dv)))
+        out.append("<p>Single-mutation neighbours (AI Def 2.34, one approximation "
+                   "triangle each):</p>")
+        out.append("<ul class='ql-silting-nbrs'>%s</ul>" % "".join(lis))
+    # bounded exploration
+    ex = b.get("exploration") or {}
+    status = ex.get("status")
+    if status == "complete":
+        out.append("<p>Bounded exploration: <b>complete</b> (finite class: %s) — the %d "
+                   "discovered vertex/vertices are ALL silting objects up to shift.</p>"
+                   % (_esc(str(ex.get("finite_class"))), len(ex.get("vertices") or [])))
+    else:
+        out.append("<p class='ql-note'>Bounded exploration: status <b>%s</b> (radius %s) — "
+                   "%d silting objects were found in the ball, but this is NOT the whole "
+                   "silting quiver (no finiteness theorem applies to this algebra; only "
+                   "local algebras certify completeness).</p>"
+                   % (_esc(str(status)), _esc(str(ex.get("radius"))),
+                      len(ex.get("vertices") or [])))
+    arrows = ex.get("arrows") or []
+    if arrows:
+        lis = ["<li>%s → %s (%s mutation)</li>"
+               % (_esc(str(a.get("from"))), _esc(str(a.get("to"))),
+                  _esc(str(a.get("direction")))) for a in arrows]
+        out.append("<ul class='ql-silting-edges'>%s</ul>" % "".join(lis))
+    # co-t-structure record
+    ct = b.get("co_t_structure")
+    if ct:
+        out.append("<p>Co-t-structure dictionary (AI Prop 2.23(b) / Jørgensen): the "
+                   "bounded co-t-structure with coheart add(T) — a documentation record "
+                   "(the aisles are infinite), coheart of %d summand(s).</p>"
+                   % len(ct.get("coheart") or []))
     return out
 
 
@@ -1339,6 +1408,8 @@ def _block_html(kind, b, ctx=None):
         return _tau_tilting_html(b)
     if kind == "wall_chamber":
         return _wall_chamber_html(b)
+    if kind == "silting":
+        return _silting_html(b)
     if kind == "recognizers":
         return _recognizers_html(b)
     if kind == "derived_fingerprint":

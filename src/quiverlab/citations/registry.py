@@ -578,6 +578,22 @@ REGISTRY: dict = {r.key: r for r in [
        "worked kA2 (Ex 13: D(P1) a ray) and cyclic rad^2-Nakayama N3^2 (Ex 15: 14 chambers) "
        "examples -- Plan 63 literature oracles.",
        "tau-tilting", "stability"),
+    _r("aihara_iyama_silting", "AiharaIyama2012", "foundation",
+       "Silting mutation in triangulated categories",
+       "Aihara-Iyama: silting/presilting objects (Hom(T,T[>0])=0 + generation), silting "
+       "mutation via one approximation triangle, the silting quiver = Hasse quiver, and "
+       "transitivity for local/hereditary/canonical -- the ground truth for Plan 67.",
+       "silting"),
+    _r("oppermann_silting_quivers", "Oppermann2017", "foundation",
+       "Quivers for silting mutation",
+       "Oppermann: the quiver of the derived endomorphism ring of a left/right silting "
+       "mutation -- the End(muT) quiver-mutation rule (Plan 67 oracle).",
+       "silting"),
+    _r("jorgensen_cotstructures", "Jorgensen2016cotstructures", "foundation",
+       "Co-t-structures: the first decade",
+       "Jorgensen's survey: bounded co-t-structures <-> silting subcategories via "
+       "coheart = add(silting) -- the co-t-structure dictionary reference (Plan 67).",
+       "silting"),
     # --- Plan 56: pi1(Q,I) + strongly simply connected (coverings) ---
     _r("assem_delapena", "AssemDelaPena1996", "foundation",
        "The fundamental groups of a triangular algebra",

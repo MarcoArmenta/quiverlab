@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-4447_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-4484_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 4447 tests over the
+Every shipped feature is unit tested (the suite is 4484 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -398,6 +398,14 @@ ported and wired in:
   τ-tilting-finite** (else an honest bounded region) — with a **LIVE 2D/3D fan drawing
   for rank ≤ 3** that overlays each labeled brick-wall, clickable no-code via
   `wall_chamber`.
+- **Silting theory (Aihara–Iyama, P67).** A silting-object verifier in `K^b(proj A)`
+  (presilting `Hom_{D^b}(T,T[n>0]) = 0` on the exact positive window + honest
+  three-valued generation — certified on the tilting / 2-term / local classes, `"unknown"`
+  where K₀ alone cannot decide), single silting mutation `μ_X^±` via one approximation
+  triangle (the mutant re-verifies silting, `μ^-∘μ^+ = id`), a bounded-radius exploration
+  with loud truncation (the silting quiver can be infinite — no general BFS; complete only
+  for local), and the co-t-structure dictionary — cross-checked against P45's τ-tilting
+  (2-term slice) and Oppermann's `End(μT)` quiver rule, no-code in the browser.
 - **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
   left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
   the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —

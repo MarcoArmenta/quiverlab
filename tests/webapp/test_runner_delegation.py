@@ -374,7 +374,19 @@ never hide behind one:
     new key is appended and no existing bytes move); both runners share the library
     builder (``tautilting.wallchamber.wall_chamber_structure``), so the Pyodide twin
     agrees (``tests/gui/test_wall_chamber_runner_twin.py``). ``canonical_key`` is
-    request-derived (schema-1 algebra-only, the budget rides in the ``compute`` string)."""
+    request-derived (schema-1 algebra-only, the budget rides in the ``compute`` string).
+  * 2026-08-08 (``silting_local`` ADDED, Plan 67 R30): a NEW fixture for the ``silting``
+    ALGEBRA-level compute kind (schema v1, local k[x]/(x^2) = one vertex with a loop x and
+    relation x*x over GF(32003), ``compute == ["silting:2,64"]``). The block's regular
+    verdict is silting (in fact tilting), and the bounded exploration is
+    ``status == "complete"`` / ``finite_class == "local"`` (a single vertex mod shift,
+    Thm 2.26). Pure ADDITION: every pre-existing entry was verified byte-identical BEFORE
+    the append (the JSON is re-dumped ``indent=1, sort_keys=False`` so stored key order is
+    preserved). Both runners share the library builder ``derived.block.silting_block``, so
+    the Pyodide twin agrees (``tests/webapp/test_silting_p67.py`` /
+    ``tests/gui/test_silting_runner_twin.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only; the radius,budget rides in the ``compute`` string, no new
+    request field)."""
 import json
 import pathlib
 

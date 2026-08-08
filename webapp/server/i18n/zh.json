@@ -309,5 +309,12 @@
   "pick.coeff_regular": "正则 A",
   "pick.coeff_dual": "对偶 D(A)",
   "pick.coeff_twisted_nakayama": "扭转 _1A_nu",
-  "pick.coeff_quotient_socle": "A/基座"
+  "pick.coeff_quotient_socle": "A/基座",
+  "inv.silting": "Silting 理论（验证器、变异、探索）",
+  "block.silting.title": "Silting：验证器、变异邻居、有界探索",
+  "block.silting.scope": "正窗口上的 presilting + 三值生成判定；silting 箭图可能无限（有界半径探索，仅对局部代数完备）——绝非一般枚举",
+  "block.silting.status_complete": "完备（局部）",
+  "block.silting.status_radius": "受半径限制（并非整个 silting 箭图）",
+  "block.silting.status_budget": "受预算限制（并非整个 silting 箭图）",
+  "pick.kind.silting": "Silting 理论"
 }
