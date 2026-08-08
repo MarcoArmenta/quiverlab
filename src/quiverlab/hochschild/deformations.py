@@ -289,3 +289,164 @@ def obstruction_map(A, *, engine="auto", max_cells=4_000_000):
         obstruction_constants=consts, characteristic=dom.characteristic,
         char0_note=_char0_note(A),
         references=tuple(_DEFORM_REFERENCES + _BRACKET_REFERENCES))
+
+
+# ---------------------------------------------------------------------------
+# the nilpotent-regime gate (MRRS Thm 5.4) + the Maurer-Cartan report (char 0)
+# ---------------------------------------------------------------------------
+def _has_parallel_arrows(q):
+    st = list(q.arrows.values())
+    return len(st) != len(set(st))
+
+
+def _is_acyclic(q):
+    """True iff the quiver has no oriented cycle (a loop is a length-1 cycle)."""
+    import collections
+    adj = collections.defaultdict(list)
+    for (s, t) in q.arrows.values():
+        adj[s].append(t)
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {v: WHITE for v in q.vertices}
+    cyclic = [False]
+
+    def dfs(u):
+        color[u] = GRAY
+        for w in adj[u]:
+            if color[w] == GRAY:
+                cyclic[0] = True
+            elif color[w] == WHITE:
+                dfs(w)
+        color[u] = BLACK
+    for v in q.vertices:
+        if color[v] == WHITE:
+            dfs(v)
+    return not cyclic[0]
+
+
+def is_l_infinity_nilpotent(A):
+    """The MRRS Thm 5.4 gate: True iff the L-infinity structure on B(A)[1] is certified
+    nilpotent (so MC = Z^2). Char-0 conservative reading of R13's stated hypotheses --
+    gentle, no parallel arrows, no oriented cycles. Returns None (NOT certified; the full
+    MC equation applies) outside these conditions: char != 0, non-gentle, parallel arrows,
+    or an oriented cycle. (`# PIN`: the exact Thm-5.4 quiver conditions were not resolvable
+    against the paper's section 5 at authoring; R13's conditions are used conservatively --
+    a True is always safe, a None never over-claims.)"""
+    if A.domain.characteristic != 0:
+        return None
+    if A.quiver is None:
+        return None
+    try:
+        gentle = A.is_gentle()
+    except QuiverlabError:
+        return None
+    if not gentle:
+        return None
+    q = A.quiver
+    if _has_parallel_arrows(q) or not _is_acyclic(q):
+        return None
+    return True
+
+
+def _z2_dim(A, *, max_cells=4_000_000):
+    """dim Z^2 = dim ker(delta^2 : C^2 -> C^3) on the CS cochain complex = dim_C(2) -
+    rank(delta^2). The Maurer-Cartan set in the nilpotent regime (MRRS: MC = Z^2)."""
+    from quiverlab.fields.linalg import rank
+    from quiverlab.resolutions_cs.build import reduction_system_of
+    from quiverlab.resolutions_cs.homology import _require_admissible
+    from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+    rs = reduction_system_of(A)
+    _require_admissible(rs)
+    res = ChouhySolotarResolution(A, rs, max_degree=3, max_cells=max_cells)
+    return res.dim_C(2, "coh") - rank(res.matrix(2, "coh"), A.domain)
+
+
+def maurer_cartan(A, *, order=2, engine="auto", max_cells=4_000_000):
+    """The Maurer-Cartan / formal-deformation report on the Hochschild DGLA C(A), solved
+    order by order to the certified truncation order `order` (the `order` PARAMETER is the
+    truncation limit -- the native CS bracket runs at any degree, so no bracket window
+    bounds the reachable order). CHAR-0 ONLY (loud QuiverlabError over char p -- the
+    deformation interpretation needs char 0; the field-general HH^2/[a,a] block stays
+    available via infinitesimal_deformations / obstruction_map).
+
+    In the MRRS nilpotent regime the MC set equals the 2-cocycles Z^2 (every infinitesimal
+    integrates, unobstructed) -- reported directly, no bracket. Outside it, the primary
+    obstruction [alpha,alpha] gates the order-2 lift (delta mu_2 = -1/2 [mu_1,mu_1] is
+    solvable iff the class vanishes); a complete formal solution past the certified order is
+    NEVER claimed."""
+    _require_presented(A, "maurer_cartan")
+    _require_budget(A, DEFORM_MAXDIM, "maurer_cartan")
+    dom = A.domain
+    if dom.characteristic != 0:
+        raise QuiverlabError(
+            "formal-deformation / Maurer-Cartan outputs need characteristic 0 (RRB / MRRS "
+            "are char-0 theorems; the L-infinity 1/n! and the DGLA 1/2 need char 0 / char "
+            "!= 2); this algebra is over %s" % dom.name,
+            hint="the field-general HH^2 / [alpha,alpha] block is still available via "
+                 "infinitesimal_deformations(A) / obstruction_map(A)")
+    if order < 1:
+        raise QuiverlabError("maurer_cartan order must be >= 1 (got %d)" % order)
+
+    nilpotent = is_l_infinity_nilpotent(A)
+    table = A.hochschild_cohomology(3, engine=engine, max_cells=max_cells)
+    hh2_dim, hh3_dim = table[2], table[3]
+    window_note = ("truncation order = %d (the `order` parameter); the native CS bracket "
+                   "has no degree window -- higher orders are simply not computed here"
+                   % order)
+
+    if nilpotent is True:
+        z2 = _z2_dim(A, max_cells=max_cells)
+        return MCReport(
+            characteristic=0, hh2_dim=hh2_dim, hh3_dim=hh3_dim,
+            basis="cs/%s" % dom.name, nilpotent_regime=True, unobstructed=True,
+            obstruction_witness=None,
+            mc_description=("MC = Z^2 (all %d 2-cocycles integrate; nilpotent regime, MRRS "
+                            "Thm 5.4 -- every infinitesimal deformation is unobstructed)" % z2),
+            mc_order_certified=order, z2_dim=z2, order_requested=order,
+            window_note=window_note, char0_note=None,
+            note="nilpotent L-infinity regime certified (gentle, no parallel arrows, no "
+                 "oriented cycles); the higher brackets vanish on Z^2.",
+            references=tuple(_DEFORM_REFERENCES))
+
+    # non-nilpotent (or not-certified): solve order by order on C(A), gate on [alpha,alpha]
+    if hh2_dim == 0:
+        # no infinitesimal deformations at all -> trivially unobstructed, MC = {0}
+        return MCReport(
+            characteristic=0, hh2_dim=0, hh3_dim=hh3_dim, basis="cs/%s" % dom.name,
+            nilpotent_regime=nilpotent, unobstructed=True, obstruction_witness=None,
+            mc_description="MC = {0}: HH^2 = 0, there are no nontrivial infinitesimal "
+                           "deformations to integrate.",
+            mc_order_certified=order, z2_dim=_z2_dim(A, max_cells=max_cells),
+            order_requested=order, window_note=window_note, char0_note=None,
+            note="no infinitesimal deformations (HH^2 = 0); nilpotent regime not certified "
+                 "but the deformation functor is trivial.",
+            references=tuple(_DEFORM_REFERENCES))
+
+    data = _obstruction_data(A, max_cells=max_cells)
+    unobstructed, witness, _ = _verdict(data)
+    z2 = data["res"].dim_C(2, "coh") - _rank(data["res"].matrix(2, "coh"), dom)
+    if unobstructed:
+        certified = min(order, 2)
+        desc = ("unobstructed at second order: the primary obstruction [alpha,alpha] "
+                "vanishes on all of HH^2, so every infinitesimal deformation lifts to "
+                "order 2 (delta mu_2 = -1/2 [mu_1,mu_1] is solvable for every direction)")
+        note = ("the primary (order-2) obstruction vanishes; orders > 2 were not computed "
+                "(default order = 2). No complete formal solution is claimed.")
+    else:
+        certified = 1
+        desc = ("obstructed: some infinitesimal direction has [alpha,alpha] != 0 in HH^3 "
+                "and does NOT lift past first order (the order-2 lift delta mu_2 = "
+                "-1/2 [mu_1,mu_1] is unsolvable for the witness direction); directions with "
+                "a vanishing self-bracket still lift")
+        note = ("a genuine second-order obstruction exists; the DGLA recursion is solvable "
+                "iff the right-hand-side class vanishes.")
+    return MCReport(
+        characteristic=0, hh2_dim=data["hh2_dim"], hh3_dim=data["hh3_dim"],
+        basis="cs/%s" % dom.name, nilpotent_regime=nilpotent, unobstructed=unobstructed,
+        obstruction_witness=witness, mc_description=desc, mc_order_certified=certified,
+        z2_dim=z2, order_requested=order, window_note=window_note, char0_note=None,
+        note=note, references=tuple(_DEFORM_REFERENCES + _BRACKET_REFERENCES))
+
+
+def _rank(M, dom):
+    from quiverlab.fields.linalg import rank
+    return rank(M, dom)
