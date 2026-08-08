@@ -624,6 +624,17 @@ class Algebra:
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
 
+    def coxeter_spectral(self):
+        """Certified Coxeter spectral report (Plan 58 / R20): exact ZZ[x] cyclotomic
+        factorization with Phi_n labels, cyclotomic / quasi-unipotent verdict, finite
+        Coxeter order (Phi^m = I) or None with an honest reason, exact outside-unit-
+        circle root count, and the spectral radius / Mahler measure as CERTIFIED
+        ALGEBRAIC NUMBERS (minimal polynomial + rational isolating interval) -- never a
+        float. Any field that refuses on this input is captured per-field, never a
+        crash."""
+        from quiverlab.invariants.coxeter_spectral import coxeter_spectral
+        return coxeter_spectral(self)
+
     def euler_form(self, d, e):
         """Euler bilinear form <d, e> = d C^{-1} e^T on integer dimension vectors
         (vertex order); for finite gl.dim, sum (-1)^i dim Ext^i (Plan 38 / C2)."""
