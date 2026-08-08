@@ -117,11 +117,18 @@ def support_tau_tilting(triple, budget=512, field=None):
     """Support tau-tilting on the split algebra via P45 ``tau_tilting_block`` (the
     exchange graph, g-matrices, brick-labelled Hasse edges, counts; honest complete-iff
     contract).  Stamps ``n = |Q_0| + |Sp|`` (the split vertex count = the geometric
-    rank, HZZ sec 6 ``|R| = |Q_0| + |Sp|``)."""
+    rank, HZZ sec 6 ``|R| = |Q_0| + |Sp|``).
+
+    Computed on the char-FREE split model over QQ, exactly as ``_analyze`` /
+    ``brick_finite_certificate`` do: the exchange-graph BFS leans on ``is_isomorphic`` /
+    ``decompose`` (rigorous only char 0 / char > dim M), and the split model is
+    characteristic-free, so the pair count is a presentation invariant.  Running it over
+    the caller's ``field`` (e.g. GF(2)) would compute over an unsound field -- M3; the
+    ``field`` argument is accepted for API symmetry only and does not change the count."""
     from quiverlab.tautilting.block import tau_tilting_block
 
     triple = _as_triple(triple)
-    A = SkewGentleAlgebra(triple, field=field)
+    A = SkewGentleAlgebra(triple, field=QQ)          # char-free model (M3), never GF(2)
     blk = tau_tilting_block(A, budget=budget)
     blk["n"] = len(list(A.quiver.vertices))         # = |Q_0| + |Sp|
     return blk

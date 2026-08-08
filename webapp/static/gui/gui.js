@@ -3326,6 +3326,8 @@
           + "; bands: " + (cl.has_bands ? "yes" : "no")
           + (cl.num_indecomposables != null
              ? "; indecomposables: " + cl.num_indecomposables : "") + "." }));
+        if (cl.note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: cl.note + "." }));
         if (b.tau_tilting && b.tau_tilting.num_pairs != null)
           div.appendChild(h("p", { text: "Support τ-tilting pairs: "
             + b.tau_tilting.num_pairs

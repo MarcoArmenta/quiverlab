@@ -981,6 +981,8 @@ def _skew_gentle_html(b):
                % (_num(cl.get("num_special")),
                   "yes" if cl.get("has_bands") else "no",
                   ("; indecomposables: <b>%s</b>" % _num(ni)) if ni is not None else ""))
+    if cl.get("note"):
+        out.append("<p class='ql-note'>%s.</p>" % _esc(str(cl["note"])))
     tt = b.get("tau_tilting") or {}
     if tt.get("num_pairs") is not None:
         out.append("<p>Support &tau;-tilting pairs: <b>%s</b> (%s).</p>"

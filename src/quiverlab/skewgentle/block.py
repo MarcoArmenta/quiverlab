@@ -15,6 +15,7 @@ JSON-serialisable (lists, ints, strings -- no tuples/sets), so it canonicalises 
 the Plan-25 key and freezes as a golden.  Float-free."""
 from __future__ import annotations
 
+from quiverlab.errors import QuiverlabError
 from quiverlab.skewgentle.certificate import (brick_finite_certificate,
                                               support_tau_tilting)
 from quiverlab.skewgentle.modules import classify, skew_gentle_indecomposables
@@ -23,6 +24,13 @@ from quiverlab.skewgentle.triple import (SkewGentleTriple, associated_gentle)
 
 _REFERENCES = ["he_zhou_zhu", "chen_skew_gentle", "amiot_skew_gentle",
                "garcia_lavoue", "assem_book"]
+
+# The enumeration is a presentation invariant computed on the char-free split model
+# over QQ (never over the caller's field -- decompose / is_isomorphic are rigorous only
+# over char 0 / char > dim M).  Stated in the block so a GF(2) report is honest.
+_CHAR_FREE_NOTE = ("indecomposables and support tau-tilting counted on the "
+                   "characteristic-free split model over QQ (a presentation invariant); "
+                   "decompose / is_isomorphic are rigorous over char 0")
 
 
 def _triple_and_algebra(source, field):
@@ -68,6 +76,9 @@ def skew_gentle_block(source, budget=512, field=None):
     tau_finite = cert["tau_tilting_finite"]
 
     # Counts only when tau-tilting-finite (bounded + safe); rep-infinite reports None.
+    # Both the tau-tilting and the indecomposable counts are computed on the char-free
+    # QQ split model (a presentation invariant), NOT over the caller's field -- so a
+    # GF(2) request is answered soundly, never over an unsound field (M3).
     num_indec, tau = None, {"num_pairs": None, "complete": False,
                             "status": cert["status"]}
     if tau_finite:
@@ -76,8 +87,17 @@ def skew_gentle_block(source, budget=512, field=None):
                "status": tt["status"]}
         try:
             num_indec = len(skew_gentle_indecomposables(triple, field=field))
-        except Exception:                            # honest omission, never a crash
-            num_indec = None
+        except QuiverlabError:                       # honest omission, never a crash --
+            num_indec = None                          # but engine bugs surface (not caught)
+
+    # Honest classification status: complete (rep-finite over QQ), budget (rep-infinite),
+    # or the loud engine status when the verdict was undecided (never a guessed "budget").
+    if tau_finite is True:
+        cls_status = "complete"
+    elif tau_finite is False:
+        cls_status = "budget"
+    else:
+        cls_status = cert["status"]
 
     return {
         "kind": "skew_gentle",
@@ -90,7 +110,7 @@ def skew_gentle_block(source, budget=512, field=None):
         "rank": len(list(A.quiver.vertices)),        # |Q_0| + |Sp|
         "classification": {"num_indecomposables": num_indec,
                            "num_special": num_special, "has_bands": has_bands,
-                           "status": "complete" if tau_finite else "budget"},
+                           "status": cls_status, "note": _CHAR_FREE_NOTE},
         "tau_tilting": tau,
         "rep_type": {"rep_finite": rep_finite, "scope": cert["scope"],
                      "status": cert["status"]},

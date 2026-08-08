@@ -3,41 +3,55 @@
 
 The indecomposable modules of a skew-gentle algebra ``A`` are the indecomposables of the
 (isomorphic) split algebra ``A_hat = kQ_hat/I_hat`` (``split.py``).  This module offers
-two views:
+two views, and they are NOT equal -- one is a documented strict subset of the other:
 
-* ``classify`` runs the P46 string/band census on the **associated gentle algebra**
-  ``A^g`` (nilpotent loops), keeps the ADMISSIBLE walks (those that do not use a special
-  loop as a letter), and TYPES each ``(r, s) in {u, p}^2`` by whether its endpoints sit
-  at a special vertex (Garcia-Lavoue sec 2.1).  A ``p``-endpoint re-glues into its two
-  ``+/-`` forms -- which in the split model are literally the two split vertices
-  ``i+``/``i-`` -- so a walk has ``2^{#special endpoints}`` split incarnations
-  (characteristic-free, sidestepping the classical char != 2 ``k[T]/(T^2-1)`` split).
+* ``classify`` / ``skew_gentle_module`` -- the **loop-free string census**.  ``classify``
+  runs the P46 string/band census on the **associated gentle algebra** ``A^g`` (nilpotent
+  loops), keeps the walks that do NOT use a special loop as a letter (the LOOP-FREE
+  ``A^g``-walks), and TYPES each ``(r, s) in {u, p}^2`` by whether its endpoints sit at a
+  special vertex (Garcia-Lavoue sec 2.1).  A ``p``-endpoint re-glues into its two ``+/-``
+  forms -- which in the split model are literally the two split vertices ``i+``/``i-`` --
+  so a walk has ``2^{#special endpoints}`` split incarnations (characteristic-free,
+  sidestepping the classical char != 2 ``k[T]/(T^2-1)`` split).
 
-  (An admissible walk NEVER has a special vertex as an internal node: at a special
+  (A loop-free walk NEVER has a special vertex as an internal node: at a special
   vertex the loop occupies one in- and one out-slot, so there is at most one other
   in-arrow ``a`` and one other out-arrow ``b``, and gentleness forces ``a*b in I`` --
   a length-2 path that a valid walk cannot traverse.  Special vertices thus appear only
   as walk ENDPOINTS, and the ``+/-`` choice is made exactly there.)
 
-* ``skew_gentle_indecomposables`` is the AUTHORITATIVE enumeration: the indecomposable
-  modules of the split algebra itself, via the P41 AR quiver on rep-finite instances
-  (count == AR vertex count -- the sufficiency oracle for the split relations).  This is
-  a SUPERSET of the admissible-string re-gluings: modules on which the split idempotent
-  mixes eigenvalues along a path (e.g. the projective ``P_1`` of the headline example)
-  are genuine indecomposables that no single admissible string produces -- they are the
-  loop-traversal re-gluings, and the AR route captures them all.
+  This census is a **documented STRICT SUBSET of the indecomposables**, NOT a complete
+  classification: live it yields 5 of the 6 indecomposables on the headline example
+  (``1 --a--> 2, Sp = {2}``) and 8 of the 11 on the mesh example.  The missing modules
+  are the **loop-traversal / mixed-eigenvalue** ones -- e.g. the projective ``P_1`` of
+  the headline, on which the split idempotent mixes the ``+/-`` eigenvalues along a path.
+  No LOOP-FREE ``A^g``-walk produces them; the SYMMETRIC / loop-traversal string
+  enumeration (Garcia-Lavoue Table 1 / the clan classification) that WOULD produce them
+  is not implemented (a DEEPER-ENGINES-BACKLOG item).  ``skew_gentle_indecomposables`` is
+  the authoritative enumeration.
+
+* ``skew_gentle_indecomposables`` is the **AUTHORITATIVE** enumeration: ALL indecomposable
+  modules of the split algebra, via the P41 AR quiver (count == AR vertex count on a
+  rep-finite instance -- the sufficiency oracle for the split relations).  It is a
+  SUPERSET of the loop-free string census above.  It runs over the char-FREE split model
+  (QQ), where ``is_isomorphic`` / ``decompose`` are rigorous -- the count is a
+  presentation invariant, so it does not depend on the caller's field (M3, mirroring the
+  certificate).  If the AR quiver is not authoritative over QQ (a genuine budget cap, a
+  self-injective input, or another loud AR status -- NOT a silent read of "rep-infinite"),
+  it falls back to the loop-free string census -- a sound but possibly PARTIAL sample.
 
 ``skew_gentle_module`` materialises the string module of a chosen form ON the split
 algebra (via the P46 ``_materialise`` self-certificate, which does not require the split
 to be a string algebra), so it works on the non-monomial mesh split too.  Char caveat:
 ``is_indecomposable`` / ``is_isomorphic`` are rigorous over QQ / char > dim M, so the
-batteries run over QQ.  Float-free / exact."""
+enumeration runs over QQ.  Float-free / exact."""
 from __future__ import annotations
 
 import itertools
 from dataclasses import dataclass
 
 from quiverlab.errors import QuiverlabError
+from quiverlab.fields import QQ
 from quiverlab.modules import linalg_mod as lm
 from quiverlab.skewgentle.split import SkewGentleAlgebra, _copy_name
 from quiverlab.skewgentle.triple import SkewGentleTriple, associated_gentle
@@ -118,10 +132,18 @@ def _classify_walk(Q_sp, walk, special, is_band):
 
 
 def classify(triple, max_length=8, budget=4096):
-    """The admissible-walk census of the associated gentle algebra, typed and re-glued.
+    """The LOOP-FREE ``A^g``-walk census of the associated gentle algebra, typed and
+    re-glued (see the module docstring).
 
-    Returns a list of ``SkewGentleString`` (strings first, then bands).  Completeness is
-    inherited from ``enumerate_strings`` (complete iff rep-finite; see ``certificate``).
+    Returns a list of ``SkewGentleString`` (strings first, then bands).  This is the
+    string layer of the classification and, at the module level, a documented STRICT
+    SUBSET of the indecomposables (headline 5 of 6, mesh 8 of 11): the loop-traversal /
+    mixed-eigenvalue modules have NO loop-free ``A^g``-walk and are not produced here --
+    the symmetric-string enumeration that would produce them is not implemented (a
+    backlog item).  ``skew_gentle_indecomposables`` is the authoritative enumeration.
+    (Completeness at the STRING level is inherited from ``enumerate_strings`` -- complete
+    iff the algebra is string-rep-finite -- but that is NOT the same as classifying every
+    indecomposable MODULE of the skew-gentle algebra.)
     """
     Ag = associated_gentle(triple)
     Q_sp = Ag.quiver
@@ -210,9 +232,14 @@ def _form_name(walk, form):
 
 def skew_gentle_module(triple, sgstring, form=0, field=None):
     """Materialise the split-algebra module for the chosen ``form`` of a classified
-    (non-band) string.  ``form`` is an integer index into ``sgstring.forms``.  Uses the
-    split copies ``i+``/``i-`` as the two forms of a special string; self-certifies via
-    ``check_module`` (inside ``_materialise``)."""
+    (non-band) LOOP-FREE-census string.  ``form`` is an integer index into
+    ``sgstring.forms``.  Uses the split copies ``i+``/``i-`` as the two forms of a special
+    string; self-certifies via ``check_module`` (inside ``_materialise``).
+
+    This materialises a member of the loop-free string census -- a documented strict
+    subset of the indecomposables (see the module docstring); it never produces a
+    loop-traversal / mixed-eigenvalue module.  ``skew_gentle_indecomposables`` is the
+    authoritative enumeration."""
     if isinstance(triple, tuple):                   # (quiver, relations, special) tuple
         triple = SkewGentleTriple.make(*triple)
     if sgstring.is_band:
@@ -232,27 +259,46 @@ def skew_gentle_module(triple, sgstring, form=0, field=None):
                                                             sgstring.forms[form]))
 
 
-def skew_gentle_indecomposables(triple, max_length=8, budget=4096, field=None):
-    """All indecomposable modules of the skew-gentle algebra, materialised on the split
-    algebra.
+def _string_census_modules(triple, max_length=8, budget=4096):
+    """The loop-free ``A^g``-walk census, materialised on the char-free (QQ) split model.
 
-    AUTHORITATIVE route: the indecomposables of the split algebra via the P41 AR quiver
-    (rep-finite instances) -- count == AR vertex count, each ``is_indecomposable``.  On
-    a rep-infinite instance the AR quiver is not complete; we then fall back to the
-    admissible-string form materialisations (a sound partial sample of the string-type
-    indecomposables), flagged by the returned modules being a strict subset."""
+    A documented STRICT SUBSET of the indecomposables (headline 5 of 6, mesh 8 of 11):
+    it misses the loop-traversal / mixed-eigenvalue modules (e.g. the projective ``P_1``
+    of the headline).  Every module lives over the SAME cached QQ split algebra as the AR
+    route, so the two enumerations are directly ``is_isomorphic``-comparable."""
     if isinstance(triple, tuple):
         triple = SkewGentleTriple.make(*triple)
-    A = _split_algebra(triple, field)
-    from quiverlab.modules.ar import knit_ar_quiver
-    ar = knit_ar_quiver(A)
-    if ar.is_complete:
-        return [rec["module"] for rec in ar.vertices]
-    # rep-infinite: no finite complete list; return the sound string-type sample.
     mods = []
     for s in classify(triple, max_length=max_length, budget=budget):
         if s.is_band:
             continue
         for f in range(len(s.forms)):
-            mods.append(skew_gentle_module(triple, s, form=f, field=field))
+            mods.append(skew_gentle_module(triple, s, form=f, field=QQ))
     return mods
+
+
+def skew_gentle_indecomposables(triple, max_length=8, budget=4096, field=None):
+    """All indecomposable modules of the skew-gentle algebra, materialised on the split
+    algebra.
+
+    AUTHORITATIVE route: the indecomposables of the split algebra via the P41 AR quiver.
+    The enumeration runs over the char-FREE split model (QQ), where ``is_isomorphic`` /
+    ``decompose`` are rigorous -- the count is a presentation invariant, so it does NOT
+    depend on the caller's ``field`` (M3, exactly as the certificate routes its counts;
+    the ``field`` argument is accepted for API symmetry and does not change the answer).
+    On a rep-finite instance ``ar.status == "complete"`` -- count == AR vertex count, each
+    ``is_indecomposable``.
+
+    Otherwise (a genuine budget cap, a self-injective input, or another loud AR status --
+    we do NOT silently read "AR not complete" as "rep-infinite") we fall back to the
+    loop-free string census (``_string_census_modules``): a sound but possibly PARTIAL
+    sample of the indecomposables (a documented strict subset -- see the module
+    docstring), NOT a claim that the algebra is representation-infinite."""
+    if isinstance(triple, tuple):
+        triple = SkewGentleTriple.make(*triple)
+    A = _split_algebra(triple, QQ)                   # char-free model (mirror certificate)
+    from quiverlab.modules.ar import knit_ar_quiver
+    ar = knit_ar_quiver(A)
+    if ar.status == "complete":
+        return [rec["module"] for rec in ar.vertices]
+    return _string_census_modules(triple, max_length=max_length, budget=budget)
