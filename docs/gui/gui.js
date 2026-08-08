@@ -140,7 +140,7 @@
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
     // ---- Plan 65: exceptional sequences (classical hereditary + tau-exceptional) ----
     '  <label><input type="checkbox" id="qlgui-exceptional_sequences"> exceptional sequences, budget ' +
-    '<input type="number" id="qlgui-exceptional_sequences-budget" value="100000" min="1"></label>' +
+    '<input type="number" id="qlgui-exceptional_sequences-budget" value="4096" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
     // ---- Plan 26: no-code module panel ----

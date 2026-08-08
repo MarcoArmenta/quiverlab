@@ -1128,7 +1128,7 @@ def compute_one(spec):
             # holds byte-for-byte. Classical (if hereditary) + tau counts, honest status.
             from quiverlab.tautilting.exceptional import exceptional_sequences_block
             block = exceptional_sequences_block(
-                A, budget=top if top is not None else 100_000)
+                A, budget=top if top is not None else 4096)   # sane DoS cap (Plan 65 H-3)
             block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "string_homological":
             # Homological string-algebra test (Plan 59 / R34, Suarez-Alvarez). Byte-

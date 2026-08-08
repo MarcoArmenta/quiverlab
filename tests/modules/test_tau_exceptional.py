@@ -241,3 +241,90 @@ def test_tau_exc_unsigned_equals_classical(n):
     classical = A.exceptional_sequences()
     assert len(all_module) == classical.count            # two independent enumerations agree
     assert all(A.is_tau_exceptional_sequence(s) for s in all_module)
+
+
+# --------------------------------------------------------------------------- #
+# Adversarial-review fixes (2026-08-08): H-1 completion-independence certificate,
+# H-2 tower chain check, M-1 deep D_4/A_4 materialisation + reorder-invariance.
+# --------------------------------------------------------------------------- #
+@selfcert
+def test_h1_reduction_completion_independence_certificate():
+    """H-1: C(U) = End(T_U)/<e_U> is completion-DEPENDENT as an ALGEBRA (different tau-tilting
+    completions give different dim / quiver), but the enumeration invariant #sTt(C(U)) is
+    completion-INDEPENDENT (DIJ). On kD4 (where the multiplicity is real -- critic-proved) the
+    reduction self-certifies #sTt across completions; here we exhaustively check that invariant
+    AND witness the algebra-level dependence (so the certificate is not vacuous)."""
+    from quiverlab.tautilting.exceptional import (_objects_from_eg, _find_completions,
+        _build_reduction_from_pair, _stt_count, tau_perpendicular_reduction)
+    from quiverlab.tautilting.mutation import exchange_graph
+    A = Quiver([1, 2, 3, 4], {"a": (2, 1), "b": (3, 1), "c": (4, 1)}).algebra(field=QQ)
+    eg = exchange_graph(A, budget_pairs=2000)
+    assert eg.status == "complete"
+    checked, algebra_differs = 0, False
+    for o in _objects_from_eg(A, eg):
+        if o.sign <= 0:
+            continue
+        comps = _find_completions(o.module, eg)
+        if len(comps) < 2:
+            continue
+        C0 = _build_reduction_from_pair(A, o.module, comps[0])[0]
+        C1 = _build_reduction_from_pair(A, o.module, comps[1])[0]
+        assert _stt_count(C0) == _stt_count(C1)              # the certified invariant (H-1)
+        if (C0.dim, len(list(C0.quiver.arrows))) != (C1.dim, len(list(C1.quiver.arrows))):
+            algebra_differs = True
+        checked += 1
+    assert checked >= 1, "no multi-completion tau-rigid U on kD4 (certificate never fires?)"
+    assert algebra_differs, "expected a completion-DEPENDENT C(U) algebra on kD4 (H-1)"
+    # the certified public reduction succeeds where the multiplicity is real (no raise)
+    U = next(o.module for o in _objects_from_eg(A, eg)
+             if o.sign > 0 and len(_find_completions(o.module, eg)) >= 2)
+    assert tau_perpendicular_reduction(A, U).reduction_algebra is not None
+
+
+@selfcert
+def test_h2_bogus_tower_chain_is_rejected():
+    """H-2: _verify_tower must recompute the reduction chain -- a hand-built tower whose middle
+    algebra is k x k (the TRUE reduction C(S_1 of kA_3) is kA_2) is a FORGERY and must be
+    rejected (#sTt(k x k) = 4 != 5 = #sTt(kA_2)), even though every rung's object is a valid
+    signed object of its (bogus) algebra. The pre-fix _verify_tower returned True (critic)."""
+    from quiverlab.tautilting.exceptional import _TowerEntry, tau_exceptional_objects
+    kA3 = linear_path_algebra(3, field=QQ)
+    kxk = Quiver([1, 2], {}).algebra(field=QQ)            # dim 2, #sTt 4 (the forgery)
+    k1 = Quiver([1], {}).algebra(field=QQ)                # dim 1, #sTt 2
+    S1 = next(o for o in kA3.tau_exceptional_objects()
+              if o.sign > 0 and o.module.dimension_vector() == {1: 1, 2: 0, 3: 0})
+    kxk_shift = next(o for o in tau_exceptional_objects(kxk) if o.sign < 0)
+    k1_shift = next(o for o in tau_exceptional_objects(k1) if o.sign < 0)
+    bogus = [_TowerEntry(kA3, S1, 3, 0),
+             _TowerEntry(kxk, kxk_shift, 2, 0),           # forged middle (true = kA_2)
+             _TowerEntry(k1, k1_shift, 1, 0)]
+    assert kA3.is_tau_exceptional_sequence(bogus) is False
+
+
+@xeng
+def test_d4_materialised_and_reorder_invariant():
+    """M-1: kD4 (subspace) signed count 1200 = 4!*50 MATERIALISED (not just formula-counted),
+    the all-module (all-positive) tower count 162 = the classical CES count (kD4), AND the
+    materialisation is REORDER-INVARIANT (reversing the object enumeration at every level
+    yields the same 1200 / 162 -- the tower set does not depend on processing order)."""
+    from quiverlab.tautilting.exceptional import tau_exceptional_sequences
+    A = Quiver([1, 2, 3, 4], {"a": (2, 1), "b": (3, 1), "c": (4, 1)}).algebra(field=QQ)
+    rep = tau_exceptional_sequences(A, budget=4096, want_sequences=True)
+    assert rep.signed_count == 24 * 50 == 1200
+    assert len(rep.sequences) == 1200                    # materialised, not formula
+    assert sum(1 for s in rep.sequences if all(e.obj.sign > 0 for e in s)) == 162  # == classical
+    rev = tau_exceptional_sequences(A, budget=4096, want_sequences=True, _reverse_objects=True)
+    assert len(rev.sequences) == 1200
+    assert sum(1 for s in rev.sequences if all(e.obj.sign > 0 for e in s)) == 162
+
+
+@xeng
+def test_a4_materialised_signed_count():
+    """M-1: kA4 signed count 1008 = 4!*42 MATERIALISED (completion-multiplicity is real at
+    this scale), all pairwise-distinct, each recognized on a sample."""
+    A = linear_path_algebra(4, field=QQ)
+    rep = A.tau_exceptional_sequences(budget=4096, want_sequences=True)
+    assert rep.signed_count == 24 * 42 == 1008
+    assert len(rep.sequences) == 1008
+    assert len({_sig_key(s) for s in rep.sequences}) == 1008          # pairwise-distinct
+    assert all(A.is_tau_exceptional_sequence(s) for s in rep.sequences[:24])   # sample recognized

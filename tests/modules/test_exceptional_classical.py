@@ -195,3 +195,27 @@ def test_non_hereditary_refused():
         is_exceptional_module(A, A.simple(1))
     with pytest.raises(QuiverlabError):
         c_matrix(A, [A.simple(1)])
+
+
+# --------------------------------------------------------------------------- #
+# Adversarial-review MINOR (a): c_matrix rows subset of the P45 wall normals.
+# --------------------------------------------------------------------------- #
+@xeng
+@pytest.mark.parametrize("n", [2, 3])
+def test_c_matrix_rows_subset_of_p45_wall_normals(n):
+    """The c-matrix rows (the dim-vectors of a complete exceptional sequence's terms) are a
+    SUBSET of the P45 tau-tilting WALL NORMALS -- the brick dim-vectors labelling the
+    exchange-graph edges. This is the plan-promised crosscheck: the hereditary
+    exceptional-sequence reading of the c-vectors overlaps the P45 wall-and-chamber surface
+    (Plan 65 R28; the P45 exchange graph is on this branch, no P63 code needed)."""
+    from quiverlab.tautilting.mutation import exchange_graph
+    A = linear_path_algebra(n, field=QQ)
+    verts = list(A.quiver.vertices)
+    eg = exchange_graph(A, budget_pairs=2000)
+    assert eg.status == "complete"
+    walls = {tuple(int(lab["brick"].get(v, 0)) for v in verts)
+             for lab in eg.arrows.values() if lab.get("brick") is not None}
+    rep = A.exceptional_sequences()
+    rows = {tuple(row) for seq in rep.sequences for row in c_matrix(A, seq)}
+    assert rows                                          # non-empty (rep-finite hereditary)
+    assert rows <= walls                                 # every c-matrix row is a wall normal

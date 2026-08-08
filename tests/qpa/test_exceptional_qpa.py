@@ -61,3 +61,28 @@ def test_qpa_has_no_exceptional_sequence_surface():
     pytest.fail(
         "QPA now exposes an exceptional-sequence surface -- wire a real crosscheck against "
         f"the Plan-65 classical/tau enumerators. Found present={present}, names={exc_like}.")
+
+
+def test_exceptional_modules_are_bricks_no_self_ext_via_qpa():
+    """Input-level anchor (MINOR b): every kA_3 indecomposable is an exceptional MODULE = a
+    rigid BRICK, and QPA independently confirms BOTH halves PER MODULE -- ``dim End(M) = 1``
+    (QPA ``HomOverAlgebra``, the Plan-37 bridge) and ``dim Ext^1(M, M) = 0`` (QPA
+    ``ExtOverAlgebra``, the Plan-27 idiom). The exceptional SEQUENCE surface has no QPA
+    verb (the guard above), but the exceptional-module criterion does."""
+    from quiverlab.families.basic import linear_path_algebra
+    from quiverlab.fields import QQ
+    from quiverlab.modules.exceptional import is_exceptional_module
+    from quiverlab.qpa import scripts
+    from quiverlab.qpa.crosscheck import _graded, crosscheck_hom_glue
+    A = linear_path_algebra(3, field=QQ)
+    for rec in A.ar_quiver().vertices:                    # every kA_3 indecomposable
+        M = rec["module"]
+        assert is_exceptional_module(A, M) is True        # our BRICK criterion (M3)
+        rep = crosscheck_hom_glue(A, M, M)                # dim End(M) = dim Hom(M,M) vs QPA
+        rep.assert_agree()
+        assert rep.ours["hom_dim"] == 1                   # brick: End_A(M) = k (QPA-confirmed)
+        dv, arr = _graded(A, M)                           # rigidity: dim Ext^1(M,M) = 0 via QPA
+        script = (scripts.quiver_and_algebra_script(A) + "\n"
+                  + scripts.module_decl(A, dv, arr, "MM")
+                  + "\nLength(ExtOverAlgebra(MM, MM)[2]);")
+        assert int(session.run(script)) == 0 == A.ext(M, M, 1)

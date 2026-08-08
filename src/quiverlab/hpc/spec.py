@@ -1597,7 +1597,7 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     # refusal is caught into an `error` field, never a 500. Both runners share
     # tautilting.exceptional.exceptional_sequences_block, so the blocks are byte-identical.
     if kind == "exceptional_sequences":
-        budget = item.hi if item.hi is not None else 100_000
+        budget = item.hi if item.hi is not None else 4096   # sane DoS cap (Plan 65 H-3)
         from quiverlab.tautilting.exceptional import exceptional_sequences_block
         block = exceptional_sequences_block(A, budget=budget)
         block["citations"] = _citation_pairs(block.get("references", []))

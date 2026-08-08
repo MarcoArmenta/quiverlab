@@ -20,6 +20,15 @@ The reduction dispatches on the SIGN of the outer object (H2):
   level**, THEN present the quotient (``presented_form``). This sidesteps a fragile
   vertex-identification in the presented ``End(T_U)`` (H5): the quotient is intrinsic and
   ``C(S_1) of kA_3`` comes out ``kA_2`` (connected, dim 3), not ``k x k`` (dim 2).
+
+  **The algebra ``C(U)`` is completion-DEPENDENT (H-1).** Different tau-tilting completions
+  ``T_U`` of the SAME ``U`` give ``End(T_U)/<e_U>`` of different dimension / quiver (live-
+  proved on kD4). Only the CATEGORY ``J(U)``, hence the invariant ``#sTt(C(U))``, is
+  completion-independent (DIJ) -- and the enumeration relies ONLY on ``#sTt``. We pick the
+  first empty-support completion in BFS order (deterministic) and self-certify: when a second
+  completion exists, ``#sTt(C(U))`` over it must match (a loud raise otherwise). So the
+  returned algebra is one valid presentation of ``C(U)``; the trustworthy datum is its
+  ``#sTt``.
 - **shifted projective ``P_v[1]``** -> the support quotient ``C(P_v[1]) = A/<e_v>`` (delete
   vertex ``v``), with ``F`` the tautological restriction ``mod(A/<e_v>) ~ {M in mod A : M_v
   = 0}`` (``Recollement.i_upper_star``).
@@ -240,34 +249,48 @@ def _quotient_by_idempotent_sc(B0, e):
     return Algebra.from_structure_constants(Tq, unitq, field=dom, check=True)
 
 
-def _reduction_tau_rigid(A, Umod, eg):
-    """``C(U) = End(T_U)/<e_U>`` for a tau-rigid indecomposable ``Umod`` (the DIJ idempotent
-    quotient). ``T_U`` = an empty-support exchange-graph vertex (a genuine tau-tilting
-    module) containing ``Umod``; ``e_U`` = its summand projector. Returns
-    ``(C, pair, u_summand_indices)``."""
+def _stt_count(algebra, *, budget=4096):
+    """``#sTt`` = the number of support tau-tilting pairs of ``algebra`` -- the generalized
+    Catalan / cluster number of ``J(U)``, the completion-INDEPENDENT invariant the
+    enumeration relies on (DIJ). From a ``status="complete"`` exchange graph; else raises."""
+    from quiverlab.tautilting.mutation import exchange_graph
+    eg = exchange_graph(algebra, budget_pairs=budget)
+    if eg.status != "complete":
+        raise QuiverlabError(
+            "tau_perpendicular_reduction: a reduction algebra's exchange graph is not "
+            f"complete (status={eg.status!r}); #sTt(C(U)) is unavailable")
+    return len(eg.vertices)
+
+
+def _iso_to(Umod):
+    """A cheap predicate: is a summand isomorphic to the indecomposable ``Umod``?"""
+    from quiverlab.modules.hom import is_isomorphic
+
+    def _p(M):
+        return (M.dim == Umod.dim
+                and M.dimension_vector() == Umod.dimension_vector()
+                and is_isomorphic(M, Umod))
+    return _p
+
+
+def _find_completions(Umod, eg):
+    """Every empty-support exchange-graph vertex (a genuine tau-tilting module) that contains
+    ``Umod`` as a summand, in the deterministic BFS order."""
+    iso = _iso_to(Umod)
+    return [rec["pair"] for rec in eg.vertices
+            if not rec["support"] and any(iso(M) for M in rec["pair"].summands)]
+
+
+def _build_reduction_from_pair(A, Umod, pair):
+    """Build ``C(U) = End(T_U)/<e_U>`` from a SPECIFIC tau-tilting completion ``pair``
+    containing ``Umod`` (the structure-constant ideal quotient of ``End(T_U)`` by the summand
+    projector ``e_U``, then presented). Returns ``(C, u_summand_indices)``."""
     from quiverlab.core.algebra import Algebra
     from quiverlab.core.basic import presented_form
     from quiverlab.fields.linalg import solve
     from quiverlab.modules.endomorphism import _structure_constants, _vec
-    from quiverlab.modules.hom import is_isomorphic
     from quiverlab.modules.morphism import direct_sum
-
-    def _iso(M):
-        return (M.dim == Umod.dim
-                and M.dimension_vector() == Umod.dimension_vector()
-                and is_isomorphic(M, Umod))
-
-    pair = None
-    for rec in eg.vertices:
-        if rec["support"]:                              # only genuine tau-tilting modules
-            continue
-        if any(_iso(M) for M in rec["pair"].summands):
-            pair = rec["pair"]
-            break
-    if pair is None:
-        raise QuiverlabError(
-            "tau_perpendicular_reduction: no tau-tilting completion of U found among the "
-            "empty-support exchange-graph vertices (U not tau-rigid, or tau-tilting-infinite)")
+    iso = _iso_to(Umod)
     summands = list(pair.summands)
     D, incls, projs = direct_sum(*summands)
     dom = D.domain
@@ -277,7 +300,7 @@ def _reduction_tau_rigid(A, Umod, eg):
     eU = [dom.zero()] * r
     uverts = []
     for i, Mi in enumerate(summands):
-        if _iso(Mi):
+        if iso(Mi):
             proj_endo = projs[i].then(incls[i])         # incl_i o proj_i : D -> D idempotent
             coords = solve(Bmat, _vec(proj_endo.matrix, D.dim), dom)
             if coords is None:
@@ -286,11 +309,41 @@ def _reduction_tau_rigid(A, Umod, eg):
             eU = [dom.add(eU[t], coords[t]) for t in range(r)]
             uverts.append(i)
     C0 = _quotient_by_idempotent_sc(B0, eU)
-    C = presented_form(C0)
-    return C, pair, uverts
+    return presented_form(C0), uverts
 
 
-def tau_perpendicular_reduction(A, U, *, budget=512, _eg=None):
+def _reduction_tau_rigid(A, Umod, eg, *, certify=True):
+    """``C(U) = End(T_U)/<e_U>`` for a tau-rigid indecomposable ``Umod`` (the DIJ idempotent
+    quotient), built from the FIRST empty-support completion in BFS order. Returns
+    ``(C, pair, u_summand_indices)``.
+
+    **Completion-independence certificate (H-1).** The algebra ``C(U)`` is genuinely
+    completion-DEPENDENT -- different tau-tilting completions of the same ``U`` give
+    ``End(T_U)/<e_U>`` of different dimension/quiver (only the category ``J(U)``, hence
+    ``#sTt``, is invariant -- DIJ; live-proved on kD4). The enumeration relies ONLY on
+    ``#sTt(C(U))``, so when ``certify`` and a SECOND completion exists we build ``C'`` from it
+    and assert ``#sTt(C) == #sTt(C')`` -- a loud raise otherwise (the count would be
+    untrustworthy). The public :func:`tau_perpendicular_reduction` certifies per instance; the
+    materialiser passes ``certify=False`` because its aggregate ``len == n!*#sTt`` IS the
+    end-to-end invariance guard."""
+    comps = _find_completions(Umod, eg)
+    if not comps:
+        raise QuiverlabError(
+            "tau_perpendicular_reduction: no tau-tilting completion of U found among the "
+            "empty-support exchange-graph vertices (U not tau-rigid, or tau-tilting-infinite)")
+    C, uverts = _build_reduction_from_pair(A, Umod, comps[0])
+    if certify and len(comps) > 1:
+        C2, _ = _build_reduction_from_pair(A, Umod, comps[1])
+        s1, s2 = _stt_count(C), _stt_count(C2)
+        if s1 != s2:
+            raise QuiverlabError(
+                "tau_perpendicular_reduction: #sTt(C(U)) is COMPLETION-DEPENDENT "
+                f"({s1} != {s2}) -- the Jasso reduction invariant failed (a reduction / P45 "
+                "bug); the signed count n!*#sTt would be untrustworthy")
+    return C, comps[0], uverts
+
+
+def tau_perpendicular_reduction(A, U, *, budget=512, certify=True, _eg=None):
     """The Jasso tau-perpendicular reduction ``C(U)`` of a signed tau-exceptional object
     ``U`` (Plan 65 / R27), dispatching on the sign of ``U`` (H2):
 
@@ -302,7 +355,10 @@ def tau_perpendicular_reduction(A, U, *, budget=512, _eg=None):
       restriction transport.
 
     Returns a :class:`TauReduction`. Self-certifies ``rk C(U) = n - |U|`` and (tau-rigid
-    case) is discriminated by the ``C(S_1 of kA_3) = kA_2`` iso pin (H5)."""
+    case) is discriminated by the ``C(S_1 of kA_3) = kA_2`` iso pin (H5). ``certify=True``
+    (default, the public path) runs the H-1 completion-independence certificate
+    (``#sTt(C(U))`` invariant across completions); the internal materialiser passes
+    ``certify=False`` (its aggregate count is the guard)."""
     _require_quiver(A, "tau_perpendicular_reduction")
     if isinstance(U, TauExcObject) and U.sign < 0:      # shifted projective P_v[1]
         from quiverlab.modules.recollement import Recollement
@@ -321,9 +377,33 @@ def tau_perpendicular_reduction(A, U, *, budget=512, _eg=None):
         raise QuiverlabError(
             "tau_perpendicular_reduction: the exchange graph is not complete "
             f"(status={eg.status!r}); U cannot be tau-Bongartz-completed")
-    C, pair, uverts = _reduction_tau_rigid(A, Umod, eg)
+    C, pair, uverts = _reduction_tau_rigid(A, Umod, eg, certify=certify)
     return TauReduction(reduction_algebra=C, bongartz=pair, u_vertices=uverts,
                         kind="tau_rigid", equivalence=None)
+
+
+# --------------------------------------------------------------------------- #
+# reduction memo (identity-safe): shared by the materialiser + the tower recognizer
+# --------------------------------------------------------------------------- #
+_REDUCTION_MEMO = {}   # id(algebra) -> list of (algebra_ref, obj_ref, TauReduction)
+
+
+def _memo_reduction(A, U, *, eg=None, certify=False):
+    """Memoized :func:`tau_perpendicular_reduction`, keyed by the (algebra, object) IDENTITY.
+    The cached tuple keeps both refs alive, so a live entry's ``id`` is never reused (safe
+    across tests). Populated by the materialiser (:func:`_enumerate_towers`) and consulted by
+    the tower recognizer (:func:`_verify_tower`), so a genuine materialised tower's next-rung
+    algebra is an IDENTITY hit -- verification is O(1) per rung, no fresh exchange graph.
+
+    Only ever called on the materialisation / tower-recognition paths (never the
+    ``want_sequences=False`` webapp block path), so the memo stays empty in production."""
+    bucket = _REDUCTION_MEMO.setdefault(id(A), [])
+    for a_ref, u_ref, res in bucket:
+        if a_ref is A and u_ref is U:
+            return res
+    res = tau_perpendicular_reduction(A, U, certify=certify, _eg=eg)
+    bucket.append((A, U, res))
+    return res
 
 
 # --------------------------------------------------------------------------- #
@@ -362,7 +442,15 @@ def _entry_shift_vertex(x):
 def _verify_tower(A, seq):
     """A materialised tower ``[(A, M_n), (C_1, M_{n-1}), ...]`` is genuine iff every rung's
     object is a signed tau-exceptional object of its algebra, the ranks descend
-    ``n, n-1, ..., 1``, and the length is ``n = rk A``."""
+    ``n, n-1, ..., 1``, the length is ``n = rk A``, AND -- the H-2 chain check -- each
+    successor algebra IS the actual reduction ``C(M_i)`` of its predecessor.
+
+    The successor is compared to the recomputed ``C(M_i)`` by (a) INSTANCE identity (the
+    common case: a materialised tower's successor is the exact reduction object, an
+    ``id`` hit via :func:`_memo_reduction`), else (b) the completion-INDEPENDENT invariant
+    ``#sTt`` plus rank -- because ``C(U)`` is completion-DEPENDENT (H-1), ``#sTt`` is the
+    honest equality that accepts a valid alternative completion yet rejects a genuinely wrong
+    successor (the critic's ``k x k`` where the true reduction is ``kA_2``: ``#sTt`` 4 != 5)."""
     n = _rank(A)
     if len(seq) != n:
         return False
@@ -375,6 +463,21 @@ def _verify_tower(A, seq):
             return False
         if not _is_signed_object(entry.algebra, entry.obj):
             return False
+        if i + 1 < len(seq):
+            try:
+                C = _memo_reduction(entry.algebra, entry.obj).reduction_algebra
+            except QuiverlabError:
+                return False
+            nxt = seq[i + 1].algebra
+            if nxt is C:                                 # materialised: identical instance
+                continue
+            if _rank(nxt) != _rank(C):                   # a hand-built / bogus successor
+                return False
+            try:
+                if _stt_count(nxt) != _stt_count(C):     # the completion-independent invariant
+                    return False
+            except QuiverlabError:
+                return False
     return True
 
 
@@ -463,32 +566,37 @@ def _as_shift_object(A, x):
 # --------------------------------------------------------------------------- #
 # Task A3: enumeration via the ordered-sTt bijection + materialisation
 # --------------------------------------------------------------------------- #
-def _enumerate_towers(A, eg):
+def _enumerate_towers(A, eg, *, reverse=False):
     """The materialised complete signed tau-exceptional sequences of ``A`` as reduction
     towers (Task A3 -- the H1 cross-check). Realises the Buan-Marsh recursion: pick an outer
     signed object ``M``, then a complete tower of ``C(M)``. ``eg`` is the (complete)
-    exchange graph of ``A``."""
+    exchange graph of ``A``. ``reverse`` reverses the object enumeration order at every level
+    (a test hook for the M-1 reorder-invariance pin -- the tower SET is order-independent)."""
     n = _rank(A)
     objs = _objects_from_eg(A, eg)
+    if reverse:
+        objs = list(reversed(objs))
     towers = []
     for i, M in enumerate(objs):
         entry = _TowerEntry(A, M, n, i)
         if n == 1:
             towers.append([entry])
             continue
-        C = tau_perpendicular_reduction(A, M, _eg=eg).reduction_algebra
+        # certify=False: the aggregate len == n!*#sTt is the end-to-end invariance guard
+        # (H-1); memoized so _verify_tower's chain check is an identity hit on this tower.
+        C = _memo_reduction(A, M, eg=eg, certify=False).reduction_algebra
         from quiverlab.tautilting.mutation import exchange_graph
         egC = exchange_graph(C, budget_pairs=max(512, len(eg.vertices)))
         if egC.status != "complete":
             raise QuiverlabError(
                 "tau_exceptional_sequences: a reduction algebra C(U) was not "
                 f"tau-tilting-finite (status={egC.status!r}) -- unexpected (report it)")
-        for sub in _enumerate_towers(C, egC):
+        for sub in _enumerate_towers(C, egC, reverse=reverse):
             towers.append([entry] + sub)
     return towers
 
 
-def tau_exceptional_sequences(A, *, budget=4096, want_sequences=True):
+def tau_exceptional_sequences(A, *, budget=4096, want_sequences=True, _reverse_objects=False):
     """The complete signed tau-exceptional sequences of a **tau-tilting-finite** ``A``
     (Plan 65 / R27). The count is the ordered-support-tau-tilt bijection
     ``signed_count = n! * #sTt`` with ``#sTt = len(exchange_graph(A).vertices)`` -- computed
@@ -526,7 +634,7 @@ def tau_exceptional_sequences(A, *, budget=4096, want_sequences=True):
             A, n, signed, stt, None, True, "complete",
             f"materialisation capped: signed_count={signed} > budget={budget}; the count is "
             "exact via the bijection formula, sequences not materialised")
-    towers = _enumerate_towers(A, eg)
+    towers = _enumerate_towers(A, eg, reverse=_reverse_objects)
     note = ""
     if len(towers) != signed:                           # a genuine reduction bug -> loud note
         note = (f"materialised {len(towers)} towers != signed_count {signed} -- a bug in the "
@@ -542,13 +650,20 @@ _EXC_REFERENCES = ["buan_marsh_tau_exceptional", "crawley_boevey_exceptional",
                    "air_tau_tilting", "assem_book"]
 
 
-def exceptional_sequences_block(A, budget=100_000):
+def exceptional_sequences_block(A, budget=4096):
     """The shared ``exceptional_sequences`` compute block (Plan 65 Task G1): the CLASSICAL
     hereditary surface (counts + braid-orbit transitivity + Dynkin closed form, if
     hereditary) AND the tau-exceptional surface (the signed count ``n!*#sTt``, if
     tau-tilting-finite), each honest about applicability. Sequences themselves are NOT
     shipped (they explode -- ``D_4`` has 162 classical / 1200 signed); the block reports
     counts + status. Presentation-less -> a typed error dict, never a 500.
+
+    **DoS cap (H-3).** ``budget`` caps the tau exchange-graph BFS -- the only unbounded axis
+    (a non-hereditary tau-tilting-INFINITE input would otherwise grind). The block default is
+    a SANE ``4096`` (not the ``100_000`` library default, which stays on
+    :meth:`Algebra.tau_exceptional_sequences`). The classical side is NEVER a DoS (it refuses
+    a rep-infinite hereditary input INSTANTLY via Gabriel, and a non-hereditary one is N/A),
+    so it uses its own generous internal tuple budget regardless of ``budget``.
 
     Shared by ``hpc/spec.py`` and ``docs/gui/runner.py`` so the blocks are byte-identical."""
     if getattr(A, "quiver", None) is None:
@@ -566,7 +681,7 @@ def exceptional_sequences_block(A, budget=100_000):
 
     classical = None
     if hereditary:
-        rep = A.exceptional_sequences(budget=budget)
+        rep = A.exceptional_sequences(budget=100_000)   # self-caps; never a DoS (Gabriel gate)
         classical = {"count": rep.count, "closed_form_count": rep.closed_form_count,
                      "transitive": rep.transitive, "complete": rep.is_complete,
                      "status": rep.status}
