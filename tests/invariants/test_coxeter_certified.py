@@ -18,12 +18,15 @@ def test_certificate_is_self_consistent():
     for alpha in (spectral_radius(t**2 - 7*t + 1), spectral_radius(LEHMER)):
         c = certify_real_algebraic(alpha)
         m = sp.Poly(c["minpoly"], x)
-        # minpoly annihilates alpha: the certificate's polynomial IS alpha's minimal
-        # polynomial over QQ. (Poly.eval on a CRootOf does not auto-reduce its powers
-        # to zero -- fine for the radical 3-Kronecker root but not the degree-10 Lehmer
-        # CRootOf -- so we compare against sympy's minimal_polynomial directly: exact,
-        # no float, and strictly stronger than a single-point annihilation check.)
-        assert m.as_expr() == sp.minimal_polynomial(alpha, x)      # minpoly annihilates
+        # certify's minpoly is EXACTLY sympy's minimal polynomial of alpha -- a
+        # COEFFICIENT ROUND-TRIP, not an independent annihilation check. (A direct
+        # m(alpha)==0 via Poly.eval would spuriously FAIL on the degree-10 Lehmer
+        # CRootOf, whose powers do not auto-reduce; this compares against the same
+        # sympy.minimal_polynomial the certificate is built from.) The INDEPENDENT
+        # anchoring -- that this is the RIGHT polynomial -- is carried by the two
+        # literature pins below (3-Kronecker [1,-7,1] and Lehmer's degree-10
+        # polynomial), whose coefficients are fixed by the record, not by sympy.
+        assert m.as_expr() == sp.minimal_polynomial(alpha, x)      # round-trips sympy's minpoly
         a, b = sp.Rational(c["interval"][0]), sp.Rational(c["interval"][1])
         assert (alpha - a).is_nonnegative and (b - alpha).is_nonnegative  # brackets
         ivs = m.intervals()
@@ -56,6 +59,31 @@ def test_cyclotomic_labelling():
     assert idx == [(2, 2), (6, 1)]
     mixed = cyclotomic_factorization(LEHMER)                       # irreducible, none
     assert [f["cyclotomic_index"] for f in mixed] == [None]
+
+
+@pytest.mark.oracle_selfcert
+def test_product_mahler_exceeds_spectral_radius():
+    """M != ρ when TWO roots lie outside the circle -- the product-Mahler branch the
+    single-outside-root battery never exercised. χ = (t²−7t+1)(t²−14t+1) has outside
+    roots (7+3√5)/2 and 7+4√3, so the Mahler measure M = their product (a degree-4
+    algebraic number, minpoly [1,−98,243,−98,1], interval (95,96)) STRICTLY exceeds the
+    spectral radius ρ = 7+4√3 (minpoly [1,−14,1], interval (13,14)). Both certify exactly
+    and quickly (the critic measured ~0.01 s) -- the multi-outside-root M path is exact."""
+    chi = (t**2 - 7*t + 1) * (t**2 - 14*t + 1)
+    assert off_circle_root_count(chi) == 2
+    rho, M = spectral_radius(chi), mahler_measure(chi)
+    assert (M - rho).is_positive                                  # M strictly exceeds ρ
+    cR = certify_real_algebraic(rho)
+    assert cR["minpoly"] == [1, -14, 1] and cR["degree"] == 2
+    assert (sp.Rational(cR["interval"][0]), sp.Rational(cR["interval"][1])) == (13, 14)
+    cM = certify_real_algebraic(M)
+    assert cM["minpoly"] == [1, -98, 243, -98, 1] and cM["degree"] == 4
+    assert (sp.Rational(cM["interval"][0]), sp.Rational(cM["interval"][1])) == (95, 96)
+    # the degree-4 certificate self-checks: minpoly == sympy's, Sturm-unique bracket
+    m = sp.Poly(cM["minpoly"], x)
+    assert m.as_expr() == sp.minimal_polynomial(M, x)
+    assert (sp.Rational(cM["interval"][0]), sp.Rational(cM["interval"][1])) \
+        == m.intervals()[cM["root_index"]][0]
 
 
 @pytest.mark.oracle_selfcert
