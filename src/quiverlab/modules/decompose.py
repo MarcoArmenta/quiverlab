@@ -148,8 +148,12 @@ def _factoring_supported(dom):
 
 def _factor_min_poly(coeffs, dom):
     """Factor the monic minimal polynomial ``coeffs`` (ascending) over ``dom``'s ground
-    field, returning ``[(factor_coeffs, multiplicity), ...]`` with each factor a monic
-    ascending Domain-coefficient list. Requires ``_factoring_supported(dom)``.
+    field, returning ``[(factor_coeffs, multiplicity), ...]`` with each factor an
+    ascending Domain-coefficient list. **The factors are NOT necessarily monic** over
+    ``QQ``: sympy's ``factor_list`` pulls out an integer content, so the linear factor
+    ``x − 1/2`` comes back as the primitive ``2x − 1`` (`[-1, 2]`). Callers that need a
+    root must divide by the leading coefficient (``root = −a₀/a₁`` for a linear factor),
+    NOT assume ``x − λ = [−λ, 1]``. Requires ``_factoring_supported(dom)``.
 
     The three exact ground fields map to the matching sympy factoring domain:
     ``GF(p)`` via ``modulus=p``, ``QQ`` via ``domain='QQ'``, and a CC number field via

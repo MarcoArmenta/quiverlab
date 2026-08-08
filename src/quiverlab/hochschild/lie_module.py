@@ -348,12 +348,15 @@ def _independent(vecs, dom):
 
 
 def _maximal_torus(c, m, dom):
-    """A maximal ad-diagonalizable abelian subalgebra ``t`` of ``HH^1`` (ambient coord
-    basis) and a provenance string. Route: the ad-semisimple part of a Cartan
-    subalgebra, then a greedy radical-toral extension by ad-semisimple ``HH^1`` basis
-    elements commuting with the current torus (the ``k[x]/x^n`` grading ``x d`` -- a
-    radical toral element P70 scoped OUT -- is captured here). Self-cert: ``t`` is
-    abelian and every generator is ad-semisimple."""
+    """An ad-diagonalizable abelian subalgebra ``t`` of ``HH^1`` (ambient coord basis) and
+    a provenance string. Route: the ad-semisimple part of a Cartan subalgebra, then a
+    greedy radical-toral extension by ad-semisimple ``HH^1`` basis elements commuting with
+    the current torus (the ``k[x]/x^n`` grading ``x d`` -- a radical toral element P70
+    scoped OUT -- is captured here). **What is certified:** ``t`` is abelian (checked
+    below), every generator is ad-semisimple (enforced at construction), and ``t`` is
+    maximal OVER THE ``HH^1`` BASIS DIRECTIONS (checked -- no standard basis element
+    extends it). A combination-level maximal torus (a generator that is a non-basis linear
+    combination) is honest-scope, so the provenance says "basis-maximal", not "maximal"."""
     if m == 0:
         return [], "trivial (HH^1 = 0)"
     H = _cartan_subalgebra(c, m, dom)
@@ -366,15 +369,28 @@ def _maximal_torus(c, m, dom):
         if _is_ad_semisimple(c, m, dom, e) and all(_commutes(c, m, dom, e, t) for t in torus) \
                 and _independent(torus + [e], dom):
             torus.append(e)
-    # self-cert: abelian + each ad-semisimple
+    # self-cert 1: t is abelian
     for a in range(len(torus)):
         for b in range(len(torus)):
             if not _commutes(c, m, dom, torus[a], torus[b]):
                 raise QuiverlabError("HH-Lie-module torus self-cert failed: not abelian")
-    prov = (f"maximal torus (dim {len(torus)}) = the ad-semisimple part of a Cartan "
-            "subalgebra of HH^1 + radical-toral extension; basis-dependent (the "
-            "normalization of each generator is a choice -- weight LABELS are provenance, "
-            "the P70 sl2-triple NON-NORMATIVE precedent)")
+    # self-cert 2: basis-maximality -- every ad-semisimple HH^1 basis element that
+    # commutes with all of t already lies in span(t) (else the greedy would have added
+    # it). A loud contradiction here means the extension loop is buggy.
+    for e in _identity_vecs(m, dom):
+        if (_is_ad_semisimple(c, m, dom, e)
+                and all(_commutes(c, m, dom, e, t) for t in torus)
+                and _independent(torus + [e], dom)):
+            raise QuiverlabError(
+                "HH-Lie-module torus self-cert failed: an ad-semisimple basis element "
+                "commuting with t was not absorbed (basis-maximality violated -- a bug)")
+    prov = (f"basis-maximal ad-diagonalizable abelian subalgebra (dim {len(torus)}) = the "
+            "ad-semisimple part of a Cartan subalgebra of HH^1 + a greedy radical-toral "
+            "extension over the HH^1 basis directions; each generator ad-semisimple, the "
+            "whole set certified abelian and basis-maximal (a combination-level maximal "
+            "torus is honest-scope). Basis-dependent: the normalization of each generator "
+            "is a choice -- weight LABELS are provenance, the P70 sl2-triple NON-NORMATIVE "
+            "precedent)")
     return torus, prov
 
 
@@ -684,13 +700,25 @@ def lie_module_action(A, top, *, budget=DEFAULT_MAXDIM, max_cells=4_000_000,
     #     governed by decompose's own char guard char 0 or char > d_n) ---
     summands = _summand_tables(fg["per_degree"], dom, budget)
 
+    # The in-window sign-arbiter VERDICT (the doc's Task-2 step 3): the field-general
+    # L_D is the Gerstenhaber degree-1 bracket [D,-]. On the normalized bar complex,
+    # L_D equals the shipped engine.tt_calculus.gerstenhaber_bracket_cochain(.,1,n,.)
+    # by the p=1 Koszul-sign collapse -- verified cochain-for-cochain over GF(p) as a
+    # cross-engine oracle (tests/hochschild/test_lie_module.py). Recorded as provenance;
+    # NOT re-run here (the field-general route carries no GF(p) bracket-engine dependency).
+    arbiter_note = (
+        "action = the Gerstenhaber degree-1 bracket [D, -] = the Lie derivative L_D; on "
+        "the normalized bar complex L_D equals the shipped degree-(1,n) Gerstenhaber "
+        "bracket by the p=1 Koszul-sign collapse, verified cochain-for-cochain over GF(p) "
+        "as a cross-engine oracle.")
+
     return HHLieModule(
         top=top, hh_dims=fg["hh_dims"], hh1_dim=fg["hh1_dim"], basis="der_inn/bar",
         action=fg["action"], module_axiom_ok=fg["module_axiom_ok"],
         inner_acts_zero=fg["inner_acts_zero"], characteristic=dom.characteristic,
         weights=weights, torus_provenance=torus_provenance, summands=summands,
         weight_base_change_note=weight_base_change_note, char0_note=char0_note,
-        status="complete", note="", references=tuple(_REFERENCES))
+        status="complete", note=arbiter_note, references=tuple(_REFERENCES))
 
 
 def hh_lie_module_block(A, top, *, budget=DEFAULT_MAXDIM, max_cells=4_000_000):
