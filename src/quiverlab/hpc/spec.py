@@ -1563,6 +1563,24 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         keys = list(block["references"])
         block["citations"] = _citation_pairs(keys)
         return block, None
+    # Homological string-algebra test (Plan 59 / R34): an algebra-only scalar kind
+    # (Suarez-Alvarez). Shared builder (string_homological.string_homological_block);
+    # a rep-infinite / self-injective / presentation-less input -> {"error": ...},
+    # never a 500 (the recognizers-block per-flag precedent). Byte-identical twin.
+    if kind == "string_homological":
+        from quiverlab.modules.string_homological import string_homological_block
+        block = string_homological_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Toupie structure (Plan 59 / R35): an algebra-only scalar kind. Shared builder
+    # (families.toupie.toupie_block): recognizer + branch/direct-arrow counts + HH
+    # (engine="cs",auto_cs) + the char-0 sl_a lower bound. A non-toupie / presentation-
+    # less input returns a labelled block, never a 500. Byte-identical twin.
+    if kind == "toupie":
+        from quiverlab.families.toupie import toupie_block
+        block = toupie_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
 
 
@@ -2322,6 +2340,11 @@ def _snippet(req: ComputeRequest, A) -> str:
                                     "from quiverlab.strings.ag import ag_invariant\n"
                                     "enumerate_strings(A), find_bands(A), "
                                     "ag_invariant(A)"),
+             "string_homological":
+                 lambda it: ("from quiverlab.modules.string_homological import "
+                             "homological_string_test\nhomological_string_test(A)"),
+             "toupie": lambda it: ("from quiverlab.families.toupie import is_toupie, "
+                                   "toupie_block\nis_toupie(A), toupie_block(A)"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",

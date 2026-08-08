@@ -57,18 +57,24 @@ def _free_dim(branches):
 
 
 def _build_quiver(branches):
-    """(Quiver, branch_paths): source ``s``, sink ``t``; branch i a fresh directed path
-    ``s -> v{i}_0 -> ... -> v{i}_{l-2} -> t`` of length l (a length-1 branch is a single
-    arrow ``s -> t``). ``branch_paths[i]`` = the ordered arrow-name list of branch i."""
-    verts = ["s", "t"]
+    """(Quiver, branch_paths): source vertex ``1``, sink vertex ``2``; branch i a fresh
+    directed path ``1 -> ... -> 2`` of length l (a length-1 branch is a single arrow
+    ``1 -> 2``). Internal vertices are integers ``>= 3`` (so the quiver round-trips
+    through the integer-vertex GUI). ``branch_paths[i]`` = the ordered arrow-name list."""
+    source, sink = 1, 2
+    verts = [source, sink]
     arrows = {}
     branch_paths = []
+    nxt = 3
     for i, l in enumerate(branches):
-        prev = "s"
+        prev = source
         names = []
         for j in range(l):
-            cur = "t" if j == l - 1 else f"v{i}_{j}"
-            if cur != "t":
+            if j == l - 1:
+                cur = sink
+            else:
+                cur = nxt
+                nxt += 1
                 verts.append(cur)
             name = f"a{i}_{j}"
             arrows[name] = (prev, cur)

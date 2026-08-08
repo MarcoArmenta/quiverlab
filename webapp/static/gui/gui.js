@@ -112,6 +112,9 @@
     '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
+    // ---- Plan 59: R34 homological string test + R35 toupie structure ----
+    '  <label><input type="checkbox" id="qlgui-string_homological"> homological string test</label>' +
+    '  <label><input type="checkbox" id="qlgui-toupie"> toupie structure</label>' +
     // ---- Plan 47: quasi-hereditary structure (natural order) ----
     '  <label><input type="checkbox" id="qlgui-quasi_hereditary"> quasi-hereditary (Δ/∇, natural order)</label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
@@ -227,6 +230,8 @@
    "derived_fingerprint",
    // Plan 46: gentle / string subsystem
    "strings",
+   // Plan 59: R34 homological string test + R35 toupie structure (scalar kinds)
+   "string_homological", "toupie",
    // Plan 47: quasi-hereditary structure (scalar kind)
    "quasi_hereditary",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
@@ -859,7 +864,7 @@
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
     ["cartan", "coxeter_polynomial", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
-     "strings", "quasi_hereditary"].forEach(function (k) {
+     "strings", "string_homological", "toupie", "quasi_hereditary"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
@@ -3277,6 +3282,54 @@
         div.appendChild(h("p", { text: "τ-orbits: " + b.tau_orbits.map(function (o) {
           return "{" + o.map(arLabel).join(", ") + "}"; }).join("  ") }));
       }
+    } else if (name === "string_homological") {
+      // Plan 59 / R34: the three-valued verdict + the is_string arbiter + the >= 3
+      // -summand middle witness (a genuine extension of indecomposables).
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: "Verdict: " + b.verdict
+          + " · syntactic is_string: " + b.is_string }));
+        if (b.witness) {
+          var shw = b.witness;
+          var shE = Object.keys(shw.E_dimvec || {}).map(function (v) {
+            return v + ":" + shw.E_dimvec[v]; }).join(", ");
+          var shS = (shw.summand_dimvecs || []).map(function (d) {
+            return "{" + Object.keys(d).map(function (v) {
+              return v + ":" + d[v]; }).join(", ") + "}"; }).join(" ⊕ ");
+          div.appendChild(h("p", { text: "Witness: middle {" + shE + "} has "
+            + shw.summand_count + " summand(s)" + (shS ? " = " + shS : "")
+            + " — not a string algebra (k-bar-sound)." }));
+        }
+        if (b.kbar_gap_note) div.appendChild(h("p", { text: b.kbar_gap_note }));
+        if (b.reason) div.appendChild(h("p", { text: b.reason }));
+      }
+    } else if (name === "toupie") {
+      // Plan 59 / R35: recognizer + branch/direct-arrow counts + HH degree table +
+      // the char-0 sl_a lower bound.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (!b.is_toupie) {
+        div.appendChild(h("p", { text: "The algebra is not a toupie." }));
+      } else {
+        div.appendChild(h("p", { text: "Toupie: " + b.branch_count + " branch(es), "
+          + b.direct_arrow_count + " direct source→sink arrow(s)." }));
+        if (b.hh) {
+          var thHr = h("tr"); thHr.appendChild(h("th", { text: "n" }));
+          var thDr = h("tr"); thDr.appendChild(h("th", { text: "dim HH^n" }));
+          b.hh.forEach(function (d, n) {
+            thHr.appendChild(h("td", { text: String(n) }));
+            thDr.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, thHr, thDr));
+        }
+        if (b.sl_a) {
+          div.appendChild(h("p", { text: "sl_a ⊆ HH¹ (char 0): a = " + b.sl_a.a
+            + ", dim sl_a = " + b.sl_a.dim
+            + (b.sl_a.char0 ? "" : " (char ≠ 0 — inclusion not claimed)") }));
+        }
+        if (b.note) div.appendChild(h("p", { text: b.note }));
+      }
     } else if (name === "derived_compare") {
       // Plan 43: the two fingerprints side by side + the honest verdict. Equal
       // rows are a NECESSARY condition for derived equivalence, never a proof.
@@ -3502,7 +3555,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver"]}
@@ -3991,6 +4044,8 @@
     fractional_cy: { cb: "fractional_cy" },
     derived_fingerprint: { cb: "derived_fingerprint" },
     strings: { cb: "strings" },
+    string_homological: { cb: "string_homological" },
+    toupie: { cb: "toupie" },
     quasi_hereditary: { cb: "quasi_hereditary" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },

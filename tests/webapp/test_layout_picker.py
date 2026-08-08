@@ -36,6 +36,8 @@ ALL_KINDS = {
     "radical_filtration_ss", "ar_quiver", "derived_compare",
     # Plan 53 (2026-08-07): the stable-category fractional Calabi-Yau dimension.
     "fractional_cy",
+    # Plan 59 (2026-08-07): the R34 homological string test + R35 toupie structure.
+    "string_homological", "toupie",
 }
 
 
