@@ -474,6 +474,16 @@ class Algebra:
         from quiverlab.modules.opposite import opposite_algebra
         return opposite_algebra(self)
 
+    def skew_group(self, action):
+        """The skew group algebra ``A rtimes G`` (smash product ``A # kG``) for an
+        explicit finite ``GroupAction`` acting by algebra automorphisms; a
+        first-class structure-constant Algebra of dimension ``|G|*dim A`` (Plan 74).
+        Characteristic-agnostic; the Stefan HH decomposition
+        (``quiverlab.hochschild.skew_group.stefan_decomposition``) needs
+        ``char k does not divide |G|``."""
+        from quiverlab.families.skew_group import skew_group_algebra
+        return skew_group_algebra(self, action)
+
     def hom(self, M, N):
         """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.hom import hom_dim
