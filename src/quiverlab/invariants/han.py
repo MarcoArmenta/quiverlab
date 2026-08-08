@@ -329,3 +329,138 @@ def one_sided_projective(ext, *, side="auto", bound=16):
         side=winner, projective=(winner is not None),
         pd_left=pdl, pd_right=pdr,
         note=f"pd_B(A/B) left={pdl}, right={pdr}; projective side = {winner}")
+
+
+# --------------------------------------------------------------------------- #
+# the bounded-extension certificate (three legs)
+# --------------------------------------------------------------------------- #
+@dataclass
+class BoundedCertificate:
+    """The three-leg bounded-extension certificate (CLMS Def. 2.3). A data report."""
+    bounded: "bool | None"               # True (a side) / False / None (undecided)
+    side: "str | None"                   # "left" | "right" | None
+    tensor_nilpotent: TensorNilpotency
+    one_sided: OneSidedProjectivity
+    pd_Be: dict                          # {route, status, gldim_B|value, ...}
+    note: str = ""
+
+
+def bounded_extension(A, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16):
+    """Decide whether ``B subset A`` (by removing ``new_arrows``) is a **bounded**
+    extension: ``A/B`` (i) ``B``-tensor nilpotent, (ii) finite ``pd_{B^e}``, (iii)
+    one-sided ``B``-projective (CLMS Def. 2.3). Bounded ``<=>`` all three on a FIXED
+    side. Returns a :class:`BoundedCertificate` -- honest ``None`` when a leg is
+    undecided."""
+    ext = arrow_removal_subalgebra(A, new_arrows)
+    tn = is_tensor_nilpotent(ext, cap=nilp_cap)
+    if tn.status == "not_nilpotent":
+        # leg (i) fails => not a bounded extension via this route
+        osp = OneSidedProjectivity(side=None, projective=False, note="leg (i) False")
+        return BoundedCertificate(
+            bounded=False, side=None, tensor_nilpotent=tn, one_sided=osp,
+            pd_Be={"route": None, "status": "n/a"},
+            note="A/B is not tensor-nilpotent (leg i) -- not bounded (CLMS Ex. 5.5)")
+    if tn.status == "undecided":
+        osp = OneSidedProjectivity(side=None, projective=None, note="leg (i) undecided")
+        return BoundedCertificate(
+            bounded=None, side=None, tensor_nilpotent=tn, one_sided=osp,
+            pd_Be={"route": None, "status": "undecided"},
+            note="leg (i) tensor-nilpotency undecided (cap reached)")
+    # leg (i) nilpotent -> the other two legs
+    pd = finite_pd_Be(ext, pd_cap=pd_cap)
+    osp = one_sided_projective(ext, side=side)
+    pd_finite = True if pd["status"] == "finite" else None
+    if osp.projective and pd_finite:
+        return BoundedCertificate(
+            bounded=True, side=osp.side, tensor_nilpotent=tn, one_sided=osp, pd_Be=pd,
+            note=f"bounded on the {osp.side} side: A/B tensor-nilpotent (index "
+                 f"{tn.index}), pd_{{B^e}} finite ({pd['route']}), {osp.side}-projective")
+    reason = []
+    if not osp.projective:
+        reason.append("A/B not one-sided B-projective")
+    if not pd_finite:
+        reason.append(f"finite pd_{{B^e}} {pd['status']}")
+    return BoundedCertificate(
+        bounded=(None if (pd_finite is None) else False),
+        side=None, tensor_nilpotent=tn, one_sided=osp, pd_Be=pd,
+        note="not bounded: " + "; ".join(reason))
+
+
+# --------------------------------------------------------------------------- #
+# Han transport -- the injection/iso LADDER (CLMS Thm 3.1/4.6, H1)
+# --------------------------------------------------------------------------- #
+def transport_verdict(nilp, pd_finite, one_sided):
+    """The pure ladder function (H1). ``nilp``/``pd_finite``/``one_sided`` are
+    ``True``/``False``/``None`` (None = undecided). There is NO "iso from leg (i)
+    alone" verdict."""
+    if nilp is False:
+        return "not_bounded"
+    if nilp is None:
+        return "undecided"
+    if pd_finite is True:
+        return "bounded" if one_sided is True else "pd_injection"
+    return "nilpotent_injection"
+
+
+@dataclass
+class HanTransport:
+    """The Han-transport certificate -- the injection/iso LADDER (H1). A data report."""
+    transport: str                       # bounded|pd_injection|nilpotent_injection|not_bounded|undecided
+    certificate: BoundedCertificate
+    han_B: "bool | None" = None
+    han_A: "bool | None" = None
+    injection_from: "int | None" = None  # CERTIFIED LOWER BOUND (H3), not a precise threshold
+    injection_bound_ok: "bool | None" = None
+    references: list = _field(default_factory=list)
+    note: str = ""
+
+
+_HAN_REFERENCES = ["clms_bounded_extensions", "clms_jacobi_zariski",
+                   "kaygun_jacobi_zariski", "han_conjecture", "assem_book"]
+
+
+def han_transport(A, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16, hh_top=None):
+    """Transport Han's conjecture across ``B subset A`` and label the claim by the
+    exact row of the injection/iso ladder (H1). The self-cert gate is the **injection
+    bound** ``dim HH_m(B) <= dim HH_m(A)`` on the shipped HH engines, with **equality
+    asserted only under ``"bounded"``**."""
+    cert = bounded_extension(A, new_arrows, side=side, nilp_cap=nilp_cap, pd_cap=pd_cap)
+    tn = cert.tensor_nilpotent
+    nilp = {"nilpotent": True, "not_nilpotent": False, "undecided": None}[tn.status]
+    pd_finite = (True if cert.pd_Be.get("status") == "finite"
+                 else (None if nilp else None))
+    one_sided = cert.one_sided.projective if nilp else None
+    transport = transport_verdict(nilp, pd_finite, one_sided)
+
+    top = hh_top if hh_top is not None else 6
+    engine = "cs" if A.domain.name.startswith("QQ") else "auto"
+    ext = arrow_removal_subalgebra(A, new_arrows)
+    hh_A = A.hochschild_homology(top, engine=engine, verbose=False).dims
+    hh_B = ext.B.hochschild_homology(top, engine=engine, verbose=False).dims
+    inj_ok = all(b <= a for a, b in zip(hh_A, hh_B))
+    equality = (hh_A == hh_B)
+    if transport == "bounded" and not equality:
+        # the iso row demands equality for * >> 0; a mismatch is a loud drift
+        raise QuiverlabError(
+            "han_transport self-cert FAILED: transport='bounded' asserts "
+            f"HH_*(B) ~= HH_*(A) for * >> 0, but HH_*(B)={hh_B} != HH_*(A)={hh_A}",
+            hint="a bounded extension forces the isomorphism (CLMS Thm 4.6)")
+
+    # Han per side, honestly scaled (claim the iff only under "bounded")
+    han_B = True if cert.pd_Be.get("route") == "gldim" else None
+    han_A = han_B if transport == "bounded" else None
+
+    injection_from = tn.index          # certified LOWER BOUND (H3), not a precise degree
+    claim = {
+        "bounded": "HH_*(B) ~= HH_*(A) (iso) => full iff B |= Han <=> A |= Han (Thm 4.6)",
+        "pd_injection": "HH_*(B) ↪ HH_*(A) (injection, ordinary coeff)",
+        "nilpotent_injection": "H_*(B,A) ↪ H_*(A,A) (injection, coefficients in A)",
+        "not_bounded": "not a bounded extension via this route (Ex. 5.5)",
+        "undecided": "honest cap reached; per-leg status reported",
+    }[transport]
+    return HanTransport(
+        transport=transport, certificate=cert, han_B=han_B, han_A=han_A,
+        injection_from=injection_from, injection_bound_ok=inj_ok,
+        references=list(_HAN_REFERENCES),
+        note=f"{claim}; injection bound dim HH_m(B) <= dim HH_m(A) held: {inj_ok}"
+             + ("; EQUALITY (bounded => iso)" if equality and transport == "bounded" else ""))

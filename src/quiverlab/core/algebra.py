@@ -534,6 +534,34 @@ class Algebra:
         from quiverlab.families.extension import enveloping_algebra
         return enveloping_algebra(self)
 
+    def bounded_extension(self, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16):
+        """Decide whether ``B subset A`` (removing ``new_arrows``) is a **bounded**
+        extension (CLMS ``2101.02597`` Def. 2.3, Plan 73 / R7): ``A/B`` tensor
+        nilpotent + finite ``pd_{B^e}`` + one-sided ``B``-projective. Returns a
+        ``BoundedCertificate`` (honest ``None`` when a leg is undecided)."""
+        from quiverlab.invariants.han import bounded_extension
+        return bounded_extension(self, new_arrows, side=side, nilp_cap=nilp_cap,
+                                 pd_cap=pd_cap)
+
+    def han_transport(self, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16,
+                      hh_top=None):
+        """Transport Han's conjecture across ``B subset A`` (CLMS Thm 3.1/4.6, Plan
+        73 / R7). Labels the claim by the exact row of the injection/isomorphism
+        LADDER (bounded => iso; (i)+(ii) => ordinary injection; (i) => mixed-coeff
+        injection). Returns a ``HanTransport``; the self-cert gate is the injection
+        bound ``dim HH_m(B) <= dim HH_m(A)``, equality only under ``"bounded"``."""
+        from quiverlab.invariants.han import han_transport
+        return han_transport(self, new_arrows, side=side, nilp_cap=nilp_cap,
+                             pd_cap=pd_cap, hh_top=hh_top)
+
+    def relative_homology(self, new_arrows, top):
+        """``HH_*(A|B)`` (``B`` = ``A`` minus ``new_arrows``) via the CLMS normalized
+        relative bar complex (Plan 73 / R7); finite when ``A/B`` is tensor-nilpotent
+        (Cor. 2.4). Returns an ``HHTable``."""
+        from quiverlab.families.extension import arrow_removal_subalgebra
+        from quiverlab.hochschild.jacobi_zariski import relative_homology
+        return relative_homology(arrow_removal_subalgebra(self, new_arrows), top)
+
     def radical_filtration(self, budget_modules=256, budget_dim=4096):
         """The radical filtration of ``mod A`` (Plan 57 / R37): exact
         ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the
