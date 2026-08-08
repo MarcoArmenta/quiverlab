@@ -226,3 +226,13 @@ def bv_matrices_symmetric(A, top, max_cells=4_000_000):
     from quiverlab.hochschild.bv.bracket import attach_bracket_arbiter
     attach_bracket_arbiter(A, bv, top, max_cells)
     return bv
+
+
+def bv_matrices_semisimple(A, top, max_cells=4_000_000):
+    """Delta on HH^*(A) for a Frobenius algebra with a SEMISIMPLE Nakayama
+    automorphism (LZZ route, spec s2.1): the nu-twisted homology HH_*(A, {}_1A_nu)
+    (P52) + the twisted Connes B_sigma + the nu-twisted pairing; the twist
+    DIRECTION is fixed by the bracket arbiter. Implemented in Task E
+    (``bv/twisted_connes.py``)."""
+    from quiverlab.hochschild.bv.twisted_connes import bv_matrices_twisted
+    return bv_matrices_twisted(A, top, max_cells)
