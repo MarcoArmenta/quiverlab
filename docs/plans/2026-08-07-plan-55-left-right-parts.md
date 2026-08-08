@@ -1387,3 +1387,27 @@ git commit -m "docs(verification): Plan-55 left/right-parts oracle rows + ACT/AC
   example; B/D task merge). Verified live in the venv: rad²=0 A₅ has 9 indecomposables,
   `𝓛_A={S₁,S₂,P₂,P₃}`, `𝓡_A={S₄,S₅,P₄,P₅}`, complement `{S₃}` (pd 2, id 2), `e_λ={1,2,3}`,
   `e_ρ={3,4,5}`, gl.dim 4, and `D 𝓡_A = 𝓛_{A^op}` (with `|𝓡_A|=4` of 9).
+
+---
+
+## Addendum (2026-08-07, P61 contract): atlas `pd_le_1` / `id_le_1` vectors
+
+P61 (the recognizer ladder, R18 — `docs/plans/2026-08-07-plan-61-recognizer-ladder.md`) needs,
+per indecomposable, the two booleans this plan **already computes** for its parts sweep —
+`pd X ≤ 1` and `id X ≤ 1` (the `_pd_le_1` / `_id_le_1` helpers, `X.projective_resolution(2)
+.betti(2) == 0` and `injective_resolution(X,2).betti(2) == 0`). Expose them as two **additive**
+`LeftRightAtlas` fields, index-aligned with `_modules` / the `left`/`right` records:
+
+- `pd_le_1: tuple[bool, ...]` — `pd_le_1[i]` is `True` iff `pd(U[i]) ≤ 1`.
+- `id_le_1: tuple[bool, ...]` — `id_le_1[i]` is `True` iff `id(U[i]) ≤ 1`.
+
+**Zero new mathematics** — the sweep already builds `pd_ok` / `id_ok` (Task A Step 3); this is a
+payload addition (assign the existing vectors into the dataclass, alongside `_leq`). It lets P61
+compute the **shod QT2 route** (`A` is shod ⟺ every indec has `pd ≤ 1 or id ≤ 1`) as an
+INDEPENDENT cross-check of the complement-empty route (survey Thm 4.1 (a)⟺(b)), and gives the
+shod/ada witnesses honest per-module `{pd_le_1, id_le_1}` flags (rather than exact pd/id
+numbers, which this plan does not compute past 2). Populated in **Task A** (the fields are
+assembled with the other atlas fields — no task-boundary regression); keep them **engine-internal**
+(P61 reads the dataclass in-process) so **no golden / canonical-key change** (`left_right_parts_block`
+need not serialize them — if it later does, add them under the byte gate). Requested at P61's
+adversarial-review round 2 (2026-08-07); this addendum is committed together with the P61 plan.
