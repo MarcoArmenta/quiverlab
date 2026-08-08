@@ -38,6 +38,7 @@
   "block.quasi_hereditary.title": "拟遗传结构",
   "block.quasi_hereditary.order_note": "拟遗传性依赖于序；本报告使用自然顶点序。",
   "inv.tau_tilting": "τ-倾斜引擎 + 墙与腔扇形",
+  "inv.left_right_parts": "左部 / 右部 + 支撑代数",
   "tt.title": "τ-倾斜：支撑 τ-倾斜对、交换图与扇形",
   "tt.pairs": "支撑 τ-倾斜对",
   "tt.chambers": "腔（g-向量锥）",

@@ -38,6 +38,7 @@
   "block.quasi_hereditary.title": "Quasi-hereditary structure",
   "block.quasi_hereditary.order_note": "quasi-heredity is order-dependent; this report uses the natural vertex order",
   "inv.tau_tilting": "τ-tilting engine + wall-and-chamber fan",
+  "inv.left_right_parts": "Left / right parts + support algebras",
   "tt.title": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
   "tt.pairs": "Support τ-tilting pairs",
   "tt.chambers": "Chambers (g-vector cones)",

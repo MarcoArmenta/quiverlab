@@ -11,9 +11,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from quiverlab.errors import QuiverlabError
+from quiverlab.errors import DepthLimitError, QuiverlabError
 from quiverlab.modules.hom import hom_dim, is_isomorphic
 from quiverlab.modules.injective import injective_resolution
+
+_LR_REFS = ("act_left_right", "aclv_supports", "organising_module_category")
 
 
 @dataclass
@@ -362,3 +364,62 @@ def left_right_parts(A, *, budget=256):
         universe_size=len(U), is_complete=True, status="complete", note=ar.note or "",
         pd_le_1=tuple(pd_ok), id_le_1=tuple(id_ok),
         _modules=tuple(U), _leq=tuple(tuple(r) for r in leq))
+
+
+def _sorted_dimvec(dv):
+    return {str(w): int(n) for w, n in sorted(dv.items(), key=lambda kv: str(kv[0]))}
+
+
+def _rec_json(r):
+    return {"name": r["name"], "dimvec": _sorted_dimvec(r["dimvec"])}
+
+
+def _support_json(sa):
+    if sa is None:
+        return None
+    return {"vertices": list(sa.vertices), "dim": int(sa.dim),
+            "components": [{"vertices": list(c["vertices"])} for c in sa.components]}
+
+
+def _empty_lr_block(n, status, note):
+    return {"kind": "left_right_parts", "n": int(n), "complete": False, "status": status,
+            "universe_size": None, "left": [], "right": [], "intersection": [],
+            "complement": [], "ext_injectives_left": [], "ext_projectives_right": [],
+            "left_support": None, "right_support": None,
+            "projective_placement": {}, "injective_placement": {}, "note": note,
+            "references": list(_LR_REFS)}
+
+
+def left_right_parts_block(A, *, budget=256):
+    """The JSON block shared byte-for-byte by both runners (Plan 55, Task E). An ALGEBRA-level
+    kind (schema v1, no module block): the module-category atlas -- both parts named with
+    S_v/P_v/I_v, the complement (P61 laura datum), the Ext-injectives (P60 hooks) and the two
+    support algebras. `Module`s and the reachability matrix are stripped. A char-scope
+    identification refusal (large GF(p) is_isomorphic) is surfaced as a loud `error` field
+    (the Plan-30 per-entry precedent -- never a 500)."""
+    n = len(A.quiver.vertices) if A.quiver is not None else 0
+    try:
+        atlas = left_right_parts(A, budget=budget)
+    except (QuiverlabError, DepthLimitError) as e:
+        block = _empty_lr_block(n, "error", None)
+        block["error"] = str(e)
+        return block
+    if not atlas.is_complete:
+        return _empty_lr_block(n, atlas.status, atlas.note or None)
+    verts = list(A.quiver.vertices)
+    return {
+        "kind": "left_right_parts", "n": int(n), "complete": True, "status": atlas.status,
+        "universe_size": int(atlas.universe_size),
+        "left": [_rec_json(r) for r in atlas.left],
+        "right": [_rec_json(r) for r in atlas.right],
+        "intersection": [_rec_json(r) for r in atlas.intersection],
+        "complement": [_rec_json(r) for r in atlas.complement],
+        "ext_injectives_left": [_rec_json(r) for r in atlas.ext_injectives_left],
+        "ext_projectives_right": [_rec_json(r) for r in atlas.ext_projectives_right],
+        "left_support": _support_json(atlas.left_support),
+        "right_support": _support_json(atlas.right_support),
+        "projective_placement": {str(v): atlas.projective_placement[v] for v in verts},
+        "injective_placement": {str(v): atlas.injective_placement[v] for v in verts},
+        "note": atlas.note or None,
+        "references": list(_LR_REFS),
+    }

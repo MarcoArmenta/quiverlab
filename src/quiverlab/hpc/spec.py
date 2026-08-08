@@ -255,6 +255,13 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # left_right_parts carries a MODULE BUDGET, not a degree range (Plan 55): the budget
+    # caps the knitted indecomposable universe, so it bypasses the 'name:0..N' grammar too.
+    if s == "left_right_parts" or s.startswith("left_right_parts:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"left_right_parts budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="left_right_parts", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SpecError(f"unparseable compute item {s!r}")
@@ -1439,6 +1446,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = ar_quiver_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Left/right parts (P55, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
+    # degree range ('left_right_parts' / 'left_right_parts:256'). The module-category atlas --
+    # both parts + complement + Ext-injectives + the two support algebras. Honest
+    # semi-decision (complete iff rep-finite non-self-injective, else status='budget'/
+    # 'unsupported'); a char-scope identification refusal is an `error` field, never a 500.
+    # Both runners share left_right.left_right_parts_block, so the blocks are byte-identical.
+    if kind == "left_right_parts":
+        budget = item.hi if item.hi is not None else 256
+        from quiverlab.modules.left_right import left_right_parts_block
+        block = left_right_parts_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # Per-invariant citation keys. NEVER A.citations() here: that set
     # ACCUMULATES across the run, so every block after (or beside) an HH
     # computation echoed the bar-resolution key -- the Cartan matrix was
@@ -2291,6 +2310,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "ar_quiver":
                  lambda it: ("A.ar_quiver(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
+             "left_right_parts":
+                 lambda it: ("A.left_right_parts("
+                             f"budget={it.hi if it.hi is not None else 256})"),
              "derived_compare":
                  lambda it: ("from quiverlab.derived import compare_fingerprints, "
                              "derived_fingerprint\n"

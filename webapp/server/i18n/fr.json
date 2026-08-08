@@ -38,6 +38,7 @@
   "block.quasi_hereditary.title": "Structure quasi-héréditaire",
   "block.quasi_hereditary.order_note": "la quasi-hérédité dépend de l'ordre ; ce rapport utilise l'ordre naturel des sommets",
   "inv.tau_tilting": "Moteur τ-tilting + éventail des murs et chambres",
+  "inv.left_right_parts": "Parties gauche / droite + algèbres support",
   "tt.title": "τ-tilting : paires τ-tilting de support, graphe d'échange et éventail",
   "tt.pairs": "Paires τ-tilting de support",
   "tt.chambers": "Chambres (cônes de g-vecteurs)",

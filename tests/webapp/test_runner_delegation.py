@@ -216,7 +216,17 @@ never hide behind one:
     ``weak-on-generators``). Pure ADDITION: every pre-existing entry was verified
     byte-identical BEFORE the two were appended; both runners share the library builders
     (``homological_profile`` / ``fractional_cy_block``), so the Pyodide twin agrees
-    (``tests/webapp/test_phidim_fcy_gui_p53.py``). ``canonical_key`` is request-derived."""
+    (``tests/webapp/test_phidim_fcy_gui_p53.py``). ``canonical_key`` is request-derived.
+  * 2026-08-07 (``left_right_parts_kA3`` ADDED, Plan 55 R15): a NEW fixture for the
+    ``left_right_parts`` ALGEBRA-level compute kind (schema v1, kA3 = 1->2->3 over QQ,
+    budget 256 -- the module-category atlas: L_A = R_A = ind A (6 indecomposables), empty
+    complement, both support algebras = A). Pure ADDITION: every pre-existing entry was
+    verified byte-identical BEFORE the new one was appended (the reserialization pre-check
+    asserted the file round-trips unchanged, and the delegation test passed on all prior
+    entries). The budget rides in the ``compute`` string (no new request field), so the
+    ``canonical_key`` is request-derived; both runners share
+    ``modules.left_right.left_right_parts_block``, so the Pyodide twin agrees
+    (``tests/webapp/test_left_right_parts_p55.py`` / ``tests/gui/test_left_right_runner_twin.py``)."""
 import json
 import pathlib
 
