@@ -394,6 +394,14 @@ ported and wired in:
   for `kA_n`) — every enumeration budget-capped with the honest
   complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
   drawn no-code in the browser for n = 2, 3** — the C4 flagship.
+- **Silting theory (Aihara–Iyama, P67).** A silting-object verifier in `K^b(proj A)`
+  (presilting `Hom_{D^b}(T,T[n>0]) = 0` on the exact positive window + honest
+  three-valued generation — certified on the tilting / 2-term / local classes, `"unknown"`
+  where K₀ alone cannot decide), single silting mutation `μ_X^±` via one approximation
+  triangle (the mutant re-verifies silting, `μ^-∘μ^+ = id`), a bounded-radius exploration
+  with loud truncation (the silting quiver can be infinite — no general BFS; complete only
+  for local), and the co-t-structure dictionary — cross-checked against P45's τ-tilting
+  (2-term slice) and Oppermann's `End(μT)` quiver rule, no-code in the browser.
 - **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
   left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
   the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —
