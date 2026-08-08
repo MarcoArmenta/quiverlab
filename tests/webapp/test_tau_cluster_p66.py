@@ -37,8 +37,14 @@ def test_tau_cluster_block_shape(tmp_path):
 
 def test_tau_tilting_infinite_status(tmp_path):
     # 2-Kronecker, small budget -> complete False, status budget/error, category+picture_group
-    # null, note set, no crash.
-    body = _req([1, 2], {"a": [1, 2], "b": [1, 2]}, [], budget=40)
+    # null, note set, no crash. Over GF(32003) budget=8 (char > dim, in P45 scope) to dodge the
+    # >120s QQ BFS (the P64 precedent -- adjust-to-reality); the refusal is IDENTICAL.
+    body = {"schema": 1,
+            "algebra": {"kind": "quiver", "vertices": [1, 2],
+                        "arrows": {"a": [1, 2], "b": [1, 2]}, "relations": [],
+                        "field": {"kind": "GF", "p": 32003, "n": 1}},
+            "compute": ["tau_cluster:8"],
+            "artifacts": {"pdf": False, "tikz": False}}
     out = spec_run(parse_request(body), tmp_path)
     b = out["results"]["tau_cluster"]
     assert b["complete"] is False and b["status"] in ("budget", "error")
@@ -49,7 +55,9 @@ def test_block_carries_citations_and_kind(tmp_path):
     out = spec_run(parse_request(_KA3), tmp_path)
     b = out["results"]["tau_cluster"]
     assert b["kind"] == "tau_cluster"
-    # every reference resolves to a (key, human) citation pair
-    keys = {k for (k, _h) in b["citations"]}
+    # the block names the P66 sources in `references` (snake registry keys)...
     for k in ("buan_marsh_wide", "hanson_igusa", "igusa_todorov_weyman", "igusa_todorov_cat0"):
-        assert k in keys, k
+        assert k in b["references"], k
+    # ...and every reference resolves to a (bibtex_key, human) citation pair.
+    assert b["citations"] and all(len(pair) == 2 for pair in b["citations"])
+    assert len(b["citations"]) == len(b["references"])

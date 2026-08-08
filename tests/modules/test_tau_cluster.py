@@ -7,7 +7,7 @@ K(pi,1) theorem-anchored (Nakayama / hereditary Dynkin). QQ-scope (the P45 char 
 import pytest
 
 from quiverlab import Quiver, linear_path_algebra
-from quiverlab.fields import QQ
+from quiverlab.fields import GF, QQ
 from quiverlab.tautilting.cluster_morphism import tau_cluster_category
 from quiverlab.tautilting.congruence import wide_subcategories
 from quiverlab.tautilting.torsion import bricks
@@ -145,7 +145,13 @@ def test_kA3_vs_kZ3rad2_share_g_fan_but_split_differs():
 @lit
 def test_tau_tilting_infinite_refuses_no_partial_category():
     # 2-Kronecker: tau-tilting-INFINITE (DIJ) -> W(A) is infinite -> NO category emitted.
-    K = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=QQ)
-    C = tau_cluster_category(K, budget=40)
+    # DEVIATION FROM THE PLAN VERBATIM (adjust-to-reality, engine cost): the honest refusal
+    # only needs the exchange graph NOT to close, which happens at ANY budget for a
+    # tau-tilting-infinite algebra -- so we use budget=8 over GF(32003) (char 32003 > dim 4,
+    # in P45 scope; the P64 test_tau_tilting_infinite_refuses_no_partial_lattice precedent)
+    # instead of budget=40 over QQ, whose BFS exceeds 120s (P64-measured). The asserted
+    # refusal is IDENTICAL.
+    K = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=GF(32003))
+    C = tau_cluster_category(K, budget=8)
     assert C.is_complete is False and C.status in ("budget", "error")
     assert C.objects == () and C.morphism_count is None and C.face_vector is None and C.note

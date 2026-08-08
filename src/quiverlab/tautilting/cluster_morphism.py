@@ -346,7 +346,8 @@ def tau_cluster_category(A, *, budget=512) -> TauClusterCategory:
     _require_quiver(A, "tau_cluster_category")
     eg, data = _build_gfan(A, budget)
     if data is None:
-        kpi1, reason = _kpi1_verdict(A)
+        # W(A) is infinite here -- the K(pi,1) verdict is moot (no finite classifying space),
+        # so it is honestly None regardless of the algebra's Nakayama/Dynkin type.
         return TauClusterCategory(
             algebra=A, objects=(), object_count=None, morphisms=(), morphism_count=None,
             out_degree={}, face_vector=None, g_fan_face_vector=None,
