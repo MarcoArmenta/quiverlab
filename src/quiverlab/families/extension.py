@@ -23,12 +23,19 @@ cross-consistency test ``remove_arrows == arrow_removal_subalgebra`` on an inert
 honest constructor drives the shipped ``families/_present.py::present_from_pi``
 (Plan 44) to extract ``ker pi`` and certify ``dim B``.
 """
+import itertools
 from dataclasses import dataclass, field as _field
 
 from quiverlab.errors import QuiverlabError
 from quiverlab.families._present import present_from_pi
+from quiverlab.fields.linalg import rank, rref
 
 _EXT_CITATIONS = ("clms_bounded_extensions", "han_conjecture")
+
+#: guard on the number of columns ``|R|^m`` of a direct tensor-power computation
+#: (the relative-path tensor blows up combinatorially; past this the direct route
+#: is refused as infeasible and the recognizer falls to the capped semi-decision).
+_MAX_TENSOR_CELLS = 20000
 
 
 # --------------------------------------------------------------------------- #
@@ -82,6 +89,156 @@ class Extension:
 
     def _new_arrow_set(self):
         return set(self.new_arrows)
+
+    def length_index(self):
+        """CLMS Def. 5.19: ``max F-length over an A-basis + 1``. When ``A/B`` is
+        tensor-nilpotent the nilpotency index is ``<=`` this (finite since ``A`` is
+        f.d.), so ``(A/B)^{ox L} = 0`` iff ``A/B`` is nilpotent."""
+        Fset = self._new_arrow_set()
+        return max((_f_length(l, Fset) for l in self.A.basis_labels), default=0) + 1
+
+    # -- relative-path tensor powers over B (CLMS Def. 2.3 / 5.x) ------------- #
+    def _tensor_data(self):
+        """Cache ``(nR, R_right, R_left)``: the right/left action of every
+        ``B``-generator (vertex idempotent + kept arrow) on the relative-path basis,
+        expressed in R-local coordinates. Built once, reused by every power."""
+        cached = getattr(self, "_td_cache", None)
+        if cached is not None:
+            return cached
+        A = self.A
+        dom = A.domain
+        labels = A.basis_labels
+        Fset = self._new_arrow_set()
+        # B-generators: vertex idempotents + kept arrows (F-free single tokens)
+        gens = [i for i, l in enumerate(labels) if l.startswith("e_")]
+        gens += [i for i, l in enumerate(labels)
+                 if _f_length(l, Fset) == 0 and len(_tokens(l)) == 1]
+        nR = len(self.rel_idx)
+
+        def projR(vec):
+            return [vec[self.rel_idx[k]] for k in range(nR)]
+
+        R_right, R_left = {}, {}
+        for k, ai in enumerate(self.rel_idx):
+            er = A._basis_vec(ai)
+            for g in gens:
+                eg = A._basis_vec(g)
+                R_right[(k, g)] = projR(A.multiply(er, eg))   # r . g
+                R_left[(k, g)] = projR(A.multiply(eg, er))    # g . r
+        cached = (nR, tuple(gens), R_right, R_left)
+        self._td_cache = cached
+        return cached
+
+    def _flat(self, tup, nR):
+        idx = 0
+        for t in tup:
+            idx = idx * nR + t
+        return idx
+
+    def _tensor_relations(self, m):
+        """The relation rows of ``(A/B)^{ox_k m} / <..(x_i . g) ox x_{i+1}.. -
+        ..x_i ox (g . x_{i+1})..>`` (``g`` over ``B``-generators, adjacent slots),
+        plus ``ncols = |R|^m``. Loud when ``|R|^m`` exceeds the cell guard."""
+        A = self.A
+        dom = A.domain
+        nR, gens, R_right, R_left = self._tensor_data()
+        ncols = nR ** m
+        if ncols > _MAX_TENSOR_CELLS:
+            raise QuiverlabError(
+                f"tensor power (A/B)^(ox {m}) has |R|^{m} = {ncols} columns, past the "
+                f"cell guard {_MAX_TENSOR_CELLS}",
+                hint="the direct tensor route is infeasible here; use the certificate "
+                     "route or a smaller cap")
+        rows = []
+        for tup in itertools.product(range(nR), repeat=m):
+            for i in range(m - 1):
+                for g in gens:
+                    lvec = R_right[(tup[i], g)]         # x_i . g  (combo over R)
+                    rvec = R_left[(tup[i + 1], g)]      # g . x_{i+1}
+                    acc = {}
+                    for s, c in enumerate(lvec):
+                        if not dom.is_zero(c):
+                            f = self._flat(tup[:i] + (s,) + tup[i + 1:], nR)
+                            acc[f] = dom.add(acc.get(f, dom.zero()), c)
+                    for s, c in enumerate(rvec):
+                        if not dom.is_zero(c):
+                            f = self._flat(tup[:i + 1] + (s,) + tup[i + 2:], nR)
+                            acc[f] = dom.add(acc.get(f, dom.zero()), dom.neg(c))
+                    if any(not dom.is_zero(v) for v in acc.values()):
+                        dense = [dom.zero()] * ncols
+                        for f, c in acc.items():
+                            dense[f] = c
+                        rows.append(dense)
+        return rows, ncols
+
+    def _tensor_rref(self, m):
+        """Cache the row-reduced relation matrix ``(Rr, pivots, ncols)`` of
+        ``(A/B)^{ox_B m}`` -- reused by ``tensor_power_dim`` and every membership
+        test (so multiple ``has_J_interrupter`` calls do NOT re-eliminate)."""
+        cache = getattr(self, "_rref_cache", None)
+        if cache is None:
+            cache = {}
+            self._rref_cache = cache
+        if m not in cache:
+            rows, ncols = self._tensor_relations(m)
+            Rr, pivots = rref(rows, self.A.domain) if rows else ([], [])
+            cache[m] = (Rr, pivots, ncols)
+        return cache[m]
+
+    def tensor_power_dim(self, m):
+        """``dim_k (A/B)^{ox_B m}`` (exact). ``m = 0 -> dim B`` is not modelled here
+        (``B`` is the tensor unit); ``m >= 1`` by the B-tensor relation quotient."""
+        if m <= 0:
+            raise QuiverlabError("tensor_power_dim needs m >= 1",
+                                 hint="(A/B)^(ox 0) = B is the tensor unit, not modelled")
+        nR = len(self.rel_idx)
+        if m == 1:
+            return nR
+        _Rr, pivots, ncols = self._tensor_rref(m)
+        return ncols - len(pivots)
+
+    def _tensor_feasible(self, m):
+        return len(self.rel_idx) ** m <= _MAX_TENSOR_CELLS
+
+    def _tensor_element_is_zero(self, tup):
+        """Is the class of the basis ``m``-tuple ``tup`` (R-local indices) zero in
+        ``(A/B)^{ox_B m}``? Reduce ``e_tup`` against the cached relation RREF."""
+        dom = self.A.domain
+        Rr, pivots, ncols = self._tensor_rref(len(tup))
+        v = [dom.zero()] * ncols
+        v[self._flat(tup, len(self.rel_idx))] = dom.one()
+        for row, pc in zip(Rr, pivots):               # RREF: leading 1 at column pc
+            f = v[pc]
+            if not dom.is_zero(f):
+                for j in range(ncols):
+                    rj = row[j]
+                    if not dom.is_zero(rj):
+                        v[j] = dom.add(v[j], dom.neg(dom.mul(f, rj)))
+        return all(dom.is_zero(x) for x in v)
+
+    # -- relative cycles + J-interrupters (CLMS Def. 5.11 / 5.13) ------------- #
+    def relative_cycles(self, cap=None):
+        """The relative-path cycles: ``A``-basis relative paths that close up
+        (source vertex == target vertex, CLMS Def. 5.11). ``cap`` is accepted for
+        API symmetry (the A-basis is finite, so all cycles are enumerated)."""
+        Q = self.A.quiver
+        labels = self.A.basis_labels
+        out = []
+        for ai in self.rel_idx:
+            toks = _tokens(labels[ai])
+            if Q.word_source(toks) == Q.word_target(toks):
+                out.append(labels[ai])
+        return out
+
+    def has_J_interrupter(self, cycle_label):
+        """Does the relative cycle ``cycle_label`` carry a ``J``-interrupter (CLMS
+        Def. 5.13)? The exact, coordinate-free manifestation: the cycle's self-tensor
+        ``w ox_B w`` vanishes -- the cyclic join across a new arrow reduces into
+        ``B``, so every tensor power collapses there. (``w ox w != 0`` == the cycle
+        survives == no ``J``-interrupter, the Ex. 5.5 witness.)"""
+        rpos = {ai: k for k, ai in enumerate(self.rel_idx)}
+        k = rpos[self.A.basis_labels.index(cycle_label)]
+        return self._tensor_element_is_zero((k, k))
 
 
 # --------------------------------------------------------------------------- #
