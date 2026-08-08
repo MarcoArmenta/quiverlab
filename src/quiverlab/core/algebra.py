@@ -466,6 +466,31 @@ class Algebra:
         from quiverlab.tautilting.mutation import exchange_graph
         return exchange_graph(self, budget_pairs=budget_pairs)
 
+    def torsion_lattice(self, budget=512):
+        """The finite lattice ``tors A`` (Plan 64 / R26, DIRRT): order, join/meet
+        (``is_lattice`` self-cert), join-/meet-irreducibles, canonical join representations,
+        and the SD/modular/distributive flags -- extracted from the P45 oriented exchange
+        graph. Certified complete iff ``A`` is tau-tilting-finite (else an honest
+        ``is_complete=False`` value, no partial-lattice lie)."""
+        from quiverlab.tautilting.congruence import torsion_lattice
+        return torsion_lattice(self, budget=budget)
+
+    def congruence_lattice(self, budget=512):
+        """``Con(tors A)`` (Plan 64 / R26, DIRRT): the congruence lattice via principal
+        cover-congruences, its join-irreducible congruences (= the bricks), the forcing order
+        on bricks, and ``|Con(tors A)|``. Distributive by Funayama-Nakayama. Certified
+        complete iff ``A`` is tau-tilting-finite."""
+        from quiverlab.tautilting.congruence import congruence_lattice
+        return congruence_lattice(self, budget=budget)
+
+    def wide_subcategories(self, budget=512):
+        """The wide-subcategory poset (Plan 64 / R26, Enomoto 2201.00595): computed from
+        ``tors A`` via the core label order AND the kappa order (asserted to coincide),
+        isomorphic to ``(wide A, subseteq)``. Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.congruence import wide_subcategories
+        return wide_subcategories(self, budget=budget)
+
     def is_tilting_module(self, T, n=1):
         """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
         ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,
