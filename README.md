@@ -378,6 +378,12 @@ ported and wired in:
   separation condition, Skowroński) with a witness on failure — three-valued and
   honest per Adian–Rabin (`None` when undecidable); the intrinsic π₁ is refused loudly.
   Clickable via `fundamental_group` / `simply_connected`. **White space in QPA.**
+- **Representation-type certificates (R19, Bongartz; Brüstle–de la Peña–Skowroński).**
+  The combinatorial **Tits form** `q_A`, exact **weak positivity / weak nonnegativity**
+  (Ovsienko's box-6 branch-and-bound + the classified hypercritical list, with the exact
+  witness on every "no"), and the **rep-finite / tame / wild** verdict for strongly
+  simply connected algebras over an algebraically closed field — gated on the P56
+  certificate, honest `None` off scope. Clickable via `tame_wild`.
 - **τ-tilting engine (C4, Adachi–Iyama–Reiten).** Support τ-tilting pairs via
   mutation, the exchange graph + torsion-class lattice with brick labels, 2-term
   silting, King θ-stability, maximal green sequences, and the AIR four-way count
