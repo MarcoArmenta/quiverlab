@@ -280,7 +280,17 @@ never hide behind one:
     (the append is textual, existing bytes untouched); both runners share the library
     builders (``string_homological_block`` / ``toupie_block``), so the Pyodide twin
     agrees (``tests/gui/test_recognizer_runner_twin_p59.py``). ``canonical_key`` is
-    request-derived (schema-1 algebra-only, no ``module`` block)."""
+    request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-08 (``tame_wild_a5_cc`` ADDED, Plan 62 / R19): a NEW algebra-only scalar
+    kind. A5 (linear 1->2->3->4->5) over CC -- the combinatorial Tits form + the
+    rep-finite/tame/wild verdict gated on the P56 certificate: ``rep_type ==
+    "rep-finite"``, ``weakly_positive == true``, ``is_unit_form == true``. Pure
+    ADDITION: every pre-existing entry was verified byte-identical BEFORE the append
+    (60 delegation asserts green first); both runners share the library builder
+    (``invariants.tits_block.tame_wild_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_tame_wild_exposure_p62.py::test_twin_parity``).
+    ``canonical_key`` is request-derived (schema-1 algebra-only, no ``module``
+    block)."""
 import json
 import pathlib
 
