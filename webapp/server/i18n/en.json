@@ -28,6 +28,7 @@
   "block.bracket.title": "Gerstenhaber bracket tables",
   "block.connes_b.title": "Connes differentials",
   "block.bracket.window": "served to degree window {n} (bar-transport bound)",
+  "block.bracket.native": "served natively on the Chouhy–Solotar resolution (homotopy liftings; any exact field, past the bar window)",
   "block.products.zero": "all products vanish in this degree pair",
   "inv.ext_algebra": "Ext-algebra / Koszulity 0..N",
   "inv.recognizers": "Recognizers + Dynkin/Euclidean type",

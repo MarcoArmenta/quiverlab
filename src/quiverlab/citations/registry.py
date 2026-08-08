@@ -46,6 +46,17 @@ REGISTRY: dict = {r.key: r for r in [
        "A bracket formula valid on any projective bimodule resolution "
        "(companion to Negron-Witherspoon).",
        "bracket"),
+    _r("oke_koszul", "Oke2021", "algorithm",
+       "Bracket structure on Hochschild cohomology of Koszul quiver algebras "
+       "using homotopy liftings",
+       "The homotopy-lifting bracket formulation quiverlab's native CS bracket "
+       "implements (Plan 51); source of the section-7 Koszul-quiver worked tables.",
+       "bracket"),
+    _r("witherspoon_gsm204", "WitherspoonGSM204", "foundation",
+       "Hochschild Cohomology for Algebras",
+       "The textbook derivation of the homotopy-lifting Gerstenhaber bracket "
+       "(the expository anchor for quiverlab's native CS bracket).",
+       "bracket"),
     _r("minimal_resolution", "GSZ2001", "algorithm",
        "Minimal projective resolutions",
        "The Green-Solberg-Zacharia minimal module resolution algorithm "

@@ -1,7 +1,9 @@
 """Plan 35 -- Domain-generic CS product tables: cup and cap on the CS HH basis
 via the Plan-20/21 native collapses of the lifted diagonal. Any exact Domain,
-any degree (no bar window). The bracket is NOT served here: its only route is
-the GF(p) tt facade (see the Plan-35 spec amendment)."""
+any degree (no bar window). Plan 51 adds the Gerstenhaber BRACKET as a SEPARATE
+sibling builder ``cs_bracket_tables`` (the Negron-Witherspoon / Volkov homotopy
+lifting on the SAME diagonal); ``cs_product_tables`` keeps serving only cup/cap
+and points a stray "bracket" call at the bracket builder."""
 from quiverlab.errors import QuiverlabError
 # _class_coords: the shared solve-in-[image|reps] lives in hochschild.products
 # (stringify=True is exactly this module's former string-returning behavior).
@@ -19,9 +21,10 @@ def _columns(M):
 def cs_product_tables(A, kind, top, max_cells):
     if kind == "bracket":
         raise QuiverlabError(
-            "the Gerstenhaber bracket has no CS-native route",
-            hint="the bracket is served over GF(p) within the bar window only; "
-                 "construct the algebra over GF(p)")
+            "cs_product_tables serves only cup/cap; the Gerstenhaber bracket has its "
+            "own CS-native builder",
+            hint="call cs_bracket_tables(A, top, max_cells) or "
+                 "Algebra.gerstenhaber_brackets(top, engine='cs')")
     if kind not in ("cup", "cap"):
         raise QuiverlabError(f"unknown product kind {kind!r}")
     from quiverlab.resolutions_cs.build import reduction_system_of
@@ -81,6 +84,74 @@ def cs_product_tables(A, kind, top, max_cells):
                       basis=f"cs/{A.domain.name}", window=None,
                       references=_REFERENCES[kind] + ["chouhy_solotar"],
                       basis_classes=bc, chain_basis=cb, differentials=diffs)
+
+
+def cs_bracket_tables(A, top, max_cells):
+    """Plan 51: the Gerstenhaber bracket table family HH^p (x) HH^q -> HH^{p+q-1}
+    on the CS HH basis, over any exact Domain, PAST the bar window -- the sibling of
+    cs_product_tables built from resolutions_cs.bracket.native_bracket (two
+    Negron-Witherspoon / Volkov homotopy liftings on the shipped diagonal).  Same
+    descent-in-[image|reps] class coordinates and explicit-reps capture; window=None
+    (native, no bar bound)."""
+    from quiverlab.resolutions_cs.build import reduction_system_of
+    from quiverlab.resolutions_cs.homology import cs_hh_basis, _require_admissible
+    from quiverlab.resolutions_cs.resolution import ChouhySolotarResolution
+    from quiverlab.resolutions_cs.bracket import native_bracket
+    from quiverlab.resolutions_cs.homotopy_lifting import homotopy_lifting
+
+    rs = reduction_system_of(A)
+    _require_admissible(rs)
+    dom = A.domain
+    # native_bracket needs S/Delta up to p+q-1 <= top; top+2 covers the pair AND the
+    # cocycle guard's one-past coboundary read (mirrors cs_product_tables' margin).
+    res = ChouhySolotarResolution(A, rs, max_degree=top + 2, max_cells=max_cells)
+    coh = {n: cs_hh_basis(A, n, "coh", max_cells=max_cells) for n in range(top + 1)}
+
+    def _image(out_n):
+        if out_n == 0:                       # B^0 = 0 (delta^{-1} = 0)
+            return []
+        return _columns(res.matrix(out_n - 1, "coh"))
+
+    # DD1: one homotopy lifting per (degree, class index), reused across the whole
+    # row/column of every table instead of rebuilt per (i, j) pair. Canonical solve ->
+    # byte-identical to the uncached path (test_native_bracket_psi_cache_byte_identical).
+    _lift = {}
+
+    def lift(deg, idx):
+        obj = _lift.get((deg, idx))
+        if obj is None:
+            obj = homotopy_lifting(res, coh[deg][idx], deg)
+            _lift[(deg, idx)] = obj
+        return obj
+
+    tables = {}
+    for (p, q) in _pairs("bracket", top):
+        out_n = p + q - 1
+        left, right = coh[p], coh[q]
+        out_reps = coh.get(out_n, [])
+        dl, dr, dout = len(left), len(right), len(out_reps)
+        img = _image(out_n)
+        consts = [[[None] * dr for _ in range(dl)] for _ in range(dout)]
+        for i in range(dl):
+            for j in range(dr):
+                coords = _class_coords(
+                    native_bracket(res, left[i], p, right[j], q,
+                                   psi_f=lift(p, i), psi_g=lift(q, j)),
+                    out_reps, img, dom)
+                for k in range(dout):
+                    consts[k][i][j] = coords[k]
+        tables[(p, q)] = ProductTable(
+            kind="bracket", degrees=(p, q), out_degree=out_n, dims=(dl, dr, dout),
+            constants=tuple(tuple(tuple(row) for row in mat) for mat in consts))
+
+    bc, cb, diffs = _capture_cs(A, res, coh, {}, "bracket", top)
+    return HHProducts(
+        kind="bracket", top=top, tables=tables,
+        engine="Chouhy-Solotar native diagonal (homotopy lifting)",
+        basis=f"cs/{A.domain.name}", window=None,
+        references=_REFERENCES["bracket"] + [
+            "bracket_liftings", "bracket_liftings_volkov", "chouhy_solotar", "oke_koszul"],
+        basis_classes=bc, chain_basis=cb, differentials=diffs)
 
 
 def _capture_cs(A, res, coh, hom, kind, top):

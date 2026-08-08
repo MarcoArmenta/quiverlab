@@ -272,6 +272,9 @@ ported and wired in:
   (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
+  The **Gerstenhaber bracket goes native on the Chouhy–Solotar resolution — past the
+  bar window, over any exact field** (Negron–Witherspoon / Volkov homotopy liftings),
+  completing the TT calculus surface (cup and cap went native earlier).
 - **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
   canonical representatives + a convergence certificate (`E_∞` totals == total
   homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,

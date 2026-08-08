@@ -28,6 +28,7 @@
   "block.bracket.title": "Tables des crochets de Gerstenhaber",
   "block.connes_b.title": "Différentielles de Connes",
   "block.bracket.window": "calculé jusqu'à la fenêtre de degré {n} (borne du transport bar)",
+  "block.bracket.native": "calculé nativement sur la résolution de Chouhy–Solotar (relèvements d'homotopie ; tout corps exact, au-delà de la fenêtre bar)",
   "block.products.zero": "tous les produits s'annulent dans cette paire de degrés",
   "inv.ext_algebra": "Algèbre de Ext / koszulité 0..N",
   "inv.recognizers": "Reconnaisseurs + type Dynkin/euclidien",

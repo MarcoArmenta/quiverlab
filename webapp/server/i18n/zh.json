@@ -28,6 +28,7 @@
   "block.bracket.title": "Gerstenhaber 括号表",
   "block.connes_b.title": "Connes 微分",
   "block.bracket.window": "计算至次数窗口 {n}（bar 传输界限）",
+  "block.bracket.native": "在 Chouhy–Solotar 分解上原生计算（同伦提升；任意精确域，超出 bar 窗口）",
   "block.products.zero": "在此次数对中所有积均为零",
   "inv.ext_algebra": "Ext 代数 / Koszul 性 0..N",
   "inv.recognizers": "识别器 + Dynkin/欧几里得型",

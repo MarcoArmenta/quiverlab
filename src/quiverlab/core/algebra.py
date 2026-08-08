@@ -868,19 +868,23 @@ class Algebra:
                 hint="choose 'auto', 'bar', or 'cs'")
         is_gfp = isinstance(self.domain, PrimeField)
         presented = self.quiver is not None and self.relations is not None
-        if engine == "cs" or (engine == "auto" and not is_gfp):
+
+        def _cs_tables():
+            # Plan 51: the bracket has its OWN CS-native builder (homotopy liftings);
+            # cup/cap keep cs_product_tables. Both any-Domain, past-window.
             if kind == "bracket":
-                raise QuiverlabError(
-                    "the Gerstenhaber bracket is served over GF(p) only "
-                    "(bar window; no CS-native brace machinery in v1)",
-                    hint="construct the algebra over GF(p)")
+                from quiverlab.resolutions_cs.products import cs_bracket_tables
+                return cs_bracket_tables(self, top, max_cells)
+            from quiverlab.resolutions_cs.products import cs_product_tables
+            return cs_product_tables(self, kind, top, max_cells)
+
+        if engine == "cs" or (engine == "auto" and not is_gfp):
             if not presented:
                 raise QuiverlabError(
                     f"{kind} tables off GF(p) need a quiver presentation "
                     "(the CS route); this algebra has structure constants only",
                     hint="build the algebra via Quiver.algebra, or use GF(p)")
-            from quiverlab.resolutions_cs.products import cs_product_tables
-            return cs_product_tables(self, kind, top, max_cells)
+            return _cs_tables()
         if not is_gfp:            # engine == "bar" explicitly, off GF(p)
             raise QuiverlabError(
                 f"engine='bar' {kind} tables need GF(p) (the tt facade)",
@@ -888,10 +892,9 @@ class Algebra:
         try:
             return gfp_product_tables(self, kind, top, max_cells)
         except DepthLimitError:
-            if engine != "auto" or not presented or kind == "bracket":
+            if engine != "auto" or not presented:
                 raise
-            from quiverlab.resolutions_cs.products import cs_product_tables
-            return cs_product_tables(self, kind, top, max_cells)
+            return _cs_tables()
 
     def cup_products(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the cup product HH^p (x) HH^q ->
@@ -908,9 +911,12 @@ class Algebra:
 
     def gerstenhaber_brackets(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the Gerstenhaber bracket HH^p (x)
-        HH^q -> HH^{p+q-1} for pairs p, q >= 1 with p+q-1 <= top. GF(p) only
-        and window-bounded (the result records the served window); the
-        degree-0 insertion action is out of scope."""
+        HH^q -> HH^{p+q-1} for pairs p, q >= 1 with p+q-1 <= top. Same engine
+        semantics as cup_products/cap_products (Plan 51): 'auto' (GF(p) -> bar/tt
+        in-window, records the served window; else CS-native for presented algebras,
+        with the CS depth fallback), 'bar' (GF(p) tt facade, loud otherwise), 'cs'
+        (Chouhy-Solotar homotopy-lifting bracket, presented algebras, any exact
+        Domain, past the bar window). The degree-0 insertion action is out of scope."""
         return self._product_dispatch("bracket", top, engine, max_cells)
 
     def connes_differentials(self, top, max_cells=4_000_000):

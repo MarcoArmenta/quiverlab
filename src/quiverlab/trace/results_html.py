@@ -132,6 +132,10 @@ _ENGINE_GLOSS = (
                "integer entries mod p and computes their exact rank by Gaussian "
                "elimination mod p; every dimension follows by rank-nullity -- "
                "nothing numerical, no floating point"),
+    ("homotopy lifting", "the Gerstenhaber bracket assembled from Negron–Witherspoon "
+                         "/ Volkov homotopy liftings on the Chouhy–Solotar diagonal: a "
+                         "finite per-degree exact linear solve (canonical), no bar "
+                         "object, any exact field, past the bar window"),
     ("chouhy", "the Chouhy–Solotar projective bimodule resolution built from "
                "the admissible presentation, certified per instance "
                "(d∘d = 0 + the order gate)"),
@@ -1325,6 +1329,11 @@ def _product_tables_html(kind, b, ctx=None):
                    "bar-route computation certifies; a cell beyond it is marked "
                    "—. The bracket is computed entirely on the bar (co)chain "
                    "route.</p>" % _num(b.get("window")))
+    elif kind == "bracket":
+        out.append("<p class='ql-note'>the Gerstenhaber bracket is computed natively "
+                   "on the Chouhy–Solotar resolution by the Negron–Witherspoon / "
+                   "Volkov homotopy liftings — no bar object, any exact field, at any "
+                   "degree (past the bar window).</p>")
     if b.get("engine"):
         out.append(_engine_note(b["engine"]))
     return out

@@ -65,6 +65,18 @@ in-window ≡ transported bracket (cross-engine); antisymmetry+Jacobi (self-cert
 the 2103.12331 Koszul-quiver tables; k[x]/(x^n) zero-entries. Size L. Deps:
 resolutions_cs/diagonal.py, hochschild/products.py.
 
+> **Implementation correction (2026-08-07, Plan 51 delivered).** Two adjustments
+> found while implementing, folded back here per the metaplan §2 rule: (1) the
+> `1⊗η` half-collapse term carries a **Koszul sign `(−1)^{n·deg τ}`** (the tensor of
+> graded maps) — omitting it makes the ψ-solve inconsistent at degree 2 already.
+> (2) The odd-exponent SIGN anchor named as **QuantumCI (2,2)** is VACUOUS:
+> `HH³(QCI/GF5)=0` (dims `[2,2,1,0,2,4]`), so the (2,2) bracket lands in the zero
+> space. The genuine non-vacuous odd-exponent discriminator is **QuantumCI (2,4) →
+> HH⁵** (dim 4, `(p-1)(q-1)=3` odd): the class is nonzero, native ≡ transported, and
+> the flipped sign disagrees (needs Δ₅, ~2 min, `slow`-marked). The `(−1)^{(p-1)(q-1)}`
+> sign (Oke Thm 3.5) is confirmed. The Oke §7 tables remain blocked-until-transcribed
+> (strict-xfail fence). Delivered on branch `plan-51-bracket`.
+
 **R2 — BV operator Δ on HH of Frobenius/self-injective algebras.** [B-scout P4,
 reference-rebuilt per critic; deepens the backlogged BV item]
 Object: Δ: HH^n → HH^{n-1} by transporting Connes B through the σ-twisted
