@@ -558,6 +558,34 @@ REGISTRY: dict = {r.key: r for r in [
        "King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the "
        "Plan-45 / C4 engine draws.",
        "tau-tilting", "stability"),
+    _r("dirrt_lattice_torsion", "DIRRT2023", "foundation",
+       "Lattice theory of torsion classes: Beyond tau-tilting theory",
+       "Demonet-Iyama-Reading-Reiten-Thomas: tors A is a complete, bialgebraic, completely "
+       "semidistributive, completely congruence-uniform lattice; the brick labelling of its "
+       "Hasse quiver; the representation-theoretic forcing order and the congruence lattice "
+       "Con(tors A). The Plan-64 congruence + forcing ground truth.",
+       "tau-tilting", "lattice"),
+    _r("barnard_carroll_zhu", "BCZ2019", "foundation",
+       "Minimal inclusions of torsion classes",
+       "Barnard-Carroll-Zhu: cover relations of tors A characterized by indecomposables; the "
+       "completely join-irreducible torsion classes are in bijection with bricks; faces of the "
+       "canonical join complex read representation-theoretically. Plan 64's join-irreducibles "
+       "<-> bricks and canonical join representations.",
+       "tau-tilting", "lattice"),
+    _r("enomoto_wide_ice", "Enomoto2023wide", "foundation",
+       "From the lattice of torsion classes to the posets of wide subcategories and ICE-closed "
+       "subcategories",
+       "Enomoto: the kappa order (extended kappa map of Barnard-Todorov-Zhu) and the core label "
+       "order on a completely semidistributive lattice coincide and are isomorphic to the poset "
+       "of wide subcategories. Plan 64's core-label-order = wide-subcategory computation.",
+       "tau-tilting", "lattice"),
+    _r("marks_stovicek", "MarksStovicek2017", "foundation",
+       "Torsion classes, wide subcategories and localisations",
+       "Marks-Stovicek: the Ingalls-Thomas maps between torsion classes and wide subcategories; "
+       "wide A injects into tors A, and the two are in BIJECTION iff A is REPRESENTATION-FINITE "
+       "(not merely hereditary). Plan 64's #wide <= #torsion bound and the honest-scope statement "
+       "that the count discriminates only off the representation-finite case.",
+       "tau-tilting", "lattice"),
     # --- Plan 63: wall-and-chamber structure via bricks (R25) ---
     _r("brustle_smith_treffinger", "BST2019", "foundation",
        "Wall and Chamber Structure for finite-dimensional Algebras",

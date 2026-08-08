@@ -187,6 +187,16 @@ never hide behind one:
     ``canonical_key`` is request-derived (the budget rides in the ``compute`` string, no
     new request field); the ``result_json`` was frozen from the server runner, and the
     Plan-45 cross-runner test asserts the Pyodide twin agrees byte-for-byte.
+  * 2026-08-07 (``congruences_kA2`` ADDED, Plan 64 / R26): a NEW fixture for the
+    ``congruences`` ALGEBRA-level compute kind (kA2 over QQ, budget 512 -- the full run:
+    the pentagon N5 torsion lattice |L|=5, |Con(tors A)|=5, the forcing "V" on 3 bricks,
+    #wide=5 = M3). Pure addition: every pre-existing entry was verified byte-identical
+    BEFORE the new one was appended (the delegation test passed on all 18 unchanged). Its
+    ``canonical_key`` is request-derived (the pair budget rides in the ``compute`` string,
+    no new request field), so schema stays v1 and no existing golden re-freezes; the
+    ``result_json`` was frozen from the server runner, and the Plan-64 cross-runner tests
+    (``tests/webapp/test_congruences_p64.py`` / ``tests/gui/test_congruences_runner_twin.py``)
+    assert the Pyodide twin is byte-identical via the shared ``congruences_block`` builder.
   * 2026-08-05 (ALL 18 result_json re-frozen, v0.2.0 bump at the P50 gate): the
     embedded ``quiverlab_version`` moved 0.1.0 -> 0.2.0. Gated re-freeze: every
     regenerated blob is byte-identical to its predecessor after mapping the

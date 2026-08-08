@@ -145,6 +145,9 @@
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
+    // ---- Plan 64: torsion lattice + Con + forcing order + wide subcategories ----
+    '  <label><input type="checkbox" id="qlgui-congruences"> torsion lattice / Con / wide, budget ' +
+    '<input type="number" id="qlgui-congruences-budget" value="512" min="1"></label>' +
     // ---- Plan 63: wall-and-chamber structure via bricks (D(B) inequality systems) ----
     '  <label><input type="checkbox" id="qlgui-wall_chamber"> wall-and-chamber D(B), budget ' +
     '<input type="number" id="qlgui-wall_chamber-budget" value="512" min="1"></label>' +
@@ -291,6 +294,8 @@
    "hh1_lie",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
+   // Plan 64: torsion lattice / Con / forcing / wide subcategories (budget picker)
+   "congruences", "congruences-budget",
    // Plan 63: wall-and-chamber structure via bricks (budget picker)
    "wall_chamber", "wall_chamber-budget",
    // Plan 67: silting theory (radius,budget picker)
@@ -936,6 +941,10 @@
     // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
     if (el.tau_tilting.checked)
       compute.push("tau_tilting:" + el["tau_tilting-budget"].value);
+    // Plan 64: the congruences kind carries a PAIR BUDGET (not a degree), so it
+    // pushes "congruences:<budget>" -- the single-int form both runners parse.
+    if (el.congruences.checked)
+      compute.push("congruences:" + el["congruences-budget"].value);
     // Plan 63: the wall-and-chamber kind carries a PAIR BUDGET too -- pushes
     // "wall_chamber:<budget>", the single-int form both runners parse (like tau_tilting).
     if (el.wall_chamber.checked)
@@ -3092,6 +3101,99 @@
       renderWallAndChamber(div, b.fan);
   }
 
+  function renderCongruences(div, b) {
+    // Plan 64: the lattice theory of torsion classes (DIRRT / BCZ / Enomoto). v1 renders
+    // the Hasse quiver + Con + wide poset as text/HTML edge-list tables (ruling 6 -- NO
+    // bespoke SVG layout; the report reuses viz/tikz.py::tikz_hasse for the PDF).
+    if (b.error) { div.appendChild(h("p", { "class": "qlgui-error", text: b.error })); return; }
+    div.appendChild(h("p", { text: "Lattice theory of torsion classes (Demonet–Iyama–"
+      + "Reading–Reiten–Thomas): the finite lattice tors A, its congruence lattice "
+      + "Con(tors A), the forcing order on bricks, and the wide-subcategory poset (Enomoto's "
+      + "core label order). Certified complete iff A is τ-tilting-finite. n = " + b.n + "." }));
+    if (!b.complete) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "The exchange graph did not close (status: " + b.status + ") — A is "
+          + "τ-tilting-infinite or the pair budget was hit. tors A is not finite, so the "
+          + "lattice, Con(tors A), the forcing order and the wide poset are ALL omitted (a "
+          + "partial lattice invariant would be a lie, not merely incomplete)." }));
+      if (b.note) div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+      return;
+    }
+    // (a) the lattice summary
+    var L = b.lattice;
+    var props = [];
+    if (L.is_semidistributive != null) props.push((L.is_semidistributive ? "" : "not ") + "semidistributive");
+    if (L.is_modular != null) props.push((L.is_modular ? "" : "not ") + "modular");
+    if (L.is_distributive != null) props.push((L.is_distributive ? "" : "not ") + "distributive");
+    div.appendChild(h("p", { text: "Lattice tors A: " + L.size + " torsion classes, "
+      + L.num_covers + " covers, " + L.join_irreducibles + " join-irreducibles (= #bricks), "
+      + L.meet_irreducibles + " meet-irreducibles" + (props.length ? " — " + props.join(", ") : "") + "." }));
+    // (b) the Hasse quiver as a text edge-list
+    if (L.hasse && L.hasse.length) {
+      div.appendChild(h("p", { text: "Hasse quiver of tors A (downward cover — brick label):" }));
+      var ul = h("ul");
+      L.hasse.forEach(function (e) {
+        var bd = e.brick_dimvec ? " — brick " + dvText(e.brick_dimvec)
+          + (e.brick_name ? " (" + e.brick_name + ")" : "") : "";
+        ul.appendChild(h("li", { text: e.from + " → " + e.to + bd }));
+      });
+      div.appendChild(ul);
+    }
+    // (c) canonical join representations
+    if (L.canonical_joins && L.canonical_joins.length) {
+      div.appendChild(h("p", { text: "Canonical join representations (element — its "
+        + "semibrick of down-cover joinands):" }));
+      var ct = h("table", { "class": "qlgui-table" });
+      var ch = h("tr");
+      ["element", "torsion class", "joinands (semibrick)"].forEach(function (t) { ch.appendChild(h("th", { text: t })); });
+      ct.appendChild(ch);
+      L.canonical_joins.forEach(function (cj) {
+        var js = (cj.joinands || []).map(function (j) {
+          return dvText(j.brick_dimvec) + (j.brick_name ? " (" + j.brick_name + ")" : "");
+        }).join(", ") || "∅";
+        ct.appendChild(h("tr", {}, h("td", { text: String(cj.element) }),
+          h("td", { text: String(cj.label) }), h("td", { text: js })));
+      });
+      div.appendChild(ct);
+    }
+    // (d) Con(tors A) + the forcing order on bricks
+    var C = b.congruences;
+    if (C) {
+      div.appendChild(h("p", { text: "Congruence lattice Con(tors A): |Con| = " + C.size
+        + ", distributive (Funayama–Nakayama), " + C.num_join_irreducibles
+        + " join-irreducible congruences = #bricks (DIRRT: the forcing order lives on bricks)." }));
+      var fo = C.forcing_order || { bricks: [], relations: [] };
+      var fb = fo.bricks || [];
+      div.appendChild(h("p", { text: "Forcing order on bricks (brick_i ≤ brick_j means "
+        + "con(brick_i) ⊆ con(brick_j) — brick_i is forced by brick_j):" }));
+      var ftbl = h("table", { "class": "qlgui-table" });
+      ftbl.appendChild(h("tr", {}, h("th", { text: "brick" }), h("th", { text: "id" })));
+      fb.forEach(function (br, i) {
+        ftbl.appendChild(h("tr", {}, h("td", { text: dvText(br.dimvec)
+          + (br.name ? " (" + br.name + ")" : "") }), h("td", { text: String(i) })));
+      });
+      div.appendChild(ftbl);
+      var rel = (fo.relations || []).map(function (r) { return r[0] + " ≤ " + r[1]; }).join(", ");
+      div.appendChild(h("p", { text: "Relations: " + (rel || "(none — antichain)") + "." }));
+    }
+    // (e) the wide-subcategory poset
+    var W = b.wide;
+    if (W) {
+      div.appendChild(h("p", { text: "Wide-subcategory poset (Enomoto, core label order = "
+        + "κ order): #wide = " + W.size + (W.constructions_agree ? " (the two constructions agree)" : "")
+        + ". #wide = #torsion iff A is representation-finite (Marks–Šťovíček)." }));
+      var wt = h("table", { "class": "qlgui-table" });
+      wt.appendChild(h("tr", {}, h("th", { text: "wide id" }), h("th", { text: "simple objects (bricks)" })));
+      (W.labels || []).forEach(function (labs, i) {
+        var s = (labs || []).map(function (l) { return dvText(l.dimvec) + (l.name ? " (" + l.name + ")" : ""); }).join(", ") || "∅";
+        wt.appendChild(h("tr", {}, h("td", { text: String(i) }), h("td", { text: s })));
+      });
+      div.appendChild(wt);
+      var wrel = (W.relations || []).map(function (r) { return r[0] + " ⊆ " + r[1]; }).join(", ");
+      div.appendChild(h("p", { text: "Inclusions: " + (wrel || "(none)") + "." }));
+    }
+  }
+
   // ---- Plan 67: the silting block (verifier + mutation neighbours + exploration) ----
   function renderSilting(div, b) {
     if (b.error) {
@@ -3921,6 +4023,8 @@
       }
     } else if (name === "tau_tilting") {
       renderTauTilting(div, b);
+    } else if (name === "congruences") {
+      renderCongruences(div, b);
     } else if (name === "hh1_lie") {
       renderHh1Lie(div, b);
     } else if (name === "wall_chamber") {
@@ -4495,7 +4599,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "derived_fingerprint", "derived_compare", "tau_tilting", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -4888,6 +4992,7 @@
     {"id": "quasi_hereditary", "title": "Quasi-hereditary structure (Δ/∇)", "category": "invariants", "keywords": ["quasi-hereditary", "standard", "costandard", "delta", "nabla", "bgg", "cuasi-hereditaria", "quasi-héréditaire", "准遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["quasi_hereditary"]}},
     {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
     {"id": "tau_tilting", "title": "τ-tilting: pairs, exchange graph, fan", "category": "tau-tilting", "keywords": ["tau-tilting", "tilting", "mutation", "torsion", "silting", "g-vector", "wall", "stability", "chamber", "inclinación", "basculement", "mutación", "倾斜", "突变", "brick", "semibrick", "fan"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["tau_tilting:512"]}},
+    {"id": "congruences", "title": "Torsion lattice: Con, forcing, wide subcategories", "category": "tau-tilting", "keywords": ["torsion", "lattice", "congruence", "forcing", "wide", "wide subcategory", "core label order", "canonical join", "brick", "semidistributive", "pentagon", "dirrt", "enomoto", "retículo", "congruencia", "treillis", "congruence", "格", "同余", "宽子范畴"], "example": {"vertices": [1, 2], "arrows": {"a": [1, 2]}, "relations": [], "field": {"kind": "QQ"}, "compute": ["congruences:512"]}},
     {"id": "left_right_parts", "title": "Left / right parts L_A, R_A + support algebras", "category": "structure", "keywords": ["left part", "right part", "L_A", "R_A", "support algebra", "laura", "ada", "quasi-tilted", "ext-injective", "complement", "assem", "coelho", "trepode", "parte izquierda", "parte derecha", "partie gauche", "partie droite", "álgebra soporte", "algèbre support", "左部", "右部", "支撑代数"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["left_right_parts:256"]}},
     {"id": "tilted_check", "title": "Tilted-algebra recognizer (Liu-Skowroński)", "category": "structure", "keywords": ["tilted", "tilted algebra", "liu", "skowronski", "skowroński", "slice", "section", "hereditary", "End_H(T)", "ringel", "happel", "faithful section", "álgebra inclinada", "algèbre inclinée", "rebanada", "tranche", "hereditaria", "héréditaire", "倾斜代数", "倾斜", "遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a1": [2, 1], "a2": [3, 2]}, "relations": ["a2*a1"], "field": {"kind": "QQ"}, "compute": ["tilted_check:256"]}},
     {"id": "recognizer_ladder", "title": "Recognizer ladder: quasi-tilted / shod / weakly-shod / laura / ada", "category": "structure", "keywords": ["quasi-tilted", "shod", "weakly shod", "laura", "ada", "recognizer", "simply connected", "simple connectedness", "HH^1", "happel", "reiten", "smalo", "coelho", "lanzilotta", "assem", "escalera", "échelle", "casi inclinada", "quasi-inclinée", "cuasi-inclinada", "simplemente conexo", "simplement connexe", "拟倾斜", "单连通", "识别阶梯"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["recognizer_ladder:256"]}},
@@ -5022,6 +5127,7 @@
     tame_wild: { cb: "tame_wild" },
     hh1_lie: { cb: "hh1_lie" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
+    congruences: { cb: "congruences", top: "congruences-budget", budget: true },
     wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },
     silting: { cb: "silting", top: "silting-budget", budget: true },
     exceptional_sequences: { cb: "exceptional_sequences", top: "exceptional_sequences-budget", budget: true },

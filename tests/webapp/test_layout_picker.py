@@ -22,7 +22,7 @@ from webapp.server.i18n import LANGS, catalog
 ROOT = Path(__file__).resolve().parents[2]
 GUI_JS = ROOT / "webapp" / "static" / "gui" / "gui.js"
 
-# The full compute-kind surface the picker must cover (23 algebra + 14 module).
+# The full compute-kind surface the picker must cover (24 algebra + 14 module).
 ALL_KINDS = {
     "hh_cohomology", "hh_homology", "cup", "cap", "bracket", "cyclic_homology",
     "connes_b", "ss_hochschild", "cartan", "coxeter_polynomial",
@@ -36,6 +36,8 @@ ALL_KINDS = {
     "orbit_geometry", "ext", "tor",
     # Wave-2 surface expansion (2026-08-06): the three new compute kinds.
     "radical_filtration_ss", "ar_quiver", "derived_compare",
+    # Plan 64 (2026-08-07): torsion-lattice congruences / forcing / wide subcategories.
+    "congruences",
     # Plan 53 (2026-08-07): the stable-category fractional Calabi-Yau dimension.
     "fractional_cy",
     # Plan 57 (2026-08-07): the radical filtration of mod A + AR-component invariants.

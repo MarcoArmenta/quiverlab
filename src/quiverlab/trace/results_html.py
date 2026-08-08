@@ -81,6 +81,7 @@ _HEADINGS = {
     "orbit_geometry": "Orbit geometry",
     "barcode": "Barcode / persistence diagram",
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
+    "congruences": "Torsion lattice: Con(tors A), forcing order and wide subcategories",
     "wall_chamber": "Wall-and-chamber structure via bricks: D(B) inequality systems + "
                     "g-cone chambers",
     "silting": "Silting: verifier, mutation neighbours, bounded exploration",
@@ -381,6 +382,104 @@ def _tau_tilting_html(b):
                          _dv(bd) if bd else "?"))
         if wl:
             out.append("<ul class='ql-tt-walls'>%s</ul>" % "".join(wl))
+    return out
+
+
+def _congruences_html(b):
+    """The Plan-64 torsion-lattice block: the lattice summary, the canonical join
+    representations, Con(tors A) + the forcing order on bricks (as a small table
+    brick_i <= brick_j), and the wide-subcategory poset -- with the honest
+    complete-iff-tau-tilting-finite status. The report PDF reuses the shipped float-free
+    viz/tikz.py::tikz_hasse for the Hasse diagram; here the covers are a text edge-list."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+    out = ["<p>The lattice theory of torsion classes (Demonet–Iyama–Reading–Reiten–Thomas): "
+           "the finite lattice tors A, its congruence lattice Con(tors A), the forcing order "
+           "on bricks (Barnard–Carroll–Zhu), and the wide-subcategory poset (Enomoto's core "
+           "label order). Certified complete iff A is τ-tilting-finite. n = %s.</p>"
+           % _esc(str(b.get("n")))]
+    if not b.get("complete"):
+        out.append("<p class='ql-note'>The exchange graph did not close (status: <b>%s</b>) "
+                   "— A is τ-tilting-infinite or the pair budget was hit. tors A is not finite, "
+                   "so the lattice, Con(tors A), the forcing order and the wide-subcategory "
+                   "poset are ALL omitted (a partial lattice invariant would be a lie, not "
+                   "merely incomplete).</p>" % _esc(str(b.get("status"))))
+        if b.get("note"):
+            out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+        return out
+    L = b.get("lattice") or {}
+    props = []
+    for key, name in (("is_semidistributive", "semidistributive"),
+                      ("is_modular", "modular"), ("is_distributive", "distributive")):
+        v = L.get(key)
+        if v is not None:
+            props.append(("" if v else "not ") + name)
+    out.append("<p>Lattice tors A: <b>%s</b> torsion classes, %s covers, %s join-irreducibles "
+               "(= #bricks, BCZ), %s meet-irreducibles%s.</p>"
+               % (L.get("size"), L.get("num_covers"), L.get("join_irreducibles"),
+                  L.get("meet_irreducibles"),
+                  (" — " + _esc(", ".join(props))) if props else ""))
+    hasse = L.get("hasse") or []
+    if hasse:
+        lis = []
+        for e in hasse:
+            bd = e.get("brick_dimvec")
+            nm = e.get("brick_name")
+            lab = ((" — brick " + _dv(bd) + ((" (" + _esc(str(nm)) + ")") if nm else ""))
+                   if bd else "")
+            lis.append("<li>%s → %s%s</li>" % (e.get("from"), e.get("to"), lab))
+        out.append("<p>Hasse quiver of tors A (downward cover — brick label):</p>")
+        out.append("<ul class='ql-cong-hasse'>%s</ul>" % "".join(lis))
+    cj = L.get("canonical_joins") or []
+    if cj:
+        rows = ["<tr><th>element</th><th>torsion class</th>"
+                "<th>canonical joinands (semibrick)</th></tr>"]
+        for row in cj:
+            js = ", ".join(_dv(j.get("brick_dimvec"))
+                           + ((" (" + _esc(str(j.get("brick_name"))) + ")")
+                              if j.get("brick_name") else "")
+                           for j in (row.get("joinands") or [])) or "∅"
+            rows.append("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+                        % (row.get("element"), _esc(str(row.get("label"))), js))
+        out.append("<p>Canonical join representations (each torsion class = the join of its "
+                   "down-cover joinands, whose brick labels form a semibrick):</p>")
+        out.append("<table class='ql-cong-cj'>%s</table>" % "".join(rows))
+    C = b.get("congruences")
+    if C:
+        out.append("<p>Congruence lattice Con(tors A): <b>|Con| = %s</b>, distributive "
+                   "(Funayama–Nakayama), %s join-irreducible congruences = #bricks — the "
+                   "forcing order lives on bricks (DIRRT).</p>"
+                   % (C.get("size"), C.get("num_join_irreducibles")))
+        fo = C.get("forcing_order") or {}
+        bricks = fo.get("bricks") or []
+        brows = ["<tr><th>brick id</th><th>brick</th></tr>"]
+        for i, br in enumerate(bricks):
+            nm = br.get("name")
+            brows.append("<tr><td>%d</td><td>%s%s</td></tr>"
+                         % (i, _dv(br.get("dimvec")),
+                            (" (" + _esc(str(nm)) + ")") if nm else ""))
+        out.append("<table class='ql-cong-bricks'>%s</table>" % "".join(brows))
+        rels = fo.get("relations") or []
+        rel = ", ".join("%s ≤ %s" % (r[0], r[1]) for r in rels) or "(none — antichain)"
+        out.append("<p>Forcing order on bricks (brick_i ≤ brick_j means con(brick_i) ⊆ "
+                   "con(brick_j); brick_i is FORCED BY brick_j): %s.</p>" % _esc(rel))
+    W = b.get("wide")
+    if W:
+        out.append("<p>Wide-subcategory poset (Enomoto: the core label order = the κ order): "
+                   "<b>#wide = %s</b>%s. #wide = #torsion iff A is representation-finite "
+                   "(Marks–Šťovíček), so on a rep-finite algebra the count does not "
+                   "discriminate — the poset structure does.</p>"
+                   % (W.get("size"),
+                      " (the two constructions agree)" if W.get("constructions_agree") else ""))
+        wrows = ["<tr><th>wide id</th><th>simple objects (bricks)</th></tr>"]
+        for i, labs in enumerate(W.get("labels") or []):
+            s = ", ".join(_dv(l.get("dimvec"))
+                          + ((" (" + _esc(str(l.get("name"))) + ")") if l.get("name") else "")
+                          for l in (labs or [])) or "∅"
+            wrows.append("<tr><td>%d</td><td>%s</td></tr>" % (i, s))
+        out.append("<table class='ql-cong-wide'>%s</table>" % "".join(wrows))
+        wrel = ", ".join("%s ⊆ %s" % (r[0], r[1]) for r in (W.get("relations") or [])) or "(none)"
+        out.append("<p>Inclusions: %s.</p>" % _esc(wrel))
     return out
 
 
@@ -1503,6 +1602,8 @@ def _block_html(kind, b, ctx=None):
         return _ext_algebra_html(b)
     if kind == "tau_tilting":
         return _tau_tilting_html(b)
+    if kind == "congruences":
+        return _congruences_html(b)
     if kind == "wall_chamber":
         return _wall_chamber_html(b)
     if kind == "silting":
