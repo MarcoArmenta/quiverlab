@@ -20,6 +20,9 @@ Public surface:
   ``support_tau_tilting`` (``certificate``)
 - ``skew_gentle_block`` (``block``)
 """
+from quiverlab.skewgentle.modules import (SkewGentleString, classify,
+                                          skew_gentle_indecomposables,
+                                          skew_gentle_module)
 from quiverlab.skewgentle.split import SkewGentleAlgebra, split_quiver
 from quiverlab.skewgentle.triple import (SkewGentleTriple, associated_gentle,
                                          is_skew_gentle_triple)
@@ -30,4 +33,8 @@ __all__ = [
     "is_skew_gentle_triple",
     "SkewGentleAlgebra",
     "split_quiver",
+    "SkewGentleString",
+    "classify",
+    "skew_gentle_module",
+    "skew_gentle_indecomposables",
 ]
