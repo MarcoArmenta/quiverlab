@@ -316,6 +316,14 @@ REGISTRY: dict = {r.key: r for r in [
        "The HH^1(T(A)) decomposition and Example 2.20 (the Z_5 cycle) -- the "
        "trivial-extension first-cohomology oracle.",
        "hochschild", "oracle"),
+    _r("clms_arrow_removal", "cibilslanzilottamarcossolotar2020", "foundation",
+       "Deleting or adding arrows of a bound quiver algebra and Hochschild "
+       "(co)homology",
+       "Inert-arrow deletion (Def. 3.1) gives a clean HH_n isomorphism for n >= 2 "
+       "(Thm 3.2) and a cohomology Ext-correction (Thm 4.2); arrow addition = the "
+       "tensor algebra T_B(N), finite iff no relative cycle (Thm 3.5/3.6) -- the "
+       "Plan-72 certified arrow-removal reduction and the P73 Han-conjecture seam.",
+       "hochschild", "oracle"),
     _r("chaparro_schroll_solotar", "ChaparroSchrollSolotar2020", "foundation",
        "On the Lie algebra structure of the first Hochschild cohomology of gentle "
        "and Brauer graph algebras",
@@ -558,6 +566,34 @@ REGISTRY: dict = {r.key: r for r in [
        "King's theta-(semi)stability and GIT walls -- the wall-and-chamber structure the "
        "Plan-45 / C4 engine draws.",
        "tau-tilting", "stability"),
+    _r("dirrt_lattice_torsion", "DIRRT2023", "foundation",
+       "Lattice theory of torsion classes: Beyond tau-tilting theory",
+       "Demonet-Iyama-Reading-Reiten-Thomas: tors A is a complete, bialgebraic, completely "
+       "semidistributive, completely congruence-uniform lattice; the brick labelling of its "
+       "Hasse quiver; the representation-theoretic forcing order and the congruence lattice "
+       "Con(tors A). The Plan-64 congruence + forcing ground truth.",
+       "tau-tilting", "lattice"),
+    _r("barnard_carroll_zhu", "BCZ2019", "foundation",
+       "Minimal inclusions of torsion classes",
+       "Barnard-Carroll-Zhu: cover relations of tors A characterized by indecomposables; the "
+       "completely join-irreducible torsion classes are in bijection with bricks; faces of the "
+       "canonical join complex read representation-theoretically. Plan 64's join-irreducibles "
+       "<-> bricks and canonical join representations.",
+       "tau-tilting", "lattice"),
+    _r("enomoto_wide_ice", "Enomoto2023wide", "foundation",
+       "From the lattice of torsion classes to the posets of wide subcategories and ICE-closed "
+       "subcategories",
+       "Enomoto: the kappa order (extended kappa map of Barnard-Todorov-Zhu) and the core label "
+       "order on a completely semidistributive lattice coincide and are isomorphic to the poset "
+       "of wide subcategories. Plan 64's core-label-order = wide-subcategory computation.",
+       "tau-tilting", "lattice"),
+    _r("marks_stovicek", "MarksStovicek2017", "foundation",
+       "Torsion classes, wide subcategories and localisations",
+       "Marks-Stovicek: the Ingalls-Thomas maps between torsion classes and wide subcategories; "
+       "wide A injects into tors A, and the two are in BIJECTION iff A is REPRESENTATION-FINITE "
+       "(not merely hereditary). Plan 64's #wide <= #torsion bound and the honest-scope statement "
+       "that the count discriminates only off the representation-finite case.",
+       "tau-tilting", "lattice"),
     # --- Plan 63: wall-and-chamber structure via bricks (R25) ---
     _r("brustle_smith_treffinger", "BST2019", "foundation",
        "Wall and Chamber Structure for finite-dimensional Algebras",
@@ -765,6 +801,32 @@ REGISTRY: dict = {r.key: r for r in [
        "Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the "
        "closed-form count oracle.",
        "modules"),
+    _r("escolar_hiraoka", "EscolarHiraoka2016", "foundation",
+       "Persistence modules on commutative ladders of finite type",
+       "Representation theory of the commutative ladder CL(n) = A_n [] A_2: rep-finite "
+       "iff n <= 4 (the P69 scope boundary), with explicit AR quivers for n <= 4. TDA "
+       "gloss: the generalized persistence diagram of a ladder persistence module is its "
+       "AR-quiver-indexed Krull-Schmidt decomposition.",
+       "modules", "persistence"),
+    _r("botnan_crawley_boevey", "BotnanCrawleyBoevey2020", "foundation",
+       "Decomposition of persistence modules",
+       "A pointwise-finite-dimensional persistence module over a totally ordered or "
+       "zigzag poset decomposes uniquely into interval modules (Krull-Remak-Schmidt-"
+       "Azumaya) -- the theorem that 'barcode = interval decomposition' is well-defined "
+       "for A_n and zigzag lines.",
+       "modules", "persistence"),
+    _r("igusa_rock_todorov", "IgusaRockTodorov2019", "foundation",
+       "Continuous quivers of type A (I)",
+       "The continuous-limit representation theory of type-A persistence -- the "
+       "conceptual bridge (representation theory <-> persistence); cited as context, not "
+       "a computed oracle (quiverlab is finite/exact).",
+       "modules", "persistence"),
+    _r("gabriel", "Gabriel1972", "foundation",
+       "Unzerlegbare Darstellungen I",
+       "Gabriel's theorem: the indecomposable representations of a type-A_n quiver are "
+       "the interval (thin) modules = positive roots, each a brick (End = k) -- why the "
+       "A_n / zigzag barcode is field-robust over every exact domain.",
+       "modules", "persistence"),
     _r("rss_hh1_lie", "RSS2023hh1lie", "foundation",
        "The first Hochschild cohomology as a Lie algebra",
        "Rubio y Degrassi-Schroll-Solotar: the no-loops/no-parallel-arrows Ext-quiver "

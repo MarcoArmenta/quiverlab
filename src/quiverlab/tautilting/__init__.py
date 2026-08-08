@@ -15,6 +15,10 @@ from quiverlab.tautilting.rigid import g_matrix, g_vector, is_tau_rigid
 from quiverlab.tautilting.silting import silting_count, two_term_silting
 from quiverlab.tautilting.stability import (is_theta_semistable, is_theta_stable,
                                             wall_and_chamber_fan)
+from quiverlab.tautilting.congruence import (CongruenceLattice, TorsionLattice,
+                                             WideSubcategoryPoset, congruence_lattice,
+                                             congruences_block, torsion_lattice,
+                                             wide_subcategories)
 from quiverlab.tautilting.torsion import (bricks, hasse_orientation, semibricks,
                                           torsion_class_data)
 from quiverlab.tautilting.wallchamber import (Wall, wall_chamber_structure,
@@ -29,5 +33,7 @@ __all__ = [
     "maximal_green_sequences",
     "two_term_silting", "silting_count",
     "tau_tilting_block",
+    "TorsionLattice", "CongruenceLattice", "WideSubcategoryPoset",
+    "torsion_lattice", "congruence_lattice", "wide_subcategories", "congruences_block",
     "Wall", "wall_of_brick", "wall_chamber_structure",
 ]

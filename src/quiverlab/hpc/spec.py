@@ -73,7 +73,7 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
@@ -112,6 +112,7 @@ _MOD_REFS = {
     "tilting_check": ["bongartz_tilting", "assem_book"],
     "orbit_geometry": ["voigt_rigidity", "kac_canonical",
                        "schofield_general_reps", "derksen_weyman_canonical"],
+    "barcode": ["escolar_hiraoka", "botnan_crawley_boevey", "gabriel", "assem_book"],
 }
 
 
@@ -270,6 +271,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # congruences (Plan 64) carries a PAIR BUDGET, not a degree range: 'congruences' or
+    # 'congruences:512' -- the torsion lattice / Con / forcing / wide poset all live on the
+    # exchange graph, sized by the pair budget (like tau_tilting), not a homological degree.
+    if s == "congruences" or s.startswith("congruences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"congruences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve (d^2 unknowns / d^3
     # equations) -- not a homological degree -- so it bypasses the 'name:0..N' grammar.
@@ -306,6 +315,16 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # split_extension / arrow_removal (Plan 72) are ALGEBRA kinds carrying a TOP-DEGREE
+    # budget (the LES / reduction is assembled to degree hi), parsed like ar_quiver:
+    # 'split_extension' / 'split_extension:6'. hi = the top degree (None => default),
+    # bypassing the 'name:0..N' grammar (a single cap, not a lo..hi range).
+    for _kind in ("split_extension", "arrow_removal"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SpecError(f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget caps the classical
     # tuple search / the tau-tilting exchange graph -- not a homological degree -- so it
@@ -432,7 +451,7 @@ def _iter_families():
     for info in ql.families():
         name = info.name
         if name in ("zoo", "BrauerGraphAlgebra", "ToupieAlgebra",
-                    "SkewGentleAlgebra"):                            # non-scalar constructors
+                    "SkewGentleAlgebra", "CommutativeLadder"):       # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -1664,6 +1683,25 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = tau_tilting_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Torsion-lattice congruences (Plan 64 / R26): an ALGEBRA-level kind carrying a PAIR
+    # BUDGET (parsed like tau_tilting). The torsion lattice + Con(tors A) + the forcing order
+    # on bricks + the wide-subcategory poset (Enomoto), all certified complete iff A is
+    # tau-tilting-finite (else lattice=congruences=wide=None + a note -- no partial-lattice
+    # lie). Both runners share tautilting.congruence.congruences_block, so the blocks are
+    # byte-identical. The char caveat (rigorous over char 0 / char > dim) surfaces as a clean
+    # {"error": ...} entry (the Plan-30 honest-per-entry precedent), never a 500.
+    if kind == "congruences":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.congruence import _CITATIONS as _CONG_KEYS
+        from quiverlab.tautilting.congruence import congruences_block
+        try:
+            block = congruences_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            keys = list(_CONG_KEYS)
+            return {"kind": "congruences", "error": str(exc), "references": keys,
+                    "citations": _citation_pairs(keys)}, None
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # HH^1 as a Lie algebra (Plan 70 / R11): an ALGEBRA-level kind carrying a DIM
     # BUDGET, not a degree range (parsed like tau_tilting). Der/Inn + bracket + series
     # + solvable/nilpotent over any exact field; over char 0 also radical/Levi/sl2-count.
@@ -1699,6 +1737,29 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         budget = item.hi if item.hi is not None else 512
         from quiverlab.modules.ar import ar_quiver_block
         block = ar_quiver_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Split-extension LES (Plan 72 / R5): an ALGEBRA-level kind carrying a TOP-DEGREE
+    # budget ('split_extension' / 'split_extension:6'). Interprets A as B, assembles
+    # HH^*(T(B)) from the flanks + snake, cross-checks against direct. Both runners share
+    # split_extension.split_extension_block (byte-identical), and its own loud refusals
+    # (presentation-less / char<=dim) come back as status='unsupported' + error (never a
+    # 500). No hh_trace (the block carries its own tables).
+    if kind == "split_extension":
+        budget = item.hi if item.hi is not None else 6
+        from quiverlab.hochschild.split_extension import split_extension_block
+        block = split_extension_block(A, top=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Certified arrow removal (Plan 72 / R6): an ALGEBRA-level kind carrying a TOP-DEGREE
+    # budget ('arrow_removal' / 'arrow_removal:6'). Auto-detects the inert arrows, builds
+    # B = A \ (inert), and reports the clean HH_{>=2} homology iso + the cohomology
+    # Ext-correction. Shared arrow_removal.arrow_removal_block; refusals -> status +
+    # error, never a 500.
+    if kind == "arrow_removal":
+        budget = item.hi if item.hi is not None else 6
+        from quiverlab.hochschild.arrow_removal import arrow_removal_block
+        block = arrow_removal_block(A, top=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Exceptional sequences (Plan 65 / R27+R28): an ALGEBRA-level kind carrying an
@@ -2452,6 +2513,13 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return _with_refs({"kind": "decompose", "side": M.side,
                            "summands": summands, "iso_classes": len(summands)}, kind)
+    if kind == "barcode":
+        # The persistence/TDA barcode (Plan 69 / R33): interval decomposition of an
+        # A_n/zigzag module (field-robust) or the AR-indexed generalized persistence
+        # diagram of a CL(n<=4) (char-scoped). SHARED core builder (barcode_block) so the
+        # Pyodide twin can't drift; a refusal is an {"error": ...} block (never a 500).
+        from quiverlab.modules.barcode import barcode_block
+        return _with_refs(barcode_block(A, M), kind)
     if kind == "almost_split":
         # The almost-split (Auslander-Reiten) sequence 0 -> tau M -> E -> M -> 0 for M
         # indecomposable non-projective (Plan 41). tau M ships as a full representation;
@@ -2724,6 +2792,12 @@ def _snippet(req: ComputeRequest, A) -> str:
              "ar_quiver":
                  lambda it: ("A.ar_quiver(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
+             "split_extension":
+                 lambda it: ("A.split_extension_cohomology("
+                             f"{it.hi if it.hi is not None else 6})"),
+             "arrow_removal":
+                 lambda it: ("A.arrow_removal(top="
+                             f"{it.hi if it.hi is not None else 6})"),
              "radical_filtration":
                  lambda it: ("A.radical_filtration(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
@@ -2793,6 +2867,9 @@ def _snippet(req: ComputeRequest, A) -> str:
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
+             "congruences":
+                 lambda it: ("A.congruence_lattice(budget="
+                             f"{it.hi if it.hi is not None else 512})"),
              "hh1_lie": lambda it: "A.hh1_lie_structure()",
              "wall_chamber":
                  lambda it: ("A.wall_chamber_structure(budget_pairs="
@@ -2813,6 +2890,8 @@ def _snippet(req: ComputeRequest, A) -> str:
                                 f"tor_dims(A, M, N, {it.hi})"),
              "decompose": lambda it: ("from quiverlab.modules.decompose import "
                                       "decompose\ndecompose(M)"),
+             "barcode": lambda it: ("from quiverlab.modules.barcode import barcode\n"
+                                    "barcode(M)"),
              "almost_split": lambda it: "M.almost_split_sequence()",
              "projective_resolution":
                  lambda it: f"M.projective_resolution({it.hi}).dimension_vectors()",

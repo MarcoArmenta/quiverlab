@@ -498,6 +498,44 @@ class Algebra:
         return knit_ar_quiver(self, budget_modules=budget_modules,
                               budget_dim=budget_dim)
 
+    def split_extension_cohomology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension (trivial-extension) Hochschild-cohomology LES,
+        assembling ``HH^•(T(A))`` from the flanks ``HH^•(L, D(A))`` / ``HH^•(L, A)``
+        and the snake connecting map, cross-checked against the direct ``HH^•(T(A))``
+        (Plan 72 / R5, CMRS ``math/0102194``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_cohomology
+        return split_extension_cohomology(self, top, M=M, max_cells=max_cells)
+
+    def split_extension_homology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension Hochschild-HOMOLOGY twin (the dual SES
+        ``0 → M → L → A → 0`` in ``HH_•(L, −)``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_homology
+        return split_extension_homology(self, top, M=M, max_cells=max_cells)
+
+    def inert_arrows(self):
+        """The inert arrows of ``A`` — arrows in no minimal relation of ``I`` (CLMS
+        Def. 3.1, Plan 72 / R6). Structure-constant-only ⇒ loud."""
+        from quiverlab.hochschild.arrow_removal import inert_arrows
+        return inert_arrows(self)
+
+    def arrow_removal(self, arrows=None, top=6, *, side="both"):
+        """The certified arrow-removal HH reduction (CLMS ``1812.07655``, Plan 72 /
+        R6): build ``B = A ∖ (inert arrows)`` and report the clean ``HH_{≥2}``
+        homology isomorphism (Thm 3.2) + the cohomology Ext-correction (Thm 4.2).
+        ``arrows=None`` removes ALL inert arrows. Returns an ``ArrowRemovalReport``."""
+        from quiverlab.hochschild.arrow_removal import arrow_removal
+        return arrow_removal(self, arrows=arrows, top=top, side=side)
+
+    def barcode(self, M, *, budget=512, budget_modules=256):
+        """The barcode / generalized persistence diagram of a persistence module ``M``
+        (Plan 69 / R33). ``A_n``/zigzag: the interval decomposition (Gabriel /
+        Botnan-Crawley-Boevey), field-robust over any exact domain. ``CL(n<=4)``: the
+        AR-quiver-indexed generalized persistence diagram (Escolar-Hiraoka), char-scoped.
+        Returns a :class:`~quiverlab.modules.barcode.Barcode`; refuses loudly on a
+        non-A_n/non-CL quiver, ``CL(n>=5)``, or a char-undecidable input."""
+        from quiverlab.modules.barcode import barcode
+        return barcode(M, budget=budget, budget_modules=budget_modules)
+
     def radical_filtration(self, budget_modules=256, budget_dim=4096):
         """The radical filtration of ``mod A`` (Plan 57 / R37): exact
         ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the
@@ -560,6 +598,31 @@ class Algebra:
         contract mirroring the AR quiver."""
         from quiverlab.tautilting.mutation import exchange_graph
         return exchange_graph(self, budget_pairs=budget_pairs)
+
+    def torsion_lattice(self, budget=512):
+        """The finite lattice ``tors A`` (Plan 64 / R26, DIRRT): order, join/meet
+        (``is_lattice`` self-cert), join-/meet-irreducibles, canonical join representations,
+        and the SD/modular/distributive flags -- extracted from the P45 oriented exchange
+        graph. Certified complete iff ``A`` is tau-tilting-finite (else an honest
+        ``is_complete=False`` value, no partial-lattice lie)."""
+        from quiverlab.tautilting.congruence import torsion_lattice
+        return torsion_lattice(self, budget=budget)
+
+    def congruence_lattice(self, budget=512):
+        """``Con(tors A)`` (Plan 64 / R26, DIRRT): the congruence lattice via principal
+        cover-congruences, its join-irreducible congruences (= the bricks), the forcing order
+        on bricks, and ``|Con(tors A)|``. Distributive by Funayama-Nakayama. Certified
+        complete iff ``A`` is tau-tilting-finite."""
+        from quiverlab.tautilting.congruence import congruence_lattice
+        return congruence_lattice(self, budget=budget)
+
+    def wide_subcategories(self, budget=512):
+        """The wide-subcategory poset (Plan 64 / R26, Enomoto 2201.00595): computed from
+        ``tors A`` via the core label order AND the kappa order (asserted to coincide),
+        isomorphic to ``(wide A, subseteq)``. Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.congruence import wide_subcategories
+        return wide_subcategories(self, budget=budget)
 
     def wall_chamber_structure(self, budget_pairs=512):
         """The wall-and-chamber structure of ``A`` via bricks (Plan 63 / R25): the chambers

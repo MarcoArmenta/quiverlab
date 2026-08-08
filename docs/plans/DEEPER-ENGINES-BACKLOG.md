@@ -439,6 +439,16 @@ planned together even if delivered in slices.
   native CS Yoneda coproduct, N-Koszul certifier, Ext(M,M) for arbitrary M.
   Original item: generators/relations of `Ext_A(⊕S, ⊕S)` from Plan-05 module
   resolutions + deep CS; Koszulity checks.
+- [ ] **P72 split-extension deferrals (DD-A2 / DD-A3, for P80).** Two honest-scope
+  deferrals recorded at the Plan-72 merge (split-extension LES + arrow removal):
+  (DD-A2) a LITERAL coefficient-cup recomputation of the CMRS Thm-4.1 connecting map
+  `δ = 1_M ⌣ (−) ± (−) ⌣ 1_M` — Plan-35's cup is coefficient-`A` only, so pairing the
+  DIFFERENT coefficient bimodules `Hom(M,M)`/`B`/`M` needs a new coefficient-cup surface
+  (`δ` currently computed as the CS-Hom-complex snake, cited as the cup, validated by
+  exactness + assembled≡direct); (DD-A3) a standalone `M^{⊗_B p}` tensor-power +
+  bimodule-`Ext` engine realizing the CMRS Cor-3.2 graded decomposition
+  `HH^n(L,X)=⊕_{p+q=n} Ext^q_{B^e}(M^{⊗_B p},X)` term-by-term — the genuine `⊗_B`
+  ACCELERATION (the LES-over-`L` route surfaces only the `p=0` leading piece today).
 - [ ] **HH cohomology ring structure + support varieties**: after Tier-1 item 1,
   finite generation over the even part; support varieties per module.
 - [ ] **BV structure** for symmetric/Frobenius algebras: Connes B is ported

@@ -38,7 +38,7 @@ _MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
@@ -205,6 +205,13 @@ def _parse_compute(spec):
             raise RequestError("tau_tilting budget must be a positive integer (got %r)"
                                % (spec,))
         return "tau_tilting", (int(rng) if rng else None)
+    # congruences carries a PAIR BUDGET, not a degree range (Plan 64): 'congruences' or
+    # 'congruences:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    if name == "congruences":
+        if rng and not rng.isdigit():
+            raise RequestError("congruences budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "congruences", (int(rng) if rng else None)
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
@@ -238,6 +245,13 @@ def _parse_compute(spec):
             raise RequestError("ar_quiver budget must be a positive integer (got %r)"
                                % (spec,))
         return "ar_quiver", (int(rng) if rng else None)
+    # split_extension / arrow_removal (Plan 72) carry a TOP-DEGREE budget, not a lo..hi
+    # range: 'split_extension' / 'split_extension:6'. Skips MAX_DEGREE like ar_quiver.
+    if name in ("split_extension", "arrow_removal"):
+        if rng and not rng.isdigit():
+            raise RequestError("%s budget must be a positive integer (got %r)"
+                               % (name, spec))
+        return name, (int(rng) if rng else None)
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. Skips MAX_DEGREE like tau_tilting.
     if name == "exceptional_sequences":
@@ -551,6 +565,7 @@ _MOD_REFS = {
     "tilting_check": ["bongartz_tilting", "assem_book"],
     "orbit_geometry": ["voigt_rigidity", "kac_canonical",
                        "schofield_general_reps", "derksen_weyman_canonical"],
+    "barcode": ["escolar_hiraoka", "botnan_crawley_boevey", "gabriel", "assem_book"],
 }
 
 
@@ -750,6 +765,16 @@ def _module_block(name, top):
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return {"kind": name, "side": M.side, "summands": summands,
                 "iso_classes": len(summands), "citations": cites}
+    if name == "barcode":
+        # The persistence/TDA barcode (Plan 69 / R33). SAME shared core builder as the
+        # hpc spec dispatch (quiverlab.modules.barcode.barcode_block) + references ->
+        # citations, so the two runners emit byte-identical blocks (a refusal is an
+        # {"error": ...} block, never a raise).
+        from quiverlab.modules.barcode import barcode_block
+        block = barcode_block(A, M)
+        block["references"] = list(keys)
+        block["citations"] = cites
+        return block
     if name == "almost_split":
         # The almost-split sequence 0 -> tau M -> E -> M -> 0 for M indecomposable
         # non-projective (Plan 41). Byte-identical block shape to quiverlab.hpc.spec's
@@ -988,6 +1013,21 @@ def compute_one(spec):
             from quiverlab.modules.ar import ar_quiver_block
             block = ar_quiver_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "split_extension":
+            # Split-extension LES (Plan 72 / R5): an ALGEBRA-level TOP-DEGREE budget
+            # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (split_extension.split_extension_block), which folds
+            # its own loud refusals into status='unsupported' + error.
+            from quiverlab.hochschild.split_extension import split_extension_block
+            block = split_extension_block(A, top=top if top is not None else 6)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "arrow_removal":
+            # Certified arrow removal (Plan 72 / R6): an ALGEBRA-level TOP-DEGREE budget
+            # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (arrow_removal.arrow_removal_block).
+            from quiverlab.hochschild.arrow_removal import arrow_removal_block
+            block = arrow_removal_block(A, top=top if top is not None else 6)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "radical_filtration":
             # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET
             # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
@@ -1200,6 +1240,23 @@ def compute_one(spec):
             # cross-runner contract holds byte-for-byte. Honest budget cap block.
             from quiverlab.tautilting.block import tau_tilting_block
             block = tau_tilting_block(A, budget=top if top is not None else 512)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "congruences":
+            # Torsion-lattice congruences (Plan 64): algebra-level, pair budget (not degree).
+            # SAME shared library builder (tautilting.congruence.congruences_block) +
+            # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so the
+            # cross-runner contract holds byte-for-byte -- INCLUDING the char-caveat error path:
+            # a QuiverlabError refusal (rigorous over char 0 / char > dim) is caught into the
+            # SAME {"kind","error","references"} shape spec.py returns (the silting-branch
+            # pattern), so the two runners' error paths are byte-identical; a non-QuiverlabError
+            # bug surfaces loudly (fail-fast). Honest complete-iff block.
+            from quiverlab.tautilting.congruence import _CITATIONS as _CONG_KEYS
+            from quiverlab.tautilting.congruence import congruences_block
+            try:
+                block = congruences_block(A, budget=top if top is not None else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "congruences", "error": str(exc),
+                         "references": list(_CONG_KEYS)}
             block["citations"] = _citation_pairs(block["references"])
         elif name == "hh1_lie":
             # HH^1 as a Lie algebra (Plan 70 / R11): algebra-level, DIM budget (not
@@ -1522,10 +1579,15 @@ def python_snippet():
              "hh_lie_module": "A.hh_lie_module(top=%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 64: the congruences kind carries a pair budget (%d = budget).
+             "congruences": "A.congruence_lattice(budget=%d)",
              # Plan 70: HH^1 as a Lie algebra, a scalar algebra-only kind, no %d.
              "hh1_lie": "A.hh1_lie_structure()",
              # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
              "wall_chamber": "A.wall_chamber_structure(budget_pairs=%d)",
+             # Plan 72: split_extension / arrow_removal carry a top-degree budget (%d = top).
+             "split_extension": "A.split_extension_cohomology(%d)",
+             "arrow_removal": "A.arrow_removal(top=%d)",
              # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
              # tmpl % top fills both %d).
              "silting": "A.silting_exploration(radius=%d, budget=%d)",
@@ -1547,6 +1609,7 @@ def python_snippet():
              "ext": "[A.ext(M, N, i) for i in range(%d + 1)]",
              "tor": "tor_dims(A, M, N, %d)  # from quiverlab.modules.tor",
              "decompose": "M.decompose()",
+             "barcode": "A.barcode(M)  # from quiverlab.modules.barcode import barcode",
              "almost_split": "M.almost_split_sequence()",
              "projective_resolution": "M.projective_resolution(%d).dimension_vectors()",
              "injective_resolution": "M.injective_resolution(%d).dimension_vectors()",
@@ -1630,6 +1693,10 @@ ETA_MODEL = {
                 "dimension_vector": 0.02, "rad_top_soc": 0.05,
                 "tau": 0.1, "tau_minus": 0.1, "ext": 0.2, "tor": 0.2,
                 "decompose": 0.3, "almost_split": 0.3,
+                # Plan 69: barcode = decompose (cheap A_n/zigzag) OR a full AR knit
+                # (CL). The knit-heavy CL case is pushed off the instant tier by the
+                # estimator's classify() upgrade (reason="knit_heavy"), not this weight.
+                "barcode": 0.3,
                 "projective_resolution": 0.2, "injective_resolution": 0.2,
                 "projective_dimension": 0.3, "injective_dimension": 0.3,
                 # Plan 44 / 49: single-module homological probes (tilting_check =
@@ -1661,6 +1728,10 @@ ETA_MODEL = {
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
                 "tau_tilting": 2.0,
+                # Plan 64: congruences BFSes the exchange graph (as tau_tilting) and then
+                # runs the principal-congruence fixed points + the kappa/CLO build -- a bit
+                # heavier than tau_tilting alone.
+                "congruences": 3.0,
                 # Plan 70: hh1_lie runs the Der/Inn Leibniz null space (d^2 unknowns /
                 # d^3 equations, ~ d^5.4 over QQ) + the bracket/series/Killing; budget-
                 # capped honestly at dim 48. The same cost class as tau_tilting.
@@ -1668,6 +1739,11 @@ ETA_MODEL = {
                 # Plan 63: wall_chamber runs the tau_tilting exchange-graph BFS PLUS the
                 # per-brick submodule enumeration for each D(B) -- just above tau_tilting.
                 "wall_chamber": 2.5,
+                # Plan 72: split_extension runs the CS Hom-complex of L = T(B)
+                # (dim 2*dim B) to degree top+2 and block-partitions it for the snake;
+                # arrow_removal runs HH_* + HH^* of A and B. Both are CS-dominated,
+                # around the tau_tilting cost class.
+                "split_extension": 2.0, "arrow_removal": 1.5,
                 # Plan 67: silting = a bounded-radius BFS of the silting quiver via K^b
                 # Hom + minimal approximations + cone/reduce per step; the hyper-Hom passes
                 # dominate. Budget-capped honestly (complete only for local).

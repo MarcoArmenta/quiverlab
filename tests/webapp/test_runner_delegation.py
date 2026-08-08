@@ -187,6 +187,16 @@ never hide behind one:
     ``canonical_key`` is request-derived (the budget rides in the ``compute`` string, no
     new request field); the ``result_json`` was frozen from the server runner, and the
     Plan-45 cross-runner test asserts the Pyodide twin agrees byte-for-byte.
+  * 2026-08-07 (``congruences_kA2`` ADDED, Plan 64 / R26): a NEW fixture for the
+    ``congruences`` ALGEBRA-level compute kind (kA2 over QQ, budget 512 -- the full run:
+    the pentagon N5 torsion lattice |L|=5, |Con(tors A)|=5, the forcing "V" on 3 bricks,
+    #wide=5 = M3). Pure addition: every pre-existing entry was verified byte-identical
+    BEFORE the new one was appended (the delegation test passed on all 18 unchanged). Its
+    ``canonical_key`` is request-derived (the pair budget rides in the ``compute`` string,
+    no new request field), so schema stays v1 and no existing golden re-freezes; the
+    ``result_json`` was frozen from the server runner, and the Plan-64 cross-runner tests
+    (``tests/webapp/test_congruences_p64.py`` / ``tests/gui/test_congruences_runner_twin.py``)
+    assert the Pyodide twin is byte-identical via the shared ``congruences_block`` builder.
   * 2026-08-05 (ALL 18 result_json re-frozen, v0.2.0 bump at the P50 gate): the
     embedded ``quiverlab_version`` moved 0.1.0 -> 0.2.0. Gated re-freeze: every
     regenerated blob is byte-identical to its predecessor after mapping the
@@ -410,18 +420,43 @@ never hide behind one:
     Both runners share the library builder (``invariants.hh1_lie.hh1_lie_block``), so the
     Pyodide twin agrees (``tests/gui/test_hh1_lie_runner_twin_p70.py``). ``canonical_key``
     is request-derived (schema-1 algebra-only, no ``module`` block).
-
   * 2026-08-08 (``hh_lie_module_kronecker`` ADDED, Plan 71 / R12): a NEW top-carrying HH
     kind (the ``bracket`` precedent). kK2 over QQ, ``compute == ["hh_lie_module:0..2"]``
     -- the shared block reports HH• as a graded Lie module over HH^1: ``hh_dims ==
     [1, 3, 0]``, ``hh1_dim == 3``, ``module_axiom_ok``/``inner_acts_zero`` true, the
     degree-1 indecomposable-summand entry (one part ``dim == 3``, the sl2-adjoint L(2)),
-    and the char-0 weight table (a symmetric sl2-string). Pure ADDITION: all 39 pre-existing
+    and the char-0 weight table (a symmetric sl2-string). Pure ADDITION: all pre-existing
     entries were verified byte-identical BEFORE the append (the generator round-trips the
     file bytes, then re-dumps ``indent=1`` order-preserving). Both runners share the library
     builder (``hochschild.lie_module.hh_lie_module_block``), so the Pyodide twin agrees
     (``tests/gui/test_hh_lie_module_twin_p71.py``). ``canonical_key`` is request-derived
-    (schema-2 algebra-only, no ``module`` block)."""
+    (schema-2 algebra-only, no ``module`` block).
+  * 2026-08-08 (``split_extension_kA2`` + ``arrow_removal_P1`` ADDED, Plan 72 /
+    R5+R6): two NEW algebra-only TOP-DEGREE budget kinds. ``split_extension_kA2`` =
+    kA2 (1->2) over GF(7), ``split_extension:4`` -- the trivial-extension Hochschild
+    LES (``assembled == direct == [3,1,1,1,1]``, ``agrees``/``exact`` true, the
+    grading-derivation ``HH^1 != 0`` witness). ``arrow_removal_P1`` = a loop x (x^2=0)
+    plus an inert bridge c:1->2 over GF(7), ``arrow_removal:4`` (``removed == ['c']``,
+    ``HH_n(A) == HH_n(B) == [3,1,1,1,1]``, ``hom_agrees`` true, ``coh_low_delta[0] ==
+    -2`` the disconnection effect). Pure ADDITION: every pre-existing entry was
+    verified byte-identical BEFORE the append (the generator round-trips the file
+    bytes, then re-dumps with the same ``indent=1`` settings). Both runners share the
+    library builders (``split_extension.split_extension_block`` /
+    ``arrow_removal.arrow_removal_block``), so the Pyodide twin agrees
+    (``tests/gui/test_split_arrow_runner_twin.py``). ``canonical_key`` is
+    request-derived (schema-1 algebra-only, the top-degree budget rides in the
+    ``compute`` string, no ``module`` block).
+  * 2026-08-08 (``barcode_a5``): ADDED for Plan 69 (R33 persistence/TDA bridge) -- the
+    new ``barcode`` module-side compute kind. One entry: a schema-2 request drawing the
+    forward line ``A_5`` (1->2->3->4->5, QQ) with the filtration ``H_0`` module (dims
+    (1,2,1,2,1), Plan-26 per-arrow block maps) + ``compute: ["barcode"]``. The block is
+    the interval barcode ``{[1,5] essential, [2,2], [4,4]}`` (LIVE-VERIFIED). Appended AFTER
+    dev's ``hh1_lie_kronecker`` (parse dev's dict, append ``barcode_a5`` LAST, re-dump
+    ``indent=1``, NEVER ``sort_keys``); all 39 prior entries confirmed byte-identical first.
+    Both runners share the library core builder (``quiverlab.modules.barcode.barcode_block``),
+    so the Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
+    is request-derived (the ``module`` block canonicalizes through the Plan-25 key; no new
+    top-level request field)."""
 import json
 import pathlib
 

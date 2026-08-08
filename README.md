@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-4629_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-4765_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 4629 tests over the
+Every shipped feature is unit tested (the suite is 4765 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -353,6 +353,13 @@ ported and wired in:
   representation-finite domain (self-injective input and rep-infinite windows refuse
   or label honestly), clickable via the no-code `radical_filtration` /
   `ar_invariants` kinds.
+- **The persistence / TDA bridge (R33).** Barcodes as **interval decompositions** of
+  `A_n` and zigzag persistence modules (Gabriel / Botnan–Crawley-Boevey; **field-robust
+  over `GF(2)`** — interval modules are bricks), and **AR-quiver-indexed generalized
+  persistence diagrams** for commutative ladders `CL(n) = A_n □ A_2` (`n ≤ 4`,
+  representation-finite; Escolar–Hiraoka; `n ≥ 5` a loud refusal) — representation theory
+  first, the `barcode` no-code compute kind. Exact only: the filtration parameter is the
+  discrete vertex index (no float thresholds, no `∞`).
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**
@@ -405,6 +412,12 @@ ported and wired in:
   for `kA_n`) — every enumeration budget-capped with the honest
   complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
   drawn no-code in the browser for n = 2, 3** — the C4 flagship.
+- **The lattice theory of torsion classes (Demonet–Iyama–Reading–Reiten–Thomas).**
+  The finite lattice `tors A` as an abstract lattice, the congruence lattice
+  `Con(tors A)`, the forcing order on bricks, canonical join representations, and the
+  **wide-subcategory poset** (Enomoto's core label order = κ order) — one click via the
+  `congruences` compute kind, certified complete iff `A` is τ-tilting-finite. kA₂ =
+  the pentagon N₅ / M₃; kA₃ = the 14-element `Con` / NC(A₃) wide poset.
 - **Wall-and-chamber structure via bricks (Brüstle–Smith–Treffinger, P63).** The wall
   `D(B)` of every brick as an **exact rational inequality system** over the submodule
   dim-vectors (`D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 for every N ⊆ B}`), the chambers
@@ -429,6 +442,14 @@ ported and wired in:
   `#signed = n!·#sτt` (materialised + cross-checked). Hereditary-only / Dynkin-only for
   the classical side, τ-tilting-finite-only for the τ side, loud otherwise. Clickable via
   `exceptional_sequences`.
+- **Split-extension LES + certified arrow removal (R5+R6, P72).** The
+  Cibils–Marcos–Redondo–Solotar **trivial-extension Hochschild long exact sequence** —
+  `HH^•(T(B))` assembled from the flanks `HH^•(L,D(B))` / `HH^•(L,B)` and the snake
+  connecting map, cross-checked against the direct answer, with the grading-derivation
+  witness `HH^1(T(B)) ≠ 0` (and `= k ⊕ HH^1(B)` on directed `B`); and the
+  Cibils–Lanzilotta–Marcos–Solotar **certified arrow removal** — deleting inert arrows
+  (in no relation) gives a clean `HH_n(A) ≅ HH_n(B)` for `n ≥ 2`, with the honest
+  cohomology Ext-correction. Clickable via `split_extension` / `arrow_removal`.
 - **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
   left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
   the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —

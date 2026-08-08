@@ -130,7 +130,7 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 # Module kinds that consume a degree range (`kind:0..n`); the rest are scalars.
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
@@ -420,6 +420,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # congruences (Plan 64) carries a PAIR BUDGET, not a degree range: 'congruences' or
+    # 'congruences:512' -- the torsion lattice / Con / forcing / wide poset live on the
+    # exchange graph, so it skips the 'name:0..N' grammar (server and GUI/hpc agree).
+    if s == "congruences" or s.startswith("congruences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"congruences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips the degree grammar (like tau_tilting).
@@ -457,6 +465,15 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # split_extension / arrow_removal (Plan 72) carry a TOP-DEGREE budget, not a lo..hi
+    # range: 'split_extension' / 'split_extension:6'. The budget is a single cap, not a
+    # 'name:0..N' range -- server and GUI/hpc agree on this special form.
+    for _kind in ("split_extension", "arrow_removal"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SchemaError(f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget is not a homological
     # degree, so it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this form.
