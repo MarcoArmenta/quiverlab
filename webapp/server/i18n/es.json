@@ -316,5 +316,7 @@
   "block.silting.status_complete": "completa (local)",
   "block.silting.status_radius": "limitada por radio (no todo el carcaj de silting)",
   "block.silting.status_budget": "limitada por presupuesto (no todo el carcaj de silting)",
-  "pick.kind.silting": "Teoría de silting"
+  "pick.kind.silting": "Teoría de silting",
+  "inv.exceptional_sequences": "Sucesiones excepcionales (clásicas + τ)",
+  "pick.kind.exceptional_sequences": "Sucesiones excepcionales"
 }

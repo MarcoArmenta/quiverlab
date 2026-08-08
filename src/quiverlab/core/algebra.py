@@ -586,6 +586,45 @@ class Algebra:
         for local (:class:`~quiverlab.derived.silting.SiltingExploration`)."""
         from quiverlab.derived.silting import bounded_silting_exploration
         return bounded_silting_exploration(self, radius=radius, budget=budget)
+    def exceptional_sequences(self, budget=100_000, transitive="auto"):
+        """The complete classical exceptional sequences of this **hereditary** algebra
+        (Plan 65 / R28): the backward-orthogonality enumeration, the braid-orbit
+        transitivity certificate, and the Dynkin closed-form count ``n! h^n / |W|``.
+        Hereditary + representation-finite scope; loud refusal otherwise. Returns an
+        :class:`~quiverlab.modules.exceptional.ExcSeqReport`."""
+        from quiverlab.modules.exceptional import exceptional_sequences
+        return exceptional_sequences(self, budget=budget, transitive=transitive)
+
+    def is_exceptional_sequence(self, seq):
+        """True iff ``seq`` is a classical exceptional sequence over this **hereditary**
+        algebra (Plan 65 / R28): each term a rigid brick, no backward Hom/Ext (``i<j`` =>
+        ``Hom(E_j,E_i)=Ext^1(E_j,E_i)=0``). Loud non-hereditary refusal."""
+        from quiverlab.modules.exceptional import is_exceptional_sequence
+        return is_exceptional_sequence(self, seq)
+
+    def tau_exceptional_objects(self, budget=512):
+        """The length-1 signed tau-exceptional objects (Plan 65 / R27): the indecomposable
+        tau-rigid modules (sign +1) + one shifted projective ``P_v[1]`` per vertex (sign -1).
+        tau-tilting-finite scope; loud refusal otherwise. A list of
+        :class:`~quiverlab.tautilting.exceptional.TauExcObject`."""
+        from quiverlab.tautilting.exceptional import tau_exceptional_objects
+        return tau_exceptional_objects(self, budget=budget)
+
+    def tau_exceptional_sequences(self, budget=4096, want_sequences=True):
+        """The complete signed tau-exceptional sequences of this **tau-tilting-finite**
+        algebra (Plan 65 / R27; Buan-Marsh): the ordered-support-tau-tilt bijection count
+        ``signed_count = n! * #sTt`` plus the materialised reduction towers (the H1
+        cross-check). Loud refusal off a complete exchange graph (M1). Returns a
+        :class:`~quiverlab.tautilting.exceptional.TauExcReport`."""
+        from quiverlab.tautilting.exceptional import tau_exceptional_sequences
+        return tau_exceptional_sequences(self, budget=budget, want_sequences=want_sequences)
+
+    def is_tau_exceptional_sequence(self, seq):
+        """True iff ``seq`` is a signed tau-exceptional sequence over this algebra
+        (Plan 65 / R27): a reduction tower, or an ambient ``(inner, ..., outer)`` sequence
+        recognized by the Jasso reduction recursion."""
+        from quiverlab.tautilting.exceptional import is_tau_exceptional_sequence
+        return is_tau_exceptional_sequence(self, seq)
 
     def is_tilting_module(self, T, n=1):
         """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module

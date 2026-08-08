@@ -316,5 +316,7 @@
   "block.silting.status_complete": "完备（局部）",
   "block.silting.status_radius": "受半径限制（并非整个 silting 箭图）",
   "block.silting.status_budget": "受预算限制（并非整个 silting 箭图）",
-  "pick.kind.silting": "Silting 理论"
+  "pick.kind.silting": "Silting 理论",
+  "inv.exceptional_sequences": "例外序列 (经典 + τ)",
+  "pick.kind.exceptional_sequences": "例外序列"
 }

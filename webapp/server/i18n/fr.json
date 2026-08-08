@@ -316,5 +316,7 @@
   "block.silting.status_complete": "complète (locale)",
   "block.silting.status_radius": "limitée par le rayon (pas tout le carquois de silting)",
   "block.silting.status_budget": "limitée par le budget (pas tout le carquois de silting)",
-  "pick.kind.silting": "Théorie du silting"
+  "pick.kind.silting": "Théorie du silting",
+  "inv.exceptional_sequences": "Suites exceptionnelles (classiques + τ)",
+  "pick.kind.exceptional_sequences": "Suites exceptionnelles"
 }

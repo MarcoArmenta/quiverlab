@@ -386,7 +386,20 @@ never hide behind one:
     the Pyodide twin agrees (``tests/webapp/test_silting_p67.py`` /
     ``tests/gui/test_silting_runner_twin.py``). ``canonical_key`` is request-derived
     (schema-1 algebra-only; the radius,budget rides in the ``compute`` string, no new
-    request field)."""
+    request field).
+  * 2026-08-08 (``exceptional_sequences_kA3`` ADDED, Plan 65 / R27+R28): a NEW
+    algebra-only budget kind. kA3 (linear 1->2->3) over GF(7), ``exceptional_sequences
+    :512`` -- the shared block dispatches BOTH halves: classical hereditary
+    (``count == 16``, ``closed_form_count == 16 = n! h^n / |W|``, ``transitive ==
+    true``, Dynkin ``A_3``) and tau-exceptional (``signed_count == 84 = 3! * 14``,
+    ``stt_count == 14``). Pure ADDITION: every pre-existing entry was verified
+    byte-identical BEFORE the append (the generator round-trips the file bytes, then
+    re-dumps with the same ``indent=1`` settings; all 33 prior delegation asserts
+    green first). Both runners share the library builder
+    (``tautilting.exceptional.exceptional_sequences_block``), so the Pyodide twin
+    agrees (``tests/gui/test_exceptional_runner_twin_p65.py``). ``canonical_key`` is
+    request-derived (schema-1 algebra-only, the budget rides in the ``compute``
+    string, no ``module`` block)."""
 import json
 import pathlib
 

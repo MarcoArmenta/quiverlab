@@ -316,5 +316,7 @@
   "block.silting.status_complete": "complete (local)",
   "block.silting.status_radius": "radius-limited (not the whole silting quiver)",
   "block.silting.status_budget": "budget-capped (not the whole silting quiver)",
-  "pick.kind.silting": "Silting theory"
+  "pick.kind.silting": "Silting theory",
+  "inv.exceptional_sequences": "Exceptional sequences (classical + τ)",
+  "pick.kind.exceptional_sequences": "Exceptional sequences"
 }

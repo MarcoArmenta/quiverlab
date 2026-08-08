@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-4484_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-4534_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 4484 tests over the
+Every shipped feature is unit tested (the suite is 4534 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -406,6 +406,15 @@ ported and wired in:
   with loud truncation (the silting quiver can be infinite — no general BFS; complete only
   for local), and the co-t-structure dictionary — cross-checked against P45's τ-tilting
   (2-term slice) and Oppermann's `End(μT)` quiver rule, no-code in the browser.
+- **Exceptional sequences (R27+R28).** The classical hereditary theory — an
+  orthogonality recognizer, **braid mutation** `σ_i` (universal-extension / kernel /
+  cokernel constructions), the Crawley-Boevey / Ringel **braid-orbit transitivity**
+  certificate, and the Dynkin closed-form counts `#CES = n!·hⁿ/|W|` (`A_n = (n+1)^{n-1}`,
+  `D_4 = 162`) — and **Buan–Marsh τ-exceptional sequences** via the **Jasso
+  τ-perpendicular reduction** and the ordered-support-τ-tilt bijection
+  `#signed = n!·#sτt` (materialised + cross-checked). Hereditary-only / Dynkin-only for
+  the classical side, τ-tilting-finite-only for the τ side, loud otherwise. Clickable via
+  `exceptional_sequences`.
 - **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
   left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
   the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —
