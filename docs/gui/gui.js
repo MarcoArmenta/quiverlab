@@ -3377,13 +3377,16 @@
       if (b.error) {
         div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
       } else {
+        var certRepInf = (b.rep_type === null || b.rep_type === undefined)
+          && b.certified === "rep_infinite";
         var twName = b.rep_type === "rep-finite" ? "representation-finite"
           : b.rep_type === "tame" ? "tame"
           : b.rep_type === "wild" ? "wild"
+          : certRepInf ? "representation-infinite (tame vs wild withheld)"
           : "undecided";
         var twline = "Representation type (certified): " + twName;
         div.appendChild(h("p", { text: twline + "." }));
-        if (b.rep_type === null || b.rep_type === undefined)
+        if ((b.rep_type === null || b.rep_type === undefined) && !certRepInf)
           div.appendChild(h("p", { "class": "qlgui-hint",
             text: "Verdict withheld — " + (b.reason || "out of scope") }));
         else if (b.reason)
@@ -3404,7 +3407,8 @@
         div.appendChild(h("p", { "class": "qlgui-hint",
           text: "Certificate (Plan 56): simply connected — " + tri(sc)
             + "; strongly simply connected — " + tri(ssc)
-            + "; algebraically closed field — " + (b.field_alg_closed ? "yes" : "no") + "." }));
+            + "; base field admits the representation-type verdict — "
+            + (b.field_alg_closed ? "yes" : "no") + "." }));
         // the integer Tits Gram matrix as an indexed grid
         if (b.gram && b.gram.length)
           div.appendChild(matrixGrid(b.gram));

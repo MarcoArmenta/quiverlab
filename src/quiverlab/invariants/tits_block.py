@@ -75,6 +75,7 @@ def tame_wild_block(A) -> dict:
         "strong_certificate": strong_blk,
         "field_alg_closed": c.field_alg_closed,
         "rep_type": c.rep_type,
+        "certified": c.certified,
         "reason": c.reason,
         "scope_note": c.scope_note,
         "labels": [str(v) for v in labels],

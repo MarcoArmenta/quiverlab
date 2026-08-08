@@ -9,8 +9,11 @@ import tempfile
 from quiverlab.hpc.spec import parse_request, run
 
 
+# The verdict layer is algebraically-closed-only (CC, or -- absent P61's field flag --
+# any char-0 field by base change): CC has a verdict in BOTH regimes, so verdict-asserting
+# requests use CC (over QQ post-P61 the flag refuses the verdict). GF(p) = the refusal.
 def _linear(n, compute, field=None):
-    field = field or {"kind": "QQ"}
+    field = field or {"kind": "CC"}
     return {
         "schema": 1,
         "algebra": {
@@ -26,7 +29,7 @@ def _linear(n, compute, field=None):
 
 
 def _star(arms, compute, field=None):
-    field = field or {"kind": "QQ"}
+    field = field or {"kind": "CC"}
     verts, ars, nxt = [0], {}, 1
     for ai, length in enumerate(arms):
         prev = 0
@@ -45,7 +48,7 @@ def _star(arms, compute, field=None):
 
 
 def _kron(m, compute, field=None):
-    field = field or {"kind": "QQ"}
+    field = field or {"kind": "CC"}
     return {
         "schema": 1,
         "algebra": {"kind": "quiver", "vertices": [1, 2],
@@ -86,8 +89,9 @@ def test_tame_wild_wild_witness(tmp_path):
 
 
 def test_tame_wild_off_scope_keeps_form(tmp_path):
-    # 2-Kronecker over QQ: form computed (weakly nonnegative True), but NOT simply
-    # connected, so the verdict is withheld (rep_type null) -- the honest layer split.
+    # 2-Kronecker over CC: form computed (weakly nonnegative True), but NOT simply
+    # connected, so the verdict is withheld (rep_type null) -- the honest layer split
+    # (over CC the FIELD gate passes, so the withholding is purely the P56 gate).
     out = run(parse_request(_kron(2, ["tame_wild"])), tempfile.mkdtemp())
     b = out["results"]["tame_wild"]
     assert b["weakly_nonnegative"] is True and b["rep_type"] is None

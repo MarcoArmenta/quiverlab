@@ -5,8 +5,11 @@ verdict None, form still computed. Refs: Bongartz Math. Ann. 269 (1984); BdlPS A
 226 (2011); Kasjan-Skowronski arXiv:1905.06028."""
 import pytest
 
-from quiverlab import CC, GF, Quiver, linear_path_algebra
+from quiverlab import CC, GF, QQi, Quiver, linear_path_algebra
+from quiverlab.fields.rationals import RationalField
 from quiverlab.invariants.tits import tame_wild_certificate
+
+QQ = RationalField()
 
 lit = pytest.mark.oracle_literature
 selfcert = pytest.mark.oracle_selfcert
@@ -105,3 +108,49 @@ def test_bongartz_rep_infinite_middle_is_None_not_tame_wild():
     assert c.weakly_positive is False and c.weakly_nonnegative is True
     assert c.rep_type is None                       # withheld -- never a guessed tame
     assert "strong" in c.reason.lower() and "infinite" in c.reason.lower()
+    # ...but the rep-infinite certainty is SURFACED explicitly (ruling 4) -- Bongartz
+    # (simple connectivity + not weakly positive) certifies rep-infinite; only the
+    # tame/wild split is undecided, and that is what rep_type=None records.
+    assert c.certified == "rep_infinite"
+
+
+@selfcert
+def test_reason_never_fabricates_algebraically_closed_over_non_CC_char0():
+    # RULING 1(a): over a char-0 field that is NOT algebraically closed (QQ, QQ(i)),
+    # the verdict is read by BASE CHANGE to the algebraic closure -- the reason string
+    # must NEVER call the field itself "over an algebraically closed field" (the old
+    # fabricated phrase), nor the scope note "algebraically-closed-only".
+    for field in (QQ, QQi):
+        c = tame_wild_certificate(linear_path_algebra(5, field=field))  # A5: ssc + wp
+        assert "over an algebraically closed field" not in c.reason
+        assert "algebraically-closed-only" not in c.scope_note
+        # the honest base-change wording is present wherever a char-0 verdict is read
+        if c.rep_type is not None:                          # base (pre-P61): char-0 fallback
+            assert "base change" in c.reason.lower()
+        else:                                               # post-P61: honest refusal
+            assert "algebraically closed base field" in c.reason
+
+
+@selfcert
+def test_verdict_field_gate_is_two_level():
+    # RULING 1(b): the verdict FIELD gate defers to P61's is_algebraically_closed flag
+    # when the domain carries it, else falls back to characteristic 0. This pin must hold
+    # on BOTH the pre-P61 base (fallback) and post-merge dev (flag) -- it asserts the
+    # verdict is reached IFF the domain-level gate says so, never a hardcoded per-field
+    # expectation. A5 is strongly simply connected + weakly positive, so the ONLY thing
+    # that can withhold its verdict is the field gate.
+    for field in (CC, QQ, QQi):                             # all characteristic 0
+        A = linear_path_algebra(5, field=field)
+        gate = getattr(A.domain, "is_algebraically_closed", A.domain.characteristic == 0)
+        c = tame_wild_certificate(A)
+        assert c.field_alg_closed is bool(gate)
+        if gate:
+            assert c.rep_type == "rep-finite"              # verdict reached
+        else:
+            assert c.rep_type is None and c.certified is None   # honest refusal
+    # GF(7): the gate is False in BOTH regimes -> refusal, form still computed.
+    A = linear_path_algebra(5, field=GF(7))
+    gate = getattr(A.domain, "is_algebraically_closed", A.domain.characteristic == 0)
+    c = tame_wild_certificate(A)
+    assert gate is False and c.field_alg_closed is False and c.rep_type is None
+    assert c.weakly_positive is True                        # field-free form still computed

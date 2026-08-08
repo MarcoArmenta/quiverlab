@@ -755,8 +755,13 @@ def _tame_wild_html(b):
     name = {"rep-finite": "representation-finite", "tame": "tame",
             "wild": "wild"}.get(rep)
     if name is None:
-        out.append("<p>Representation type <b>undecided</b> — %s</p>"
-                   % _esc(str(b.get("reason", "out of scope"))))
+        if b.get("certified") == "rep_infinite":
+            out.append("<p>Representation type (certified): "
+                       "<b>representation-infinite</b> (tame vs wild withheld). %s</p>"
+                       % _esc(str(b.get("reason", ""))))
+        else:
+            out.append("<p>Representation type <b>undecided</b> — %s</p>"
+                       % _esc(str(b.get("reason", "out of scope"))))
     else:
         out.append("<p>Representation type (certified): <b>%s</b>. %s</p>"
                    % (_esc(name), _esc(str(b.get("reason", "")))))
@@ -768,7 +773,8 @@ def _tame_wild_html(b):
         out.append("<p>Witness d = %s with q_A(d) = %s.</p>"
                    % (_esc(str(b["witness"])), _num(b.get("witness_value"))))
     out.append("<p><em>Certificate (Plan 56): simply connected — %s; strongly "
-               "simply connected — %s; algebraically closed field — %s.</em></p>"
+               "simply connected — %s; base field admits the representation-type "
+               "verdict — %s.</em></p>"
                % (tri(b.get("simply_connected")),
                   tri(b.get("strongly_simply_connected")),
                   "yes" if b.get("field_alg_closed") else "no"))

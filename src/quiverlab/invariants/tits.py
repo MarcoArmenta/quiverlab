@@ -13,8 +13,11 @@ homological Euler form at Ext^2 and is defined for EVERY admissible presentation
 The computation of q_A and of its weak positivity / weak nonnegativity is
 FIELD-FREE integer arithmetic.
 
-The representation-type verdict on top of the form is algebraically-closed-only
-(char 0 in quiverlab; see `_is_alg_closed`) and gated on the P56 certificate:
+The representation-type verdict on top of the form requires an algebraically
+closed base field (`_is_alg_closed`: the CC working domain, or -- absent P61's
+`is_algebraically_closed` field flag -- any characteristic-0 field read by base
+change to the algebraic closure, the form and the representation type being
+field-independent in characteristic 0). It is gated on the P56 certificate:
 
     * A representation-finite  <=>  q_A weakly positive     (Bongartz 1984,
       simply connected);
@@ -443,18 +446,19 @@ def is_weakly_nonnegative(form, *, budget=3_000_000) -> FormVerdict:
 
 
 # ---------------------------------------------------------------------------
-# the tame/wild certificate (P56-gated, characteristic-0 only)
+# the tame/wild certificate (P56-gated; verdict on an algebraically closed base)
 # ---------------------------------------------------------------------------
 def _is_alg_closed(A) -> bool:
-    """quiverlab's algebraically-closed setting for the representation-type
-    verdict: characteristic 0. A char-0 kQ/I is read as its base change to C = the
-    algebraic closure (the quiver + relations, hence q_A and the representation
-    type, are unchanged); positive characteristic GF(p)/GF(p^n) is refused (the
-    working field is finite, not algebraically closed, and quiverlab does not model
-    its algebraic closure). The CC/QQ working domain collapses to the smallest
-    exact field, so the two are indistinguishable post-construction -- char 0 is the
-    honest, decidable gate."""
-    return getattr(A.domain, "characteristic", 0) == 0
+    """The representation-type verdict gate: True exactly when the base field
+    admits the tame/wild reading. Post-P61 this reads the domain's
+    ``is_algebraically_closed`` flag (True only on the CC working domain; QQ,
+    QQ(i) and every GF(p)/GF(p^n) are False). On a branch predating that flag it
+    falls back to ``characteristic == 0`` -- a char-0 verdict is then justified by
+    base change to the algebraic closure (the combinatorial Tits form and the
+    representation type are field-independent in characteristic 0). A
+    positive-characteristic field is refused in either regime (finite, not
+    algebraically closed, and quiverlab does not model its algebraic closure)."""
+    return getattr(A.domain, "is_algebraically_closed", A.domain.characteristic == 0)
 
 
 @dataclass(frozen=True)
@@ -471,20 +475,26 @@ class TameWildCertificate:
     simply_connected: object
     strongly_simply_connected: object
     strong_certificate: object
-    # -- verdict layer (char 0 + P56 gate) --
-    field_alg_closed: bool
+    # -- verdict layer (algebraically-closed-base gate + P56 gate) --
+    field_alg_closed: bool             # the verdict field gate (flag if present, else char 0)
     rep_type: object                   # "rep-finite" | "tame" | "wild" | None
     reason: str
     scope_note: str
+    certified: object = None           # "rep_infinite" when rep_type is None but
+    #                                    Bongartz certifies representation-infinite
+    #                                    (not weakly positive + simply connected)
 
 
 _SCOPE_NOTE = (
     "The combinatorial Tits form q_A and its weak positivity / weak nonnegativity "
-    "are field-free integer arithmetic. The representation-type verdict is "
-    "algebraically-closed-only (characteristic 0 in quiverlab) and gated on the "
-    "P56 certificate: rep-finite <=> weakly positive for a SIMPLY connected algebra "
-    "(Bongartz 1984); tame <=> weakly nonnegative for a STRONGLY simply connected "
-    "algebra (Brustle-de la Pena-Skowronski 2011). wild = a found d >= 0 with "
+    "are field-free integer arithmetic. The representation-type verdict requires an "
+    "algebraically closed base field (quiverlab's CC domain; over a characteristic-0 "
+    "field it is read by base change to the algebraic closure, the Tits form being "
+    "field-independent in characteristic 0 -- GF(p)/GF(p^n) is refused) and is gated "
+    "on the P56 certificate: rep-finite <=> weakly positive for a SIMPLY connected "
+    "algebra (Bongartz 1984); tame <=> weakly nonnegative for a STRONGLY simply "
+    "connected algebra (Brustle-de la Pena-Skowronski 2011), decided here by the "
+    "exact positive-semidefinite (Euclidean) certificate. wild = a found d >= 0 with "
     "q_A(d) < 0. Off scope the form is still computed and the verdict is None."
 )
 
@@ -493,7 +503,8 @@ def tame_wild_certificate(A, *, convex_budget=20000,
                           search_budget=3_000_000) -> TameWildCertificate:
     """The Tits-form representation-type certificate (Plan 62 / R19): the
     rep-finite / tame / wild trichotomy gated on the P56 strong-simple-connectivity
-    certificate over a characteristic-0 field. Loud on presentation-less input;
+    certificate over an algebraically closed base field (a characteristic-0 field is
+    read by base change to the algebraic closure). Loud on presentation-less input;
     raises (via as_unit_form) on a non-triangular quiver. P56's None propagates to
     a None verdict -- never a fabricated tame/wild."""
     _require_quiver(A, "tame_wild_certificate")
@@ -513,21 +524,26 @@ def tame_wild_certificate(A, *, convex_budget=20000,
     ssc_obj = sc.strongly
     sscv = ssc_obj.verdict if ssc_obj is not None else None
 
-    char0 = _is_alg_closed(A)
+    field_ok = _is_alg_closed(A)
 
     rep_type = None
-    if not char0:
+    certified = None
+    if not field_ok:
         p = getattr(A.domain, "characteristic", 0)
-        reason = (f"the representation-type verdict is algebraically-closed-only "
-                  f"(characteristic 0); this field has characteristic {p}, which is "
-                  f"not algebraically closed. The Tits form above is field-free and "
-                  f"reported.")
+        why = (f"this field has characteristic {p}" if p else
+               "this characteristic-0 field is not flagged algebraically closed")
+        reason = ("the representation-type verdict requires an algebraically closed "
+                  f"base field (quiverlab's CC working domain); {why}, so the tame/wild "
+                  "reading is out of scope. The Tits form above is field-free and "
+                  "reported.")
     elif sscv is True:
         # tame/wild axis (BdlPS, strong simple connectivity)
         if wp.holds is True:
             rep_type = "rep-finite"
             reason = ("weakly positive => representation-finite (Bongartz 1984); "
-                      "strongly simply connected over an algebraically closed field.")
+                      "strongly simply connected, verdict read by base change to the "
+                      "algebraic closure (the Tits form is field-independent in "
+                      "characteristic 0).")
         elif wnn.holds is False:
             rep_type = "wild"
             reason = (f"a witness d={list(witness)} with q_A(d)={witness_value} < 0 was "
@@ -538,6 +554,11 @@ def tame_wild_certificate(A, *, convex_budget=20000,
             reason = ("weakly nonnegative but not weakly positive => tame "
                       "(Brustle-de la Pena-Skowronski 2011); strongly simply "
                       "connected. The isotropic witness records the tame direction.")
+        elif wp.holds is False:
+            reason = ("strongly simply connected and NOT weakly positive => "
+                      "representation-infinite (Bongartz 1984); the tame/wild split is "
+                      f"undetermined (weak nonnegativity = {wnn.reason}). Verdict "
+                      "withheld between tame and wild (no guess).")
         else:
             reason = ("strongly simply connected, but the form verdict is "
                       f"undetermined: weak positivity = {wp.reason}; weak "
@@ -563,7 +584,6 @@ def tame_wild_certificate(A, *, convex_budget=20000,
     else:
         # neither strongly nor simply connected is certified True
         if sscv is False:
-            w = (ssc_obj.witness or {}) if ssc_obj else {}
             reason = (f"not strongly simply connected (P56: {ssc_obj.reason}) -- the "
                       f"Tits-form tame/wild verdict is out of scope.")
         elif scv is False:
@@ -572,6 +592,15 @@ def tame_wild_certificate(A, *, convex_budget=20000,
         else:
             reason = (f"simple connectivity undecided (P56: {sc.reason}) -- verdict "
                       f"None propagated; never upgraded to a tame/wild claim.")
+
+    # Bongartz-certain representation-INFINITE (Plan 62 ruling 4): not weakly positive
+    # on a (strongly) simply connected algebra over the verdict field certifies
+    # representation-infinite, even when the tame/wild split stays undetermined. Surfaced
+    # explicitly so the GUI/report can STATE the certainty; rep_type stays None because
+    # tame-vs-wild is genuinely unknown here (never conflated with the undecided case).
+    if (rep_type is None and field_ok and wp.holds is False
+            and (scv is True or sscv is True)):
+        certified = "rep_infinite"
 
     return TameWildCertificate(
         gram=form.gram,
@@ -584,8 +613,9 @@ def tame_wild_certificate(A, *, convex_budget=20000,
         simply_connected=scv,
         strongly_simply_connected=sscv,
         strong_certificate=ssc_obj,
-        field_alg_closed=char0,
+        field_alg_closed=field_ok,
         rep_type=rep_type,
         reason=reason,
         scope_note=_SCOPE_NOTE,
+        certified=certified,
     )

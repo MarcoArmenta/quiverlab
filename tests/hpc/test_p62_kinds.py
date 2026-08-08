@@ -10,10 +10,14 @@ from quiverlab.hpc.spec import parse_request
 from quiverlab.hpc.spec import run as spec_run
 
 
+# The verdict layer is algebraically-closed-only (the CC working domain, or -- absent
+# P61's field flag -- any char-0 field by base change): CC is the field with a verdict
+# in BOTH regimes, so verdict-asserting requests use CC (over QQ post-P61 the flag would
+# refuse the verdict). The FORM layer is field-free; GF(p) exercises the honest refusal.
 def _linear(n, field=None):
     return {"kind": "quiver", "vertices": list(range(1, n + 1)),
             "arrows": {f"a{i}": [i, i + 1] for i in range(1, n)},
-            "relations": [], "field": field or {"kind": "QQ"}}
+            "relations": [], "field": field or {"kind": "CC"}}
 
 
 def _star(arms, field=None):
@@ -26,7 +30,7 @@ def _star(arms, field=None):
             prev = nxt
             nxt += 1
     return {"kind": "quiver", "vertices": verts, "arrows": ars,
-            "relations": [], "field": field or {"kind": "QQ"}}
+            "relations": [], "field": field or {"kind": "CC"}}
 
 
 def _req(algebra, compute):
