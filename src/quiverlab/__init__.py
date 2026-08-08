@@ -25,6 +25,9 @@ from quiverlab.families import (  # noqa: E402,F401
 )
 from quiverlab.families import BrauerGraph, BrauerGraphAlgebra  # noqa: E402,F401
 from quiverlab.families import (  # noqa: E402,F401
+    CommutativeLadder, is_commutative_ladder, persistence_line,
+)
+from quiverlab.families import (  # noqa: E402,F401
     ToupieAlgebra, is_toupie, toupie_branch_count, toupie_direct_arrow_count,
     toupie_sl_a_lower_bound,
 )
@@ -61,6 +64,7 @@ __all__ = [
     "IncidenceAlgebra", "QuantumCI", "ExteriorAlgebra", "PreprojectiveAlgebra",
     "TrivialExtension", "TensorProduct", "zoo", "families",
     "BrauerGraph", "BrauerGraphAlgebra",
+    "CommutativeLadder", "is_commutative_ladder", "persistence_line",
     "ToupieAlgebra", "is_toupie", "toupie_branch_count",
     "toupie_direct_arrow_count", "toupie_sl_a_lower_bound",
     "SkewGentleAlgebra", "SkewGentleTriple", "is_skew_gentle_triple",

@@ -73,7 +73,7 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
@@ -112,6 +112,7 @@ _MOD_REFS = {
     "tilting_check": ["bongartz_tilting", "assem_book"],
     "orbit_geometry": ["voigt_rigidity", "kac_canonical",
                        "schofield_general_reps", "derksen_weyman_canonical"],
+    "barcode": ["escolar_hiraoka", "botnan_crawley_boevey", "gabriel", "assem_book"],
 }
 
 
@@ -424,7 +425,7 @@ def _iter_families():
     for info in ql.families():
         name = info.name
         if name in ("zoo", "BrauerGraphAlgebra", "ToupieAlgebra",
-                    "SkewGentleAlgebra"):                            # non-scalar constructors
+                    "SkewGentleAlgebra", "CommutativeLadder"):       # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -2421,6 +2422,13 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return _with_refs({"kind": "decompose", "side": M.side,
                            "summands": summands, "iso_classes": len(summands)}, kind)
+    if kind == "barcode":
+        # The persistence/TDA barcode (Plan 69 / R33): interval decomposition of an
+        # A_n/zigzag module (field-robust) or the AR-indexed generalized persistence
+        # diagram of a CL(n<=4) (char-scoped). SHARED core builder (barcode_block) so the
+        # Pyodide twin can't drift; a refusal is an {"error": ...} block (never a 500).
+        from quiverlab.modules.barcode import barcode_block
+        return _with_refs(barcode_block(A, M), kind)
     if kind == "almost_split":
         # The almost-split (Auslander-Reiten) sequence 0 -> tau M -> E -> M -> 0 for M
         # indecomposable non-projective (Plan 41). tau M ships as a full representation;
@@ -2779,6 +2787,8 @@ def _snippet(req: ComputeRequest, A) -> str:
                                 f"tor_dims(A, M, N, {it.hi})"),
              "decompose": lambda it: ("from quiverlab.modules.decompose import "
                                       "decompose\ndecompose(M)"),
+             "barcode": lambda it: ("from quiverlab.modules.barcode import barcode\n"
+                                    "barcode(M)"),
              "almost_split": lambda it: "M.almost_split_sequence()",
              "projective_resolution":
                  lambda it: f"M.projective_resolution({it.hi}).dimension_vectors()",

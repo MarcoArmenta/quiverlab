@@ -71,6 +71,12 @@ CATALOG = (
                "(Chen sec 3; dim-certified vs the associated gentle algebra, HZZ Lemma "
                "1.5; characteristic-free). Non-scalar constructor: not offered by the "
                "scalar form-builder."),
+    FamilyInfo("CommutativeLadder", "CommutativeLadder(n, base_orientation='forward')",
+               "general", ("escolar_hiraoka", "botnan_crawley_boevey", "assem_book"),
+               "Commutative ladder CL(n) = A_n [] A_2 (box product, commuting squares); "
+               "the TDA persistence-ladder algebra, rep-finite iff n <= 4 "
+               "(Escolar-Hiraoka). Scalar vertex names 'i_j'; surfaced as a GUI preset "
+               "(the base_orientation arg is not a scalar form field)."),
     FamilyInfo("zoo", "zoo(dim_max=12)",
                "iterator", ("han_conjecture", "chouhy_solotar"),
                "Iterator over the curated exact zoo of open (Han-conjecture) algebras."),
