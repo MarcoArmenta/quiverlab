@@ -867,6 +867,21 @@ REGISTRY: dict = {r.key: r for r in [
        "rad = [L,L]^perp, Levi-Malcev decomposition, and direct-sum-of-simple-ideals "
        "type of a semisimple Lie algebra.",
        "lie", "algorithm"),
+    # --- Plan 71: R12 HH^* as a graded Lie module over HH^1 ---
+    _r("mnprs_special_biserial", "MeinelNguyenPauwelsRedondoSolotar2021", "foundation",
+       "The Gerstenhaber structure on the Hochschild cohomology of a class of special biserial algebras",
+       "Meinel-Nguyen-Pauwels-Redondo-Solotar: HH^1 is a direct sum of copies of a "
+       "subquotient of the Virasoro algebra, and each HH^n is described as a module over "
+       "this Lie algebra by its decomposition into indecomposable summands -- the "
+       "char-0 indecomposable-summand deliverable of Plan 71.",
+       "hochschild", "lie"),
+    _r("csss_gentle_tt", "ChaparroSchrollSolotarSuarezAlvarez2026", "foundation",
+       "The Hochschild cohomology and the Tamarkin-Tsygan calculus of gentle algebras",
+       "Chaparro-Schroll-Solotar-Suarez-Alvarez: the whole Tamarkin-Tsygan calculus of "
+       "gentle algebras -- HH^* as a graded-commutative algebra and a graded Lie algebra, "
+       "with HH_* a module over HH^*; the Lie-module-over-HH^1 structure Plan 71 computes "
+       "is one facet, and gentle algebras are its literature anchor.",
+       "hochschild", "lie"),
 ]}
 
 
