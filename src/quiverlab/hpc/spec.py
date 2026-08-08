@@ -1727,8 +1727,11 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
     # RADIUS,BUDGET pair (parsed like tau_tilting's budget). Verifier verdict on the
     # regular object + single-mutation neighbours + a bounded-radius exploration (loud
     # status, complete only for local) + the co-t-structure record. Both runners share
-    # derived.block.silting_block, so the blocks are byte-identical. A char-scope /
-    # presentation refusal is caught into an `error` field, never a 500.
+    # derived.block.silting_block, so the blocks are byte-identical. A QuiverlabError
+    # refusal (the char-scope / presentation / verifier-edge path) is caught into an
+    # `error` field; a non-QuiverlabError bug is NOT swallowed here -- it surfaces loudly
+    # (the fail-fast house rule), so this narrows to "the typed refusals never 500", not
+    # "never a 500".
     if kind == "silting":
         radius = item.lo if item.lo is not None else 3
         budget = item.hi if item.hi is not None else 64

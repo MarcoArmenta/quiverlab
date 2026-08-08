@@ -1128,8 +1128,11 @@ def compute_one(spec):
             # Silting theory (Plan 67 / Aihara-Iyama): algebra-level, RADIUS,BUDGET pair
             # (not a degree). SAME shared library builder (derived.block.silting_block) +
             # references -> citations as the server twin (quiverlab.hpc.spec._dispatch), so
-            # the cross-runner contract holds byte-for-byte. A char-scope / presentation
-            # refusal is caught into an `error` field, never a crash.
+            # the cross-runner contract holds byte-for-byte. A QuiverlabError refusal (the
+            # char-scope / presentation / verifier-edge path) is caught into an `error`
+            # field; a non-QuiverlabError bug is NOT swallowed here -- it surfaces loudly
+            # (the fail-fast house rule), so this narrows to "the typed refusals never
+            # crash the block", not "never a crash".
             radius, budget = top if top is not None else (3, 64)
             from quiverlab.derived.block import silting_block
             try:

@@ -5,11 +5,13 @@ silting, shares n-1 summands, differs from the input; left-then-right is the ide
 (involution)."""
 import pytest
 
-from quiverlab import Quiver
+from quiverlab import NakayamaAlgebra, Quiver, linear_path_algebra
+from quiverlab.errors import QuiverlabError
 from quiverlab.fields import QQ
 from quiverlab.modules.complexes import ChainComplex
 from quiverlab.derived.silting import (is_silting_object, silting_mutate,
-                                       silting_neighbors)
+                                       silting_neighbors, _assert_neighbour,
+                                       _cx_to_pc, _pc_to_cx)
 
 selfcert = pytest.mark.oracle_selfcert
 lit = pytest.mark.oracle_literature
@@ -78,3 +80,95 @@ def test_neighbors_reports_all_summands():
     assert len(nb) == 2
     for (i, mutant) in nb:
         assert mutant is not None and is_silting_object(mutant).is_silting in (True, "unknown")
+
+
+# --------------------------------------------------------------------------- #
+# Plan 67 fix round: robustness probes (M1/M2) + the fingerprint edge (M3) +
+# the ChainComplex<->PComplex bridge round-trip (H3).
+# --------------------------------------------------------------------------- #
+def _skey(cx):
+    return (tuple(sorted((n, tuple(sorted(cx.term(n).dimension_vector().items())))
+                         for n in cx.degrees())),)
+
+
+def _involution_holds(A):
+    """mu^-_?(mu^+_X(T)) recovers T at the matching summand, at EVERY summand (AI Prop 2.33
+    involution). Mutate left at i, find the new (non-shared) summand, mutate it back right."""
+    T = [ChainComplex.stalk(A.projective(v), 0) for v in A.quiver.vertices]
+    for i in range(len(T)):
+        mut = silting_mutate(T, i, direction="left")
+        shared = {_skey(c) for c in T}
+        j = [k for k, c in enumerate(mut) if _skey(c) not in shared][0]
+        back = silting_mutate(mut, j, direction="right")
+        if {_skey(c) for c in back} != {_skey(c) for c in T}:
+            return False
+    return True
+
+
+@selfcert
+def test_involution_kA2_linear():
+    # M1/M2: mu^-omu^+ = id on the hereditary kA2 (1->2), at every summand.
+    assert _involution_holds(linear_path_algebra(2, field=QQ)) is True
+
+
+@selfcert
+def test_involution_nonhereditary_kZ3J2():
+    # M1/M2: mu^-omu^+ = id on the NON-hereditary self-injective kZ3/J2 (det Cartan = 2),
+    # at every summand -- the involution is not a hereditary accident.
+    assert _involution_holds(NakayamaAlgebra([2, 2, 2], cyclic=True, field=QQ)) is True
+
+
+@selfcert
+def test_multivertex_mutation_chain_kA3():
+    # M1/M2: a multi-vertex mutation CHAIN -- iterate single left mutations over kA3
+    # (3 vertices), each re-verified silting (or the honest 'unknown'), shares n-1 with its
+    # predecessor, and the walk visits genuinely distinct silting objects.
+    A = linear_path_algebra(3, field=QQ)
+    cur = [ChainComplex.stalk(A.projective(v), 0) for v in A.quiver.vertices]
+    states = [tuple(sorted(_skey(c) for c in cur))]
+    for i in (0, 1, 2, 0):
+        prev = cur
+        cur = silting_mutate(prev, i % len(prev), direction="left")
+        assert is_silting_object(cur).is_silting in (True, "unknown")
+        shared = {_skey(c) for c in prev} & {_skey(c) for c in cur}
+        assert len(shared) == len(cur) - 1               # single-summand Hasse step
+        states.append(tuple(sorted(_skey(c) for c in cur)))
+    assert len(set(states)) >= 4                          # the chain genuinely moves
+
+
+@selfcert
+def test_assert_neighbour_ambiguity_and_degeneration_are_distinct():
+    # M3: the shares-n-1 self-cert uses a per-degree dim-vector fingerprint, which is NOT
+    # canonical. _assert_neighbour must distinguish the two failure modes with honest,
+    # DISTINCT wording -- not silently mislabel a possibly-valid mutation as a non-neighbour.
+    A = linear_path_algebra(2, field=QQ)
+    P1 = ChainComplex.stalk(A.projective(1), 0)
+    P2 = ChainComplex.stalk(A.projective(2), 0)
+    # (i) FINGERPRINT AMBIGUITY: a "mutant" whose profiles coincide with the input's
+    # (here the input reordered) -> shared == n. The fingerprint cannot certify it DIFFERS
+    # from the input; refuse loudly as an ambiguity, NOT as a degeneration.
+    with pytest.raises(QuiverlabError, match="(?i)ambiguity|coincide"):
+        _assert_neighbour([P1, P2], [P2, P1], 2)
+    # (ii) DEGENERATION: a presilting object (A[1]) sharing FEWER than n-1 profiles with the
+    # input -> the mutation degenerated. Distinct message.
+    with pytest.raises(QuiverlabError, match="DEGENERATED"):
+        _assert_neighbour([P1, P2], [P1.shift(1), P2.shift(1)], 2)
+
+
+@selfcert
+def test_cx_pc_bridge_roundtrip_nontwoterm():
+    # H3: the ChainComplex <-> PComplex bridge (_cx_to_pc / _pc_to_cx) is a faithful
+    # round-trip on a genuinely NON-2-term perfect complex (degrees {0,1,2}) -- degrees,
+    # per-degree dims AND every differential matrix are preserved byte-for-byte. (The old
+    # batteries only exercised 2-term mutants; this pins the wider bridge the mutation
+    # engine relies on.)
+    from quiverlab import GF
+    L = Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(
+        relations=["a*b"], field=GF(32003))
+    cx = ChainComplex.from_projective_resolution(L.simple(1), length=2)  # [P3->P2->P1]
+    assert cx.degrees() == [0, 1, 2]                     # genuinely 3-term (non-2-term)
+    rt = _pc_to_cx(_cx_to_pc(cx))
+    assert rt.degrees() == cx.degrees()
+    assert {n: rt.term(n).dim for n in rt.degrees()} == {n: cx.term(n).dim for n in cx.degrees()}
+    for n in set(cx._dmats) | set(rt._dmats):
+        assert rt._dmats.get(n) == cx._dmats.get(n)      # differentials byte-identical

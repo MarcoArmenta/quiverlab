@@ -23,8 +23,9 @@ on non-unimodular Cartan (self-injective/symmetric; Example 2.47).
 
 Single mutation (AI Def 2.30/2.34) is one approximation triangle: at an indecomposable
 summand X, the cone of the minimal left add(T/X)-approximation (left mutation mu^+) or the
-cocone of the right one (right mutation mu^-). Every mutant is RE-VERIFIED silting, shares
-exactly n-1 summands with its input, and mu^- o mu^+ = id (AI Thm 2.31 / Prop 2.33). The
+cocone of the right one (right mutation mu^-). Every mutant is RE-VERIFIED PRESILTING (the
+decidable positive-window half, NOT full generation), shares exactly n-1 summand PROFILES
+with its input, and mu^- o mu^+ = id (AI Thm 2.31 / Prop 2.33). The
 bounded-radius exploration truncates loudly (the silting quiver can be infinite -- kA2
 already is; transitivity is proven only for local/hereditary/canonical, AI Thm 1.2, so
 there is NO general BFS/enumeration claim). Float-free; exact linear algebra only."""
@@ -150,7 +151,8 @@ def co_t_structure_of(summands):
 # delooping/Gaussian elimination of iso blocks (the minimal representative). We reuse that
 # TESTED engine rather than re-deriving it on ``ChainComplex`` (the plan's Task-2 sketch
 # omitted the minimizer, which the involution oracle needs); the public surface stays
-# ``ChainComplex`` and the mutant is re-verified silting by the hyper-Hom verifier above.
+# ``ChainComplex`` and the mutant is re-verified PRESILTING (the decidable positive-window
+# half) + shares-n-1 by the verifier above -- full generation is not re-derived here.
 # The two representations differ only by the degree convention (PComplex is cohomological
 # d^i: C^i -> C^{i+1}; ChainComplex is homological d_n: C_n -> C_{n-1}), so n = -i is the
 # exact bijection and the differential matrix is byte-identical (same shape, same
@@ -220,18 +222,34 @@ def _pc_to_cx(pc):
 
 
 def _summand_key(cx):
-    """A degree-sensitive per-summand fingerprint (per-degree dim-vectors) -- the same
-    notion the mutation oracles use; enough to recognise the surviving summands and the
-    new cone. Minimal (reduced) representatives make this a canonical fingerprint."""
+    """A degree-sensitive per-summand fingerprint (per-degree dim-vectors). This is a
+    NECESSARY, not canonical, identifier of a summand: two non-isomorphic perfect complexes
+    CAN share a per-degree dim-vector profile (a canonical iso-class key for complexes is
+    not cheap -- cf. ``modules/hom.py::identify_standard`` for modules). ``_assert_neighbour``
+    handles that ambiguity explicitly (loudly) rather than silently mislabelling it."""
     return tuple(sorted((n, tuple(sorted(cx.term(n).dimension_vector().items())))
                         for n in cx.degrees()))
 
 
 def _assert_neighbour(T, mutant, n):
-    """Self-certificate for a single mutation (never trusts the construction): the mutant
-    has ``n`` summands, is presilting (AI Thm 2.31 -- if this fails the approximation /
-    cone / shift is wrong), and shares EXACTLY ``n-1`` summand fingerprints with the input
-    (a Hasse neighbour that differs from it)."""
+    """Self-certificate for a single mutation (never trusts the construction). Two DECIDABLE
+    checks: the mutant has ``n`` summands and RE-VERIFIES **PRESILTING** (AI Thm 2.31 -- a
+    mutation of a silting object is silting; presilting is the positive-window half we
+    actually decide here, NOT full generation), plus a fingerprint check that it shares
+    EXACTLY ``n-1`` summand PROFILES with the input (a Hasse neighbour differing from it).
+
+    The fingerprint (``_summand_key``, per-degree dim-vectors) is not canonical, so the
+    shares-count is split into two honest branches:
+    - ``shared < n-1`` -- the mutation DEGENERATED: too few surviving profiles, so the
+      approximation / cone / shift is wrong (a genuine failure).
+    - ``shared > n-1`` (== n) -- FINGERPRINT AMBIGUITY: the new cone ``N_X`` carries the
+      SAME per-degree dim-vector profile as the mutated summand ``X`` (or the mutant equals
+      the input up to reordering), so the dim-vector fingerprint cannot certify the mutant
+      DIFFERS from the input. This is NOT proof the mutation is wrong (the mutant is still
+      presilting with ``n`` summands) -- it is a limitation of the coarse fingerprint. We
+      refuse LOUDLY and honestly rather than mislabel a possibly-valid mutation as a
+      non-neighbour; a canonical iso-class key for complexes would resolve it but is not
+      cheap. (Never observed on the shipped batteries -- a defensive guard.)"""
     if len(mutant) != n:
         raise QuiverlabError(
             f"silting_mutate: mutant has {len(mutant)} summands, expected {n}")
@@ -249,20 +267,29 @@ def _assert_neighbour(T, mutant, n):
                 used[k] = True
                 shared += 1
                 break
-    if shared != n - 1:
+    if shared < n - 1:
         raise QuiverlabError(
-            f"silting_mutate: mutant shares {shared} summands with the input, expected "
-            f"{n - 1} -- not a single-mutation Hasse neighbour")
+            f"silting_mutate: mutant shares only {shared} summand profiles with the input "
+            f"(expected n-1 = {n - 1}) -- the mutation DEGENERATED (the approximation / "
+            "cone / shift is wrong)")
+    if shared > n - 1:
+        raise QuiverlabError(
+            f"silting_mutate: the mutant's per-degree dim-vector profiles coincide with the "
+            f"input's ({shared} == n = {n}), so the fingerprint cannot certify the mutant "
+            "DIFFERS from the input -- a FINGERPRINT AMBIGUITY (the new cone shares the "
+            "mutated summand's profile), NOT necessarily a degeneration; report the algebra "
+            "+ summand index")
 
 
 def silting_mutate(summands, i, direction="left"):
     """Irreducible mutation at summand index ``i`` (AI Def 2.34), ``direction`` in
     ``{"left", "right"}``. SELF-CERTIFIED: the input must be silting or presilting +
-    K0-basis (loud otherwise); the result RE-VERIFIES silting, shares exactly ``n-1``
-    summands with the input, and differs from it. Returns the new list
-    ``[rest..., N_X]`` of minimal perfect complexes. Left mutation ``mu^+`` is the cone of
-    the minimal left ``add(T/X)``-approximation; right mutation ``mu^-`` is the cocone of
-    the right one; ``mu^- o mu^+ = id`` (AI Prop 2.33)."""
+    K0-basis (loud otherwise); the result RE-VERIFIES **PRESILTING** (AI Thm 2.31 -- the
+    decidable positive-window half, NOT full generation) and shares exactly ``n-1`` summand
+    PROFILES with the input, differing from it. Returns the new list ``[rest..., N_X]`` of
+    minimal perfect complexes. Left mutation ``mu^+`` is the cone of the minimal left
+    ``add(T/X)``-approximation; right mutation ``mu^-`` is the cocone of the right one;
+    ``mu^- o mu^+ = id`` (AI Prop 2.33)."""
     from quiverlab.tautilting import _twoterm as tt
     rep = is_silting_object(summands)
     if rep.is_silting not in (True, "unknown"):
