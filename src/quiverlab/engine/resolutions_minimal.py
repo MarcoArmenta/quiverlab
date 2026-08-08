@@ -865,7 +865,12 @@ def minimal_homology_dims(A, N, primes=(32003,), max_term_dim=20000,
 
     Plan 52: with a coefficient Bimodule ``coefficients`` (GF(p), built over a
     quiver-presented quiverlab Algebra) this computes ``dim HH_n(A, M)`` -- the
-    Plan-16 covariance generalized (P3): homology ``b·w·a`` on ``e_w M e_v``."""
+    Plan-16 covariance generalized (P3): homology ``b·w·a`` on ``e_w M e_v``.
+    ARG ASYMMETRY (Plan 52): ``A`` is an ENGINE algebra when ``coefficients=None``
+    (the existing callers) but the PUBLIC ``quiverlab.core.Algebra`` when
+    ``coefficients=M`` -- the coefficient path converts it via ``to_engine`` and
+    builds ``M``'s actions against it (a mismatch is refused loudly in
+    ``_coeff_prepare``)."""
     if coefficients is not None:
         return _minimal_homology_dims_coeff(A, N, primes, coefficients,
                                             max_term_dim, max_transient_bytes)
@@ -989,7 +994,9 @@ def minimal_cohomology_dims(A, N, primes=(32003,), max_term_dim=20000,
 
     Plan 52: with a coefficient Bimodule ``coefficients`` (GF(p), quiver-presented)
     this computes ``dim HH^n(A, M)`` -- cohomology ``a·w·b`` on the SWAPPED corner
-    ``e_v M e_w`` (P3)."""
+    ``e_v M e_w`` (P3). ARG ASYMMETRY (Plan 52): ``A`` is an ENGINE algebra when
+    ``coefficients=None`` but the PUBLIC ``quiverlab.core.Algebra`` when
+    ``coefficients=M`` (see ``minimal_homology_dims``)."""
     if coefficients is not None:
         return _minimal_cohomology_dims_coeff(A, N, primes, coefficients,
                                               max_term_dim, max_transient_bytes)

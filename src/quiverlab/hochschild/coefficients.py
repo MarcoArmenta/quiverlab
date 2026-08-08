@@ -529,19 +529,23 @@ def twisted_homology_classes(A, M, top, max_cells=4_000_000):
     - ``classes`` — a basis of homology-class representatives, a chosen lift of
       ``ker b_n / im b_{n+1}`` (each a coordinate vector in ``C_n``).
 
-    CONVENTION BLOCK (mirrored VERBATIM from P54 §3 — cross-plan contract with P54;
+    CONVENTION BLOCK (cross-plan contract with P54, which will mirror it VERBATIM;
     a divergence between this block and P54 §3 is a review defect on whichever plan
-    merges second):
+    merges second). It states what THIS code does — ``bar.boundary_matrix``:
 
         *Twist placement:* the coefficient ``M`` occupies the leading tensor factor
-        ``M ⊗ Ā^{⊗n}``; the twist (right action ``m·a = m·ψ(a)``) enters the
-        boundary **only** on the **LAST face map** ``d_n`` (``(−1)^n · (ψ-twisted)
-        a_n · m``), matching P1; the first face uses the untwisted left action.
+        ``M ⊗ Ā^{⊗n}``. The boundary's outer two faces use ``M``'s actions: **term
+        0 / the FIRST face** is the RIGHT action ``m·a_1`` (``+``), and **term n /
+        the LAST face** is the LEFT action ``a_n·m`` (``(−1)^n``). For the Nakayama
+        twist ``{}_1A_ν`` (``Lact`` untwisted, ``Ract`` = ``ψ``-twisted) the twist
+        therefore lives in the RIGHT action and enters on the **FIRST face**
+        (``m·a_1 = m·ψ(a_1)``); the last face (left action ``a_n·m``) is untwisted.
         *Normalization:* reduced bar (``Ā = A/k·1``), so index 0 is dropped from
         every bar slot. *Basis ordering:* ``M``-basis index ``s`` outermost
         (slowest), then the bar multi-index ``J ∈ {1..m-1}^n`` in lexicographic
         order (fastest last). *Cohomology twin:* ``twisted_cohomology_classes``
-        mirrors with ``Hom_{A^e}`` collapse and the transposed convention.
+        mirrors with ``Hom_{A^e}`` collapse and the transposed convention (the
+        twisted right action enters the coboundary's LAST face, ``f(a_1..a_n)·a_{n+1}``).
     """
     from quiverlab.hochschild import bar
     B = A.unit_adapted()

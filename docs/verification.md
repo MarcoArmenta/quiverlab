@@ -551,15 +551,16 @@ They overlap by design, so the union is smaller than their sum.
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 884 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 554 | two independent implementations compute the same thing and match live |
+| Cross-engine agreement | `-m oracle_crossengine` | 555 | two independent implementations compute the same thing and match live |
 | Self-certifying certificates | `-m oracle_selfcert` | 1104 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 190 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2169 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2170 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Recounted 2026-08-07 (Plan 52, HH with bimodule coefficients + relative HH): +2
-`oracle_literature` (the BLOCKED-until-transcribed gentle/relative-`HH¹` pins), +26
-`oracle_crossengine` (M=A≡ordinary, bar≡CS≡minimal incl. nontrivial-ν, exact≡ported
-GF(p) bank, relative≡absolute), +20 `oracle_selfcert` (`HH⁰=M^A`, `HH₀=M/[A,M]`, the
+`oracle_literature` (the BLOCKED-until-transcribed gentle/relative-`HH¹` pins), +27
+`oracle_crossengine` (M=A≡ordinary, bar≡CS≡minimal incl. nontrivial-ν + the deep
+degree-4 bar-transport tie on non-unit-adapted kA₃, exact≡ported GF(p) bank,
+relative≡absolute), +20 `oracle_selfcert` (`HH⁰=M^A`, `HH₀=M/[A,M]`, the
 proven duality + its non-symmetric discriminator, twisted≡dual, the symmetric web, the
 single-vertex relative byte-identity, and the P54 chain-contract self-check), +1 `qpa`
 (the honest with-coefficients/relative probe).

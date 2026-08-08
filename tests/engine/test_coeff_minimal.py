@@ -65,6 +65,29 @@ def test_minimal_matches_cs_deep_nontrivial_nu():
         cs_homology_dims(A, N, coefficients=M).dims
 
 
+def test_bar_transport_deep_multivertex():
+    # Review micro-fix 1: the bar UNIT-ADAPTATION TRANSPORT of a coefficient built
+    # in A's own basis, exercised at DEPTH (top=4) on a NON-unit-adapted multi-vertex
+    # algebra -- bar(transport) ≡ CS ≡ minimal, all three engines. kA3 (a*b=0, dim 5,
+    # unit = e1+e2+e3 so A is NOT unit-adapted); bar's cochain basis stays sparse so
+    # the exact rank reaches degree 4 (~5s) with a raised max_cells. This closes the
+    # gap where the shipped multi-vertex bar-transport coverage stopped at degree 2/3.
+    from quiverlab.resolutions_cs.homology import cs_cohomology_dims, cs_homology_dims
+    A = ql.Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(
+        relations=["a*b"], field=ql.GF(32003))
+    assert A.is_unit_adapted is False           # the transport is genuinely exercised
+    M = Bimodule.dual(A)
+    N, MC = 4, 20_000_000
+    bar_c = A.hochschild_cohomology(N, engine="bar", coefficients=M,
+                                    max_cells=MC, verbose=False).dims
+    bar_h = A.hochschild_homology(N, engine="bar", coefficients=M,
+                                  max_cells=MC, verbose=False).dims
+    assert bar_c == cs_cohomology_dims(A, N, coefficients=M).dims == \
+        minimal_cohomology_dims(A, N, primes=(32003,), coefficients=M)[32003]
+    assert bar_h == cs_homology_dims(A, N, coefficients=M).dims == \
+        minimal_homology_dims(A, N, primes=(32003,), coefficients=M)[32003]
+
+
 def test_minimal_refuses_non_gfp_coefficient():
     from quiverlab.errors import QuiverlabError
     A = ql.truncated_polynomial(3, field=ql.CC)

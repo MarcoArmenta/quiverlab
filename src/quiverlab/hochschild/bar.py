@@ -47,12 +47,17 @@ def _coeff_in_unit_basis(A, B, coefficients):
     """Re-express a coefficient bimodule built in ``A``'s own basis into the
     unit-adapted basis ``B = A.unit_adapted()`` the bar complex works in. ``None``
     (regular) stays ``None`` (byte-identical path); an already-unit-adapted ``A``
-    needs no change (``B is A``)."""
+    needs no change (``B is A``). When a genuine change of basis happens, the
+    transported bimodule is ``check()``-certified ONCE here (construction-time, not
+    per-degree) so a wrong transport fails loudly at runtime, not only in tests
+    (the certificate does not touch the returned dims — results are byte-identical)."""
     if coefficients is None:
         return None
     if A.is_unit_adapted:
         return coefficients
-    return coefficients.change_of_basis(A._unit_adapting_change(), B)
+    Mb = coefficients.change_of_basis(A._unit_adapting_change(), B)
+    Mb.check()
+    return Mb
 
 
 def coboundary_matrix(A, n, max_cells, coefficients=None):
