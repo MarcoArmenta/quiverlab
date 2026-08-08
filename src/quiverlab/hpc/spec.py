@@ -375,7 +375,7 @@ def resolve_references(keys) -> list:
 def _iter_families():
     for info in ql.families():
         name = info.name
-        if name in ("zoo", "BrauerGraphAlgebra"):   # non-scalar constructors
+        if name in ("zoo", "BrauerGraphAlgebra", "ToupieAlgebra"):   # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -1757,6 +1757,38 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         keys = list(block["references"])
         block["citations"] = _citation_pairs(keys)
         return block, None
+    # Homological string-algebra test (Plan 59 / R34): an algebra-only scalar kind
+    # (Suarez-Alvarez). Shared builder (string_homological.string_homological_block);
+    # a rep-infinite / self-injective / presentation-less input -> {"error": ...},
+    # never a 500 (the recognizers-block per-flag precedent). Byte-identical twin.
+    if kind == "string_homological":
+        from quiverlab.modules.string_homological import string_homological_block
+        block = string_homological_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Toupie structure (Plan 59 / R35): an algebra-only scalar kind. Shared builder
+    # (families.toupie.toupie_block): recognizer + branch/direct-arrow counts + HH
+    # (engine="cs",auto_cs) + the char-0 sl_a lower bound. A non-toupie / presentation-
+    # less input returns a labelled block, never a 500. Byte-identical twin.
+    if kind == "toupie":
+        from quiverlab.families.toupie import toupie_block
+        block = toupie_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # pi1(Q, I) + simple connectivity (Plan 56): algebra-scalar kinds (schema v1, NO
+    # module block -- the recognizers/strings precedent). Shared builders drive both
+    # runners byte-identically; the simply_connected kind carries the R16 strongly-
+    # simply-connected certificate (the P62 consumable).
+    if kind == "fundamental_group":
+        from quiverlab.invariants.coverings_block import fundamental_group_block
+        block = fundamental_group_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    if kind == "simply_connected":
+        from quiverlab.invariants.coverings_block import simply_connected_block
+        block = simply_connected_block(A)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
 
 
@@ -2521,6 +2553,8 @@ def _snippet(req: ComputeRequest, A) -> str:
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),
              "quasi_hereditary": lambda it: "A.is_quasi_hereditary()",
+             "fundamental_group": lambda it: "A.fundamental_group()",
+             "simply_connected": lambda it: "A.is_simply_connected()",
              "derived_fingerprint":
                  lambda it: ("from quiverlab.derived import derived_fingerprint; "
                              f"derived_fingerprint(A, {it.hi if it.hi is not None else 4})"),
@@ -2529,6 +2563,11 @@ def _snippet(req: ComputeRequest, A) -> str:
                                     "from quiverlab.strings.ag import ag_invariant\n"
                                     "enumerate_strings(A), find_bands(A), "
                                     "ag_invariant(A)"),
+             "string_homological":
+                 lambda it: ("from quiverlab.modules.string_homological import "
+                             "homological_string_test\nhomological_string_test(A)"),
+             "toupie": lambda it: ("from quiverlab.families.toupie import is_toupie, "
+                                   "toupie_block\nis_toupie(A), toupie_block(A)"),
              "cup": lambda it: f"A.cup_products({it.hi})",
              "cap": lambda it: f"A.cap_products({it.hi})",
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
