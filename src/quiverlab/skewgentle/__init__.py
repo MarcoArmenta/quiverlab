@@ -20,6 +20,7 @@ Public surface:
   ``support_tau_tilting`` (``certificate``)
 - ``skew_gentle_block`` (``block``)
 """
+from quiverlab.skewgentle.split import SkewGentleAlgebra, split_quiver
 from quiverlab.skewgentle.triple import (SkewGentleTriple, associated_gentle,
                                          is_skew_gentle_triple)
 
@@ -27,4 +28,6 @@ __all__ = [
     "SkewGentleTriple",
     "associated_gentle",
     "is_skew_gentle_triple",
+    "SkewGentleAlgebra",
+    "split_quiver",
 ]
