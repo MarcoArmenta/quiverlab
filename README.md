@@ -415,6 +415,14 @@ ported and wired in:
   `#signed = n!·#sτt` (materialised + cross-checked). Hereditary-only / Dynkin-only for
   the classical side, τ-tilting-finite-only for the τ side, loud otherwise. Clickable via
   `exceptional_sequences`.
+- **Split-extension LES + certified arrow removal (R5+R6, P72).** The
+  Cibils–Marcos–Redondo–Solotar **trivial-extension Hochschild long exact sequence** —
+  `HH^•(T(B))` assembled from the flanks `HH^•(L,D(B))` / `HH^•(L,B)` and the snake
+  connecting map, cross-checked against the direct answer, with the grading-derivation
+  witness `HH^1(T(B)) ≠ 0` (and `= k ⊕ HH^1(B)` on directed `B`); and the
+  Cibils–Lanzilotta–Marcos–Solotar **certified arrow removal** — deleting inert arrows
+  (in no relation) gives a clean `HH_n(A) ≅ HH_n(B)` for `n ≥ 2`, with the honest
+  cohomology Ext-correction. Clickable via `split_extension` / `arrow_removal`.
 - **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
   left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
   the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —
