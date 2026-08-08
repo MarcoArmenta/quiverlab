@@ -107,3 +107,37 @@ def _surviving_cycle(ext, cycles):
         if not ext.has_J_interrupter(w):
             return w
     return cycles[0] if cycles else None
+
+
+# --------------------------------------------------------------------------- #
+# leg (ii): finite pd_{B^e}(A/B) -- gl.dim primary (CLMS Ex. 6.1) + fallback
+# --------------------------------------------------------------------------- #
+def finite_pd_Be(ext, *, pd_cap=16):
+    """Is ``pd_{B^e}(A/B) < infinity``? Returns a dict
+    ``{route, status, gldim_B|value, note}``.
+
+    **PRIMARY (free) route (CLMS Ex. 6.1):** if ``gl.dim B < infinity`` then
+    ``gl.dim B^e < infinity`` and every ``B``-bimodule -- in particular ``A/B`` --
+    has finite ``pd_{B^e}``. No enveloping algebra is built. **FALLBACK
+    (``gl.dim B = infinity``):** ``A/B`` as a right ``B^e``-module, ``pd`` via the
+    shipped module resolution capped at ``pd_cap`` (Task II3); honest ``"undecided"``
+    + certified lower bound over the cap (never ``infinity`` unproven).
+    """
+    B = ext.B
+    gd = B.global_dimension()
+    if gd.exact:
+        v = int(gd)
+        return {"route": "gldim", "status": "finite", "gldim_B": v, "value": None,
+                "note": f"gl.dim B = {v} < inf => gl.dim B^e < inf => "
+                        f"pd_{{B^e}}(A/B) < inf (CLMS Ex. 6.1)"}
+    return _finite_pd_Be_envelope(ext, pd_cap=pd_cap)
+
+
+def _finite_pd_Be_envelope(ext, *, pd_cap=16):
+    """The ``gl.dim B = infinity`` fallback: build ``B^e`` and resolve ``A/B`` over
+    it, capped (Task II3). Placeholder until Task II3 wires the enveloping bridge --
+    honest ``"undecided"`` so the primary-route slice stays green."""
+    return {"route": "enveloping", "status": "undecided", "gldim_B": None,
+            "value": None,
+            "note": "gl.dim B = inf: the enveloping-algebra pd fallback is not yet "
+                    "wired (Task II3)"}
