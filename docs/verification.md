@@ -453,6 +453,7 @@ Plan-35 product surface).
 | `invariants/` (Cartan, Coxeter, spectral, Betti, cyclic, Frobenius incl. the Plan-29 trace-form symmetry certifier, scalar, sweep; Plan-29 Coxeter/identity literature batteries) | 115 | fast | second models (λ-complex, relative-Tor Betti); self-certifying `λ`/`ν`; GF(p) engine parity |
 | `invariants/geometry.py` (Plan-49 C8 — orbit dimension `dim O_M = Σ d_v² − dim End(M)`, Voigt rigidity `is_rigid`/`rigidity_codim`, the Kac `canonical_decomposition` over hereditary Dynkin, and the shared `orbit_geometry_block`) — `tests/invariants/test_geometry_orbit.py`, `test_geometry_canonical.py` | 21 | fast | **`oracle_selfcert`**: the orbit-dim identity `dim O_M = Σ d_v² − dim End(M)`, GF(p)↔QQ field parity, the canonical-decomposition sum-of-roots + per-instance rigidity certificate `Ext¹(G,G)=0`, the loud Euclidean-deferred / non-hereditary refusals. **`oracle_crossengine`**: the Voigt codim identity `dim Rep(Q,d) − dim O_M ≡ dim Ext¹(M,M)` on hereditary + the P38 `tits_form` tie; the canonical decomposition ≡ the Krull–Schmidt summands of the degeneration poset's maximum. **`oracle_literature`**: every Dynkin indecomposable is rigid (codim 0); `(2,1) = P₁ ⊕ S₁` over kA₂ (hand-derived Kac pin) |
 | `modules/degeneration.py` (Plan-49 C8 — the Zwara–Bongartz degeneration = hom order poset for representation-finite algebras, `DegenerationPoset`) — `tests/modules/test_degeneration.py` | 6 | deep | **`oracle_literature`**: kA₂ (1,1) = the 2-chain `S₁⊕S₂ <_deg P₁`; kA₃ (1,1,1) = the diamond (orbit dims `[0,1,1,2]`, 4 covers, two incomparable middles) — both hand-derived. **`oracle_selfcert`**: the hom-order is a partial order (reflexive/antisymmetric), orbit dim strictly increases up every cover, the per-class orbit dim ≡ `geometry.orbit_dimension`, and the honest semi-decision cap (rep-infinite / self-injective ⇒ `is_complete=False` with a loud `status`, never a partial poset) |
+| `modules/left_right.py` (Plan-55 R15 — the left/right parts `L_A`/`R_A` of the module category via the closed-under-predecessors pd/id ≤ 1 sweep on the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)`, the Ext-injectives of `add L_A` (+ dual Ext-projectives of `add R_A`), and the left/right support algebras `A_λ`/`A_ρ` as presented induced-convex-subquiver `Algebra`s with their connected-component factors; the P61-addendum per-indecomposable `pd_le_1`/`id_le_1` vectors) — `tests/modules/test_left_right_{parts,ext,support,oracles}.py`, `tests/qpa/test_left_right_qpa.py` | 24 + 2 qpa | deep + qpa | **`oracle_selfcert`** — `L_A` closed under predecessors / `R_A` under successors, intersection/complement consistency (`complement = U ∖ (L_A ∪ R_A)`), `gl.dim ≤ 1 ⇒ both parts total`; Ext-injectives ⊆ `L_A` and an injective in `L_A` is always Ext-injective; the support certificates — `e_λ`/`e_ρ` convex, hereditary ⇒ `A_λ = A_ρ = A` (connected), and the loud presentation-less refusal (structure-constants-only `A` ⇒ `QuiverlabError`, no fabricated quiver); the honest self-injective (`status="unsupported"`) / rep-infinite refusals; the P61 `pd_le_1`/`id_le_1` index-alignment. **`oracle_literature`** — hereditary ⇒ `L_A = R_A = ind A`, empty complement (kA_n); **ACLV Example 2.2(b)** the rad²=0 linear-Nakayama A₅: `L_A = {S₁,S₂,P₂,P₃}`, `R_A = {S₄,S₅,P₄,P₅}`, `L_A ∩ R_A = ∅`, **complement = {S₃}** (pd 2, id 2 — the ada-with-non-empty-complement datum), `e_λ = {1,2,3}`, `e_ρ = {3,4,5}`, `gl.dim = 4`; kA_n Ext-injectives count = #injectives. **`oracle_crossengine`** — the Hom-nonzero transitive-closure predecessor relation ≡ the AR-quiver irreducible-map reachability closure (rad^∞ = 0, rep-finite); the ACLV duality `D R_A = L_{A^op}` / `D L_A = R_{A^op}` on the **proper-subset** A₅ (`\|R_A\| = 4` of 9, non-vacuous); the presented `A_λ` dim ≡ `end_algebra(⊕ P_x)` dim. **`qpa`** (`tests/qpa/test_left_right_qpa.py`) — the defining pd ≤ 1 / id ≤ 1 flags corroborated pointwise via QPA `ProjectiveResolution` / `InjDimensionOfModule` on the kA₃ indecomposables; a fail-if-appears `IsBoundGlobal` probe that trips if QPA ever ships a left/right-part or support-algebra verb |
 | `families/` (catalog, zoo; Plan-29 trivial-extension/incidence batteries; Plan-31 certified trivial-extension presentation, `test_trivial_extension_presented.py`) | 166 | deep | closed-form family pins; zoo diversity gates; citations; Plan-31 special-case + Cartan + iso-invariance + CS≡bar pins |
 | `strings/` (Plan-46 C5 gentle/string subsystem: reduced walks + σ/ε signs + string census + band detection; string/band module materialisation; string-τ by hooks/cohooks; the Avella-Alaminos–Geiss derived invariant; the `strings` block) — `tests/modules/test_strings_*.py`, `tests/invariants/test_ag_invariant.py` | 33 | deep + fast | Butler-Ringel `n(n+1)/2` interval count + Kronecker band existence (`oracle_literature`); string-τ ≡ engine τ + census count ≡ `knit_ar_quiver` vertex count (`oracle_crossengine`); `check_module` on every materialised string/band + permitted/forbidden thread partition of `Q_1` (`oracle_selfcert`); AAG-2008 pins reproduced verbatim (Nakaoka `arXiv:1811.00775` Example 2.15 = `{(3,2),(2,2),(0,3)}`) |
 | `families/brauer.py` (Plan-46 Brauer graph algebra constructor from a ribbon graph + multiplicities) — `tests/families/test_brauer.py` | 10 | deep | `dim = Σ_v m_v·val(v)²` per-instance certificate + `is_symmetric` (`oracle_literature`); Brauer-star ≡ symmetric Nakayama `NakayamaAlgebra(n, mn+1, cyclic=True)` byte-equal Cartan (`oracle_crossengine`) |
@@ -551,12 +552,12 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 891 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 530 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1094 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 198 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 900 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 534 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1104 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 200 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2152 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2177 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Counts as of the P43 merge (the derived-category surface); sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
@@ -1119,6 +1120,32 @@ verified precision and listed below as such.
   / n=2 fan-tiling + n=3 per-chamber-unimodular unfolding-sanity / King certificates
   (self-cert), and the pair↔`Gen(M)` + fan-normal cross-checks (cross-engine). The external cross-checks NAMED (not run live) are the
   Demonet–Iyama–Jasso tables and Iyama's `fd-applet`; neither is wired as a live oracle.
+- **The Plan-55 left/right parts — five binding scope facts.** (a) **Representation-finite and
+  non-self-injective only.** `left_right_parts` is complete **iff** the P41 knit closes: a
+  self-injective algebra (`k[x]/(xⁿ)`) returns `status="unsupported"`, a rep-infinite one
+  (2-Kronecker; ACLV Example 2.2(c) `1⇉2⇉3⇉4` bound by rad²=0 is *mathematically ada* yet
+  rep-infinite) returns `status="budget"` — never a partial atlas. It mirrors the `ARQuiver`
+  loud cap exactly. (b) **The support-algebra build needs a quiver presentation.** A
+  structure-constants-only `A` (`A.quiver is None`) cannot present the induced subquiver, so
+  `_support_algebra` raises `QuiverlabError` up front — never a fabricated quiver (the
+  GUI/webapp always feed a quiver-presented `A`). (c) **Identification is QQ / char-0
+  decisive.** Every step that *locates* a module in the universe (`_index_in_U` for `τ⁻¹X` /
+  `P_x` / `I_x`) calls `is_isomorphic`, which is decisive over char 0 but **positive-only and
+  RAISES** over large GF(p)/GF(p^n) when it cannot exhibit an isomorphism; on an in-scope
+  algebra with two non-isomorphic indecomposables sharing a dimension vector this propagates a
+  **loud whole-compute refusal** — so the identification batteries run over **QQ**, and the
+  `GF(p)` route is used only where every indecomposable has a distinct dimension vector
+  (kA_n, the rad²=0 linear Nakayama), where the dim-vector prefilter never enters the
+  positive-only branch. Never a silent wrong part or support. (d) **The "product of tilted
+  algebras" property is REPORTED, not certified here.** `A_λ`/`A_ρ` are a product of
+  quasi-tilted algebras in general (tilted for ada — ACT [5](2.3) / ACLV Thm A); P55 ships the
+  connected-component factors and pins the per-factor *tiltedness* with an auto-flipping
+  skipped test (`test_support_components_are_tilted_PIN`) that becomes a real assert when
+  **P60**'s `is_tilted` lands. (e) **QPA CANNOT COMPARE the left/right-part surface** — QPA
+  1.37 exposes no `L_A`/`R_A`/support-algebra verb (a fail-if-appears `IsBoundGlobal` probe is
+  the trip-wire), so the covering oracles are the ACLV literature pins + the predecessor-closure
+  / support / duality certificates; the *defining* pd ≤ 1 / id ≤ 1 flags ARE corroborated
+  pointwise by QPA `ProjectiveResolution` / `InjDimensionOfModule`.
 
 ### v0.2.0 GUI-deferral ledger
 

@@ -351,6 +351,13 @@ ported and wired in:
   for `kA_n`) — every enumeration budget-capped with the honest
   complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
   drawn no-code in the browser for n = 2, 3** — the C4 flagship.
+- **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
+  left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
+  the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —
+  non-empty even for ada), the Ext-injectives of `add L_A` (and dual Ext-projectives of
+  `add R_A`), and the left/right support algebras `A_λ`, `A_ρ` (products of tilted
+  algebras) as presented induced-convex-subquiver algebras — the recognizer-ladder
+  substrate, no-code in the browser (representation-finite scope, loud otherwise).
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`
