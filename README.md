@@ -272,6 +272,9 @@ ported and wired in:
   (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
+- **Hochschild (co)homology with arbitrary bimodule coefficients** (`D(A)`, twisted
+  `{}_1A_ν`, `A/soc`, any no-code bimodule) and **relative HH over the vertices** —
+  `coefficients=` on the Hochschild kinds, `relative_to="vertices"` for `HH_•(A|kQ₀,M)`.
 - **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
   canonical representatives + a convergence certificate (`E_∞` totals == total
   homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,
