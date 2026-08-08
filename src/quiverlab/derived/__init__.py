@@ -13,7 +13,8 @@ from quiverlab.derived.tilting import (TiltingReport, is_tilting_complex,
 from quiverlab.derived.fingerprint import derived_fingerprint, compare_fingerprints
 from quiverlab.derived.silting import (SiltingReport, is_silting_object,
                                        co_t_structure_of, silting_mutate,
-                                       silting_neighbors)
+                                       silting_neighbors, bounded_silting_exploration,
+                                       SiltingExploration)
 
 __all__ = [
     "hyper_hom_basis",
@@ -22,5 +23,6 @@ __all__ = [
     "corner_cartan_of_complex", "two_term_silting_from_presentation", "g_proj",
     "derived_fingerprint", "compare_fingerprints",
     "SiltingReport", "is_silting_object", "co_t_structure_of",
-    "silting_mutate", "silting_neighbors",
+    "silting_mutate", "silting_neighbors", "bounded_silting_exploration",
+    "SiltingExploration",
 ]

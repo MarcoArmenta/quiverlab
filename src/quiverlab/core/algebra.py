@@ -561,6 +561,22 @@ class Algebra:
         from quiverlab.tautilting.mutation import exchange_graph
         return exchange_graph(self, budget_pairs=budget_pairs)
 
+    def silting_report(self):
+        """The silting-object verdict for the regular object ``A = (+)_v P_v`` in
+        ``K^b(proj A)`` (Plan 67 / Aihara-Iyama): presilting on the exact positive window
+        + three-valued generation (:class:`~quiverlab.derived.silting.SiltingReport`)."""
+        from quiverlab.derived.silting import is_silting_object
+        from quiverlab.modules.complexes import ChainComplex
+        return is_silting_object([ChainComplex.stalk(self.projective(v), 0)
+                                  for v in self.quiver.vertices])
+
+    def silting_exploration(self, radius=3, budget=64):
+        """A bounded-radius exploration of the silting quiver from the regular object
+        (Plan 67 / AI Thm 1.2 -- NO general BFS): loud ``status``, certified complete only
+        for local (:class:`~quiverlab.derived.silting.SiltingExploration`)."""
+        from quiverlab.derived.silting import bounded_silting_exploration
+        return bounded_silting_exploration(self, radius=radius, budget=budget)
+
     def is_tilting_module(self, T, n=1):
         """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
         ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,

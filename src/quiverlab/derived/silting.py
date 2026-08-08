@@ -297,3 +297,101 @@ def silting_neighbors(summands, direction="left"):
         except QuiverlabError:
             out.append((i, None))
     return out
+
+
+# --------------------------------------------------------------------------- #
+# bounded-radius exploration with LOUD truncation (AI Thm 1.2 -- no general BFS)
+#
+# The silting quiver can be INFINITE (kA2 already is, AI Example 2.45) and
+# mutation-transitivity is proven only for local / hereditary / canonical (AI Thm 1.2,
+# and it FAILS for a symmetric algebra [AGI]). So there is no general BFS/enumeration
+# claim: this is a bounded-radius walk from a silting object (the regular A, or a supplied
+# one) through irreducible left + right mutations, deduped by a shift-insensitive silting
+# key, stopping with a loud ``status`` -- ``"complete"`` ONLY for the local class (Thm
+# 2.26: silt = {A[i]}, radius 0 already closes; ``finite_class in {"local", None}``, there
+# is deliberately NO ``"two_term"`` -- a general mutation walk cannot be restricted to the
+# 2-term slice, so 2-term finiteness is P45's, cross-checked directly, not claimed here).
+# --------------------------------------------------------------------------- #
+@dataclass
+class SiltingExploration:
+    vertices: list        # {"summands", "key", "is_initial", "silting"}
+    arrows: dict          # {(i, j): {"direction": "left"|"right", "summand": <index>}}
+    status: str           # "complete" | "radius" | "budget"
+    radius: int           # the radius actually reached
+    finite_class: object  # "local" | None (local is the ONLY certified-complete class)
+
+
+def _silting_key(summands):
+    """A SHIFT-INSENSITIVE fingerprint of a silting object: normalise the common shift
+    (anchor the whole object at minimal degree 0 -- AI identifies T with T[i]) and take the
+    frozenset of the per-summand (shift-normalised) per-degree dim-vector tuples. Dedups
+    ``A`` and ``A[3]``."""
+    degs = [d for T in summands for d in T.degrees()]
+    base = min(degs) if degs else 0
+    parts = []
+    for T in summands:
+        parts.append(tuple(sorted(
+            (n - base, tuple(sorted(T.term(n).dimension_vector().items())))
+            for n in T.degrees())))
+    return frozenset(parts)
+
+
+def _explore_record(summands, is_initial):
+    return {"summands": summands, "key": _silting_key(summands),
+            "is_initial": is_initial, "silting": is_silting_object(summands).is_silting}
+
+
+def bounded_silting_exploration(start, radius=3, budget=256):
+    """Bounded-radius BFS of the silting quiver from ``start`` (an :class:`Algebra` ->
+    begin at the regular silting ``A``, or a silting summand list) through irreducible
+    left+right mutations, deduped by :func:`_silting_key`. LOUD ``status``: ``"complete"``
+    only for a proven-finite class (LOCAL only -- Thm 2.26), ``"radius"`` when the radius
+    bound is reached (or the ball closes with no finiteness theorem -- a closed ball is not
+    a completeness proof), ``"budget"`` when the vertex cap trips first. NEVER claims
+    completeness outside the local class."""
+    from quiverlab.modules.complexes import ChainComplex
+    if hasattr(start, "quiver"):                      # an Algebra: the regular object A
+        A = start
+        init = [ChainComplex.stalk(A.projective(v), 0) for v in A.quiver.vertices]
+    else:
+        init = list(start)
+        A = init[0].algebra
+    verts = list(A.quiver.vertices)
+    # LOCAL (one simple): silt = {A[i]} (Thm 2.26) -- radius-0 already closes -> complete.
+    if len(verts) == 1:
+        return SiltingExploration(vertices=[_explore_record(init, True)], arrows={},
+                                  status="complete", radius=0, finite_class="local")
+    records = [_explore_record(init, True)]
+    index = {records[0]["key"]: 0}
+    depth = {0: 0}
+    arrows = {}
+    frontier = [0]
+    while frontier:
+        i = frontier.pop(0)
+        if depth[i] >= radius:                        # do not expand beyond the radius
+            continue
+        for direction in ("left", "right"):
+            for (k, mut) in silting_neighbors(records[i]["summands"], direction):
+                if mut is None:
+                    continue
+                key = _silting_key(mut)
+                j = index.get(key)
+                if j is None:
+                    if len(records) >= budget:        # LOUD cap before the (budget+1)-th
+                        return SiltingExploration(vertices=records, arrows=arrows,
+                                                  status="budget", radius=radius,
+                                                  finite_class=None)
+                    j = len(records)
+                    index[key] = j
+                    depth[j] = depth[i] + 1
+                    records.append(_explore_record(mut, False))
+                    frontier.append(j)
+                if i != j:
+                    e = (min(i, j), max(i, j))
+                    if e not in arrows:
+                        arrows[e] = {"direction": direction, "summand": k}
+    # frontier emptied. A closed ball is NOT a proof of completeness without a finiteness
+    # theorem (only the local class, handled above, upgrades to "complete"): status stays
+    # "radius" for every non-local algebra (honest -- AI Thm 1.2).
+    return SiltingExploration(vertices=records, arrows=arrows, status="radius",
+                              radius=radius, finite_class=None)
