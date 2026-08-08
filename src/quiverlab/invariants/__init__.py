@@ -11,3 +11,9 @@ from quiverlab.invariants.recognizers import (  # noqa: F401
     is_basic, is_gentle, is_hereditary, is_nakayama, is_radical_square_zero,
     is_semisimple, is_special_biserial, is_string,
 )
+from quiverlab.invariants.coverings import (  # noqa: F401
+    FundamentalGroup, fundamental_group, intrinsic_fundamental_group,
+    minimal_relation_counts, bypasses, has_double_bypass,
+    SimpleConnectivity, is_simply_connected, Separation, separation_condition,
+    StrongSimpleConnectivity, is_strongly_simply_connected,
+)

@@ -372,6 +372,12 @@ ported and wired in:
   dual, and recollements from an idempotent (the corner `eAe`, the quotient `A/AeA`,
   and the six functors) — each certified per instance or refusing loudly;
   `quasi_hereditary` is clickable in the no-code GUI. **White space in QPA.**
+- **Fundamental group and simple connectivity (coverings).** The presentation
+  fundamental group π₁(Q,I) with exact abelianization by ℤ Smith normal form, the
+  Hurewicz `Hom(π₁,k⁺) ↪ HH¹` check, and a strongly-simply-connected recognizer (the
+  separation condition, Skowroński) with a witness on failure — three-valued and
+  honest per Adian–Rabin (`None` when undecidable); the intrinsic π₁ is refused loudly.
+  Clickable via `fundamental_group` / `simply_connected`. **White space in QPA.**
 - **τ-tilting engine (C4, Adachi–Iyama–Reiten).** Support τ-tilting pairs via
   mutation, the exchange graph + torsion-class lattice with brick labels, 2-term
   silting, King θ-stability, maximal green sequences, and the AIR four-way count
