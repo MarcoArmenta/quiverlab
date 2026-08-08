@@ -402,3 +402,37 @@ def test_summands_independent_of_char0_weight_gate():
     assert L.weights is None                                     # weight/torus char-0 gated
     for n in range(1, 3):
         assert sum(p["dim"] * p["mult"] for p in L.summands[n]) == L.hh_dims[n]
+
+
+# ---------------------------------------------------------------------------
+# Task 5: literature decomposition anchors (ALS toupie, truncated-Witt)
+# ---------------------------------------------------------------------------
+@lit
+@pytest.mark.parametrize("a,hh1", [(2, 3), (3, 8)])
+def test_als_toupie_kronecker_hh1_irreducible(a, hh1):
+    """The a-Kronecker 1 =>=> 2 (a parallel arrows) IS an ALS toupie algebra
+    (Artenstein-Lanzilotta-Solotar, alsolotar_toupie): HH^* = [1, a^2-1, 0, ..], and
+    HH^1 = sl_a acting on HH^1 as the IRREDUCIBLE adjoint -- a genuine, self-contained
+    member of the ALS toupie Lie-module family (a=2 -> sl2 = L(2); a=3 -> sl3, dim 8)."""
+    arrows = {chr(ord("a") + i): (1, 2) for i in range(a)}
+    A = Quiver([1, 2], arrows).algebra(field=QQ)
+    L = lie_module_action(A, top=1)
+    assert L.hh_dims[:2] == [1, hh1] and L.hh1_dim == hh1
+    s = L.summands[1]
+    assert len(s) == 1 and s[0]["dim"] == hh1                    # one irreducible adjoint sl_a
+
+
+@lit
+@pytest.mark.parametrize("n", [2, 3, 4])
+def test_truncated_witt_anchor(n):
+    """k[x]/(x^n): HH^1 = the positive-Witt truncation <x^{i+1} d : 0<=i<=n-2> (an
+    ANALOGUE of the MNPRS Virasoro-subquotient structure; self-contained, not a citation
+    of MNPRS's special-biserial theorem). Each HH^m (m>=1, dim n-1) is a SINGLE
+    indecomposable over this Lie algebra, with an equal-gap grading-weight progression."""
+    A = truncated_polynomial(n, field=QQ)
+    L = lie_module_action(A, top=3)
+    assert L.hh_dims == [n, n - 1, n - 1, n - 1]
+    assert L.hh1_dim == n - 1                                    # dim of the Witt truncation
+    for m in range(1, 4):
+        assert len(L.summands[m]) == 1                          # single indecomposable
+        assert _is_equal_gap(_weights_at(L, m))                 # equal-gap grading weights
