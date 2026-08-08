@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-3506_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-3799_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 3506 tests over the
+Every shipped feature is unit tested (the suite is 3799 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -342,6 +342,12 @@ ported and wired in:
   for `kA_n`) — every enumeration budget-capped with the honest
   complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
   drawn no-code in the browser for n = 2, 3** — the C4 flagship.
+- **The lattice theory of torsion classes (Demonet–Iyama–Reading–Reiten–Thomas).**
+  The finite lattice `tors A` as an abstract lattice, the congruence lattice
+  `Con(tors A)`, the forcing order on bricks, canonical join representations, and the
+  **wide-subcategory poset** (Enomoto's core label order = κ order) — one click via the
+  `congruences` compute kind, certified complete iff `A` is τ-tilting-finite. kA₂ =
+  the pentagon N₅ / M₃; kA₃ = the 14-element `Con` / NC(A₃) wide poset.
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`
