@@ -20,6 +20,9 @@ Public surface:
   ``support_tau_tilting`` (``certificate``)
 - ``skew_gentle_block`` (``block``)
 """
+from quiverlab.skewgentle.certificate import (brick_finite_certificate,
+                                              is_representation_finite,
+                                              support_tau_tilting)
 from quiverlab.skewgentle.modules import (SkewGentleString, classify,
                                           skew_gentle_indecomposables,
                                           skew_gentle_module)
@@ -37,4 +40,7 @@ __all__ = [
     "classify",
     "skew_gentle_module",
     "skew_gentle_indecomposables",
+    "is_representation_finite",
+    "brick_finite_certificate",
+    "support_tau_tilting",
 ]
