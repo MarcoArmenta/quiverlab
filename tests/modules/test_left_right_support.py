@@ -5,7 +5,6 @@ against end_algebra. Literature: hereditary => A_lambda = A_rho = A (connected);
 => e_lambda = {1,2,3}, e_rho = {3,4,5}. The tiltedness of each factor is PIN'd for P60."""
 import pytest
 
-import quiverlab
 from quiverlab import Quiver, RadicalSquareZero, linear_path_algebra
 from quiverlab.fields import QQ
 from quiverlab.modules.left_right import left_right_parts
@@ -66,11 +65,9 @@ def test_support_presentation_less_refuses_loudly():
         _support_algebra(sc, U, [1, 2, 3], projectives=True)
 
 
-@pytest.mark.skipif(not hasattr(quiverlab.Algebra, "is_tilted"),
-                    reason="PIN: each support component is tilted -- VERIFIED in P60 (tilted "
-                           "recognizer). GENUINELY auto-flips to a real assert once "
-                           "Algebra.is_tilted lands (P60).")
+@lit
 def test_support_components_are_tilted_PIN():
+    # P60 landed Algebra.is_tilted (the tilted recognizer): this PIN is now a real assert.
     atlas = left_right_parts(linear_path_algebra(3, field=QQ))
     for comp in atlas.left_support.components:
         assert comp["algebra"].is_tilted()             # P60 API
