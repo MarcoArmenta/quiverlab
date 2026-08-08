@@ -1476,6 +1476,18 @@ git commit -m "docs(verification): Plan-57 radical-filtration + Liu-degree oracl
 
 ## Change log
 
+- **2026-08-07 implementation note:** `dim rad¹(kA₃) = 9` (ALL radical maps); the
+  6 arrows are a basis of `rad/rad²` — the earlier "rad¹ = the six arrows" prose
+  describes generators, not `rad¹` itself (the descending filtration puts each
+  nonzero map into `rad^m` for every `m ≤ n₀`). Verified live and adjudicated by
+  the adversarial critic (who independently re-derived `9` and `d_ℓ(P₁→I₂)=2`).
+- **2026-08-07 implementation note (directing/rep-directed):** the plan's "no cycle
+  carries a nonzero composite" refinement is WITHDRAWN — on `NakayamaAlgebra([3,2,2])`
+  the round-trip composite is `0` in `rad^{≥N}` yet the module is genuinely
+  non-directing. The implemented recognizer uses Ringel's definition directly (an
+  oriented cycle in `Γ_A` is a cycle of nonzero non-isomorphisms because every
+  `Γ_A` arrow is an irreducible map), via a Tarjan-SCC test. Critic-adjudicated in
+  the implementation's favor.
 - **2026-08-07 (authoring):** initial plan (R21 + R37; route (ii) arbiter, route
   (i) mesh crosscheck; six tasks).
 - **2026-08-07 adversarial review: 3 majors + 7 minors applied** (kA₂/kA₃ degree

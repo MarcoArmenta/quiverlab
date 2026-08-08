@@ -426,6 +426,29 @@ class Algebra:
         return knit_ar_quiver(self, budget_modules=budget_modules,
                               budget_dim=budget_dim)
 
+    def radical_filtration(self, budget_modules=256, budget_dim=4096):
+        """The radical filtration of ``mod A`` (Plan 57 / R37): exact
+        ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the
+        nilpotency index of ``rad(mod A)``, and the ``rad^inf = 0 <=>
+        representation-finite`` certificate (Auslander). Returns a
+        :class:`~quiverlab.modules.radical.RadicalFiltration`; certified iff the knit
+        closes (rep-finite), else an honest window/refusal with no verdict."""
+        from quiverlab.modules.radical import radical_filtration
+        return radical_filtration(self, budget_modules=budget_modules,
+                                  budget_dim=budget_dim)
+
+    def ar_invariants(self, budget_modules=256, budget_dim=4096):
+        """The Auslander-Reiten component invariants (Plan 57 / R21): Liu left/right
+        degrees of irreducible maps, sectional paths, the
+        postprojective/preinjective/regular partition, directing modules, the
+        representation-directed recognizer (``Gamma_A`` acyclic) and the
+        generalized-standard flag. Returns an
+        :class:`~quiverlab.modules.ar_invariants.ARInvariants`; certified iff the knit
+        closes (rep-finite), else an honest off-scope refusal."""
+        from quiverlab.modules.ar_invariants import ar_invariants
+        return ar_invariants(self, budget_modules=budget_modules,
+                             budget_dim=budget_dim)
+
     def ext_algebra(self, top=6):
         """The Yoneda / Ext-algebra E(A) = Ext^*_A(A/J, A/J) as a graded
         quiver-with-relations presentation over R = k^{Q_0}, through degree `top`
@@ -624,6 +647,17 @@ class Algebra:
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
 
+    def coxeter_spectral(self):
+        """Certified Coxeter spectral report (Plan 58 / R20): exact ZZ[x] cyclotomic
+        factorization with Phi_n labels, cyclotomic / quasi-unipotent verdict, finite
+        Coxeter order (Phi^m = I) or None with an honest reason, exact outside-unit-
+        circle root count, and the spectral radius / Mahler measure as CERTIFIED
+        ALGEBRAIC NUMBERS (minimal polynomial + rational isolating interval) -- never a
+        float. Any field that refuses on this input is captured per-field, never a
+        crash."""
+        from quiverlab.invariants.coxeter_spectral import coxeter_spectral
+        return coxeter_spectral(self)
+
     def euler_form(self, d, e):
         """Euler bilinear form <d, e> = d C^{-1} e^T on integer dimension vectors
         (vertex order); for finite gl.dim, sum (-1)^i dim Ext^i (Plan 38 / C2)."""
@@ -697,6 +731,39 @@ class Algebra:
         silent partial poset)."""
         from quiverlab.modules.degeneration import degeneration_order
         return degeneration_order(self, d, budget=budget)
+
+    def left_right_parts(self, budget=256, budget_dim=64):
+        """The left/right parts L_A, R_A of the module category, their intersection and
+        the finite complement ind A \\ (L_A u R_A), the Ext-injectives of add L_A (and dual
+        Ext-projectives of add R_A), and the left/right support algebras A_lambda, A_rho
+        (Plan 55 / R15, Assem-Coelho-Trepode). Returns a LeftRightAtlas; complete iff A is
+        representation-finite and not self-injective, else a loud status (never a partial
+        atlas). ``budget_dim`` caps the knitted per-module dimension (default 64): a
+        rep-infinite input the fast certificate misses trips a loud status="budget" in
+        bounded time rather than hanging -- raise it for a rep-finite algebra with larger
+        indecomposables."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget, budget_dim=budget_dim)
+
+    def left_part(self, budget=256):
+        """The left part L_A = { M in ind A : pd L <= 1 for every predecessor L of M }
+        (Plan 55) -- the ``left`` records of :meth:`left_right_parts`."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget).left
+
+    def right_part(self, budget=256):
+        """The right part R_A (successors, id <= 1) -- the ``right`` records of
+        :meth:`left_right_parts` (Plan 55)."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget).right
+
+    def support_algebras(self, budget=256):
+        """The left/right support algebras (A_lambda, A_rho) as presented induced-convex-
+        subquiver Algebras (Plan 55) -- ``(left_support, right_support)`` of
+        :meth:`left_right_parts`."""
+        from quiverlab.modules.left_right import left_right_parts
+        atlas = left_right_parts(self, budget=budget)
+        return atlas.left_support, atlas.right_support
 
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
@@ -868,19 +935,23 @@ class Algebra:
                 hint="choose 'auto', 'bar', or 'cs'")
         is_gfp = isinstance(self.domain, PrimeField)
         presented = self.quiver is not None and self.relations is not None
-        if engine == "cs" or (engine == "auto" and not is_gfp):
+
+        def _cs_tables():
+            # Plan 51: the bracket has its OWN CS-native builder (homotopy liftings);
+            # cup/cap keep cs_product_tables. Both any-Domain, past-window.
             if kind == "bracket":
-                raise QuiverlabError(
-                    "the Gerstenhaber bracket is served over GF(p) only "
-                    "(bar window; no CS-native brace machinery in v1)",
-                    hint="construct the algebra over GF(p)")
+                from quiverlab.resolutions_cs.products import cs_bracket_tables
+                return cs_bracket_tables(self, top, max_cells)
+            from quiverlab.resolutions_cs.products import cs_product_tables
+            return cs_product_tables(self, kind, top, max_cells)
+
+        if engine == "cs" or (engine == "auto" and not is_gfp):
             if not presented:
                 raise QuiverlabError(
                     f"{kind} tables off GF(p) need a quiver presentation "
                     "(the CS route); this algebra has structure constants only",
                     hint="build the algebra via Quiver.algebra, or use GF(p)")
-            from quiverlab.resolutions_cs.products import cs_product_tables
-            return cs_product_tables(self, kind, top, max_cells)
+            return _cs_tables()
         if not is_gfp:            # engine == "bar" explicitly, off GF(p)
             raise QuiverlabError(
                 f"engine='bar' {kind} tables need GF(p) (the tt facade)",
@@ -888,10 +959,9 @@ class Algebra:
         try:
             return gfp_product_tables(self, kind, top, max_cells)
         except DepthLimitError:
-            if engine != "auto" or not presented or kind == "bracket":
+            if engine != "auto" or not presented:
                 raise
-            from quiverlab.resolutions_cs.products import cs_product_tables
-            return cs_product_tables(self, kind, top, max_cells)
+            return _cs_tables()
 
     def cup_products(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the cup product HH^p (x) HH^q ->
@@ -908,9 +978,12 @@ class Algebra:
 
     def gerstenhaber_brackets(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the Gerstenhaber bracket HH^p (x)
-        HH^q -> HH^{p+q-1} for pairs p, q >= 1 with p+q-1 <= top. GF(p) only
-        and window-bounded (the result records the served window); the
-        degree-0 insertion action is out of scope."""
+        HH^q -> HH^{p+q-1} for pairs p, q >= 1 with p+q-1 <= top. Same engine
+        semantics as cup_products/cap_products (Plan 51): 'auto' (GF(p) -> bar/tt
+        in-window, records the served window; else CS-native for presented algebras,
+        with the CS depth fallback), 'bar' (GF(p) tt facade, loud otherwise), 'cs'
+        (Chouhy-Solotar homotopy-lifting bracket, presented algebras, any exact
+        Domain, past the bar window). The degree-0 insertion action is out of scope."""
         return self._product_dispatch("bracket", top, engine, max_cells)
 
     def connes_differentials(self, top, max_cells=4_000_000):

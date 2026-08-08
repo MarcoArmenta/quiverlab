@@ -65,6 +65,18 @@ in-window ≡ transported bracket (cross-engine); antisymmetry+Jacobi (self-cert
 the 2103.12331 Koszul-quiver tables; k[x]/(x^n) zero-entries. Size L. Deps:
 resolutions_cs/diagonal.py, hochschild/products.py.
 
+> **Implementation correction (2026-08-07, Plan 51 delivered).** Two adjustments
+> found while implementing, folded back here per the metaplan §2 rule: (1) the
+> `1⊗η` half-collapse term carries a **Koszul sign `(−1)^{n·deg τ}`** (the tensor of
+> graded maps) — omitting it makes the ψ-solve inconsistent at degree 2 already.
+> (2) The odd-exponent SIGN anchor named as **QuantumCI (2,2)** is VACUOUS:
+> `HH³(QCI/GF5)=0` (dims `[2,2,1,0,2,4]`), so the (2,2) bracket lands in the zero
+> space. The genuine non-vacuous odd-exponent discriminator is **QuantumCI (2,4) →
+> HH⁵** (dim 4, `(p-1)(q-1)=3` odd): the class is nonzero, native ≡ transported, and
+> the flipped sign disagrees (needs Δ₅, ~2 min, `slow`-marked). The `(−1)^{(p-1)(q-1)}`
+> sign (Oke Thm 3.5) is confirmed. The Oke §7 tables remain blocked-until-transcribed
+> (strict-xfail fence). Delivered on branch `plan-51-bracket`.
+
 **R2 — BV operator Δ on HH of Frobenius/self-injective algebras.** [B-scout P4,
 reference-rebuilt per critic; deepens the backlogged BV item]
 Object: Δ: HH^n → HH^{n-1} by transporting Connes B through the σ-twisted
@@ -326,6 +338,15 @@ nilpotency index on Nakayama zoo algebras; (rad^∞)²=0 ⇒ rep-finite as a
 discriminating battery; degree-vs-layer consistency with R21 (an irreducible
 map of finite left degree d forces the predicted rad-layer drop). Size M.
 Deps: AR knitting, Hom, R21 degrees.
+
+> **2026-08-07 (P57, citation-grouping correction):** the nilpotency-index
+> formula (Thm 1.3 `index = max_a{r_a+1}`, Thm 1.5(a) `index(kA_n)=n`) source is
+> **arXiv:2003.04189 (Chaio–Guazzelli, *On the nilpotency index of the radical of
+> a module category*, JPAA)**, DISTINCT from the degree paper **arXiv:1704.03933
+> (ART 2019, *Degrees of Irreducible Morphisms over Perfect Fields*)** which
+> supplies only the left/right degree definition (with the corrected membership
+> `fg ∈ rad^{m+2}`, the `∈` direction). Add 2003.04189 to R37's anchors. Shipped
+> by Plan 57 (`modules/radical.py`, `modules/ar_invariants.py`).
 
 **R22 — Cluster-tilted algebras: relation-extension constructor + local-slice
 recognizer.** [C-scout P6; keep]

@@ -98,6 +98,8 @@
     '  <label><input type="checkbox" id="qlgui-radical_filtration_ss"> radical-filtration SS 0..<input type="number" id="qlgui-radical_filtration_ss-top" value="4" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
+    // ---- Plan 58: certified Coxeter spectral analysis (Φ_n, certified ρ/M, Lehmer) ----
+    '  <label><input type="checkbox" id="qlgui-coxeter_spectral"> Coxeter spectral analysis</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
     '  <label><input type="checkbox" id="qlgui-homological_profile"> homological dimensions</label>' +
     '  <label><input type="checkbox" id="qlgui-fractional_cy"> fractional Calabi–Yau (self-injective)</label>' +
@@ -110,6 +112,13 @@
     '  <label><input type="checkbox" id="qlgui-derived_compare"> derived compare (with B)</label>' +
     // Plan-41: AR-quiver knitting (algebra-level; honest semi-decision + budget).
     '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
+    // Plan-57: radical filtration of mod A (rad^n(X,Y) + nilpotency index) and the
+    // AR-component invariants (Liu degrees, directing, rep-directed). Algebra-level,
+    // budget (max indecomposables). NOT the Loewy radical series (radical_filtration_ss).
+    '  <label><input type="checkbox" id="qlgui-radical_filtration"> radical filtration rad^n(X,Y) + nilpotency index, budget <input type="number" id="qlgui-radical_filtration-budget" value="512" min="1"></label>' +
+    '  <label><input type="checkbox" id="qlgui-ar_invariants"> AR-component invariants (Liu degrees, directing), budget <input type="number" id="qlgui-ar_invariants-budget" value="512" min="1"></label>' +
+    // Plan-55: left/right parts of the module category (algebra-level; honest semi-decision + budget).
+    '  <label><input type="checkbox" id="qlgui-left_right_parts"> left/right parts, budget <input type="number" id="qlgui-left_right_parts-budget" value="256" min="1"></label>' +
     // ---- Plan 46: gentle / string subsystem (census + bands + rep-type + AG) ----
     '  <label><input type="checkbox" id="qlgui-strings"> strings &amp; bands (gentle)</label>' +
     // ---- Plan 59: R34 homological string test + R35 toupie structure ----
@@ -217,11 +226,16 @@
    "radical_filtration_ss", "radical_filtration_ss-top",
    // Plan 41: AR-quiver knitting (algebra-level, budget) ; Plan 43: derived compare + algebra B
    "ar_quiver", "ar_quiver-budget", "derived_compare",
+   // Plan 57: radical filtration + AR-component invariants (algebra-level, budget)
+   "radical_filtration", "radical_filtration-budget",
+   "ar_invariants", "ar_invariants-budget",
+   // Plan 55: left/right parts of the module category (algebra-level, budget)
+   "left_right_parts", "left_right_parts-budget",
    "algb", "algb-legend", "algb-mode", "algb-mode-label",
    "algb-type", "algb-type-wrap", "algb-type-label",
    "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
    "cartan",
-   "coxeter_polynomial", "global_dimension", "center",
+   "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
    // Plan 53: fractional Calabi-Yau (self-injective; scalar kind)
@@ -862,7 +876,7 @@
       compute.push("radical_filtration_ss:0.." + el["radical_filtration_ss-top"].value);
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
-    ["cartan", "coxeter_polynomial", "global_dimension", "center",
+    ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "string_homological", "toupie", "quasi_hereditary"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
@@ -875,6 +889,16 @@
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
       compute.push("ar_quiver:" + el["ar_quiver-budget"].value);
+    // Plan 57: radical_filtration + ar_invariants carry a MODULE BUDGET (like
+    // ar_quiver) -- the single-int form both runners parse.
+    if (el.radical_filtration.checked)
+      compute.push("radical_filtration:" + el["radical_filtration-budget"].value);
+    if (el.ar_invariants.checked)
+      compute.push("ar_invariants:" + el["ar_invariants-budget"].value);
+    // Plan 55: left/right parts carries a MODULE BUDGET (not a degree) -- the single-int
+    // form both runners parse (like ar_quiver / tau_tilting).
+    if (el.left_right_parts.checked)
+      compute.push("left_right_parts:" + el["left_right_parts-budget"].value);
     // Plan 43: derived_compare is algebra-level and needs a second algebra B.
     if (el.derived_compare.checked) compute.push("derived_compare");
     var module = null, extTarget = null, torTarget = null;
@@ -1403,6 +1427,11 @@
         + "integer entries mod p and computes their exact rank by Gaussian "
         + "elimination mod p; every dimension follows by rank-nullity \u2014 nothing "
         + "numerical, no floating point.";
+    if (low.indexOf("homotopy lifting") !== -1)
+      return s + " \u2014 the Gerstenhaber bracket assembled from Negron\u2013"
+        + "Witherspoon / Volkov homotopy liftings on the Chouhy\u2013Solotar diagonal: "
+        + "a finite per-degree exact linear solve (canonical), no bar object, any exact "
+        + "field, past the bar window.";
     if (low.indexOf("chouhy") !== -1 || low.indexOf("solotar") !== -1)
       return s + " \u2014 the Chouhy\u2013Solotar projective bimodule resolution built "
         + "from the admissible presentation, certified per instance "
@@ -2645,6 +2674,10 @@
     if (name === "bracket" && b.window != null) {
       div.appendChild(h("p", { "class": "qlgui-hint",
         text: "served to degree window " + b.window + " (bar-transport bound)" }));
+    } else if (name === "bracket") {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "served natively on the Chouhy–Solotar resolution (homotopy "
+          + "liftings; any exact field, past the bar window)" }));
     }
     div.appendChild(h("div", { "class": "qlgui-cites", text: engineNote(b.engine) }));
   }
@@ -3184,6 +3217,54 @@
       if (b.note) div.appendChild(h("p", { text: b.note }));
     } else if (name === "orbit_geometry") {
       renderOrbitGeometry(div, b);
+    } else if (name === "string_homological") {
+      // Plan 59 / R34: the three-valued verdict + the is_string arbiter + the >= 3
+      // -summand middle witness (a genuine extension of indecomposables).
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: "Verdict: " + b.verdict
+          + " · syntactic is_string: " + b.is_string }));
+        if (b.witness) {
+          var shw = b.witness;
+          var shE = Object.keys(shw.E_dimvec || {}).map(function (v) {
+            return v + ":" + shw.E_dimvec[v]; }).join(", ");
+          var shS = (shw.summand_dimvecs || []).map(function (d) {
+            return "{" + Object.keys(d).map(function (v) {
+              return v + ":" + d[v]; }).join(", ") + "}"; }).join(" ⊕ ");
+          div.appendChild(h("p", { text: "Witness: middle {" + shE + "} has "
+            + shw.summand_count + " summand(s)" + (shS ? " = " + shS : "")
+            + " — not a string algebra (k-bar-sound)." }));
+        }
+        if (b.kbar_gap_note) div.appendChild(h("p", { text: b.kbar_gap_note }));
+        if (b.reason) div.appendChild(h("p", { text: b.reason }));
+      }
+    } else if (name === "toupie") {
+      // Plan 59 / R35: recognizer + branch/direct-arrow counts + HH degree table +
+      // the char-0 sl_a lower bound.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (!b.is_toupie) {
+        div.appendChild(h("p", { text: "The algebra is not a toupie." }));
+      } else {
+        div.appendChild(h("p", { text: "Toupie: " + b.branch_count + " branch(es), "
+          + b.direct_arrow_count + " direct source→sink arrow(s)." }));
+        if (b.hh) {
+          var thHr = h("tr"); thHr.appendChild(h("th", { text: "n" }));
+          var thDr = h("tr"); thDr.appendChild(h("th", { text: "dim HH^n" }));
+          b.hh.forEach(function (d, n) {
+            thHr.appendChild(h("td", { text: String(n) }));
+            thDr.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, thHr, thDr));
+        }
+        if (b.sl_a) {
+          div.appendChild(h("p", { text: "sl_a ⊆ HH¹ (char 0): a = " + b.sl_a.a
+            + ", dim sl_a = " + b.sl_a.dim
+            + (b.sl_a.char0 ? "" : " (char ≠ 0 — inclusion not claimed)") }));
+        }
+        if (b.note) div.appendChild(h("p", { text: b.note }));
+      }
     } else if (name === "quasi_hereditary") {
       // Plan 47: the quasi-heredity verdict + order-dependence note + per-index
       // certificates (End Δ(i)=k, P(i) Δ-filtered) + the standard-module dim vectors.
@@ -3282,53 +3363,118 @@
         div.appendChild(h("p", { text: "τ-orbits: " + b.tau_orbits.map(function (o) {
           return "{" + o.map(arLabel).join(", ") + "}"; }).join("  ") }));
       }
-    } else if (name === "string_homological") {
-      // Plan 59 / R34: the three-valued verdict + the is_string arbiter + the >= 3
-      // -summand middle witness (a genuine extension of indecomposables).
+    } else if (name === "radical_filtration") {
+      // Plan 57 / R37: the radical of the MODULE CATEGORY rad^n(X,Y) and its
+      // nilpotency index -- NOT the Loewy radical series (radical_filtration_ss).
+      // Honest semi-decision: verdict FIRST, then the layer profile; off-scope input
+      // shows the loud window/unsupported note, never a fake index.
       if (b.error) {
         div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
-      } else {
-        div.appendChild(h("p", { text: "Verdict: " + b.verdict
-          + " · syntactic is_string: " + b.is_string }));
-        if (b.witness) {
-          var shw = b.witness;
-          var shE = Object.keys(shw.E_dimvec || {}).map(function (v) {
-            return v + ":" + shw.E_dimvec[v]; }).join(", ");
-          var shS = (shw.summand_dimvecs || []).map(function (d) {
-            return "{" + Object.keys(d).map(function (v) {
-              return v + ":" + d[v]; }).join(", ") + "}"; }).join(" ⊕ ");
-          div.appendChild(h("p", { text: "Witness: middle {" + shE + "} has "
-            + shw.summand_count + " summand(s)" + (shS ? " = " + shS : "")
-            + " — not a string algebra (k-bar-sound)." }));
-        }
-        if (b.kbar_gap_note) div.appendChild(h("p", { text: b.kbar_gap_note }));
-        if (b.reason) div.appendChild(h("p", { text: b.reason }));
-      }
-    } else if (name === "toupie") {
-      // Plan 59 / R35: recognizer + branch/direct-arrow counts + HH degree table +
-      // the char-0 sl_a lower bound.
-      if (b.error) {
-        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
-      } else if (!b.is_toupie) {
-        div.appendChild(h("p", { text: "The algebra is not a toupie." }));
-      } else {
-        div.appendChild(h("p", { text: "Toupie: " + b.branch_count + " branch(es), "
-          + b.direct_arrow_count + " direct source→sink arrow(s)." }));
-        if (b.hh) {
-          var thHr = h("tr"); thHr.appendChild(h("th", { text: "n" }));
-          var thDr = h("tr"); thDr.appendChild(h("th", { text: "dim HH^n" }));
-          b.hh.forEach(function (d, n) {
-            thHr.appendChild(h("td", { text: String(n) }));
-            thDr.appendChild(h("td", { text: String(d) }));
+      } else if (b.complete === true) {
+        div.appendChild(h("p", { text: "Representation-finite: " + b.num_indecomposables
+          + " indecomposable(s); nilpotency index N = " + b.nilpotency_index
+          + "; rad^∞(mod A) = 0 (Auslander); generalized standard: "
+          + (b.generalized_standard ? "yes" : "no") + "." }));
+        if ((b.layer_profile || []).length) {
+          var lfh = h("tr"), lfr = h("tr");
+          lfh.appendChild(h("th", { text: "n" }));
+          lfr.appendChild(h("th", { text: "Σ dim radⁿ" }));
+          b.layer_profile.forEach(function (d, idx) {
+            lfh.appendChild(h("th", { text: String(idx + 1) }));
+            lfr.appendChild(h("td", { text: String(d) }));
           });
-          div.appendChild(h("table", {}, thHr, thDr));
+          div.appendChild(h("table", {}, lfh, lfr));
         }
-        if (b.sl_a) {
-          div.appendChild(h("p", { text: "sl_a ⊆ HH¹ (char 0): a = " + b.sl_a.a
-            + ", dim sl_a = " + b.sl_a.dim
-            + (b.sl_a.char0 ? "" : " (char ≠ 0 — inclusion not claimed)") }));
+      } else {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: (b.status === "unsupported")
+            ? "Not computed — " + (b.note || "input not eligible (self-injective).")
+            : "Window only (budget " + b.budget + " reached) — "
+              + (b.note || "") + " No nilpotency index or rad^∞ verdict." }));
+      }
+    } else if (name === "ar_invariants") {
+      // Plan 57 / R21: Liu degrees + directing / rep-directed recognizer + partition.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else if (b.complete === true) {
+        div.appendChild(h("p", { text: "Representation-directed: "
+          + (b.representation_directed ? "yes" : "no") + " (" + b.num_directing
+          + " of " + b.num_indecomposables + " directing); generalized standard: "
+          + (b.generalized_standard ? "yes" : "no") + "; nilpotency index N = "
+          + b.nilpotency_index + "; max sectional length = "
+          + b.max_sectional_length + "." }));
+        var pc = b.partition_counts || {};
+        var pcs = Object.keys(pc).map(function (k) { return k + ": " + pc[k]; }).join(", ");
+        if (pcs) div.appendChild(h("p", { text: "Partition — " + pcs + "." }));
+        if (b.partition_note)
+          div.appendChild(h("p", { text: b.partition_note }));
+        var dg = b.degrees || {}, dks = Object.keys(dg);
+        if (dks.length) {
+          var dgh = h("tr");
+          dgh.appendChild(h("th", { text: "irreducible map" }));
+          dgh.appendChild(h("th", { text: "dℓ" }));
+          dgh.appendChild(h("th", { text: "dᵣ" }));
+          var dgt = h("table", {}, dgh);
+          dks.forEach(function (k) {
+            var rec = dg[k];
+            dgt.appendChild(h("tr", {}, h("th", { text: k }),
+              h("td", { text: rec.d_l === null ? "∞" : String(rec.d_l) }),
+              h("td", { text: rec.d_r === null ? "∞" : String(rec.d_r) })));
+          });
+          div.appendChild(dgt);
         }
-        if (b.note) div.appendChild(h("p", { text: b.note }));
+      } else {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: (b.status === "unsupported")
+            ? "Not computed — " + (b.note || "input not eligible (self-injective).")
+            : "Off scope (status " + b.status + ") — " + (b.note || "")
+              + " No directing/partition/degree verdict." }));
+      }
+    } else if (name === "left_right_parts") {
+      // Plan 55: the module-category atlas. Completeness/refusal status FIRST (an honest
+      // semi-decision: rep-finite non-self-injective only), then both parts named
+      // S_v/P_v/I_v, the complement (laura datum), the Ext-injectives / Ext-projectives,
+      // and the two support algebras with their component counts.
+      var lrDone = b.complete === true;
+      div.appendChild(h("p", { "class": lrDone ? "" : "qlgui-error",
+        text: lrDone
+          ? ("Module category: " + b.universe_size + " indecomposable(s); L_A has "
+             + (b.left || []).length + ", R_A has " + (b.right || []).length
+             + " (intersection " + (b.intersection || []).length + ", complement "
+             + (b.complement || []).length + ").")
+          : (b.status === "unsupported" || b.status === "error")
+            ? "Not computed — " + (b.error || b.note || "input not eligible "
+              + "(self-injective or not representation-finite)") + "."
+            : "Partial (budget reached — the algebra is likely representation-infinite; "
+              + "this is NOT the full atlas)." }));
+      if (lrDone) {
+        var lrName = function (recs) {
+          if (!recs || !recs.length) return "∅";
+          return recs.map(function (r) {
+            if (r.name) return r.name;
+            var dv = r.dimvec || {};
+            return "(" + Object.keys(dv).map(function (w) { return dv[w]; }).join(",") + ")";
+          }).join(", ");
+        };
+        div.appendChild(h("p", {}, h("b", { text: "Left part L_A: " }),
+          document.createTextNode(lrName(b.left))));
+        div.appendChild(h("p", {}, h("b", { text: "Right part R_A: " }),
+          document.createTextNode(lrName(b.right))));
+        div.appendChild(h("p", {}, h("b", { text: "Complement (ind A ∖ (L_A ∪ R_A)): " }),
+          document.createTextNode(lrName(b.complement))));
+        div.appendChild(h("p", {}, h("b", { text: "Ext-injectives of add L_A: " }),
+          document.createTextNode(lrName(b.ext_injectives_left))));
+        div.appendChild(h("p", {}, h("b", { text: "Ext-projectives of add R_A: " }),
+          document.createTextNode(lrName(b.ext_projectives_right))));
+        [["A_λ (left support)", b.left_support], ["A_ρ (right support)", b.right_support]]
+          .forEach(function (pair) {
+            var sa = pair[1];
+            if (!sa) return;
+            div.appendChild(h("p", {}, h("b", { text: pair[0] + ": " }),
+              document.createTextNode("vertices {" + (sa.vertices || []).join(", ")
+                + "}, dim " + sa.dim + ", " + (sa.components || []).length
+                + " connected component(s)")));
+          });
       }
     } else if (name === "derived_compare") {
       // Plan 43: the two fingerprints side by side + the honest verdict. Equal
@@ -3375,6 +3521,62 @@
           text: "Incomparable (errored on one/both sides): "
             + b.incomparable_fields.join(", ") + "." }));
       if (b.scope) div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
+    } else if (name === "coxeter_spectral") {
+      // Plan 58 (R20): certified Coxeter spectral analysis -- Phi_n factorization,
+      // cyclotomic/order verdicts, outside-circle count, rho/M as certified algebraic
+      // numbers (minpoly + rational isolating interval), Lehmer-class footnote.
+      var errObj = function (v) { return v && typeof v === "object" && "error" in v; };
+      if (errObj(b.coxeter_polynomial)) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Coxeter polynomial unavailable — " + b.coxeter_polynomial.error }));
+      } else {
+        div.appendChild(h("p", { text: "Certified Coxeter spectral analysis" }));
+        div.appendChild(h("p", { "class": "arithmatex",
+          text: "\\[ \\chi(t) = " + (b.coxeter_latex || "") + " \\]" }));
+        div.appendChild(h("p", { text: "Cyclotomic factorization (Φ_n labels):" }));
+        var cxFacs = h("ul");
+        (b.factorization || []).forEach(function (f) {
+          var pow = f.multiplicity > 1 ? "^{" + f.multiplicity + "}" : "";
+          var lbl = (f.cyclotomic_index !== null && f.cyclotomic_index !== undefined)
+            ? "\\Phi_{" + f.cyclotomic_index + "}" + pow
+            : "\\text{(non-cyclotomic)}" + pow;
+          cxFacs.appendChild(h("li", { "class": "arithmatex",
+            text: "\\( " + lbl + " = " + f.latex + " \\)" }));
+        });
+        div.appendChild(cxFacs);
+        div.appendChild(h("p", { text: "Cyclotomic (all eigenvalues roots of unity): "
+          + (b.cyclotomic ? "yes" : "no") + "; quasi-unipotent: "
+          + (b.quasi_unipotent ? "yes" : "no") + "." }));
+        var cxOrd = b.coxeter_order, cxOrdTxt;
+        if (errObj(cxOrd)) cxOrdTxt = "not decided — " + cxOrd.error;
+        else if (cxOrd === null || cxOrd === undefined) cxOrdTxt = "infinite (∞)";
+        else cxOrdTxt = String(cxOrd);
+        div.appendChild(h("p", { text: "Coxeter order (Φ^m = I): " + cxOrdTxt
+          + (typeof b.coxeter_order_reason === "string"
+             ? " — " + b.coxeter_order_reason : "") + "." }));
+        div.appendChild(h("p", { text: "Roots strictly outside the unit circle: "
+          + b.outside_unit_circle_count + "." }));
+        var cxCert = function (label, c) {
+          if (errObj(c)) {
+            div.appendChild(h("p", { "class": "qlgui-hint",
+              text: label + ": not certified — " + c.error }));
+            return;
+          }
+          if (!c) return;
+          div.appendChild(h("p", { "class": "arithmatex",
+            text: "\\[ " + label + " = " + c.latex + " \\]" }));
+          div.appendChild(h("p", { "class": "qlgui-cites",
+            text: "minimal polynomial of degree " + c.degree
+              + ", isolating interval (" + c.interval[0] + ", " + c.interval[1] + ")"
+              + (c.is_rational ? " (rational)" : "") + "." }));
+        };
+        cxCert("\\rho\\ (\\text{spectral radius})", b.spectral_radius);
+        cxCert("M\\ (\\text{Mahler measure})", b.mahler_measure);
+        if (b.lehmer_class_note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.lehmer_class_note }));
+        if (b.scope)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
+      }
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -3472,7 +3674,7 @@
    el.connes_b, el["connes_b-top"],
    el.cyclic_homology, el["cyclic_homology-top"],
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
-   el.coxeter_polynomial, el.global_dimension, el.center,
+   el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
@@ -3554,11 +3756,11 @@
   [
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
-    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
+    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting", "left_right_parts"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
-    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver"]}
+    {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
   ];
   // QLGUI-THEMES-END
 
@@ -3920,6 +4122,7 @@
     {"id": "products", "title": "HH products: cup, cap, bracket", "category": "hochschild", "keywords": ["cup", "cap", "bracket", "gerstenhaber", "producto", "produit", "杯", "帽", "括号", "product"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cup:0..2", "cap:0..2", "bracket:0..2"]}},
     {"id": "ss_hochschild", "title": "Hochschild (b,B) spectral sequence", "category": "hochschild", "keywords": ["spectral", "sequence", "espectral", "spectrale", "谱序列", "ss", "b,B", "abutment"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ss_hochschild:0..3"]}},
     {"id": "cartan_coxeter", "title": "Cartan matrix & Coxeter polynomial", "category": "invariants", "keywords": ["cartan", "coxeter", "matrix", "matriz", "matrice", "polynomial", "polinomio", "polynôme", "卡坦", "矩阵", "多项式"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cartan", "coxeter_polynomial"]}},
+    {"id": "coxeter_spectral", "title": "Coxeter spectral analysis (certified ρ/M, Φ_n)", "category": "invariants", "keywords": ["coxeter", "spectral", "mahler", "lehmer", "cyclotomic", "salem", "spectral radius", "espectral", "ciclotómico", "spectrale", "cyclotomique", "谱", "分圆", "谱半径", "pisot"], "example": {"vertices": [1, 2], "arrows": {"a0": [1, 2], "a1": [1, 2], "a2": [1, 2]}, "relations": [], "field": {"kind": "QQ"}, "compute": ["coxeter_spectral"]}},
     {"id": "homological_profile", "title": "Homological dimensions & global dimension", "category": "invariants", "keywords": ["homological", "dimension", "global", "gldim", "dimensión", "dimension", "同调维数", "全局维数", "findim", "gorenstein", "igusa", "todorov"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["homological_profile", "global_dimension"]}},
     {"id": "fractional_cy", "title": "Fractional Calabi–Yau dimension (self-injective)", "category": "invariants", "keywords": ["fractional", "calabi", "yau", "calabi-yau", "cy", "stable", "serre", "nakayama", "self-injective", "selfinjective", "periodic", "calabi–yau", "分数", "卡拉比", "丘"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["fractional_cy"]}},
     {"id": "center", "title": "Center of the algebra Z(A)", "category": "invariants", "keywords": ["center", "centre", "centro", "中心", "Z(A)", "zentrum"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["center"]}},
@@ -3929,10 +4132,12 @@
     {"id": "quasi_hereditary", "title": "Quasi-hereditary structure (Δ/∇)", "category": "invariants", "keywords": ["quasi-hereditary", "standard", "costandard", "delta", "nabla", "bgg", "cuasi-hereditaria", "quasi-héréditaire", "准遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["quasi_hereditary"]}},
     {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
     {"id": "tau_tilting", "title": "τ-tilting: pairs, exchange graph, fan", "category": "tau-tilting", "keywords": ["tau-tilting", "tilting", "mutation", "torsion", "silting", "g-vector", "wall", "stability", "chamber", "inclinación", "basculement", "mutación", "倾斜", "突变", "brick", "semibrick", "fan"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["tau_tilting:512"]}},
+    {"id": "left_right_parts", "title": "Left / right parts L_A, R_A + support algebras", "category": "structure", "keywords": ["left part", "right part", "L_A", "R_A", "support algebra", "laura", "ada", "quasi-tilted", "ext-injective", "complement", "assem", "coelho", "trepode", "parte izquierda", "parte derecha", "partie gauche", "partie droite", "álgebra soporte", "algèbre support", "左部", "右部", "支撑代数"], "example": {"vertices": [1, 2, 3, 4, 5], "arrows": {"a1": [2, 1], "a2": [3, 2], "a3": [4, 3], "a4": [5, 4]}, "relations": ["a2*a1", "a3*a2", "a4*a3"], "field": {"kind": "QQ"}, "compute": ["left_right_parts:256"]}},
     {"id": "module_basics", "title": "Module: dimension vector, rad/top/soc", "category": "modules", "keywords": ["module", "dimension vector", "radical", "top", "socle", "zócalo", "socle", "módulo", "module", "模块", "维数向量", "loewy"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["dimension_vector", "rad_top_soc"]}},
     {"id": "resolutions", "title": "Projective & injective resolutions", "category": "modules", "keywords": ["resolution", "projective", "injective", "resolución", "résolution", "proyectiva", "inyectiva", "projective", "injective", "分解", "投影", "内射", "pd", "id"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["projective_resolution:0..6", "injective_resolution:0..6", "projective_dimension", "injective_dimension"]}},
     {"id": "ext_tor", "title": "Ext & Tor between modules", "category": "modules", "keywords": ["ext", "tor", "extension", "extensión", "扩张", "torsion", "扭积", "yoneda"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "ext_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "right"}, "tor_target": {"builtin": {"kind": "simple", "vertex": 1}, "side": "left"}, "compute": ["ext:0..3", "tor:0..3"]}},
     {"id": "ar_theory", "title": "Auslander–Reiten: τ, τ⁻, almost-split", "category": "ar", "keywords": ["auslander", "reiten", "tau", "translate", "almost-split", "irreducible", "traslación", "translation", "转变", "几乎分裂", "ar-quiver"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["tau", "tau_minus", "almost_split"]}},
+    {"id": "radical_filtration", "title": "Radical filtration & AR-component invariants (Liu–Chaio)", "category": "ar", "keywords": ["radical", "filtration", "filtración", "filtration", "nilpotency", "index", "liu", "chaio", "degree", "grado", "degré", "sectional", "directing", "representation-directed", "generalized standard", "auslander", "rad^n", "根", "幂零指数", "radical de módulos"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["radical_filtration", "ar_invariants"]}},
     {"id": "decompose", "title": "Krull–Schmidt decomposition", "category": "modules", "keywords": ["decompose", "krull-schmidt", "indecomposable", "descomponer", "décomposer", "indescomponible", "分解", "不可分"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"dims": {"1": 1, "2": 1, "3": 0}, "maps": {"a": [[0]], "b": []}, "side": "right"}, "compute": ["decompose"]}},
     {"id": "orbit_geometry", "title": "Representation-variety orbit geometry", "category": "geometry", "keywords": ["orbit", "geometry", "variety", "voigt", "rigid", "degeneration", "kac", "órbita", "orbite", "geometría", "géométrie", "轨道", "几何", "rigidity"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "simple", "vertex": 2}, "side": "right"}, "compute": ["orbit_geometry"]}},
     {"id": "tilting_check", "title": "Tilting-module check", "category": "tau-tilting", "keywords": ["tilting", "bongartz", "cotilting", "inclinación", "basculant", "倾斜模块"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "module": {"builtin": {"kind": "projective", "vertex": 1}, "side": "right"}, "compute": ["tilting_check"]}}
@@ -4033,10 +4238,14 @@
     ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
     radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },
     ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
+    radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
+    ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
+    left_right_parts: { cb: "left_right_parts", top: "left_right_parts-budget", budget: true },
     derived_compare: { cb: "derived_compare" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },
     coxeter_polynomial: { cb: "coxeter_polynomial" },
+    coxeter_spectral: { cb: "coxeter_spectral" },
     global_dimension: { cb: "global_dimension" },
     center: { cb: "center" },
     recognizers: { cb: "recognizers" },

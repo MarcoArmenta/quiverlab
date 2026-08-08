@@ -147,3 +147,129 @@ def mahler_measure(poly):
     for r in _off_circle_roots(q):
         m = m * sp.Abs(r)
     return sp.simplify(m)
+
+
+# =====================================================================
+# Plan 58: certification + labelling + count layer (NO new root-finding;
+# wraps/reuses spectral_radius, mahler_measure, is_cyclotomic_product and the
+# private _noncyclotomic_part / _off_circle_roots helpers above). Every value is
+# EXACT -- minimal polynomial + rational isolating interval, never a float.
+# =====================================================================
+
+def certify_real_algebraic(alpha) -> dict:
+    """Certify an exact non-negative REAL sympy value ``alpha`` (what
+    ``spectral_radius`` / ``mahler_measure`` return on a real-dominant spectrum:
+    ``Integer`` / ``Rational`` / a radical ``Add``/``Pow`` / a real ``CRootOf``) as
+    an algebraic number: its minimal polynomial over ``QQ`` (primitive ``ZZ[x]``,
+    high->low degree), a RATIONAL isolating interval, a Sturm-certified unique root
+    index, and the exact ``latex``/``value`` display forms.  Never a float; the
+    rational interval IS the numeric localisation (§D2).
+
+    CALLER CONTRACT (§D2/§D3): ``alpha`` must be a real radical/CRootOf/rational.
+    ``sympy.minimal_polynomial`` is intractable (~121 s, measured) on the
+    complex-modulus form ``sqrt(CRootOf*CRootOf)`` a complex-dominant spectrum
+    yields, and it does NOT raise there -- it hangs -- so the assembler gates on the
+    shipped ``_real_roots_suffice`` predicate BEFORE calling this and never hands a
+    complex-modulus value in.  This function's only loud refusal is the
+    non-unique-location guard below.
+
+    Raises ``QuiverlabError`` if ``alpha`` is ``None``, if ``minimal_polynomial``
+    raises, or if the root cannot be uniquely located among the isolating
+    intervals (never a guessed root)."""
+    from quiverlab.errors import QuiverlabError
+    if alpha is None:
+        raise QuiverlabError(
+            "certify_real_algebraic: no value to certify (alpha is None)",
+            hint="the Coxeter polynomial has degree < 1")
+    x = sp.Symbol("x")
+    if alpha.is_Rational:
+        # minimal polynomial of p/q over QQ, primitive ZZ[x]: q*x - p
+        p, qd = int(alpha.p), int(alpha.q)
+        return {
+            "minpoly": [qd, -p],
+            "degree": 1,
+            "interval": [str(alpha), str(alpha)],
+            "root_index": 0,
+            "is_rational": True,
+            "latex": sp.latex(alpha),
+            "value": str(alpha),
+        }
+    try:
+        m = sp.minimal_polynomial(alpha, x, polys=True)
+    except Exception as exc:                          # pragma: no cover - defensive
+        raise QuiverlabError(
+            "certify_real_algebraic: minimal_polynomial failed on %r" % (alpha,),
+            hint="alpha must be a real algebraic number (radical / real CRootOf / "
+                 "rational)") from exc
+    ivs = m.intervals()                               # ascending, disjoint, rational
+    hits = []
+    for k, (endpoints, _mult) in enumerate(ivs):
+        a_k, b_k = endpoints
+        if (alpha - a_k).is_nonnegative and (b_k - alpha).is_nonnegative:
+            hits.append((k, a_k, b_k))
+    if len(hits) != 1:
+        raise QuiverlabError(
+            "certify_real_algebraic: could not uniquely locate %r among the %d "
+            "isolating intervals (%d candidate hits)" % (alpha, len(ivs), len(hits)),
+            hint="alpha must be a real root of its minimal polynomial")
+    k, a_k, b_k = hits[0]
+    return {
+        "minpoly": [int(c) for c in m.all_coeffs()],
+        "degree": m.degree(),
+        "interval": [str(a_k), str(b_k)],
+        "root_index": k,
+        "is_rational": False,
+        "latex": sp.latex(alpha),
+        "value": str(alpha),
+    }
+
+
+def cyclotomic_factorization(poly) -> list:
+    """Factor ``poly`` over ``ZZ`` and label each monic irreducible factor with its
+    cyclotomic index (§D1).  Returns ``[{factor, latex, multiplicity,
+    cyclotomic_index: int|None}, ...]`` -- one entry per ``(factor, multiplicity)``
+    pair from ``sympy.factor_list`` (repeated cyclotomic factors keep their
+    multiplicity).
+
+    For a factor of degree ``d`` the search runs ``n in {1, ..., 2 d^2}`` for
+    ``totient(n) == d`` and ``Poly(factor) == cyclotomic_poly(n)``: since
+    ``phi(n) >= sqrt(n/2)``, ``phi(n) = d`` forces ``n <= 2 d^2``, so the bound is
+    exact -- consistent with (and slightly tighter than) the ``range(1, 2 d^2 + 3)``
+    ``is_cyclotomic_product`` already searches.  The search starts at ``n = 1`` so
+    ``Phi_1 = t - 1`` and ``Phi_2 = t + 1`` are labelled like any other index; a bare
+    factor ``t`` (root 0) matches no cyclotomic polynomial and is labelled ``None``."""
+    poly = _as_expr(poly)
+    _const, factors = sp.factor_list(sp.expand(poly), _T)
+    out = []
+    for fac, mult in factors:
+        fp = sp.Poly(fac, _T)
+        if fp.LC() < 0:                               # normalise sign (monic)
+            fp = sp.Poly(-fp.as_expr(), _T)
+        d = fp.degree()
+        index = None
+        for nn in range(1, 2 * d * d + 1):
+            if sp.totient(nn) == d and fp == sp.Poly(sp.cyclotomic_poly(nn, _T), _T):
+                index = nn
+                break
+        out.append({
+            "factor": str(fp.as_expr()),
+            "latex": sp.latex(fp.as_expr()),
+            "multiplicity": int(mult),
+            "cyclotomic_index": index,
+        })
+    return out
+
+
+def off_circle_root_count(poly) -> int:
+    """Exact count of roots of ``poly`` with ``|z| > 1`` (§D4): ``0`` on a
+    constant / cyclotomic polynomial (all roots on the unit circle), else
+    ``len(_off_circle_roots(_noncyclotomic_part(poly)))`` -- the shipped, sound
+    helper (it counts complex off-circle roots too, via its ``all_roots``
+    fallback)."""
+    poly = _as_expr(poly)
+    if _degree_below_one(poly):
+        return 0
+    q = _noncyclotomic_part(poly)
+    if q is None:                                     # product of cyclotomics
+        return 0
+    return len(_off_circle_roots(q))

@@ -169,6 +169,22 @@ def _parse_compute(spec):
             raise RequestError("ar_quiver budget must be a positive integer (got %r)"
                                % (spec,))
         return "ar_quiver", (int(rng) if rng else None)
+    # radical_filtration + ar_invariants (Plan 57) carry a MODULE BUDGET, not a degree
+    # range (parsed like ar_quiver -- skips MAX_DEGREE). NOTE: 'radical_filtration'
+    # (the module-category radical rad^n(X,Y)) is DISTINCT from 'radical_filtration_ss'
+    # (the Loewy radical-series spectral sequence, a DIFFERENT object).
+    if name in ("radical_filtration", "ar_invariants"):
+        if rng and not rng.isdigit():
+            raise RequestError("%s budget must be a positive integer (got %r)"
+                               % (name, spec))
+        return name, (int(rng) if rng else None)
+    # left_right_parts carries a MODULE BUDGET, not a degree range (Plan 55): the budget caps
+    # the knitted universe, so it skips MAX_DEGREE (like ar_quiver / tau_tilting).
+    if name == "left_right_parts":
+        if rng and not rng.isdigit():
+            raise RequestError("left_right_parts budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "left_right_parts", (int(rng) if rng else None)
     if rng:
         lo, _, hi = rng.partition("..")
         if lo != "0" or not hi.isdigit():
@@ -839,6 +855,39 @@ def compute_one(spec):
             from quiverlab.modules.ar import ar_quiver_block
             block = ar_quiver_block(A, budget=top if top is not None else 512)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "radical_filtration":
+            # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET
+            # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.radical.radical_filtration_block). A
+            # char-scope refusal is caught into an `error` field, never a crash.
+            # NOTE: distinct from radical_filtration_ss (the Loewy radical-series
+            # spectral sequence, a DIFFERENT object).
+            from quiverlab.errors import QuiverlabError
+            from quiverlab.modules.radical import radical_filtration_block
+            try:
+                block = radical_filtration_block(A, budget=top if top is not None else 512)
+            except QuiverlabError as exc:
+                block = {"kind": "radical_filtration", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "ar_invariants":
+            # The AR-component invariants (Plan 57 / R21): Liu degrees, partition,
+            # directing, rep-directed recognizer. Same BUDGET-kind contract + shared
+            # builder (modules.ar_invariants.ar_invariants_block); byte-identical twin.
+            from quiverlab.errors import QuiverlabError
+            from quiverlab.modules.ar_invariants import ar_invariants_block
+            try:
+                block = ar_invariants_block(A, budget=top if top is not None else 512)
+            except QuiverlabError as exc:
+                block = {"kind": "ar_invariants", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "left_right_parts":
+            # Left/right parts (P55, wave 2): an ALGEBRA-level BUDGET kind (not a degree
+            # range). Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
+            # SAME shared builder (modules.left_right.left_right_parts_block) +
+            # references->citations.
+            from quiverlab.modules.left_right import left_right_parts_block
+            block = left_right_parts_block(A, budget=top if top is not None else 256)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "cartan":
             # PER-INVARIANT citation keys, matching the server twin
             # (quiverlab.hpc.spec._dispatch) BYTE-FOR-BYTE. NEVER A.citations() here:
@@ -910,6 +959,14 @@ def compute_one(spec):
             # server twin: SAME library block builder + `references`->citations.
             from quiverlab.invariants.recognizers import recognizers_block
             block = recognizers_block(A)
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "coxeter_spectral":
+            # Certified Coxeter spectral analysis (Plan 58 / R20). Byte-identical to
+            # the server twin (quiverlab.hpc.spec._dispatch): SAME library block
+            # builder (invariants.coxeter_spectral.coxeter_spectral_block) +
+            # `references`->citations.
+            from quiverlab.invariants.coxeter_spectral import coxeter_spectral_block
+            block = coxeter_spectral_block(A)
             block["citations"] = _citation_pairs(block["references"])
         elif name == "derived_fingerprint":
             # Derived fingerprint (Plan 43). Byte-identical to the server twin
@@ -1214,6 +1271,11 @@ def python_snippet():
              "connes_b": "A.connes_differentials(%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
+             # Plan 57: radical_filtration + ar_invariants carry a module budget.
+             "radical_filtration": "A.radical_filtration(budget_modules=%d)",
+             "ar_invariants": "A.ar_invariants(budget_modules=%d)",
+             # Plan 55: the left/right parts kind carries a module budget (%d = budget).
+             "left_right_parts": "A.left_right_parts(budget=%d)",
              "dimension_vector": "M.dimension_vector()",
              "rad_top_soc": "(M.radical(), M.top(), M.socle())",
              "tau": "M.tau()", "tau_minus": "M.tau_minus()",
@@ -1285,6 +1347,11 @@ ETA_MODEL = {
     "bar":  {"alpha": 1.4622e-07, "p": 1.3},
     "fast": {"alpha": 5.3447e-07, "p": 1.1},
     "scalars": {"cartan": 0.01, "coxeter_polynomial": 0.2,
+                # Plan 58: coxeter_spectral is bimodal-but-fast -- real-dominant certifies
+                # sub-second (minpoly + Sturm interval), complex-dominant is REFUSED
+                # without computing (the deterministic _real_roots_suffice gate, never the
+                # measured 121 s minimal_polynomial hang), so 0.5 is honest in both branches.
+                "coxeter_spectral": 0.5,
                 "center": 0.05, "global_dimension": 0.5,
                 # Plan 40: the C6 family aggregates gl.dim + finitistic + dominant +
                 # Gorenstein + Igusa-Todorov (several resolutions), so a bit heavier.
@@ -1325,6 +1392,10 @@ ETA_MODEL = {
                 # 2-term silting mutation (per-pair K^b Hom + minimal approximations);
                 # heavier than the string DFS, budget-capped honestly.
                 "tau_tilting": 2.0,
+                # Plan 55: left/right parts = an AR knit + the N^2 Hom predecessor matrix +
+                # a pd/id sweep + the two support-algebra End certificates; knit-dominated,
+                # the same cost class as tau_tilting.
+                "left_right_parts": 2.0,
                 # Plan 59: string_homological KNITS the AR quiver + realizes/decomposes
                 # extensions (expensive, ar_quiver class); toupie is a small HH + a
                 # graph-shape scan (cheap).

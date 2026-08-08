@@ -789,6 +789,190 @@
   "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x*x*x\"], \"vertices\": [1]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The Serre functor S = Omega.nu, suspension Sigma = Omega^{-1}, and the criterion Omega^{n+1} ~ nu^{-1} -- the Plan-53 fractional-CY ground truth (Table 1 deferred).\", \"arxiv\": \"1212.2619\", \"arxiv_url\": \"https://arxiv.org/abs/1212.2619\", \"bibtex_key\": \"IvanovVolkov2012\", \"doi\": \"10.1016/j.jalgebra.2014.04.025\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2014.04.025\", \"formatted\": \"Ivanov, Sergei O.; Volkov, Yury (2014). Stable Calabi-Yau dimension of self-injective algebras of finite type. Journal of Algebra 413, 72-99.\", \"key\": \"ivanov_volkov\", \"topic\": \"Families\"}, {\"annotation\": \"Introduced the stable Calabi-Yau dimension of a self-injective algebra as the weak CY dimension of mod-bar A -- the Plan-53 fractional-CY foundation.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ErdmannSkowronski2006\", \"doi\": \"10.2969/jmsj/1145287094\", \"doi_url\": \"https://doi.org/10.2969/jmsj/1145287094\", \"formatted\": \"Erdmann, Karin; Skowro'nski, Andrzej (2006). The stable Calabi-Yau dimension of tame symmetric algebras. Journal of the Mathematical Society of Japan 58, 97-128.\", \"key\": \"erdmann_skowronski_scy\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x*x'], field=GF(7))\\nA.fractional_calabi_yau_dimension()\", \"results\": {\"fractional_cy\": {\"certificate\": [[\"1\", \"Omega^{2} nu^{1} ~ id\"]], \"checked_on\": \"simples + Omega/nu-orbit reps (object-wise on a generating set; anchored by literature + one (m,ell) for all generators; can under-report m AND ell)\", \"citations\": [[\"IvanovVolkov2012\", \"Ivanov, Sergei O.; Volkov, Yury (2014). Stable Calabi-Yau dimension of self-injective algebras of finite type. Journal of Algebra 413, 72-99.\"], [\"ErdmannSkowronski2006\", \"Erdmann, Karin; Skowro'nski, Andrzej (2006). The stable Calabi-Yau dimension of tame symmetric algebras. Journal of the Mathematical Society of Japan 58, 97-128.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"cy_dimension\": \"1/1\", \"ell\": 1, \"kind\": \"fractional_cy\", \"m\": 1, \"references\": [\"ivanov_volkov\", \"erdmann_skowronski_scy\", \"assem_book\"], \"sigma_period\": 2, \"status\": \"certified\", \"text\": \"stable CY dimension 1/1 (weak-on-generators); weakly 1-CY\", \"tier\": \"weak-on-generators\", \"weakly_n_cy\": 1}}}",
   "canonical_key": "7b83535ad7d39827a55c3e8835a24de4f6b3e21ef9ed84b52d2029ede4f934bd"
  },
+ "bracket_native_qq": {
+  "body": {
+   "schema": 2,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1
+    ],
+    "arrows": {
+     "x": [
+      1,
+      1
+     ]
+    },
+    "relations": [
+     "x*x"
+    ],
+    "field": {
+     "kind": "QQ",
+     "n": 1
+    }
+   },
+   "compute": [
+    "bracket:0..2"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"x\": [1, 1]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [\"x*x\"], \"vertices\": [1]}, \"json_guide\": [{\"note\": \"list of tables. For \\u03b1_i^p [-,-] \\u03b1_j^q find the table whose degrees == [p, q]; constants[k][i][j] is the coefficient of the k-th output class; dims == [dl, dr, dout].\", \"object\": \"bracket product tables\", \"path\": \"results.bracket.tables\"}, {\"note\": \"side coh, list; entry j is class j -- .terms is the labelled term-sum, .vector is the sparse coordinate vector [[index, coeff], ...] over the ordered basis in the matching chain_basis entry. Sibling keys are the other degrees.\", \"object\": \"the operand/output classes in degree 0\", \"path\": \"results.bracket.basis_classes[\\\"coh\\\"][\\\"0\\\"]\"}, {\"note\": \"the ordered basis element labels the .vector indices point into.\", \"object\": \"ordered basis of degree 0\", \"path\": \"results.bracket.chain_basis[\\\"coh\\\"][\\\"0\\\"]\"}, {\"note\": \"the (co)boundary whose kernel/quotient gives this degree; .rows is the exact matrix (or elided with a rebuild note past the recorder cap).\", \"object\": \"annihilating differential in degree 0\", \"path\": \"results.bracket.differentials[\\\"coh\\\"][\\\"0\\\"]\"}], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The graded Lie bracket making HH^* a Gerstenhaber algebra.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"bracket\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The definitional source of the cup product and Gerstenhaber bracket.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"gerstenhaber\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Gerstenhaber bracket computed directly on a non-bar resolution (with Volkov2019), transported onto bar representatives.\", \"arxiv\": \"1406.0036\", \"arxiv_url\": \"https://arxiv.org/abs/1406.0036\", \"bibtex_key\": \"NegronWitherspoon2016\", \"doi\": \"10.4310/HHA.2016.v18.n1.a14\", \"doi_url\": \"https://doi.org/10.4310/HHA.2016.v18.n1.a14\", \"formatted\": \"Negron, Cris; Witherspoon, Sarah (2016). An alternate approach to the Lie bracket on Hochschild cohomology. Homology, Homotopy and Applications 18, 265-285.\", \"key\": \"bracket_liftings\", \"topic\": \"Algorithms\"}, {\"annotation\": \"A bracket formula valid on any projective bimodule resolution (companion to Negron-Witherspoon).\", \"arxiv\": \"1610.05741\", \"arxiv_url\": \"https://arxiv.org/abs/1610.05741\", \"bibtex_key\": \"Volkov2019\", \"doi\": \"10.1017/S0013091518000901\", \"doi_url\": \"https://doi.org/10.1017/S0013091518000901\", \"formatted\": \"Volkov, Yury (2019). Gerstenhaber bracket on the Hochschild cohomology via an arbitrary resolution. Proceedings of the Edinburgh Mathematical Society. Series II 62, 817-836.\", \"key\": \"bracket_liftings_volkov\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The general kQ/I bimodule resolution from a reduction system -- quiverlab's Chouhy-Solotar engine for non-monomial algebras.\", \"arxiv\": \"1406.2300\", \"arxiv_url\": \"https://arxiv.org/abs/1406.2300\", \"bibtex_key\": \"ChouhySolotar2015\", \"doi\": \"10.1016/j.jalgebra.2015.02.019\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2015.02.019\", \"formatted\": \"Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61.\", \"key\": \"chouhy_solotar\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The homotopy-lifting bracket formulation quiverlab's native CS bracket implements (Plan 51); source of the section-7 Koszul-quiver worked tables.\", \"arxiv\": \"2103.12331\", \"arxiv_url\": \"https://arxiv.org/abs/2103.12331\", \"bibtex_key\": \"Oke2021\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Oke, Femi Emmanuel (2021). Bracket structure on Hochschild cohomology of Koszul quiver algebras using homotopy liftings. Communications in Algebra.\", \"key\": \"oke_koszul\", \"topic\": \"Algorithms\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1], arrows={\\\"x\\\": (1, 1)})\\nA = Q.algebra(relations=['x*x'], field=QQ)\\nA.gerstenhaber_brackets(2)\", \"results\": {\"bracket\": {\"basis\": \"cs/QQ\", \"basis_classes\": {\"coh\": {\"0\": [{\"degree\": 0, \"kind\": \"cochain\", \"terms\": [[\"1\", [], \"e_1\"]], \"vector\": [[0, \"1\"]]}, {\"degree\": 0, \"kind\": \"cochain\", \"terms\": [[\"1\", [], \"x\"]], \"vector\": [[1, \"1\"]]}], \"1\": [{\"degree\": 1, \"kind\": \"cochain\", \"terms\": [[\"1\", [\"x\"], \"x\"]], \"vector\": [[1, \"1\"]]}], \"2\": [{\"degree\": 2, \"kind\": \"cochain\", \"terms\": [[\"1\", [\"x\\u00b7x\"], \"e_1\"]], \"vector\": [[0, \"1\"]]}]}}, \"chain_basis\": {\"coh\": {\"0\": [\"e_1\", \"x\"], \"1\": [\"[x -> e_1]\", \"[x -> x]\"], \"2\": [\"[x\\u00b7x -> e_1]\", \"[x\\u00b7x -> x]\"]}}, \"citations\": [[\"Gerstenhaber1963\", \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\"], [\"NegronWitherspoon2016\", \"Negron, Cris; Witherspoon, Sarah (2016). An alternate approach to the Lie bracket on Hochschild cohomology. Homology, Homotopy and Applications 18, 265-285.\"], [\"Volkov2019\", \"Volkov, Yury (2019). Gerstenhaber bracket on the Hochschild cohomology via an arbitrary resolution. Proceedings of the Edinburgh Mathematical Society. Series II 62, 817-836.\"], [\"ChouhySolotar2015\", \"Chouhy, Sergio; Solotar, Andrea (2015). Projective resolutions of associative algebras and ambiguities. Journal of Algebra 432, 22-61.\"], [\"Oke2021\", \"Oke, Femi Emmanuel (2021). Bracket structure on Hochschild cohomology of Koszul quiver algebras using homotopy liftings. Communications in Algebra.\"]], \"differentials\": {\"coh\": {\"0\": {\"rows\": [[\"0\", \"0\"], [\"0\", \"0\"]], \"shape\": [2, 2]}, \"1\": {\"rows\": [[\"0\", \"0\"], [\"2\", \"0\"]], \"shape\": [2, 2]}, \"2\": {\"rows\": [[\"0\", \"0\"], [\"0\", \"0\"]], \"shape\": [2, 2]}}}, \"engine\": \"Chouhy-Solotar native diagonal (homotopy lifting)\", \"kind\": \"bracket\", \"references\": [\"bracket\", \"gerstenhaber\", \"bracket_liftings\", \"bracket_liftings_volkov\", \"chouhy_solotar\", \"oke_koszul\"], \"tables\": [{\"constants\": [[[\"0\"]]], \"degrees\": [1, 1], \"dims\": [1, 1, 1], \"out_degree\": 1}, {\"constants\": [[[\"-2\"]]], \"degrees\": [1, 2], \"dims\": [1, 1, 1], \"out_degree\": 2}, {\"constants\": [[[\"2\"]]], \"degrees\": [2, 1], \"dims\": [1, 1, 1], \"out_degree\": 2}], \"top\": 2}}}",
+  "canonical_key": "4e751f0c1e3bbc704b4b43aae3558940b5be945e4d2030e727c5fd5f750411ee"
+ },
+ "coxeter_spectral_3kronecker_qq": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2
+    ],
+    "arrows": {
+     "a0": [
+      1,
+      2
+     ],
+     "a1": [
+      1,
+      2
+     ],
+     "a2": [
+      1,
+      2
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "coxeter_spectral"
+   ]
+  },
+  "canonical_key": "60e093b9fb32597a55c845959497bdc7b6ff54e896fc42eaca8b232ad89d0a64",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a0\": [1, 2], \"a1\": [1, 2], \"a2\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"de la Pena's class-conditional Mahler-measure dichotomy for accessible algebras (M = 1 or M >= mu_0, mu_0 = Lehmer's number) -- the Plan-58 Lehmer-class documentation note (shares the dlPena2014mahler eprint with the Plan-29 delapena_mahler oracle key).\", \"arxiv\": \"1310.1910\", \"arxiv_url\": \"https://arxiv.org/abs/1310.1910\", \"bibtex_key\": \"dlPena2014mahler\", \"doi\": null, \"doi_url\": null, \"formatted\": \"de la Pe na, Jos'e Antonio (2014). On the Mahler measure of the Coxeter polynomial of an algebra. Advances in Mathematics.\", \"key\": \"dlPena2014mahler\", \"topic\": \"Foundations\"}, {\"annotation\": \"de la Pena's separation of periodic (finite-order) Coxeter transformations from merely cyclotomic-type (quasi-unipotent) ones -- the Plan-58 quasi-unipotent / finite-order verdict.\", \"arxiv\": \"1310.1557\", \"arxiv_url\": \"https://arxiv.org/abs/1310.1557\", \"bibtex_key\": \"dlPena2013cyclotomic\", \"doi\": null, \"doi_url\": null, \"formatted\": \"de la Pe na, Jos'e Antonio (2013). Algebras whose Coxeter polynomials are products of cyclotomic polynomials.\", \"key\": \"dlPena2013cyclotomic\", \"topic\": \"Foundations\"}, {\"annotation\": \"de la Pena-Takane: reality of the dominant Coxeter eigenvalue on the wild-hereditary locus -- the Plan-58 real-dominant spectral-radius foundation (Arch. Math. 55 (1990) 120-134).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"dlPenaTakane1990spectral\", \"doi\": null, \"doi_url\": null, \"formatted\": \"de la Pe na, Jos'e Antonio; Takane, Martha (1990). Spectral properties of Coxeter transformations and applications. Archiv der Mathematik 55, 120-134.\", \"key\": \"dlPenaTakane1990spectral\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Dynkin / extended-Dynkin / canonical Coxeter-polynomial tables and Happel's trace identity -- the spectral-invariant oracle.\", \"arxiv\": \"0805.1018\", \"arxiv_url\": \"https://arxiv.org/abs/0805.1018\", \"bibtex_key\": \"LenzingdlPena2008spectral\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\", \"key\": \"lenzing_delapena_spectral\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a0\\\": (1, 2), \\\"a1\\\": (1, 2), \\\"a2\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.coxeter_spectral()\", \"results\": {\"coxeter_spectral\": {\"citations\": [[\"dlPena2014mahler\", \"de la Pe na, Jos'e Antonio (2014). On the Mahler measure of the Coxeter polynomial of an algebra. Advances in Mathematics.\"], [\"dlPena2013cyclotomic\", \"de la Pe na, Jos'e Antonio (2013). Algebras whose Coxeter polynomials are products of cyclotomic polynomials.\"], [\"dlPenaTakane1990spectral\", \"de la Pe na, Jos'e Antonio; Takane, Martha (1990). Spectral properties of Coxeter transformations and applications. Archiv der Mathematik 55, 120-134.\"], [\"LenzingdlPena2008spectral\", \"Lenzing, Helmut; de la Pe na, Jos'e Antonio (2008). Spectral analysis of finite dimensional algebras and singularities. Trends in Representation Theory of Algebras and Related Topics (ICRA XII), 541-588.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"coxeter_latex\": \"t^{2} - 7 t + 1\", \"coxeter_order\": null, \"coxeter_order_reason\": \"not quasi-unipotent: some eigenvalue has modulus > 1 (\\u03c1 > 1), so the Coxeter transformation has infinite order\", \"coxeter_polynomial\": \"t**2 - 7*t + 1\", \"cyclotomic\": false, \"factorization\": [{\"cyclotomic_index\": null, \"factor\": \"t**2 - 7*t + 1\", \"latex\": \"t^{2} - 7 t + 1\", \"multiplicity\": 1}], \"kind\": \"coxeter_spectral\", \"latex\": \"\\\\begin{aligned} \\\\chi(t) &= t^{2} - 7 t + 1 \\\\\\\\ \\\\text{cyclotomic} &= \\\\text{no} \\\\\\\\ \\\\text{Coxeter order} &= \\\\infty \\\\\\\\ \\\\#\\\\{\\\\,|z|>1\\\\,\\\\} &= 1 \\\\\\\\ \\\\rho &= \\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2} \\\\\\\\ M &= \\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2} \\\\end{aligned}\", \"lehmer_class_note\": \"de la Pe\\u00f1a (arXiv:1310.1910): for an accessible algebra, M(\\u03c7) is either 1 or \\u2265 \\u03bc\\u2080, where \\u03bc\\u2080 is the Mahler measure of Lehmer's polynomial -- the algebraic number whose minimal polynomial is t^10 + t^9 - t^7 - t^6 - t^5 - t^4 - t^3 + t + 1 (the smallest known Salem number). quiverlab does not decide accessibility and does not rule on the open general Lehmer problem; this documents the class-conditional dichotomy only.\", \"mahler_measure\": {\"degree\": 2, \"interval\": [\"6\", \"7\"], \"is_rational\": false, \"latex\": \"\\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2}\", \"minpoly\": [1, -7, 1], \"root_index\": 1, \"value\": \"3*sqrt(5)/2 + 7/2\"}, \"outside_unit_circle_count\": 1, \"quasi_unipotent\": false, \"references\": [\"dlPena2014mahler\", \"dlPena2013cyclotomic\", \"dlPenaTakane1990spectral\", \"lenzing_delapena_spectral\", \"assem_book\"], \"scope\": \"exact spectral analysis of the Coxeter polynomial \\u03c7 = charpoly(-C^{-T}C); \\u03c1 and M are certified algebraic numbers (minimal polynomial + rational isolating interval). The finite/tame/wild reading is a theorem on the hereditary locus (see form_type).\", \"spectral_radius\": {\"degree\": 2, \"interval\": [\"6\", \"7\"], \"is_rational\": false, \"latex\": \"\\\\frac{3 \\\\sqrt{5}}{2} + \\\\frac{7}{2}\", \"minpoly\": [1, -7, 1], \"root_index\": 1, \"value\": \"3*sqrt(5)/2 + 7/2\"}}}}"
+ },
+ "radical_filtration_kA3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a1": [
+      1,
+      2
+     ],
+     "a2": [
+      2,
+      3
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "GF",
+     "p": 32003,
+     "n": 1
+    }
+   },
+   "compute": [
+    "radical_filtration"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2], \"a2\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Chaio-Liu: rep-finiteness through the infinite radical; the nilpotency of rad(mod A) in the rep-finite case is the maximal depth of composites -- the theorem behind Plan 57's nilpotency index and rad^inf=0 gate.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ChaioLiu2013\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Chaio, Claudia; Liu, Shiping (2013). A note on the radical of a module category. Communications in Algebra 41, 4419-4424.\", \"key\": \"chaio_liu_radical\", \"topic\": \"Foundations\"}, {\"annotation\": \"Liu's left/right degrees of irreducible morphisms and their control of the AR-quiver shape -- the R21 degree theory Plan 57 computes on the knit.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu1992degrees\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\", \"key\": \"liu_degrees\", \"topic\": \"Foundations\"}, {\"annotation\": \"CMMS: (rad^inf)^2 = 0 implies representation-finite -- the class oracle justifying Plan 57's finite-nilpotency-index rep-finiteness certificate (documented, not a per-instance decider off the rep-finite domain).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"CMMS1994radsq\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Coelho, Fl'avio U.; Marcos, Eduardo N.; Merklen, H'ector A.; Skowro'nski, Andrzej (1994). Module categories with infinite radical square zero are of finite type. Communications in Algebra 22, 4511-4517.\", \"key\": \"cmms_radsq\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a1\\\": (1, 2), \\\"a2\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(32003))\\nA.radical_filtration(budget_modules=512)\", \"results\": {\"radical_filtration\": {\"budget\": 512, \"citations\": [[\"ChaioLiu2013\", \"Chaio, Claudia; Liu, Shiping (2013). A note on the radical of a module category. Communications in Algebra 41, 4419-4424.\"], [\"Liu1992degrees\", \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\"], [\"CMMS1994radsq\", \"Coelho, Fl'avio U.; Marcos, Eduardo N.; Merklen, H'ector A.; Skowro'nski, Andrzej (1994). Module categories with infinite radical square zero are of finite type. Communications in Algebra 22, 4511-4517.\"]], \"complete\": true, \"generalized_standard\": true, \"kind\": \"radical_filtration\", \"latex\": \"\\\\operatorname{rad}^{n}(X,Y)\\\\ \\\\text{and}\\\\ N=\\\\min\\\\{n:\\\\operatorname{rad}^n=0\\\\}\", \"layer_profile\": [9, 3], \"nilpotency_index\": 3, \"note\": \"representation-finite: the knit closed on 6 indecomposables, so rad^inf(mod A) = 0 (Auslander) with nilpotency index N = 3 the finite witness\", \"num_indecomposables\": 6, \"rad_infinity_zero\": true, \"references\": [\"chaio_liu_radical\", \"liu_degrees\", \"cmms_radsq\"], \"status\": \"complete\", \"vertices\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}]}}}",
+  "canonical_key": "ed0aeb788b3bd3eb7f63630537558e601a7f540c5d9a240cae48fa5624f71605"
+ },
+ "ar_invariants_kA3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a1": [
+      1,
+      2
+     ],
+     "a2": [
+      2,
+      3
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "GF",
+     "p": 32003,
+     "n": 1
+    }
+   },
+   "compute": [
+    "ar_invariants"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a1\": [1, 2], \"a2\": [2, 3]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Liu's left/right degrees of irreducible morphisms and their control of the AR-quiver shape -- the R21 degree theory Plan 57 computes on the knit.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu1992degrees\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\", \"key\": \"liu_degrees\", \"topic\": \"Foundations\"}, {\"annotation\": \"Liu's component classification (sectional paths, semistable/directed components) underlying Plan 57's partition and rep-directed recognizer.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Liu1993semistable\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Liu, Shiping (1993). Semi-stable components of an Auslander-Reiten quiver. Journal of the London Mathematical Society. Second Series 47, 405-416.\", \"key\": \"liu_semistable\", \"topic\": \"Foundations\"}, {\"annotation\": \"Ringel LNM 1099: directing modules, the postprojective/regular/preinjective trichotomy -- the R21 component-invariant reference.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Ringel1984tame\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Ringel, Claus Michael (1984). Tame Algebras and Integral Quadratic Forms. Springer 1099.\", \"key\": \"ringel_tame\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a1\\\": (1, 2), \\\"a2\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=GF(32003))\\nA.ar_invariants(budget_modules=512)\", \"results\": {\"ar_invariants\": {\"budget\": 512, \"citations\": [[\"Liu1992degrees\", \"Liu, Shiping (1992). Degrees of irreducible maps and the shapes of Auslander-Reiten quivers. Journal of the London Mathematical Society. Second Series 45, 32-54.\"], [\"Liu1993semistable\", \"Liu, Shiping (1993). Semi-stable components of an Auslander-Reiten quiver. Journal of the London Mathematical Society. Second Series 47, 405-416.\"], [\"Ringel1984tame\", \"Ringel, Claus Michael (1984). Tame Algebras and Integral Quadratic Forms. Springer 1099.\"]], \"complete\": true, \"degrees\": {\"0->3\": {\"d_l\": 2, \"d_r\": null, \"finite_l\": true, \"finite_r\": false}, \"1->0\": {\"d_l\": null, \"d_r\": 2, \"finite_l\": false, \"finite_r\": true}, \"1->4\": {\"d_l\": 1, \"d_r\": null, \"finite_l\": true, \"finite_r\": false}, \"2->1\": {\"d_l\": null, \"d_r\": 1, \"finite_l\": false, \"finite_r\": true}, \"3->5\": {\"d_l\": 1, \"d_r\": null, \"finite_l\": true, \"finite_r\": false}, \"4->3\": {\"d_l\": null, \"d_r\": 1, \"finite_l\": false, \"finite_r\": true}}, \"generalized_standard\": true, \"kind\": \"ar_invariants\", \"latex\": \"d_\\\\ell,\\\\ d_r\\\\ \\\\text{(Liu)},\\\\ \\\\text{postproj/preinj/regular},\\\\ \\\\text{directing},\\\\ \\\\Gamma_A\\\\ \\\\text{acyclic}\", \"max_sectional_length\": 2, \"nilpotency_index\": 3, \"note\": \"representation-finite: 6 indecomposables; representation-directed=True (Gamma_A acyclic), generalized standard (rad^inf = 0, witness N = 3)\", \"num_directing\": 6, \"num_indecomposables\": 6, \"partition\": {\"0\": \"postprojective\", \"1\": \"postprojective\", \"2\": \"postprojective\", \"3\": \"postprojective\", \"4\": \"postprojective\", \"5\": \"postprojective\"}, \"partition_counts\": {\"postprojective\": 6}, \"references\": [\"liu_degrees\", \"liu_semistable\", \"ringel_tame\"], \"representation_directed\": true, \"status\": \"complete\", \"vertices\": [{\"name\": \"P_1\"}, {\"name\": \"P_2\"}, {\"name\": \"S_3\"}, {\"name\": \"I_2\"}, {\"name\": \"S_2\"}, {\"name\": \"S_1\"}]}}}",
+  "canonical_key": "7cde6b023d185f8a6b8d4fa75803e9fa790c5d24731e911ec48632b0657fad98"
+ },
+ "left_right_parts_kA3": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2,
+     3
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "left_right_parts:256"
+   ],
+   "schema": 1
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Assem-Coelho-Trepode: L_A / R_A via predecessor/successor closure of pd<=1 / id<=1, the Ext-injective criterion tau^{-1}X notin L_A, and the support algebra A_lambda = End of the projectives in L_A -- the ground truth for Plan 55.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ACT2004\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Assem, Ibrahim; Coelho, Fl'avio U.; Trepode, Sonia (2004). The left and the right parts of a module category. Journal of Algebra 281, 518-534.\", \"key\": \"act_left_right\", \"topic\": \"Foundations\"}, {\"annotation\": \"Assem-Castonguay-Lanzilotta-Vargas: A_lambda / A_rho are products of tilted algebras for ada algebras (quasi-tilted in general), D L_A = R_{A^op}, and the laura complement ind A minus (L_A u R_A) -- non-empty even for ada; feeds P60 (tilted) and P61 (laura/ada).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ACLV2011\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Assem, Ibrahim; Castonguay, Diane; Lanzilotta, Marcelo; Vargas, Rosana R. S. (2011). Algebras determined by their supports.\", \"key\": \"aclv_supports\", \"topic\": \"Foundations\"}, {\"annotation\": \"Alvares-Assem-Castonguay-Vargas survey of the left/right parts, supports, and the quasi-tilted/laura/ada organisation of mod A -- Plan 55's secondary reference.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AACV2021\", \"doi\": \"10.1007/s40863-021-00241-4\", \"doi_url\": \"https://doi.org/10.1007/s40863-021-00241-4\", \"formatted\": \"Alvares, Edson Ribeiro; Assem, Ibrahim; Castonguay, Diane; Vargas, Rosana R. S. (2022). Organising the module category. S ao Paulo Journal of Mathematical Sciences 16, 62-82.\", \"key\": \"organising_module_category\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.left_right_parts(budget=256)\", \"results\": {\"left_right_parts\": {\"citations\": [[\"ACT2004\", \"Assem, Ibrahim; Coelho, Fl'avio U.; Trepode, Sonia (2004). The left and the right parts of a module category. Journal of Algebra 281, 518-534.\"], [\"ACLV2011\", \"Assem, Ibrahim; Castonguay, Diane; Lanzilotta, Marcelo; Vargas, Rosana R. S. (2011). Algebras determined by their supports.\"], [\"AACV2021\", \"Alvares, Edson Ribeiro; Assem, Ibrahim; Castonguay, Diane; Vargas, Rosana R. S. (2022). Organising the module category. S ao Paulo Journal of Mathematical Sciences 16, 62-82.\"]], \"complement\": [], \"complete\": true, \"ext_injectives_left\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"ext_projectives_right\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}], \"injective_placement\": {\"1\": \"both\", \"2\": \"both\", \"3\": \"both\"}, \"intersection\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"kind\": \"left_right_parts\", \"left\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"left_support\": {\"components\": [{\"vertices\": [1, 2, 3]}], \"dim\": 6, \"vertices\": [1, 2, 3]}, \"n\": 3, \"note\": null, \"projective_placement\": {\"1\": \"both\", \"2\": \"both\", \"3\": \"both\"}, \"references\": [\"act_left_right\", \"aclv_supports\", \"organising_module_category\"], \"right\": [{\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1}, \"name\": \"P_1\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 1}, \"name\": \"P_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 0, \"3\": 1}, \"name\": \"S_3\"}, {\"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 0}, \"name\": \"I_2\"}, {\"dimvec\": {\"1\": 0, \"2\": 1, \"3\": 0}, \"name\": \"S_2\"}, {\"dimvec\": {\"1\": 1, \"2\": 0, \"3\": 0}, \"name\": \"S_1\"}], \"right_support\": {\"components\": [{\"vertices\": [1, 2, 3]}], \"dim\": 6, \"vertices\": [1, 2, 3]}, \"status\": \"complete\", \"universe_size\": 6}}}",
+  "canonical_key": "40456312e8999019e5edbf724ef63dcab3f032ce2dd7e0b70fde3b73537935ef"
+ },
  "string_homological_kD4": {
   "body": {
    "algebra": {

@@ -8,9 +8,11 @@ QQ-domain elements back through the exact-scalar reader, a FALSE refusal.
 
 This reconstructs that session (faithful to the saved ``fielderror.html`` state)
 and runs it through ``run_spec``. It must COMPLETE with no FieldError and no error
-blocks. ``bracket`` is intentionally omitted: over CC it is a SEPARATE, by-design
-honest refusal (Plan 35: the Gerstenhaber bracket is served over GF(p) only), and
-it sits after cup/cap in the compute order -- Marco never reached it.
+blocks. ``bracket`` is intentionally omitted: it was not part of Marco's reproduced
+session (it sits after cup/cap in the compute order, and he never reached it). NOTE
+(Plan 51, 2026-08-07): the bracket is no longer GF(p)-only -- it now has a CS-native
+route over any exact field for presented algebras -- so this omission is about
+faithfully reproducing the saved session, not a field restriction.
 """
 from webapp.server.runner import run_spec
 from webapp.server.schema import ComputeRequest
