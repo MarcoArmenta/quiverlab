@@ -54,6 +54,8 @@ _HEADINGS = {
     "recognizers": "Structural recognizers and type",
     "derived_fingerprint": "Derived fingerprint",
     "strings": "Strings and bands",
+    "string_homological": "Homological string test",
+    "toupie": "Toupie structure",
     "quasi_hereditary": "Quasi-hereditary structure",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
@@ -780,6 +782,55 @@ def _left_right_parts_html(b):
     return chunks
 
 
+def _string_homological_html(b):
+    """The homological string-algebra test (Plan 59 / R34): the three-valued verdict, the
+    syntactic is_string arbiter, and -- on a refutation -- the >= 3-summand middle witness
+    (a genuine extension of indecomposables), plus the k-bar-gap / inconclusive note."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Homological string test not run: %s</p>"
+                % _esc(str(b["error"]))]
+    chunks = ["<p>Verdict: <b>%s</b>. Syntactic <code>is_string</code>: %s "
+              "(the decidable k-bar arbiter).</p>"
+              % (_esc(str(b.get("verdict"))), _esc(str(b.get("is_string"))))]
+    w = b.get("witness")
+    if w:
+        summ = " &oplus; ".join(_dv(d) for d in (w.get("summand_dimvecs") or []))
+        chunks.append("<p>Witness: an extension of indecomposables whose middle term "
+                      "(dim vector %s) has %s indecomposable summands%s &mdash; so A is "
+                      "not a string algebra (k-bar-sound).</p>"
+                      % (_esc(_dv(w.get("E_dimvec") or {})), _num(w.get("summand_count")),
+                         (" = " + summ) if summ else ""))
+    if b.get("kbar_gap_note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["kbar_gap_note"])))
+    if b.get("reason"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["reason"])))
+    return chunks
+
+
+def _toupie_html(b):
+    """The toupie structure block (Plan 59 / R35): the recognizer verdict, the branch /
+    direct-arrow counts, the Hochschild cohomology row and the char-0 sl_a lower bound."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Toupie structure not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("is_toupie"):
+        return ["<p>The algebra is <b>not</b> a toupie.</p>"]
+    chunks = ["<p>A toupie with <b>%s</b> branches (%s direct source&rarr;sink arrows).</p>"
+              % (_num(b.get("branch_count")), _num(b.get("direct_arrow_count")))]
+    if b.get("hh") is not None:
+        chunks.append(_dims_table("dim HH^n", b.get("hh")))
+    sl = b.get("sl_a")
+    if sl:
+        tail = ("" if sl.get("char0")
+                else " (characteristic &ne; 0 &mdash; the inclusion is not claimed)")
+        chunks.append("<p>sl_a &sube; HH&sup1; (ALS Thm 6.5, char 0): a = %s (direct "
+                      "arrows), dim sl_a = %s%s.</p>"
+                      % (_num(sl.get("a")), _num(sl.get("dim")), tail))
+    if b.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return chunks
+
+
 def _strings_html(b):
     """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
     census + band presence + honest rep-type + (gentle) AG invariant."""
@@ -940,6 +991,10 @@ def _block_html(kind, b, ctx=None):
         return _derived_compare_html(b)
     if kind == "strings":
         return _strings_html(b)
+    if kind == "string_homological":
+        return _string_homological_html(b)
+    if kind == "toupie":
+        return _toupie_html(b)
     if kind == "quasi_hereditary":
         return _quasi_hereditary_html(b)
     if kind == "dimension_vector":

@@ -28,7 +28,7 @@ def test_quasi_hereditary_checkbox_and_registry():
 
 def test_compute_push_and_render_branch():
     src = GUI_DOCS.read_text(encoding="utf-8")
-    assert '"strings", "quasi_hereditary"' in src              # in the plain-kind push-list
+    assert '"quasi_hereditary"].forEach' in src                # in the plain-kind push-list
     assert 'name === "quasi_hereditary"' in src                # renderBlock branch
 
 

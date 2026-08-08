@@ -258,7 +258,18 @@ never hide behind one:
     ``coefficients`` block rides the request only when present -- a coefficients-LESS
     request keeps sending schema 2 and drops the key via model_dump, so every prior
     entry's key is unchanged); the ``result_json`` was frozen from the server runner,
-    and the Plan-52 cross-runner test asserts the Pyodide twin agrees on the block."""
+    and the Plan-52 cross-runner test asserts the Pyodide twin agrees on the block.
+  * 2026-08-07 (``string_homological_kD4`` + ``toupie_a_kronecker`` ADDED, Plan 59):
+    two NEW algebra-only scalar kinds over QQ. ``string_homological_kD4`` is the
+    homological string test (R34) on kD4 (subspace) -- ``verdict == "not_string"``,
+    ``is_string == False``, a 3-summand-middle witness. ``toupie_a_kronecker`` is the
+    toupie block (R35) on the 3-Kronecker (three parallel arrows 1->2) -- ``is_toupie``,
+    ``branch_count == 3``, ``hh == [1, 8, 0, 0, 0]``, ``sl_a.dim == 8``. Pure ADDITION:
+    every pre-existing entry was verified byte-identical BEFORE the two were appended
+    (the append is textual, existing bytes untouched); both runners share the library
+    builders (``string_homological_block`` / ``toupie_block``), so the Pyodide twin
+    agrees (``tests/gui/test_recognizer_runner_twin_p59.py``). ``canonical_key`` is
+    request-derived (schema-1 algebra-only, no ``module`` block)."""
 import json
 import pathlib
 

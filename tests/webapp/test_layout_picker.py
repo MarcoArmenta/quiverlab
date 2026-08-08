@@ -42,6 +42,8 @@ ALL_KINDS = {
     "radical_filtration", "ar_invariants",
     # Plan 55 (2026-08-07): the left/right parts + support algebras.
     "left_right_parts",
+    # Plan 59 (2026-08-07): the R34 homological string test + R35 toupie structure.
+    "string_homological", "toupie",
 }
 
 
