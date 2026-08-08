@@ -316,6 +316,14 @@ REGISTRY: dict = {r.key: r for r in [
        "The HH^1(T(A)) decomposition and Example 2.20 (the Z_5 cycle) -- the "
        "trivial-extension first-cohomology oracle.",
        "hochschild", "oracle"),
+    _r("clms_arrow_removal", "cibilslanzilottamarcossolotar2020", "foundation",
+       "Deleting or adding arrows of a bound quiver algebra and Hochschild "
+       "(co)homology",
+       "Inert-arrow deletion (Def. 3.1) gives a clean HH_n isomorphism for n >= 2 "
+       "(Thm 3.2) and a cohomology Ext-correction (Thm 4.2); arrow addition = the "
+       "tensor algebra T_B(N), finite iff no relative cycle (Thm 3.5/3.6) -- the "
+       "Plan-72 certified arrow-removal reduction and the P73 Han-conjecture seam.",
+       "hochschild", "oracle"),
     _r("chaparro_schroll_solotar", "ChaparroSchrollSolotar2020", "foundation",
        "On the Lie algebra structure of the first Hochschild cohomology of gentle "
        "and Brauer graph algebras",

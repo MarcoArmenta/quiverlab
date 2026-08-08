@@ -33,6 +33,13 @@ from quiverlab.families import (  # noqa: E402,F401
 )
 from quiverlab.citations import bibliography  # noqa: E402,F401
 from quiverlab.hochschild.coefficients import Bimodule  # noqa: E402,F401
+from quiverlab.hochschild.split_extension import (  # noqa: E402,F401
+    split_extension, split_extension_cohomology, split_extension_homology,
+    hh1_grading_witness, SplitExtReport,
+)
+from quiverlab.hochschild.arrow_removal import (  # noqa: E402,F401
+    inert_arrows, remove_arrows, add_arrows, arrow_removal, ArrowRemovalReport,
+)
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 from quiverlab.modules.complexes import ChainComplex, ChainMap  # noqa: E402,F401
 from quiverlab.specseq import (  # noqa: E402,F401
@@ -68,6 +75,11 @@ __all__ = [
     "cyclic_derivative",
     "bibliography",
     "Bimodule",
+    # Plan 72 -- split-extension LES + certified arrow removal
+    "split_extension", "split_extension_cohomology", "split_extension_homology",
+    "hh1_grading_witness", "SplitExtReport",
+    "inert_arrows", "remove_arrows", "add_arrows", "arrow_removal",
+    "ArrowRemovalReport",
     "sweep",
     "ChainComplex", "ChainMap",
     "FilteredComplex", "DoubleComplex", "SpectralSequence",
