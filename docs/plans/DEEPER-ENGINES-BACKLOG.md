@@ -365,6 +365,16 @@ planned together even if delivered in slices.
 
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
+- [ ] **Rep-infinite tilted recognizer via the local cut criterion** (added by Plan 60,
+  R17). P60 (`modules/tilted.py`) decides tiltedness on the **representation-finite**
+  complete knit (plus the hereditary/self-injective/`gl.dim>2` theorem gates); a
+  rep-infinite non-hereditary `gl.dim ≤ 2` algebra returns an honest `verdict="unknown"`
+  (`status="budget"`). The documented extension is **Liu, arXiv:1409.2054 Thm 2.6**: `A`
+  is tilted iff `Γ_A` contains a **faithful cut** `Δ` with `Hom_A(X, τY)=0` — a
+  *finite/local* object (weakly convex), checkable in a bounded AR-neighbourhood **without
+  the full knit**. Plus **Thm 2.7's tilted-quotient algebras** `B = A/ann(Δ)` (a genuine
+  extension: tilted quotients of a non-tilted `A`; P60 accepts only faithful `Δ`, so
+  `ann(Δ)=0` and `B=A`). Deferred from P60 v1; P80 reconciles.
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
   Plan 20, 2026-07-24, branch `plan-20-native-cs-cup`**
   (`2026-07-24-plan-20-native-cs-cup.md`). A comparison-lifted diagonal

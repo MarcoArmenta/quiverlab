@@ -298,6 +298,15 @@ ported and wired in:
   a k̄-sound contradiction), and **toupie algebras** (`ToupieAlgebra` constructor +
   connected-acyclic graph-shape recognizer + the `a`-Kronecker `HH^• = [1, a²−1, 0, …]`
   closed form + the char-0 `sl_a ⊆ HH¹` inclusion), both clickable in the no-code GUI.
+- **Tilted-algebra recognizer (R17, Liu–Skowroński).** `A.tilted_check()` /
+  `A.is_tilted()` decide whether `A ≅ End_H(T)` (`H` hereditary, `T` tilting) by a
+  **faithful-section search** on the AR quiver (a section Σ with `Hom_A(X, τY) = 0`),
+  returning the **slice** `Σ`, the **reconstructed hereditary type**, and a **Ringel
+  slice-theorem certificate** (`⊕Σ` a tilting `A`-module with `End_A(⊕Σ)` presented
+  hereditary); three theorem gates (hereditary ⇒ tilted; non-semisimple self-injective
+  ⇒ not; `gl.dim > 2` ⇒ not) extend and speed the verdict, and every answer is a
+  certified `tilted`/`not_tilted` or an honest `unknown` (rep-finite non-self-injective
+  search scope) — no-code in the browser via the `tilted_check` compute kind.
 - **Modules, scalar invariants, and the exact spectral layer.** Right A-modules
   with exact **Ext**, **Hom**, and minimal **projective resolutions**; the scalar
   invariants **Loewy length**, **center**, and **complexity** (GF(p); the last a
