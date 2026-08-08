@@ -617,9 +617,19 @@ def crosscheck_hh1_lie(algebra) -> Hh1LieReport:
     if L.solvable:                                    # GAP's series reaches 0 too
         ok = ok and (gap_ds == L.derived_series_dims)
     if gap_type is not None:
-        ok = ok and (gap_type == L.levi_type)
+        # GAP's SemiSimpleType is SPACE-separated ("A1 A1"); our levi_type is "+"-joined
+        # ("A1+A1"). Compare as the canonical sorted multiset of simple factors so the
+        # multi-factor semisimple path (sl2 (+) sl2 (+) ...) does not spuriously disagree.
+        ok = ok and (_norm_lie_type(gap_type) == _norm_lie_type(L.levi_type))
     return Hh1LieReport(L.solvable, gap_solvable, L.derived_series_dims, gap_ds,
                         L.levi_type, gap_type, ok)
+
+
+def _norm_lie_type(s):
+    """The canonical sorted multiset of simple factors from either "A1+A1" (our
+    ``levi_type``) or "A1 A1" (GAP ``SemiSimpleType``) or "A1" (a single factor)."""
+    import re
+    return tuple(sorted(f for f in re.split(r"[+\s]+", str(s).strip()) if f))
 
 
 def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:

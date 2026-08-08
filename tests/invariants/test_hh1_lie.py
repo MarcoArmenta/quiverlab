@@ -8,7 +8,8 @@ from quiverlab.families import truncated_polynomial
 from quiverlab.errors import QuiverlabError
 from quiverlab.invariants.hh1_lie import (
     derivations, inner_derivations, hh1_lie_structure, rss_solvable_certificate,
-    _lie_invariants_from_products,
+    _lie_invariants_from_products, _field_general, _jacobi_holds,
+    _matmul_commutator_flat, _span_basis, _rank, DEFAULT_MAXDIM,
 )
 
 xeng = pytest.mark.oracle_crossengine
@@ -40,11 +41,40 @@ def test_dim_hh1_kronecker():
 
 @selfcert
 def test_inn_is_ideal_of_der():
-    """[Der, Inn] subset Inn (so HH^1 = Der/Inn is a Lie algebra)."""
+    """[Der, Inn] subset Inn (so HH^1 = Der/Inn is a Lie algebra) -- CHECKED
+    computationally: every commutator [D, ad] of a Der basis element with an Inn basis
+    element lies in span(Inn) (adding it does not raise the Inn rank)."""
     A = _kron()
     L = hh1_lie_structure(A)
     assert L.dim_der - L.dim_inn == L.dim
-    assert len(derivations(A)) == L.dim_der and len(inner_derivations(A)) == L.dim_inn
+    Der, Inn = derivations(A), inner_derivations(A)
+    assert len(Der) == L.dim_der and len(Inn) == L.dim_inn
+    dom = A.domain
+    inn_basis = _span_basis(Inn, dom)
+    inn_rank = _rank(inn_basis, dom)
+    assert inn_rank == L.dim_inn > 0                     # Inn nontrivial here (kK2)
+    for D in Der:
+        for ad in inn_basis:
+            br = _matmul_commutator_flat(D, ad, A.dim, dom)
+            assert _rank(inn_basis + [br], dom) == inn_rank   # [D, ad] in span(Inn)
+
+
+@selfcert
+@pytest.mark.parametrize("factory", ["kron_qq", "witt_gf3", "x5_qq", "kron_sum_qq"])
+def test_jacobi_identity_on_bracket_constants(factory):
+    """The HH^1 bracket structure constants satisfy the Jacobi identity on the basis
+    (an oracle_selfcert that the Der/Inn representative extraction is a genuine Lie
+    algebra) -- verified across the pin zoo incl. the char-p Witt case and sl2 (+) sl2."""
+    if factory == "kron_qq":
+        A = _kron()
+    elif factory == "witt_gf3":
+        A = truncated_polynomial(3, field=GF(3))
+    elif factory == "x5_qq":
+        A = truncated_polynomial(5, field=QQ)
+    else:                                                # sl2 (+) sl2, multi-factor
+        A = Quiver([1, 2, 3, 4], {"a": (1, 2), "b": (1, 2), "c": (3, 4), "d": (3, 4)}).algebra(field=QQ)
+    fg = _field_general(A, DEFAULT_MAXDIM)
+    assert _jacobi_holds(fg["c"], fg["dim"], A.domain)
 
 
 @selfcert
