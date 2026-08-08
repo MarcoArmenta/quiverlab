@@ -833,6 +833,35 @@ REGISTRY: dict = {r.key: r for r in [
        "rad = [L,L]^perp, Levi-Malcev decomposition, and direct-sum-of-simple-ideals "
        "type of a semisimple Lie algebra.",
        "lie", "algorithm"),
+    _r("buan_marsh_wide", "BuanMarsh2021wide", "foundation",
+       "A category of wide subcategories",
+       "Buan-Marsh: DEFINES the tau-cluster morphism category W(A) -- objects are the "
+       "tau-perpendicular wide subcategories, morphisms are support tau-rigid pairs of the source "
+       "with target the tau-perpendicular category (via the Jasso reduction), morphisms factor as "
+       "signed tau-exceptional sequences. Plan 66's category-structure ground truth.",
+       "tau-tilting", "wide", "category"),
+    _r("hanson_igusa", "HansonIgusa2021", "foundation",
+       "tau-cluster morphism categories and picture groups",
+       "Hanson-Igusa: the classifying space of W(A) is a cube complex (one n-cube per support "
+       "tau-tilting object); it is a K(pi,1) for Nakayama algebras; pi_1 is the picture group. "
+       "Plan 66's cube-complex face vector, the Nakayama K(pi,1) verdict, and the picture group.",
+       "tau-tilting", "picture-group", "cube-complex"),
+    _r("igusa_todorov_weyman", "IgusaTodorovWeyman2016", "foundation",
+       "Picture groups of finite type and cohomology in type A_n",
+       "Igusa-Todorov-Weyman: the picture group PRESENTATION -- one generator x(beta) per brick "
+       "(positive real Schur root), relations per rank-2 configuration (commutation for k x k, the "
+       "atom/pentagon relation for connected rank-2 wides); the CW complex with cells in "
+       "bijection with cluster-tilting objects (Catalan-many). Plan 66's presentation ground truth.",
+       "tau-tilting", "picture-group"),
+    _r("igusa_todorov_cat0", "IgusaTodorov2022cat0", "foundation",
+       "Which cluster morphism categories are CAT(0)",
+       "Igusa-Todorov: the cluster morphism category is a CAT(0) category for hereditary algebras "
+       "of finite (Dynkin) or tame type with only small tubes, so its classifying space is locally "
+       "CAT(0) hence a K(pi,1). Plan 66's specific anchor for the HEREDITARY-DYNKIN K(pi,1) verdict "
+       "(distinct from the ITW type-A_n presentation paper), and the honest-scope context for why the "
+       "general tau-tilting-finite case is delicate (CAT(0) is proven only for hereditary "
+       "finite/tame type, not the general algebra).",
+       "tau-tilting", "picture-group", "cube-complex", "cat0"),
 ]}
 
 
