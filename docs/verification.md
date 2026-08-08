@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **4218 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **4223 tests** (collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Plan-48 marked-surface subsystem (marked surfaces →
 ideal triangulations → gentle Jacobian algebras; +70 tests), the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
@@ -585,10 +585,10 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 987 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 599 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1243 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 1248 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 210 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2466 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2471 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Counts as of the P56 merge (pi1 + strong simple connectedness -- the Wave-2 independent set complete);
 sibling plans in the v0.2.0
 
@@ -844,14 +844,44 @@ verified precision and listed below as such.
   relation + the perfect-pairing certificate + the derived-bracket == independent-
   Gerstenhaber arbiter + the Tradler/BIKLZ literature pins). (d) **ν is defined only
   up to inner automorphism**; the gate tests the concrete `nakayama_automorphism()`
-  representative, and the bracket arbiter is the ultimate per-instance certificate (a
-  wrong representative fails the arbiter and refuses, never returns a wrong Δ). The
-  twist DIRECTION (ν vs ν⁻¹) is determined by the arbiter, not assumed; on the
-  flagship `QuantumCI(q=2)` the two directions even give different twisted-homology
-  dims, so the perfect-pairing dim-match already rejects ν⁻¹ and the arbiter confirms
-  ν. (e) **char 2 is SERVED** but its certification is `Δ²=0` + the BV relation mod 2 +
-  pairing invertibility, NOT sign-determination — the sign/transpose convention is
-  inherited from the odd-prime (3/5/32003) arbiter, applied uniformly.
+  representative, and the bracket arbiter is the per-instance CORRECTNESS GATE — but
+  note precisely what it certifies: it pins Δ **modulo cup-derivations** (the data the
+  BV relation `[a,b] = ε(Δ(a∪b) − Δa∪b − (−1)^p a∪Δb)` constrains) together with
+  `Δ²=0`, **not** every last coordinate (a Δ and a cup-derivation-shifted Δ are
+  indistinguishable to it). A wrong ν-representative fails the arbiter and refuses,
+  never returns a wrong Δ. The twist DIRECTION (ν vs ν⁻¹) is determined by the arbiter,
+  not assumed; on the flagship `QuantumCI(q=2)` the two directions even give different
+  twisted-homology dims, so the perfect-pairing dim-match already rejects ν⁻¹ and the
+  arbiter confirms ν. (e) **char 2 is SERVED** but its certification is `Δ²=0` + the BV
+  relation mod 2 + pairing invertibility, NOT sign-determination — the sign/transpose
+  convention is inherited from the odd-prime (3/5/32003) arbiter, applied uniformly.
+  (f) **The weakly-symmetric semisimple-ν "exterior class" is REFUSED loudly (engine
+  limitation, not a theorem gap).** The semisimple-ν route carries the ORDINARY twisted
+  Connes operator `B_σ = s∘N` (the naive norm-then-degeneracy), whose descent to twisted
+  homology is a PER-INSTANCE certified property, **NOT** a consequence of semisimplicity:
+  it holds only when the paracyclic defect `(1 − T)` (with `T = t_σ^{n+1}` the diagonal
+  σ-action) vanishes EXACTLY on the twisted cycle representatives. For a diagonal ν of
+  order 3/4 (the `QuantumCI(q)` instances) the reps are fixed by `T` on the nose and the
+  descent certifies; but for a weakly-symmetric ν of **order 2 acting by −1 on odd-degree
+  factors** — the exterior algebra `ExteriorAlgebra(2) = Λ(k²)` over GF(5)/GF(7), where
+  `ν = diag(1,−1,−1,1) = −id` — `B_σ` of a degree-2 cycle is a cycle only MODULO
+  boundaries, so the chain-level descent self-cert fires and `bv_operator` refuses
+  loudly rather than return a wrong Δ. LZZ (arXiv:1405.5325) guarantees `HH^*(Λ(k²))`
+  IS a BV algebra; the fix is the **general LZZ twisted Connes operator** (a per-class
+  correction solve `b·w = (1 − T)·z`, `B̃z = Bz − w`), which is **backlogged**
+  (DEEPER-ENGINES-BACKLOG). A fix-round bounded probe confirmed that no cheap
+  strengthening of `s∘N` (the `(1 − t)`-corrected forms, the sign-normalization variants,
+  or the norm over the paracyclic orbit of the correct order `r(n+1)`) recovers an exact
+  chain-level descent that ALSO reproduces the independent Gerstenhaber bracket: the only
+  variant passing the exterior descent (`s(1−t)N = s(1−T)`) gives the WRONG bracket there
+  and zeroes the QuantumCI Δ. **Presentation-dependence (pre-existing `is_symmetric`
+  behavior), stated plainly:** the SAME algebra Λ(k²) presented as `QuantumCI(q=−1)` is
+  detected `is_symmetric = True` and is SERVED via the symmetric (Tradler) route, whereas
+  presented as `ExteriorAlgebra(2)` it is detected non-symmetric and routes to the
+  refused semisimple-ν branch — same mathematics, different route/outcome, because
+  `is_symmetric` reads the concrete presentation's trace form. Pinned by
+  `tests/hochschild/test_bv_twisted.py` (the exterior refusal as a known boundary, and
+  the QuantumCI(−1)-symmetric-served vs ExteriorAlgebra(2)-refused contrast).
 - **The delooping level (Plan 40, Task F) is DEFERRED, not shipped.** Gélinas's
   `dell(M) = inf{ n : Ωⁿ M is a direct summand of Ω^{n+1} N for SOME f.d. `N` }`
   (Gélinas, *Adv. Math.* 394, 2022 — cited as `gelinas_delooping`) has an

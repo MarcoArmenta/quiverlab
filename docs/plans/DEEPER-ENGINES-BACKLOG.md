@@ -565,6 +565,27 @@ planned together even if delivered in slices.
   deferred: the Plan-26 module editor is one-sided (a right-module action per
   arrow), whereas a bimodule needs BOTH a left and a right action per generator.
   P80 adds the two-sided grid editor.
+- [ ] **General LZZ twisted Connes operator `B_σ`** (Plan 54 fix-round find,
+  2026-08-08): the semisimple-ν BV route carries the NAIVE twisted Connes operator
+  `B_σ = s∘N`, whose descent to twisted homology is a per-instance certified property
+  (the paracyclic defect `(1 − T)` must vanish EXACTLY on the cycle reps), NOT a
+  consequence of semisimplicity. It holds on the diagonal-ν `QuantumCI(q)` instances
+  but FAILS on the **weakly-symmetric "exterior class"** — `ExteriorAlgebra(2) = Λ(k²)`
+  over GF(5)/GF(7), ν = diag(1,−1,−1,1) = −id of order 2 — where `B_σ` of a degree-2
+  cycle is a cycle only MODULO boundaries; P54 currently REFUSES this class loudly
+  (`bv_operator` raises the descent self-cert). LZZ (arXiv:1405.5325) guarantees
+  `HH^*(Λ(k²))` is a BV algebra; the close-out is the **general LZZ operator** — a
+  per-class correction solve `b·w = (1 − T)·z`, `B̃z = Bz − w`, making `B_σ` a genuine
+  chain map to homology (analogous to the Plan-20 diagonal lift-solve). A fix-round
+  bounded probe confirmed no cheap strengthening of `s∘N` (the `(1 − t)`-corrected
+  forms, sign-normalization variants, or the norm over the paracyclic orbit of order
+  `r(n+1)`) works: the only variant passing the exterior chain-level descent
+  (`s(1−t)N = s(1−T)`) gives the WRONG bracket there and zeroes the QuantumCI Δ. NB: a
+  strict chain-map well-definedness gate (`B` carries boundaries to boundaries) is NOT
+  a viable interim narrowing — the naive `B_σ` fails it even on the served QuantumCI
+  route (a boundary can map to a cycle with nonzero homology class), so the cycle-leg
+  descent self-cert + the downstream bracket arbiter remain the correctness gates until
+  the general operator lands.
 
 ## Done (this backlog's history)
 

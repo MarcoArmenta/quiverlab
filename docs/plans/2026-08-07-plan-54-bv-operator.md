@@ -243,9 +243,11 @@ and is decided by ONE exact test:
     "the" Nakayama automorphism. For the algebras in scope (symmetric, quantum
     complete intersections with diagonal ν, self-injective Nakayama) the canonical
     representative is the natural one, and the **arbiter (`(BV)` ≡ independent
-    bracket) is the ultimate per-instance certificate** — a wrong representative
-    would fail the arbiter and refuse, never return a wrong Δ silently. Recorded on
-    the verification page.
+    bracket) is the per-instance correctness gate** — a wrong representative would
+    fail the arbiter and refuse, never return a wrong Δ silently. Precise scope
+    (fix-round): the arbiter pins Δ **modulo cup-derivations** (the data the `(BV)`
+    relation constrains) together with `Δ²=0`, not every last coordinate. Recorded
+    on the verification page.
 
 * **BIKLZ (self-injective Nakayama, semisimplicity REMOVED)** is the only regime
   that adds genuinely new instances beyond LZZ: a **non-semisimple** ν, which
