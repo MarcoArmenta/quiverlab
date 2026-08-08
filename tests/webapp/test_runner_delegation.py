@@ -216,7 +216,18 @@ never hide behind one:
     ``weak-on-generators``). Pure ADDITION: every pre-existing entry was verified
     byte-identical BEFORE the two were appended; both runners share the library builders
     (``homological_profile`` / ``fractional_cy_block``), so the Pyodide twin agrees
-    (``tests/webapp/test_phidim_fcy_gui_p53.py``). ``canonical_key`` is request-derived."""
+    (``tests/webapp/test_phidim_fcy_gui_p53.py``). ``canonical_key`` is request-derived.
+  * 2026-08-07 (``coxeter_spectral_3kronecker_qq`` ADDED, Plan 58 / R20): a NEW fixture
+    for the ``coxeter_spectral`` algebra-scalar compute kind (the 3-Kronecker over QQ --
+    wild, non-cyclotomic: χ = t²-7t+1, ρ = M = (7+3√5)/2 as a CERTIFIED algebraic number
+    with minpoly [1,-7,1] and rational isolating interval (6,7), one root outside the
+    unit circle, Coxeter order None, the class-conditional Lehmer note). Pure ADDITION:
+    the round-trip of the whole goldens file (indent=1) was asserted byte-identical to the
+    original BEFORE appending, so every pre-existing entry is untouched. Schema v1 (acts on
+    the algebra block, no new request block). Both runners share
+    ``invariants.coxeter_spectral.coxeter_spectral_block``, so the Pyodide twin is
+    byte-identical (``tests/webapp/test_coxeter_spectral_p58.py::test_twin_parity``).
+    ``canonical_key`` is request-derived."""
 import json
 import pathlib
 

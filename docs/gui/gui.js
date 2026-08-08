@@ -98,6 +98,8 @@
     '  <label><input type="checkbox" id="qlgui-radical_filtration_ss"> radical-filtration SS 0..<input type="number" id="qlgui-radical_filtration_ss-top" value="4" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cartan" checked> Cartan matrix</label>' +
     '  <label><input type="checkbox" id="qlgui-coxeter_polynomial"> Coxeter polynomial</label>' +
+    // ---- Plan 58: certified Coxeter spectral analysis (Φ_n, certified ρ/M, Lehmer) ----
+    '  <label><input type="checkbox" id="qlgui-coxeter_spectral"> Coxeter spectral analysis</label>' +
     '  <label><input type="checkbox" id="qlgui-global_dimension"> gl.dim</label>' +
     '  <label><input type="checkbox" id="qlgui-homological_profile"> homological dimensions</label>' +
     '  <label><input type="checkbox" id="qlgui-fractional_cy"> fractional Calabi–Yau (self-injective)</label>' +
@@ -218,7 +220,7 @@
    "algb-type", "algb-type-wrap", "algb-type-label",
    "algb-preset", "algb-preset-wrap", "algb-preset-label", "algb-hint",
    "cartan",
-   "coxeter_polynomial", "global_dimension", "center",
+   "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
    // Plan 53: fractional Calabi-Yau (self-injective; scalar kind)
@@ -857,7 +859,7 @@
       compute.push("radical_filtration_ss:0.." + el["radical_filtration_ss-top"].value);
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
-    ["cartan", "coxeter_polynomial", "global_dimension", "center",
+    ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "quasi_hereditary"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
@@ -3331,6 +3333,62 @@
           text: "Incomparable (errored on one/both sides): "
             + b.incomparable_fields.join(", ") + "." }));
       if (b.scope) div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
+    } else if (name === "coxeter_spectral") {
+      // Plan 58 (R20): certified Coxeter spectral analysis -- Phi_n factorization,
+      // cyclotomic/order verdicts, outside-circle count, rho/M as certified algebraic
+      // numbers (minpoly + rational isolating interval), Lehmer-class footnote.
+      var errObj = function (v) { return v && typeof v === "object" && "error" in v; };
+      if (errObj(b.coxeter_polynomial)) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Coxeter polynomial unavailable — " + b.coxeter_polynomial.error }));
+      } else {
+        div.appendChild(h("p", { text: "Certified Coxeter spectral analysis" }));
+        div.appendChild(h("p", { "class": "arithmatex",
+          text: "\\[ \\chi(t) = " + (b.coxeter_latex || "") + " \\]" }));
+        div.appendChild(h("p", { text: "Cyclotomic factorization (Φ_n labels):" }));
+        var cxFacs = h("ul");
+        (b.factorization || []).forEach(function (f) {
+          var pow = f.multiplicity > 1 ? "^{" + f.multiplicity + "}" : "";
+          var lbl = (f.cyclotomic_index !== null && f.cyclotomic_index !== undefined)
+            ? "\\Phi_{" + f.cyclotomic_index + "}" + pow
+            : "\\text{(non-cyclotomic)}" + pow;
+          cxFacs.appendChild(h("li", { "class": "arithmatex",
+            text: "\\( " + lbl + " = " + f.latex + " \\)" }));
+        });
+        div.appendChild(cxFacs);
+        div.appendChild(h("p", { text: "Cyclotomic (all eigenvalues roots of unity): "
+          + (b.cyclotomic ? "yes" : "no") + "; quasi-unipotent: "
+          + (b.quasi_unipotent ? "yes" : "no") + "." }));
+        var cxOrd = b.coxeter_order, cxOrdTxt;
+        if (errObj(cxOrd)) cxOrdTxt = "not decided — " + cxOrd.error;
+        else if (cxOrd === null || cxOrd === undefined) cxOrdTxt = "infinite (∞)";
+        else cxOrdTxt = String(cxOrd);
+        div.appendChild(h("p", { text: "Coxeter order (Φ^m = I): " + cxOrdTxt
+          + (typeof b.coxeter_order_reason === "string"
+             ? " — " + b.coxeter_order_reason : "") + "." }));
+        div.appendChild(h("p", { text: "Roots strictly outside the unit circle: "
+          + b.outside_unit_circle_count + "." }));
+        var cxCert = function (label, c) {
+          if (errObj(c)) {
+            div.appendChild(h("p", { "class": "qlgui-hint",
+              text: label + ": not certified — " + c.error }));
+            return;
+          }
+          if (!c) return;
+          div.appendChild(h("p", { "class": "arithmatex",
+            text: "\\[ " + label + " = " + c.latex + " \\]" }));
+          div.appendChild(h("p", { "class": "qlgui-cites",
+            text: "minimal polynomial of degree " + c.degree
+              + ", isolating interval (" + c.interval[0] + ", " + c.interval[1] + ")"
+              + (c.is_rational ? " (rational)" : "") + "." }));
+        };
+        cxCert("\\rho\\ (\\text{spectral radius})", b.spectral_radius);
+        cxCert("M\\ (\\text{Mahler measure})", b.mahler_measure);
+        if (b.lehmer_class_note)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.lehmer_class_note }));
+        if (b.scope)
+          div.appendChild(h("p", { "class": "qlgui-hint", text: b.scope }));
+      }
     }
     div.appendChild(citesLine(b));
     el.results.appendChild(div);
@@ -3428,7 +3486,7 @@
    el.connes_b, el["connes_b-top"],
    el.cyclic_homology, el["cyclic_homology-top"],
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
-   el.coxeter_polynomial, el.global_dimension, el.center,
+   el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
@@ -3510,7 +3568,7 @@
   [
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "ss_hochschild", "radical_filtration_ss"]},
-    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "global_dimension", "homological_profile", "fractional_cy", "center"]},
+    {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint", "derived_compare", "tau_tilting"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
@@ -3876,6 +3934,7 @@
     {"id": "products", "title": "HH products: cup, cap, bracket", "category": "hochschild", "keywords": ["cup", "cap", "bracket", "gerstenhaber", "producto", "produit", "杯", "帽", "括号", "product"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cup:0..2", "cap:0..2", "bracket:0..2"]}},
     {"id": "ss_hochschild", "title": "Hochschild (b,B) spectral sequence", "category": "hochschild", "keywords": ["spectral", "sequence", "espectral", "spectrale", "谱序列", "ss", "b,B", "abutment"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ss_hochschild:0..3"]}},
     {"id": "cartan_coxeter", "title": "Cartan matrix & Coxeter polynomial", "category": "invariants", "keywords": ["cartan", "coxeter", "matrix", "matriz", "matrice", "polynomial", "polinomio", "polynôme", "卡坦", "矩阵", "多项式"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["cartan", "coxeter_polynomial"]}},
+    {"id": "coxeter_spectral", "title": "Coxeter spectral analysis (certified ρ/M, Φ_n)", "category": "invariants", "keywords": ["coxeter", "spectral", "mahler", "lehmer", "cyclotomic", "salem", "spectral radius", "espectral", "ciclotómico", "spectrale", "cyclotomique", "谱", "分圆", "谱半径", "pisot"], "example": {"vertices": [1, 2], "arrows": {"a0": [1, 2], "a1": [1, 2], "a2": [1, 2]}, "relations": [], "field": {"kind": "QQ"}, "compute": ["coxeter_spectral"]}},
     {"id": "homological_profile", "title": "Homological dimensions & global dimension", "category": "invariants", "keywords": ["homological", "dimension", "global", "gldim", "dimensión", "dimension", "同调维数", "全局维数", "findim", "gorenstein", "igusa", "todorov"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["homological_profile", "global_dimension"]}},
     {"id": "fractional_cy", "title": "Fractional Calabi–Yau dimension (self-injective)", "category": "invariants", "keywords": ["fractional", "calabi", "yau", "calabi-yau", "cy", "stable", "serre", "nakayama", "self-injective", "selfinjective", "periodic", "calabi–yau", "分数", "卡拉比", "丘"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x*x"], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["fractional_cy"]}},
     {"id": "center", "title": "Center of the algebra Z(A)", "category": "invariants", "keywords": ["center", "centre", "centro", "中心", "Z(A)", "zentrum"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["center"]}},
@@ -3993,6 +4052,7 @@
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },
     coxeter_polynomial: { cb: "coxeter_polynomial" },
+    coxeter_spectral: { cb: "coxeter_spectral" },
     global_dimension: { cb: "global_dimension" },
     center: { cb: "center" },
     recognizers: { cb: "recognizers" },

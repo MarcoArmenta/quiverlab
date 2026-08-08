@@ -41,6 +41,7 @@ _HEADINGS = {
     "connes_b": "Connes differentials",
     "cartan": "Cartan matrix",
     "coxeter_polynomial": "Coxeter polynomial",
+    "coxeter_spectral": "Certified Coxeter spectral analysis",
     "global_dimension": "Global dimension",
     "homological_profile": "Homological dimensions",
     "fractional_cy": "Fractional Calabi–Yau dimension",
@@ -355,6 +356,66 @@ def _recognizers_html(b):
     else:
         out.append("<p>Form type: undefined (the Cartan matrix is not unimodular, "
                    "so the Euler/Tits form has no integral matrix here).</p>")
+    return out
+
+
+def _coxeter_spectral_html(b):
+    """Plan 58 (R20): the certified Coxeter spectral report -- the Phi_n-labelled ZZ[x]
+    factorization, the cyclotomic / quasi-unipotent / finite-order verdicts, the exact
+    outside-unit-circle count, and rho / M as certified algebraic numbers (minimal
+    polynomial + rational isolating interval) or an honest per-field refusal. Every field
+    that refused on this input is stated, never dropped."""
+    cp = b.get("coxeter_polynomial")
+    if isinstance(cp, dict) and "error" in cp:
+        return ["<p>Coxeter polynomial unavailable — %s</p>" % _esc(str(cp["error"]))]
+    out = []
+    if b.get("coxeter_latex"):
+        out.append(_math(r"\chi(t) = " + b["coxeter_latex"]))
+    facs = b.get("factorization") or []
+    if facs:
+        lis = []
+        for f in facs:
+            mult = f.get("multiplicity", 1)
+            pw = ("^{%d}" % mult) if isinstance(mult, int) and mult > 1 else ""
+            idx = f.get("cyclotomic_index")
+            lbl = (r"\Phi_{%d}%s" % (idx, pw)) if idx is not None \
+                else (r"\text{(non-cyclotomic)}%s" % pw)
+            lis.append("<li>%s</li>" % _math_inline("%s = %s" % (lbl, f.get("latex", ""))))
+        out.append("<p>Cyclotomic factorization (Φ_n labels):</p>")
+        out.append("<ul class='ql-flags'>%s</ul>" % "".join(lis))
+    out.append("<p>Cyclotomic (all eigenvalues roots of unity): <b>%s</b>; "
+               "quasi-unipotent: <b>%s</b>.</p>"
+               % ("yes" if b.get("cyclotomic") else "no",
+                  "yes" if b.get("quasi_unipotent") else "no"))
+    order = b.get("coxeter_order")
+    if isinstance(order, dict) and "error" in order:
+        otxt = "not decided — %s" % _esc(str(order["error"]))
+    elif order is None:
+        otxt = "infinite (∞)"
+    else:
+        otxt = _esc(str(order))
+    reason = b.get("coxeter_order_reason")
+    rtxt = " — %s" % _esc(str(reason)) if isinstance(reason, str) else ""
+    out.append("<p>Coxeter order (Φ<sup>m</sup> = I): <b>%s</b>%s.</p>" % (otxt, rtxt))
+    out.append("<p>Roots strictly outside the unit circle: <b>%s</b>.</p>"
+               % _esc(str(b.get("outside_unit_circle_count"))))
+    for label, key in ((r"\rho\ (\text{spectral radius})", "spectral_radius"),
+                       (r"M\ (\text{Mahler measure})", "mahler_measure")):
+        c = b.get(key)
+        if isinstance(c, dict) and "error" in c:
+            out.append("<p class='ql-note'>%s: not certified — %s</p>"
+                       % (_esc(key.replace("_", " ")), _esc(str(c["error"]))))
+        elif isinstance(c, dict) and "latex" in c:
+            out.append(_math("%s = %s" % (label, c["latex"])))
+            out.append("<p class='ql-note'>minimal polynomial of degree %s, isolating "
+                       "interval (%s, %s)%s.</p>"
+                       % (_esc(str(c.get("degree"))), _esc(str(c["interval"][0])),
+                          _esc(str(c["interval"][1])),
+                          " (rational)" if c.get("is_rational") else ""))
+    if b.get("lehmer_class_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["lehmer_class_note"])))
+    if b.get("scope"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["scope"])))
     return out
 
 
@@ -726,6 +787,8 @@ def _block_html(kind, b, ctx=None):
         return [_math("C = " + b["latex"])] if b.get("latex") else []
     if kind == "coxeter_polynomial":
         return [_math(r"\chi(t) = " + b["latex"])] if b.get("latex") else []
+    if kind == "coxeter_spectral":
+        return _coxeter_spectral_html(b)
     if kind == "global_dimension":
         return ["<p>%s</p>" % _esc(str(b.get("text", "")))]
     if kind == "homological_profile":

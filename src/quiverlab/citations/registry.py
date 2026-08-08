@@ -213,6 +213,26 @@ REGISTRY: dict = {r.key: r for r in [
        "The wild star [2,3,7] realizes Lehmer's polynomial -- the "
        "spectral_radius / mahler_measure oracle (Plan 29).",
        "spectral", "oracle"),
+    # --- Plan 58: certified Coxeter spectral analysis (record R20) ---
+    _r("dlPena2014mahler", "dlPena2014mahler", "foundation",
+       "On the Mahler measure of the Coxeter polynomial of an algebra",
+       "de la Pena's class-conditional Mahler-measure dichotomy for accessible "
+       "algebras (M = 1 or M >= mu_0, mu_0 = Lehmer's number) -- the Plan-58 "
+       "Lehmer-class documentation note (shares the dlPena2014mahler eprint with "
+       "the Plan-29 delapena_mahler oracle key).",
+       "spectral", "coxeter", "oracle"),
+    _r("dlPena2013cyclotomic", "dlPena2013cyclotomic", "foundation",
+       "Algebras whose Coxeter polynomials are products of cyclotomic polynomials",
+       "de la Pena's separation of periodic (finite-order) Coxeter transformations "
+       "from merely cyclotomic-type (quasi-unipotent) ones -- the Plan-58 "
+       "quasi-unipotent / finite-order verdict.",
+       "spectral", "coxeter"),
+    _r("dlPenaTakane1990spectral", "dlPenaTakane1990spectral", "foundation",
+       "Spectral properties of Coxeter transformations and applications",
+       "de la Pena-Takane: reality of the dominant Coxeter eigenvalue on the "
+       "wild-hereditary locus -- the Plan-58 real-dominant spectral-radius "
+       "foundation (Arch. Math. 55 (1990) 120-134).",
+       "spectral", "coxeter"),
     _r("redondo_roman_2014", "RedondoRoman2014", "family",
        "Hochschild cohomology of triangular string algebras and its ring structure",
        "HH^* of the triangular string algebras A_n (with the degree-(2m+1) "
