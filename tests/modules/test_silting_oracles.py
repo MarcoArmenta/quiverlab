@@ -1,13 +1,21 @@
-"""Silting oracles (Plan 67). Cross-engine: the 2-term slice == P45 tau-tilting (count
-+ per-object silting verdict, over the SUMMAND LIST not the direct-summed blob); End(mu T)
-underlying quiver == Oppermann's rule (Thm 1.1). Literature: kA2 first mutation ring (AI
-Example 2.45); Example 2.47 cones."""
+"""Silting oracles (Plan 67). Cross-engine: the 2-term slice == P45 tau-tilting -- a REAL
+BIDIRECTIONAL agreement (Plan 67 fix round, MAJOR H2), NOT P45 re-verified against itself.
+The SILTING engine INDEPENDENTLY enumerates the 2-term silting objects (BFS via
+silting_mutate + is_silting_object + a g_proj fingerprint, restricted to the canonical AIR
+{0,1} window -- a different verification/dedup/graph pipeline than P45's mutate + make_pair
++ g_key), and the resulting SET of g-vector fingerprints equals P45's exchange_graph vertex
+set BOTH WAYS; the silting_neighbors edges equal the exchange_graph edges. Pinned on kA2
+(hereditary, 5) AND kZ3/J2 (NON-hereditary self-injective, 14). End(mu T) underlying quiver
+== Oppermann's rule (Thm 1.1). Literature: kA2 first mutation ring (AI Example 2.45);
+Example 2.47 cones."""
 import pytest
 
-from quiverlab import Quiver, linear_path_algebra
+from quiverlab import NakayamaAlgebra, Quiver, linear_path_algebra
 from quiverlab.fields import QQ
 from quiverlab.modules.complexes import ChainComplex
-from quiverlab.derived.silting import is_silting_object, silting_mutate
+from quiverlab.derived.silting import (is_silting_object, silting_mutate,
+                                        silting_neighbors)
+from quiverlab.derived.tilting import g_proj, two_term_silting_from_presentation
 
 lit = pytest.mark.oracle_literature
 xeng = pytest.mark.oracle_crossengine
@@ -24,7 +32,6 @@ def _pair_to_summand_complexes(pair):
     LIST of per-summand perfect complexes (NOT the direct-summed blob): each module summand
     M_i -> its 2-term presentation [P1 -> P0] (degrees 1, 0); each killed projective P_v ->
     the stalk P_v[1]. This is the list is_silting_object consumes."""
-    from quiverlab.derived.tilting import two_term_silting_from_presentation
     A = pair.algebra
     verts = list(A.quiver.vertices)
     out = []
@@ -36,25 +43,102 @@ def _pair_to_summand_complexes(pair):
     return out
 
 
-@xeng
-def test_two_term_silting_matches_p45():
-    # Per-object, over the SUMMAND LIST (Ruling 5): every support tau-tilting pair's 2-term
-    # silting object verifies silting via is_silting_object; the count ties to #support
-    # tau-tilting pairs (exchange_graph) -- for kA2, 5 (AIR four-way identity). Do NOT pass
-    # two_term_silting(pair)["complex"] (a single object) to is_silting_object: with one
-    # summand the g-matrix is 1xn (non-square), k0_basis vacuously False, a no-op that
-    # asserts nothing.
-    A = linear_path_algebra(2, field=QQ)
-    eg = A.exchange_graph(budget_pairs=64)
-    assert eg.is_complete
-    pairs = [rec["pair"] for rec in eg.vertices]
-    for pair in pairs:
-        summand_list = _pair_to_summand_complexes(pair)      # a LIST, not ["complex"]
-        assert len(summand_list) == len(list(A.quiver.vertices))   # n summands = n simples
+def _g_fingerprint(summands, verts):
+    """The canonical, shift-SENSITIVE identifier of a 2-term silting object: the frozenset
+    of its summands' K0 classes (g-vectors) in the projective basis via g_proj. This is
+    exactly P45's g_key notion (AIR: the g-vectors determine the pair), so it distinguishes
+    A ({e_v}, all deg 0) from A[1] ({-e_v}, all deg 1) -- both genuine, distinct support
+    tau-tilting pairs. (The shift-INsensitive _silting_key would wrongly merge them.)"""
+    return frozenset(tuple(g_proj(c, verts)) for c in summands)
+
+
+def _in_two_term_window(summands):
+    """The canonical AIR 2-term window: every summand concentrated in degrees {0, 1} (NOT
+    merely SOME two consecutive degrees). This anchors the enumeration to P45's slice --
+    A at deg 0 and A[1] at deg 1 both qualify and stay distinct, while stray shifts (A[2],
+    a {-1,0} cocone representative) are dropped so the walk does not over-count shifts."""
+    return all(set(c.degrees()) <= {0, 1} for c in summands)
+
+
+def _enumerate_two_term_silting_via_silting_engine(A, budget=512):
+    """INDEPENDENT enumeration of the 2-term silting objects, driven ENTIRELY by the silting
+    engine (NOT P45): BFS from the regular object A through single silting mutations (both
+    directions, silting_neighbors), keep only results in the canonical {0,1} window that
+    RE-VERIFY silting (is_silting_object), dedup by the g_proj fingerprint. Returns
+    ``(keys, edges, complete)`` -- ``complete`` False iff the vertex budget tripped. The
+    AIR support-tau-tilting quiver is connected under 2-term mutation for a tau-tilting-
+    finite algebra, so this closes on exactly the 2-term slice."""
+    verts = list(A.quiver.vertices)
+    start = [ChainComplex.stalk(A.projective(v), 0) for v in verts]
+    seen = {_g_fingerprint(start, verts)}
+    frontier = [start]
+    edges = set()
+    while frontier:
+        T = frontier.pop()
+        kT = _g_fingerprint(T, verts)
+        for direction in ("left", "right"):
+            for (_i, mut) in silting_neighbors(T, direction):
+                if mut is None or not _in_two_term_window(mut):
+                    continue
+                if is_silting_object(mut).is_silting not in (True, "unknown"):
+                    continue
+                k = _g_fingerprint(mut, verts)
+                edges.add(frozenset((kT, k)))
+                if k not in seen:
+                    if len(seen) >= budget:
+                        return seen, edges, False
+                    seen.add(k)
+                    frontier.append(mut)
+    return seen, edges, True
+
+
+def _p45_two_term_objects(A):
+    """P45's 2-term silting objects + edges as g-fingerprint sets, from the SUPPORT
+    tau-tilting exchange graph (the independent P45 surface). Returns ``(keys, edges, eg)``."""
+    verts = list(A.quiver.vertices)
+    eg = A.exchange_graph(budget_pairs=256)
+    fp = [_g_fingerprint(_pair_to_summand_complexes(rec["pair"]), verts)
+          for rec in eg.vertices]
+    keys = set(fp)
+    edges = {frozenset((fp[a], fp[b])) for (a, b) in eg.arrows}
+    return keys, edges, eg
+
+
+def _assert_two_term_slice_matches_p45(A, expected_count):
+    eg_keys, eg_edges, eg = _p45_two_term_objects(A)
+    assert eg.is_complete                                     # tau-tilting-finite gate
+    assert len(eg_keys) == len(eg.vertices) == expected_count
+    # per-object: every P45 2-term silting object RE-VERIFIES silting via the silting engine
+    for rec in eg.vertices:
+        summand_list = _pair_to_summand_complexes(rec["pair"])
+        assert len(summand_list) == len(list(A.quiver.vertices))
         rep = is_silting_object(summand_list)
-        assert rep.is_silting is True                        # NOT a vacuous no-op
+        assert rep.is_silting is True
         assert rep.generation_certified_by.startswith(("tilting", "2-term"))
-    assert len(pairs) == 5                                    # kA2 count tie (P45)
+    # INDEPENDENT silting-engine enumeration + BIDIRECTIONAL set equality (H2).
+    silt_keys, silt_edges, complete = _enumerate_two_term_silting_via_silting_engine(A)
+    assert complete
+    assert silt_keys == eg_keys, (
+        f"silting-only={len(silt_keys - eg_keys)} p45-only={len(eg_keys - silt_keys)}")
+    assert len(silt_keys) == expected_count
+    # (b) the silting_neighbors edges equal the exchange_graph edges.
+    assert silt_edges == eg_edges
+
+
+@xeng
+def test_two_term_silting_set_equals_p45_kA2():
+    # kA2 (hereditary): 5 support tau-tilting pairs == 5 independently-enumerated 2-term
+    # silting objects, sets AND edges equal both ways (AIR four-way identity, silting leg).
+    _assert_two_term_slice_matches_p45(linear_path_algebra(2, field=QQ), 5)
+
+
+@xeng
+def test_two_term_silting_set_equals_p45_nonhereditary_kZ3J2():
+    # kZ3/J2 = NakayamaAlgebra([2,2,2], cyclic): a NON-hereditary (self-injective, det
+    # Cartan = 2) instance -- 14 pairs, all verifying, sets AND edges equal both ways. The
+    # non-unimodular Cartan exercises the g_proj projective-basis fingerprint (Task 0).
+    _assert_two_term_slice_matches_p45(
+        NakayamaAlgebra([2, 2, 2], cyclic=True, field=QQ), 14)
 
 
 @xeng
