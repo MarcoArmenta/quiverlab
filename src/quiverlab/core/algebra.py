@@ -698,15 +698,18 @@ class Algebra:
         from quiverlab.modules.degeneration import degeneration_order
         return degeneration_order(self, d, budget=budget)
 
-    def left_right_parts(self, budget=256):
+    def left_right_parts(self, budget=256, budget_dim=64):
         """The left/right parts L_A, R_A of the module category, their intersection and
         the finite complement ind A \\ (L_A u R_A), the Ext-injectives of add L_A (and dual
         Ext-projectives of add R_A), and the left/right support algebras A_lambda, A_rho
         (Plan 55 / R15, Assem-Coelho-Trepode). Returns a LeftRightAtlas; complete iff A is
         representation-finite and not self-injective, else a loud status (never a partial
-        atlas)."""
+        atlas). ``budget_dim`` caps the knitted per-module dimension (default 64): a
+        rep-infinite input the fast certificate misses trips a loud status="budget" in
+        bounded time rather than hanging -- raise it for a rep-finite algebra with larger
+        indecomposables."""
         from quiverlab.modules.left_right import left_right_parts
-        return left_right_parts(self, budget=budget)
+        return left_right_parts(self, budget=budget, budget_dim=budget_dim)
 
     def left_part(self, budget=256):
         """The left part L_A = { M in ind A : pd L <= 1 for every predecessor L of M }

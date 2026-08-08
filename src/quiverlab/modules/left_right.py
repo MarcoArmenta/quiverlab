@@ -53,8 +53,8 @@ class SupportAlgebra:
     components: tuple          # tuple of {"vertices": (...), "algebra": Algebra} factors
 
 
-def _universe(A, budget):
-    ar = A.ar_quiver(budget_modules=budget)
+def _universe(A, budget, budget_dim):
+    ar = A.ar_quiver(budget_modules=budget, budget_dim=budget_dim)
     U = [v["module"] for v in ar.vertices]
     names = [v["name"] for v in ar.vertices]
     recs = [{"index": i, "name": v["name"], "dimvec": v["dimvec"]}
@@ -233,7 +233,13 @@ def _reachability(quiver):
 
 def _is_convex(A, verts):
     """``verts`` is convex in A's quiver: every vertex on a directed path between two chosen
-    vertices is itself chosen (so the induced full subquiver loses/creates no relation)."""
+    vertices is itself chosen (so the induced full subquiver loses/creates no relation).
+
+    NOTE (defensive): through the public ``left_right_parts`` API this ALWAYS returns True --
+    ACT prove the support `A_lambda = e_lambda A e_lambda` is a full CONVEX subcategory of A
+    (ACLV §2), so `e_lambda` / `e_rho` are convex by the theorem and `_support_algebra`'s
+    convexity assertion cannot fire. It is a per-instance certificate guarding against an
+    internal bug (a wrong `e_lambda`), never a reachable user-facing refusal."""
     V, idx, reach = _reachability(A.quiver)
     vset = set(verts)
     for x in verts:
@@ -325,20 +331,69 @@ def _support_algebra(A, U, verts, *, projectives=True):
                           components=tuple(components))
 
 
-def left_right_parts(A, *, budget=256):
-    # Fast representation-infinite refusal (hereditary non-Dynkin): the projective-seeded
-    # knit would run away on a rep-infinite algebra (a multi-minute hang before the module
-    # budget trips). Refuse before it does -- mirrors degeneration.py's guard (2026-08-05).
+def _separated_quiver_algebra(A):
+    """The separated quiver of A's quiver, as a path algebra. Its vertices are two disjoint
+    copies (`("s", v)` sources, `("t", v)` sinks) and each arrow `a: i -> j` of Q becomes
+    `s_i -> t_j`. The result is bipartite hence ACYCLIC, so it is a HEREDITARY path algebra --
+    Gabriel's theorem applies to its own Tits form directly."""
+    from quiverlab.combinat.quiver import Quiver
+    Q = A.quiver
+    verts = [("s", v) for v in Q.vertices] + [("t", v) for v in Q.vertices]
+    arrows = {name: (("s", s), ("t", t)) for name, (s, t) in Q.arrows.items()}
+    return Quiver(verts, arrows).algebra(relations=[], field=A.domain)
+
+
+def _certified_rep_infinite(A):
+    """A CHEAP, SUFFICIENT (never necessary) representation-infinite certificate: a note
+    (proven rep-infinite -> refuse) or None (not certified here -> fall through to the
+    budget_dim-capped knit). Both routes are shipped THEOREMS, so a fired certificate is
+    always correct (never a false rep-infinite claim on a rep-finite algebra):
+
+    1. HEREDITARY kQ with a non-positive-definite Tits form -- Gabriel: kQ is rep-finite iff
+       Q is Dynkin, so `form_type != "finite"` proves rep-infinite. Covers the 2-Kronecker.
+    2. rad^2 = 0 whose SEPARATED quiver is NOT a disjoint union of Dynkin diagrams -- Gabriel's
+       separated-quiver criterion (A = kQ/rad^2 is rep-finite iff Q^s is a disjoint union of
+       Dynkin diagrams); Q^s is bipartite-acyclic hence hereditary, so its own `form_type`
+       decides. Covers ACLV Example 2.2(c) (rep-infinite, NON-hereditary) INSTANTLY -- the knit
+       itself would take minutes there (the almost-split cost scales with module dim; measured
+       ~120s even at budget_dim=16), so a fast certificate is required, not the budget route.
+
+    Anything else falls through (a QuiverlabError from any probe -- e.g. `form_type` on a
+    non-unimodular Cartan, or a presentation-less base -- is swallowed: the route just does not
+    certify here, and the honest budget_dim-capped knit takes over)."""
     try:
-        hereditary = A.is_hereditary()
+        if A.is_hereditary() and A.form_type() != "finite":
+            return (f"hereditary of {A.dynkin_type()} type: representation-infinite "
+                    "(infinitely many indecomposables) -- no finite left/right parts")
     except QuiverlabError:
-        hereditary = False
-    if hereditary and A.form_type() != "finite":
-        return LeftRightAtlas(
-            A, [], [], [], [], is_complete=False, status="unsupported",
-            note=f"hereditary of {A.dynkin_type()} type: representation-infinite "
-                 "(infinitely many indecomposables) -- no finite left/right parts")
-    ar, U, names, recs = _universe(A, budget)
+        pass
+    try:
+        if A.quiver is not None and A.is_radical_square_zero() \
+                and _separated_quiver_algebra(A).form_type() != "finite":
+            return ("radical-square-zero with a non-Dynkin separated quiver (Gabriel's "
+                    "separated-quiver criterion): representation-infinite -- no finite "
+                    "left/right parts")
+    except QuiverlabError:
+        pass
+    return None
+
+
+def left_right_parts(A, *, budget=256, budget_dim=64):
+    # Fast SUFFICIENT representation-infinite refusal BEFORE the expensive knit: the knit's
+    # per-module almost-split cost makes even a small budget_dim cap take minutes on a
+    # rep-infinite input (measured: budget_dim=16 on ACLV 2.2(c) ~ 120s), so a provably
+    # rep-infinite algebra is refused up front by a shipped-theorem certificate (hereditary
+    # non-Dynkin, or rad^2=0 with a non-Dynkin separated quiver -- the 2-Kronecker and 2.2(c)).
+    note = _certified_rep_infinite(A)
+    if note is not None:
+        return LeftRightAtlas(A, [], [], [], [], is_complete=False,
+                              status="unsupported", note=note)
+    # Otherwise knit, budget-capped BOTH ways: budget_modules AND a per-module dimension cap
+    # budget_dim (default 64). A rep-finite algebra in the no-code regime has small
+    # indecomposables (kA_n: dim <= n; rad^2=0: dim <= 2), so 64 completes them; a rep-infinite
+    # input NOT caught by the fast certificate above trips a LOUD status="budget" in bounded
+    # time instead of hanging. Raise budget_dim for a rep-finite algebra with larger indecs.
+    ar, U, names, recs = _universe(A, budget, budget_dim)
     if not ar.is_complete:
         return LeftRightAtlas(A, [], [], [], [], is_complete=False,
                               status=ar.status, note=ar.note or "")

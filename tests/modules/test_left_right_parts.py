@@ -81,7 +81,7 @@ def test_predecessor_relation_two_routes_agree():
     # Hom-nonzero transitive closure == AR-quiver reachability (rad^infty = 0, rep-finite).
     from quiverlab.modules.left_right import _ar_reachability, _leq_matrix, _universe
     A = _radsq_nakayama_a5()
-    ar, U, _names, _recs = _universe(A, 256)
+    ar, U, _names, _recs = _universe(A, 256, 4096)
     assert ar.is_complete
     assert _leq_matrix(U) == _ar_reachability(ar, len(U))
 
@@ -100,6 +100,29 @@ def test_rep_infinite_refused_loudly():
     A = Quiver([1, 2], {"a": (1, 2), "b": (1, 2)}).algebra(relations=[], field=QQ)
     atlas = left_right_parts(A, budget=40)                   # 2-Kronecker, rep-infinite
     assert atlas.is_complete is False and atlas.status in ("budget", "error", "unsupported")
+
+
+@selfcert
+def test_aclv_22c_nonhereditary_rep_infinite_refused_fast():
+    # ACLV Example 2.2(c): 1 => 2 => 3 => 4 (double arrows) bound by rad^2 = 0 -- a
+    # MATHEMATICALLY ada but REPRESENTATION-INFINITE algebra (the plan's named refusal
+    # oracle, acceptance #6). It is NON-hereditary, so the hereditary fast guard misses it;
+    # the knit's per-module almost-split cost makes even budget_dim=16 take ~120s (measured),
+    # so a fast SUFFICIENT rep-infinite certificate is required -- Gabriel's separated-quiver
+    # criterion (rad^2=0, separated quiver not a disjoint union of Dynkin) fires INSTANTLY.
+    import time
+    Q = Quiver([1, 2, 3, 4],
+               {"a1": (1, 2), "b1": (1, 2), "a2": (2, 3), "b2": (2, 3),
+                "a3": (3, 4), "b3": (3, 4)})
+    A = RadicalSquareZero(Q, field=QQ)
+    assert A.is_hereditary() is False               # bypasses the 2-Kronecker (hereditary) guard
+    t = time.time()
+    atlas = left_right_parts(A)
+    elapsed = time.time() - t
+    assert atlas.is_complete is False               # a LOUD bounded refusal, never a partial atlas
+    assert atlas.status in ("budget", "unsupported")
+    assert atlas.left == [] and atlas.right == [] and atlas.complement == []
+    assert elapsed < 15.0, f"2.2(c) refusal took {elapsed:.1f}s (must be fast, not the ~120s knit)"
 
 
 @selfcert

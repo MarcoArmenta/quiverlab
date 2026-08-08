@@ -26,14 +26,20 @@ def _dvms(records):
 
 @xeng
 def test_D_of_right_equals_left_of_opposite_on_proper_subset():
-    # ACLV: D R_A = L_{A^op}. On the rad^2=0 A5, R_A is a PROPER subset (4 of 9), so the
-    # dim-vector multisets of R_A (over A) and L_{A^op} (over A^op) coincide non-trivially.
+    # ACLV: D R_A = L_{A^op}. On the rad^2=0 A5, R_A is a PROPER subset (4 of 9). The check is
+    # dim-vector MULTISET equality; it is membership-exact HERE because the compared parts have
+    # PAIRWISE-DISTINCT dim-vectors (asserted below), so the multiset pins the exact module set.
     A = _radsq_nakayama_a5()
     atlas_A = left_right_parts(A)
     atlas_op = left_right_parts(A.opposite())
     assert len(atlas_A.right) == 4 and len(atlas_A.right) < atlas_A.universe_size  # non-vacuous
-    assert _dvms(atlas_A.right) == _dvms(atlas_op.left)
-    assert _dvms(atlas_A.left) == _dvms(atlas_op.right)          # D L_A = R_{A^op}
+    # membership-exactness precondition: no two modules in the compared parts share a dim-vector
+    for part in (atlas_A.right, atlas_A.left, atlas_op.left, atlas_op.right):
+        dvs = [tuple(sorted(r["dimvec"].items())) for r in part]
+        assert len(dvs) == len(set(dvs)), "dim-vectors not pairwise distinct -- multiset " \
+                                          "equality would not be membership-exact"
+    assert _dvms(atlas_A.right) == _dvms(atlas_op.left)         # D R_A = L_{A^op}
+    assert _dvms(atlas_A.left) == _dvms(atlas_op.right)         # D L_A = R_{A^op}
 
 
 @xeng
