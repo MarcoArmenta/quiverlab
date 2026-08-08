@@ -55,7 +55,11 @@ _HEADINGS = {
     "recognizers": "Structural recognizers and type",
     "derived_fingerprint": "Derived fingerprint",
     "strings": "Strings and bands",
+    "string_homological": "Homological string test",
+    "toupie": "Toupie structure",
     "quasi_hereditary": "Quasi-hereditary structure",
+    "fundamental_group": "Fundamental group π₁(Q, I)",
+    "simply_connected": "Simple connectivity",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -667,6 +671,75 @@ def _ar_quiver_html(b):
     return chunks
 
 
+def _fundamental_group_html(b):
+    """The pi1(Q, I) block (Plan 56): the abelianization (exact SNF), the finite
+    presentation, the Hom(pi1, k+) count, and the honest intrinsic-vs-presentation note."""
+    out = []
+    if b.get("latex"):
+        out.append(_math(b["latex"]))
+    gens = b.get("generators") or []
+    rels = b.get("relators") or []
+    out.append("<p>Presentation: %d generator%s (the non-tree arrows), %d relator%s."
+               % (len(gens), "" if len(gens) == 1 else "s",
+                  len(rels), "" if len(rels) == 1 else "s"))
+    if gens:
+        out[-1] += " Generators: %s." % _esc(", ".join(str(x) for x in gens))
+    if rels:
+        out[-1] += " Relators: %s." % _esc("; ".join(str(x) for x in rels))
+    out[-1] += "</p>"
+    ab = b.get("abelianization") or {}
+    out.append("<p>Abelianization π₁<sup>ab</sup>: free rank %s, invariant factors %s. "
+               "dim<sub>k</sub> Hom(π₁, (k,+)) = %s over %d connected component%s.</p>"
+               % (_num(ab.get("free_rank")),
+                  _esc(str(ab.get("invariant_factors") or [])),
+                  _num(b.get("hom_to_additive_dim")), b.get("components", 1),
+                  "" if b.get("components", 1) == 1 else "s"))
+    if b.get("presentation_note"):
+        out.append("<p><em>%s.</em></p>" % _esc(str(b["presentation_note"])))
+    if b.get("intrinsic_note"):
+        out.append("<p class='ql-note'><em>%s</em></p>" % _esc(str(b["intrinsic_note"])))
+    return out
+
+
+def _sc_phrase(verdict, yes, no, undecided):
+    if verdict is True:
+        return yes
+    if verdict is False:
+        return no
+    return undecided
+
+
+def _simply_connected_html(b):
+    """The three-valued simple-connectivity block (Plan 56) + the R16 strongly-simply-
+    connected certificate. None is rendered honestly (Adian-Rabin undecidability)."""
+    out = []
+    verdict = b.get("verdict")
+    phrase = _sc_phrase(
+        verdict, "simply connected", "not simply connected",
+        "undecided (triviality of a finitely presented group is undecidable — "
+        "Adian–Rabin)")
+    out.append("<p>Verdict: <b>%s</b>." % _esc(phrase))
+    if verdict is False and b.get("witness"):
+        out[-1] += " Witness: %s." % _esc(str(b["witness"]))
+    out[-1] += "</p>"
+    if b.get("reason"):
+        out.append("<p><em>%s.</em></p>" % _esc(str(b["reason"])))
+    strong = b.get("strongly")
+    if isinstance(strong, dict):
+        sph = _sc_phrase(
+            strong.get("verdict"),
+            "strongly simply connected (separation holds on every full convex "
+            "subcategory)",
+            "not strongly simply connected (separation fails)",
+            "strong simple connectivity undecided (char/budget)")
+        out.append("<p>Strong simple connectivity (the P62 gate): <b>%s</b>." % _esc(sph))
+        if strong.get("verdict") is False and strong.get("witness"):
+            out[-1] += " Witness: %s." % _esc(str(strong["witness"]))
+        out[-1] += " (%s convex subcategories checked.)</p>" % _num(
+            strong.get("checked_convex"))
+    return out
+
+
 def _radical_filtration_html(b):
     """The radical filtration of mod A (Plan 57 / R37): the completeness verdict, the
     nilpotency index + rad^inf certificate, and the layer profile (sum_ij dim rad^n).
@@ -827,6 +900,55 @@ def _tilted_check_html(b):
                       % (_esc(str(recon.get("note") or "")),
                          _num(recon.get("dim_A")), _num(recon.get("dim_H"))))
     if verdict == "unknown" and b.get("note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return chunks
+
+
+def _string_homological_html(b):
+    """The homological string-algebra test (Plan 59 / R34): the three-valued verdict, the
+    syntactic is_string arbiter, and -- on a refutation -- the >= 3-summand middle witness
+    (a genuine extension of indecomposables), plus the k-bar-gap / inconclusive note."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Homological string test not run: %s</p>"
+                % _esc(str(b["error"]))]
+    chunks = ["<p>Verdict: <b>%s</b>. Syntactic <code>is_string</code>: %s "
+              "(the decidable k-bar arbiter).</p>"
+              % (_esc(str(b.get("verdict"))), _esc(str(b.get("is_string"))))]
+    w = b.get("witness")
+    if w:
+        summ = " &oplus; ".join(_dv(d) for d in (w.get("summand_dimvecs") or []))
+        chunks.append("<p>Witness: an extension of indecomposables whose middle term "
+                      "(dim vector %s) has %s indecomposable summands%s &mdash; so A is "
+                      "not a string algebra (k-bar-sound).</p>"
+                      % (_esc(_dv(w.get("E_dimvec") or {})), _num(w.get("summand_count")),
+                         (" = " + summ) if summ else ""))
+    if b.get("kbar_gap_note"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["kbar_gap_note"])))
+    if b.get("reason"):
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["reason"])))
+    return chunks
+
+
+def _toupie_html(b):
+    """The toupie structure block (Plan 59 / R35): the recognizer verdict, the branch /
+    direct-arrow counts, the Hochschild cohomology row and the char-0 sl_a lower bound."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Toupie structure not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("is_toupie"):
+        return ["<p>The algebra is <b>not</b> a toupie.</p>"]
+    chunks = ["<p>A toupie with <b>%s</b> branches (%s direct source&rarr;sink arrows).</p>"
+              % (_num(b.get("branch_count")), _num(b.get("direct_arrow_count")))]
+    if b.get("hh") is not None:
+        chunks.append(_dims_table("dim HH^n", b.get("hh")))
+    sl = b.get("sl_a")
+    if sl:
+        tail = ("" if sl.get("char0")
+                else " (characteristic &ne; 0 &mdash; the inclusion is not claimed)")
+        chunks.append("<p>sl_a &sube; HH&sup1; (ALS Thm 6.5, char 0): a = %s (direct "
+                      "arrows), dim sl_a = %s%s.</p>"
+                      % (_num(sl.get("a")), _num(sl.get("dim")), tail))
+    if b.get("note"):
         chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
     return chunks
 
@@ -993,8 +1115,16 @@ def _block_html(kind, b, ctx=None):
         return _derived_compare_html(b)
     if kind == "strings":
         return _strings_html(b)
+    if kind == "string_homological":
+        return _string_homological_html(b)
+    if kind == "toupie":
+        return _toupie_html(b)
     if kind == "quasi_hereditary":
         return _quasi_hereditary_html(b)
+    if kind == "fundamental_group":
+        return _fundamental_group_html(b)
+    if kind == "simply_connected":
+        return _simply_connected_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":

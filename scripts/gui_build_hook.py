@@ -36,6 +36,11 @@ def _preset_algebras():
         ("Truncated polynomial GF(2)[x]/(x^3)",
          ql.truncated_polynomial(n=3, field=ql.GF(2)),
          {"kind": "GF", "p": 2, "n": 1}),
+        # Plan 59 -- a genuine toupie (unique source/sink, two length-2 branches):
+        # the R35 family surfaced as a drawable preset (the constructor takes a list).
+        ("Toupie: two length-2 branches (CC)",
+         ql.ToupieAlgebra([2, 2], field=ql.CC),
+         {"kind": "CC"}),
     ]
     for i, A in enumerate(ql.zoo(dim_max=12)):
         if i >= 2:

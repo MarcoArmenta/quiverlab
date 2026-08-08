@@ -1005,5 +1005,184 @@
   },
   "canonical_key": "5a7bb0f044fa52a620228608ce390ff0a9aab2d08f4dec6e6d0c42c9941c7023",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 5}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [{\"note\": \"list; dim HH in degree n is dims[n].\", \"object\": \"Hochschild cohomology dimensions\", \"path\": \"results.hh_cohomology.dims\"}], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Hochschild's original definition of the cohomology of an associative algebra; the normalized bar complex is quiverlab's HH^*/HH_* oracle in any characteristic.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Hochschild1945\", \"doi\": \"10.2307/1969145\", \"doi_url\": \"https://doi.org/10.2307/1969145\", \"formatted\": \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\", \"key\": \"bar\", \"topic\": \"Foundations\"}, {\"annotation\": \"Determines HH^1(A, M) with different coefficients for gentle algebras via ribbon-graph combinatorics -- the Plan-52 gentle HH^1-with-coefficients provenance (numeric pin BLOCKED-until-transcribed).\", \"arxiv\": \"1811.02211\", \"arxiv_url\": \"https://arxiv.org/abs/1811.02211\", \"bibtex_key\": \"ChaparroSchrollSolotar2020\", \"doi\": \"10.1016/j.jalgebra.2020.04.008\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2020.04.008\", \"formatted\": \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea (2020). On the Lie algebra structure of the first Hochschild cohomology of gentle algebras and Brauer graph algebras. Journal of Algebra 558, 293-326.\", \"key\": \"chaparro_schroll_solotar\", \"topic\": \"Foundations\"}, {\"annotation\": \"The Lie-algebra structure of the first RELATIVE (vertex-relative, E = kQ_0) Hochschild cohomology, with radical-square-zero computations -- the Plan-52 relative HH provenance (numeric pin BLOCKED-until-transcribed).\", \"arxiv\": \"2411.03080\", \"arxiv_url\": \"https://arxiv.org/abs/2411.03080\", \"bibtex_key\": \"LindellRubio2024\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Lindell, Jonathan; Rubio y Degrassi, Lleonard (2024). On the first relative Hochschild cohomology and the contracted fundamental group. arXiv preprint.\", \"key\": \"lindell_rubio_relative\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=GF(5))\\nA.hochschild_cohomology(3)\", \"results\": {\"hh_cohomology\": {\"citations\": [[\"Hochschild1945\", \"Hochschild, Gerhard (1945). On the cohomology groups of an associative algebra. Annals of Mathematics. Second Series 46, 58-67.\"], [\"ChaparroSchrollSolotar2020\", \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea (2020). On the Lie algebra structure of the first Hochschild cohomology of gentle algebras and Brauer graph algebras. Journal of Algebra 558, 293-326.\"], [\"LindellRubio2024\", \"Lindell, Jonathan; Rubio y Degrassi, Lleonard (2024). On the first relative Hochschild cohomology and the contracted fundamental group. arXiv preprint.\"]], \"coefficients\": \"D(A)\", \"dims\": [2, 0, 0, 0], \"engine\": \"normalized bar complex\", \"kind\": \"HH^\", \"references\": [\"bar\", \"chaparro_schroll_solotar\", \"lindell_rubio_relative\"], \"top\": 3}}}"
+ },
+ "string_homological_kD4": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      0
+     ],
+     "b": [
+      2,
+      0
+     ],
+     "c": [
+      3,
+      0
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     0,
+     1,
+     2,
+     3
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "string_homological"
+   ],
+   "schema": 1
+  },
+  "canonical_key": "e51fdc740f4162b5a6115101f6897c6737c3187086564014c7f63d68433fe635",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 0], \"b\": [2, 0], \"c\": [3, 0]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [0, 1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Suarez-Alvarez: among rep-finite algebras, string <=> the middle term of EVERY extension of indecomposables has <= 2 summands (all Ext^1 classes, not just AR sequences) -- the homological string test.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"SuarezAlvarez2023\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Su'arez-'Alvarez, Mariano (). A Simple Homological Characterization of String Algebras of Finite Representation Type. Algebras and Representation Theory 26}, number = {5}, pages = {1759--1772}, year = {2023.\", \"key\": \"suarez_alvarez\", \"topic\": \"Algorithms\"}, {\"annotation\": \"Butler-Ringel: the string/band module classification and the hook/cohook description of the AR translate -- the ground truth for the string subsystem.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ButlerRingel1987\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\", \"key\": \"butler_ringel\", \"topic\": \"Algorithms\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[0, 1, 2, 3], arrows={\\\"a\\\": (1, 0), \\\"b\\\": (2, 0), \\\"c\\\": (3, 0)})\\nA = Q.algebra(relations=[], field=QQ)\\nfrom quiverlab.modules.string_homological import homological_string_test\\nhomological_string_test(A)\", \"results\": {\"string_homological\": {\"checked\": {\"classes\": 0, \"field\": \"QQ\", \"n_indec\": 12, \"route\": [\"ar\"]}, \"citations\": [[\"SuarezAlvarez2023\", \"Su'arez-'Alvarez, Mariano (). A Simple Homological Characterization of String Algebras of Finite Representation Type. Algebras and Representation Theory 26}, number = {5}, pages = {1759--1772}, year = {2023.\"], [\"ButlerRingel1987\", \"Butler, M. C. R.; Ringel, Claus Michael (). Auslander-Reiten sequences with few middle terms and applications to string algebras. Communications in Algebra.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"is_string\": false, \"kbar_gap_note\": null, \"reason\": null, \"references\": [\"suarez_alvarez\", \"butler_ringel\", \"assem_book\"], \"verdict\": \"not_string\", \"witness\": {\"E_dimvec\": {\"0\": 3, \"1\": 1, \"2\": 1, \"3\": 1}, \"X\": {\"0\": 2, \"1\": 1, \"2\": 1, \"3\": 1}, \"Y\": {\"0\": 1, \"1\": 0, \"2\": 0, \"3\": 0}, \"class\": \"ar_socle\", \"coeffs\": null, \"summand_count\": 3, \"summand_dimvecs\": [{\"0\": 1, \"1\": 1, \"2\": 0, \"3\": 0}, {\"0\": 1, \"1\": 0, \"2\": 1, \"3\": 0}, {\"0\": 1, \"1\": 0, \"2\": 0, \"3\": 1}]}}}}"
+ },
+ "toupie_a_kronecker": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      1,
+      2
+     ],
+     "c": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "toupie"
+   ],
+   "schema": 1
+  },
+  "canonical_key": "9c47537101c39d38885f55e38369ee3d69067ffb6ab3bfb8f29a226844e407f0",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [1, 2], \"c\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Artenstein-Lanzilotta-Solotar: toupie = unique source/sink + a parallel branches; a-Kronecker HH^* = [1, a^2-1, 0, ..]; HH^1 contains sl_a (char 0), a = # direct source->sink arrows.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ArtensteinLanzilottaSolotar2020\", \"doi\": \"10.1007/s10468-019-09854-y\", \"doi_url\": \"https://doi.org/10.1007/s10468-019-09854-y\", \"formatted\": \"Artenstein, Dalia; Lanzilotta, Marcelo; Solotar, Andrea (). Gerstenhaber structure on Hochschild cohomology of toupie algebras. Algebras and Representation Theory 23}, number = {2}, pages = {421--456}, year = {2020.\", \"key\": \"alsolotar_toupie\", \"topic\": \"Families\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (1, 2), \\\"c\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nfrom quiverlab.families.toupie import is_toupie, toupie_block\\nis_toupie(A), toupie_block(A)\", \"results\": {\"toupie\": {\"branch_count\": 3, \"citations\": [[\"ArtensteinLanzilottaSolotar2020\", \"Artenstein, Dalia; Lanzilotta, Marcelo; Solotar, Andrea (). Gerstenhaber structure on Hochschild cohomology of toupie algebras. Algebras and Representation Theory 23}, number = {2}, pages = {421--456}, year = {2020.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"direct_arrow_count\": 3, \"hh\": [1, 8, 0, 0, 0], \"hh_top\": 4, \"is_toupie\": true, \"note\": null, \"references\": [\"alsolotar_toupie\", \"assem_book\"], \"sl_a\": {\"a\": 3, \"char0\": true, \"dim\": 8}}}}"
+ },
+ "fundamental_group_square_gf7": {
+  "body": {
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      4
+     ],
+     "c": [
+      1,
+      3
+     ],
+     "d": [
+      3,
+      4
+     ]
+    },
+    "relations": [
+     "a*b - c*d"
+    ],
+    "field": {
+     "kind": "GF",
+     "p": 7,
+     "n": 1
+    }
+   },
+   "compute": [
+    "fundamental_group"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 4], \"c\": [1, 3], \"d\": [3, 4]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"a*b - c*d\"], \"vertices\": [1, 2, 3, 4]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The fundamental group pi1(Q,I) of a presentation and the Hom(pi1, k+) embedding into HH^1 for triangular algebras -- the Plan-56 pi1 + Hurewicz foundation.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AssemDelaPena1996\", \"doi\": \"10.1080/00927879608825561\", \"doi_url\": \"https://doi.org/10.1080/00927879608825561\", \"formatted\": \"Assem, Ibrahim; de la Pe na, Jos'e Antonio (1996). The fundamental groups of a triangular algebra. Communications in Algebra 24, 187-208.\", \"key\": \"assem_delapena\", \"topic\": \"Foundations\"}, {\"annotation\": \"The original homotopy relation ~_I on walks (minimal relations glue parallel paths) that quiverlab's pi1^ab computes by exact linear algebra on I/(rad.I + I.rad).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"MartinezVillaDelaPena1983\", \"doi\": \"10.1016/0022-4049(83)90064-0\", \"doi_url\": \"https://doi.org/10.1016/0022-4049(83)90064-0\", \"formatted\": \"Mart'inez-Villa, Roberto; de la Pe na, Jos'e Antonio (1983). The universal cover of a quiver with relations. Journal of Pure and Applied Algebra 30, 277-292.\", \"key\": \"martinez_villa_delapena\", \"topic\": \"Foundations\"}, {\"annotation\": \"For a Schurian category the Hurewicz map Hom(pi1, k+) -> HH^1 is an isomorphism -- the equality case of the Plan-56 Hom(pi1,k+) <= dim HH^1 cross-check.\", \"arxiv\": \"1010.6296\", \"arxiv_url\": \"https://arxiv.org/abs/1010.6296\", \"bibtex_key\": \"CibilsRedondoSolotar2010hurewicz\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Fundamental group of Schurian categories and the Hurewicz isomorphism. arXiv preprint.\", \"key\": \"crs_hurewicz\", \"topic\": \"Foundations\"}, {\"annotation\": \"The intrinsic pi1 (inverse limit over connected gradings) and the oracle pi1(k[x]/(x^p)) = Z x C_p in char p -- documents WHY the presentation group (Z) is not the algebra invariant (Plan-56 intrinsic refusal).\", \"arxiv\": \"0906.3069\", \"arxiv_url\": \"https://arxiv.org/abs/0906.3069\", \"bibtex_key\": \"CibilsRedondoSolotar2010gradings\", \"doi\": \"10.2140/ant.2010.4.625\", \"doi_url\": \"https://doi.org/10.2140/ant.2010.4.625\", \"formatted\": \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Connected gradings and the fundamental group. Algebra & Number Theory 4, 625-648.\", \"key\": \"crs_gradings\", \"topic\": \"Foundations\"}, {\"annotation\": \"Every maximal torus of HH^1(A) is dual to some fundamental group of A -- the maximal-torus refinement of the Plan-56 Hurewicz cross-check.\", \"arxiv\": \"2109.03704\", \"arxiv_url\": \"https://arxiv.org/abs/2109.03704\", \"bibtex_key\": \"BriggsRubioyDegrassi2023\", \"doi\": \"10.1093/imrn/rnac059\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnac059\", \"formatted\": \"Briggs, Benjamin; Rubio y Degrassi, Lleonard (2023). Maximal tori in $HH^1$ and the fundamental group. International Mathematics Research Notices 2023, 5538-5568.\", \"key\": \"briggs_ryd_tori\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3, 4], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 4), \\\"c\\\": (1, 3), \\\"d\\\": (3, 4)})\\nA = Q.algebra(relations=['a*b - c*d'], field=GF(7))\\nA.fundamental_group()\", \"results\": {\"fundamental_group\": {\"abelianization\": {\"free_rank\": 0, \"invariant_factors\": []}, \"citations\": [[\"AssemDelaPena1996\", \"Assem, Ibrahim; de la Pe na, Jos'e Antonio (1996). The fundamental groups of a triangular algebra. Communications in Algebra 24, 187-208.\"], [\"MartinezVillaDelaPena1983\", \"Mart'inez-Villa, Roberto; de la Pe na, Jos'e Antonio (1983). The universal cover of a quiver with relations. Journal of Pure and Applied Algebra 30, 277-292.\"], [\"CibilsRedondoSolotar2010hurewicz\", \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Fundamental group of Schurian categories and the Hurewicz isomorphism. arXiv preprint.\"], [\"CibilsRedondoSolotar2010gradings\", \"Cibils, Claude; Redondo, Mar'ia Julia; Solotar, Andrea (2010). Connected gradings and the fundamental group. Algebra & Number Theory 4, 625-648.\"], [\"BriggsRubioyDegrassi2023\", \"Briggs, Benjamin; Rubio y Degrassi, Lleonard (2023). Maximal tori in $HH^1$ and the fundamental group. International Mathematics Research Notices 2023, 5538-5568.\"]], \"components\": 1, \"generators\": [\"d\"], \"hom_to_additive_dim\": 0, \"intrinsic_note\": \"The INTRINSIC fundamental group (the inverse limit over connected gradings) is not bounded-computable and is NOT reported here: e.g. the presentation pi1(k[x]/(x^p)) = Z differs from the intrinsic pi1 = Z x C_p in characteristic p (Cibils-Redondo-Solotar). quiverlab reports the PRESENTATION group pi1(Q, I).\", \"kind\": \"fundamental_group\", \"latex\": \"\\\\pi_1^{\\\\mathrm{ab}} = 0\", \"presentation_note\": \"presentation invariant of (Q, I); NOT of the algebra A\", \"references\": [\"assem_delapena\", \"martinez_villa_delapena\", \"crs_hurewicz\", \"crs_gradings\", \"briggs_ryd_tori\"], \"relators\": [\"d^-1\"]}}}",
+  "canonical_key": "9b96ddc88eb51d87b46e3c6e04cfee0056fd213d5f03f2bfe791ba7d86b484b9"
+ },
+ "simply_connected_zito": {
+  "body": {
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "arrows": {
+     "al": [
+      1,
+      2
+     ],
+     "be": [
+      2,
+      3
+     ],
+     "ga": [
+      3,
+      5
+     ],
+     "de": [
+      2,
+      4
+     ],
+     "ep": [
+      4,
+      5
+     ]
+    },
+    "relations": [
+     "al*be*ga - al*de*ep"
+    ],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "simply_connected"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"al\": [1, 2], \"be\": [2, 3], \"de\": [2, 4], \"ep\": [4, 5], \"ga\": [3, 5]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [\"al*be*ga - al*de*ep\"], \"vertices\": [1, 2, 3, 4, 5]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}, {\"annotation\": \"A triangular algebra is strongly simply connected iff every full convex subcategory satisfies the separation condition -- the Plan-56 R16 recognizer (the P62 tame/wild gate).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Skowronski1993\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Skowro'nski, Andrzej (1993). Simply connected algebras and Hochschild cohomologies. Representations of Algebras (Ottawa, ON, 1992) 14, 431-447.\", \"key\": \"skowronski_ssc\", \"topic\": \"Foundations\"}, {\"annotation\": \"Thm 1.1: a char-0 triangular algebra with no double bypasses has a privileged presentation whose pi1 surjects onto every other -- the Plan-56 no-bypass True route.\", \"arxiv\": \"math/0503302\", \"arxiv_url\": \"https://arxiv.org/abs/math/0503302\", \"bibtex_key\": \"LeMeur2005\", \"doi\": \"10.1016/j.crma.2005.07.005\", \"doi_url\": \"https://doi.org/10.1016/j.crma.2005.07.005\", \"formatted\": \"Le Meur, Patrick (2005). The fundamental group of a triangular algebra without double bypasses. Comptes Rendus Math'ematique. Acad'emie des Sciences. Paris 341, 211-216.\", \"key\": \"le_meur_pi1\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3, 4, 5], arrows={\\\"al\\\": (1, 2), \\\"be\\\": (2, 3), \\\"ga\\\": (3, 5), \\\"de\\\": (2, 4), \\\"ep\\\": (4, 5)})\\nA = Q.algebra(relations=['al*be*ga - al*de*ep'], field=QQ)\\nA.is_simply_connected()\", \"results\": {\"simply_connected\": {\"citations\": [[\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"], [\"Skowronski1993\", \"Skowro'nski, Andrzej (1993). Simply connected algebras and Hochschild cohomologies. Representations of Algebras (Ottawa, ON, 1992) 14, 431-447.\"], [\"LeMeur2005\", \"Le Meur, Patrick (2005). The fundamental group of a triangular algebra without double bypasses. Comptes Rendus Math'ematique. Acad'emie des Sciences. Paris 341, 211-216.\"]], \"kind\": \"simply_connected\", \"reason\": \"triangular with no bypasses (pi1 is presentation-independent, Le Meur) and the presentation trivialises (R3)\", \"references\": [\"assem_book\", \"skowronski_ssc\", \"le_meur_pi1\"], \"strongly\": {\"checked_convex\": 17, \"reason\": \"[2, 3, 4, 5]@vertex 2 fails\", \"verdict\": false, \"witness\": {\"convex_subset\": [2, 3, 4, 5], \"summand_supports\": [[3, 5], [4, 5]], \"vertex\": 2}}, \"verdict\": true, \"witness\": null}}}",
+  "canonical_key": "edf2f84f64899ef9a9d245f2c42a9ed5dfbda20914a099e98da38802e87f7eb9"
  }
 }

@@ -781,6 +781,56 @@ class Algebra:
         from quiverlab.invariants.dynkin_type import dynkin_type
         return dynkin_type(self.quiver)
 
+    # -- coverings: pi1 + simple connectivity (Plan 56 / R14, R16) -----------
+    def fundamental_group(self, base=None):
+        """The presentation fundamental group pi1(Q, I): a finite presentation
+        (generators = non-tree arrows, relators from the minimal relations of I)
+        with its abelianization pi1^ab by exact integer Smith normal form. Loud
+        refusal on presentation-less input. NOT the intrinsic (grading) group."""
+        from quiverlab.invariants.coverings import fundamental_group
+        return fundamental_group(self, base=base)
+
+    def intrinsic_fundamental_group(self):
+        """The intrinsic fundamental group (inverse limit over connected gradings):
+        ALWAYS refused loudly -- not bounded-computable (Cibils-Redondo-Solotar).
+        Use fundamental_group() for the presentation group instead."""
+        from quiverlab.invariants.coverings import intrinsic_fundamental_group
+        return intrinsic_fundamental_group(self)
+
+    def minimal_relation_counts(self):
+        """{(src, tgt): count} of the minimal relations of I per ordered vertex pair
+        (= dim_k e_tgt (I/(rad.I + I.rad)) e_src, the Tits-form r_ij). Loud on
+        presentation-less input; empty for a hereditary algebra (Plan 56 / P62)."""
+        from quiverlab.invariants.coverings import minimal_relation_counts
+        return minimal_relation_counts(self)
+
+    def is_simply_connected(self, strong="auto", convex_budget=20000):
+        """Three-valued simple-connectivity verdict: True only via decidable
+        sufficient criteria (tree / no-bypass Le Meur / separation), False via a
+        decidable witness (disconnected / oriented cycle / nontrivial pi1^ab), else
+        None (inconclusive, honest per Adian-Rabin). Carries the R16
+        strongly-simply-connected certificate (the P62 gate). Loud on
+        presentation-less input (Plan 56)."""
+        from quiverlab.invariants.coverings import is_simply_connected
+        return is_simply_connected(self, strong=strong, convex_budget=convex_budget)
+
+    def separation_condition(self):
+        """The separation condition at every vertex a: the distinct indecomposable
+        summands of rad P_a have supports in distinct connected components of Q_a
+        (Q minus a and its transitive predecessor closure). Triangular only (loud
+        otherwise); a decompose char-caveat is caught as an undecided verdict
+        (Plan 56 / R16)."""
+        from quiverlab.invariants.coverings import separation_condition
+        return separation_condition(self)
+
+    def is_strongly_simply_connected(self, convex_budget=20000):
+        """The R16 recognizer: separation for every full convex subcategory
+        (Skowronski 1993). Three-valued (None on char/budget events), witness on
+        failure. Triangular only (loud otherwise). The clean certificate P62 reads
+        (Plan 56)."""
+        from quiverlab.invariants.coverings import is_strongly_simply_connected
+        return is_strongly_simply_connected(self, convex_budget=convex_budget)
+
     def positive_roots(self):
         """Positive roots of the Tits form (= dimension vectors of the
         indecomposables, Gabriel) for a hereditary Dynkin algebra; loud on

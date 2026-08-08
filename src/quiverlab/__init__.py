@@ -24,6 +24,10 @@ from quiverlab.families import (  # noqa: E402,F401
     OnePointExtension, repetitive_slice, JacobianAlgebra, Potential, cyclic_derivative,
 )
 from quiverlab.families import BrauerGraph, BrauerGraphAlgebra  # noqa: E402,F401
+from quiverlab.families import (  # noqa: E402,F401
+    ToupieAlgebra, is_toupie, toupie_branch_count, toupie_direct_arrow_count,
+    toupie_sl_a_lower_bound,
+)
 from quiverlab.citations import bibliography  # noqa: E402,F401
 from quiverlab.hochschild.coefficients import Bimodule  # noqa: E402,F401
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
@@ -54,6 +58,8 @@ __all__ = [
     "IncidenceAlgebra", "QuantumCI", "ExteriorAlgebra", "PreprojectiveAlgebra",
     "TrivialExtension", "TensorProduct", "zoo", "families",
     "BrauerGraph", "BrauerGraphAlgebra",
+    "ToupieAlgebra", "is_toupie", "toupie_branch_count",
+    "toupie_direct_arrow_count", "toupie_sl_a_lower_bound",
     "OnePointExtension", "repetitive_slice", "JacobianAlgebra", "Potential",
     "cyclic_derivative",
     "bibliography",

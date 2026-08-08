@@ -59,6 +59,10 @@ CATALOG = (
                "Symmetric special-biserial algebra of a ribbon graph with vertex "
                "multiplicities (dim = sum_v m_v*val(v)^2). Non-scalar constructor: "
                "not offered by the scalar form-builder."),
+    FamilyInfo("ToupieAlgebra", "ToupieAlgebra([l1,..,la], relations=...)",
+               "general", ("alsolotar_toupie", "assem_book"),
+               "Toupie: unique source/sink, a parallel branches; admissible I. "
+               "Non-scalar (list-arg) constructor: surfaced as a GUI preset."),
     FamilyInfo("zoo", "zoo(dim_max=12)",
                "iterator", ("han_conjecture", "chouhy_solotar"),
                "Iterator over the curated exact zoo of open (Han-conjecture) algebras."),
