@@ -123,8 +123,10 @@ def wall_of_brick(B, *, budget=4096):
     if n == 2:
         rays = _rays_n2(dv, ineqs)
     elif n == 1:
-        # the only stability space is R; theta . (d,) = 0 with d >= 1 forces theta = 0.
+        # the only stability space is R; theta . (d,) = 0 with d >= 1 forces theta = 0, so
+        # D(B) = {0} -- a DEGENERATE point, not the "full hyperplane" (kept honest per plan).
         rays = ()
+        is_full = False
     else:
         rays = None                                   # n >= 3: geometry via grouped facets
     return Wall(brick_dimvec=dv, brick_name=name, equality=dv, inequalities=ineqs,
