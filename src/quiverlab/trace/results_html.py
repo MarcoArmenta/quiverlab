@@ -407,6 +407,9 @@ def _wall_chamber_html(b):
                      % (_esc(str(w.get("brick_name") or "—")),
                         _dv(w.get("brick_dimvec")), _esc(shape), _esc(system)))
     out.append("<table class='ql-wc-walls'>%s</table>" % "".join(wrows))
+    return out
+
+
 def _silting_html(b):
     """The Plan-67 silting block: the verifier verdict on the regular object, the
     single-mutation neighbours, a bounded-radius exploration (loud status; complete only
