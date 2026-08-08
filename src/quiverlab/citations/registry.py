@@ -318,6 +318,17 @@ REGISTRY: dict = {r.key: r for r in [
        "Butler-Ringel: the string/band module classification and the hook/cohook "
        "description of the AR translate -- the ground truth for the string subsystem.",
        "modules"),
+    # --- Plan 59: R34 homological string test + R35 toupie algebras ---
+    _r("suarez_alvarez", "SuarezAlvarez2023", "algorithm",
+       "A simple homological characterization of string algebras of finite rep. type",
+       "Suarez-Alvarez: among rep-finite algebras, string <=> the middle term of EVERY "
+       "extension of indecomposables has <= 2 summands (all Ext^1 classes, not just AR "
+       "sequences) -- the homological string test.", "modules"),
+    _r("alsolotar_toupie", "ArtensteinLanzilottaSolotar2020", "family",
+       "Hochschild cohomology of toupie algebras",
+       "Artenstein-Lanzilotta-Solotar: toupie = unique source/sink + a parallel "
+       "branches; a-Kronecker HH^* = [1, a^2-1, 0, ..]; HH^1 contains sl_a (char 0), "
+       "a = # direct source->sink arrows.", "families", "hochschild"),
     _r("avella_geiss", "AvellaAlaminosGeiss2008", "algorithm",
        "Combinatorial derived invariants for gentle algebras",
        "The AG-invariant: a multiset of (n,m) pairs from permitted/forbidden threads; "
