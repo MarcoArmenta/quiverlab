@@ -227,7 +227,40 @@ never hide behind one:
     appending). Both runners share the library builders
     (``invariants.coverings_block.fundamental_group_block`` / ``simply_connected_block``),
     so the Pyodide twin agrees (``tests/webapp/test_coverings_exposure_p56.py::
-    test_twin_parity``). ``canonical_key`` is request-derived."""
+    test_twin_parity``). ``canonical_key`` is request-derived.
+  * 2026-08-07 (``coxeter_spectral_3kronecker_qq`` ADDED, Plan 58 / R20): a NEW fixture
+    for the ``coxeter_spectral`` algebra-scalar compute kind (the 3-Kronecker over QQ --
+    wild, non-cyclotomic: χ = t²-7t+1, ρ = M = (7+3√5)/2 as a CERTIFIED algebraic number
+    with minpoly [1,-7,1] and rational isolating interval (6,7), one root outside the
+    unit circle, Coxeter order None, the class-conditional Lehmer note). Pure ADDITION:
+    the round-trip of the whole goldens file (indent=1) was asserted byte-identical to the
+    original BEFORE appending, so every pre-existing entry is untouched. Schema v1 (acts on
+    the algebra block, no new request block). Both runners share
+    ``invariants.coxeter_spectral.coxeter_spectral_block``, so the Pyodide twin is
+    byte-identical (``tests/webapp/test_coxeter_spectral_p58.py::test_twin_parity``).
+    ``canonical_key`` is request-derived.
+  * 2026-08-07 (``radical_filtration_kA3`` + ``ar_invariants_kA3`` ADDED, Plan 57):
+    two NEW algebra-only fixtures over the hereditary ``kA_3`` (1->2->3, GF(32003)).
+    ``radical_filtration_kA3`` pins the ``radical_filtration`` block (nilpotency index
+    3, ``rad^inf = 0``, layer profile ``[9, 3]``); ``ar_invariants_kA3`` pins the
+    ``ar_invariants`` block (representation-directed, Liu-degree table). Pure ADDITION:
+    every pre-existing entry was verified content-identical BEFORE the two were
+    appended (the generator reproduces the file bytes exactly, then re-dumps with the
+    same settings). Both runners share the library builders
+    (``modules.radical.radical_filtration_block`` /
+    ``modules.ar_invariants.ar_invariants_block``), so the Pyodide twin agrees
+    (``tests/webapp/test_radical_filtration_p57.py``, ``tests/gui/test_radical_runner_twin.py``).
+    ``canonical_key`` is request-derived (the budget rides in the ``compute`` string).
+  * 2026-08-07 (``left_right_parts_kA3`` ADDED, Plan 55 R15): a NEW fixture for the
+    ``left_right_parts`` ALGEBRA-level compute kind (schema v1, kA3 = 1->2->3 over QQ,
+    budget 256 -- the module-category atlas: L_A = R_A = ind A (6 indecomposables), empty
+    complement, both support algebras = A). Pure ADDITION: every pre-existing entry was
+    verified byte-identical BEFORE the new one was appended (the reserialization pre-check
+    asserted the file round-trips unchanged, and the delegation test passed on all prior
+    entries). The budget rides in the ``compute`` string (no new request field), so the
+    ``canonical_key`` is request-derived; both runners share
+    ``modules.left_right.left_right_parts_block``, so the Pyodide twin agrees
+    (``tests/webapp/test_left_right_parts_p55.py`` / ``tests/gui/test_left_right_runner_twin.py``)."""
 import json
 import pathlib
 

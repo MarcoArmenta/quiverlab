@@ -46,6 +46,17 @@ REGISTRY: dict = {r.key: r for r in [
        "A bracket formula valid on any projective bimodule resolution "
        "(companion to Negron-Witherspoon).",
        "bracket"),
+    _r("oke_koszul", "Oke2021", "algorithm",
+       "Bracket structure on Hochschild cohomology of Koszul quiver algebras "
+       "using homotopy liftings",
+       "The homotopy-lifting bracket formulation quiverlab's native CS bracket "
+       "implements (Plan 51); source of the section-7 Koszul-quiver worked tables.",
+       "bracket"),
+    _r("witherspoon_gsm204", "WitherspoonGSM204", "foundation",
+       "Hochschild Cohomology for Algebras",
+       "The textbook derivation of the homotopy-lifting Gerstenhaber bracket "
+       "(the expository anchor for quiverlab's native CS bracket).",
+       "bracket"),
     _r("minimal_resolution", "GSZ2001", "algorithm",
        "Minimal projective resolutions",
        "The Green-Solberg-Zacharia minimal module resolution algorithm "
@@ -149,6 +160,30 @@ REGISTRY: dict = {r.key: r for r in [
        "The Auslander-Reiten theory reference: almost-split sequences, irreducible "
        "maps, the AR quiver, and the Nakayama functor -- the ground truth for Plan 41.",
        "book"),
+    # Plan 57 (R21 + R37): Liu degree theory, the Chaio-Liu radical of the module
+    # category, CMMS radical-square-zero, and Ringel's directing/trichotomy reference.
+    _r("liu_degrees", "Liu1992degrees", "foundation",
+       "Degrees of irreducible maps and the shapes of Auslander-Reiten quivers",
+       "Liu's left/right degrees of irreducible morphisms and their control of the "
+       "AR-quiver shape -- the R21 degree theory Plan 57 computes on the knit.", "ar"),
+    _r("liu_semistable", "Liu1993semistable", "foundation",
+       "Semi-stable components of an Auslander-Reiten quiver",
+       "Liu's component classification (sectional paths, semistable/directed "
+       "components) underlying Plan 57's partition and rep-directed recognizer.", "ar"),
+    _r("chaio_liu_radical", "ChaioLiu2013", "foundation",
+       "A note on the radical of a module category",
+       "Chaio-Liu: rep-finiteness through the infinite radical; the nilpotency of "
+       "rad(mod A) in the rep-finite case is the maximal depth of composites -- the "
+       "theorem behind Plan 57's nilpotency index and rad^inf=0 gate.", "ar"),
+    _r("cmms_radsq", "CMMS1994radsq", "foundation",
+       "Module categories with infinite radical square zero are of finite type",
+       "CMMS: (rad^inf)^2 = 0 implies representation-finite -- the class oracle "
+       "justifying Plan 57's finite-nilpotency-index rep-finiteness certificate "
+       "(documented, not a per-instance decider off the rep-finite domain).", "ar"),
+    _r("ringel_tame", "Ringel1984tame", "foundation",
+       "Tame Algebras and Integral Quadratic Forms",
+       "Ringel LNM 1099: directing modules, the postprojective/regular/preinjective "
+       "trichotomy -- the R21 component-invariant reference.", "book"),
     _r("han_conjecture", "Han2006", "foundation",
        "Han's conjecture",
        "Finite global dimension iff finite Hochschild homology dimension -- the "
@@ -202,6 +237,26 @@ REGISTRY: dict = {r.key: r for r in [
        "The wild star [2,3,7] realizes Lehmer's polynomial -- the "
        "spectral_radius / mahler_measure oracle (Plan 29).",
        "spectral", "oracle"),
+    # --- Plan 58: certified Coxeter spectral analysis (record R20) ---
+    _r("dlPena2014mahler", "dlPena2014mahler", "foundation",
+       "On the Mahler measure of the Coxeter polynomial of an algebra",
+       "de la Pena's class-conditional Mahler-measure dichotomy for accessible "
+       "algebras (M = 1 or M >= mu_0, mu_0 = Lehmer's number) -- the Plan-58 "
+       "Lehmer-class documentation note (shares the dlPena2014mahler eprint with "
+       "the Plan-29 delapena_mahler oracle key).",
+       "spectral", "coxeter", "oracle"),
+    _r("dlPena2013cyclotomic", "dlPena2013cyclotomic", "foundation",
+       "Algebras whose Coxeter polynomials are products of cyclotomic polynomials",
+       "de la Pena's separation of periodic (finite-order) Coxeter transformations "
+       "from merely cyclotomic-type (quasi-unipotent) ones -- the Plan-58 "
+       "quasi-unipotent / finite-order verdict.",
+       "spectral", "coxeter"),
+    _r("dlPenaTakane1990spectral", "dlPenaTakane1990spectral", "foundation",
+       "Spectral properties of Coxeter transformations and applications",
+       "de la Pena-Takane: reality of the dominant Coxeter eigenvalue on the "
+       "wild-hereditary locus -- the Plan-58 real-dominant spectral-radius "
+       "foundation (Arch. Math. 55 (1990) 120-134).",
+       "spectral", "coxeter"),
     _r("redondo_roman_2014", "RedondoRoman2014", "family",
        "Hochschild cohomology of triangular string algebras and its ring structure",
        "HH^* of the triangular string algebras A_n (with the degree-(2m+1) "
@@ -470,6 +525,21 @@ REGISTRY: dict = {r.key: r for r in [
        "subcategory satisfies the separation condition -- the Plan-56 R16 recognizer "
        "(the P62 tame/wild gate).",
        "coverings", "ssc"),
+    _r("act_left_right", "ACT2004", "foundation",
+       "The left and the right parts of a module category",
+       "Assem-Coelho-Trepode: L_A / R_A via predecessor/successor closure of pd<=1 / id<=1, the "
+       "Ext-injective criterion tau^{-1}X notin L_A, and the support algebra A_lambda = End of "
+       "the projectives in L_A -- the ground truth for Plan 55.", "recognizer"),
+    _r("aclv_supports", "ACLV2011", "foundation",
+       "Algebras determined by their supports",
+       "Assem-Castonguay-Lanzilotta-Vargas: A_lambda / A_rho are products of tilted algebras for "
+       "ada algebras (quasi-tilted in general), D L_A = R_{A^op}, and the laura complement "
+       "ind A minus (L_A u R_A) -- non-empty even for ada; feeds P60 (tilted) and P61 (laura/ada).",
+       "recognizer"),
+    _r("organising_module_category", "AACV2021", "foundation",
+       "Organising the module category",
+       "Alvares-Assem-Castonguay-Vargas survey of the left/right parts, supports, and the "
+       "quasi-tilted/laura/ada organisation of mod A -- Plan 55's secondary reference.", "survey"),
 ]}
 
 

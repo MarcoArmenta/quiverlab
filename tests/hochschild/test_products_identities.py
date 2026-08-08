@@ -101,6 +101,34 @@ def test_bar_vs_cs_cup_tables_in_window(prime):
 
 @pytest.mark.oracle_crossengine
 @pytest.mark.parametrize("prime", (7, 3))
+def test_bar_vs_cs_bracket_tables_in_window(prime):
+    """Plan 51 cross-engine gate for the BRACKET: same DIMS and RANK-equivalent
+    flattened-constants per bidegree, bar (tt facade) vs CS (homotopy lifting),
+    in-window over GF(7)/GF(3). Bases differ, so only basis-independent data compared."""
+    import numpy as np
+    from quiverlab.engine.coxeter import rref_mod_p
+    Q = ql.Quiver(vertices=[1], arrows={"x": (1, 1)})
+    A = Q.algebra(relations=["x*x*x"], field=ql.GF(prime))
+    bar = A.gerstenhaber_brackets(2, engine="bar")
+    cs = A.gerstenhaber_brackets(2, engine="cs")
+    assert sorted(bar.tables) == sorted(cs.tables)
+    assert bar.window == 2 and cs.window is None       # provenance: bar bounded, CS not
+    for key in bar.tables:
+        tb, tc = bar.tables[key], cs.tables[key]
+        assert tb.dims == tc.dims
+        def flat_rank(t):
+            dl, dr, dout = t.dims
+            if 0 in t.dims:
+                return 0
+            M = np.array([[int(t.constants[k][i][j]) for k in range(dout)]
+                          for i in range(dl) for j in range(dr)], dtype=np.int64)
+            _, piv = rref_mod_p(M % prime, prime)
+            return len(piv)
+        assert flat_rank(tb) == flat_rank(tc), f"bracket table rank differs at {key}"
+
+
+@pytest.mark.oracle_crossengine
+@pytest.mark.parametrize("prime", (7, 3))
 def test_bar_vs_cs_cap_tables_in_window(prime):
     """The cross-engine gate for the CAP action: same DIMS and RANK-equivalent
     tables (bar vs CS) in-window. Same basis-independent comparison as the cup

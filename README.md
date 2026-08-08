@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-3506_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-3537_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 3506 tests over the
+Every shipped feature is unit tested (the suite is 3537 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -272,6 +272,9 @@ ported and wired in:
   (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
+  The **Gerstenhaber bracket goes native on the Chouhy–Solotar resolution — past the
+  bar window, over any exact field** (Negron–Witherspoon / Volkov homotopy liftings),
+  completing the TT calculus surface (cup and cap went native earlier).
 - **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
   canonical representatives + a convergence certificate (`E_∞` totals == total
   homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,
@@ -292,6 +295,12 @@ ported and wired in:
   inputs); and the
   exact **spectral radius** / **Mahler measure** of the Coxeter polynomial as
   sympy algebraic numbers — no floats, ever.
+- **Certified Coxeter spectral analysis (R20).** `A.coxeter_spectral()` — the exact
+  cyclotomic **Φ_n** factorization, a cyclotomic / quasi-unipotent verdict and the
+  finite Coxeter **order** (Φ^m = I, verified by exact matrix power), the exact count
+  of roots outside the unit circle, and the spectral radius & Mahler measure as
+  **certified algebraic numbers** (minimal polynomial + rational isolating interval,
+  never a float), with the class-conditional **Lehmer-class note** (documentation only).
 - **Homological dimensions (C6).** Public **syzygy/cosyzygy** operators,
   **finitistic / dominant / Gorenstein dimensions**, the **Igusa–Todorov φ/ψ**
   functions, and **Ω/τ-periodicity certificates** — the C6 homological-dimensions
@@ -311,6 +320,15 @@ ported and wired in:
   ν / ν⁻ as named functors, **almost-split sequences** `0 → τM → E → M → 0` with the
   middle term built and certified (exact, non-split, indecomposable ends), irreducible
   maps and `rad(M,N)/rad²`, stable Hom, and **AR-quiver knitting** — complete for a
+- **The radical filtration of `mod A` (Liu–Chaio, R37+R21).** Exact `rad^n(X,Y)`
+  layer dimensions on the knitted indecomposables, the **nilpotency index** of
+  `rad(mod A)`, and the `rad^∞ = 0 ⇔ representation-finite` (Auslander) certificate;
+  **Liu's left/right degrees** of irreducible maps, sectional paths, the
+  postprojective/preinjective/regular partition, directing modules and the
+  **representation-directed** recognizer — the R21+R37 axis, certified on the
+  representation-finite domain (self-injective input and rep-infinite windows refuse
+  or label honestly), clickable via the no-code `radical_filtration` /
+  `ar_invariants` kinds.
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**
@@ -357,6 +375,13 @@ ported and wired in:
   for `kA_n`) — every enumeration budget-capped with the honest
   complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
   drawn no-code in the browser for n = 2, 3** — the C4 flagship.
+- **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
+  left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
+  the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —
+  non-empty even for ada), the Ext-injectives of `add L_A` (and dual Ext-projectives of
+  `add R_A`), and the left/right support algebras `A_λ`, `A_ρ` (products of tilted
+  algebras) as presented induced-convex-subquiver algebras — the recognizer-ladder
+  substrate, no-code in the browser (representation-finite scope, loud otherwise).
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

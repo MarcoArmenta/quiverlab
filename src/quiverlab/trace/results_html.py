@@ -33,6 +33,9 @@ _HEADINGS = {
     "ss_hochschild": "Hochschild (b,B) spectral sequence",
     "radical_filtration_ss": "Radical-filtration spectral sequence",
     "ar_quiver": "Auslander–Reiten quiver",
+    "radical_filtration": "Radical filtration of mod A",
+    "ar_invariants": "AR-component invariants",
+    "left_right_parts": "Left / right parts",
     "derived_compare": "Derived fingerprint comparison",
     # Plan 35 HH product surface -- the gui.js PRODUCT_TITLE i18n titles.
     "cup": "Cup product tables",
@@ -41,6 +44,7 @@ _HEADINGS = {
     "connes_b": "Connes differentials",
     "cartan": "Cartan matrix",
     "coxeter_polynomial": "Coxeter polynomial",
+    "coxeter_spectral": "Certified Coxeter spectral analysis",
     "global_dimension": "Global dimension",
     "homological_profile": "Homological dimensions",
     "fractional_cy": "Fractional Calabi–Yau dimension",
@@ -134,6 +138,10 @@ _ENGINE_GLOSS = (
                "integer entries mod p and computes their exact rank by Gaussian "
                "elimination mod p; every dimension follows by rank-nullity -- "
                "nothing numerical, no floating point"),
+    ("homotopy lifting", "the Gerstenhaber bracket assembled from Negron–Witherspoon "
+                         "/ Volkov homotopy liftings on the Chouhy–Solotar diagonal: a "
+                         "finite per-degree exact linear solve (canonical), no bar "
+                         "object, any exact field, past the bar window"),
     ("chouhy", "the Chouhy–Solotar projective bimodule resolution built from "
                "the admissible presentation, certified per instance "
                "(d∘d = 0 + the order gate)"),
@@ -353,6 +361,66 @@ def _recognizers_html(b):
     else:
         out.append("<p>Form type: undefined (the Cartan matrix is not unimodular, "
                    "so the Euler/Tits form has no integral matrix here).</p>")
+    return out
+
+
+def _coxeter_spectral_html(b):
+    """Plan 58 (R20): the certified Coxeter spectral report -- the Phi_n-labelled ZZ[x]
+    factorization, the cyclotomic / quasi-unipotent / finite-order verdicts, the exact
+    outside-unit-circle count, and rho / M as certified algebraic numbers (minimal
+    polynomial + rational isolating interval) or an honest per-field refusal. Every field
+    that refused on this input is stated, never dropped."""
+    cp = b.get("coxeter_polynomial")
+    if isinstance(cp, dict) and "error" in cp:
+        return ["<p>Coxeter polynomial unavailable — %s</p>" % _esc(str(cp["error"]))]
+    out = []
+    if b.get("coxeter_latex"):
+        out.append(_math(r"\chi(t) = " + b["coxeter_latex"]))
+    facs = b.get("factorization") or []
+    if facs:
+        lis = []
+        for f in facs:
+            mult = f.get("multiplicity", 1)
+            pw = ("^{%d}" % mult) if isinstance(mult, int) and mult > 1 else ""
+            idx = f.get("cyclotomic_index")
+            lbl = (r"\Phi_{%d}%s" % (idx, pw)) if idx is not None \
+                else (r"\text{(non-cyclotomic)}%s" % pw)
+            lis.append("<li>%s</li>" % _math_inline("%s = %s" % (lbl, f.get("latex", ""))))
+        out.append("<p>Cyclotomic factorization (Φ_n labels):</p>")
+        out.append("<ul class='ql-flags'>%s</ul>" % "".join(lis))
+    out.append("<p>Cyclotomic (all eigenvalues roots of unity): <b>%s</b>; "
+               "quasi-unipotent: <b>%s</b>.</p>"
+               % ("yes" if b.get("cyclotomic") else "no",
+                  "yes" if b.get("quasi_unipotent") else "no"))
+    order = b.get("coxeter_order")
+    if isinstance(order, dict) and "error" in order:
+        otxt = "not decided — %s" % _esc(str(order["error"]))
+    elif order is None:
+        otxt = "infinite (∞)"
+    else:
+        otxt = _esc(str(order))
+    reason = b.get("coxeter_order_reason")
+    rtxt = " — %s" % _esc(str(reason)) if isinstance(reason, str) else ""
+    out.append("<p>Coxeter order (Φ<sup>m</sup> = I): <b>%s</b>%s.</p>" % (otxt, rtxt))
+    out.append("<p>Roots strictly outside the unit circle: <b>%s</b>.</p>"
+               % _esc(str(b.get("outside_unit_circle_count"))))
+    for label, key in ((r"\rho\ (\text{spectral radius})", "spectral_radius"),
+                       (r"M\ (\text{Mahler measure})", "mahler_measure")):
+        c = b.get(key)
+        if isinstance(c, dict) and "error" in c:
+            out.append("<p class='ql-note'>%s: not certified — %s</p>"
+                       % (_esc(key.replace("_", " ")), _esc(str(c["error"]))))
+        elif isinstance(c, dict) and "latex" in c:
+            out.append(_math("%s = %s" % (label, c["latex"])))
+            out.append("<p class='ql-note'>minimal polynomial of degree %s, isolating "
+                       "interval (%s, %s)%s.</p>"
+                       % (_esc(str(c.get("degree"))), _esc(str(c["interval"][0])),
+                          _esc(str(c["interval"][1])),
+                          " (rational)" if c.get("is_rational") else ""))
+    if b.get("lehmer_class_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["lehmer_class_note"])))
+    if b.get("scope"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["scope"])))
     return out
 
 
@@ -669,6 +737,120 @@ def _simply_connected_html(b):
     return out
 
 
+def _radical_filtration_html(b):
+    """The radical filtration of mod A (Plan 57 / R37): the completeness verdict, the
+    nilpotency index + rad^inf certificate, and the layer profile (sum_ij dim rad^n).
+    An honest window (budget) / self-injective (unsupported) block ships the loud note
+    and NO index -- never a fake verdict. Distinct from radical_filtration_ss (the
+    Loewy radical-series spectral sequence)."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Radical filtration not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    chunks = []
+    if b.get("complete"):
+        chunks.append(
+            "<p>The algebra is representation-finite: mod A has %s indecomposable(s); "
+            "the nilpotency index of rad(mod A) is <b>N = %s</b>, so "
+            "rad<sup>&infin;</sup>(mod A) = 0 (Auslander's certificate, with N the "
+            "finite witness), and every component is generalized standard: <b>%s</b>.</p>"
+            % (_num(b.get("num_indecomposables")), _num(b.get("nilpotency_index")),
+               "yes" if b.get("generalized_standard") else "no"))
+        prof = b.get("layer_profile") or []
+        if prof:
+            head = "".join("<th>%s</th>" % _num(n + 1) for n in range(len(prof)))
+            body = "".join("<td>%s</td>" % _num(d) for d in prof)
+            chunks.append(
+                "<table class='ql-table'><thead><tr><th>n</th>%s</tr></thead><tbody>"
+                "<tr><th>&Sigma; dim rad<sup>n</sup>(X,Y)</th>%s</tr></tbody></table>"
+                % (head, body))
+    else:
+        chunks.append("<p class='ql-note'>Not the category radical (status: %s) — %s</p>"
+                      % (_esc(str(b.get("status", "?"))), _esc(str(b.get("note") or
+                         "the knit did not close; no nilpotency index or rad^inf verdict"))))
+    return chunks
+
+
+def _ar_invariants_html(b):
+    """The AR-component invariants (Plan 57 / R21): the representation-directed verdict,
+    the postprojective/preinjective/regular partition, the generalized-standard flag,
+    and Liu's left/right degrees per irreducible map. Off-scope input ships the loud
+    note, never a false 'directed'."""
+    if b.get("error"):
+        return ["<p class='ql-note'>AR-component invariants not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Not computed (status: %s) — %s</p>"
+                % (_esc(str(b.get("status", "?"))), _esc(str(b.get("note") or
+                   "the knit did not close; no directing/partition/degree verdict")))]
+    chunks = ["<p>Representation-directed: <b>%s</b> (%s of %s indecomposables "
+              "directing); generalized standard: <b>%s</b>; nilpotency index N = %s; "
+              "maximal sectional-path length %s.</p>"
+              % ("yes" if b.get("representation_directed") else "no",
+                 _num(b.get("num_directing")), _num(b.get("num_indecomposables")),
+                 "yes" if b.get("generalized_standard") else "no",
+                 _num(b.get("nilpotency_index")), _num(b.get("max_sectional_length")))]
+    pc = b.get("partition_counts") or {}
+    if pc:
+        chunks.append("<p>Partition: %s.</p>"
+                      % _esc(", ".join("%s: %s" % (k, pc[k]) for k in sorted(pc))))
+    if b.get("partition_note"):                     # honest non-directed caveat
+        chunks.append("<p class='ql-note'>%s</p>" % _esc(str(b["partition_note"])))
+    degs = b.get("degrees") or {}
+    if degs:
+        def _deg(v):
+            return "&infin;" if v is None else _num(v)
+        rows = "".join("<tr><th>%s</th><td>%s</td><td>%s</td></tr>"
+                       % (_esc(k), _deg(degs[k].get("d_l")), _deg(degs[k].get("d_r")))
+                       for k in sorted(degs))
+        chunks.append("<table class='ql-table'><thead><tr><th>irreducible map</th>"
+                      "<th>d<sub>&#8467;</sub></th><th>d<sub>r</sub></th></tr></thead>"
+                      "<tbody>%s</tbody></table>" % rows)
+    return chunks
+
+
+def _left_right_parts_html(b):
+    """The left/right parts atlas (Plan 55): both parts named S_v/P_v/I_v, the complement
+    (laura datum), the Ext-injectives of add L_A (and dual Ext-projectives of add R_A), and
+    the two support algebras with their connected-component counts. An honest refusal
+    (self-injective / rep-infinite / char-scope) is the library's loud message."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Left/right parts not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    if not b.get("complete"):
+        return ["<p class='ql-note'>Incomplete (status: %s) — %s</p>"
+                % (_esc(str(b.get("status"))),
+                   _esc(str(b.get("note") or "the algebra is not representation-finite / "
+                        "the knit did not close (self-injective or rep-infinite)")))]
+
+    def _named(records):
+        if not records:
+            return "&empty;"
+        return ", ".join(_esc(r.get("name") or _dv(r.get("dimvec") or {}))
+                         for r in records)
+
+    chunks = ["<p>The module category has %s indecomposables; L_A has %s and R_A has %s "
+              "(intersection %s, complement %s).</p>"
+              % (_num(b.get("universe_size")), _num(len(b.get("left") or [])),
+                 _num(len(b.get("right") or [])), _num(len(b.get("intersection") or [])),
+                 _num(len(b.get("complement") or [])))]
+    chunks.append("<p><b>Left part L<sub>A</sub></b>: %s.</p>" % _named(b.get("left")))
+    chunks.append("<p><b>Right part R<sub>A</sub></b>: %s.</p>" % _named(b.get("right")))
+    chunks.append("<p><b>Complement</b> (ind A &setminus; (L<sub>A</sub> &cup; "
+                  "R<sub>A</sub>)): %s.</p>" % _named(b.get("complement")))
+    chunks.append("<p><b>Ext-injectives of add L<sub>A</sub></b>: %s.</p>"
+                  % _named(b.get("ext_injectives_left")))
+    chunks.append("<p><b>Ext-projectives of add R<sub>A</sub></b>: %s.</p>"
+                  % _named(b.get("ext_projectives_right")))
+    for label, sa in (("A<sub>&lambda;</sub> (left support)", b.get("left_support")),
+                      ("A<sub>&rho;</sub> (right support)", b.get("right_support"))):
+        if sa is None:
+            continue
+        chunks.append("<p><b>%s</b>: vertices {%s}, dim %s, %s connected component(s).</p>"
+                      % (label, ", ".join(_esc(str(v)) for v in (sa.get("vertices") or [])),
+                         _num(sa.get("dim")), _num(len(sa.get("components") or []))))
+    return chunks
+
+
 def _strings_html(b):
     """The gentle / string subsystem block (Plan 46): recognizer verdicts + string
     census + band presence + honest rep-type + (gentle) AG invariant."""
@@ -787,12 +969,20 @@ def _block_html(kind, b, ctx=None):
         return _radical_filtration_ss_html(b)
     if kind == "ar_quiver":
         return _ar_quiver_html(b)
+    if kind == "radical_filtration":
+        return _radical_filtration_html(b)
+    if kind == "ar_invariants":
+        return _ar_invariants_html(b)
+    if kind == "left_right_parts":
+        return _left_right_parts_html(b)
     if kind == "cartan":
         if b.get("matrix"):
             return [matrix_grid(b["matrix"], label="C")]
         return [_math("C = " + b["latex"])] if b.get("latex") else []
     if kind == "coxeter_polynomial":
         return [_math(r"\chi(t) = " + b["latex"])] if b.get("latex") else []
+    if kind == "coxeter_spectral":
+        return _coxeter_spectral_html(b)
     if kind == "global_dimension":
         return ["<p>%s</p>" % _esc(str(b.get("text", "")))]
     if kind == "homological_profile":
@@ -1400,6 +1590,11 @@ def _product_tables_html(kind, b, ctx=None):
                    "bar-route computation certifies; a cell beyond it is marked "
                    "—. The bracket is computed entirely on the bar (co)chain "
                    "route.</p>" % _num(b.get("window")))
+    elif kind == "bracket":
+        out.append("<p class='ql-note'>the Gerstenhaber bracket is computed natively "
+                   "on the Chouhy–Solotar resolution by the Negron–Witherspoon / "
+                   "Volkov homotopy liftings — no bar object, any exact field, at any "
+                   "degree (past the bar window).</p>")
     if b.get("engine"):
         out.append(_engine_note(b["engine"]))
     return out

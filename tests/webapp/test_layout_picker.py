@@ -22,10 +22,12 @@ from webapp.server.i18n import LANGS, catalog
 ROOT = Path(__file__).resolve().parents[2]
 GUI_JS = ROOT / "webapp" / "static" / "gui" / "gui.js"
 
-# The full compute-kind surface the picker must cover (20 algebra + 14 module).
+# The full compute-kind surface the picker must cover (23 algebra + 14 module).
 ALL_KINDS = {
     "hh_cohomology", "hh_homology", "cup", "cap", "bracket", "cyclic_homology",
     "connes_b", "ss_hochschild", "cartan", "coxeter_polynomial",
+    # Plan 58 (2026-08-07): certified Coxeter spectral analysis.
+    "coxeter_spectral",
     "global_dimension", "homological_profile", "center", "recognizers",
     "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint",
     "tau_tilting", "dimension_vector", "rad_top_soc", "tau", "tau_minus",
@@ -36,6 +38,10 @@ ALL_KINDS = {
     "radical_filtration_ss", "ar_quiver", "derived_compare",
     # Plan 53 (2026-08-07): the stable-category fractional Calabi-Yau dimension.
     "fractional_cy",
+    # Plan 57 (2026-08-07): the radical filtration of mod A + AR-component invariants.
+    "radical_filtration", "ar_invariants",
+    # Plan 55 (2026-08-07): the left/right parts + support algebras.
+    "left_right_parts",
     # Plan 56 (2026-08-07): pi1(Q,I) + simple connectivity.
     "fundamental_group", "simply_connected",
 }

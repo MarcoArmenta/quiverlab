@@ -540,6 +540,23 @@ planned together even if delivered in slices.
   the docstrings + the verification honest-scope entry); this backlog item is the
   actual fix (a `max_steps`/deadline in the BFS inner loop, honest `status="budget"`
   on trip).
+- [ ] **A second odd-exponent bracket fixture** (Plan 51 critic find, 2026-08-07):
+  the odd-exponent bracket sign `(−1)^{(p-1)(q-1)}` is currently pinned by a SINGLE
+  non-vacuous anchor — QuantumCI (2,4) → HH⁵ (Δ₅, ~2 min, `slow`). k[x]/x² and
+  k[x]/x³ are sign-blind at (2,2) (odd-squared brackets vanish). Add a second,
+  ideally cheaper, algebra with a nonzero `[HH^even, HH^even]` bracket (a richer
+  even-degree HH — a preprojective / higher-QCI / group-algebra candidate) so the
+  odd-exponent sign has redundant coverage.
+- [ ] **Native Gerstenhaber bracket on minimal / Bardzell resolutions** (Plan 51
+  follow-up, 2026-08-07): the CS-native bracket (`resolutions_cs/homotopy_lifting.py`
+  + `bracket.py`) needs a diagonal Δ, which quiverlab ships only on the CS resolution.
+  A presentation-less **structure-constants** algebra therefore gets no native bracket
+  off GF(p) today (it keeps only the in-window GF(p) transported bracket). Closing that
+  gap needs a diagonal on the minimal `A^e` resolution (rides on **Plan 75 — GHMS
+  comultiplicative minimal resolution**, which is exactly Oke's own Koszul carrier) and
+  a smaller monomial diagonal on the Bardzell resolution. Both engines accept
+  structure-constants input, so the follow-up is what makes the native bracket reach
+  presentation-less algebras. Deps: Plan 75 GHMS / a Bardzell diagonal.
 
 ## Done (this backlog's history)
 
