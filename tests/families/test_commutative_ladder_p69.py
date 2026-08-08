@@ -56,14 +56,17 @@ def test_cl4_dim_certificate_no_knit():
     assert ok is True and m == 4
 
 
+@lit
 @selfcert
-@pytest.mark.parametrize("n, count", [(2, 11), (3, 29)])   # LIVE-VERIFIED engine counts
-def test_cl_verified_counts_single_engine(n, count):
-    # SINGLE-ENGINE self-cert: this count is asserted against the SAME AR knitter that
-    # produces it -- it rests on one engine until reconciled against the Escolar-Hiraoka
-    # AR figure (BLOCKING, Task 6 Step 1a; count from the RENDERED figure, NOT pdftotext --
-    # which linearizes the 2-D figure unreliably, ~30 +-1..2) and/or QPA (Task 4). This is
-    # oracle_selfcert, NOT oracle_literature (H3).
+@pytest.mark.parametrize("n, count", [(2, 11), (3, 29)])   # FIGURE-CONFIRMED counts
+def test_cl_verified_counts(n, count):
+    # FIGURE-CONFIRMED literature pin (H3 reconciliation DONE): the Escolar-Hiraoka
+    # AR-quiver figures (arXiv:1404.7588, DCG 2016) were rendered (pdftotext -layout +
+    # pages 46-47 @150dpi) and counted -- Fig. 13 = CL(f) = this CL(2): 3+5+3 = 11 (all
+    # thin); Fig. 14 = CL(ff) = this CL(3): 1+6+11+6+5 = 29, exactly 2 non-thin, matching
+    # the engine's 27+2 thin/non-thin split. The equioriented ladder IS the incidence
+    # algebra of the [n]x[2] grid poset (iso-invariant), so the orientation identification
+    # is airtight. Kept oracle_selfcert too (the same knit reproduces it; Plan-32 overlap).
     A = CommutativeLadder(n, field=QQ)
     ar = knit_ar_quiver(A, budget_modules=400, budget_dim=8000)
     assert ar.is_complete and len(ar.vertices) == count
