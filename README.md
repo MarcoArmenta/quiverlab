@@ -339,6 +339,13 @@ ported and wired in:
   representation-finite domain (self-injective input and rep-infinite windows refuse
   or label honestly), clickable via the no-code `radical_filtration` /
   `ar_invariants` kinds.
+- **The persistence / TDA bridge (R33).** Barcodes as **interval decompositions** of
+  `A_n` and zigzag persistence modules (Gabriel / Botnan–Crawley-Boevey; **field-robust
+  over `GF(2)`** — interval modules are bricks), and **AR-quiver-indexed generalized
+  persistence diagrams** for commutative ladders `CL(n) = A_n □ A_2` (`n ≤ 4`,
+  representation-finite; Escolar–Hiraoka; `n ≥ 5` a loud refusal) — representation theory
+  first, the `barcode` no-code compute kind. Exact only: the filtration parameter is the
+  discrete vertex index (no float thresholds, no `∞`).
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**
