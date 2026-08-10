@@ -65,6 +65,8 @@ _HEADINGS = {
     "simply_connected": "Simple connectivity",
     "tame_wild": "Representation type (tame / wild)",
     "hh1_lie": "HH¹ as a Lie algebra",
+    "deformations": "Formal deformations and Maurer–Cartan",
+    "hh_lie_module": "HH• as a Lie module over HH¹",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
     "tau": "AR translate τM",
@@ -79,14 +81,17 @@ _HEADINGS = {
     "injective_dimension": "Injective dimension of M",
     "tilting_check": "Tilting test",
     "orbit_geometry": "Orbit geometry",
+    "barcode": "Barcode / persistence diagram",
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
     "congruences": "Torsion lattice: Con(tors A), forcing order and wide subcategories",
+    "tau_cluster": "τ-cluster morphism category W(A): classifying space + picture group",
     "wall_chamber": "Wall-and-chamber structure via bricks: D(B) inequality systems + "
                     "g-cone chambers",
     "silting": "Silting: verifier, mutation neighbours, bounded exploration",
     "exceptional_sequences": "Exceptional sequences",
     "split_extension": "Split-extension Hochschild long exact sequence",
     "arrow_removal": "Certified arrow-removal HH reduction",
+    "skew_group_hh": "Hochschild HH of A⋊G (Ştefan conjugacy-class decomposition)",
     "han_transport": "Han transport across a bounded extension",
 }
 
@@ -317,6 +322,109 @@ def _hh1_lie_html(b):
     return out
 
 
+def _deformations_html(b):
+    """Formal deformations / L∞ / Maurer–Cartan (Plan 78): the infinitesimal space HH²,
+    the obstruction [α, α] ∈ HH³ with its witness, the nilpotent regime + MC description,
+    the dg-Lie certificate and ℓ₃ status, and the display-only presented A_α."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+
+    def yn(x):
+        return "yes" if x else "no" if x is not None else "not determined"
+
+    out = ["<p>Infinitesimal deformations of A are classified by HH²(A, A); the "
+           "obstruction to extending a first-order deformation α is the Gerstenhaber "
+           "square [α, α] ∈ HH³(A, A) (Gerstenhaber 1964).</p>",
+           "<p>dim HH² = <b>%s</b> (the infinitesimal directions); dim HH³ = <b>%s</b> "
+           "(where obstructions live).</p>"
+           % (_esc(str(b.get("hh2_dim"))), _esc(str(b.get("hh3_dim"))))]
+    unob = b.get("unobstructed")
+    out.append("<p>Every first-order direction unobstructed ([α, α] = 0 for all α): "
+               "<b>%s</b>.</p>" % yn(unob))
+    if b.get("obstruction_witness"):
+        out.append("<p>Obstructed witness: %s — a basis direction with [α, α] ≠ 0, so "
+                   "that first-order deformation does NOT extend to second order. The "
+                   "witness is basis-dependent (its existence is not).</p>"
+                   % _esc(str(b["obstruction_witness"])))
+    if b.get("mc_description"):
+        out.append("<p>Maurer–Cartan: %s</p>" % _esc(str(b["mc_description"])))
+    if b.get("nilpotent_regime") is not None:
+        out.append("<p>Nilpotent regime (the MC equation is a finite condition): <b>%s</b>"
+                   "%s.</p>"
+                   % (yn(b.get("nilpotent_regime")),
+                      "; certified to order %s" % _esc(str(b["mc_order_certified"]))
+                      if b.get("mc_order_certified") is not None else ""))
+    if b.get("dg_lie") is not None:
+        out.append("<p>dg-Lie certificate on the L∞ companion B(A)[1]: <b>%s</b>. "
+                   "ℓ₃ status: %s.</p>"
+                   % (yn(b.get("dg_lie")), _esc(str(b.get("l3_status")))))
+    if b.get("a_alpha"):
+        out.append("<p>Deformed algebra A_α (display only, re-certified flat — "
+                   "dim A_α = dim A): %s</p>" % _esc(str(b["a_alpha"])))
+    if b.get("ext_algebra_summary"):
+        out.append("<p>Ext-algebra handoff: %s</p>"
+                   % _esc(str(b["ext_algebra_summary"])))
+    for key in ("char0_note", "base_change_note", "window_note", "note"):
+        if b.get(key):
+            out.append("<p class='ql-note'>%s</p>" % _esc(str(b[key])))
+    return out
+
+
+def _hh_lie_module_html(b):
+    """HH^* as a graded Lie module over HH^1 (Plan 71): hh_dims, the module-axiom /
+    inner-zero verdicts, the indecomposable-summand decomposition table and (char 0)
+    the weight / torus table. The action structure constants are NOT shipped."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+
+    def yn(x):
+        return "yes" if x else "no"
+
+    out = ["<p>HH•(A) is a graded Lie module over HH¹(A): the action is the "
+           "Gerstenhaber degree-1 bracket [D, −], which on cochains is the Lie "
+           "derivative (field-general over any exact field).</p>",
+           "<p>dim HH• = [%s]; dim HH¹ = <b>%d</b> (the acting Lie algebra).</p>"
+           % (_esc(", ".join(str(d) for d in b.get("hh_dims", []))), b.get("hh1_dim", 0)),
+           "<p>Module axiom ρ([D,E]) = [ρ(D),ρ(E)]: <b>%s</b>; inner derivations act as "
+           "zero: <b>%s</b>.</p>"
+           % (yn(b.get("module_axiom_ok")), yn(b.get("inner_acts_zero")))]
+    summ = b.get("summands")
+    if summ:
+        rows = ["<tr><th>n</th><th>HHⁿ = ⊕ M<sup>dim</sup></th></tr>"]
+        for e in summ:
+            parts = e.get("parts")
+            if isinstance(parts, dict) and parts.get("error"):
+                desc = _esc(str(parts["error"]))
+            else:
+                pieces = []
+                for p in (parts or []):
+                    lab = (" (%s)" % _esc(str(p["label"]))) if p.get("label") else ""
+                    mult = ("<sup>%d</sup>" % p["mult"]) if p.get("mult", 1) > 1 else ""
+                    pieces.append("M<sub>%d</sub>%s%s" % (p["dim"], mult, lab))
+                desc = " ⊕ ".join(pieces) or "0"
+            rows.append("<tr><td>%d</td><td>%s</td></tr>" % (e["n"], desc))
+        out.append("<p>Indecomposable summands:</p><table>%s</table>" % "".join(rows))
+    weights = b.get("weights")
+    if weights:
+        rows = ["<tr><th>n</th><th>rank</th><th>weights (λ: dim)</th></tr>"]
+        for e in weights:
+            ws = "  ".join("(%s): %d" % (_esc(",".join(lam)), dim)
+                           for lam, dim in (e.get("weights") or []))
+            rows.append("<tr><td>%d</td><td>%d</td><td>%s</td></tr>"
+                        % (e["n"], e.get("torus_rank", 0), ws))
+        out.append("<p>Weights (maximal torus):</p><table>%s</table>" % "".join(rows))
+        if b.get("torus_provenance"):
+            out.append("<p class='ql-note'>%s</p>" % _esc(str(b["torus_provenance"])))
+    elif b.get("char0_note"):
+        out.append("<p class='ql-note'>Weights/decomposition need characteristic 0 — %s</p>"
+                   % _esc(str(b["char0_note"])))
+    if b.get("weight_base_change_note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["weight_base_change_note"])))
+    if b.get("note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return out
+
+
 def _tau_tilting_html(b):
     """The C4 tau-tilting block (Plan 45): the support tau-tilting pairs (label +
     g-matrix + support), the brick-labelled Hasse edges, the AIR four-way counts +
@@ -482,6 +590,91 @@ def _congruences_html(b):
         out.append("<table class='ql-cong-wide'>%s</table>" % "".join(wrows))
         wrel = ", ".join("%s ⊆ %s" % (r[0], r[1]) for r in (W.get("relations") or [])) or "(none)"
         out.append("<p>Inclusions: %s.</p>" % _esc(wrel))
+    return out
+
+
+def _tau_cluster_html(b):
+    """The Plan-66 τ-cluster morphism category block: the category summary (objects = #wide,
+    morphisms), the Hanson–Igusa CLASSIFYING-SPACE cube complex (face_vector, f_0 = #wide,
+    labelled distinctly from the g-fan SPHERE g_fan_face_vector with f_n = #sτt), the Euler
+    characteristic, the theorem-anchored K(π,1) verdict, and the picture-group presentation
+    (generators = bricks, typed relations, abelianization). Honest complete-iff-τ-tilting-finite
+    status; a partial category is never emitted."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+    out = ["<p>The τ-cluster morphism category W(A) (Buan–Marsh, IMRN 2021): objects = the "
+           "τ-perpendicular wide subcategories, morphisms = support τ-rigid pairs of the source "
+           "graded by rank. Its classifying space is the Hanson–Igusa cube complex (Comm. Alg. "
+           "2021), whose π₁ (when aspherical) is the picture group (Igusa–Todorov–Weyman). "
+           "Certified complete iff A is τ-tilting-finite. n = %s.</p>" % _esc(str(b.get("n")))]
+    if not b.get("complete"):
+        out.append("<p class='ql-note'>The exchange graph did not close (status: <b>%s</b>) — A "
+                   "is τ-tilting-infinite or the pair budget was hit. W(A) is an INFINITE "
+                   "category, so the objects, morphisms, the cube complex and the picture group "
+                   "are ALL omitted (a partial category would be a lie, not merely incomplete)."
+                   "</p>" % _esc(str(b.get("status"))))
+        if b.get("note"):
+            out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+        return out
+    C = b.get("category") or {}
+    out.append("<p>Category W(A): <b>%s objects</b> (= #wide subcategories, tying the Enomoto "
+               "count) and <b>%s morphisms</b>.</p>"
+               % (C.get("object_count"), C.get("morphism_count")))
+    obr = C.get("objects_by_rank") or {}
+    mbr = C.get("morphisms_by_rank") or {}
+    rows = ["<tr><th>rank k</th><th>objects (wides)</th><th>morphisms (k-cells)</th></tr>"]
+    for k in sorted(mbr, key=lambda x: int(x)):
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+                    % (k, obr.get(str(k), obr.get(k, 0)), mbr.get(k)))
+    out.append("<table class='ql-tcl-byrank'>%s</table>" % "".join(rows))
+    fv = C.get("face_vector") or []
+    gfv = C.get("g_fan_face_vector") or []
+    out.append("<p>Classifying-space cube complex |W(A)| (Hanson–Igusa): f₀ = #wide (one 0-cell "
+               "per wide subcategory), f_k = #(rank-k morphisms). Face vector = (%s); Euler "
+               "characteristic χ = Σ(−1)^k f_k = <b>%s</b>.</p>"
+               % (_esc(", ".join(str(x) for x in fv)), C.get("euler_characteristic")))
+    out.append("<p class='ql-note'>The g-fan / cluster fan of A (a triangulated (n−1)-SPHERE, "
+               "NOT the classifying space) has face vector (%s); its top cell f_n = #support "
+               "τ-tilting pairs = %s.</p>"
+               % (_esc(", ".join(str(x) for x in gfv)), (gfv[-1] if gfv else "")))
+    if C.get("is_kpi1") is True:
+        out.append("<p>The classifying space is a <b>K(π,1)</b> [%s], so π₁ is the picture "
+                   "group below.</p>" % _esc(str(C.get("kpi1_reason"))))
+    else:
+        out.append("<p class='ql-note'>K(π,1): %s — the picture group below is π₁ only when the "
+                   "space is aspherical.</p>" % _esc(str(C.get("kpi1_reason"))))
+    P = b.get("picture_group")
+    if P:
+        ab = P.get("abelianization") or []
+        ab_str = "ℤ^%s" % P.get("abelianization_rank")
+        if ab:
+            ab_str += " ⊕ " + " ⊕ ".join("ℤ/%s" % d for d in ab)
+        out.append("<p>Picture group π₁(|W(A)|) (Igusa–Todorov–Weyman): <b>%s generators</b> "
+                   "(one per brick), <b>%s relations</b> (one per rank-2 wide: %s atom/pentagon "
+                   "+ %s commutation), abelianization %s.</p>"
+                   % (P.get("num_generators"), P.get("num_relations"), P.get("num_atom"),
+                      P.get("num_commutation"), _esc(ab_str)))
+        grows = ["<tr><th>generator</th><th>brick</th></tr>"]
+        for i, g in enumerate(P.get("generators") or []):
+            nm = g.get("name")
+            grows.append("<tr><td>x_%d</td><td>%s%s</td></tr>"
+                         % (i, _dv(g.get("dimvec")),
+                            (" (" + _esc(str(nm)) + ")") if nm else ""))
+        out.append("<table class='ql-tcl-gens'>%s</table>" % "".join(grows))
+        rrows = ["<tr><th>type</th><th>simple bricks</th><th>extension brick</th>"
+                 "<th>relation</th></tr>"]
+        for r in (P.get("relations") or []):
+            sb = ", ".join(_dv(s.get("dimvec"))
+                           + ((" (" + _esc(str(s.get("name"))) + ")") if s.get("name") else "")
+                           for s in (r.get("simple_bricks") or []))
+            eb = r.get("ext_brick")
+            ex = (_dv(eb.get("dimvec")) + ((" (" + _esc(str(eb.get("name"))) + ")")
+                                           if eb.get("name") else "")) if eb else "—"
+            rrows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                         % (_esc(str(r.get("type"))), sb, ex, _esc(str(r.get("word")))))
+        out.append("<table class='ql-tcl-rels'>%s</table>" % "".join(rrows))
+    if b.get("note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
     return out
 
 
@@ -1045,6 +1238,49 @@ def _split_extension_html(b):
     if fml is True:
         wit += " For this directed B the sharper HH<sup>1</sup>(T(B)) = k &oplus; HH<sup>1</sup>(B) holds."
     out.append("<p>%s</p>" % wit)
+    return out
+
+
+def _skew_group_hh_html(b):
+    """The skew-group HH decomposition block (Plan 74 / R8): per conjugacy-class
+    twisted HH dims + their Z(g)-invariants, the assembled total, and the DIRECT
+    cross-check row. Modular (char | |G|) shows direct-only; a bad action -> note."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Skew-group HH decomposition not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = []
+    out.append("<p>The algebra is the skew group algebra <em>A&#8905;G</em> "
+               "(dim = |G|&middot;dim A = %s&middot;%s = <strong>%s</strong>). Over "
+               "char <em>k</em> &#8740; |G| the Hochschild cohomology decomposes along "
+               "the conjugacy classes of <em>G</em>: "
+               "HH<sup>n</sup>(A&#8905;G) &cong; &oplus;<sub>[g]</sub> "
+               "HH<sup>n</sup>(A, <sub>g</sub>A)<sup>Z(g)</sup> "
+               "(&#350;tefan 1995; Shepler&ndash;Witherspoon 2012).</p>"
+               % (_esc(str(b.get("group_order"))), _esc(str(b.get("base_dim"))),
+                  _esc(str(b.get("dim")))))
+    if not b.get("char_ok", True):
+        out.append("<p class='ql-note'>%s Only the DIRECT HH of A&#8905;G is shown.</p>"
+                   % _esc(str(b.get("note") or "Modular case (char divides |G|).")))
+        if b.get("dims") is not None:
+            out.append(_dims_table("dim HH<sup>n</sup>(A&#8905;G)  [direct]", b["dims"]))
+        return out
+    for s in (b.get("decomposition") or []):
+        out.append("<p>Conjugacy class <strong>[%s]</strong>:</p>" % _esc(str(s.get("class"))))
+        out.append(_dims_table("dim HH<sup>n</sup>(A, <sub>g</sub>A)", s.get("hh") or []))
+        out.append(_dims_table("Z(g)-invariants  dim (&minus;)<sup>Z(g)</sup>",
+                               s.get("inv") or []))
+    out.append(_dims_table("assembled dim HH<sup>n</sup>(A&#8905;G)", b.get("dims") or []))
+    if b.get("direct_dims") is not None:
+        out.append(_dims_table("direct dim HH<sup>n</sup>(A&#8905;G)  [cross-check]",
+                               b["direct_dims"]))
+    agrees = b.get("agrees")
+    if agrees is not None:
+        out.append("<p>decomposition == direct: <strong>%s</strong>.</p>"
+                   % _esc(str(agrees)))
+    if b.get("status") and b["status"] != "complete":
+        out.append("<p class='ql-note'>status: %s%s</p>"
+                   % (_esc(str(b["status"])),
+                      (" &mdash; " + _esc(str(b["note"]))) if b.get("note") else ""))
     return out
 
 
@@ -1752,6 +1988,8 @@ def _block_html(kind, b, ctx=None):
         return _tau_tilting_html(b)
     if kind == "congruences":
         return _congruences_html(b)
+    if kind == "tau_cluster":
+        return _tau_cluster_html(b)
     if kind == "wall_chamber":
         return _wall_chamber_html(b)
     if kind == "silting":
@@ -1762,6 +2000,8 @@ def _block_html(kind, b, ctx=None):
         return _split_extension_html(b)
     if kind == "arrow_removal":
         return _arrow_removal_html(b)
+    if kind == "skew_group_hh":
+        return _skew_group_hh_html(b)
     if kind == "han_transport":
         return _han_transport_html(b)
     if kind == "recognizers":
@@ -1788,6 +2028,10 @@ def _block_html(kind, b, ctx=None):
         return _tame_wild_html(b)
     if kind == "hh1_lie":
         return _hh1_lie_html(b)
+    if kind == "hh_lie_module":
+        return _hh_lie_module_html(b)
+    if kind == "deformations":
+        return _deformations_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":
@@ -1798,6 +2042,8 @@ def _block_html(kind, b, ctx=None):
         return _decompose_html(b)
     if kind == "almost_split":
         return _almost_split_html(b)
+    if kind == "barcode":
+        return _barcode_html(b)
     if kind in ("ext", "tor"):
         op = "Ext^" if kind == "ext" else "Tor_"
         chunks = []
@@ -2474,6 +2720,78 @@ def _pmatrix(matrix):
         return "0"
     body = r" \\ ".join(" & ".join(str(x) for x in row) for row in rows)
     return r"\begin{pmatrix} %s \end{pmatrix}" % body
+
+
+def _barcode_html(b):
+    """The persistence/TDA barcode block (Plan 69 / R33): a one-line rep-theory framing,
+    an interval table (birth | death | multiplicity | essential | dim-vector), a simple
+    HTML bar diagram over the 1..n index axis (no new canvas), and -- for a commutative
+    ladder -- the AR-quiver-indexed generalized persistence diagram table."""
+    kind = b.get("kind", "persistence")
+    n = int(b.get("n") or 0)
+    field = b.get("field", "")
+    bars = b.get("bars") or []
+    out = []
+    if kind == "commutative_ladder":
+        out.append("<p>A persistence module on the commutative ladder "
+                   "<i>CL(%d) = A_%d &#9633; A_2</i> is a representation of this bound "
+                   "quiver; its <b>generalized persistence diagram</b> is the "
+                   "Krull&ndash;Schmidt decomposition indexed by the "
+                   "Auslander&ndash;Reiten quiver (Escolar&ndash;Hiraoka). Char-scoped: "
+                   "over %s (char 0 / char &gt; dim).</p>" % (n, n, _esc(field)))
+    else:
+        name = "zigzag module" if kind == "zigzag" else "persistence module"
+        out.append("<p>A %s over <i>A_%d</i> is a representation of the quiver "
+                   "<i>A_%d</i>; its <b>barcode</b> is the interval decomposition of "
+                   "<i>M</i> (Gabriel / Botnan&ndash;Crawley-Boevey), i.e. the support "
+                   "intervals of the Krull&ndash;Schmidt indecomposable summands. "
+                   "Field-robust over %s (interval modules are bricks). The filtration "
+                   "parameter is the discrete vertex index 1..%d; a top-reaching "
+                   "<i>forward</i> bar is <b>essential</b> (death = %d), never "
+                   "&infin;.</p>" % (name, n, n, _esc(field), n, n))
+    # (i) the interval table.
+    rows = ["<tr><th>birth</th><th>death</th><th>multiplicity</th>"
+            "<th>essential</th><th>dim vector</th></tr>"]
+    for bar in bars:
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                    % (_num(bar.get("birth")), _num(bar.get("death")),
+                       _num(bar.get("multiplicity")),
+                       "yes" if bar.get("essential") else "no",
+                       _esc(_dv(bar.get("dimvec") or {}))))
+    if len(rows) > 1:
+        out.append('<table class="ql-dims">%s</table>' % "".join(rows))
+    else:
+        out.append("<p class='ql-note'>no bars (the module is zero).</p>")
+    # (ii) a simple HTML bar diagram over the 1..n index axis (grey cells birth..death).
+    if n and bars:
+        diag = ["<tr><th></th>"]
+        for i in range(1, n + 1):
+            diag.append("<th>%d</th>" % i)
+        diag.append("</tr>")
+        for bi, bar in enumerate(bars):
+            birth, death = bar.get("birth"), bar.get("death")
+            cells = ["<th>[%s,%s]</th>" % (_num(birth), _num(death))]
+            for i in range(1, n + 1):
+                on = (isinstance(birth, int) and isinstance(death, int)
+                      and birth <= i <= death)
+                cells.append('<td style="background:%s">&nbsp;</td>'
+                             % ("#bbb" if on else "transparent"))
+            diag.append("<tr>%s</tr>" % "".join(cells))
+        out.append('<table class="ql-barcode">%s</table>' % "".join(diag))
+    # (iii) the CL AR-indexed generalized persistence diagram table.
+    if kind == "commutative_ladder" and b.get("diagram"):
+        drows = ["<tr><th>AR vertex</th><th>dim vector</th><th>multiplicity</th>"
+                 "<th>interval?</th></tr>"]
+        for e in b["diagram"]:
+            drows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                         % (_esc(str(e.get("ar_name"))),
+                            _esc(_dv(e.get("dimvec") or {})),
+                            _num(e.get("multiplicity")),
+                            "yes" if e.get("is_interval") else "no"))
+        out.append("<p><i>Generalized persistence diagram (indexed by the AR quiver of "
+                   "CL(%d)):</i></p>" % n)
+        out.append('<table class="ql-dims">%s</table>' % "".join(drows))
+    return out
 
 
 def _dv(dimvec):

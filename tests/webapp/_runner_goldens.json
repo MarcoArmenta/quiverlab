@@ -1614,6 +1614,249 @@
   "canonical_key": "eea52b45678f7e57c2677a4d973ec8d15ad5e8fb592276c1af622286daa25c73",
   "result_json": "{\"algebra\": {\"arrows\": {\"c\": [1, 2], \"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x^2\"], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Inert-arrow deletion (Def. 3.1) gives a clean HH_n isomorphism for n >= 2 (Thm 3.2) and a cohomology Ext-correction (Thm 4.2); arrow addition = the tensor algebra T_B(N), finite iff no relative cycle (Thm 3.5/3.6) -- the Plan-72 certified arrow-removal reduction and the P73 Han-conjecture seam.\", \"arxiv\": \"1812.07655\", \"arxiv_url\": \"https://arxiv.org/abs/1812.07655\", \"bibtex_key\": \"cibilslanzilottamarcossolotar2020\", \"doi\": \"10.1090/proc/14936\", \"doi_url\": \"https://doi.org/10.1090/proc/14936\", \"formatted\": \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2020). Deleting or adding arrows of a bound quiver algebra and Hochschild (co)homology. Proceedings of the American Mathematical Society 148, 2421-2432.\", \"key\": \"clms_arrow_removal\", \"topic\": \"Foundations\"}, {\"annotation\": \"Finite global dimension iff finite Hochschild homology dimension -- the conjecture the zoo scans probe.\", \"arxiv\": \"math/0408402\", \"arxiv_url\": \"https://arxiv.org/abs/math/0408402\", \"bibtex_key\": \"Han2006\", \"doi\": \"10.1112/S002461070602299X\", \"doi_url\": \"https://doi.org/10.1112/S002461070602299X\", \"formatted\": \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\", \"key\": \"han_conjecture\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"x\\\": (1, 1), \\\"c\\\": (1, 2)})\\nA = Q.algebra(relations=['x^2'], field=GF(7))\\nA.arrow_removal(top=4)\", \"results\": {\"arrow_removal\": {\"algebra\": \"Algebra of dimension 5 over GF(7)\", \"citations\": [[\"cibilslanzilottamarcossolotar2020\", \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2020). Deleting or adding arrows of a bound quiver algebra and Hochschild (co)homology. Proceedings of the American Mathematical Society 148, 2421-2432.\"], [\"Han2006\", \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\"]], \"coh_A\": [1, 1, 1, 1, 1], \"coh_B\": [3, 1, 1, 1, 1], \"coh_correction\": [0, 0, 0, 0, 0], \"coh_low_delta\": [-2, 0], \"hom_A\": [3, 1, 1, 1, 1], \"hom_B\": [3, 1, 1, 1, 1], \"hom_agrees\": true, \"hom_iso_from\": 2, \"hom_low_agrees\": [true, true], \"inert_certificate\": {\"c\": \"appears in no relation\"}, \"kind\": \"arrow_removal\", \"note\": \"\", \"reduced\": \"Algebra of dimension 3 over GF(7)\", \"references\": [\"clms_arrow_removal\", \"han_conjecture\"], \"removed\": [\"c\"], \"status\": \"complete\"}}}"
  },
+ "barcode_a5": {
+  "body": {
+   "schema": 2,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ],
+     "c": [
+      3,
+      4
+     ],
+     "d": [
+      4,
+      5
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "module": {
+    "dims": {
+     "1": 1,
+     "2": 2,
+     "3": 1,
+     "4": 2,
+     "5": 1
+    },
+    "maps": {
+     "a": [
+      [
+       1
+      ],
+      [
+       0
+      ]
+     ],
+     "b": [
+      [
+       1,
+       1
+      ]
+     ],
+     "c": [
+      [
+       1
+      ],
+      [
+       0
+      ]
+     ],
+     "d": [
+      [
+       1,
+       1
+      ]
+     ]
+    }
+   },
+   "compute": [
+    "barcode"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3], \"c\": [3, 4], \"d\": [4, 5]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2, 3, 4, 5]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Representation theory of the commutative ladder CL(n) = A_n [] A_2: rep-finite iff n <= 4 (the P69 scope boundary), with explicit AR quivers for n <= 4. TDA gloss: the generalized persistence diagram of a ladder persistence module is its AR-quiver-indexed Krull-Schmidt decomposition.\", \"arxiv\": \"1404.7588\", \"arxiv_url\": \"https://arxiv.org/abs/1404.7588\", \"bibtex_key\": \"EscolarHiraoka2016\", \"doi\": \"10.1007/s00454-015-9746-2\", \"doi_url\": \"https://doi.org/10.1007/s00454-015-9746-2\", \"formatted\": \"Escolar, Emerson G.; Hiraoka, Yasuaki (2016). Persistence Modules on Commutative Ladders of Finite Type. Discrete Comput. Geom. 55, 100-157.\", \"key\": \"escolar_hiraoka\", \"topic\": \"Foundations\"}, {\"annotation\": \"A pointwise-finite-dimensional persistence module over a totally ordered or zigzag poset decomposes uniquely into interval modules (Krull-Remak-Schmidt-Azumaya) -- the theorem that 'barcode = interval decomposition' is well-defined for A_n and zigzag lines.\", \"arxiv\": \"1811.08946\", \"arxiv_url\": \"https://arxiv.org/abs/1811.08946\", \"bibtex_key\": \"BotnanCrawleyBoevey2020\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Botnan, Magnus Bakke; Crawley-Boevey, William (2020). Decomposition of persistence modules. Proc. Amer. Math. Soc. 148, 4581-4596.\", \"key\": \"botnan_crawley_boevey\", \"topic\": \"Foundations\"}, {\"annotation\": \"Gabriel's theorem: the indecomposable representations of a type-A_n quiver are the interval (thin) modules = positive roots, each a brick (End = k) -- why the A_n / zigzag barcode is field-robust over every exact domain.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gabriel1972\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Gabriel, Peter (1972). Unzerlegbare Darstellungen I. Manuscripta Math. 6, 71-103.\", \"key\": \"gabriel\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3, 4, 5], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3), \\\"c\\\": (3, 4), \\\"d\\\": (4, 5)})\\nA = Q.algebra(relations=[], field=QQ)\\nM = A.module({1: 1, 2: 2, 3: 1, 4: 2, 5: 1}, {\\\"a\\\": [[0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]], \\\"b\\\": [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]], \\\"c\\\": [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]], \\\"d\\\": [[0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 1, 1, 0]]}, side=\\\"right\\\", name=\\\"M\\\")\\nfrom quiverlab.modules.barcode import barcode\\nbarcode(M)\", \"results\": {\"barcode\": {\"ar_status\": null, \"bars\": [{\"birth\": 1, \"death\": 5, \"dimvec\": {\"1\": 1, \"2\": 1, \"3\": 1, \"4\": 1, \"5\": 1}, \"essential\": true, \"multiplicity\": 1}, {\"birth\": 2, \"death\": 2, \"dimvec\": {\"2\": 1}, \"essential\": false, \"multiplicity\": 1}, {\"birth\": 4, \"death\": 4, \"dimvec\": {\"4\": 1}, \"essential\": false, \"multiplicity\": 1}], \"citations\": [[\"EscolarHiraoka2016\", \"Escolar, Emerson G.; Hiraoka, Yasuaki (2016). Persistence Modules on Commutative Ladders of Finite Type. Discrete Comput. Geom. 55, 100-157.\"], [\"BotnanCrawleyBoevey2020\", \"Botnan, Magnus Bakke; Crawley-Boevey, William (2020). Decomposition of persistence modules. Proc. Amer. Math. Soc. 148, 4581-4596.\"], [\"Gabriel1972\", \"Gabriel, Peter (1972). Unzerlegbare Darstellungen I. Manuscripta Math. 6, 71-103.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"diagram\": null, \"field\": \"QQ\", \"field_robust\": true, \"kind\": \"persistence\", \"n\": 5, \"references\": [\"escolar_hiraoka\", \"botnan_crawley_boevey\", \"gabriel\", \"assem_book\"]}}}",
+  "canonical_key": "edb62299887a3264071edb320191216ed0fea6505c94a2527a83c1348251486c"
+ },
+ "hh_lie_module_kronecker": {
+  "body": {
+   "algebra": {
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      1,
+      2
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    },
+    "kind": "quiver",
+    "relations": [],
+    "vertices": [
+     1,
+     2
+    ]
+   },
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   },
+   "compute": [
+    "hh_lie_module:0..2"
+   ],
+   "schema": 2
+  },
+  "canonical_key": "806d4d1bb8b72079acde7693e5b37ce169ac32d5323d7a97c43b385b3cd5562f",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Artenstein-Lanzilotta-Solotar: toupie = unique source/sink + a parallel branches; a-Kronecker HH^* = [1, a^2-1, 0, ..]; HH^1 contains sl_a (char 0), a = # direct source->sink arrows.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ArtensteinLanzilottaSolotar2020\", \"doi\": \"10.1007/s10468-019-09854-y\", \"doi_url\": \"https://doi.org/10.1007/s10468-019-09854-y\", \"formatted\": \"Artenstein, Dalia; Lanzilotta, Marcelo; Solotar, Andrea (). Gerstenhaber structure on Hochschild cohomology of toupie algebras. Algebras and Representation Theory 23}, number = {2}, pages = {421--456}, year = {2020.\", \"key\": \"alsolotar_toupie\", \"topic\": \"Families\"}, {\"annotation\": \"Meinel-Nguyen-Pauwels-Redondo-Solotar: HH^1 is a direct sum of copies of a subquotient of the Virasoro algebra, and each HH^n is described as a module over this Lie algebra by its decomposition into indecomposable summands -- the char-0 indecomposable-summand deliverable of Plan 71.\", \"arxiv\": \"1803.10909\", \"arxiv_url\": \"https://arxiv.org/abs/1803.10909\", \"bibtex_key\": \"MeinelNguyenPauwelsRedondoSolotar2021\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Meinel, Joanna; Nguyen, Van C.; Pauwels, Bregje; Redondo, Mar'ia Julia; Solotar, Andrea (2021). The Gerstenhaber structure on the Hochschild cohomology of a class of special biserial algebras. J. Algebra 580, 264-298.\", \"key\": \"mnprs_special_biserial\", \"topic\": \"Foundations\"}, {\"annotation\": \"Chaparro-Schroll-Solotar-Suarez-Alvarez: the whole Tamarkin-Tsygan calculus of gentle algebras -- HH^* as a graded-commutative algebra and a graded Lie algebra, with HH_* a module over HH^*; the Lie-module-over-HH^1 structure Plan 71 computes is one facet, and gentle algebras are its literature anchor.\", \"arxiv\": \"2311.08003\", \"arxiv_url\": \"https://arxiv.org/abs/2311.08003\", \"bibtex_key\": \"ChaparroSchrollSolotarSuarezAlvarez2026\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea; Su'arez-'Alvarez, Mariano (2026). The Hochschild cohomology and the Tamarkin-Tsygan calculus of gentle algebras. J. Algebra 708, 138-231.\", \"key\": \"csss_gentle_tt\", \"topic\": \"Foundations\"}, {\"annotation\": \"Gerstenhaber: the graded Lie bracket on HH^*; in degree 1 it is the commutator of derivations and descends to HH^1 = Der/Inn -- the identity that makes the field-general Der/Inn route the Gerstenhaber Lie structure.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Gerstenhaber1963\", \"doi\": \"10.2307/1970343\", \"doi_url\": \"https://doi.org/10.2307/1970343\", \"formatted\": \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\", \"key\": \"gerstenhaber1963\", \"topic\": \"Foundations\"}, {\"annotation\": \"Rubio y Degrassi-Schroll-Solotar: the no-loops/no-parallel-arrows Ext-quiver criterion => HH^1 solvable, in arbitrary characteristic (Plan 70's RSS solvability certificate).\", \"arxiv\": \"1903.12145\", \"arxiv_url\": \"https://arxiv.org/abs/1903.12145\", \"bibtex_key\": \"RSS2023hh1lie\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Rubio y Degrassi, Lleonard; Schroll, Sibylle; Solotar, Andrea (2023). The first Hochschild cohomology as a Lie algebra. Quaest. Math..\", \"key\": \"rss_hh1_lie\", \"topic\": \"Foundations\"}, {\"annotation\": \"de Graaf: the algorithms behind the char-0 classification -- solvable radical rad = [L,L]^perp, Levi-Malcev decomposition, and direct-sum-of-simple-ideals type of a semisimple Lie algebra.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"deGraaf2000\", \"doi\": null, \"doi_url\": null, \"formatted\": \"de Graaf, Willem A. (2000). Lie Algebras: Theory and Algorithms. Elsevier 56.\", \"key\": \"degraaf_lie\", \"topic\": \"Algorithms\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.hh_lie_module(top=2)\", \"results\": {\"hh_lie_module\": {\"char0_note\": null, \"characteristic\": 0, \"citations\": [[\"ArtensteinLanzilottaSolotar2020\", \"Artenstein, Dalia; Lanzilotta, Marcelo; Solotar, Andrea (). Gerstenhaber structure on Hochschild cohomology of toupie algebras. Algebras and Representation Theory 23}, number = {2}, pages = {421--456}, year = {2020.\"], [\"MeinelNguyenPauwelsRedondoSolotar2021\", \"Meinel, Joanna; Nguyen, Van C.; Pauwels, Bregje; Redondo, Mar'ia Julia; Solotar, Andrea (2021). The Gerstenhaber structure on the Hochschild cohomology of a class of special biserial algebras. J. Algebra 580, 264-298.\"], [\"ChaparroSchrollSolotarSuarezAlvarez2026\", \"Chaparro, Cristian; Schroll, Sibylle; Solotar, Andrea; Su'arez-'Alvarez, Mariano (2026). The Hochschild cohomology and the Tamarkin-Tsygan calculus of gentle algebras. J. Algebra 708, 138-231.\"], [\"Gerstenhaber1963\", \"Gerstenhaber, Murray (1963). The cohomology structure of an associative ring. Annals of Mathematics. Second Series 78, 267-288.\"], [\"RSS2023hh1lie\", \"Rubio y Degrassi, Lleonard; Schroll, Sibylle; Solotar, Andrea (2023). The first Hochschild cohomology as a Lie algebra. Quaest. Math..\"], [\"deGraaf2000\", \"de Graaf, Willem A. (2000). Lie Algebras: Theory and Algorithms. Elsevier 56.\"]], \"hh1_dim\": 3, \"hh_dims\": [1, 3, 0], \"inner_acts_zero\": true, \"kind\": \"hh_lie_module\", \"module_axiom_ok\": true, \"note\": \"action = the Gerstenhaber degree-1 bracket [D, -] = the Lie derivative L_D; on the normalized bar complex L_D equals the shipped degree-(1,n) Gerstenhaber bracket by the p=1 Koszul-sign collapse, verified cochain-for-cochain over GF(p) as a cross-engine oracle.\", \"references\": [\"alsolotar_toupie\", \"mnprs_special_biserial\", \"csss_gentle_tt\", \"gerstenhaber1963\", \"rss_hh1_lie\", \"degraaf_lie\"], \"status\": \"complete\", \"summands\": [{\"n\": 0, \"parts\": [{\"dim\": 1, \"label\": null, \"mult\": 1}]}, {\"n\": 1, \"parts\": [{\"dim\": 3, \"label\": null, \"mult\": 1}]}, {\"n\": 2, \"parts\": []}], \"top\": 2, \"torus_provenance\": \"basis-maximal ad-diagonalizable abelian subalgebra (dim 1) = the ad-semisimple part of a Cartan subalgebra of HH^1 + a greedy radical-toral extension over the HH^1 basis directions; each generator ad-semisimple, the whole set certified abelian and basis-maximal (a combination-level maximal torus is honest-scope). Basis-dependent: the normalization of each generator is a choice -- weight LABELS are provenance, the P70 sl2-triple NON-NORMATIVE precedent)\", \"weight_base_change_note\": null, \"weights\": [{\"n\": 0, \"torus_rank\": 1, \"weights\": [[[\"0\"], 1]]}, {\"n\": 1, \"torus_rank\": 1, \"weights\": [[[\"1\"], 1], [[\"0\"], 1], [[\"-1\"], 1]]}, {\"n\": 2, \"torus_rank\": 1, \"weights\": []}]}}}"
+ },
+ "skew_group_hh_z2dual": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "family",
+    "family": "SkewGroupAlgebra",
+    "params": {
+     "vertices": [
+      1
+     ],
+     "arrows": {
+      "x": [
+       1,
+       1
+      ]
+     },
+     "relations": [
+      "x*x"
+     ],
+     "generators": [
+      {
+       "vertex_perm": {
+        "1": 1
+       },
+       "arrow_perm": {
+        "x": "x"
+       },
+       "arrow_scalars": {
+        "x": -1
+       }
+      }
+     ]
+    },
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "skew_group_hh:3"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "c9e586a31226ba9a1a6f353fa5ce94380590dbdd6937934365a4a6de765313f3",
+  "result_json": "{\"algebra\": {\"family\": \"SkewGroupAlgebra\", \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"family\", \"params\": {\"arrows\": {\"x\": [1, 1]}, \"generators\": [{\"arrow_perm\": {\"x\": \"x\"}, \"arrow_scalars\": {\"x\": -1}, \"vertex_perm\": {\"1\": 1}}], \"relations\": [\"x*x\"], \"vertices\": [1]}}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Stefan: the spectral sequence for a Hopf-Galois extension; for H = kG a group algebra it decomposes along the conjugacy classes of G -- the origin of the skew-group HH conjugacy-class decomposition (Plan 74).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"StefanHopfGalois1995\", \"doi\": null, \"doi_url\": null, \"formatted\": \"cStefan, Dragocs (1995). Hochschild cohomology on Hopf Galois extensions. J. Pure Appl. Algebra 103, 221-233.\", \"key\": \"stefan_hopf_galois\", \"topic\": \"Foundations\"}, {\"annotation\": \"Shepler-Witherspoon: the additive conjugacy-class decomposition of HH^*(A rtimes G) with the Z(g)-invariants -- the load-bearing anchor for quiverlab's Stefan decomposition (Plan 74).\", \"arxiv\": \"0911.0938\", \"arxiv_url\": \"https://arxiv.org/abs/0911.0938\", \"bibtex_key\": \"SheplerWitherspoonGroupActions\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Shepler, Anne V.; Witherspoon, Sarah (2012). Group actions on algebras and the graded Lie structure of Hochschild cohomology. J. Algebra 351, 350-381.\", \"key\": \"shepler_witherspoon_group_actions\", \"topic\": \"Foundations\"}, {\"annotation\": \"Cibils-Marcos: the smash-product / skew-category construction, the free action, and the Galois covering -- the constructor + free-action anchor for A rtimes G (Plan 74).\", \"arxiv\": \"math/0312214\", \"arxiv_url\": \"https://arxiv.org/abs/math/0312214\", \"bibtex_key\": \"CibilsMarcosSmash2006\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Cibils, Claude; Marcos, Eduardo N. (2006). Skew category, Galois covering and smash product of a $k$-category. Proc. Amer. Math. Soc. 134, 39-50.\", \"key\": \"cibils_marcos_smash\", \"topic\": \"Foundations\"}, {\"annotation\": \"Marcos-Martinez-Villa-Martins: the ring monomorphism HH^*(A)^G into HH^*(A rtimes G) -- the identity-summand self-certificate for the skew-group decomposition (Plan 74).\", \"arxiv\": \"math/0312460\", \"arxiv_url\": \"https://arxiv.org/abs/math/0312460\", \"bibtex_key\": \"MarcosMartinezVillaMartinsInvariants\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Marcos, Eduardo N.; Mart'inez-Villa, Roberto; Martins, Maria Izabel Ramalho (2004). Hochschild cohomology of skew group rings and invariants.\", \"key\": \"marcos_mv_invariants\", \"topic\": \"Foundations\"}, {\"annotation\": \"The textbook derivation of the homotopy-lifting Gerstenhaber bracket (the expository anchor for quiverlab's native CS bracket).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"WitherspoonGSM204\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Witherspoon, Sarah J. (2019). Hochschild Cohomology for Algebras. American Mathematical Society 204.\", \"key\": \"witherspoon_gsm204\", \"topic\": \"Foundations\"}], \"reproduce\": \"import quiverlab as ql\\nfrom quiverlab.fields import QQ\\nfrom quiverlab.families.skew_group import build_skew_group_from_params\\nA = build_skew_group_from_params({'vertices': [1], 'arrows': {'x': [1, 1]}, 'relations': ['x*x'], 'generators': [{'vertex_perm': {'1': 1}, 'arrow_perm': {'x': 'x'}, 'arrow_scalars': {'x': -1}}]}, QQ)\\nstefan_decomposition(base, action, 3)  # from quiverlab.hochschild.skew_group\", \"results\": {\"skew_group_hh\": {\"agrees\": true, \"base_dim\": 2, \"char_ok\": true, \"citations\": [[\"StefanHopfGalois1995\", \"cStefan, Dragocs (1995). Hochschild cohomology on Hopf Galois extensions. J. Pure Appl. Algebra 103, 221-233.\"], [\"SheplerWitherspoonGroupActions\", \"Shepler, Anne V.; Witherspoon, Sarah (2012). Group actions on algebras and the graded Lie structure of Hochschild cohomology. J. Algebra 351, 350-381.\"], [\"CibilsMarcosSmash2006\", \"Cibils, Claude; Marcos, Eduardo N. (2006). Skew category, Galois covering and smash product of a $k$-category. Proc. Amer. Math. Soc. 134, 39-50.\"], [\"MarcosMartinezVillaMartinsInvariants\", \"Marcos, Eduardo N.; Mart'inez-Villa, Roberto; Martins, Maria Izabel Ramalho (2004). Hochschild cohomology of skew group rings and invariants.\"], [\"WitherspoonGSM204\", \"Witherspoon, Sarah J. (2019). Hochschild Cohomology for Algebras. American Mathematical Society 204.\"]], \"decomposition\": [{\"class\": \"e\", \"hh\": [2, 1, 1, 1], \"inv\": [1, 1, 1, 1]}, {\"class\": \"g1\", \"hh\": [1, 1, 1, 1], \"inv\": [0, 0, 0, 0]}], \"dim\": 4, \"dims\": [1, 1, 1, 1], \"direct_dims\": [1, 1, 1, 1], \"group_order\": 2, \"kind\": \"skew_group_hh\", \"note\": null, \"references\": [\"stefan_hopf_galois\", \"shepler_witherspoon_group_actions\", \"cibils_marcos_smash\", \"marcos_mv_invariants\", \"witherspoon_gsm204\"], \"side\": \"coh\", \"status\": \"complete\"}}}"
+ },
+ "tau_cluster_kA2": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ]
+    },
+    "relations": [],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "tau_cluster:512"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "87504cf8d202daa7d5c378f786eebfcc876825cfcb0d9de88b3425d7f587bc01",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Buan-Marsh: DEFINES the tau-cluster morphism category W(A) -- objects are the tau-perpendicular wide subcategories, morphisms are support tau-rigid pairs of the source with target the tau-perpendicular category (via the Jasso reduction), morphisms factor as signed tau-exceptional sequences. Plan 66's category-structure ground truth.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"BuanMarsh2021wide\", \"doi\": \"10.1093/imrn/rnz082\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnz082\", \"formatted\": \"Buan, Aslak Bakke; Marsh, Robert J. (2021). A category of wide subcategories. Int. Math. Res. Not. IMRN 2021, 10278-10338.\", \"key\": \"buan_marsh_wide\", \"topic\": \"Foundations\"}, {\"annotation\": \"Hanson-Igusa: the classifying space of W(A) is a cube complex (one n-cube per support tau-tilting object); it is a K(pi,1) for Nakayama algebras; pi_1 is the picture group. Plan 66's cube-complex face vector, the Nakayama K(pi,1) verdict, and the picture group.\", \"arxiv\": \"1809.08989\", \"arxiv_url\": \"https://arxiv.org/abs/1809.08989\", \"bibtex_key\": \"HansonIgusa2021\", \"doi\": \"10.1080/00927872.2021.1921184\", \"doi_url\": \"https://doi.org/10.1080/00927872.2021.1921184\", \"formatted\": \"Hanson, Eric J.; Igusa, Kiyoshi (2021). $tau$-cluster morphism categories and picture groups. Comm. Algebra 49, 4376-4415.\", \"key\": \"hanson_igusa\", \"topic\": \"Foundations\"}, {\"annotation\": \"Igusa-Todorov-Weyman: the picture group PRESENTATION -- one generator x(beta) per brick (positive real Schur root), relations per rank-2 configuration (commutation for k x k, the atom/pentagon relation for connected rank-2 wides); the CW complex with cells in bijection with cluster-tilting objects (Catalan-many). Plan 66's presentation ground truth.\", \"arxiv\": \"1609.02636\", \"arxiv_url\": \"https://arxiv.org/abs/1609.02636\", \"bibtex_key\": \"IgusaTodorovWeyman2016\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Igusa, Kiyoshi; Todorov, Gordana; Weyman, Jerzy (2016). Picture groups of finite type and cohomology in type $A_n$. arXiv preprint.\", \"key\": \"igusa_todorov_weyman\", \"topic\": \"Foundations\"}, {\"annotation\": \"Igusa-Todorov: the cluster morphism category is a CAT(0) category for hereditary algebras of finite (Dynkin) or tame type with only small tubes, so its classifying space is locally CAT(0) hence a K(pi,1). Plan 66's specific anchor for the HEREDITARY-DYNKIN K(pi,1) verdict (distinct from the ITW type-A_n presentation paper), and the honest-scope context for why the general tau-tilting-finite case is delicate (CAT(0) is proven only for hereditary finite/tame type, not the general algebra).\", \"arxiv\": \"2203.16679\", \"arxiv_url\": \"https://arxiv.org/abs/2203.16679\", \"bibtex_key\": \"IgusaTodorov2022cat0\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Igusa, Kiyoshi; Todorov, Gordana (2022). Which cluster morphism categories are CAT(0). arXiv preprint.\", \"key\": \"igusa_todorov_cat0\", \"topic\": \"Foundations\"}, {\"annotation\": \"Enomoto: the kappa order (extended kappa map of Barnard-Todorov-Zhu) and the core label order on a completely semidistributive lattice coincide and are isomorphic to the poset of wide subcategories. Plan 64's core-label-order = wide-subcategory computation.\", \"arxiv\": \"2201.00595\", \"arxiv_url\": \"https://arxiv.org/abs/2201.00595\", \"bibtex_key\": \"Enomoto2023wide\", \"doi\": \"10.1007/s10468-023-10214-0\", \"doi_url\": \"https://doi.org/10.1007/s10468-023-10214-0\", \"formatted\": \"Enomoto, Haruhisa (2023). From the lattice of torsion classes to the posets of wide subcategories and ICE-closed subcategories. Algebras and Representation Theory.\", \"key\": \"enomoto_wide_ice\", \"topic\": \"Foundations\"}, {\"annotation\": \"Jasso: the tau-perpendicular category J(U) ~ mod C(U), rank n-|U| (the DIJ idempotent quotient) -- the recursion engine for tau-exceptional sequences.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"Jasso2015\", \"doi\": \"10.1093/imrn/rnu163\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnu163\", \"formatted\": \"Jasso, Gustavo (2015). Reduction of $tau$-tilting modules and torsion pairs. Int. Math. Res. Not. IMRN, 7190-7237.\", \"key\": \"jasso_reduction\", \"topic\": \"Foundations\"}, {\"annotation\": \"Adachi-Iyama-Reiten: support tau-tilting pairs, mutation, the exchange graph, g-vectors, and the bijection with functorially finite torsion classes -- the ground truth for the Plan-45 / C4 tau-tilting engine.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"AIR2014\", \"doi\": \"10.1112/S0010437X13007422\", \"doi_url\": \"https://doi.org/10.1112/S0010437X13007422\", \"formatted\": \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\", \"key\": \"air_tau_tilting\", \"topic\": \"Foundations\"}, {\"annotation\": \"DIJ: tau-tilting-finiteness <=> finite g-fan <=> finitely many bricks; the counting identities and the wall-and-chamber / g-vector fan (Plan 45 / C4).\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"DIJ2019\", \"doi\": \"10.1093/imrn/rnx135\", \"doi_url\": \"https://doi.org/10.1093/imrn/rnx135\", \"formatted\": \"Demonet, Laurent; Iyama, Osamu; Jasso, Gustavo (2019). $tau$-tilting finite algebras, bricks, and $g$-vectors. International Mathematics Research Notices 2019, 852-892.\", \"key\": \"demonet_iyama_jasso\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"a\\\": (1, 2)})\\nA = Q.algebra(relations=[], field=QQ)\\nA.tau_cluster_category(budget=512); A.picture_group(budget=512)\", \"results\": {\"tau_cluster\": {\"category\": {\"euler_characteristic\": -1, \"face_vector\": [5, 11, 5], \"g_fan_face_vector\": [1, 5, 5], \"is_kpi1\": true, \"kpi1_reason\": \"Nakayama (Hanson-Igusa)\", \"morphism_count\": 21, \"morphisms_by_rank\": {\"0\": 5, \"1\": 11, \"2\": 5}, \"object_count\": 5, \"objects_by_rank\": {\"0\": 1, \"1\": 3, \"2\": 1}}, \"citations\": [[\"BuanMarsh2021wide\", \"Buan, Aslak Bakke; Marsh, Robert J. (2021). A category of wide subcategories. Int. Math. Res. Not. IMRN 2021, 10278-10338.\"], [\"HansonIgusa2021\", \"Hanson, Eric J.; Igusa, Kiyoshi (2021). $tau$-cluster morphism categories and picture groups. Comm. Algebra 49, 4376-4415.\"], [\"IgusaTodorovWeyman2016\", \"Igusa, Kiyoshi; Todorov, Gordana; Weyman, Jerzy (2016). Picture groups of finite type and cohomology in type $A_n$. arXiv preprint.\"], [\"IgusaTodorov2022cat0\", \"Igusa, Kiyoshi; Todorov, Gordana (2022). Which cluster morphism categories are CAT(0). arXiv preprint.\"], [\"Enomoto2023wide\", \"Enomoto, Haruhisa (2023). From the lattice of torsion classes to the posets of wide subcategories and ICE-closed subcategories. Algebras and Representation Theory.\"], [\"Jasso2015\", \"Jasso, Gustavo (2015). Reduction of $tau$-tilting modules and torsion pairs. Int. Math. Res. Not. IMRN, 7190-7237.\"], [\"AIR2014\", \"Adachi, Takahide; Iyama, Osamu; Reiten, Idun (2014). $tau$-tilting theory. Compositio Mathematica 150, 415-452.\"], [\"DIJ2019\", \"Demonet, Laurent; Iyama, Osamu; Jasso, Gustavo (2019). $tau$-tilting finite algebras, bricks, and $g$-vectors. International Mathematics Research Notices 2019, 852-892.\"]], \"complete\": true, \"kind\": \"tau_cluster\", \"n\": 2, \"note\": null, \"picture_group\": {\"abelianization\": [], \"abelianization_rank\": 2, \"generators\": [{\"dimvec\": {\"1\": 1}, \"name\": \"S1\"}, {\"dimvec\": {\"2\": 1}, \"name\": \"S2\"}, {\"dimvec\": {\"1\": 1, \"2\": 1}, \"name\": \"P1\"}], \"num_atom\": 1, \"num_commutation\": 0, \"num_generators\": 3, \"num_relations\": 1, \"relations\": [{\"ext_brick\": {\"dimvec\": {\"1\": 1, \"2\": 1}, \"name\": \"P1\"}, \"simple_bricks\": [{\"dimvec\": {\"1\": 1}, \"name\": \"S1\"}, {\"dimvec\": {\"2\": 1}, \"name\": \"S2\"}], \"type\": \"atom\", \"word\": \"x_{S1} x_{S2} = x_{S1} x_{P1} x_{S2}\"}]}, \"references\": [\"buan_marsh_wide\", \"hanson_igusa\", \"igusa_todorov_weyman\", \"igusa_todorov_cat0\", \"enomoto_wide_ice\", \"jasso_reduction\", \"air_tau_tilting\", \"demonet_iyama_jasso\"], \"status\": \"complete\"}}}"
+ },
+ "deformations_radsq3": {
+  "body": {
+   "schema": 2,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3
+    ],
+    "arrows": {
+     "a": [
+      1,
+      2
+     ],
+     "b": [
+      2,
+      3
+     ],
+     "c": [
+      3,
+      1
+     ]
+    },
+    "relations": [
+     "a*b",
+     "b*c",
+     "c*a"
+    ],
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "deformations"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "7101b50c6a7ee15d6ce980d8a94524962b8d6bbceaf5a1a10652b192954f998f",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [1, 2], \"b\": [2, 3], \"c\": [3, 1]}, \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"quiver\", \"relations\": [\"a*b\", \"b*c\", \"c*a\"], \"vertices\": [1, 2, 3]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Redondo-Rossi Bertone: the explicit L-infinity structure on B(A) for a monomial char-0 algebra (weakly equivalent to the Hochschild complex C(A)), the Maurer-Cartan equation in degree 2, and the rad^2=0 => B(A) is a dg-Lie algebra collapse -- Plan 78's rad^2=0 dg-Lie certificate and the higher-l_n route.\", \"arxiv\": \"2008.08122\", \"arxiv_url\": \"https://arxiv.org/abs/2008.08122\", \"bibtex_key\": \"RedondoRossiBertone2022linfty\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Redondo, Mar'ia Julia; Rossi Bertone, Fiorela (2022). $L_infty$-structure on Bardzell's complex for monomial algebras. J. Pure Appl. Algebra 226, Paper No. 106935.\", \"key\": \"rrb_linfty_bardzell\", \"topic\": \"Foundations\"}, {\"annotation\": \"Muller-Redondo-Rossi Bertone-Suarez: under quiver hypotheses on a gentle A=kQ/I the L-infinity structure on B(A)[1] is nilpotent and the Maurer-Cartan set equals the 2-cocycles Z^2 (every infinitesimal deformation integrates) -- Plan 78's nilpotent-regime MC=Z^2 gate.\", \"arxiv\": \"2309.02582\", \"arxiv_url\": \"https://arxiv.org/abs/2309.02582\", \"bibtex_key\": \"MullerRedondoRossiBertoneSuarez2025\", \"doi\": null, \"doi_url\": null, \"formatted\": \"M\\\"uller, Monique; Redondo, Mar'ia Julia; Rossi Bertone, Fiorela; Suarez, Pamela (2025). Maurer-Cartan equation for gentle algebras. Comm. Algebra 53, 3984-4007.\", \"key\": \"mrrs_mc_gentle\", \"topic\": \"Foundations\"}, {\"annotation\": \"Redondo-Roman-Rossi Bertone-Verdecchia: the transfer of infinitesimal deformations HH^2(A)<->HH^2(B) under Morita equivalence, and (over an algebraically closed field) the presentation by quiver and relations of the infinitesimal deformations -- Plan 78's presented deformed algebra A_alpha.\", \"arxiv\": \"2003.10366\", \"arxiv_url\": \"https://arxiv.org/abs/2003.10366\", \"bibtex_key\": \"RedondoRomanRossiBertoneVerdecchia2020\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Redondo, Mar'ia Julia; Rom'an, Lucrecia; Rossi Bertone, Fiorela; Verdecchia, Melina (2020). Morita invariance for infinitesimal deformations.\", \"key\": \"rrrv_morita_deform\", \"topic\": \"Foundations\"}, {\"annotation\": \"Redondo-Roman-Rossi Bertone (three authors): the algebra structure of the Ext-algebra of an infinitesimal deformation A_f, described (under conditions on f) in terms of the Ext-algebra of A -- Plan 78's Ext-algebra handoff on A_alpha.\", \"arxiv\": \"2202.01199\", \"arxiv_url\": \"https://arxiv.org/abs/2202.01199\", \"bibtex_key\": \"RedondoRomanRossiBertone2022ext\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Redondo, Mar'ia Julia; Rom'an, Lucrecia; Rossi Bertone, Fiorela (2022). The Ext-algebra for infinitesimal deformations.\", \"key\": \"rrr_ext_deform\", \"topic\": \"Foundations\"}, {\"annotation\": \"Chouhy: the degeneration relation on associative-algebra varieties described via Gerstenhaber formal deformations, with N-Koszulity preserved under degeneration -- the geometric reading of A ~> A_alpha in Plan 78.\", \"arxiv\": \"1708.02933\", \"arxiv_url\": \"https://arxiv.org/abs/1708.02933\", \"bibtex_key\": \"Chouhy2019degeneration\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Chouhy, Sergio (2019). On geometric degenerations and Gerstenhaber formal deformations. Bull. Lond. Math. Soc..\", \"key\": \"chouhy_degeneration\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver\\nfrom quiverlab.fields import QQ\\n\\nQ = Quiver(vertices=[1, 2, 3], arrows={\\\"a\\\": (1, 2), \\\"b\\\": (2, 3), \\\"c\\\": (3, 1)})\\nA = Q.algebra(relations=['a*b', 'b*c', 'c*a'], field=QQ)\\nA.deformation_structure()\", \"results\": {\"deformations\": {\"a_alpha\": null, \"base_change_note\": null, \"char0_note\": null, \"characteristic\": 0, \"citations\": [[\"RedondoRossiBertone2022linfty\", \"Redondo, Mar'ia Julia; Rossi Bertone, Fiorela (2022). $L_infty$-structure on Bardzell's complex for monomial algebras. J. Pure Appl. Algebra 226, Paper No. 106935.\"], [\"MullerRedondoRossiBertoneSuarez2025\", \"M\\\"uller, Monique; Redondo, Mar'ia Julia; Rossi Bertone, Fiorela; Suarez, Pamela (2025). Maurer-Cartan equation for gentle algebras. Comm. Algebra 53, 3984-4007.\"], [\"RedondoRomanRossiBertoneVerdecchia2020\", \"Redondo, Mar'ia Julia; Rom'an, Lucrecia; Rossi Bertone, Fiorela; Verdecchia, Melina (2020). Morita invariance for infinitesimal deformations.\"], [\"RedondoRomanRossiBertone2022ext\", \"Redondo, Mar'ia Julia; Rom'an, Lucrecia; Rossi Bertone, Fiorela (2022). The Ext-algebra for infinitesimal deformations.\"], [\"Chouhy2019degeneration\", \"Chouhy, Sergio (2019). On geometric degenerations and Gerstenhaber formal deformations. Bull. Lond. Math. Soc..\"]], \"dg_lie\": true, \"ext_algebra_summary\": null, \"hh2_dim\": 0, \"hh3_dim\": 0, \"kind\": \"deformations\", \"l3_status\": \"dg_lie\", \"mc_description\": \"MC = {0}: HH^2 = 0, no nontrivial infinitesimal deformations\", \"mc_order_certified\": 2, \"nilpotent_regime\": null, \"note\": \"B(A)'s transferred l_2 induces the Gerstenhaber bracket on HH (the L-infinity quasi-isomorphism B(A) ~ C(A) is a theorem, rrb_linfty_bardzell section 4); this is stated as the model-independence THEOREM, cited -- not a computed check, since no B(A) l_2 adapter is built in v1.\", \"obstruction_witness\": null, \"references\": [\"rrb_linfty_bardzell\", \"mrrs_mc_gentle\", \"rrrv_morita_deform\", \"rrr_ext_deform\", \"chouhy_degeneration\"], \"status\": \"complete\", \"unobstructed\": true, \"window_note\": \"MC truncation order is bounded by the `order` parameter of maurer_cartan (default 2 -- the primary obstruction); the native CS bracket has no degree window.\"}}}"
+ },
  "han_transport_ex53": {
   "body": {
    "schema": 1,

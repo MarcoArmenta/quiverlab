@@ -449,6 +449,37 @@ planned together even if delivered in slices.
   bimodule-`Ext` engine realizing the CMRS Cor-3.2 graded decomposition
   `HH^n(L,X)=⊕_{p+q=n} Ext^q_{B^e}(M^{⊗_B p},X)` term-by-term — the genuine `⊗_B`
   ACCELERATION (the LES-over-`L` route surfaces only the `p=0` leading piece today).
+- [ ] **P74 skew-group covering-reduction HH transport (deferred, for a P74-followup).**
+  Plan 74 ships the free-action DETECTION (`is_free_action`) and the genuine free-orbit
+  ORACLE (`Z/2`-swap on the 2-cycle Nakayama → `presented_form = k[x]/(x²)`, HH matches
+  the orbit algebra), but NOT the general Galois-`G`-covering HH reduction
+  `HH^•(A⋊G) ≅ HH^•(A/G)`-style transport (Cibils–Marcos math/0312214) for an arbitrary
+  free action. The Ştefan conjugacy-class decomposition already delivers the HH answer
+  within scope (`char k ∤ |G|`), so the covering route is a redundancy/acceleration, not a
+  gap. A followup can add the orbit-algebra `A/G` builder + the covering HH iso for free
+  actions (and, beyond that, the modular `char | |G|` bracket-twisted route of
+  Shepler–Witherspoon 1905.09613, out of the Ştefan scope entirely).
+- [ ] **P78 char-0 Bardzell `ℓ₃`/`ℓ_n` on `B(A)[1]` (the L∞ higher brackets, for P80).**
+  The Plan-78 feasibility spike (Task 4 Step 1) FROZE the general `ℓ₃`: RRB's
+  homotopy-transfer `ℓ₃` (`rrb_linfty_bardzell`, arXiv:2008.08122) needs the FULL L∞
+  transfer machinery — the explicit contracting homotopy of Bardzell's complex + the
+  tree-summed transferred bracket — beyond one plan. v1 shipped only (a) the **rad²=0
+  dg-Lie certificate** (`ℓ_{≥3}≡0`, unconditional, `dg_lie_certificate`) and (b) the
+  induced-`ℓ₂` ≡ CS-bracket **model-independence theorem statement** (§4, cited, NOT a
+  computed self-cert — no `B(A)` `ℓ₂` adapter is built). Deferred (P80 reconciles): the
+  char-0 Bardzell `B(A)` L∞ adapter (reuse the field-free `MonomialPresentation`
+  combinatorics + the ±1 differential over ℚ), the monomial `ℓ₃` validated against RRB's
+  truncated computations, the induced-`ℓ₂` computed crossengine self-cert (needs the
+  adapter, M1 ruling), and `ℓ₄` (NEVER claimed zero — "ℓ_n=0 for n≥5" is only a
+  sufficient collapse condition; honest L∞). `l3_bracket` returns `status="deferred"`
+  today. The deformation FUNCTOR (HH²/obstruction/MC/`A_α`) is complete on the DGLA
+  `C(A)` via CS-over-ℚ — this deferral is the small-model enrichment only.
+- [ ] **P78 GUI `A_α`-adopt flow (schema-heavy, for P80, needs Marco's sign-off).** v1
+  ships the presented deformed algebra `A_α` as **display-only** (quiver + deformed
+  relations rendered in the `deformations` block). The **adopt** flow — load `A_α` back
+  onto the canvas as a fresh quiver+relations input the canvas ingests — is a new
+  schema surface (the GUI-deferral ledger, metaplan §1.2); P80 reconciles it with the
+  P52 two-sided-editor / P60 / P72 GUI-deferral cluster.
 - [ ] **HH cohomology ring structure + support varieties**: after Tier-1 item 1,
   finite generation over the even part; support varieties per module.
 - [ ] **BV structure** for symmetric/Frobenius algebras: Connes B is ported

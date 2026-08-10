@@ -830,6 +830,32 @@ REGISTRY: dict = {r.key: r for r in [
        "Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the "
        "closed-form count oracle.",
        "modules"),
+    _r("escolar_hiraoka", "EscolarHiraoka2016", "foundation",
+       "Persistence modules on commutative ladders of finite type",
+       "Representation theory of the commutative ladder CL(n) = A_n [] A_2: rep-finite "
+       "iff n <= 4 (the P69 scope boundary), with explicit AR quivers for n <= 4. TDA "
+       "gloss: the generalized persistence diagram of a ladder persistence module is its "
+       "AR-quiver-indexed Krull-Schmidt decomposition.",
+       "modules", "persistence"),
+    _r("botnan_crawley_boevey", "BotnanCrawleyBoevey2020", "foundation",
+       "Decomposition of persistence modules",
+       "A pointwise-finite-dimensional persistence module over a totally ordered or "
+       "zigzag poset decomposes uniquely into interval modules (Krull-Remak-Schmidt-"
+       "Azumaya) -- the theorem that 'barcode = interval decomposition' is well-defined "
+       "for A_n and zigzag lines.",
+       "modules", "persistence"),
+    _r("igusa_rock_todorov", "IgusaRockTodorov2019", "foundation",
+       "Continuous quivers of type A (I)",
+       "The continuous-limit representation theory of type-A persistence -- the "
+       "conceptual bridge (representation theory <-> persistence); cited as context, not "
+       "a computed oracle (quiverlab is finite/exact).",
+       "modules", "persistence"),
+    _r("gabriel", "Gabriel1972", "foundation",
+       "Unzerlegbare Darstellungen I",
+       "Gabriel's theorem: the indecomposable representations of a type-A_n quiver are "
+       "the interval (thin) modules = positive roots, each a brick (End = k) -- why the "
+       "A_n / zigzag barcode is field-robust over every exact domain.",
+       "modules", "persistence"),
     _r("rss_hh1_lie", "RSS2023hh1lie", "foundation",
        "The first Hochschild cohomology as a Lie algebra",
        "Rubio y Degrassi-Schroll-Solotar: the no-loops/no-parallel-arrows Ext-quiver "
@@ -870,6 +896,109 @@ REGISTRY: dict = {r.key: r for r in [
        "rad = [L,L]^perp, Levi-Malcev decomposition, and direct-sum-of-simple-ideals "
        "type of a semisimple Lie algebra.",
        "lie", "algorithm"),
+    # --- Plan 71: R12 HH^* as a graded Lie module over HH^1 ---
+    _r("mnprs_special_biserial", "MeinelNguyenPauwelsRedondoSolotar2021", "foundation",
+       "The Gerstenhaber structure on the Hochschild cohomology of a class of special biserial algebras",
+       "Meinel-Nguyen-Pauwels-Redondo-Solotar: HH^1 is a direct sum of copies of a "
+       "subquotient of the Virasoro algebra, and each HH^n is described as a module over "
+       "this Lie algebra by its decomposition into indecomposable summands -- the "
+       "char-0 indecomposable-summand deliverable of Plan 71.",
+       "hochschild", "lie"),
+    _r("csss_gentle_tt", "ChaparroSchrollSolotarSuarezAlvarez2026", "foundation",
+       "The Hochschild cohomology and the Tamarkin-Tsygan calculus of gentle algebras",
+       "Chaparro-Schroll-Solotar-Suarez-Alvarez: the whole Tamarkin-Tsygan calculus of "
+       "gentle algebras -- HH^* as a graded-commutative algebra and a graded Lie algebra, "
+       "with HH_* a module over HH^*; the Lie-module-over-HH^1 structure Plan 71 computes "
+       "is one facet, and gentle algebras are its literature anchor.",
+       "hochschild", "lie"),
+    _r("stefan_hopf_galois", "StefanHopfGalois1995", "foundation",
+       "Hochschild cohomology on Hopf Galois extensions",
+       "Stefan: the spectral sequence for a Hopf-Galois extension; for H = kG a group "
+       "algebra it decomposes along the conjugacy classes of G -- the origin of the "
+       "skew-group HH conjugacy-class decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("shepler_witherspoon_group_actions", "SheplerWitherspoonGroupActions", "foundation",
+       "Group actions on algebras and the graded Lie structure of Hochschild cohomology",
+       "Shepler-Witherspoon: the additive conjugacy-class decomposition of HH^*(A rtimes G) "
+       "with the Z(g)-invariants -- the load-bearing anchor for quiverlab's Stefan "
+       "decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("cibils_marcos_smash", "CibilsMarcosSmash2006", "foundation",
+       "Skew category, Galois covering and smash product of a k-category",
+       "Cibils-Marcos: the smash-product / skew-category construction, the free action, "
+       "and the Galois covering -- the constructor + free-action anchor for A rtimes G "
+       "(Plan 74).",
+       "family", "skew_group"),
+    _r("marcos_mv_invariants", "MarcosMartinezVillaMartinsInvariants", "foundation",
+       "Hochschild cohomology of skew group rings and invariants",
+       "Marcos-Martinez-Villa-Martins: the ring monomorphism HH^*(A)^G into HH^*(A rtimes G) "
+       "-- the identity-summand self-certificate for the skew-group decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+
+    _r("buan_marsh_wide", "BuanMarsh2021wide", "foundation",
+       "A category of wide subcategories",
+       "Buan-Marsh: DEFINES the tau-cluster morphism category W(A) -- objects are the "
+       "tau-perpendicular wide subcategories, morphisms are support tau-rigid pairs of the source "
+       "with target the tau-perpendicular category (via the Jasso reduction), morphisms factor as "
+       "signed tau-exceptional sequences. Plan 66's category-structure ground truth.",
+       "tau-tilting", "wide", "category"),
+    _r("hanson_igusa", "HansonIgusa2021", "foundation",
+       "tau-cluster morphism categories and picture groups",
+       "Hanson-Igusa: the classifying space of W(A) is a cube complex (one n-cube per support "
+       "tau-tilting object); it is a K(pi,1) for Nakayama algebras; pi_1 is the picture group. "
+       "Plan 66's cube-complex face vector, the Nakayama K(pi,1) verdict, and the picture group.",
+       "tau-tilting", "picture-group", "cube-complex"),
+    _r("igusa_todorov_weyman", "IgusaTodorovWeyman2016", "foundation",
+       "Picture groups of finite type and cohomology in type A_n",
+       "Igusa-Todorov-Weyman: the picture group PRESENTATION -- one generator x(beta) per brick "
+       "(positive real Schur root), relations per rank-2 configuration (commutation for k x k, the "
+       "atom/pentagon relation for connected rank-2 wides); the CW complex with cells in "
+       "bijection with cluster-tilting objects (Catalan-many). Plan 66's presentation ground truth.",
+       "tau-tilting", "picture-group"),
+    _r("igusa_todorov_cat0", "IgusaTodorov2022cat0", "foundation",
+       "Which cluster morphism categories are CAT(0)",
+       "Igusa-Todorov: the cluster morphism category is a CAT(0) category for hereditary algebras "
+       "of finite (Dynkin) or tame type with only small tubes, so its classifying space is locally "
+       "CAT(0) hence a K(pi,1). Plan 66's specific anchor for the HEREDITARY-DYNKIN K(pi,1) verdict "
+       "(distinct from the ITW type-A_n presentation paper), and the honest-scope context for why the "
+       "general tau-tilting-finite case is delicate (CAT(0) is proven only for hereditary "
+       "finite/tame type, not the general algebra).",
+       "tau-tilting", "picture-group", "cube-complex", "cat0"),
+
+    # --- Plan 78: R13 L-infinity / Maurer-Cartan formal deformations ---
+    _r("rrb_linfty_bardzell", "RedondoRossiBertone2022linfty", "foundation",
+       "L-infinity-structure on Bardzell's complex for monomial algebras",
+       "Redondo-Rossi Bertone: the explicit L-infinity structure on B(A) for a monomial "
+       "char-0 algebra (weakly equivalent to the Hochschild complex C(A)), the "
+       "Maurer-Cartan equation in degree 2, and the rad^2=0 => B(A) is a dg-Lie algebra "
+       "collapse -- Plan 78's rad^2=0 dg-Lie certificate and the higher-l_n route.",
+       "hochschild", "deformation"),
+    _r("mrrs_mc_gentle", "MullerRedondoRossiBertoneSuarez2025", "foundation",
+       "Maurer-Cartan equation for gentle algebras",
+       "Muller-Redondo-Rossi Bertone-Suarez: under quiver hypotheses on a gentle A=kQ/I "
+       "the L-infinity structure on B(A)[1] is nilpotent and the Maurer-Cartan set equals "
+       "the 2-cocycles Z^2 (every infinitesimal deformation integrates) -- Plan 78's "
+       "nilpotent-regime MC=Z^2 gate.",
+       "hochschild", "deformation"),
+    _r("rrrv_morita_deform", "RedondoRomanRossiBertoneVerdecchia2020", "foundation",
+       "Morita invariance for infinitesimal deformations",
+       "Redondo-Roman-Rossi Bertone-Verdecchia: the transfer of infinitesimal deformations "
+       "HH^2(A)<->HH^2(B) under Morita equivalence, and (over an algebraically closed field) "
+       "the presentation by quiver and relations of the infinitesimal deformations -- "
+       "Plan 78's presented deformed algebra A_alpha.",
+       "hochschild", "deformation"),
+    _r("rrr_ext_deform", "RedondoRomanRossiBertone2022ext", "foundation",
+       "The Ext-algebra for infinitesimal deformations",
+       "Redondo-Roman-Rossi Bertone (three authors): the algebra structure of the "
+       "Ext-algebra of an infinitesimal deformation A_f, described (under conditions on f) "
+       "in terms of the Ext-algebra of A -- Plan 78's Ext-algebra handoff on A_alpha.",
+       "hochschild", "deformation"),
+    _r("chouhy_degeneration", "Chouhy2019degeneration", "foundation",
+       "On geometric degenerations and Gerstenhaber formal deformations",
+       "Chouhy: the degeneration relation on associative-algebra varieties described via "
+       "Gerstenhaber formal deformations, with N-Koszulity preserved under degeneration -- "
+       "the geometric reading of A ~> A_alpha in Plan 78.",
+       "hochschild", "deformation"),
 ]}
 
 

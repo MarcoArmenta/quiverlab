@@ -474,6 +474,16 @@ class Algebra:
         from quiverlab.modules.opposite import opposite_algebra
         return opposite_algebra(self)
 
+    def skew_group(self, action):
+        """The skew group algebra ``A rtimes G`` (smash product ``A # kG``) for an
+        explicit finite ``GroupAction`` acting by algebra automorphisms; a
+        first-class structure-constant Algebra of dimension ``|G|*dim A`` (Plan 74).
+        Characteristic-agnostic; the Stefan HH decomposition
+        (``quiverlab.hochschild.skew_group.stefan_decomposition``) needs
+        ``char k does not divide |G|``."""
+        from quiverlab.families.skew_group import skew_group_algebra
+        return skew_group_algebra(self, action)
+
     def hom(self, M, N):
         """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.hom import hom_dim
@@ -526,6 +536,15 @@ class Algebra:
         from quiverlab.hochschild.arrow_removal import arrow_removal
         return arrow_removal(self, arrows=arrows, top=top, side=side)
 
+    def barcode(self, M, *, budget=512, budget_modules=256):
+        """The barcode / generalized persistence diagram of a persistence module ``M``
+        (Plan 69 / R33). ``A_n``/zigzag: the interval decomposition (Gabriel /
+        Botnan-Crawley-Boevey), field-robust over any exact domain. ``CL(n<=4)``: the
+        AR-quiver-indexed generalized persistence diagram (Escolar-Hiraoka), char-scoped.
+        Returns a :class:`~quiverlab.modules.barcode.Barcode`; refuses loudly on a
+        non-A_n/non-CL quiver, ``CL(n>=5)``, or a char-undecidable input."""
+        from quiverlab.modules.barcode import barcode
+        return barcode(M, budget=budget, budget_modules=budget_modules)
     def enveloping(self):
         """The enveloping algebra ``A^e = A (x) A^op`` as a first-class bound quiver
         Algebra (product quiver, ``present_from_pi``-certified ``dim = (dim A)^2``,
@@ -649,6 +668,27 @@ class Algebra:
         tau-tilting-finite."""
         from quiverlab.tautilting.congruence import wide_subcategories
         return wide_subcategories(self, budget=budget)
+
+    def tau_cluster_category(self, budget=512):
+        """The tau-cluster morphism category ``W(A)`` (Plan 66 / R29; Buan-Marsh IMRN 2021 +
+        Hanson-Igusa Comm. Alg. 2021): objects = the tau-perpendicular wide subcategories
+        (``object_count == wide_subcategories(A).size``), morphisms = support tau-rigid pairs
+        of the source graded by rank, the Hanson-Igusa classifying-space cube-complex
+        ``face_vector`` (``f_0 = #wide``, ``f_k = #(rank-k morphisms)``) + Euler characteristic
+        + the ``g``-fan sphere ``g_fan_face_vector``, and the theorem-anchored ``K(pi,1)``
+        verdict (Nakayama / hereditary Dynkin). Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import tau_cluster_category
+        return tau_cluster_category(self, budget=budget)
+
+    def picture_group(self, budget=512):
+        """The picture-group presentation ``pi_1(|W(A)|)`` as DATA (Plan 66 / R29;
+        Igusa-Todorov-Weyman arXiv:1609.02636; Hanson-Igusa): generators = the bricks,
+        relations = the rank-2 wides (typed commutation / atom via ``Ext^1``), and the
+        abelianization by exact Smith normal form. Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import picture_group
+        return picture_group(self, budget=budget)
 
     def wall_chamber_structure(self, budget_pairs=512):
         """The wall-and-chamber structure of ``A`` via bricks (Plan 63 / R25): the chambers
@@ -1366,6 +1406,20 @@ class Algebra:
         Domain, past the bar window). The degree-0 insertion action is out of scope."""
         return self._product_dispatch("bracket", top, engine, max_cells)
 
+    def hh_lie_module(self, top, budget=None, max_cells=4_000_000):
+        """HH^*(A) as a graded Lie module over HH^1(A) (Plan 71 / R12): per degree
+        0..top the action matrices rho_n(D) = the Gerstenhaber degree-1 Lie derivative
+        (the field-general primitive, over any exact field), the self-certified module
+        axiom rho_n([D,E]) = [rho_n(D),rho_n(E)] and inner-acts-zero, plus -- over
+        characteristic 0 -- the weight/torus decomposition and the indecomposable
+        Lie-module summands (the latter governed independently by decompose's own char
+        guard). Builds on HH^1 = Der/Inn (Plan 70); no resolution engine. Returns a
+        frozen HHLieModule."""
+        from quiverlab.hochschild.lie_module import DEFAULT_MAXDIM, lie_module_action
+        return lie_module_action(
+            self, top, budget=DEFAULT_MAXDIM if budget is None else budget,
+            max_cells=max_cells)
+
     def connes_differentials(self, top, max_cells=4_000_000):
         """Induced Connes differentials B : HH_n -> HH_{n+1} (matrices +
         ranks) for 0 <= n < top. GF(p) via the engine (b,B); any other exact
@@ -1495,6 +1549,32 @@ class Algebra:
         """Is HH^1(A) a nilpotent Lie algebra? Any exact field (Plan 70)."""
         from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, is_nilpotent_hh1
         return is_nilpotent_hh1(self, budget=DEFAULT_MAXDIM if budget is None else budget)
+
+    def deformation_structure(self, budget=None, engine="auto"):
+        """The char-0 formal-deformation report (Plan 78 / R13): infinitesimal HH^2, the
+        primary obstruction [alpha,alpha] in HH^3, the MRRS nilpotent-regime verdict, the
+        order-by-order Maurer-Cartan description on the Hochschild DGLA C(A), the rad^2=0
+        dg-Lie certificate, and a display-only presented deformed algebra A_alpha with its
+        Ext-algebra summary. Over char p the field-general HH^2/HH^3 block is returned
+        behind the char-0 caveat. Returns a frozen Deformations."""
+        from quiverlab.hochschild.deformations import (
+            DEFORM_MAXDIM, deformation_structure)
+        return deformation_structure(
+            self, budget=DEFORM_MAXDIM if budget is None else budget, engine=engine)
+
+    def obstruction_map(self, engine="auto"):
+        """The primary deformation obstruction alpha |-> [alpha,alpha] in HH^3 -- the
+        targeted (2,2) CS Gerstenhaber self-bracket (Plan 78). Field-general; the
+        `unobstructed` verdict + a basis-dependent witness. Returns a frozen Obstruction."""
+        from quiverlab.hochschild.deformations import obstruction_map
+        return obstruction_map(self, engine=engine)
+
+    def deformed_algebra(self, direction, t="1"):
+        """Build the presented deformed algebra A_alpha = kQ/I_alpha for a RADICAL
+        2-cocycle direction and value t, re-certified admissible + flat (Plan 78 / RRRV).
+        Loud on a unit / non-admissible / non-flat direction. Returns an Algebra."""
+        from quiverlab.hochschild.deformations import deformed_algebra
+        return deformed_algebra(self, direction, t=t)
 
     def tor(self, M, N, n):
         """dim Tor_n^A(M, N) for a RIGHT A-module M and a LEFT A-module N (Plan 29).
