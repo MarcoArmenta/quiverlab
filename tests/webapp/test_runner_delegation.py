@@ -434,7 +434,17 @@ never hide behind one:
     ``arrow_removal.arrow_removal_block``), so the Pyodide twin agrees
     (``tests/gui/test_split_arrow_runner_twin.py``). ``canonical_key`` is
     request-derived (schema-1 algebra-only, the top-degree budget rides in the
-    ``compute`` string, no ``module`` block)."""
+    ``compute`` string, no ``module`` block).
+  * 2026-08-08 (``han_transport_ex53`` ADDED, Plan 73 -- Han bounded-extension
+    transport): a NEW fixture for the ``han_transport`` algebra-level CERTIFICATE
+    kind carrying the request-level ``new_arrows`` field (CLMS Ex. 5.3, ``F = {a}``
+    over GF(32003) -- ``transport == 'bounded'``, tensor-nilpotent index 2,
+    right-``B``-projective, ``pd_{B^e}`` finite via ``gl.dim B = 2``). Pure ADDITION:
+    the 42 existing entries were verified byte-identical BEFORE the append (indent=1,
+    order-preserving). ``new_arrows`` is dropped from ``model_dump`` when absent, so
+    every existing request's ``canonical_key`` is byte-unchanged; both runners share
+    ``invariants.han.han_transport_block``, so the Pyodide twin agrees
+    (``tests/gui/test_han_runner_twin_p73.py``)."""
 import json
 import pathlib
 

@@ -117,6 +117,9 @@
     // Plan-72: split-extension LES (trivial extension) + certified arrow removal (algebra-level; top-degree budget).
     '  <label><input type="checkbox" id="qlgui-split_extension"> split-extension LES (trivial ext), top <input type="number" id="qlgui-split_extension-budget" value="6" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-arrow_removal"> arrow removal (inert), top <input type="number" id="qlgui-arrow_removal-budget" value="6" min="1"></label>' +
+    // Plan-73: Han transport across a bounded extension B <= A (algebra-level certificate;
+    // carries the new-arrow subset F -- the derived_compare second-input precedent).
+    '  <label><input type="checkbox" id="qlgui-han_transport"> Han transport (bounded ext), new arrows <input type="text" id="qlgui-han_transport-arrows" placeholder="a,b" size="8"></label>' +
     // Plan-57: radical filtration of mod A (rad^n(X,Y) + nilpotency index) and the
     // AR-component invariants (Liu degrees, directing, rep-directed). Algebra-level,
     // budget (max indecomposables). NOT the Loewy radical series (radical_filtration_ss).
@@ -262,6 +265,8 @@
    "ar_quiver", "ar_quiver-budget", "derived_compare",
    // Plan 72: split-extension LES + certified arrow removal (algebra-level, top-degree budget)
    "split_extension", "split_extension-budget", "arrow_removal", "arrow_removal-budget",
+   // Plan 73: Han transport (algebra-level certificate + new-arrow subset text field)
+   "han_transport", "han_transport-arrows",
    // Plan 57: radical filtration + AR-component invariants (algebra-level, budget)
    "radical_filtration", "radical_filtration-budget",
    "ar_invariants", "ar_invariants-budget",
@@ -990,6 +995,8 @@
       compute.push("recognizer_ladder:" + el["recognizer_ladder-budget"].value);
     // Plan 43: derived_compare is algebra-level and needs a second algebra B.
     if (el.derived_compare.checked) compute.push("derived_compare");
+    // Plan 73: han_transport is algebra-level and needs the new-arrow subset F.
+    if (el.han_transport.checked) compute.push("han_transport");
     // Plan 68: skew-gentle. The drawn quiver + relations + the special-vertex picks form
     // the triple (Q, I, Sp); the request's algebra is REPLACED (below) by the split
     // constructor family form so every compute runs on the admissible split algebra.
@@ -1063,6 +1070,14 @@
     if (el.derived_compare.checked) {
       var algb = buildAlgebraB();
       if (algb) req.algebra_b = algb;
+    }
+    // Plan-73: han_transport's new-arrow subset F. Only attached with the kind, so
+    // an ordinary request never carries new_arrows (cache-key discipline). Parsed
+    // from the text field: comma / whitespace-separated whole arrow tokens.
+    if (el.han_transport.checked) {
+      var na = (el["han_transport-arrows"].value || "")
+                 .split(/[\s,]+/).filter(function (s) { return s.length > 0; });
+      if (na.length) req.new_arrows = na;
     }
     return req;
   }
@@ -4039,6 +4054,38 @@
           div.appendChild(h("p", { text: "Low-degree center/disconnection deltas [n=0, n=1]: "
             + JSON.stringify(b.coh_low_delta) + " (distinct from the n>=2 Ext-correction)." }));
       }
+    } else if (name === "han_transport") {
+      // Plan 73: Han transport across a bounded extension B <= A. The three legs
+      // (tensor-nilpotency + finite pd_{B^e} + one-sided projectivity) and the
+      // injection/isomorphism LADDER verdict.
+      if (b.error || b.status === "unsupported" || b.status === "error") {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Han transport not computed — " + (b.error || "input not eligible") + "." }));
+      } else {
+        div.appendChild(h("p", { text: "Extension B = A minus new arrows {"
+          + (b.new_arrows || []).join(", ") + "}. dim A = " + b.dim_A + ", dim B = "
+          + b.dim_B + ", dim A/B = " + b.dim_quotient + "." }));
+        var tn = b.tensor_nilpotent || {}, os = b.one_sided || {}, pd = b.pd_Be || {};
+        var legRows = [
+          ["A/B tensor-nilpotent (leg i)", tn.status + (tn.index != null ? " (index " + tn.index + ")" : "") + " [" + (tn.route || "") + "]"],
+          ["finite pd over B^e (leg ii)", pd.status + " [route " + (pd.route || "") + (pd.gldim_B != null ? ", gl.dim B = " + pd.gldim_B : "") + (pd.value != null ? ", pd = " + pd.value : "") + "]"],
+          ["one-sided B-projective (leg iii)", String(os.projective) + (os.side ? " (" + os.side + " side)" : "")]
+        ];
+        var lt = h("table"), lh = h("tr");
+        lh.appendChild(h("th", { text: "leg" })); lh.appendChild(h("th", { text: "status" }));
+        lt.appendChild(lh);
+        legRows.forEach(function (r) {
+          var row = h("tr");
+          row.appendChild(h("th", { text: r[0] }));
+          row.appendChild(h("td", { text: r[1] }));
+          lt.appendChild(row);
+        });
+        div.appendChild(lt);
+        div.appendChild(h("p", { text: "Transport verdict: " + b.transport
+          + (b.injection_from != null ? " (injection/iso from degree >= " + b.injection_from + ", a certified lower bound)" : "")
+          + ". Injection bound dim HH_m(B) <= dim HH_m(A) held: " + String(b.injection_bound_ok) + "." }));
+        if (b.note) div.appendChild(h("p", { "class": "qlgui-note", text: b.note }));
+      }
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -4524,7 +4571,8 @@
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
    el.fundamental_group, el.simply_connected, el.tame_wild,
-   el.skew_gentle, el["skew_gentle-special"]]
+   el.skew_gentle, el["skew_gentle-special"],
+   el.han_transport, el["han_transport-arrows"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -4602,7 +4650,7 @@
   // QLGUI-THEMES-BEGIN
   var THEMES =
   [
-    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal"]},
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "han_transport"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
@@ -5116,6 +5164,7 @@
     tilted_check: { cb: "tilted_check", top: "tilted_check-budget", budget: true },
     recognizer_ladder: { cb: "recognizer_ladder", top: "recognizer_ladder-budget", budget: true },
     derived_compare: { cb: "derived_compare" },
+    han_transport: { cb: "han_transport" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
     cartan: { cb: "cartan" },
     coxeter_polynomial: { cb: "coxeter_polynomial" },

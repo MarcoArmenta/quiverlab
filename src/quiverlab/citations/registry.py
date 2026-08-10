@@ -324,6 +324,35 @@ REGISTRY: dict = {r.key: r for r in [
        "tensor algebra T_B(N), finite iff no relative cycle (Thm 3.5/3.6) -- the "
        "Plan-72 certified arrow-removal reduction and the P73 Han-conjecture seam.",
        "hochschild", "oracle"),
+    _r("clms_bounded_extensions", "CLMSbounded2022", "algorithm",
+       "Han's conjecture for bounded extensions",
+       "CLMS: B subset A left/right bounded (A/B tensor-nilpotent, finite pd over B^e, "
+       "one-sided B-projective) implies B satisfies Han iff A does (Thm 4.6). Examples "
+       "5.3 (bounded) / 5.5 (not bounded) are the P73 oracles.",
+       "hochschild", "han"),
+    _r("clms_jacobi_zariski", "CLMSjacobiZariski2022", "foundation",
+       "Jacobi-Zariski long nearly exact sequences for associative algebras",
+       "CLMS: the Jacobi-Zariski long nearly exact sequence relating HH_*(A), HH_*(B), "
+       "HH_*(A|B) ('exact twice in three') -- the computational tool + self-cert gate "
+       "for the P73 Han transport.",
+       "hochschild", "han"),
+    _r("kaygun_jacobi_zariski", "Kaygun2012", "foundation",
+       "Jacobi-Zariski Exact Sequence for Hochschild Homology and Cyclic (Co)Homology",
+       "Kaygun: the classical noncommutative Jacobi-Zariski sequence (B subset A with "
+       "A/B flat) -- the origin CLMS credit for the noncommutative case; CLMS "
+       "2009.05017 is the 'long nearly exact / exact twice in three' refinement P73 "
+       "computes with.",
+       "hochschild"),
+    _r("clms_split_bounded", "CLMSsplitBounded2020", "foundation",
+       "Split bounded extension algebras and Han's conjecture",
+       "CLMS: the split-case predecessor of the bounded-extension theory (context).",
+       "hochschild"),
+    _r("wang_recollement_han", "WangXuZhangZhou2024", "foundation",
+       "A recollement approach to Han's conjecture",
+       "Wang-Xu-Zhang-Zhou: an independent recollement/derived reduction of Han's "
+       "conjecture (also proves Han for skew-gentle algebras -- ties to P68). "
+       "Authorship verified.",
+       "hochschild"),
     _r("chaparro_schroll_solotar", "ChaparroSchrollSolotar2020", "foundation",
        "On the Lie algebra structure of the first Hochschild cohomology of gentle "
        "and Brauer graph algebras",

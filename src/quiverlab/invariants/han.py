@@ -427,8 +427,13 @@ def han_transport(A, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16, hh_top=N
     cert = bounded_extension(A, new_arrows, side=side, nilp_cap=nilp_cap, pd_cap=pd_cap)
     tn = cert.tensor_nilpotent
     nilp = {"nilpotent": True, "not_nilpotent": False, "undecided": None}[tn.status]
-    pd_finite = (True if cert.pd_Be.get("status") == "finite"
-                 else (None if nilp else None))
+    # True only when pd_{B^e}(A/B) is CERTIFIED finite; otherwise None = "unknown",
+    # deliberately NOT False -- an uncertified or infinite-looking pd must never let
+    # `transport_verdict` claim a row, it must fall through to the honest "undecided"
+    # end of the ladder. (This was written as `None if nilp else None`, a no-op ternary
+    # that read as if one branch were meant to be False; the conservative None is what
+    # the ladder actually relies on, so it is now spelled once.)
+    pd_finite = True if cert.pd_Be.get("status") == "finite" else None
     one_sided = cert.one_sided.projective if nilp else None
     transport = transport_verdict(nilp, pd_finite, one_sided)
 
@@ -464,3 +469,38 @@ def han_transport(A, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16, hh_top=N
         references=list(_HAN_REFERENCES),
         note=f"{claim}; injection bound dim HH_m(B) <= dim HH_m(A) held: {inj_ok}"
              + ("; EQUALITY (bounded => iso)" if equality and transport == "bounded" else ""))
+
+
+# --------------------------------------------------------------------------- #
+# the GUI / webapp block (algebra-level certificate carrying the new-arrow subset)
+# --------------------------------------------------------------------------- #
+def han_transport_block(A, new_arrows, *, hh_top=None):
+    """The ``han_transport`` compute-kind block (all three tiers, shared by both
+    runners). Loud refusals (structure-constant ``A`` / bad arrow name) become a
+    clean ``error`` block -- never a 500."""
+    block = {"kind": "han_transport", "new_arrows": list(new_arrows),
+             "references": list(_HAN_REFERENCES)}
+    try:
+        ht = han_transport(A, tuple(new_arrows), hh_top=hh_top)
+    except QuiverlabError as exc:
+        block.update(status="unsupported", error=str(exc),
+                     note="Han transport unavailable for this input")
+        return block
+    cert = ht.certificate
+    tn = cert.tensor_nilpotent
+    ext = arrow_removal_subalgebra(A, tuple(new_arrows))    # dims (cheap arrow-removal)
+    block.update(
+        status="complete",
+        dim_A=ext.dim_A, dim_B=ext.dim_B, dim_quotient=ext.dim_quotient,
+        transport=ht.transport,
+        tensor_nilpotent={"status": tn.status, "index": tn.index, "route": tn.route},
+        one_sided={"side": cert.one_sided.side, "projective": cert.one_sided.projective},
+        pd_Be={"route": cert.pd_Be.get("route"), "value": cert.pd_Be.get("value"),
+               "status": cert.pd_Be.get("status"),
+               "gldim_B": cert.pd_Be.get("gldim_B")},
+        injection_from=ht.injection_from,
+        injection_bound_ok=ht.injection_bound_ok,
+        han_B=ht.han_B, han_A=ht.han_A,
+        note=ht.note,
+    )
+    return block

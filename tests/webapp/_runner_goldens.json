@@ -1613,5 +1613,67 @@
   },
   "canonical_key": "eea52b45678f7e57c2677a4d973ec8d15ad5e8fb592276c1af622286daa25c73",
   "result_json": "{\"algebra\": {\"arrows\": {\"c\": [1, 2], \"x\": [1, 1]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 7}, \"kind\": \"quiver\", \"relations\": [\"x^2\"], \"vertices\": [1, 2]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Inert-arrow deletion (Def. 3.1) gives a clean HH_n isomorphism for n >= 2 (Thm 3.2) and a cohomology Ext-correction (Thm 4.2); arrow addition = the tensor algebra T_B(N), finite iff no relative cycle (Thm 3.5/3.6) -- the Plan-72 certified arrow-removal reduction and the P73 Han-conjecture seam.\", \"arxiv\": \"1812.07655\", \"arxiv_url\": \"https://arxiv.org/abs/1812.07655\", \"bibtex_key\": \"cibilslanzilottamarcossolotar2020\", \"doi\": \"10.1090/proc/14936\", \"doi_url\": \"https://doi.org/10.1090/proc/14936\", \"formatted\": \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2020). Deleting or adding arrows of a bound quiver algebra and Hochschild (co)homology. Proceedings of the American Mathematical Society 148, 2421-2432.\", \"key\": \"clms_arrow_removal\", \"topic\": \"Foundations\"}, {\"annotation\": \"Finite global dimension iff finite Hochschild homology dimension -- the conjecture the zoo scans probe.\", \"arxiv\": \"math/0408402\", \"arxiv_url\": \"https://arxiv.org/abs/math/0408402\", \"bibtex_key\": \"Han2006\", \"doi\": \"10.1112/S002461070602299X\", \"doi_url\": \"https://doi.org/10.1112/S002461070602299X\", \"formatted\": \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\", \"key\": \"han_conjecture\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2], arrows={\\\"x\\\": (1, 1), \\\"c\\\": (1, 2)})\\nA = Q.algebra(relations=['x^2'], field=GF(7))\\nA.arrow_removal(top=4)\", \"results\": {\"arrow_removal\": {\"algebra\": \"Algebra of dimension 5 over GF(7)\", \"citations\": [[\"cibilslanzilottamarcossolotar2020\", \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2020). Deleting or adding arrows of a bound quiver algebra and Hochschild (co)homology. Proceedings of the American Mathematical Society 148, 2421-2432.\"], [\"Han2006\", \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\"]], \"coh_A\": [1, 1, 1, 1, 1], \"coh_B\": [3, 1, 1, 1, 1], \"coh_correction\": [0, 0, 0, 0, 0], \"coh_low_delta\": [-2, 0], \"hom_A\": [3, 1, 1, 1, 1], \"hom_B\": [3, 1, 1, 1, 1], \"hom_agrees\": true, \"hom_iso_from\": 2, \"hom_low_agrees\": [true, true], \"inert_certificate\": {\"c\": \"appears in no relation\"}, \"kind\": \"arrow_removal\", \"note\": \"\", \"reduced\": \"Algebra of dimension 3 over GF(7)\", \"references\": [\"clms_arrow_removal\", \"han_conjecture\"], \"removed\": [\"c\"], \"status\": \"complete\"}}}"
+ },
+ "han_transport_ex53": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "quiver",
+    "vertices": [
+     1,
+     2,
+     3,
+     4,
+     5
+    ],
+    "arrows": {
+     "al": [
+      5,
+      1
+     ],
+     "be": [
+      1,
+      5
+     ],
+     "d": [
+      1,
+      4
+     ],
+     "c": [
+      4,
+      3
+     ],
+     "b": [
+      3,
+      2
+     ],
+     "a": [
+      2,
+      1
+     ]
+    },
+    "relations": [
+     "al*be",
+     "d*c*b*a - be*al"
+    ],
+    "field": {
+     "kind": "GF",
+     "p": 32003,
+     "n": 1
+    }
+   },
+   "compute": [
+    "han_transport"
+   ],
+   "new_arrows": [
+    "a"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "canonical_key": "76793f840dccb9fd2ff01dc2d0620d29b947c6d1e9a4bcc421892efa65d6da27",
+  "result_json": "{\"algebra\": {\"arrows\": {\"a\": [2, 1], \"al\": [5, 1], \"b\": [3, 2], \"be\": [1, 5], \"c\": [4, 3], \"d\": [1, 4]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [\"al*be\", \"d*c*b*a - be*al\"], \"vertices\": [1, 2, 3, 4, 5]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"CLMS: B subset A left/right bounded (A/B tensor-nilpotent, finite pd over B^e, one-sided B-projective) implies B satisfies Han iff A does (Thm 4.6). Examples 5.3 (bounded) / 5.5 (not bounded) are the P73 oracles.\", \"arxiv\": \"2101.02597\", \"arxiv_url\": \"https://arxiv.org/abs/2101.02597\", \"bibtex_key\": \"CLMSbounded2022\", \"doi\": \"10.1016/j.jalgebra.2022.01.022\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2022.01.022\", \"formatted\": \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Han's conjecture for bounded extensions. Journal of Algebra.\", \"key\": \"clms_bounded_extensions\", \"topic\": \"Algorithms\"}, {\"annotation\": \"CLMS: the Jacobi-Zariski long nearly exact sequence relating HH_*(A), HH_*(B), HH_*(A|B) ('exact twice in three') -- the computational tool + self-cert gate for the P73 Han transport.\", \"arxiv\": \"2009.05017\", \"arxiv_url\": \"https://arxiv.org/abs/2009.05017\", \"bibtex_key\": \"CLMSjacobiZariski2022\", \"doi\": \"10.1112/blms.12516\", \"doi_url\": \"https://doi.org/10.1112/blms.12516\", \"formatted\": \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Jacobi-Zariski long nearly exact sequences for associative algebras. Bulletin of the London Mathematical Society 54.\", \"key\": \"clms_jacobi_zariski\", \"topic\": \"Foundations\"}, {\"annotation\": \"Kaygun: the classical noncommutative Jacobi-Zariski sequence (B subset A with A/B flat) -- the origin CLMS credit for the noncommutative case; CLMS 2009.05017 is the 'long nearly exact / exact twice in three' refinement P73 computes with.\", \"arxiv\": \"1103.4377\", \"arxiv_url\": \"https://arxiv.org/abs/1103.4377\", \"bibtex_key\": \"Kaygun2012\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Kaygun, Atabey (2012). Jacobi-Zariski Exact Sequence for Hochschild Homology and Cyclic (Co)Homology. Homology, Homotopy and Applications 14, 65-78.\", \"key\": \"kaygun_jacobi_zariski\", \"topic\": \"Foundations\"}, {\"annotation\": \"Finite global dimension iff finite Hochschild homology dimension -- the conjecture the zoo scans probe.\", \"arxiv\": \"math/0408402\", \"arxiv_url\": \"https://arxiv.org/abs/math/0408402\", \"bibtex_key\": \"Han2006\", \"doi\": \"10.1112/S002461070602299X\", \"doi_url\": \"https://doi.org/10.1112/S002461070602299X\", \"formatted\": \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\", \"key\": \"han_conjecture\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3, 4, 5], arrows={\\\"al\\\": (5, 1), \\\"be\\\": (1, 5), \\\"d\\\": (1, 4), \\\"c\\\": (4, 3), \\\"b\\\": (3, 2), \\\"a\\\": (2, 1)})\\nA = Q.algebra(relations=['al*be', 'd*c*b*a - be*al'], field=GF(32003))\\n# F = the new-arrow subset defining B <= A\\nA.han_transport(F)\", \"results\": {\"han_transport\": {\"citations\": [[\"CLMSbounded2022\", \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Han's conjecture for bounded extensions. Journal of Algebra.\"], [\"CLMSjacobiZariski2022\", \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Jacobi-Zariski long nearly exact sequences for associative algebras. Bulletin of the London Mathematical Society 54.\"], [\"Kaygun2012\", \"Kaygun, Atabey (2012). Jacobi-Zariski Exact Sequence for Hochschild Homology and Cyclic (Co)Homology. Homology, Homotopy and Applications 14, 65-78.\"], [\"Han2006\", \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"dim_A\": 47, \"dim_B\": 20, \"dim_quotient\": 27, \"han_A\": true, \"han_B\": true, \"injection_bound_ok\": true, \"injection_from\": 2, \"kind\": \"han_transport\", \"new_arrows\": [\"a\"], \"note\": \"HH_*(B) ~= HH_*(A) (iso) => full iff B |= Han <=> A |= Han (Thm 4.6); injection bound dim HH_m(B) <= dim HH_m(A) held: True; EQUALITY (bounded => iso)\", \"one_sided\": {\"projective\": true, \"side\": \"right\"}, \"pd_Be\": {\"gldim_B\": 2, \"route\": \"gldim\", \"status\": \"finite\", \"value\": null}, \"references\": [\"clms_bounded_extensions\", \"clms_jacobi_zariski\", \"kaygun_jacobi_zariski\", \"han_conjecture\", \"assem_book\"], \"status\": \"complete\", \"tensor_nilpotent\": {\"index\": 2, \"route\": \"J_interrupter\", \"status\": \"nilpotent\"}, \"transport\": \"bounded\"}}}"
  }
 }

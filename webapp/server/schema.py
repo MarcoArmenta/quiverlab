@@ -295,6 +295,7 @@ class ComputeRequest(BaseModel):
     tor_target: ModuleSpec | None = None      # v2 (Plan 30): the N in Tor^A_n(M, N)
     coefficients: CoefficientSpec | None = None   # v3 (Plan 52): the M in HH(A, M)
     algebra_b: AlgebraSpec | None = None      # wave 2: the SECOND algebra for derived_compare
+    new_arrows: list[str] | None = None       # Plan 73: the F subset for han_transport
 
     @model_validator(mode="before")
     @classmethod
@@ -379,6 +380,14 @@ class ComputeRequest(BaseModel):
             raise SchemaError("a second algebra 'algebra_b' is only used by "
                               "derived_compare; drop it, or add a 'derived_compare' "
                               "compute kind")
+        # Plan 73: han_transport needs the new-arrow subset F; nothing else may carry
+        # it (same canonical-key guard as algebra_b above).
+        if "han_transport" in kinds and self.new_arrows is None:
+            raise SchemaError("han_transport needs a 'new_arrows' field (the subset F "
+                              "of arrows whose removal from A defines the subalgebra B)")
+        if self.new_arrows is not None and "han_transport" not in kinds:
+            raise SchemaError("a 'new_arrows' field is only used by han_transport; "
+                              "drop it, or add a 'han_transport' compute kind")
         return self
 
     def model_dump(self, *args, **kwargs):
@@ -388,7 +397,8 @@ class ComputeRequest(BaseModel):
         request -- and every Plan-26 ext request -- is unchanged; only genuine Tor and
         derived_compare requests carry the extra blocks)."""
         d = super().model_dump(*args, **kwargs)
-        for k in ("module", "ext_target", "tor_target", "coefficients", "algebra_b"):
+        for k in ("module", "ext_target", "tor_target", "coefficients", "algebra_b",
+                  "new_arrows"):
             if d.get(k) is None:
                 d.pop(k, None)
         # An ABSENT quiver potential must serialize away too, so every existing

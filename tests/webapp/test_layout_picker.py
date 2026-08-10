@@ -66,6 +66,8 @@ ALL_KINDS = {
     "hh1_lie",
     # Plan 72 (2026-08-08): split-extension LES + certified arrow removal.
     "split_extension", "arrow_removal",
+    # Plan 73 (2026-08-08): Han transport across a bounded extension.
+    "han_transport",
 }
 
 
