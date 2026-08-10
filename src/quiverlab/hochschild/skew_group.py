@@ -128,27 +128,44 @@ def _cols(M):
 # --------------------------------------------------------------------------- #
 # the bridge: h-action on the twisted HH classes
 # --------------------------------------------------------------------------- #
-def _autom_action_on_classes(dom, MhB, hbar, classes, n, side, image_cols):
+def _autom_action_on_classes(dom, MhA, hbar, classes, n, side, image_cols):
     """The matrix (in the class-rep basis) of the automorphism ``h`` on
-    ``HH_n(A, {}_gA)`` / ``HH^n(...)``, given ``h``'s unit-basis matrix ``MhB`` and
-    its induced map ``hbar`` on Abar, the P52 ``classes`` (cycle reps), and the
-    boundary/coboundary ``image_cols`` to quotient by.
+    ``HH_n(A, {}_gA)`` / ``HH^n(...)``, given ``h``'s matrix ``MhA`` on the
+    COEFFICIENT slot, its induced map ``hbar`` on Abar, the P52 ``classes``
+    (cycle reps), and the boundary/coboundary ``image_cols`` to quotient by.
 
-    Homology transport: ``H_n = MhB (x) hbar^{(x)n}`` (the diagonal action).
-    Cohomology transport: ``H^n = MhB (x) ((hbar^{-1})^T)^{(x)n}`` (precomposition
-    by ``h^{-1}`` on the argument slots, post by ``h`` on the value slot)."""
+    Homology transport: ``H_n = MhA (x) hbar^{(x)n}`` (the diagonal action).
+    Cohomology transport: ``H^n = MhA (x) ((hbar^{-1})^T)^{(x)n}`` (precomposition
+    by ``h^{-1}`` on the argument slots, post by ``h`` on the value slot).
+
+    TWO DIFFERENT BASES, and mixing them is silently wrong on multi-vertex input.
+    The bar slots live in the UNIT-ADAPTED basis (``hbar`` is cut from ``h``'s
+    unit-adapted matrix), but the coefficient slot does NOT: P52's
+    ``bar._coeff_in_unit_basis`` transports a coefficient bimodule by
+    ``Bimodule.change_of_basis``, which by contract re-indexes only the A-element
+    slot and leaves ``M``'s OWN basis alone -- so ``M`` stays in ``A``'s original
+    basis. Hence ``MhA = action.matrix_of(h, A)`` (untransported) is what belongs
+    here. The two coincide whenever ``A`` is already unit-adapted (every local
+    algebra) or ``h`` fixes the unit-adapting vertex, which is why the error is
+    invisible until a VERTEX-PERMUTING automorphism acts on a multi-vertex algebra;
+    there it is loud (the transported class leaves the cycle span) rather than
+    quietly wrong. Both conventions above are arbitrated non-vacuously against the
+    chain-map property in ``tests/hochschild/test_skew_group_transport_basis.py``,
+    on an ``hbar`` that is neither symmetric nor self-inverse (so ``hbar``,
+    ``hbar^T``, ``hbar^{-1}``, ``(hbar^{-1})^T`` are four distinct matrices and
+    exactly one works on each side)."""
     K = len(classes)
     if K == 0:
         return []
     if n == 0:
-        Hn = MhB
+        Hn = MhA
     else:
         if side == "hom":
             Jblock = hbar
         else:
             Jblock = _transpose(_matinv(dom, hbar)) if (hbar and hbar[0]) else hbar
         Jpow = _kpow(dom, Jblock, n)
-        Hn = _kron(dom, MhB, Jpow)
+        Hn = _kron(dom, MhA, Jpow)
     # reduction basis: [class reps | image columns]
     reduce_cols = [list(c) for c in classes] + [list(c) for c in image_cols]
     dimC = len(reduce_cols[0])
@@ -225,9 +242,13 @@ def stefan_decomposition(A, action, top, *, side="coh", max_cells=4_000_000,
     summands = []
     status = "complete"
     note = ""
-    # precompute each element's unit-basis matrix + hbar (shared across summands)
-    MhB = [_to_unit_basis(A, action.matrix_of(i, A)) for i in range(order)]
-    Hbar = [_hbar(dom, MhB[i]) for i in range(order)]
+    # precompute each element's matrices (shared across summands). TWO BASES, on
+    # purpose -- see _autom_action_on_classes: the COEFFICIENT slot stays in A's own
+    # basis (Bimodule.change_of_basis never moves M's basis), while the BAR slots are
+    # unit-adapted. They differ exactly when a vertex-permuting automorphism acts on a
+    # multi-vertex algebra.
+    MhA = [action.matrix_of(i, A) for i in range(order)]
+    Hbar = [_hbar(dom, _to_unit_basis(A, MhA[i])) for i in range(order)]
 
     for cls in action.conjugacy_classes:
         gi = cls[0]
@@ -255,7 +276,7 @@ def stefan_decomposition(A, action, top, *, side="coh", max_cells=4_000_000,
                 image_cols = _cols(prev) if prev else []
             mats = []
             for hk in Zg:
-                R = _autom_action_on_classes(dom, MhB[hk], Hbar[hk],
+                R = _autom_action_on_classes(dom, MhA[hk], Hbar[hk],
                                              cd[n]["classes"], n, side, image_cols)
                 mats.append(R)
             invs.append(_reynolds_invariant_dim(dom, mats, len(Zg)))
