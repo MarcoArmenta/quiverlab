@@ -474,6 +474,16 @@ class Algebra:
         from quiverlab.modules.opposite import opposite_algebra
         return opposite_algebra(self)
 
+    def skew_group(self, action):
+        """The skew group algebra ``A rtimes G`` (smash product ``A # kG``) for an
+        explicit finite ``GroupAction`` acting by algebra automorphisms; a
+        first-class structure-constant Algebra of dimension ``|G|*dim A`` (Plan 74).
+        Characteristic-agnostic; the Stefan HH decomposition
+        (``quiverlab.hochschild.skew_group.stefan_decomposition``) needs
+        ``char k does not divide |G|``."""
+        from quiverlab.families.skew_group import skew_group_algebra
+        return skew_group_algebra(self, action)
+
     def hom(self, M, N):
         """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.hom import hom_dim
@@ -497,6 +507,44 @@ class Algebra:
         from quiverlab.modules.ar import knit_ar_quiver
         return knit_ar_quiver(self, budget_modules=budget_modules,
                               budget_dim=budget_dim)
+
+    def split_extension_cohomology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension (trivial-extension) Hochschild-cohomology LES,
+        assembling ``HH^•(T(A))`` from the flanks ``HH^•(L, D(A))`` / ``HH^•(L, A)``
+        and the snake connecting map, cross-checked against the direct ``HH^•(T(A))``
+        (Plan 72 / R5, CMRS ``math/0102194``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_cohomology
+        return split_extension_cohomology(self, top, M=M, max_cells=max_cells)
+
+    def split_extension_homology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension Hochschild-HOMOLOGY twin (the dual SES
+        ``0 → M → L → A → 0`` in ``HH_•(L, −)``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_homology
+        return split_extension_homology(self, top, M=M, max_cells=max_cells)
+
+    def inert_arrows(self):
+        """The inert arrows of ``A`` — arrows in no minimal relation of ``I`` (CLMS
+        Def. 3.1, Plan 72 / R6). Structure-constant-only ⇒ loud."""
+        from quiverlab.hochschild.arrow_removal import inert_arrows
+        return inert_arrows(self)
+
+    def arrow_removal(self, arrows=None, top=6, *, side="both"):
+        """The certified arrow-removal HH reduction (CLMS ``1812.07655``, Plan 72 /
+        R6): build ``B = A ∖ (inert arrows)`` and report the clean ``HH_{≥2}``
+        homology isomorphism (Thm 3.2) + the cohomology Ext-correction (Thm 4.2).
+        ``arrows=None`` removes ALL inert arrows. Returns an ``ArrowRemovalReport``."""
+        from quiverlab.hochschild.arrow_removal import arrow_removal
+        return arrow_removal(self, arrows=arrows, top=top, side=side)
+
+    def barcode(self, M, *, budget=512, budget_modules=256):
+        """The barcode / generalized persistence diagram of a persistence module ``M``
+        (Plan 69 / R33). ``A_n``/zigzag: the interval decomposition (Gabriel /
+        Botnan-Crawley-Boevey), field-robust over any exact domain. ``CL(n<=4)``: the
+        AR-quiver-indexed generalized persistence diagram (Escolar-Hiraoka), char-scoped.
+        Returns a :class:`~quiverlab.modules.barcode.Barcode`; refuses loudly on a
+        non-A_n/non-CL quiver, ``CL(n>=5)``, or a char-undecidable input."""
+        from quiverlab.modules.barcode import barcode
+        return barcode(M, budget=budget, budget_modules=budget_modules)
 
     def radical_filtration(self, budget_modules=256, budget_dim=4096):
         """The radical filtration of ``mod A`` (Plan 57 / R37): exact
@@ -1322,6 +1370,20 @@ class Algebra:
         (Chouhy-Solotar homotopy-lifting bracket, presented algebras, any exact
         Domain, past the bar window). The degree-0 insertion action is out of scope."""
         return self._product_dispatch("bracket", top, engine, max_cells)
+
+    def hh_lie_module(self, top, budget=None, max_cells=4_000_000):
+        """HH^*(A) as a graded Lie module over HH^1(A) (Plan 71 / R12): per degree
+        0..top the action matrices rho_n(D) = the Gerstenhaber degree-1 Lie derivative
+        (the field-general primitive, over any exact field), the self-certified module
+        axiom rho_n([D,E]) = [rho_n(D),rho_n(E)] and inner-acts-zero, plus -- over
+        characteristic 0 -- the weight/torus decomposition and the indecomposable
+        Lie-module summands (the latter governed independently by decompose's own char
+        guard). Builds on HH^1 = Der/Inn (Plan 70); no resolution engine. Returns a
+        frozen HHLieModule."""
+        from quiverlab.hochschild.lie_module import DEFAULT_MAXDIM, lie_module_action
+        return lie_module_action(
+            self, top, budget=DEFAULT_MAXDIM if budget is None else budget,
+            max_cells=max_cells)
 
     def connes_differentials(self, top, max_cells=4_000_000):
         """Induced Connes differentials B : HH_n -> HH_{n+1} (matrices +

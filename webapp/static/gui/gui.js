@@ -114,6 +114,11 @@
     '  <label><input type="checkbox" id="qlgui-derived_compare"> derived compare (with B)</label>' +
     // Plan-41: AR-quiver knitting (algebra-level; honest semi-decision + budget).
     '  <label><input type="checkbox" id="qlgui-ar_quiver"> AR quiver, budget <input type="number" id="qlgui-ar_quiver-budget" value="512" min="1"></label>' +
+    // Plan-72: split-extension LES (trivial extension) + certified arrow removal (algebra-level; top-degree budget).
+    '  <label><input type="checkbox" id="qlgui-split_extension"> split-extension LES (trivial ext), top <input type="number" id="qlgui-split_extension-budget" value="6" min="1"></label>' +
+    '  <label><input type="checkbox" id="qlgui-arrow_removal"> arrow removal (inert), top <input type="number" id="qlgui-arrow_removal-budget" value="6" min="1"></label>' +
+    // Plan-74: skew-group HH decomposition (algebra-level; top-degree budget; needs a SkewGroupAlgebra input).
+    '  <label><input type="checkbox" id="qlgui-skew_group_hh"> skew-group HH decomposition (A&#8905;G), top <input type="number" id="qlgui-skew_group_hh-budget" value="3" min="1"></label>' +
     // Plan-57: radical filtration of mod A (rad^n(X,Y) + nilpotency index) and the
     // AR-component invariants (Liu degrees, directing, rep-directed). Algebra-level,
     // budget (max indecomposables). NOT the Loewy radical series (radical_filtration_ss).
@@ -142,6 +147,8 @@
     '  <label><input type="checkbox" id="qlgui-tame_wild"> tame / wild (Tits form)</label>' +
     // ---- Plan 70: HH^1 as a Lie algebra (Der/Inn, solvable/Levi) ----
     '  <label><input type="checkbox" id="qlgui-hh1_lie"> HH&sup1; Lie structure (Der/Inn, solvable/Levi)</label>' +
+    // ---- Plan 71: HH^* as a graded Lie module over HH^1 (weights + indecomposable summands) ----
+    '  <label><input type="checkbox" id="qlgui-hh_lie_module"> HH&bull; Lie module over HH&sup1; 0..<input type="number" id="qlgui-hh_lie_module-top" value="2" min="0"></label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
@@ -188,6 +195,7 @@
     '    <label><input type="checkbox" id="qlgui-projective_resolution"> proj.res 0..<select id="qlgui-pr-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-injective_resolution"> inj.res 0..<select id="qlgui-ir-top"></select></label>' +
     '    <label><input type="checkbox" id="qlgui-decompose"> decompose</label>' +
+    '    <label><input type="checkbox" id="qlgui-barcode"> barcode</label>' +
     '    <label><input type="checkbox" id="qlgui-almost_split"> almost-split</label>' +
     '    <label><input type="checkbox" id="qlgui-tilting_check"> tilting?</label>' +
     '    <label><input type="checkbox" id="qlgui-orbit_geometry"> orbit geometry</label>' +
@@ -260,6 +268,10 @@
    "radical_filtration_ss", "radical_filtration_ss-top",
    // Plan 41: AR-quiver knitting (algebra-level, budget) ; Plan 43: derived compare + algebra B
    "ar_quiver", "ar_quiver-budget", "derived_compare",
+   // Plan 72: split-extension LES + certified arrow removal (algebra-level, top-degree budget)
+   "split_extension", "split_extension-budget", "arrow_removal", "arrow_removal-budget",
+   // Plan 74: skew-group HH decomposition (algebra-level, top-degree budget)
+   "skew_group_hh", "skew_group_hh-budget",
    // Plan 57: radical filtration + AR-component invariants (algebra-level, budget)
    "radical_filtration", "radical_filtration-budget",
    "ar_invariants", "ar_invariants-budget",
@@ -294,6 +306,8 @@
    "tame_wild",
    // Plan 70: HH^1 as a Lie algebra (scalar algebra-only kind)
    "hh1_lie",
+   // Plan 71: HH^* as a Lie module over HH^1 + degree picker (top-carrying HH kind)
+   "hh_lie_module", "hh_lie_module-top",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
    // Plan 64: torsion lattice / Con / forcing / wide subcategories (budget picker)
@@ -313,7 +327,7 @@
    "dimension_vector", "rad_top_soc", "tau", "tau_minus",
    "projective_dimension", "injective_dimension",
    "projective_resolution", "pr-top", "injective_resolution", "ir-top",
-   "decompose", "almost_split", "ext", "ext-top", "tor", "tor-top",
+   "decompose", "barcode", "almost_split", "ext", "ext-top", "tor", "tor-top",
    "decompose", "tilting_check", "orbit_geometry", "ext", "ext-top", "tor", "tor-top",
    "target", "target-mode", "target-side", "target-body", "target-note"]
     .forEach(function (id) { el[id] = document.getElementById("qlgui-" + id); });
@@ -460,7 +474,7 @@
     "projective_dimension", "injective_dimension",
     "projective_resolution", "injective_resolution", "decompose", "almost_split",
     "projective_resolution", "injective_resolution", "decompose", "tilting_check",
-    "orbit_geometry", "ext", "tor"];
+    "orbit_geometry", "barcode", "ext", "tor"];
 
   // Generic matrix-editor helpers over a module-state {dims, maps} + a side. Used
   // by BOTH the main module panel (S.module) and the second-argument editor
@@ -941,6 +955,9 @@
      "fundamental_group", "simply_connected", "tame_wild", "hh1_lie"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
+    // Plan 71: HH^* as a Lie module over HH^1 -- a top-carrying HH kind (bracket form).
+    if (el.hh_lie_module.checked)
+      compute.push("hh_lie_module:0.." + el["hh_lie_module-top"].value);
     // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
     // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
     if (el.tau_tilting.checked)
@@ -969,6 +986,14 @@
     // degree -- the single-int form both runners parse (like tau_tilting).
     if (el.ar_quiver.checked)
       compute.push("ar_quiver:" + el["ar_quiver-budget"].value);
+    // Plan 72: split-extension LES + arrow removal carry a TOP-DEGREE budget -- the
+    // single-int form "split_extension:<top>" both runners parse (like ar_quiver).
+    if (el.split_extension.checked)
+      compute.push("split_extension:" + el["split_extension-budget"].value);
+    if (el.arrow_removal.checked)
+      compute.push("arrow_removal:" + el["arrow_removal-budget"].value);
+    if (el.skew_group_hh.checked)
+      compute.push("skew_group_hh:" + el["skew_group_hh-budget"].value);
     // Plan 57: radical_filtration + ar_invariants carry a MODULE BUDGET (like
     // ar_quiver) -- the single-int form both runners parse.
     if (el.radical_filtration.checked)
@@ -997,7 +1022,7 @@
       module = moduleSpec();
       ["dimension_vector", "rad_top_soc", "tau", "tau_minus",
        "projective_dimension", "injective_dimension", "decompose",
-       "tilting_check", "orbit_geometry"].forEach(function (k) {
+       "tilting_check", "orbit_geometry", "barcode"].forEach(function (k) {
         if (el[k].checked) compute.push(k);
       });
       if (el.projective_resolution.checked)
@@ -3053,6 +3078,79 @@
       div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
   }
 
+  // ---- Plan 71: HH^* as a graded Lie module over HH^1 (weights + summands) ----
+  function renderHhLieModule(div, b) {
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.error }));
+      return;
+    }
+    var yn = function (x) { return x ? "yes" : "no"; };
+    div.appendChild(h("p", { text: dataText("block-hh_lie_module-title",
+      "HH• as a Lie module over HH¹") + ": the action is the Gerstenhaber degree-1 "
+      + "bracket [D, −] = the Lie derivative (field-general over any exact field)." }));
+    div.appendChild(h("p", { text: "dim HH• = [" + (b.hh_dims || []).join(", ")
+      + "],  dim HH¹ = " + b.hh1_dim + "  (the acting Lie algebra)." }));
+    div.appendChild(h("p", { text: "module axiom ρ([D,E]) = [ρ(D),ρ(E)]: "
+      + yn(b.module_axiom_ok) + " · inner derivations act as zero: "
+      + yn(b.inner_acts_zero) + "." }));
+    // Indecomposable-summand decomposition table (per degree: HH^n = (+) M_d^m).
+    if (b.summands) {
+      div.appendChild(h("p", { text: dataText("block-hh_lie_module-decomp",
+        "Indecomposable summands") + ":" }));
+      var st = h("table"), sh = h("tr");
+      sh.appendChild(h("th", { text: "n" }));
+      sh.appendChild(h("th", { text: "HHⁿ = ⊕ Mᵈⁱᵐ" }));
+      st.appendChild(sh);
+      b.summands.forEach(function (e) {
+        var desc;
+        if (e.parts && e.parts.error) {
+          desc = e.parts.error;
+        } else {
+          desc = (e.parts || []).map(function (p) {
+            return "M" + p.dim + (p.mult > 1 ? "^" + p.mult : "")
+              + (p.label ? " (" + p.label + ")" : "");
+          }).join(" ⊕ ") || "0";
+        }
+        var r = h("tr");
+        r.appendChild(h("td", { text: String(e.n) }));
+        r.appendChild(h("td", { text: desc }));
+        st.appendChild(r);
+      });
+      div.appendChild(st);
+    }
+    // Weight / torus decomposition table (characteristic 0 only).
+    if (b.weights) {
+      div.appendChild(h("p", { text: dataText("block-hh_lie_module-weights",
+        "Weights (maximal torus)") + ":" }));
+      var wt = h("table"), wh = h("tr");
+      wh.appendChild(h("th", { text: "n" }));
+      wh.appendChild(h("th", { text: "rank" }));
+      wh.appendChild(h("th", { text: "weights (λ: dim)" }));
+      wt.appendChild(wh);
+      b.weights.forEach(function (e) {
+        var ws = (e.weights || []).map(function (pair) {
+          return "(" + (pair[0] || []).join(",") + "): " + pair[1];
+        }).join("  ");
+        var r = h("tr");
+        r.appendChild(h("td", { text: String(e.n) }));
+        r.appendChild(h("td", { text: String(e.torus_rank) }));
+        r.appendChild(h("td", { text: ws }));
+        wt.appendChild(r);
+      });
+      div.appendChild(wt);
+      if (b.torus_provenance)
+        div.appendChild(h("p", { "class": "qlgui-hint", text: b.torus_provenance }));
+    } else if (b.char0_note) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: dataText("block-hh_lie_module-charp",
+          "Weights/decomposition need characteristic 0") + " — " + b.char0_note }));
+    }
+    if (b.weight_base_change_note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.weight_base_change_note }));
+    if (b.note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+  }
+
   function renderTauTilting(div, b) {
     div.appendChild(h("p", { text: "Support τ-tilting pairs (Adachi–Iyama–"
       + "Reiten): each is a maximal cone of the g-vector fan; each mutation crosses a wall "
@@ -3652,6 +3750,79 @@
         " indecomposable summand(s):" }));
       div.appendChild(decompTable(b.summands));
       appendSummandMaps(div, b.summands);
+    } else if (name === "barcode") {
+      // Persistence/TDA barcode (Plan 69 / R33): rep-theory-first framing, an interval
+      // table + a simple HTML bar diagram over the 1..n index axis, and -- for a
+      // commutative ladder -- the AR-quiver-indexed generalized persistence diagram.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        var bkind = b.kind || "persistence";
+        var intro = (bkind === "commutative_ladder")
+          ? ("A persistence module on the commutative ladder CL(" + b.n + ") = A_" + b.n
+             + " □ A_2 is a representation of this bound quiver; its generalized "
+             + "persistence diagram is the Krull–Schmidt decomposition indexed by "
+             + "the Auslander–Reiten quiver (Escolar–Hiraoka). Char-scoped over "
+             + b.field + " (char 0 / char > dim).")
+          : ((bkind === "zigzag" ? "A zigzag module" : "A persistence module")
+             + " over A_" + b.n + " is a representation of the quiver A_" + b.n
+             + "; its barcode is the interval decomposition of M (Gabriel / "
+             + "Botnan–Crawley-Boevey). Field-robust over " + b.field
+             + " (interval modules are bricks); the filtration parameter is the discrete "
+             + "vertex index 1.." + b.n + ", a top-reaching forward bar is essential "
+             + "(death = " + b.n + "), never ∞.");
+        div.appendChild(h("p", { "class": "qlgui-hint", text: intro }));
+        var bhead = h("tr");
+        ["Birth", "Death", "multiplicity", "essential", "dim vector"].forEach(function (t) {
+          bhead.appendChild(h("th", { text: t }));
+        });
+        var btbl = h("table", {}, bhead);
+        (b.bars || []).forEach(function (bar) {
+          var tr = h("tr");
+          tr.appendChild(h("td", { text: String(bar.birth) }));
+          tr.appendChild(h("td", { text: String(bar.death) }));
+          tr.appendChild(h("td", { text: String(bar.multiplicity) }));
+          tr.appendChild(h("td", { text: bar.essential ? "yes" : "no" }));
+          tr.appendChild(h("td", { text: dvText(bar.dimvec || {}) }));
+          btbl.appendChild(tr);
+        });
+        div.appendChild(btbl);
+        if (b.n && (b.bars || []).length) {
+          var dhead = h("tr");
+          dhead.appendChild(h("th"));
+          for (var i = 1; i <= b.n; i++) dhead.appendChild(h("th", { text: String(i) }));
+          var dtbl = h("table", { "class": "qlgui-barcode" }, dhead);
+          b.bars.forEach(function (bar) {
+            var tr = h("tr");
+            tr.appendChild(h("th", { text: "[" + bar.birth + "," + bar.death + "]" }));
+            for (var j = 1; j <= b.n; j++) {
+              var on = (bar.birth <= j && j <= bar.death);
+              tr.appendChild(h("td", { style: "background:" + (on ? "#bbb" : "transparent") },
+                document.createTextNode(" ")));
+            }
+            dtbl.appendChild(tr);
+          });
+          div.appendChild(dtbl);
+        }
+        if (bkind === "commutative_ladder" && b.diagram) {
+          div.appendChild(h("p", { text: "Generalized persistence diagram (indexed by the "
+            + "AR quiver of CL(" + b.n + ")):" }));
+          var ghead = h("tr");
+          ["AR vertex", "dim vector", "multiplicity", "interval?"].forEach(function (t) {
+            ghead.appendChild(h("th", { text: t }));
+          });
+          var gtbl = h("table", {}, ghead);
+          b.diagram.forEach(function (e) {
+            var tr = h("tr");
+            tr.appendChild(h("td", { text: String(e.ar_name) }));
+            tr.appendChild(h("td", { text: dvText(e.dimvec || {}) }));
+            tr.appendChild(h("td", { text: String(e.multiplicity) }));
+            tr.appendChild(h("td", { text: e.is_interval ? "yes" : "no" }));
+            gtbl.appendChild(tr);
+          });
+          div.appendChild(gtbl);
+        }
+      }
     } else if (name === "almost_split") {
       // The almost-split (Auslander–Reiten) sequence 0 → τM → E → M → 0 (Plan 41);
       // an honest refusal for a projective / decomposable / undecidable input.
@@ -4046,12 +4217,124 @@
       renderTauCluster(div, b);
     } else if (name === "hh1_lie") {
       renderHh1Lie(div, b);
+    } else if (name === "hh_lie_module") {
+      renderHhLieModule(div, b);
     } else if (name === "wall_chamber") {
       renderWallChamber(div, b);
     } else if (name === "silting") {
       renderSilting(div, b);
     } else if (name === "exceptional_sequences") {
       renderExceptionalSequences(div, b);
+    } else if (name === "split_extension") {
+      // Plan 72: the split-extension (trivial-extension) Hochschild LES. Flanks +
+      // p=0 leading pieces + snake delta + assembled vs direct + HH^1 witness.
+      if (b.error || b.status === "unsupported" || b.status === "error") {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Split-extension LES not computed — " + (b.error || "input not eligible") + "." }));
+      } else {
+        div.appendChild(h("p", { text: "Drawn algebra read as B; extension L = T(B) = "
+          + "B ⋉ D(B). " + (b.side || "cohomology")
+          + " LES assembled from the flanks + snake, cross-checked against direct." }));
+        var seRows = [
+          ["dim HH^n(L, D(B)) [M-flank -> top+1]", b.flank_M],
+          ["dim HH^n(L, B) [B-flank]", b.flank_B],
+          ["p=0 leading HH^n(B)", b.leading_B],
+          ["p=0 leading H^n(B, D(B))", b.leading_M],
+          ["rank of connecting map δ^n", b.delta_ranks],
+          ["assembled HH^n(L)", b.assembled],
+          ["direct HH^n(L) [cross-check]", b.direct]
+        ];
+        seRows.forEach(function (r) {
+          if (!r[1]) return;
+          var head = h("tr"), row = h("tr");
+          head.appendChild(h("th", { text: r[0] }));
+          row.appendChild(h("th", { text: "" }));
+          r[1].forEach(function (d, n) {
+            head.appendChild(h("th", { text: String(n) }));
+            row.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, head, row));
+        });
+        div.appendChild(h("p", { text: "LES exactness self-cert: " + String(b.exact)
+          + "; assembled == direct: " + String(b.agrees) + "." }));
+        var seWit = b.hh1_nonzero
+          ? "HH^1(L) ≠ 0 (the grading-derivation witness E(b+m)=m is outer)."
+          : "HH^1(L) witness unavailable.";
+        if (b.hh1_directed_formula === true)
+          seWit += " For this directed B, HH^1(T(B)) = k ⊕ HH^1(B).";
+        div.appendChild(h("p", { text: seWit }));
+      }
+    } else if (name === "arrow_removal") {
+      // Plan 72: certified arrow removal. Inert arrows + clean HH_{>=2} homology
+      // isomorphism (Thm 3.2) + cohomology Ext-correction (Thm 4.2).
+      if (b.error || b.status === "unsupported" || b.status === "error") {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Arrow-removal reduction not computed — " + (b.error || "input not eligible") + "." }));
+      } else {
+        div.appendChild(h("p", { text: "Inert arrows deleted (Def. 3.1): "
+          + ((b.removed || []).join(", ") || "none") + ". B = A \\ {" + (b.removed || []).join(", ") + "}." }));
+        var arRows = [["dim HH_n(A)", b.hom_A], ["dim HH_n(B)", b.hom_B],
+          ["dim HH^n(A)", b.coh_A], ["dim HH^n(B)", b.coh_B],
+          ["cohomology Ext-correction (n>=2)", b.coh_correction]];
+        arRows.forEach(function (r) {
+          if (!r[1]) return;
+          var head = h("tr"), row = h("tr");
+          head.appendChild(h("th", { text: r[0] }));
+          row.appendChild(h("th", { text: "" }));
+          r[1].forEach(function (d, n) {
+            head.appendChild(h("th", { text: String(n) }));
+            row.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, head, row));
+        });
+        div.appendChild(h("p", { text: "Homology isomorphism HH_n(A) = HH_n(B) for n >= 2 (Thm 3.2): "
+          + String(b.hom_agrees) + ". HH_0 provably invariant; HH_{0,1}: "
+          + JSON.stringify(b.hom_low_agrees) + "." }));
+        if (b.coh_low_delta)
+          div.appendChild(h("p", { text: "Low-degree center/disconnection deltas [n=0, n=1]: "
+            + JSON.stringify(b.coh_low_delta) + " (distinct from the n>=2 Ext-correction)." }));
+      }
+    } else if (name === "skew_group_hh") {
+      // Plan 74: the Ştefan conjugacy-class HH decomposition of A⋊G, cross-checked
+      // against the direct engine. Per-class twisted HH + Z(g)-invariants + assembled
+      // total + direct row; modular (char | |G|) shows direct-only.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Skew-group HH decomposition not computed — " + b.error + "." }));
+      } else {
+        div.appendChild(h("p", { text: "Skew group algebra A⋊G (dim = |G|·dim A = "
+          + String(b.group_order) + "·" + String(b.base_dim) + " = " + String(b.dim)
+          + "). HH^n(A⋊G) ≅ ⊕_[g] HH^n(A, gA)^Z(g) (Ştefan 1995; Shepler–Witherspoon 2012)." }));
+        var sgRows = [];
+        if (b.char_ok === false) {
+          div.appendChild(h("p", { "class": "qlgui-note",
+            text: (b.note || "Modular case (char divides |G|).") + " Direct HH only." }));
+          sgRows.push(["dim HH^n(A⋊G) [direct]", b.dims]);
+        } else {
+          (b.decomposition || []).forEach(function (s) {
+            sgRows.push(["dim HH^n(A, gA) [class " + String(s["class"]) + "]", s.hh]);
+            sgRows.push(["Z(g)-invariants [class " + String(s["class"]) + "]", s.inv]);
+          });
+          sgRows.push(["assembled dim HH^n(A⋊G)", b.dims]);
+          sgRows.push(["direct dim HH^n(A⋊G) [cross-check]", b.direct_dims]);
+        }
+        sgRows.forEach(function (r) {
+          if (!r[1]) return;
+          var head = h("tr"), row = h("tr");
+          head.appendChild(h("th", { text: r[0] }));
+          row.appendChild(h("th", { text: "" }));
+          r[1].forEach(function (d, n) {
+            head.appendChild(h("th", { text: String(n) }));
+            row.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, head, row));
+        });
+        if (b.agrees !== null && b.agrees !== undefined)
+          div.appendChild(h("p", { text: "decomposition == direct: " + String(b.agrees) + "." }));
+        if (b.status && b.status !== "complete")
+          div.appendChild(h("p", { "class": "qlgui-note", text: "status: " + String(b.status)
+            + (b.note ? " — " + b.note : "") }));
+      }
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -4537,6 +4820,7 @@
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
    el.fundamental_group, el.simply_connected, el.tame_wild,
+   el.hh_lie_module, el["hh_lie_module-top"],
    el.skew_gentle, el["skew_gentle-special"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
@@ -4550,7 +4834,7 @@
   [el.dimension_vector, el.rad_top_soc, el.tau, el.tau_minus,
    el.projective_dimension, el.injective_dimension, el.decompose, el.almost_split,
    el.projective_dimension, el.injective_dimension, el.decompose, el.tilting_check,
-   el.orbit_geometry,
+   el.orbit_geometry, el.barcode,
    el.projective_resolution, el["pr-top"], el.injective_resolution, el["ir-top"],
    el["ext-top"], el["tor-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
@@ -4615,11 +4899,11 @@
   // QLGUI-THEMES-BEGIN
   var THEMES =
   [
-    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket"]},
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
-    {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "orbit_geometry"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
   ];
@@ -5121,6 +5405,9 @@
     ss_hochschild: { cb: "ss_hochschild", top: "ss_hochschild-top" },
     radical_filtration_ss: { cb: "radical_filtration_ss", top: "radical_filtration_ss-top" },
     ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
+    split_extension: { cb: "split_extension", top: "split_extension-budget", budget: true },
+    arrow_removal: { cb: "arrow_removal", top: "arrow_removal-budget", budget: true },
+    skew_group_hh: { cb: "skew_group_hh", top: "skew_group_hh-budget", budget: true },
     radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
     ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
     left_right_parts: { cb: "left_right_parts", top: "left_right_parts-budget", budget: true },
@@ -5145,6 +5432,7 @@
     simply_connected: { cb: "simply_connected" },
     tame_wild: { cb: "tame_wild" },
     hh1_lie: { cb: "hh1_lie" },
+    hh_lie_module: { cb: "hh_lie_module", top: "hh_lie_module-top" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     congruences: { cb: "congruences", top: "congruences-budget", budget: true },
     tau_cluster: { cb: "tau_cluster", top: "tau_cluster-budget", budget: true },

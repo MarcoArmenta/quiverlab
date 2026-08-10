@@ -11,6 +11,7 @@ DATA (ints or exact strings like ``"1/2"``) — never evaluated, never floats; t
 exact parse into the chosen field happens later, loudly, in the runner."""
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from fractions import Fraction
@@ -68,6 +69,21 @@ class FamilyAlgebraSpec(BaseModel):
         for key, val in v.items():
             _reject_float_params(val, repr(key))
         return v
+
+    @model_validator(mode="after")
+    def _normalize_generators(self):
+        # Canonical-key generator-ORDER normalization (Plan 74): the SkewGroupAlgebra
+        # `generators` list ORDER is presentation, not mathematics. Sort it by a stable
+        # JSON key so two orderings of the same action produce the SAME cache key (the
+        # library builder re-canonicalizes independently, so the built algebra is
+        # order-invariant regardless). Full up-to-iso group normalization is out of
+        # v1 scope (a different generating SET keys differently -- documented).
+        if self.family == "SkewGroupAlgebra":
+            gens = self.params.get("generators")
+            if isinstance(gens, list):
+                self.params["generators"] = sorted(
+                    gens, key=lambda g: json.dumps(g, sort_keys=True, default=str))
+        return self
 
 
 class QuiverAlgebraSpec(BaseModel):
@@ -130,7 +146,7 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 # Module kinds that consume a degree range (`kind:0..n`); the rest are scalars.
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
@@ -473,6 +489,23 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # split_extension / arrow_removal (Plan 72) carry a TOP-DEGREE budget, not a lo..hi
+    # range: 'split_extension' / 'split_extension:6'. The budget is a single cap, not a
+    # 'name:0..N' range -- server and GUI/hpc agree on this special form.
+    for _kind in ("split_extension", "arrow_removal"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SchemaError(f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
+    # skew_group_hh (Plan 74) carries a TOP-DEGREE budget: 'skew_group_hh' or
+    # 'skew_group_hh:3'. The Stefan conjugacy-class HH decomposition is assembled to
+    # degree hi (a single cap, not a 'name:0..N' range) -- server and GUI/hpc agree.
+    if s == "skew_group_hh" or s.startswith("skew_group_hh:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"skew_group_hh budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_group_hh", lo=None, hi=(int(b) if b else None))
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget is not a homological
     # degree, so it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this form.

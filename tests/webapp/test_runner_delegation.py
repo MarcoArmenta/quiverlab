@@ -420,6 +420,58 @@ never hide behind one:
     Both runners share the library builder (``invariants.hh1_lie.hh1_lie_block``), so the
     Pyodide twin agrees (``tests/gui/test_hh1_lie_runner_twin_p70.py``). ``canonical_key``
     is request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-08 (``hh_lie_module_kronecker`` ADDED, Plan 71 / R12): a NEW top-carrying HH
+    kind (the ``bracket`` precedent). kK2 over QQ, ``compute == ["hh_lie_module:0..2"]``
+    -- the shared block reports HH• as a graded Lie module over HH^1: ``hh_dims ==
+    [1, 3, 0]``, ``hh1_dim == 3``, ``module_axiom_ok``/``inner_acts_zero`` true, the
+    degree-1 indecomposable-summand entry (one part ``dim == 3``, the sl2-adjoint L(2)),
+    and the char-0 weight table (a symmetric sl2-string). Pure ADDITION: all pre-existing
+    entries were verified byte-identical BEFORE the append (the generator round-trips the
+    file bytes, then re-dumps ``indent=1`` order-preserving). Both runners share the library
+    builder (``hochschild.lie_module.hh_lie_module_block``), so the Pyodide twin agrees
+    (``tests/gui/test_hh_lie_module_twin_p71.py``). ``canonical_key`` is request-derived
+    (schema-2 algebra-only, no ``module`` block).
+  * 2026-08-08 (``split_extension_kA2`` + ``arrow_removal_P1`` ADDED, Plan 72 /
+    R5+R6): two NEW algebra-only TOP-DEGREE budget kinds. ``split_extension_kA2`` =
+    kA2 (1->2) over GF(7), ``split_extension:4`` -- the trivial-extension Hochschild
+    LES (``assembled == direct == [3,1,1,1,1]``, ``agrees``/``exact`` true, the
+    grading-derivation ``HH^1 != 0`` witness). ``arrow_removal_P1`` = a loop x (x^2=0)
+    plus an inert bridge c:1->2 over GF(7), ``arrow_removal:4`` (``removed == ['c']``,
+    ``HH_n(A) == HH_n(B) == [3,1,1,1,1]``, ``hom_agrees`` true, ``coh_low_delta[0] ==
+    -2`` the disconnection effect). Pure ADDITION: every pre-existing entry was
+    verified byte-identical BEFORE the append (the generator round-trips the file
+    bytes, then re-dumps with the same ``indent=1`` settings). Both runners share the
+    library builders (``split_extension.split_extension_block`` /
+    ``arrow_removal.arrow_removal_block``), so the Pyodide twin agrees
+    (``tests/gui/test_split_arrow_runner_twin.py``). ``canonical_key`` is
+    request-derived (schema-1 algebra-only, the top-degree budget rides in the
+    ``compute`` string, no ``module`` block).
+  * 2026-08-08 (``barcode_a5``): ADDED for Plan 69 (R33 persistence/TDA bridge) -- the
+    new ``barcode`` module-side compute kind. One entry: a schema-2 request drawing the
+    forward line ``A_5`` (1->2->3->4->5, QQ) with the filtration ``H_0`` module (dims
+    (1,2,1,2,1), Plan-26 per-arrow block maps) + ``compute: ["barcode"]``. The block is
+    the interval barcode ``{[1,5] essential, [2,2], [4,4]}`` (LIVE-VERIFIED). Appended AFTER
+    dev's ``hh1_lie_kronecker`` (parse dev's dict, append ``barcode_a5`` LAST, re-dump
+    ``indent=1``, NEVER ``sort_keys``); all 39 prior entries confirmed byte-identical first.
+    Both runners share the library core builder (``quiverlab.modules.barcode.barcode_block``),
+    so the Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
+    is request-derived (the ``module`` block canonicalizes through the Plan-25 key; no new
+    top-level request field).
+  * 2026-08-08 (``skew_group_hh_z2dual`` ADDED, Plan 74 / R8): a NEW fixture for the
+    ``SkewGroupAlgebra`` construction family + the ``skew_group_hh`` ALGEBRA-level
+    TOP-DEGREE budget kind. Z/2 on k[x]/(x^2) (σ: x ↦ −x, arrow scalar −1) over QQ,
+    ``compute == ["skew_group_hh:3"]`` -- the Ştefan conjugacy-class decomposition
+    ``dims == direct_dims == [1,1,1,1]``, ``agrees == true``, the per-class summands
+    (identity ``inv [1,1,1,1]`` + σ-twisted ``inv [0,0,0,0]``). Pure ADDITION: every
+    pre-existing entry was verified byte-identical BEFORE the append (the goldens JSON
+    round-trips through ``json.dumps(indent=1)`` + newline byte-for-byte, so the new key
+    is appended LAST and no existing bytes move). Both runners share the library builder
+    (``hochschild.skew_group.skew_group_hh_block``) and the family builder
+    (``families.skew_group.build_skew_group_from_params``), so the Pyodide twin agrees
+    (``tests/gui/test_skew_group_runner_twin_p74.py``). ``canonical_key`` is
+    request-derived (family params; the SkewGroupAlgebra ``generators`` list is
+    order-normalized in the schema so two orderings collide, the top-degree budget rides
+    in the ``compute`` string -- no new top-level request field).
   * 2026-08-08 (``tau_cluster_kA2`` ADDED, Plan 66 / R29): a NEW algebra-only PAIR-budget
     kind. kA2 (1 -> 2, no relations) over QQ, ``compute == ["tau_cluster:512"]`` -- the
     shared block reports the tau-cluster morphism category W(A): ``object_count == 5`` (=

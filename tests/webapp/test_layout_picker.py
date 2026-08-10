@@ -60,10 +60,18 @@ ALL_KINDS = {
     "tame_wild",
     # Plan 54 (2026-08-07): the Batalin-Vilkovisky operator Delta.
     "bv_operator",
+    # Plan 69 (2026-08-07): the persistence/TDA barcode module-side kind.
+    "barcode",
     # Plan 65 (2026-08-08): exceptional sequences (classical hereditary + tau-exceptional).
     "exceptional_sequences",
     # Plan 70 (2026-08-08): HH^1 as a Lie algebra (Der/Inn, solvable/Levi).
     "hh1_lie",
+    # Plan 71 (2026-08-08): HH^* as a Lie module over HH^1 (weights + summands).
+    "hh_lie_module",
+    # Plan 72 (2026-08-08): split-extension LES + certified arrow removal.
+    "split_extension", "arrow_removal",
+    # Plan 74 (2026-08-08): skew-group HH decomposition (Ştefan conjugacy classes).
+    "skew_group_hh",
     # Plan 66 (2026-08-08): tau-cluster morphism category W(A) + picture group.
     "tau_cluster",
 }

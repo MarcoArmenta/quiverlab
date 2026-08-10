@@ -316,6 +316,14 @@ REGISTRY: dict = {r.key: r for r in [
        "The HH^1(T(A)) decomposition and Example 2.20 (the Z_5 cycle) -- the "
        "trivial-extension first-cohomology oracle.",
        "hochschild", "oracle"),
+    _r("clms_arrow_removal", "cibilslanzilottamarcossolotar2020", "foundation",
+       "Deleting or adding arrows of a bound quiver algebra and Hochschild "
+       "(co)homology",
+       "Inert-arrow deletion (Def. 3.1) gives a clean HH_n isomorphism for n >= 2 "
+       "(Thm 3.2) and a cohomology Ext-correction (Thm 4.2); arrow addition = the "
+       "tensor algebra T_B(N), finite iff no relative cycle (Thm 3.5/3.6) -- the "
+       "Plan-72 certified arrow-removal reduction and the P73 Han-conjecture seam.",
+       "hochschild", "oracle"),
     _r("chaparro_schroll_solotar", "ChaparroSchrollSolotar2020", "foundation",
        "On the Lie algebra structure of the first Hochschild cohomology of gentle "
        "and Brauer graph algebras",
@@ -793,6 +801,32 @@ REGISTRY: dict = {r.key: r for r in [
        "Obaid et al.: #CES(Delta) = n! h^n / |W|; A_n = (n+1)^{n-1}, D_4 = 162 -- the "
        "closed-form count oracle.",
        "modules"),
+    _r("escolar_hiraoka", "EscolarHiraoka2016", "foundation",
+       "Persistence modules on commutative ladders of finite type",
+       "Representation theory of the commutative ladder CL(n) = A_n [] A_2: rep-finite "
+       "iff n <= 4 (the P69 scope boundary), with explicit AR quivers for n <= 4. TDA "
+       "gloss: the generalized persistence diagram of a ladder persistence module is its "
+       "AR-quiver-indexed Krull-Schmidt decomposition.",
+       "modules", "persistence"),
+    _r("botnan_crawley_boevey", "BotnanCrawleyBoevey2020", "foundation",
+       "Decomposition of persistence modules",
+       "A pointwise-finite-dimensional persistence module over a totally ordered or "
+       "zigzag poset decomposes uniquely into interval modules (Krull-Remak-Schmidt-"
+       "Azumaya) -- the theorem that 'barcode = interval decomposition' is well-defined "
+       "for A_n and zigzag lines.",
+       "modules", "persistence"),
+    _r("igusa_rock_todorov", "IgusaRockTodorov2019", "foundation",
+       "Continuous quivers of type A (I)",
+       "The continuous-limit representation theory of type-A persistence -- the "
+       "conceptual bridge (representation theory <-> persistence); cited as context, not "
+       "a computed oracle (quiverlab is finite/exact).",
+       "modules", "persistence"),
+    _r("gabriel", "Gabriel1972", "foundation",
+       "Unzerlegbare Darstellungen I",
+       "Gabriel's theorem: the indecomposable representations of a type-A_n quiver are "
+       "the interval (thin) modules = positive roots, each a brick (End = k) -- why the "
+       "A_n / zigzag barcode is field-robust over every exact domain.",
+       "modules", "persistence"),
     _r("rss_hh1_lie", "RSS2023hh1lie", "foundation",
        "The first Hochschild cohomology as a Lie algebra",
        "Rubio y Degrassi-Schroll-Solotar: the no-loops/no-parallel-arrows Ext-quiver "
@@ -833,6 +867,45 @@ REGISTRY: dict = {r.key: r for r in [
        "rad = [L,L]^perp, Levi-Malcev decomposition, and direct-sum-of-simple-ideals "
        "type of a semisimple Lie algebra.",
        "lie", "algorithm"),
+    # --- Plan 71: R12 HH^* as a graded Lie module over HH^1 ---
+    _r("mnprs_special_biserial", "MeinelNguyenPauwelsRedondoSolotar2021", "foundation",
+       "The Gerstenhaber structure on the Hochschild cohomology of a class of special biserial algebras",
+       "Meinel-Nguyen-Pauwels-Redondo-Solotar: HH^1 is a direct sum of copies of a "
+       "subquotient of the Virasoro algebra, and each HH^n is described as a module over "
+       "this Lie algebra by its decomposition into indecomposable summands -- the "
+       "char-0 indecomposable-summand deliverable of Plan 71.",
+       "hochschild", "lie"),
+    _r("csss_gentle_tt", "ChaparroSchrollSolotarSuarezAlvarez2026", "foundation",
+       "The Hochschild cohomology and the Tamarkin-Tsygan calculus of gentle algebras",
+       "Chaparro-Schroll-Solotar-Suarez-Alvarez: the whole Tamarkin-Tsygan calculus of "
+       "gentle algebras -- HH^* as a graded-commutative algebra and a graded Lie algebra, "
+       "with HH_* a module over HH^*; the Lie-module-over-HH^1 structure Plan 71 computes "
+       "is one facet, and gentle algebras are its literature anchor.",
+       "hochschild", "lie"),
+    _r("stefan_hopf_galois", "StefanHopfGalois1995", "foundation",
+       "Hochschild cohomology on Hopf Galois extensions",
+       "Stefan: the spectral sequence for a Hopf-Galois extension; for H = kG a group "
+       "algebra it decomposes along the conjugacy classes of G -- the origin of the "
+       "skew-group HH conjugacy-class decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("shepler_witherspoon_group_actions", "SheplerWitherspoonGroupActions", "foundation",
+       "Group actions on algebras and the graded Lie structure of Hochschild cohomology",
+       "Shepler-Witherspoon: the additive conjugacy-class decomposition of HH^*(A rtimes G) "
+       "with the Z(g)-invariants -- the load-bearing anchor for quiverlab's Stefan "
+       "decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("cibils_marcos_smash", "CibilsMarcosSmash2006", "foundation",
+       "Skew category, Galois covering and smash product of a k-category",
+       "Cibils-Marcos: the smash-product / skew-category construction, the free action, "
+       "and the Galois covering -- the constructor + free-action anchor for A rtimes G "
+       "(Plan 74).",
+       "family", "skew_group"),
+    _r("marcos_mv_invariants", "MarcosMartinezVillaMartinsInvariants", "foundation",
+       "Hochschild cohomology of skew group rings and invariants",
+       "Marcos-Martinez-Villa-Martins: the ring monomorphism HH^*(A)^G into HH^*(A rtimes G) "
+       "-- the identity-summand self-certificate for the skew-group decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+
     _r("buan_marsh_wide", "BuanMarsh2021wide", "foundation",
        "A category of wide subcategories",
        "Buan-Marsh: DEFINES the tau-cluster morphism category W(A) -- objects are the "

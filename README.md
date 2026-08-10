@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-4658_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-4847_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 4658 tests over the
+Every shipped feature is unit tested (the suite is 4847 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -283,6 +283,12 @@ ported and wired in:
   toral rank behind a hard char gate; the `k[x]/(x^n)` **solvable-vs-Jacobson–Witt**
   dichotomy (`W₁` at `n = char = p`) and `HH¹(Kronecker) ≅ sl₂` (char ≠ 2), plus the
   RSS Ext-quiver solvability certificate — clickable in the no-code GUI.
+- **HH• as a graded Lie module over HH¹ (R12).** The Gerstenhaber degree-1 action (the
+  field-general Lie derivative `L_D f = D∘f − Σ f(…,Da_i,…)`, over any exact field —
+  `A.hh_lie_module`), its weight/torus decomposition over **characteristic 0** and the
+  indecomposable Lie-module summands; the Kronecker `HH¹(kK₂) ≅ sl₂` acting irreducibly
+  on `HH^1` (the toupie adjoint `L(2)`), the `k[x]/(x^n)` truncated-Witt grading (a
+  Virasoro-subquotient analogue) — clickable in the no-code GUI.
 - **Hochschild (co)homology with arbitrary bimodule coefficients** (`D(A)`, twisted
   `{}_1A_ν`, `A/soc`, any no-code bimodule) and **relative HH over the vertices** —
   `coefficients=` on the Hochschild kinds, `relative_to="vertices"` for `HH_•(A|kQ₀,M)`.
@@ -347,6 +353,18 @@ ported and wired in:
   representation-finite domain (self-injective input and rep-infinite windows refuse
   or label honestly), clickable via the no-code `radical_filtration` /
   `ar_invariants` kinds.
+- **The persistence / TDA bridge (R33).** Barcodes as **interval decompositions** of
+  `A_n` and zigzag persistence modules (Gabriel / Botnan–Crawley-Boevey; **field-robust
+  over `GF(2)`** — interval modules are bricks), and **AR-quiver-indexed generalized
+  persistence diagrams** for commutative ladders `CL(n) = A_n □ A_2` (`n ≤ 4`,
+  representation-finite; Escolar–Hiraoka; `n ≥ 5` a loud refusal) — representation theory
+  first, the `barcode` no-code compute kind. Exact only: the filtration parameter is the
+  discrete vertex index (no float thresholds, no `∞`).
+- **Skew group algebras `A⋊G` (R8).** A base `kQ/I` and an **explicit** finite group acting
+  by quiver automorphisms build the smash product `A⋊G = A#kG` (dimension `|G|·dim A`,
+  characteristic-agnostic) as a no-code **input** — with the **Ştefan conjugacy-class Hochschild
+  decomposition** `HH^n(A⋊G) ≅ ⊕_{[g]} HH^n(A, {}_gA)^{Z(g)}` (over `char k ∤ |G|`)
+  cross-checked degreewise against the direct engine.
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**
@@ -437,6 +455,14 @@ ported and wired in:
   `#signed = n!·#sτt` (materialised + cross-checked). Hereditary-only / Dynkin-only for
   the classical side, τ-tilting-finite-only for the τ side, loud otherwise. Clickable via
   `exceptional_sequences`.
+- **Split-extension LES + certified arrow removal (R5+R6, P72).** The
+  Cibils–Marcos–Redondo–Solotar **trivial-extension Hochschild long exact sequence** —
+  `HH^•(T(B))` assembled from the flanks `HH^•(L,D(B))` / `HH^•(L,B)` and the snake
+  connecting map, cross-checked against the direct answer, with the grading-derivation
+  witness `HH^1(T(B)) ≠ 0` (and `= k ⊕ HH^1(B)` on directed `B`); and the
+  Cibils–Lanzilotta–Marcos–Solotar **certified arrow removal** — deleting inert arrows
+  (in no relation) gives a clean `HH_n(A) ≅ HH_n(B)` for `n ≥ 2`, with the honest
+  cohomology Ext-correction. Clickable via `split_extension` / `arrow_removal`.
 - **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
   left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
   the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —

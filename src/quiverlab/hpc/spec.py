@@ -73,7 +73,7 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
                                 "injective_resolution"})
@@ -112,6 +112,7 @@ _MOD_REFS = {
     "tilting_check": ["bongartz_tilting", "assem_book"],
     "orbit_geometry": ["voigt_rigidity", "kac_canonical",
                        "schofield_general_reps", "derksen_weyman_canonical"],
+    "barcode": ["escolar_hiraoka", "botnan_crawley_boevey", "gabriel", "assem_book"],
 }
 
 
@@ -323,6 +324,25 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # split_extension / arrow_removal (Plan 72) are ALGEBRA kinds carrying a TOP-DEGREE
+    # budget (the LES / reduction is assembled to degree hi), parsed like ar_quiver:
+    # 'split_extension' / 'split_extension:6'. hi = the top degree (None => default),
+    # bypassing the 'name:0..N' grammar (a single cap, not a lo..hi range).
+    for _kind in ("split_extension", "arrow_removal"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SpecError(f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
+    # skew_group_hh carries a TOP-DEGREE budget (the Stefan conjugacy-class HH
+    # decomposition is assembled to degree hi), parsed like split_extension:
+    # 'skew_group_hh' / 'skew_group_hh:3'. hi = the top HH degree (None => default 3),
+    # bypassing the 'name:0..N' grammar (a single cap, not a lo..hi range) (Plan 74).
+    if s == "skew_group_hh" or s.startswith("skew_group_hh:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"skew_group_hh budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_group_hh", lo=None, hi=(int(b) if b else None))
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget caps the classical
     # tuple search / the tau-tilting exchange graph -- not a homological degree -- so it
@@ -449,7 +469,7 @@ def _iter_families():
     for info in ql.families():
         name = info.name
         if name in ("zoo", "BrauerGraphAlgebra", "ToupieAlgebra",
-                    "SkewGentleAlgebra"):                            # non-scalar constructors
+                    "SkewGentleAlgebra", "CommutativeLadder"):       # non-scalar constructors
             continue
         builder = getattr(ql, name, None)
         if builder is None:
@@ -963,6 +983,7 @@ _SYNTHETIC_FAMILY_PARAMS = {
     "OppositeAlgebra": {"base"},
     "MarkedSurface": {"preset"},
     "SkewGentleAlgebra": {"vertices", "arrows", "relations", "special"},
+    "SkewGroupAlgebra": {"vertices", "arrows", "relations", "generators"},
 }
 
 _SURFACE_PRESETS = ("disc_fan_A3", "annulus_C22", "hexagon_internal")
@@ -1085,7 +1106,24 @@ def _build_synthetic(spec):
         return _build_brauer(params, field)
     if name == "SkewGentleAlgebra":
         return _build_skew_gentle(params, field)
+    if name == "SkewGroupAlgebra":
+        return _build_skew_group(params, field)
     raise ComputeError("CatalogError", f"no synthetic builder for {name!r}")
+
+
+def _build_skew_group(params, field):
+    """SkewGroupAlgebra A|xG from flattened params: ``vertices`` / ``arrows`` /
+    ``relations`` (the base quiver kQ/I) + ``generators`` (a list of
+    quiver-automorphism dicts). The base is given as an explicit quiver (not a Dynkin
+    string) so k[x]/(x^2) and the 2-cycle Nakayama are expressible (Plan 74).
+    Delegates to the shared library builder so the server and Pyodide twins build a
+    byte-identical algebra; the library's loud QuiverlabError refusals surface as
+    clean CatalogError entries."""
+    from quiverlab.families.skew_group import build_skew_group_from_params
+    try:
+        return build_skew_group_from_params(params, field)
+    except qerr.QuiverlabError as exc:
+        raise ComputeError("CatalogError", str(exc)) from exc
 
 
 def _build_skew_gentle(params, field):
@@ -1760,6 +1798,41 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = ar_quiver_block(A, budget=budget)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Split-extension LES (Plan 72 / R5): an ALGEBRA-level kind carrying a TOP-DEGREE
+    # budget ('split_extension' / 'split_extension:6'). Interprets A as B, assembles
+    # HH^*(T(B)) from the flanks + snake, cross-checks against direct. Both runners share
+    # split_extension.split_extension_block (byte-identical), and its own loud refusals
+    # (presentation-less / char<=dim) come back as status='unsupported' + error (never a
+    # 500). No hh_trace (the block carries its own tables).
+    if kind == "split_extension":
+        budget = item.hi if item.hi is not None else 6
+        from quiverlab.hochschild.split_extension import split_extension_block
+        block = split_extension_block(A, top=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Certified arrow removal (Plan 72 / R6): an ALGEBRA-level kind carrying a TOP-DEGREE
+    # budget ('arrow_removal' / 'arrow_removal:6'). Auto-detects the inert arrows, builds
+    # B = A \ (inert), and reports the clean HH_{>=2} homology iso + the cohomology
+    # Ext-correction. Shared arrow_removal.arrow_removal_block; refusals -> status +
+    # error, never a 500.
+    if kind == "arrow_removal":
+        budget = item.hi if item.hi is not None else 6
+        from quiverlab.hochschild.arrow_removal import arrow_removal_block
+        block = arrow_removal_block(A, top=budget)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Skew-group HH decomposition (Plan 74 / R8): an ALGEBRA-level kind carrying a
+    # TOP-DEGREE budget ('skew_group_hh' / 'skew_group_hh:3'). A must be a
+    # SkewGroupAlgebra (a smash carrying its base + action); the Stefan conjugacy-class
+    # decomposition is cross-checked against the DIRECT engine. Both runners share
+    # hochschild.skew_group.skew_group_hh_block, so the blocks are byte-identical; the
+    # modular (char | |G|) case reports direct-only, a bad action -> clean error field.
+    if kind == "skew_group_hh":
+        budget = item.hi if item.hi is not None else 3
+        from quiverlab.hochschild.skew_group import skew_group_hh_block
+        block = skew_group_hh_block(A, budget)
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # Exceptional sequences (Plan 65 / R27+R28): an ALGEBRA-level kind carrying an
     # ENUMERATION BUDGET, not a degree range (parsed like tau_tilting / ar_quiver). One
     # shared block dispatches BOTH halves -- classical hereditary (braid-orbit counts) and
@@ -1988,6 +2061,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         block = method(top).blocks()
         keys = list(block["references"])
         block["citations"] = _citation_pairs(keys)
+        return block, None
+    # HH^* as a graded Lie module over HH^1 (Plan 71 / R12): a top-carrying HH kind
+    # (the gerstenhaber_brackets precedent -- budget caps A.dim for the Der solve, top
+    # caps the bar degree; over top >= 2 max_cells is the binding limiter). The shared
+    # block builder ships hh_dims, the module-axiom / inner-zero verdicts, the char-0
+    # weight table and the indecomposable-summand decomposition table (NOT the exploding
+    # basis-dependent action structure constants). Not an HH run (returns block, None).
+    if kind == "hh_lie_module":
+        from quiverlab.hochschild.lie_module import hh_lie_module_block
+        top = item.hi if item.hi is not None else 2
+        block = hh_lie_module_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Homological string-algebra test (Plan 59 / R34): an algebra-only scalar kind
     # (Suarez-Alvarez). Shared builder (string_homological.string_homological_block);
@@ -2499,6 +2584,13 @@ def _dispatch_module(A, item, M, N, T=None) -> dict:
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return _with_refs({"kind": "decompose", "side": M.side,
                            "summands": summands, "iso_classes": len(summands)}, kind)
+    if kind == "barcode":
+        # The persistence/TDA barcode (Plan 69 / R33): interval decomposition of an
+        # A_n/zigzag module (field-robust) or the AR-indexed generalized persistence
+        # diagram of a CL(n<=4) (char-scoped). SHARED core builder (barcode_block) so the
+        # Pyodide twin can't drift; a refusal is an {"error": ...} block (never a 500).
+        from quiverlab.modules.barcode import barcode_block
+        return _with_refs(barcode_block(A, M), kind)
     if kind == "almost_split":
         # The almost-split (Auslander-Reiten) sequence 0 -> tau M -> E -> M -> 0 for M
         # indecomposable non-projective (Plan 41). tau M ships as a full representation;
@@ -2703,6 +2795,11 @@ def _synthetic_reproduce_lines(family, params, field_ref) -> list:
                 "BrauerGraph, BrauerGraphAlgebra",
                 f"G = BrauerGraph(edges={edges!r}, cyclic_order={cyclic!r})",
                 f"A = BrauerGraphAlgebra(G, {mult!r}, field={field_ref})"]
+    if family == "SkewGroupAlgebra":
+        # Rebuild A|xG from the flattened params via the shared library builder (the
+        # base quiver + the explicit group action). Kept byte-identical to the twin.
+        return ["from quiverlab.families.skew_group import build_skew_group_from_params",
+                f"A = build_skew_group_from_params({dict(params)!r}, {field_ref})"]
     # No short-script form: an honest comment, never crashing code (the algebra is
     # still reachable through the webapp `family` block).
     return [f"# built via the webapp family {family!r}; see docs"]
@@ -2771,6 +2868,16 @@ def _snippet(req: ComputeRequest, A) -> str:
              "ar_quiver":
                  lambda it: ("A.ar_quiver(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
+             "split_extension":
+                 lambda it: ("A.split_extension_cohomology("
+                             f"{it.hi if it.hi is not None else 6})"),
+             "arrow_removal":
+                 lambda it: ("A.arrow_removal(top="
+                             f"{it.hi if it.hi is not None else 6})"),
+             "skew_group_hh":
+                 lambda it: ("stefan_decomposition(base, action, "
+                             f"{it.hi if it.hi is not None else 3})  "
+                             "# from quiverlab.hochschild.skew_group"),
              "radical_filtration":
                  lambda it: ("A.radical_filtration(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
@@ -2835,6 +2942,8 @@ def _snippet(req: ComputeRequest, A) -> str:
              "bracket": lambda it: f"A.gerstenhaber_brackets({it.hi})",
              "connes_b": lambda it: f"A.connes_differentials({it.hi})",
              "bv_operator": lambda it: f"A.bv_operator({it.hi})",
+             "hh_lie_module":
+                 lambda it: f"A.hh_lie_module(top={it.hi if it.hi is not None else 2})",
              "tau_tilting":
                  lambda it: ("A.exchange_graph(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),
@@ -2866,6 +2975,8 @@ def _snippet(req: ComputeRequest, A) -> str:
                                 f"tor_dims(A, M, N, {it.hi})"),
              "decompose": lambda it: ("from quiverlab.modules.decompose import "
                                       "decompose\ndecompose(M)"),
+             "barcode": lambda it: ("from quiverlab.modules.barcode import barcode\n"
+                                    "barcode(M)"),
              "almost_split": lambda it: "M.almost_split_sequence()",
              "projective_resolution":
                  lambda it: f"M.projective_resolution({it.hi}).dimension_vectors()",

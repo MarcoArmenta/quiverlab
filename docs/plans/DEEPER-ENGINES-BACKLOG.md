@@ -439,6 +439,26 @@ planned together even if delivered in slices.
   native CS Yoneda coproduct, N-Koszul certifier, Ext(M,M) for arbitrary M.
   Original item: generators/relations of `Ext_A(⊕S, ⊕S)` from Plan-05 module
   resolutions + deep CS; Koszulity checks.
+- [ ] **P72 split-extension deferrals (DD-A2 / DD-A3, for P80).** Two honest-scope
+  deferrals recorded at the Plan-72 merge (split-extension LES + arrow removal):
+  (DD-A2) a LITERAL coefficient-cup recomputation of the CMRS Thm-4.1 connecting map
+  `δ = 1_M ⌣ (−) ± (−) ⌣ 1_M` — Plan-35's cup is coefficient-`A` only, so pairing the
+  DIFFERENT coefficient bimodules `Hom(M,M)`/`B`/`M` needs a new coefficient-cup surface
+  (`δ` currently computed as the CS-Hom-complex snake, cited as the cup, validated by
+  exactness + assembled≡direct); (DD-A3) a standalone `M^{⊗_B p}` tensor-power +
+  bimodule-`Ext` engine realizing the CMRS Cor-3.2 graded decomposition
+  `HH^n(L,X)=⊕_{p+q=n} Ext^q_{B^e}(M^{⊗_B p},X)` term-by-term — the genuine `⊗_B`
+  ACCELERATION (the LES-over-`L` route surfaces only the `p=0` leading piece today).
+- [ ] **P74 skew-group covering-reduction HH transport (deferred, for a P74-followup).**
+  Plan 74 ships the free-action DETECTION (`is_free_action`) and the genuine free-orbit
+  ORACLE (`Z/2`-swap on the 2-cycle Nakayama → `presented_form = k[x]/(x²)`, HH matches
+  the orbit algebra), but NOT the general Galois-`G`-covering HH reduction
+  `HH^•(A⋊G) ≅ HH^•(A/G)`-style transport (Cibils–Marcos math/0312214) for an arbitrary
+  free action. The Ştefan conjugacy-class decomposition already delivers the HH answer
+  within scope (`char k ∤ |G|`), so the covering route is a redundancy/acceleration, not a
+  gap. A followup can add the orbit-algebra `A/G` builder + the covering HH iso for free
+  actions (and, beyond that, the modular `char | |G|` bracket-twisted route of
+  Shepler–Witherspoon 1905.09613, out of the Ştefan scope entirely).
 - [ ] **HH cohomology ring structure + support varieties**: after Tier-1 item 1,
   finite generation over the even part; support varieties per module.
 - [ ] **BV structure** for symmetric/Frobenius algebras: Connes B is ported

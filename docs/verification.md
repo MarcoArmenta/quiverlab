@@ -5,9 +5,8 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **4658 tests** (live-recounted 2026-08-08 at the Plan-66 branch — +40 tests for
-the τ-cluster morphism category W(A) + picture group; onto the Plan-64 merge onto dev's P70
-tip; collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
+The suite is **4847 tests** (live-recounted 2026-08-10 at the Plan-66 top-up merge onto
+dev's P74 tip; collected with the `[dev,fast,docs,web,qpa,hpc]` extras,
 2026-08-05, after Plans 21–33, the Plan-48 marked-surface subsystem (marked surfaces →
 ideal triangulations → gentle Jacobian algebras; +70 tests), the Wave-1 v0.2.0 trio — Plan-36 Macaulay2 fifth
 oracle class, Plan-37 C1 categorical glue, Plan-38 C2 forms/type/positive-roots/
@@ -371,7 +370,7 @@ recompute independently and refuses to silently disagree
   (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
   square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (233 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (242 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -506,7 +505,11 @@ Plan-35 product surface).
 | `invariants/coverings.py` (Plan-56 R14/R16 — the presentation fundamental group π₁(Q,I) + π₁^ab by exact ℤ SNF, the Hom(π₁,k⁺)↪HH¹ Hurewicz bound, the three-valued `is_simply_connected`, the separation condition + `is_strongly_simply_connected` R16 recognizer that GATES P62, and `minimal_relation_counts` = the Tits-form rᵢⱼ; the `combinat/quiver.py` graph primitives) — `tests/coverings/*.py`, `tests/qpa/test_pi1_qpa.py` | 34 + 1 qpa | fast + qpa | **`oracle_literature`** — the CORRECTED commutative square (WITH the commutativity relation ⇒ π₁=1 / WITHOUT ⇒ ℤ), Le Meur Example 1 (monomial `⟨da⟩`⇒ℤ vs binomial `⟨da−dcb⟩`⇒0), trees/single-loop/multi-loop free ranks, the **two-independent-pairs discriminator** (a non-minimal generating set is NOT over-glued: π₁^ab=ℤ not 0 — the minimal relations are exact `I/(rad·I+I·rad)` linear algebra, never a greedy drop), the Zito example (simply connected but NOT strongly, separation fails at vertex 2), the star/deeper-tree/branching-source-in-a-non-tree separation discriminators (the corrected Qₐ = delete a + its transitive predecessor closure), the hereditary square genuinely NOT separated, and the loud intrinsic-π₁ refusal. **`oracle_crossengine`** — Hom(π₁,k⁺) ≤ dim HH¹ over the triangular zoo, equality on the Schurian square (the Hurewicz iso). **`oracle_selfcert`** — the graph primitives (spanning forest Betti number, components, induced subquiver), the annulus π₁^ab=ℤ (Betti of a 4-cycle), the `minimal_relation_counts` total == Σ block counts, and the char-caveat undecided path (decompose refusal ⇒ `undecided_char` ⇒ verdict None, never a mid-sweep raise). **`qpa`** (`tests/qpa/test_pi1_qpa.py`) — QPA 1.37 has NO fundamental-group / simple-connectivity surface (live `NamesGVars()` sweep); the probe SKIPS honestly and FAILS if QPA ever ships `FundamentalGroup`/`IsSimplyConnected`/`SeparationCondition`. |
 | `invariants/tits.py` + `invariants/_tits_lists.py` (Plan-62 R19 — the COMBINATORIAL Tits form `q_A = Σx_i² − Σ_{arrows} + Σ r_ij x_i x_j` with `r_ij` = the P56 `minimal_relation_counts` (the `I/(rad·I+I·rad)` count, cross-checked vs `dim Ext²(S_i,S_j)`); `is_weakly_positive` (Ovsienko box-6, positive-definite / isotropic-radical / Euclidean-restriction fast certificates + connected-support branch-and-bound); `is_weakly_nonnegative` (positive-SEMIdefinite/Euclidean True certificate — with `HYPERCRITICAL_COVERAGE` empty by design, PSD is the ONLY route to a `True`/tame verdict — + the classified hypercritical list — K3/T334/T245/**T237 the 10-variable refutation** — as the primary False route + a sound witness-finder, honest `None` outside coverage, NEVER a guessed True); `tame_wild_certificate` — the rep-finite/tame/wild trichotomy gated on the P56 strong-simple-connectivity certificate over an algebraically closed base field (the CC working domain, or — absent P61's `is_algebraically_closed` flag — any characteristic-0 field read by base change to the algebraic closure; `GF(p)`/`GF(p^n)` refused), P56's `None` propagated) — `tests/invariants/test_tits_form.py`, `test_weak_positivity.py`, `test_tits_lists.py`, `test_tame_wild.py`, `test_tame_wild_oracles.py`, `tests/qpa/test_tame_wild_qpa.py` | 44 + 9 qpa | fast + qpa | **`oracle_literature`** — the m-Kronecker ladder `q(1,1)=2−m` (1/2/≥3 = weakly positive / Euclidean isotropic / wild), the Dynkin trees rep-finite, the Euclidean trees (`~A_n`/`~D_n`/`~E_{6,7,8}`) weakly nonnegative not weakly positive with `q(radical)=0`, `T_{2,3,7}` wild with the SINCERE 10-vertex defect `(12,6,8,4,10,9,7,6,4,2)`, `q=−1` (the classified-list refutation of the `≤9`-variable cap), the Bongartz + Brüstle–de la Peña–Skowroński theorem verdicts (Dynkin→rep-finite, Euclidean→tame, `T_{2,3,7}`→wild). **`oracle_crossengine`** — `r_ij` (P56 count) == `dim Ext²(S_i,S_j)`; the combinatorial Tits Gram == P38's Euler symmetrization `E+Eᵀ` where both are defined (`gl.dim ≤ 2`); the AR-knit `is_complete` ⇒ `rep-finite` + `weakly_positive` (module-category enumeration vs quadratic-form arithmetic). **`oracle_selfcert`** — every `False` witness is exact and `≥ 0` with `q(witness) ≤ 0`/`< 0`, the budget→`None` honesty (no guessed True), the m-Kronecker form-layer split (not simply connected ⇒ verdict None), the non-CC form-computed/verdict-refused split, P56's `None` propagation, the relabelling-invariant hypercritical matcher, the **two-level verdict field gate** (P61's `is_algebraically_closed` flag when present, else `characteristic == 0` — pinned to hold on both the pre-P61 base and post-merge dev), the **honest base-change wording** (over QQ/QQ(i) the reason never fabricates "over an algebraically closed field"), and the **Bongartz-certain rep-infinite** surfacing (`certified == "rep_infinite"` when the form is not weakly positive on a simply connected algebra, `rep_type` staying `None` because tame-vs-wild is genuinely undecided). **`qpa`** (`tests/qpa/test_tame_wild_qpa.py`) — QPA 1.37 SHIPS a Tits-form surface: `IsWeaklyPositiveUnitForm`/`IsWeaklyNonnegativeUnitForm` of `TitsUnitFormOfAlgebra(A)` agree with our decisions on A5/E8/`~E8`/`T_{2,3,7}`/K2/K3/kA₃-rel (a real two-implementation oracle, incl. the `T_{2,3,7}` list-decided `wnn=False` confirmed independently); QPA has NO representation-type (tame/wild) VERDICT verb, so the verdict layer stays theory-oracled (a fail-if-appears probe). |
 | `invariants/hh1_lie.py` (Plan-70 R11 — HH¹ = Der(A)/Inn(A) as a Lie algebra: the field-general Leibniz-null-space `derivations` + `inner_derivations`, the matrix-commutator bracket structure constants in the `der_inn` basis, the derived / lower-central series + solvable / nilpotent / abelian / perfect verdicts over ANY exact Domain; the char-0 classification behind a hard `characteristic == 0` gate — the Killing form `κ`, the solvable radical `rad = [L,L]^⊥` (de Graaf), the Levi factor `S = L/rad`, the sl₂-count via the invariant-symmetric-forms simple-ideal count, toral rank + type; the RSS Ext-quiver solvability certificate; the Gerstenhaber-bracket cross-engine helper) — `tests/invariants/test_hh1_lie.py`, `tests/qpa/test_hh1_lie_qpa.py` | 39 + 3 qpa | fast + qpa | **`oracle_literature`** — the `k[x]/(x^n)` dichotomy: solvable with derived-series dims `[2,1,0]/[3,2,0]/[4,3,1,0]` for `char ∤ n`, and `W₁` (Jacobson–Witt) at `n = char = p` (dim `p`, perfect + simple for `p ≥ 3`, 2-dim solvable at `p = 2`), plus the `char | n, n ≠ p` refinement (`k[x]/(x⁴)`, `k[x]/(x⁶)` over `GF(2)` SOLVABLE, `k[x]/(x⁶)` over `GF(3)` NOT); `kK₂` (Kronecker) `≅ sl₂` (dim 3, perfect, simple, `levi_type "A1"`, sl₂-count 1, toral rank 1); `T(kK₂) = k ⋉ sl₂` (dim 4, radical 1, sl₂-count 1, NOT simple — the card refinement); the **default-field `CC` pin** (formally algebraically closed, exact QQ arithmetic → computes, equals the explicit-QQ run, `base_change_note` present); the **`GF(4) = GF(2²)` non-prime-field row**; the RSS no-loops/no-parallel ⇒ solvable pins (`k(1↔2)/rad²`, 3-cycle`/rad²` over QQ/GF(3)/GF(5)). **`oracle_crossengine`** — `dim(Der/Inn) == A.hochschild_cohomology(top=2).dims[1]` on the zoo; the Plan-35/P51 degree-(1,1) `gerstenhaber_brackets` route agrees with the Der/Inn commutator on BASIS-INDEPENDENT data (dim, solvable, nilpotent, derived-series dims) over GF(p) in-window; `rss_solvable_certificate ⇒ is_solvable_hh1`. **`oracle_selfcert`** — `Inn ⊆ Der` **checked computationally** (`[D, ad] ∈ span(Inn)` for every Der×Inn pair), the **Jacobi identity** on the HH¹ bracket structure constants across the pin zoo (incl. the char-p Witt case and sl₂ ⊕ sl₂), the char-p loud gate on radical/Levi/sl₂/toral (`require_char0=True` raises), the base-change note gated on the ARITHMETIC field not the formal `is_algebraically_closed` flag (present over CC AND QQ), the oversize-budget loud refusal, abelian/perfect flags, the presentation-less RSS refusal. **`qpa`** (`tests/qpa/test_hh1_lie_qpa.py`) — QPA has NO HH¹-Lie surface, but GAP's core Lie library (`LieAlgebraByStructureConstants` + `IsLieSolvable` / `LieDerivedSeries` / `SemiSimpleType`) recomputes our verdicts from the shipped structure constants (`sl₂ → "A1"`, `IsLieSolvable == false`; `k[x]/x³/QQ` solvable, derived dims `[2,1,0]`; the MULTI-FACTOR `sl₂ ⊕ sl₂` where GAP's space-separated `"A1 A1"` is compared to our `"A1+A1"` as a normalized sorted factor multiset — the path that feeds P71); an honest skip that FAILS if the Lie functions disappear. |
+| `hochschild/lie_module.py` + `modules/decompose.py::decompose_representation` (Plan-71 R12 — HH•(A) as a graded Lie module over HH¹(A): the field-general action `ρ_n(D)` = the Gerstenhaber degree-1 Lie derivative `L_D f = D∘f − Σ f(…,Da_i,…)` on the normalized bar cochain complex over ANY exact Domain (no resolution engine), the module axiom `ρ_n([D,E]) = [ρ_n(D),ρ_n(E)]` + inner-acts-zero self-certs; over `char == 0` the from-scratch maximal-torus weight decomposition (Cartan subalgebra by de Graaf Engel/Fitting → ad-semisimple part → radical-toral extension → rational simultaneous diagonalization); the indecomposable Lie-module summands via the matrix-level Fitting core `decompose_representation` driven by the directly-computed commutant `End_{HH¹}(HH^n)`) — `tests/hochschild/test_lie_module.py`, `tests/qpa/test_hh_lie_module_qpa.py` | 32 + 2 qpa | fast + qpa | **`oracle_literature`** — `kK₂` (an ALS toupie, a=2) `HH¹ = sl₂` acting on `HH^1` as the IRREDUCIBLE adjoint `L(2)` (one summand dim 3, weights a symmetric sl₂-string `{−c,0,c}`, `c ≠ 0` — the PATTERN, not the literal integers; `HH^0 = L(0)`, one weight 0); the 3-Kronecker (ALS toupie a=3) `HH• = [1,8]`, `HH¹ = sl₃` irreducible adjoint (dim 8); `k[x]/(x^n)` the truncated-Witt anchor (`HH¹ = ⟨x^{i+1}∂⟩`, a Virasoro-subquotient *analogue*) with each `HH^m` a single indecomposable and an equal-gap grading-weight progression; the `k[x]/(x²)` weight ladder; `k[x,y]/(x,y)²` `HH^n` multi-summand `gl₂`-modules. **`oracle_crossengine`** — `hh_dims == A.hochschild_cohomology` on the zoo; the **STRONG entry-wise** check `L_D` on the engine degree-n cochain basis ≡ the shipped `engine.tt_calculus.gerstenhaber_bracket_cochain(·,1,n,·)` cochain-for-cochain over GF(p) (the `p=1` Koszul-sign collapse is exact, not just up to invariants); the weaker in-window `gerstenhaber_brackets` degree-`(1,n)` induced-map arbiter on BASIS-INDEPENDENT data (dim HH^n, dim associative envelope `B_n`, dim commutant `End`). **`oracle_selfcert`** — the module axiom `ρ_n([D,E]) = [ρ_n(D),ρ_n(E)]` and `ρ_n(ad_x) = 0` (the action factors through `HH¹ = Der/Inn`) on `k[x]/(x^n)`/`k[x,y]/(x,y)²`/`kK₂`; the torus generators commute; `Σ_λ dim HH^n_λ = dim HH^n`; each certified summand reassembles `HH^n`; the char-p LOUD gate on **weights/torus** (`require_char0=True` raises) while the SUMMAND decomposition is governed INDEPENDENTLY by decompose's own guard (`char 0 or char > d_n`) — so summands appear at `char p > d_n` while `weights` is `None`; `decompose_representation` reproduces `decompose(M)` on a standard module (byte-stable). **`qpa`** (`tests/qpa/test_hh_lie_module_qpa.py`) — QPA has NO Hochschild-Lie-module surface (an honest `NamesGVars` skip that FAILS if one appears); the substantive oracle is GAP's own MeatAxe (`GModuleByMats` + `MTX.CompositionFactors`) on the fed `ρ_n` matrices — the MULTI-summand `k[x,y]/(x,y)²` `gl₂` case (per-degree constituent dims `[1,3]`/`[2,4]` == ours), with the sl₂ = `kK₂` case a trivial irreducible sentinel. |
 | `modules/radical.py` + `modules/ar_invariants.py` (Plan-57 R37/R21 — the radical filtration of `mod A`: exact `dim rad^n(X,Y)` layers on the knitted indecomposables (route (ii), left-to-right composition), the nilpotency index of `rad(mod A)`, the `rad^∞ = 0 ⇔ representation-finite` (Auslander) gate; Liu's left/right degrees of irreducible maps (`fg ∈ rad^{m+2}`, corrected), sectional paths, the postprojective/preinjective/regular partition, directing modules, the representation-directed recognizer (`Γ_A` acyclic), the generalized-standard flag) — `tests/modules/test_radical_filtration.py`, `test_liu_degrees.py`, `test_ar_invariants.py`, `tests/qpa/test_radical_qpa.py` | 29 + 2 qpa | deep + qpa | **`oracle_selfcert`** — the descending filtration `rad^{n+1} ⊆ rad^n`, `rad^N = 0` while `rad^{N-1} ≠ 0`, composition closure, `rad^1 = Hom` off the diagonal (QQ↔GF(32003) parity); the Thm-1.3 `max_a{r_a+1}` index walk ≡ route-(ii) `nilpotency_index` (two readings of ONE knit); the **degree-vs-layer witness triple** externally asserted — a finite left degree returns `(Z, g)` with `g ∈ rad^d`, `g ∉ rad^{d+1}`, `g.then(f) ∈ rad^{d+2}` (the certified layer drop); the `d_r(f) ≡ d_l(Df)` opposite-algebra multiset symmetry; the partition totality; the honest semi-decision contract (self-injective ⇒ `status="unsupported"`, no verdict; budget ⇒ window-restricted layers, `nilpotency_index=None`, no `rad^∞` claim; never a false `representation_directed`). **`oracle_literature`** — `N(kA_n) = n` (Thm 1.5(a)), the `kA_3` layer table (total `dim rad^1 = 9`, `rad^2 = 3`, `N = 3`), `kA_3/J^2` index 3 (Thm 1.3 `max{2,3,2}`), the hand-derived `kA_2`/`kA_3` left+right degree tables by module name (mono ⇒ `d_l = ∞`, epi ⇒ `d_r = ∞` on directed `kA_n`), `kA_n`/`D_4` representation-directed with no regular modules and every indecomposable directing, sectional composites nonzero; the live-verified non-directed witness `NakayamaAlgebra(kupisch=[3,2,2])` (non-self-injective, 7 indecomposables, oriented `Γ_A` cycle) separating `representation_directed=False` from `generalized_standard=True`. **`oracle_crossengine`** — the genuinely independent route-(i) `ZA_n` mesh closed form (pure interval combinatorics on dimension vectors, no Hom/matmul) ≡ route-(ii) `dim rad^n(X,Y)` on `kA_3`/`kA_4`. **`qpa`** (`tests/qpa/test_radical_qpa.py`) — QPA has NO module-category-radical or degree surface (`RadicalOfModule` is the Jacobson radical of ONE module, not `rad(X,Y)`; no `LeftDegree`/`RightDegree`/`NilpotencyIndexOfRadical`): a fail-if-appears `IsBoundGlobal` probe, plus the one checkable slice `dim rad(X,Y) = dim Hom(X,Y)` (`X ≇ Y`) corroborated against `HomOverAlgebra`. |
+| `hochschild/split_extension.py` + `hochschild/arrow_removal.py` (Plan-72 R5/R6 — (a) the CMRS split-extension / trivial-extension Hochschild LES `0→M→L→B→0` in `HH^•(L,−)`: `Bimodule.inflate` (the `L`-bimodule by inflation along `π: L↠B`), `split_extension_cohomology`/`_homology` assembling `HH^•(T(B))` from the flanks + the SNAKE connecting map + the direct cross-check, `hh1_grading_witness` (CMRS Thm 5.5); (b) certified arrow removal/addition (CLMS `1812.07655`): `inert_arrows` (Def 3.1), `remove_arrows`/`add_arrows`, `arrow_removal` (the clean `HH_{≥2}` iso Thm 3.2 + the cohomology Ext-correction Thm 4.2)) — `tests/families/test_split_extension_les_p72.py` (26), `tests/families/test_arrow_removal_p72.py` (19) | 45 | deep | **`oracle_literature`** — the frozen `HH^•(T(kA₂))=[3,1,1,1,1]` / `T(kA₃)=[4,1,1,1,1]` / `T(kD₄)=[5,1,0,0,2]`, the flank pins (`T(kA₂)`: `flank_M=[2,1,0,1,2,1,0]`, `flank_B=[1,0,1,2,1,0]`; the `T(kD₄)` **boundary-rule** pin `flank_M=[4,1,0,0,1,4]` with `HH^5(L,M)=4≠0`), the `HH^1(T(B))≠0` sweep + the directed formula `HH^1(T(B))=1+HH^1(B)` (kA₂/kA₃/kD₄→1, 2-Kronecker→4, N/A on `k[x]/(x^a)`); the CLMS `HH_{≥2}(A)=HH_{≥2}(B)` iso on the P1–P4 removed-arrow pairs and the **P2 `n=2` Ext-correction `=1`** (the homology/cohomology asymmetry). **`oracle_crossengine`** — **assembled `HH^•(L)` == direct `HH^•(L)`** (the LES-over-the-CS-Hom-complex route vs. the standalone bar/CS engine; the `T(kD₄)` case EXERCISES the `top+1` M-flank boundary rule with `δ^4=2`); `arrow_removal` `HH_n(A)==HH_n(B)` for `n≥2` == direct on P1–P4; the leading-piece **identity `flank_B[0]==HH^0(B)`** + the **summand inequality `flank_B[n]≥HH^n(B)`**, tight/non-vacuous on `T(2-Kronecker)` (`flank_B[1]=3=HH^1(B)`, NOT an equality tautology — `D(B)` is bimodule-projective only iff `B` self-injective); the `Bimodule.inflate(D(B))` flank == the report's `flank_M` (inflate ≅ the ideal-`M` sub-bimodule). **`oracle_selfcert`** — the LES exactness / degreewise SES dim identity `dim C^n(L,M)+dim C^n(L,B)=dim C^n(L,L)`; the snake `δ` well-defined (the adversarial-lift test — shifting the lift by any `M`-cochain leaves `δ[φ]`'s class fixed); `Bimodule.inflate(...).check()` (incl. the multi-vertex `kD₄`); the `HH^1` grading cocycle is a cocycle with nonzero (outer) class; `dim T(B)=2·dim B`; `remove_arrows` dim drop + inert witnesses (incl. the P4 **binomial** relation `a*c−b*d`); the addition round-trip `add_arrows(remove_arrows(A,D),D)≅A`; `HH_0` provably invariant under inert removal on P1–P4; the loud refusals (non-inert arrow with witness, relative-cycle addition, unpresentable `L`). **QPA has NO split-extension-LES or arrow-removal HH surface** (see the honest-scope entry). |
+| `modules/barcode.py` + `families/commutative_ladder.py` (Plan-69 R33 — the persistence/TDA bridge, representation theory FIRST: `barcode(M)` = the interval decomposition of an `A_n`/zigzag persistence module (Gabriel / Botnan–Crawley-Boevey — the support intervals of the Krull–Schmidt summands), field-robust over EVERY exact domain incl. GF(2) (interval modules are bricks, `dim End = 1`); the forward-only `mat_rank` rank-formula second route; `CommutativeLadder(n) = A_n □ A_2` (scalar `"i_j"` vertex names — tuple labels crash the AR knit) with the AR-quiver-indexed generalized persistence diagram for `n ≤ 4` (char-scoped: char 0 / char > dim), rep-finite iff `n ≤ 4` (Escolar–Hiraoka); the `barcode` module-side compute kind) — `tests/modules/test_barcode_p69.py`, `test_barcode_cl_p69.py`, `test_barcode_battery_p69.py`, `tests/families/test_commutative_ladder_p69.py`, `tests/qpa/test_barcode_qpa.py` | (see class table) | deep + qpa | **`oracle_literature`** — the `A_5` filtration barcode `{[1,5],[2,2],[4,4]}` (hand-derived + engine-confirmed, identical over QQ and GF(2)); the Escolar–Hiraoka **rep-finiteness BOOLEAN** `CL(n)` rep-finite iff `n ≤ 4` (theorem, literature-confirmed VERBATIM — the `n=2,3` knits terminate `"complete"` AND `CL(5)` is refused at construction; `CL(4)` is theorem-certified + dim-30-built, its knit excluded from CI as impractically slow — see honest scope); **the `CL(2)=11` / `CL(3)=29` indecomposable counts** — figure-confirmed against the Escolar–Hiraoka AR-quiver figures (Fig. 13 = `3+5+3=11` all thin; Fig. 14 = `1+6+11+6+5=29`, exactly 2 non-thin, matching the engine's 27+2 thin/non-thin split; the equioriented ladder = incidence algebra of the `[n]×[2]` grid poset, iso-invariant), the plan's BLOCKING reconciliation (Task 6 Step 1a) DONE — kept ALSO `oracle_selfcert` (the same knit reproduces them, Plan-32 overlap). **`oracle_crossengine`** — `decompose` barcode ≡ the `mat_rank`-only rank formula on forward lines; `GF(2) ≡ QQ` field-robustness (bricks); the CL diagram's distinct-indecomposable count ⊆ the knit's vertex count; **QPA** `DecomposeModuleWithMultiplicities` parity on `A_5` (barcode's interval bars == QPA's summand dim-vector multiset) + the CL(3) diagram DECOMPOSE closer (our decompose of a CL(3) module ≡ QPA over GF(23)). **`oracle_selfcert`** — the interval-sum identity `Σ m_i·dimvec == M.dimension_vector()`; every summand's support is a contiguous interval in the line order; the CL AR-index match (`is_isomorphic` certificate, an unmatched summand a loud bug); the `essential` forward-only flag (always `False` for zigzag — M2; and always `False` for a commutative-ladder interval bar as well — a ladder base is not a single monotone persistence line, and the CL primary object is the AR-indexed diagram, not the bars — a deliberate simplification of the plan's Bar-schema prose); the `n=1` single-vertex handling (one bar `[1,1]·dim M` — M1); the char-scope refusal CHAIN over GF(2 ≤ dim) (the knit CATCHES the internal `decompose` char-refusal → `status="error"`, `is_complete=False` → `barcode` refuses, never a silent truncated `"complete"` — M6); the loud refusals (non-`A_n`/non-CL, presentation-less); the forward dimension certificate `3·C(n+1,2)` (9/18/30) and the scalar-vertex + graph-shape recognizer; **the `CL(2)=11` / `CL(3)=29` indecomposable counts** (the SAME AR knitter that produces them — kept `oracle_selfcert` in addition to the figure-confirmed `oracle_literature` pin, Plan-32 overlap; the thin/non-thin 27+2 split reproduces Fig. 14). **QPA has NO persistence/barcode/commutative-ladder surface** (`tests/qpa/test_barcode_qpa.py` — a fail-if-appears `IsBoundGlobal` guard on `PersistenceDiagram`/`CommutativeLadder`/`Barcode`); the whole-AR-quiver 29-vertex COUNT is not a QPA verb (QPA has no AR-quiver enumeration), so it stays `oracle_selfcert`. |
+| `families/skew_group.py` + `hochschild/skew_group.py` (Plan-74 R8 — the skew group algebra `A⋊G` (smash `A#kG`): `QuiverAutomorphism` (a per-instance-certified algebra automorphism from a quiver `(π,ρ,s)` triple) + `GroupAction` (BFS closure, Cayley table, conjugacy classes, centralizers), `skew_group_algebra(A, action)` (structure constants `(a·g)(b·h)=a·g(b)·gh`, dim `|G|·dim A`, char-agnostic), `Algebra.skew_group`, `is_free_action`; the Ştefan conjugacy-class decomposition `stefan_decomposition` (`HH^n(A⋊G) ≅ ⊕_{[g]} HH^n(A,{}_gA)^{Z(g)}` via P52 `Bimodule.twisted` + the NEW `Z(g)`-action transport `_autom_action_on_classes` + Reynolds invariants), the `SkewGroupAlgebra` construction family + the `skew_group_hh` compute kind) — `tests/families/test_skew_group_action.py` (9), `test_skew_group_algebra.py` (5), `test_skew_group_free_action.py` (3), `tests/hochschild/test_skew_group_summands.py` (3), `test_skew_group_decomposition.py` (6), `tests/hochschild/test_skew_group_transport_basis.py` (5), `tests/qpa/test_skew_group_qpa.py` (3) | (see class table) | fast + deep + qpa | **`oracle_literature`** — `HH^•(k[x]/(x²))=[2,1,1,1]`; the **dim law** `dim(A⋊G)=|G|·dim A`; the orbit-Nakayama `HH^•=[1,1,1,1]`/`HH_•=[2,1,1,1]` (self-injective Nakayama); the **non-abelian `S₃`-on-`k³`** `HH^0=2` (semisimple, Morita `k×k`, dim `18`). **`oracle_crossengine`** — **the R8 oracle** `stefan_decomposition.dims == HH^•(A⋊G) direct` (`Z/2` on the dual numbers, both sides `[1,1,1,1]`/`[2,1,1,1]`); `HH^•(A⋊G) direct == HH^•(orbit Nakayama)`; the **genuinely FREE `Z/2`-swap** on `k(1⇄2)/rad²` → `presented_form == k[x]/(x²)`, `HH^•==[2,1,1]` (QQ); `Bimodule.regular ≡ ordinary` (P52 `M=A`); the twisted summand `HH^•(A,{}_σA)`; the **HOM `n=1` per-summand split** `[{e:0},{σ:1}]` (a NONZERO twisted invariant at `n≥1`, findings 1a/2b — a dead/sign-wrong bridge fails it even though the total is unchanged); the `Z/3` on `k[x]/(x³)`/GF(7) non-involution direct (`[1,1,1]`/`[3,2,2]`, `HH_0` split `1+1+1`). **`oracle_selfcert`** — the dim-law certificate; `GroupAction.check` (each generator an algebra automorphism preserving `I`; closure a group of the claimed order over the field); trivial-`G` `T`-byte-identity (`A⋊{1}.T == A.T`); `presented_form` dim + multiplicativity; the Reynolds idempotent `e²=e`; the identity-summand monomorphism `dim HH^n(A)^G ≤ dim HH^n(A⋊G)` (Marcos–Martínez-Villa); the degree-0 hand-pin `HH^0(A⋊G)=1`; the **twist-symmetry** `HH^•(A,phi=g)==HH^•(A,psi=g⁻¹)` (order-2 AND order-3, so the twist convention is NOT summand-arbitrable); the modular `char \| |G|` loud refusal; the canonical-key generator-order normalization; **the transport's TWO-BASES arbiter** — on a `hbar` that is neither symmetric nor self-inverse (the `Z/3` 3-cycle rotation), EXACTLY ONE of the eight (coefficient-slot, bar-block) combinations is a chain map on each side, plus the fixture guard that fails if `hbar` ever goes symmetric/self-inverse (scope fact (k)); the vertex-permuting `Z/2`-swap decomposition ≡ DIRECT on both sides (the regression: the unit-adapted matrix on the coefficient slot made the transport leave the cycle span and the whole decomposition refuse). **QPA (`-m qpa`)** — a `NamesGVars()` fail-if-appears guard (QPA 1.37 has NO skew-group / smash / conjugacy-class-decomposition surface) + the input-level DIRECT `HH^•(A⋊G)` crosscheck: build `A⋊G`'s presented `kQ'/I'` (`presented_form`) and compare its QPA `HochschildCohomology` dims to our direct engine (`Z/2` on the dual numbers over QQ → `[1,1,1,1]`; `Z/3` on `k[x]/(x³)` over GF(13) → `[1,1,1]` — GF(13) so `char > dim 9` for `presented_form`). The DECOMPOSITION itself has no QPA counterpart (honest scope). |
 | `batch/` (labdb port, open-zone scans) | 11 | deep | labdb port equality; scan-surface checks |
 | `citations/` (registry, bibliography) | 12 | fast | packaged-bib resolution; result references |
 | `trace/` (worked-steps incl. the Plan-30 module events, the kA₂ replay golden, the 2026-07-29 report-completeness battery, the Plan-35 UNIT-2 HH explicit-reps rendering, the Plan-35 wave-3a Ext/Tor explicit-reps rendering, the Plan-35 wave-3b cyclic-homology explicit-reps rendering — the total-complex `Tot_n = C_n ⊕ C_{n-2} ⊕ …` column heading, per-degree classes + verification; and the Plan-35 wave-3c Yoneda-sequence + classical-dictionary rendering — `interpretations.py`; and the Plan-35 wave-3d plain-HH explicit-reps + element-wise dictionary rendering — `hh_element_interpretation`/`hh_reps_sections`) | 250 | fast | golden-file equality (dims derived from ranks); **the per-degree explicit-reps layout** (each product/Connes class rendered as term-sum + coordinate vector under a stable anchor, with the annihilating differential + a one-line verification sentence; the bar AND Chouhy-Solotar HH worked-steps carry each (co)chain term's ordered basis, length-guarded against the recorded term dim; module resolution `term_basis` lengths match the differential row/col dims, injective order pinned against the transposed proj-resolution-of-DM; the degree anchors are linked from every product table) + **the module Ext/Tor per-degree sections** (ordered Hom/tensor basis → classes → differential + verification, `cr-`/`ws-` anchors, the `ExtReps` worked-steps event, Tor₀ = M ⊗ N cokernel note) + **the Yoneda-sequence + dictionary rendering** (each Ext class' constructed exact sequence — sequence line, middle module, exactness verified — under `cr-ext-yoneda-deg-n`; the shared classical-dictionary framing on the ext/tor/HH/cyclic blocks; the HH¹ derivation read-off; matrix-grid double zebra striping is structure-safe) + **the plain-HH element-wise dictionary + per-degree reps** (HH⁰'s central elements, HH¹'s `D(arrow)=value` derivations + the inner-derivation subspace dimension `rank δ⁰`, HH²'s deformation 2-cocycle, HH₀'s commutator residues — read straight off the captured term-sums; the per-degree explicit-reps sections under `cr-hh_cohomology`/`cr-hh_homology` anchors; both gui.js copies mirror it) + the missing-fields tolerance + the two-runner `term_basis`/reps/interpretation equality + **the renderer-return gate** (2026-08-06: every per-kind `*_html` helper in `results_html.py` must end in an explicit `return` — an AST scan plus a live `derived_fingerprint` render through `results_section`; regression for the fall-through that returned `None` and killed the whole worked-steps bundle for any request containing `derived_fingerprint`) |
@@ -596,24 +599,18 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 1119 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 657 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1373 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
-| Live QPA / GAP | `-m qpa` | 238 | an independent external system (QPA) recomputes and agrees |
+| Literature / theory pins | `-m oracle_literature` | 1159 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 703 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1459 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Live QPA / GAP | `-m qpa` | 246 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2813 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
-Recounted 2026-08-08 at the Plan-66 branch (the τ-cluster morphism category W(A) + picture
-group, R29) onto the Plan-64 merge: the P66 engine tests add oracle_literature +14
-(1105 → 1119, the kA₂/kA₃/kA₄ picture groups + classifying-space face vectors + the
-kA₃-vs-kZ₃/rad² relation-split discriminator + the Nakayama K(π,1) + the τ-tilting-infinite
-refusal), oracle_crossengine +11 (646 → 657, object count = #wide + #generators = #bricks +
-#relations = #rank-2 wides + the morphisms-out-of-top = g-fan faces), oracle_selfcert +7
-(1366 → 1373, χ = Σ(−1)^k f_k + face_vector[0] = object_count + the factorization tie to P65 +
-the atom-relation ext-brick + the K(π,1) theorem-anchoring + the abelianization-rank SNF), qpa
-+1 (237 → 238, the honest no-cluster-morphism-surface probe), union +33 (2780 → 2813); m2
-unchanged. Live-collected from the branch tree (mid-merge-train honest).
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 2968 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+Recounted 2026-08-10 at the Plan-66 top-up merge (R29 the τ-cluster morphism category
+W(A) + the Hanson–Igusa classifying space + the picture group) onto dev's P74 tip; the
+Plan-66 additions (lit +14 / xeng +11 / selfcert +7 / qpa +1 / m2 +0, union +33) fold
+into these live-collected totals.
 
-Counts as of the P70 merge (HH¹ as a Lie algebra R11, after P65 exceptional sequences R27+R28 / P67 silting / P54 BV / P68 skew-gentle / P63 wall-and-chamber);
+Counts as of the P71 merge (HH• as a graded Lie module over HH¹ R12, after P69 persistence/TDA R33 / P72 split-extension+arrow-removal R5+R6 / P70 HH¹-Lie / P64 congruences / P65 exceptional sequences / P67 silting / P54 BV / P68 skew-gentle / P63 wall-and-chamber);
 sibling plans in the v0.2.0
 
 Collected 2026-08-05 (through the Wave-1 v0.2.0 merges: Plans 36, 37, 38). The oracle markers live only on the
@@ -1526,6 +1523,88 @@ verified precision and listed below as such.
   theory/self-cert-oracled; the exceptional-MODULE criterion IS QPA-anchored per indecomposable
   on the kA₃ zoo — `dim End_A(M)=1` via QPA `HomOverAlgebra` (brick) and `dim Ext¹_A(M,M)=0`
   via QPA `ExtOverAlgebra` (rigid), both agreeing with our engine.
+- **Split-extension LES + certified arrow removal — five binding scope facts** (Plan 72
+  R5+R6; `docs/plans/2026-08-08-plan-72-split-extension-arrow-removal.md`). (a) **The snake
+  connecting map `δ` is computed on the Chouhy–Solotar `L^e`-projective resolution, cited as
+  the cup with the extension class (CMRS Thm 4.1).** The bar route the plan's Task A2 names is
+  intractable at the plan's own pinned depths (`T(kD₄)`'s `δ^4` lands in `HH^5(L,M)` whose bar
+  chain group has `>2·10^6` rows); CS is another `L^e`-projective resolution, so the SES snake
+  and its ranks are IDENTICAL (validated: every pin reproduced, incl. the `T(kD₄)` boundary
+  case). `δ` is realized as the coupling block of the coefficient-split-block-triangular CS
+  coboundary and validated by the exactness self-cert + assembled≡direct — NOT by an
+  independent cup recomputation. (b) **A literal coefficient-cup recomputation of `δ` via the
+  Plan-35 surface is out of scope (DD-A2):** Plan-35's cup is coefficient-`A` only
+  (`HH^•(A)⊗HH^•(A)→HH^•(A)`), whereas Thm 4.1's cup pairs *different* coefficient bimodules;
+  building that coefficient-cup is a ledger deferral (P80). (c) **The `⊗_B` tensor-power
+  decomposition (CMRS Cor 3.2) is deferred and does NOT fully split here (DD-A3):** the card's
+  "from `HH^•(B) + H^•(B,M)`" is realized as the `p=0` **leading piece** surfaced from the
+  `L`-flanks, pinned as the `n=0` identity + the summand INEQUALITY — a degreewise EQUALITY
+  `flank_B==HH^•(B)` would be FALSE (and, as `leading_B := HH^•(B)`, a tautology), because Cor
+  3.2's full splitting needs `M=D(B)` one-sided `B`-projective, i.e. `B` self-injective (false
+  for `kA_n`/`kD₄`). (d) **Cohomology arrow removal is NOT a clean isomorphism.** The homology
+  `HH_{≥2}(A)≅HH_{≥2}(B)` (Thm 3.2) is the only iso claim; cohomology carries the Thm-4.2 Ext
+  correction (`coh_correction`, nonzero `HH^2` on P2) — reported separately from the `n=0,1`
+  center/disconnection deltas (`coh_low_delta`; `HH_0` is provably invariant, an inert arrow
+  never lies on a cycle). (e) **QPA has NO split-extension-LES or arrow-removal HH surface**
+  (the P35 precedent — a fail-if-appears `NamesGVars()` guard); the INPUTS are QPA-crosscheckable
+  (`TrivialExtensionOfQuiverAlgebra`, `HochschildCohomologyHomology` of `A`/`B`) but the LES/
+  reduction verdicts are theory/self-cert/cross-engine oracled. General `B⋉M` (arbitrary
+  bimodule `M`) is refused loudly — only the trivial-extension flagship `M=D(B)` (whose `L` is
+  presentable via `TrivialExtension`) is in scope (DD-A1).
+- **Skew group algebras `A⋊G` + the Ştefan HH decomposition — ten binding scope facts**
+  (Plan 74 R8; `docs/plans/2026-08-08-plan-74-skew-group.md`). (a) **The DIRECT
+  `HH^•(A⋊G)` (the shipped engine on the constructed algebra) is the trustworthy primary;
+  the decomposition is the value-add, cross-checked degreewise against it** — a mismatch is
+  a loud bug in the bridge, never a silent number. (b) **Char scope is on the DECOMPOSITION
+  + covering ONLY, not the constructor**: the smash structure constants + the direct HH are
+  char-agnostic (the build never divides by `|G|`); only Reynolds/Maschke need `char k ∤ |G|`.
+  (c) **The presented `kQ'/I'` view is the BASIC algebra of `A⋊G`** (via the shipped
+  `presented_form`, Morita-equivalent ⇒ HH-faithful, NOT dimension-faithful — the dim law is
+  a statement about the full structure-constant `A⋊G`, which the constructor always returns).
+  (d) **The covering-reduction HH transport is v1-deferred** (`is_free_action` detection + the
+  FREE-orbit oracle `Z/2`-swap → `k[x]/(x²)` shipped; the general Galois-`G`-covering HH
+  reduction is ledgered — the Ştefan route already gives HH within scope); the FLAGSHIP
+  (`Z/2` on the dual numbers) is `kG`-idempotent-splitting `k[Z/2]≅k×k`, NOT a free orbit
+  (`is_free_action False` — the vertex is fixed). (e) **QPA has NO skew-group-HH-decomposition
+  surface** (a `NamesGVars()` fail-if-appears guard, the P35 precedent); the input-level DIRECT
+  `HH^•(A⋊G)` is QPA-crosscheckable by building the smash by hand, but the isotypic/`Z(g)`-
+  decomposition is theory/self-cert/cross-engine oracled. (f) **The left-vs-right twist convention
+  is SOURCE-PINNED from Shepler–Witherspoon, NOT summand-arbitrable** — the summand dims are
+  twist-symmetric (`{}_φA_ψ ≅ {}_1A_{φ⁻¹ψ}`, live-verified order-2 AND order-3), so the only
+  discriminator is the assembled total + the per-summand split against DIRECT. (g) **Deeper
+  degrees / larger `|G|` are budget-capped, direct-oracle-pinned** (the dim-9 `Z/3` caps at
+  degree 2, the dim-18 `S₃` at degree 0 — honest `status="budget"`); **non-abelian `G` is IN
+  scope** (the `S₃`-on-`k³` pin, dim 18, `HH^0=2`, classes `{e}/3 transp/2 3-cyc` with proper
+  centralizers `Z(g)=S₃/Z/2/Z/3`). (h) **`arXiv:1804.02223` is WITHDRAWN and mis-attributed in
+  the source card** (Cibils–Marcos, two authors — NOT "CMRS"); it is NOT anchored — the
+  decomposition rests on Ştefan 1995 (JPAA 103, the spectral-sequence origin) + Shepler–
+  Witherspoon 2012 (J. Algebra 351, the additive decomposition). (i) **Modular `char \| |G|`:
+  `stefan_decomposition` refuses loudly** (`"modular"`); the direct `A⋊G` is still computable,
+  but its `presented_form`/`is_selfinjective` then describe a GENUINELY DIFFERENT (modular)
+  algebra — distinct from the `char ≤ dim` `presented_form` refusal seen live on the dim-8 free
+  example over GF(7). (j) **The graded Lie / Gerstenhaber-bracket structure of `HH^•(A⋊G)` is
+  OUT of scope** — this plan ships only the decomposition of DIMENSIONS; the bracket/Lie content
+  is downstream of P70/P71/P51 running on `A⋊G` as an ordinary input (Shepler–Witherspoon 0911.0938
+  is fundamentally about the bracket — the P70 seam). (k) **The `Z(g)`-transport reads TWO
+  DIFFERENT BASES, and the arbiter that pins them is non-vacuous by construction**
+  (`tests/hochschild/test_skew_group_transport_basis.py`). The bar slots are unit-adapted, but
+  the COEFFICIENT slot is not: P52's `bar._coeff_in_unit_basis` transports a bimodule with
+  `Bimodule.change_of_basis`, which by contract re-indexes only the A-element slot and leaves
+  `M`'s own basis alone — so `M` stays in `A`'s ORIGINAL basis and the coefficient slot takes
+  `action.matrix_of(h, A)` UNTRANSPORTED. The two matrices coincide on every local algebra
+  (`A` already unit-adapted) and under any vertex-FIXING automorphism, so the distinction is
+  invisible to the dual-numbers / `k[x]/(x³)` / arrow-swap batteries; it bites exactly when a
+  VERTEX-PERMUTING automorphism acts on a multi-vertex algebra. The convention is therefore
+  arbitrated against the chain-map property `δ∘H_n = H_{n+1}∘δ` on the `Z/3` 3-cycle rotation,
+  whose `hbar` is neither symmetric nor self-inverse — so `hbar`, `hbarᵀ`, `hbar⁻¹`,
+  `(hbar⁻¹)ᵀ` are four DISTINCT matrices and the test demands that EXACTLY ONE of the eight
+  (coefficient-slot, bar-block) combinations is a chain map on each side: `(hbar⁻¹)ᵀ` for
+  cohomology, `hbar` for homology, both on the untransported slot. A test asserting only that
+  the shipped combination works would pass under a symmetric involution; a fixture guard fails
+  if `hbar` ever goes symmetric or self-inverse. Observed failure mode of the wrong slot is a
+  LOUD refusal (the transported class leaves the cycle span), not a wrong number — but that is
+  the observed behaviour on these inputs, NOT a theorem, which is why the end-to-end
+  vertex-permuting agreement vs DIRECT is pinned too.
 - **The radical filtration of `mod A` + Liu degrees — six binding scope facts** (Plan 57
   R37/R21; `docs/plans/2026-08-07-plan-57-degrees-radical-filtration.md`). (a) **Certified
   only on the representation-finite (knit-complete) domain.** `radical_filtration` /
@@ -1684,6 +1763,45 @@ verified precision and listed below as such.
   `S` is a sum of sl₂'s (via the invariant-symmetric-forms simple-ideal count), else `status`
   records the incomplete decomposition (`"levi_incomplete"`, `sl2_count`/`levi_type` left `None`),
   never a guessed type.
+- **HH• as a graded Lie module over HH¹ (Plan 71 / R12) — eight binding scope facts**
+  (`docs/plans/2026-08-08-plan-71-hh-lie-module.md`). (a) **The weight/torus decomposition is
+  characteristic-0 ONLY** (P70's gate — no positive-char Cartan/Weyl; reference P70's rationale, do
+  not re-argue): a loud `QuiverlabError` (`require_char0=True`) or `weights = None` + a `char0_note`
+  over `char > 0`. The **indecomposable-summand decomposition is NOT tied to that gate** — it follows
+  `decompose`'s OWN char guard independently (entry (b)); the field-general `ρ_n` / module-axiom /
+  graded-module surface stays live in every characteristic. (b) **The summand decomposition inherits
+  `decompose.py`'s char guard** (`char 0 or char > d_n`; a per-degree loud refusal surfaced as a note
+  at `char p ≤ d_n` with no `dim End = 1` certificate) — so summands ARE returned at `char p > d_n`
+  even while `weights` is `None`; never a guessed decomposition. (c) **The weight torus is a
+  DIFFERENT object from P70's `toral_rank` — NET-NEW code P70 scoped OUT** (not a reuse of P70
+  scaffolding): a maximal ad-diagonalizable abelian subalgebra of ALL of `HH¹`, including radical
+  toral elements like the `k[x]/x^n` grading (MNPRS's "Virasoro degree"). P70 exposes only ints/bools
+  (no Cartan/torus matrices) and explicitly scopes this torus out, so P71 computes it from scratch
+  (the Cartan by de Graaf Engel/Fitting → ad-semisimple part → radical-toral extension → rational
+  simultaneous diagonalization). The exact weight LABELS are **basis-dependent / NON-NORMATIVE**
+  (scalar-doubling a torus generator doubles every weight; the torus-normalization provenance is
+  recorded — the P70 sl₂-triple precedent); NORMATIVE = distinct-weight count, per-weight dims, and
+  the weight PATTERN (sl₂-string `{−c,0,c}` / equal-gap progression). (d) **The action structure
+  constants are basis-dependent** (`basis="der_inn/bar"`); cross-engine / cross-run comparison uses
+  only basis-independent data (dims, the induced-map dim `B_n` / commutant `End`, weight multisets) —
+  the Plan-35 rule. The action constants are NOT shipped in the block (they explode). (e) **The sign
+  arbiter is GF(p) in-window** (Plan 35 is GF(p); P51 extends to any Domain in-window; degree `(1,n)`
+  is in-window). **The field-general `L_D` = the shipped `(1,n)` bracket by a source-level sign
+  identity** (`p = 1` collapses all Koszul signs) — the primary route needs NO bracket engine (the
+  whole point of R12), verified cochain-for-cochain over GF(p). (f) **QPA has no Hochschild-Lie-module
+  surface** (the Plan-35 products precedent); the substantive oracle is GAP's own MeatAxe on the fed
+  `ρ_n` matrices (the multi-summand `gl₂` case; composition factors == indecomposable summands for
+  these SEMISIMPLE reductive-Lie modules), plus the internal identity batteries. (g) **Cost/budget** —
+  the action is the P70 Der solve (`≈ d^5.4` over QQ, bounded by `DEFAULT_MAXDIM = 48` on `A.dim`)
+  PLUS the exponential bar cochain complex in `top`; **for `top ≥ 2` the binding limiter is
+  `max_cells`, not `DEFAULT_MAXDIM`** (the `d·(d−1)^{top+1}` bar-cell wall `A.hochschild_cohomology`
+  already enforces, reused). Every oracle (max `dim` 5, `top ≤ 4`) fits trivially; the dim-220
+  Nakayama webapp examples carry NO `hh_lie_module` (the Plan-35 omission precedent). (h) **The MNPRS
+  / larger-ALS decomposition tables at scale are DEFERRED, not invented** — the pinned small cases
+  (`kK₂`/3-Kronecker ALS toupies, the `k[x]/x^n` truncated-Witt, `k[x,y]/(x,y)²` `gl₂`) reproduce the
+  *structure* (irreducible/uniserial/multi-summand); transcribing a specific published MNPRS
+  special-biserial decomposition table verbatim needs the paper in hand and is a `# PIN` follow-up (no
+  fabricated numbers — the house rule).
 - **The Plan-55 left/right parts — five binding scope facts.** (a) **Representation-finite and
   non-self-injective only.** `left_right_parts` is complete **iff** `A` is rep-finite and not
   self-injective. A self-injective algebra (`k[x]/(xⁿ)`) is refused by the P41 knit with
@@ -1789,6 +1907,46 @@ verified precision and listed below as such.
   correction:** the record's "cluster-tilted `A₃` ⇒ not tilted" and "`kZ₃/J²` ⇒ not tilted" are
   the **same** self-injective algebra (the type-`A₃` non-hereditary cluster-tilted algebra
   `Jac(3-cycle, αβγ)` IS `kZ₃/J²`), refuted by the same Gate S.
+- **The Plan-69 persistence/TDA bridge — four binding scope facts** (R33;
+  `docs/plans/2026-08-07-plan-69-persistence-tda.md`). (a) **Field scope SPLIT.** The
+  `A_n`/zigzag barcode is **field-robust** — interval summands are **bricks** (`dim End = 1`),
+  which `decompose` certifies in ANY characteristic (the `dim End = 1 ⇒ local` short-circuit,
+  never the char-scoped trace-form fallback), so the barcode is byte-identical over
+  `QQ`/`GF(2)`/`GF(3)` (LIVE-VERIFIED). The **commutative-ladder route is char-scoped**
+  (`char 0` or `char > dim`): CL indecomposables need not be bricks, so the AR knit + non-brick
+  `decompose` lean on the trace-form radical; over `GF(2 ≤ dim)` the knit CATCHES its internal
+  `decompose` char-refusal and returns `status="error"` / `is_complete=False`, and `barcode`
+  refuses LOUDLY off that flag — never a silently truncated `"complete"` (M6, live-verified
+  CL(3)/GF(2) → 8 partial vertices). (b) **`CL(n ≥ 5)` is a loud refusal** (Escolar–Hiraoka:
+  representation-infinite), enforced at `CommutativeLadder` construction AND in `barcode`'s CL
+  branch — never a partial diagram, never a knit-budget "discovery" of infiniteness. (c) **Float
+  filtration values are OUT OF SCOPE** (exact-only house rule): the persistence parameter is the
+  discrete vertex index; optional `filtration_values` are exact `int`/`Fraction` display labels;
+  a float is refused. `∞` is NEVER emitted — a top-reaching FORWARD bar is `death = n` with
+  `essential = True` (`essential` is forward-only, always `False` for zigzag — M2). (d) **Theorem
+  AND figure counts literature-confirmed (H3 — the BLOCKING reconciliation is DONE).** The
+  Escolar–Hiraoka **rep-finiteness theorem** (`n ≤ 4` finite / `n ≥ 5` infinite, arbitrary
+  orientation) is a real `oracle_literature` pin. The **AR-quiver-figure indecomposable counts**
+  `CL(2)=11` / `CL(3)=29` are **now `oracle_literature` too** — the plan's BLOCKING figure
+  reconciliation (Task 6 Step 1a) was **COMPLETED**: the Escolar–Hiraoka paper (arXiv:1404.7588,
+  DCG 55(1) 2016) AR-quiver figures were extracted (`pdftotext -layout` + the rendered pages 46–47
+  at 150 dpi) and counted from the RENDERED figures — **Figure 13** = `CL(f)` = the plan's
+  equioriented `CL(2)`: `3 + 5 + 3 = 11` indecomposables, all thin; **Figure 14** = `CL(ff)` = the
+  plan's equioriented `CL(3)`: `1 + 6 + 11 + 6 + 5 = 29`, with **exactly 2 non-thin** entries (the
+  `121/011` and `110/121` dim-vectors) — matching the engine's live **27 thin + 2 non-thin** split.
+  The orientation identification is airtight: the equioriented ladder IS the incidence algebra of
+  the `[n]×[2]` grid poset (iso-invariant), and the figure dimension vectors `2×2` / `2×3` confirm
+  the `4` / `6` vertices. So both counts are **figure-confirmed literature pins**, kept
+  ALSO as `oracle_selfcert` (Plan-32 overlap is allowed) since the engine's own knit reproduces
+  them. The QPA closer independently confirms the DIAGRAM's `decompose` engine across engines (QPA
+  has no whole-AR-quiver vertex-count verb). The **`CL(4)` count is `# PIN`** and its **AR knit is
+  EXCLUDED from CI** — the dim-30 CL(4) knit did not complete within 30+ min in-session
+  (impractical for the deep bucket), so CL(4) rep-finiteness rests on the theorem + the dim-30
+  build certificate, and the knit corroboration runs only at `n = 2, 3`. Igusa–Rock–Todorov is
+  cited as the **conceptual bridge**, not a computed oracle (quiverlab is finite/exact, not
+  continuous). **QPA CANNOT COMPARE** — QPA 1.37 has no persistence/barcode/commutative-ladder
+  surface (a fail-if-appears `IsBoundGlobal` guard); the covering cross-engine oracle is
+  `DecomposeModuleWithMultiplicities` parity on `A_n` + the CL(3) diagram decompose closer.
 
 - **The Plan-64 R26 torsion-lattice congruence surface — five binding scope facts.**
   (a) **Rigorous over char 0 / char > dim (QQ default).** The bricks, semibricks, the
