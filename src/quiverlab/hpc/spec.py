@@ -287,6 +287,15 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"hh1_lie budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="hh1_lie", lo=None, hi=(int(b) if b else None))
+    # deformations carries a DIM BUDGET, not a degree range (Plan 78): 'deformations' or
+    # 'deformations:32'. The budget caps A.dim for the CS obstruction bracket (a coarse DoS
+    # backstop -- the real cost is HH^2/HH^3 richness x resolution size, H1) -- not a
+    # homological degree -- so it bypasses the 'name:0..N' grammar (like hh1_lie).
+    if s == "deformations" or s.startswith("deformations:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"deformations budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="deformations", lo=None, hi=(int(b) if b else None))
     # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or
     # 'wall_chamber:512' -- the exchange-graph pair budget, not a degree range.
     if s == "wall_chamber" or s.startswith("wall_chamber:"):
@@ -1711,6 +1720,20 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         budget = item.hi if item.hi is not None else 48   # DEFAULT_MAXDIM (Plan 70)
         from quiverlab.invariants.hh1_lie import hh1_lie_block
         block = hh1_lie_block(A, budget=budget)
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
+    # Formal deformations / L-infinity / Maurer-Cartan (Plan 78 / R13): an ALGEBRA-level
+    # kind carrying a DIM BUDGET (the plan's OWN DEFORM_MAXDIM=32, NOT P70's 48 -- different
+    # cost law), not a degree range. Infinitesimal HH^2 + the primary obstruction
+    # [alpha,alpha] in HH^3 + the MRRS nilpotent verdict + the DGLA Maurer-Cartan
+    # description + the rad^2=0 dg-Lie certificate + a display-only presented A_alpha. Both
+    # runners share hochschild.deformations.deformations_block, so the blocks are
+    # byte-identical; a char-p / oversize / presentation-less refusal is an `error` field.
+    if kind == "deformations":
+        from quiverlab.hochschild.deformations import (
+            DEFORM_MAXDIM, deformations_block)
+        budget = item.hi if item.hi is not None else DEFORM_MAXDIM
+        block = deformations_block(A, budget=budget)
         block["citations"] = _citation_pairs(block.get("references", []))
         return block, None
     # Wall-and-chamber structure via bricks (Plan 63 / R25): an ALGEBRA-level kind
