@@ -100,10 +100,13 @@ def _max_degree(req: ComputeRequest) -> int:
         # Plan 72: `split_extension` / `arrow_removal` carry a TOP-DEGREE budget in hi;
         # they are sized on the algebra dim (split_extension on 2*dim via sizing_dim's
         # extension-awareness below), NOT tiered by hi-as-degree, so they skip too.
+        # Plan 74: `skew_group_hh` carries a TOP-DEGREE budget in hi; the smash A|xG is
+        # dim |G|*dim A, so it is sized on the algebra dim (sizing_dim), not tiered by
+        # hi-as-degree -- it skips too (the split_extension/arrow_removal precedent).
         if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts",
                          "tilted_check", "recognizer_ladder", "silting",
                          "exceptional_sequences", "congruences", "hh1_lie",
-                         "split_extension", "arrow_removal"):
+                         "split_extension", "arrow_removal", "skew_group_hh"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

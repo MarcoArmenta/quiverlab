@@ -882,6 +882,29 @@ REGISTRY: dict = {r.key: r for r in [
        "with HH_* a module over HH^*; the Lie-module-over-HH^1 structure Plan 71 computes "
        "is one facet, and gentle algebras are its literature anchor.",
        "hochschild", "lie"),
+    _r("stefan_hopf_galois", "StefanHopfGalois1995", "foundation",
+       "Hochschild cohomology on Hopf Galois extensions",
+       "Stefan: the spectral sequence for a Hopf-Galois extension; for H = kG a group "
+       "algebra it decomposes along the conjugacy classes of G -- the origin of the "
+       "skew-group HH conjugacy-class decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("shepler_witherspoon_group_actions", "SheplerWitherspoonGroupActions", "foundation",
+       "Group actions on algebras and the graded Lie structure of Hochschild cohomology",
+       "Shepler-Witherspoon: the additive conjugacy-class decomposition of HH^*(A rtimes G) "
+       "with the Z(g)-invariants -- the load-bearing anchor for quiverlab's Stefan "
+       "decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("cibils_marcos_smash", "CibilsMarcosSmash2006", "foundation",
+       "Skew category, Galois covering and smash product of a k-category",
+       "Cibils-Marcos: the smash-product / skew-category construction, the free action, "
+       "and the Galois covering -- the constructor + free-action anchor for A rtimes G "
+       "(Plan 74).",
+       "family", "skew_group"),
+    _r("marcos_mv_invariants", "MarcosMartinezVillaMartinsInvariants", "foundation",
+       "Hochschild cohomology of skew group rings and invariants",
+       "Marcos-Martinez-Villa-Martins: the ring monomorphism HH^*(A)^G into HH^*(A rtimes G) "
+       "-- the identity-summand self-certificate for the skew-group decomposition (Plan 74).",
+       "hochschild", "skew_group"),
 ]}
 
 

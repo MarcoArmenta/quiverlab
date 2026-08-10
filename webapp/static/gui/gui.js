@@ -117,6 +117,8 @@
     // Plan-72: split-extension LES (trivial extension) + certified arrow removal (algebra-level; top-degree budget).
     '  <label><input type="checkbox" id="qlgui-split_extension"> split-extension LES (trivial ext), top <input type="number" id="qlgui-split_extension-budget" value="6" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-arrow_removal"> arrow removal (inert), top <input type="number" id="qlgui-arrow_removal-budget" value="6" min="1"></label>' +
+    // Plan-74: skew-group HH decomposition (algebra-level; top-degree budget; needs a SkewGroupAlgebra input).
+    '  <label><input type="checkbox" id="qlgui-skew_group_hh"> skew-group HH decomposition (A&#8905;G), top <input type="number" id="qlgui-skew_group_hh-budget" value="3" min="1"></label>' +
     // Plan-57: radical filtration of mod A (rad^n(X,Y) + nilpotency index) and the
     // AR-component invariants (Liu degrees, directing, rep-directed). Algebra-level,
     // budget (max indecomposables). NOT the Loewy radical series (radical_filtration_ss).
@@ -265,6 +267,8 @@
    "ar_quiver", "ar_quiver-budget", "derived_compare",
    // Plan 72: split-extension LES + certified arrow removal (algebra-level, top-degree budget)
    "split_extension", "split_extension-budget", "arrow_removal", "arrow_removal-budget",
+   // Plan 74: skew-group HH decomposition (algebra-level, top-degree budget)
+   "skew_group_hh", "skew_group_hh-budget",
    // Plan 57: radical filtration + AR-component invariants (algebra-level, budget)
    "radical_filtration", "radical_filtration-budget",
    "ar_invariants", "ar_invariants-budget",
@@ -979,6 +983,8 @@
       compute.push("split_extension:" + el["split_extension-budget"].value);
     if (el.arrow_removal.checked)
       compute.push("arrow_removal:" + el["arrow_removal-budget"].value);
+    if (el.skew_group_hh.checked)
+      compute.push("skew_group_hh:" + el["skew_group_hh-budget"].value);
     // Plan 57: radical_filtration + ar_invariants carry a MODULE BUDGET (like
     // ar_quiver) -- the single-int form both runners parse.
     if (el.radical_filtration.checked)
@@ -4195,6 +4201,47 @@
           div.appendChild(h("p", { text: "Low-degree center/disconnection deltas [n=0, n=1]: "
             + JSON.stringify(b.coh_low_delta) + " (distinct from the n>=2 Ext-correction)." }));
       }
+    } else if (name === "skew_group_hh") {
+      // Plan 74: the Ştefan conjugacy-class HH decomposition of A⋊G, cross-checked
+      // against the direct engine. Per-class twisted HH + Z(g)-invariants + assembled
+      // total + direct row; modular (char | |G|) shows direct-only.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error",
+          text: "Skew-group HH decomposition not computed — " + b.error + "." }));
+      } else {
+        div.appendChild(h("p", { text: "Skew group algebra A⋊G (dim = |G|·dim A = "
+          + String(b.group_order) + "·" + String(b.base_dim) + " = " + String(b.dim)
+          + "). HH^n(A⋊G) ≅ ⊕_[g] HH^n(A, gA)^Z(g) (Ştefan 1995; Shepler–Witherspoon 2012)." }));
+        var sgRows = [];
+        if (b.char_ok === false) {
+          div.appendChild(h("p", { "class": "qlgui-note",
+            text: (b.note || "Modular case (char divides |G|).") + " Direct HH only." }));
+          sgRows.push(["dim HH^n(A⋊G) [direct]", b.dims]);
+        } else {
+          (b.decomposition || []).forEach(function (s) {
+            sgRows.push(["dim HH^n(A, gA) [class " + String(s["class"]) + "]", s.hh]);
+            sgRows.push(["Z(g)-invariants [class " + String(s["class"]) + "]", s.inv]);
+          });
+          sgRows.push(["assembled dim HH^n(A⋊G)", b.dims]);
+          sgRows.push(["direct dim HH^n(A⋊G) [cross-check]", b.direct_dims]);
+        }
+        sgRows.forEach(function (r) {
+          if (!r[1]) return;
+          var head = h("tr"), row = h("tr");
+          head.appendChild(h("th", { text: r[0] }));
+          row.appendChild(h("th", { text: "" }));
+          r[1].forEach(function (d, n) {
+            head.appendChild(h("th", { text: String(n) }));
+            row.appendChild(h("td", { text: String(d) }));
+          });
+          div.appendChild(h("table", {}, head, row));
+        });
+        if (b.agrees !== null && b.agrees !== undefined)
+          div.appendChild(h("p", { text: "decomposition == direct: " + String(b.agrees) + "." }));
+        if (b.status && b.status !== "complete")
+          div.appendChild(h("p", { "class": "qlgui-note", text: "status: " + String(b.status)
+            + (b.note ? " — " + b.note : "") }));
+      }
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -4759,7 +4806,7 @@
   // QLGUI-THEMES-BEGIN
   var THEMES =
   [
-    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal"]},
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
@@ -5267,6 +5314,7 @@
     ar_quiver: { cb: "ar_quiver", top: "ar_quiver-budget", budget: true },
     split_extension: { cb: "split_extension", top: "split_extension-budget", budget: true },
     arrow_removal: { cb: "arrow_removal", top: "arrow_removal-budget", budget: true },
+    skew_group_hh: { cb: "skew_group_hh", top: "skew_group_hh-budget", budget: true },
     radical_filtration: { cb: "radical_filtration", top: "radical_filtration-budget", budget: true },
     ar_invariants: { cb: "ar_invariants", top: "ar_invariants-budget", budget: true },
     left_right_parts: { cb: "left_right_parts", top: "left_right_parts-budget", budget: true },
