@@ -444,6 +444,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"congruences budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
+    # tau_cluster (Plan 66) carries a PAIR BUDGET, not a degree range: 'tau_cluster' or
+    # 'tau_cluster:512' -- the tau-cluster morphism category + cube complex + picture group
+    # live on the exchange graph, sized by the pair budget (like tau_tilting / congruences).
+    if s == "tau_cluster" or s.startswith("tau_cluster:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"tau_cluster budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_cluster", lo=None, hi=(int(b) if b else None))
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips the degree grammar (like tau_tilting).

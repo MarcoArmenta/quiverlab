@@ -155,6 +155,9 @@
     // ---- Plan 64: torsion lattice + Con + forcing order + wide subcategories ----
     '  <label><input type="checkbox" id="qlgui-congruences"> torsion lattice / Con / wide, budget ' +
     '<input type="number" id="qlgui-congruences-budget" value="512" min="1"></label>' +
+    // ---- Plan 66: tau-cluster morphism category W(A) + cube complex + picture group ----
+    '  <label><input type="checkbox" id="qlgui-tau_cluster"> &tau;-cluster category + picture group, budget ' +
+    '<input type="number" id="qlgui-tau_cluster-budget" value="512" min="1"></label>' +
     // ---- Plan 63: wall-and-chamber structure via bricks (D(B) inequality systems) ----
     '  <label><input type="checkbox" id="qlgui-wall_chamber"> wall-and-chamber D(B), budget ' +
     '<input type="number" id="qlgui-wall_chamber-budget" value="512" min="1"></label>' +
@@ -309,6 +312,8 @@
    "tau_tilting", "tau_tilting-budget",
    // Plan 64: torsion lattice / Con / forcing / wide subcategories (budget picker)
    "congruences", "congruences-budget",
+   // Plan 66: tau-cluster morphism category + picture group (budget picker)
+   "tau_cluster", "tau_cluster-budget",
    // Plan 63: wall-and-chamber structure via bricks (budget picker)
    "wall_chamber", "wall_chamber-budget",
    // Plan 67: silting theory (radius,budget picker)
@@ -961,6 +966,10 @@
     // pushes "congruences:<budget>" -- the single-int form both runners parse.
     if (el.congruences.checked)
       compute.push("congruences:" + el["congruences-budget"].value);
+    // Plan 66: the tau_cluster kind carries a PAIR BUDGET (not a degree), so it
+    // pushes "tau_cluster:<budget>" -- the single-int form both runners parse.
+    if (el.tau_cluster.checked)
+      compute.push("tau_cluster:" + el["tau_cluster-budget"].value);
     // Plan 63: the wall-and-chamber kind carries a PAIR BUDGET too -- pushes
     // "wall_chamber:<budget>", the single-int form both runners parse (like tau_tilting).
     if (el.wall_chamber.checked)
@@ -3291,6 +3300,88 @@
     }
   }
 
+  // ---- Plan 66: the tau-cluster morphism category W(A) + picture group ----
+  function renderTauCluster(div, b) {
+    // v1 renders the category summary, the Hanson-Igusa CLASSIFYING-SPACE cube complex (NOT
+    // the g-fan sphere), the Euler characteristic + K(pi,1) verdict, and the picture-group
+    // presentation as text/HTML tables (ruling 6 -- NO bespoke SVG layout).
+    if (b.error) { div.appendChild(h("p", { "class": "qlgui-error", text: b.error })); return; }
+    div.appendChild(h("p", { text: "The τ-cluster morphism category W(A) (Buan–Marsh, IMRN "
+      + "2021): objects = the τ-perpendicular wide subcategories, morphisms = support τ-rigid "
+      + "pairs of the source graded by rank. Its classifying space is the Hanson–Igusa cube "
+      + "complex (Comm. Alg. 2021). Certified complete iff A is τ-tilting-finite. n = "
+      + b.n + "." }));
+    if (!b.complete) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: "The exchange graph did not close (status: " + b.status + ") — A is "
+          + "τ-tilting-infinite or the pair budget was hit. W(A) is an INFINITE category, so "
+          + "the objects, morphisms, the cube complex and the picture group are ALL omitted (a "
+          + "partial category would be a lie, not merely incomplete)." }));
+      if (b.note) div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+      return;
+    }
+    // (a) the category summary
+    var C = b.category;
+    div.appendChild(h("p", { text: "Category W(A): " + C.object_count + " objects (= #wide "
+      + "subcategories, tying the Enomoto count) and " + C.morphism_count + " morphisms." }));
+    var byr = h("table", { "class": "qlgui-table" });
+    byr.appendChild(h("tr", {}, h("th", { text: "rank k" }),
+      h("th", { text: "objects (wides)" }), h("th", { text: "morphisms (k-cells)" })));
+    var ranks = Object.keys(C.morphisms_by_rank).map(Number).sort(function (a, c) { return a - c; });
+    ranks.forEach(function (k) {
+      byr.appendChild(h("tr", {}, h("td", { text: String(k) }),
+        h("td", { text: String((C.objects_by_rank || {})[k] || 0) }),
+        h("td", { text: String(C.morphisms_by_rank[k]) })));
+    });
+    div.appendChild(byr);
+    // (b) the classifying-space cube complex (face vector) + the g-fan SPHERE + Euler + K(pi,1)
+    div.appendChild(h("p", { text: "Classifying-space cube complex |W(A)| (Hanson–Igusa): "
+      + "f_0 = #wide (one 0-cell per wide subcategory), f_k = #(rank-k morphisms). "
+      + "face vector = (" + (C.face_vector || []).join(", ") + "); Euler characteristic χ = "
+      + "Σ(−1)^k f_k = " + C.euler_characteristic + "." }));
+    div.appendChild(h("p", { "class": "qlgui-hint", text: "The g-fan / cluster fan of A (a "
+      + "triangulated (n−1)-SPHERE, NOT the classifying space) has face vector ("
+      + (C.g_fan_face_vector || []).join(", ") + "); its top cell f_n = #support τ-tilting "
+      + "pairs = " + (C.g_fan_face_vector || []).slice(-1)[0] + "." }));
+    if (C.is_kpi1 === true)
+      div.appendChild(h("p", { text: "The classifying space is a K(π,1) [" + C.kpi1_reason
+        + "], so π₁ is the picture group below." }));
+    else
+      div.appendChild(h("p", { "class": "qlgui-hint", text: "K(π,1): " + C.kpi1_reason
+        + " — the picture group below is π₁ only when the space is aspherical." }));
+    // (c) the picture-group presentation
+    var P = b.picture_group;
+    if (P) {
+      div.appendChild(h("p", { text: "Picture group π₁(|W(A)|) (Igusa–Todorov–Weyman): "
+        + P.num_generators + " generators (one per brick), " + P.num_relations + " relations "
+        + "(one per rank-2 wide: " + P.num_atom + " atom/pentagon + " + P.num_commutation
+        + " commutation), abelianization ℤ^" + P.abelianization_rank
+        + (P.abelianization && P.abelianization.length
+           ? " ⊕ " + P.abelianization.map(function (d) { return "ℤ/" + d; }).join(" ⊕ ") : "")
+        + "." }));
+      var gt = h("table", { "class": "qlgui-table" });
+      gt.appendChild(h("tr", {}, h("th", { text: "generator" }), h("th", { text: "brick" })));
+      (P.generators || []).forEach(function (g, i) {
+        gt.appendChild(h("tr", {}, h("td", { text: "x_" + i }),
+          h("td", { text: dvText(g.dimvec) + (g.name ? " (" + g.name + ")" : "") })));
+      });
+      div.appendChild(gt);
+      var rt = h("table", { "class": "qlgui-table" });
+      rt.appendChild(h("tr", {}, h("th", { text: "type" }), h("th", { text: "simple bricks" }),
+        h("th", { text: "extension brick" }), h("th", { text: "relation" })));
+      (P.relations || []).forEach(function (r) {
+        var sb = (r.simple_bricks || []).map(function (s) {
+          return dvText(s.dimvec) + (s.name ? " (" + s.name + ")" : ""); }).join(", ");
+        var ex = r.ext_brick ? dvText(r.ext_brick.dimvec)
+          + (r.ext_brick.name ? " (" + r.ext_brick.name + ")" : "") : "—";
+        rt.appendChild(h("tr", {}, h("td", { text: r.type }), h("td", { text: sb }),
+          h("td", { text: ex }), h("td", { text: r.word })));
+      });
+      div.appendChild(rt);
+    }
+    if (b.note) div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+  }
+
   // ---- Plan 67: the silting block (verifier + mutation neighbours + exploration) ----
   function renderSilting(div, b) {
     if (b.error) {
@@ -4122,6 +4213,8 @@
       renderTauTilting(div, b);
     } else if (name === "congruences") {
       renderCongruences(div, b);
+    } else if (name === "tau_cluster") {
+      renderTauCluster(div, b);
     } else if (name === "hh1_lie") {
       renderHh1Lie(div, b);
     } else if (name === "hh_lie_module") {
@@ -4809,7 +4902,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -5342,6 +5435,7 @@
     hh_lie_module: { cb: "hh_lie_module", top: "hh_lie_module-top" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     congruences: { cb: "congruences", top: "congruences-budget", budget: true },
+    tau_cluster: { cb: "tau_cluster", top: "tau_cluster-budget", budget: true },
     wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },
     silting: { cb: "silting", top: "silting-budget", budget: true },
     exceptional_sequences: { cb: "exceptional_sequences", top: "exceptional_sequences-budget", budget: true },

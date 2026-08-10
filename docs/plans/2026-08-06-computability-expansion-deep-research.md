@@ -438,6 +438,26 @@ arXiv:2509.10910 (re-slotted as context for R28 too). Oracles: kA₂/kA₃ pictu
 groups; object count = # wide subcategories (ties R26); Nakayama K(π,1).
 Size M.
 
+> **Correction (2026-08-08, folded back at the Plan-66 implementation).** The
+> attribution above headlines "Hanson–Igusa … W(A)"; web-verified this is the wrong
+> primary attribution. The **τ-cluster morphism category is DEFINED by Buan–Marsh,
+> "A category of wide subcategories," IMRN 2021** (objects = τ-perpendicular
+> subcategories, morphisms via signed τ-exceptional sequences). **Hanson–Igusa,
+> Comm. Alg. 49 (2021) no. 10 (arXiv:1809.08989)** prove the classifying space is a
+> **cube complex**, that it is a **K(π,1) for Nakayama algebras**, and identify π₁
+> with the **picture group**. The **picture-group PRESENTATION** ground truth is
+> **Igusa–Todorov–Weyman, arXiv:1609.02636** (one generator per brick, relations per
+> rank-2 configuration). The **hereditary-Dynkin K(π,1) verdict** is anchored to
+> **Igusa–Todorov, "Which cluster morphism categories are CAT(0)," arXiv:2203.16679
+> (2022)** (CAT(0) for hereditary finite/tame type with small tubes; the general
+> τ-tilting-finite case is delicate and NOT claimed). Two mathematical fix-round
+> corrections to the Plan-66 draft were also applied and live-verified: **(H1)** the
+> classifying-space `face_vector` is the HI cube complex `f_0 = #wide, f_k =
+> #(rank-k morphisms)` (kA₂ `(5,11,5)` χ=−1, kA₃ `(14,49,49,14)` χ=0, kA₄
+> `(42,204,326,204,42)` χ=2), NOT the g-fan sphere (kept separately as
+> `g_fan_face_vector`); **(H2)** the abelianization is `ℤ^{#bricks − #distinct-ext-
+> bricks}` by SNF (kA₃ → ℤ³, kA₄ → ℤ⁴), NOT `ℤ^{#bricks − #atom}`.
+
 ## 6. Derived / silting
 
 **R30 — Silting: verifier + single mutation + bounded exploration.** [D-scout

@@ -471,7 +471,20 @@ never hide behind one:
     (``tests/gui/test_skew_group_runner_twin_p74.py``). ``canonical_key`` is
     request-derived (family params; the SkewGroupAlgebra ``generators`` list is
     order-normalized in the schema so two orderings collide, the top-degree budget rides
-    in the ``compute`` string -- no new top-level request field)."""
+    in the ``compute`` string -- no new top-level request field).
+  * 2026-08-08 (``tau_cluster_kA2`` ADDED, Plan 66 / R29): a NEW algebra-only PAIR-budget
+    kind. kA2 (1 -> 2, no relations) over QQ, ``compute == ["tau_cluster:512"]`` -- the
+    shared block reports the tau-cluster morphism category W(A): ``object_count == 5`` (=
+    #wide), classifying-space ``face_vector == [5, 11, 5]`` (f_0 = #wide, H1), g-fan sphere
+    ``g_fan_face_vector == [1, 5, 5]``, ``euler_characteristic == -1``, ``is_kpi1 == true``
+    (hereditary Dynkin), and the picture group (3 generators, 1 atom relation,
+    ``abelianization_rank == 2``). Pure ADDITION: all 40 pre-existing entries were verified
+    byte-identical BEFORE the append (the generator round-trips the file bytes, then re-dumps
+    ``indent=1`` order-preserving). Both runners share the library builder
+    (``tautilting.cluster_morphism.tau_cluster_block``), so the Pyodide twin agrees
+    (``tests/gui/test_tau_cluster_runner_twin.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only, the pair budget rides in the ``compute`` string, no ``module``
+    block)."""
 import json
 import pathlib
 

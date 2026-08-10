@@ -83,6 +83,7 @@ _HEADINGS = {
     "barcode": "Barcode / persistence diagram",
     "tau_tilting": "τ-tilting: support τ-tilting pairs, exchange graph and fan",
     "congruences": "Torsion lattice: Con(tors A), forcing order and wide subcategories",
+    "tau_cluster": "τ-cluster morphism category W(A): classifying space + picture group",
     "wall_chamber": "Wall-and-chamber structure via bricks: D(B) inequality systems + "
                     "g-cone chambers",
     "silting": "Silting: verifier, mutation neighbours, bounded exploration",
@@ -539,6 +540,91 @@ def _congruences_html(b):
         out.append("<table class='ql-cong-wide'>%s</table>" % "".join(wrows))
         wrel = ", ".join("%s ⊆ %s" % (r[0], r[1]) for r in (W.get("relations") or [])) or "(none)"
         out.append("<p>Inclusions: %s.</p>" % _esc(wrel))
+    return out
+
+
+def _tau_cluster_html(b):
+    """The Plan-66 τ-cluster morphism category block: the category summary (objects = #wide,
+    morphisms), the Hanson–Igusa CLASSIFYING-SPACE cube complex (face_vector, f_0 = #wide,
+    labelled distinctly from the g-fan SPHERE g_fan_face_vector with f_n = #sτt), the Euler
+    characteristic, the theorem-anchored K(π,1) verdict, and the picture-group presentation
+    (generators = bricks, typed relations, abelianization). Honest complete-iff-τ-tilting-finite
+    status; a partial category is never emitted."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+    out = ["<p>The τ-cluster morphism category W(A) (Buan–Marsh, IMRN 2021): objects = the "
+           "τ-perpendicular wide subcategories, morphisms = support τ-rigid pairs of the source "
+           "graded by rank. Its classifying space is the Hanson–Igusa cube complex (Comm. Alg. "
+           "2021), whose π₁ (when aspherical) is the picture group (Igusa–Todorov–Weyman). "
+           "Certified complete iff A is τ-tilting-finite. n = %s.</p>" % _esc(str(b.get("n")))]
+    if not b.get("complete"):
+        out.append("<p class='ql-note'>The exchange graph did not close (status: <b>%s</b>) — A "
+                   "is τ-tilting-infinite or the pair budget was hit. W(A) is an INFINITE "
+                   "category, so the objects, morphisms, the cube complex and the picture group "
+                   "are ALL omitted (a partial category would be a lie, not merely incomplete)."
+                   "</p>" % _esc(str(b.get("status"))))
+        if b.get("note"):
+            out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+        return out
+    C = b.get("category") or {}
+    out.append("<p>Category W(A): <b>%s objects</b> (= #wide subcategories, tying the Enomoto "
+               "count) and <b>%s morphisms</b>.</p>"
+               % (C.get("object_count"), C.get("morphism_count")))
+    obr = C.get("objects_by_rank") or {}
+    mbr = C.get("morphisms_by_rank") or {}
+    rows = ["<tr><th>rank k</th><th>objects (wides)</th><th>morphisms (k-cells)</th></tr>"]
+    for k in sorted(mbr, key=lambda x: int(x)):
+        rows.append("<tr><td>%s</td><td>%s</td><td>%s</td></tr>"
+                    % (k, obr.get(str(k), obr.get(k, 0)), mbr.get(k)))
+    out.append("<table class='ql-tcl-byrank'>%s</table>" % "".join(rows))
+    fv = C.get("face_vector") or []
+    gfv = C.get("g_fan_face_vector") or []
+    out.append("<p>Classifying-space cube complex |W(A)| (Hanson–Igusa): f₀ = #wide (one 0-cell "
+               "per wide subcategory), f_k = #(rank-k morphisms). Face vector = (%s); Euler "
+               "characteristic χ = Σ(−1)^k f_k = <b>%s</b>.</p>"
+               % (_esc(", ".join(str(x) for x in fv)), C.get("euler_characteristic")))
+    out.append("<p class='ql-note'>The g-fan / cluster fan of A (a triangulated (n−1)-SPHERE, "
+               "NOT the classifying space) has face vector (%s); its top cell f_n = #support "
+               "τ-tilting pairs = %s.</p>"
+               % (_esc(", ".join(str(x) for x in gfv)), (gfv[-1] if gfv else "")))
+    if C.get("is_kpi1") is True:
+        out.append("<p>The classifying space is a <b>K(π,1)</b> [%s], so π₁ is the picture "
+                   "group below.</p>" % _esc(str(C.get("kpi1_reason"))))
+    else:
+        out.append("<p class='ql-note'>K(π,1): %s — the picture group below is π₁ only when the "
+                   "space is aspherical.</p>" % _esc(str(C.get("kpi1_reason"))))
+    P = b.get("picture_group")
+    if P:
+        ab = P.get("abelianization") or []
+        ab_str = "ℤ^%s" % P.get("abelianization_rank")
+        if ab:
+            ab_str += " ⊕ " + " ⊕ ".join("ℤ/%s" % d for d in ab)
+        out.append("<p>Picture group π₁(|W(A)|) (Igusa–Todorov–Weyman): <b>%s generators</b> "
+                   "(one per brick), <b>%s relations</b> (one per rank-2 wide: %s atom/pentagon "
+                   "+ %s commutation), abelianization %s.</p>"
+                   % (P.get("num_generators"), P.get("num_relations"), P.get("num_atom"),
+                      P.get("num_commutation"), _esc(ab_str)))
+        grows = ["<tr><th>generator</th><th>brick</th></tr>"]
+        for i, g in enumerate(P.get("generators") or []):
+            nm = g.get("name")
+            grows.append("<tr><td>x_%d</td><td>%s%s</td></tr>"
+                         % (i, _dv(g.get("dimvec")),
+                            (" (" + _esc(str(nm)) + ")") if nm else ""))
+        out.append("<table class='ql-tcl-gens'>%s</table>" % "".join(grows))
+        rrows = ["<tr><th>type</th><th>simple bricks</th><th>extension brick</th>"
+                 "<th>relation</th></tr>"]
+        for r in (P.get("relations") or []):
+            sb = ", ".join(_dv(s.get("dimvec"))
+                           + ((" (" + _esc(str(s.get("name"))) + ")") if s.get("name") else "")
+                           for s in (r.get("simple_bricks") or []))
+            eb = r.get("ext_brick")
+            ex = (_dv(eb.get("dimvec")) + ((" (" + _esc(str(eb.get("name"))) + ")")
+                                           if eb.get("name") else "")) if eb else "—"
+            rrows.append("<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+                         % (_esc(str(r.get("type"))), sb, ex, _esc(str(r.get("word")))))
+        out.append("<table class='ql-tcl-rels'>%s</table>" % "".join(rrows))
+    if b.get("note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
     return out
 
 
@@ -1773,6 +1859,8 @@ def _block_html(kind, b, ctx=None):
         return _tau_tilting_html(b)
     if kind == "congruences":
         return _congruences_html(b)
+    if kind == "tau_cluster":
+        return _tau_cluster_html(b)
     if kind == "wall_chamber":
         return _wall_chamber_html(b)
     if kind == "silting":

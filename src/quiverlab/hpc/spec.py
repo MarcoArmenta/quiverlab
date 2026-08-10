@@ -279,6 +279,15 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"congruences budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
+    # tau_cluster (Plan 66 / R29) carries a PAIR BUDGET, not a degree range: 'tau_cluster'
+    # or 'tau_cluster:512'. The tau-cluster morphism category W(A) + its classifying-space
+    # cube complex + the picture group all live on the exchange graph, sized by the pair
+    # budget (like tau_tilting / congruences), not a homological degree.
+    if s == "tau_cluster" or s.startswith("tau_cluster:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"tau_cluster budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_cluster", lo=None, hi=(int(b) if b else None))
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve (d^2 unknowns / d^3
     # equations) -- not a homological degree -- so it bypasses the 'name:0..N' grammar.
@@ -1729,6 +1738,29 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
                     "citations": _citation_pairs(keys)}, None
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # tau-cluster morphism category W(A) + picture group (Plan 66 / R29): an ALGEBRA-level
+    # kind carrying a PAIR BUDGET (parsed like tau_tilting / congruences). Objects = the
+    # tau-perpendicular wide subcategories (== #wide, ties P64), morphisms = support tau-rigid
+    # pairs graded by rank, the Hanson-Igusa classifying-space cube complex (face_vector,
+    # f_0 = #wide) + Euler characteristic + the g-fan SPHERE + the theorem-anchored K(pi,1)
+    # verdict, and the picture-group presentation (generators=bricks, typed relations,
+    # abelianization). Certified complete iff A is tau-tilting-finite (else
+    # category=picture_group=None + a note -- no partial-category lie). Both runners share
+    # tautilting.cluster_morphism.tau_cluster_block, so the blocks are byte-identical. The char
+    # caveat / tau-tilting-infinite refusal surfaces as a clean {"error": ...} entry (the
+    # Plan-30 honest-per-entry precedent), never a 500.
+    if kind == "tau_cluster":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.cluster_morphism import (_REFERENCES as _TCL_KEYS,
+                                                           tau_cluster_block)
+        try:
+            block = tau_cluster_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            keys = list(_TCL_KEYS)
+            return {"kind": "tau_cluster", "error": str(exc), "references": keys,
+                    "citations": _citation_pairs(keys)}, None
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # HH^1 as a Lie algebra (Plan 70 / R11): an ALGEBRA-level kind carrying a DIM
     # BUDGET, not a degree range (parsed like tau_tilting). Der/Inn + bracket + series
     # + solvable/nilpotent over any exact field; over char 0 also radical/Levi/sl2-count.
@@ -2917,6 +2949,11 @@ def _snippet(req: ComputeRequest, A) -> str:
                              f"{it.hi if it.hi is not None else 512})"),
              "congruences":
                  lambda it: ("A.congruence_lattice(budget="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "tau_cluster":
+                 lambda it: ("A.tau_cluster_category(budget="
+                             f"{it.hi if it.hi is not None else 512}); "
+                             "A.picture_group(budget="
                              f"{it.hi if it.hi is not None else 512})"),
              "hh1_lie": lambda it: "A.hh1_lie_structure()",
              "wall_chamber":
