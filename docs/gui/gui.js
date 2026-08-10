@@ -147,6 +147,7 @@
     '  <label><input type="checkbox" id="qlgui-tame_wild"> tame / wild (Tits form)</label>' +
     // ---- Plan 70: HH^1 as a Lie algebra (Der/Inn, solvable/Levi) ----
     '  <label><input type="checkbox" id="qlgui-hh1_lie"> HH&sup1; Lie structure (Der/Inn, solvable/Levi)</label>' +
+    '  <label><input type="checkbox" id="qlgui-deformations"> Formal deformations (HH&sup2;, obstruction, Maurer&ndash;Cartan)</label>' +
     // ---- Plan 71: HH^* as a graded Lie module over HH^1 (weights + indecomposable summands) ----
     '  <label><input type="checkbox" id="qlgui-hh_lie_module"> HH&bull; Lie module over HH&sup1; 0..<input type="number" id="qlgui-hh_lie_module-top" value="2" min="0"></label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
@@ -306,6 +307,7 @@
    "tame_wild",
    // Plan 70: HH^1 as a Lie algebra (scalar algebra-only kind)
    "hh1_lie",
+   "deformations",
    // Plan 71: HH^* as a Lie module over HH^1 + degree picker (top-carrying HH kind)
    "hh_lie_module", "hh_lie_module-top",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
@@ -952,7 +954,8 @@
     ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "string_homological", "toupie", "quasi_hereditary",
-     "fundamental_group", "simply_connected", "tame_wild", "hh1_lie"].forEach(function (k) {
+     "fundamental_group", "simply_connected", "tame_wild", "hh1_lie",
+     "deformations"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
     // Plan 71: HH^* as a Lie module over HH^1 -- a top-carrying HH kind (bracket form).
@@ -3079,6 +3082,58 @@
   }
 
   // ---- Plan 71: HH^* as a graded Lie module over HH^1 (weights + summands) ----
+  function renderDeformations(div, b) {
+    // Plan 78: formal deformations / L-infinity / Maurer-Cartan. Mirrors the report
+    // renderer quiverlab.trace.results_html._deformations_html.
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.error }));
+      return;
+    }
+    var yn = function (x) { return x === null || x === undefined ? "not determined" : (x ? "yes" : "no"); };
+    div.appendChild(h("p", { text: dataText("block-deformations-title",
+      "Formal deformations and Maurer-Cartan")
+      + ": infinitesimal deformations of A are classified by HH\u00b2(A, A); the "
+      + "obstruction to extending a first-order deformation \u03b1 is the Gerstenhaber "
+      + "square [\u03b1, \u03b1] \u2208 HH\u00b3(A, A)." }));
+    div.appendChild(h("p", { text: "dim HH\u00b2 = " + b.hh2_dim
+      + "  (infinitesimal directions),  dim HH\u00b3 = " + b.hh3_dim
+      + "  (where obstructions live)." }));
+    div.appendChild(h("p", { text: dataText("block-deformations-unobstructed",
+      "Every first-order direction unobstructed") + ": " + yn(b.unobstructed) + "." }));
+    if (b.obstruction_witness) {
+      div.appendChild(h("p", { text: dataText("block-deformations-witness",
+        "Obstructed witness") + ": " + b.obstruction_witness
+        + " \u2014 a basis direction with [\u03b1, \u03b1] \u2260 0 (basis-dependent; "
+        + "its existence is not)." }));
+    }
+    if (b.mc_description) {
+      div.appendChild(h("p", { text: dataText("block-deformations-mc",
+        "Maurer-Cartan") + ": " + b.mc_description }));
+    }
+    if (b.nilpotent_regime !== null && b.nilpotent_regime !== undefined) {
+      div.appendChild(h("p", { text: dataText("block-deformations-nilpotent",
+        "Nilpotent regime") + ": " + yn(b.nilpotent_regime)
+        + (b.mc_order_certified !== null && b.mc_order_certified !== undefined
+           ? "; certified to order " + b.mc_order_certified : "") + "." }));
+    }
+    if (b.dg_lie !== null && b.dg_lie !== undefined) {
+      div.appendChild(h("p", { text: dataText("block-deformations-dglie",
+        "dg-Lie certificate on B(A)[1]") + ": " + yn(b.dg_lie)
+        + " \u00b7 \u2113\u2083 status: " + b.l3_status }));
+    }
+    if (b.a_alpha) {
+      div.appendChild(h("p", { text: dataText("block-deformations-aalpha",
+        "Deformed algebra A_\u03b1 (display only, re-certified flat)") + ": " + b.a_alpha }));
+    }
+    if (b.ext_algebra_summary) {
+      div.appendChild(h("p", { text: dataText("block-deformations-ext",
+        "Ext-algebra handoff") + ": " + b.ext_algebra_summary }));
+    }
+    ["char0_note", "base_change_note", "window_note", "note"].forEach(function (k) {
+      if (b[k]) { div.appendChild(h("p", { "class": "qlgui-hint", text: b[k] })); }
+    });
+  }
+
   function renderHhLieModule(div, b) {
     if (b.error) {
       div.appendChild(h("p", { "class": "qlgui-hint", text: b.error }));
@@ -4217,6 +4272,8 @@
       renderTauCluster(div, b);
     } else if (name === "hh1_lie") {
       renderHh1Lie(div, b);
+    } else if (name === "deformations") {
+      renderDeformations(div, b);
     } else if (name === "hh_lie_module") {
       renderHhLieModule(div, b);
     } else if (name === "wall_chamber") {
@@ -4902,7 +4959,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "deformations", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -5432,6 +5489,7 @@
     simply_connected: { cb: "simply_connected" },
     tame_wild: { cb: "tame_wild" },
     hh1_lie: { cb: "hh1_lie" },
+    deformations: { cb: "deformations" },
     hh_lie_module: { cb: "hh_lie_module", top: "hh_lie_module-top" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     congruences: { cb: "congruences", top: "congruences-budget", budget: true },

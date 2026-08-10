@@ -255,6 +255,15 @@ def _parse_compute(spec):
             raise RequestError("hh1_lie budget must be a positive integer (got %r)"
                                % (spec,))
         return "hh1_lie", (int(rng) if rng else None)
+    # deformations carries a DIM BUDGET, not a degree range (Plan 78): 'deformations' or
+    # 'deformations:32'. The budget caps A.dim for the CS obstruction bracket (a coarse DoS
+    # backstop -- the real cost is HH^2/HH^3 richness x resolution size), not a homological
+    # degree, so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
+    if name == "deformations":
+        if rng and not rng.isdigit():
+            raise RequestError("deformations budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "deformations", (int(rng) if rng else None)
     # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
     # -- the exchange-graph pair budget, not a homological degree, so it skips MAX_DEGREE.
     if name == "wall_chamber":
@@ -1337,6 +1346,16 @@ def compute_one(spec):
             from quiverlab.invariants.hh1_lie import hh1_lie_block
             block = hh1_lie_block(A, budget=top if top is not None else 48)
             block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "deformations":
+            # Formal deformations / L-infinity / Maurer-Cartan (Plan 78 / R13): algebra-level,
+            # DIM budget (not degree), the plan's OWN DEFORM_MAXDIM (32), NOT P70's 48 -- the
+            # cost class is different (CS bracket on HH^2/HH^3, not a Der solve). SAME shared
+            # library builder (hochschild.deformations.deformations_block) + references ->
+            # citations as the server twin (quiverlab.hpc.spec._dispatch), byte-for-byte.
+            from quiverlab.hochschild.deformations import (
+                DEFORM_MAXDIM, deformations_block)
+            block = deformations_block(A, budget=top if top is not None else DEFORM_MAXDIM)
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "wall_chamber":
             # Wall-and-chamber structure via bricks (Plan 63 / R25): algebra-level, budget
             # (not degree). SAME shared library builder
@@ -1661,6 +1680,8 @@ def python_snippet():
              "tau_cluster": "A.tau_cluster_category(budget=%d)",
              # Plan 70: HH^1 as a Lie algebra, a scalar algebra-only kind, no %d.
              "hh1_lie": "A.hh1_lie_structure()",
+             # Plan 78: deformations is a scalar algebra-only kind, no %d.
+             "deformations": "A.deformation_structure()",
              # Plan 63: the wall-and-chamber kind carries a pair budget (%d = budget_pairs).
              "wall_chamber": "A.wall_chamber_structure(budget_pairs=%d)",
              # Plan 72: split_extension / arrow_removal carry a top-degree budget (%d = top).
@@ -1822,6 +1843,11 @@ ETA_MODEL = {
                 # d^3 equations, ~ d^5.4 over QQ) + the bracket/series/Killing; budget-
                 # capped honestly at dim 48. The same cost class as tau_tilting.
                 "hh1_lie": 2.0,
+                # Plan 78: deformations runs HH^2 + HH^3 and then the CS Gerstenhaber
+                # bracket [alpha, alpha] per basis direction -- the bracket, not the dim,
+                # is the driver, and it tracks HH-RICHNESS (a dim-8 HH-rich algebra can
+                # cost more than a dim-20 HH-thin one). Weighted well above hh1_lie.
+                "deformations": 20.0,
                 # Plan 63: wall_chamber runs the tau_tilting exchange-graph BFS PLUS the
                 # per-brick submodule enumeration for each D(B) -- just above tau_tilting.
                 "wall_chamber": 2.5,

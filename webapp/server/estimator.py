@@ -106,11 +106,14 @@ def _max_degree(req: ComputeRequest) -> int:
         # Plan 66: `tau_cluster` carries a PAIR BUDGET too (the exchange graph + the wide
         # poset + a reduction/sub-g-fan per object) -- knit-heavier than `congruences`, sized
         # on sizing_dim (A.dim), not a degree.
+        # Plan 78: `deformations` carries a DIM BUDGET (DEFORM_MAXDIM, the plan's OWN cap
+        # of 32 -- NOT P70's 48, a different cost law), not a homological degree. Its real
+        # routing is HH-RICHNESS via `_deformations_dim` below, not `hi`, so it skips too.
         if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver",
                          "left_right_parts", "tilted_check", "recognizer_ladder",
                          "silting", "exceptional_sequences", "congruences",
                          "hh1_lie", "split_extension", "arrow_removal",
-                         "skew_group_hh", "tau_cluster"):
+                         "skew_group_hh", "tau_cluster", "deformations"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)
@@ -182,7 +185,44 @@ def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     classifies exactly as before (Plan 26/30 + wave 2)."""
     return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
                _module_dim(req.tor_target), _coefficient_dim(req), _algebra_b_dim(req),
-               _extension_dim(req, algebra_dim))
+               _extension_dim(req, algebra_dim), _deformations_dim(req, algebra_dim))
+
+
+def _deformations_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Effective size of a ``deformations`` request (Plan 78 / H1). Returns ``0`` when the
+    request does not ask for ``deformations``, so every other request classifies EXACTLY as
+    before.
+
+    The deformation cost is driven by the Gerstenhaber obstruction bracket ``[alpha, alpha]``
+    evaluated per ``HH^2`` basis direction, and that tracks **HH-RICHNESS x resolution size,
+    NOT the algebra dimension** -- live-measured in the plan: dim-20 ``kZ_10/J^2`` with
+    ``HH^2 = 0`` is 0.024 s, while dim-4 ``QuantumCI(-1)`` with ``HH^2 = 5`` is 43.5 s. Sizing
+    on ``A.dim`` alone would therefore route the CHEAP big algebra off the instant tier and
+    the EXPENSIVE small one onto it -- exactly backwards.
+
+    So this pre-probes the (comparatively cheap) ``HH^2`` and returns
+    ``algebra_dim * (1 + dim HH^2) ** 2`` -- monotone in both factors, and on the two measured
+    points it orders them correctly (``kZ_10/J^2`` -> 20, ``QuantumCI(-1)`` -> 144). The
+    pre-probe is worth its seconds precisely because the bracket it gates costs minutes
+    (``kZ_16/J^2`` HH is ~2.4 s at dim 32, the cap). ``DEFORM_MAXDIM`` remains a coarse
+    backstop inside the compute itself; THIS is the real routing.
+
+    DEFENSIVE, like :func:`_barcode_knit_heavy`: any failure to build or probe falls back to
+    ``algebra_dim`` (the request's real error surfaces later as a clean 4xx) because
+    ``app.py``'s ``classify(...)`` is not wrapped.
+    """
+    try:
+        if not any(parse_compute_item(r).kind == "deformations" for r in req.compute):
+            return 0
+    except Exception:
+        return 0
+    try:
+        from quiverlab.hpc.spec import build_algebra
+        A = build_algebra(req.algebra.model_dump())
+        hh2 = int(A.hochschild_cohomology(2).dims[2])
+        return int(algebra_dim * (1 + hh2) ** 2)
+    except Exception:
+        return algebra_dim
 
 
 # Heuristic throughput used to turn the op estimate into a human "minutes"

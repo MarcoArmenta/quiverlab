@@ -1515,6 +1515,32 @@ class Algebra:
         from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, is_nilpotent_hh1
         return is_nilpotent_hh1(self, budget=DEFAULT_MAXDIM if budget is None else budget)
 
+    def deformation_structure(self, budget=None, engine="auto"):
+        """The char-0 formal-deformation report (Plan 78 / R13): infinitesimal HH^2, the
+        primary obstruction [alpha,alpha] in HH^3, the MRRS nilpotent-regime verdict, the
+        order-by-order Maurer-Cartan description on the Hochschild DGLA C(A), the rad^2=0
+        dg-Lie certificate, and a display-only presented deformed algebra A_alpha with its
+        Ext-algebra summary. Over char p the field-general HH^2/HH^3 block is returned
+        behind the char-0 caveat. Returns a frozen Deformations."""
+        from quiverlab.hochschild.deformations import (
+            DEFORM_MAXDIM, deformation_structure)
+        return deformation_structure(
+            self, budget=DEFORM_MAXDIM if budget is None else budget, engine=engine)
+
+    def obstruction_map(self, engine="auto"):
+        """The primary deformation obstruction alpha |-> [alpha,alpha] in HH^3 -- the
+        targeted (2,2) CS Gerstenhaber self-bracket (Plan 78). Field-general; the
+        `unobstructed` verdict + a basis-dependent witness. Returns a frozen Obstruction."""
+        from quiverlab.hochschild.deformations import obstruction_map
+        return obstruction_map(self, engine=engine)
+
+    def deformed_algebra(self, direction, t="1"):
+        """Build the presented deformed algebra A_alpha = kQ/I_alpha for a RADICAL
+        2-cocycle direction and value t, re-certified admissible + flat (Plan 78 / RRRV).
+        Loud on a unit / non-admissible / non-flat direction. Returns an Algebra."""
+        from quiverlab.hochschild.deformations import deformed_algebra
+        return deformed_algebra(self, direction, t=t)
+
     def tor(self, M, N, n):
         """dim Tor_n^A(M, N) for a RIGHT A-module M and a LEFT A-module N (Plan 29).
 
