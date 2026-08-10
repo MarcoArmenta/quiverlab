@@ -100,13 +100,20 @@ def _max_degree(req: ComputeRequest) -> int:
         # Plan 72: `split_extension` / `arrow_removal` carry a TOP-DEGREE budget in hi;
         # they are sized on the algebra dim (split_extension on 2*dim via sizing_dim's
         # extension-awareness below), NOT tiered by hi-as-degree, so they skip too.
+        # Plan 74: `skew_group_hh` carries a TOP-DEGREE budget in hi; the smash A|xG is
+        # dim |G|*dim A, so it is sized on the algebra dim (sizing_dim), not tiered by
+        # hi-as-degree -- it skips too (the split_extension/arrow_removal precedent).
+        # Plan 66: `tau_cluster` carries a PAIR BUDGET too (the exchange graph + the wide
+        # poset + a reduction/sub-g-fan per object) -- knit-heavier than `congruences`, sized
+        # on sizing_dim (A.dim), not a degree.
         # Plan 78: `deformations` carries a DIM BUDGET (DEFORM_MAXDIM, the plan's OWN cap
         # of 32 -- NOT P70's 48, a different cost law), not a homological degree. Its real
         # routing is HH-RICHNESS via `_deformations_dim` below, not `hi`, so it skips too.
-        if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver", "left_right_parts",
-                         "tilted_check", "recognizer_ladder", "silting",
-                         "exceptional_sequences", "congruences", "hh1_lie",
-                         "split_extension", "arrow_removal", "deformations"):
+        if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver",
+                         "left_right_parts", "tilted_check", "recognizer_ladder",
+                         "silting", "exceptional_sequences", "congruences",
+                         "hh1_lie", "split_extension", "arrow_removal",
+                         "skew_group_hh", "tau_cluster", "deformations"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)

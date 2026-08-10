@@ -279,6 +279,15 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SpecError(f"congruences budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
+    # tau_cluster (Plan 66 / R29) carries a PAIR BUDGET, not a degree range: 'tau_cluster'
+    # or 'tau_cluster:512'. The tau-cluster morphism category W(A) + its classifying-space
+    # cube complex + the picture group all live on the exchange graph, sized by the pair
+    # budget (like tau_tilting / congruences), not a homological degree.
+    if s == "tau_cluster" or s.startswith("tau_cluster:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"tau_cluster budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_cluster", lo=None, hi=(int(b) if b else None))
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve (d^2 unknowns / d^3
     # equations) -- not a homological degree -- so it bypasses the 'name:0..N' grammar.
@@ -334,6 +343,15 @@ def parse_compute_item(s: str) -> ComputeItem:
             if b and not b.isdigit():
                 raise SpecError(f"{_kind} budget must be a positive integer (got {s!r})")
             return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
+    # skew_group_hh carries a TOP-DEGREE budget (the Stefan conjugacy-class HH
+    # decomposition is assembled to degree hi), parsed like split_extension:
+    # 'skew_group_hh' / 'skew_group_hh:3'. hi = the top HH degree (None => default 3),
+    # bypassing the 'name:0..N' grammar (a single cap, not a lo..hi range) (Plan 74).
+    if s == "skew_group_hh" or s.startswith("skew_group_hh:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(f"skew_group_hh budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_group_hh", lo=None, hi=(int(b) if b else None))
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget caps the classical
     # tuple search / the tau-tilting exchange graph -- not a homological degree -- so it
@@ -974,6 +992,7 @@ _SYNTHETIC_FAMILY_PARAMS = {
     "OppositeAlgebra": {"base"},
     "MarkedSurface": {"preset"},
     "SkewGentleAlgebra": {"vertices", "arrows", "relations", "special"},
+    "SkewGroupAlgebra": {"vertices", "arrows", "relations", "generators"},
 }
 
 _SURFACE_PRESETS = ("disc_fan_A3", "annulus_C22", "hexagon_internal")
@@ -1096,7 +1115,24 @@ def _build_synthetic(spec):
         return _build_brauer(params, field)
     if name == "SkewGentleAlgebra":
         return _build_skew_gentle(params, field)
+    if name == "SkewGroupAlgebra":
+        return _build_skew_group(params, field)
     raise ComputeError("CatalogError", f"no synthetic builder for {name!r}")
+
+
+def _build_skew_group(params, field):
+    """SkewGroupAlgebra A|xG from flattened params: ``vertices`` / ``arrows`` /
+    ``relations`` (the base quiver kQ/I) + ``generators`` (a list of
+    quiver-automorphism dicts). The base is given as an explicit quiver (not a Dynkin
+    string) so k[x]/(x^2) and the 2-cycle Nakayama are expressible (Plan 74).
+    Delegates to the shared library builder so the server and Pyodide twins build a
+    byte-identical algebra; the library's loud QuiverlabError refusals surface as
+    clean CatalogError entries."""
+    from quiverlab.families.skew_group import build_skew_group_from_params
+    try:
+        return build_skew_group_from_params(params, field)
+    except qerr.QuiverlabError as exc:
+        raise ComputeError("CatalogError", str(exc)) from exc
 
 
 def _build_skew_gentle(params, field):
@@ -1711,6 +1747,29 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
                     "citations": _citation_pairs(keys)}, None
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # tau-cluster morphism category W(A) + picture group (Plan 66 / R29): an ALGEBRA-level
+    # kind carrying a PAIR BUDGET (parsed like tau_tilting / congruences). Objects = the
+    # tau-perpendicular wide subcategories (== #wide, ties P64), morphisms = support tau-rigid
+    # pairs graded by rank, the Hanson-Igusa classifying-space cube complex (face_vector,
+    # f_0 = #wide) + Euler characteristic + the g-fan SPHERE + the theorem-anchored K(pi,1)
+    # verdict, and the picture-group presentation (generators=bricks, typed relations,
+    # abelianization). Certified complete iff A is tau-tilting-finite (else
+    # category=picture_group=None + a note -- no partial-category lie). Both runners share
+    # tautilting.cluster_morphism.tau_cluster_block, so the blocks are byte-identical. The char
+    # caveat / tau-tilting-infinite refusal surfaces as a clean {"error": ...} entry (the
+    # Plan-30 honest-per-entry precedent), never a 500.
+    if kind == "tau_cluster":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.tautilting.cluster_morphism import (_REFERENCES as _TCL_KEYS,
+                                                           tau_cluster_block)
+        try:
+            block = tau_cluster_block(A, budget=budget)
+        except qerr.QuiverlabError as exc:
+            keys = list(_TCL_KEYS)
+            return {"kind": "tau_cluster", "error": str(exc), "references": keys,
+                    "citations": _citation_pairs(keys)}, None
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     # HH^1 as a Lie algebra (Plan 70 / R11): an ALGEBRA-level kind carrying a DIM
     # BUDGET, not a degree range (parsed like tau_tilting). Der/Inn + bracket + series
     # + solvable/nilpotent over any exact field; over char 0 also radical/Levi/sl2-count.
@@ -1784,6 +1843,18 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         from quiverlab.hochschild.arrow_removal import arrow_removal_block
         block = arrow_removal_block(A, top=budget)
         block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Skew-group HH decomposition (Plan 74 / R8): an ALGEBRA-level kind carrying a
+    # TOP-DEGREE budget ('skew_group_hh' / 'skew_group_hh:3'). A must be a
+    # SkewGroupAlgebra (a smash carrying its base + action); the Stefan conjugacy-class
+    # decomposition is cross-checked against the DIRECT engine. Both runners share
+    # hochschild.skew_group.skew_group_hh_block, so the blocks are byte-identical; the
+    # modular (char | |G|) case reports direct-only, a bad action -> clean error field.
+    if kind == "skew_group_hh":
+        budget = item.hi if item.hi is not None else 3
+        from quiverlab.hochschild.skew_group import skew_group_hh_block
+        block = skew_group_hh_block(A, budget)
+        block["citations"] = _citation_pairs(block.get("references", []))
         return block, None
     # Exceptional sequences (Plan 65 / R27+R28): an ALGEBRA-level kind carrying an
     # ENUMERATION BUDGET, not a degree range (parsed like tau_tilting / ar_quiver). One
@@ -2747,6 +2818,11 @@ def _synthetic_reproduce_lines(family, params, field_ref) -> list:
                 "BrauerGraph, BrauerGraphAlgebra",
                 f"G = BrauerGraph(edges={edges!r}, cyclic_order={cyclic!r})",
                 f"A = BrauerGraphAlgebra(G, {mult!r}, field={field_ref})"]
+    if family == "SkewGroupAlgebra":
+        # Rebuild A|xG from the flattened params via the shared library builder (the
+        # base quiver + the explicit group action). Kept byte-identical to the twin.
+        return ["from quiverlab.families.skew_group import build_skew_group_from_params",
+                f"A = build_skew_group_from_params({dict(params)!r}, {field_ref})"]
     # No short-script form: an honest comment, never crashing code (the algebra is
     # still reachable through the webapp `family` block).
     return [f"# built via the webapp family {family!r}; see docs"]
@@ -2821,6 +2897,10 @@ def _snippet(req: ComputeRequest, A) -> str:
              "arrow_removal":
                  lambda it: ("A.arrow_removal(top="
                              f"{it.hi if it.hi is not None else 6})"),
+             "skew_group_hh":
+                 lambda it: ("stefan_decomposition(base, action, "
+                             f"{it.hi if it.hi is not None else 3})  "
+                             "# from quiverlab.hochschild.skew_group"),
              "radical_filtration":
                  lambda it: ("A.radical_filtration(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),
@@ -2892,6 +2972,11 @@ def _snippet(req: ComputeRequest, A) -> str:
                              f"{it.hi if it.hi is not None else 512})"),
              "congruences":
                  lambda it: ("A.congruence_lattice(budget="
+                             f"{it.hi if it.hi is not None else 512})"),
+             "tau_cluster":
+                 lambda it: ("A.tau_cluster_category(budget="
+                             f"{it.hi if it.hi is not None else 512}); "
+                             "A.picture_group(budget="
                              f"{it.hi if it.hi is not None else 512})"),
              "hh1_lie": lambda it: "A.hh1_lie_structure()",
              "deformations": lambda it: "A.deformation_structure()",

@@ -89,6 +89,11 @@ def _algebra_from_spec(alg):
         # build (quiverlab.hpc.spec._build_skew_gentle).
         if alg.get("family") == "SkewGentleAlgebra":
             return _skew_gentle_from_spec(alg)
+        # SkewGroupAlgebra (Plan 74): a base kQ/I + an explicit finite group action.
+        # Byte-identical to the server build (both call the shared library builder
+        # quiverlab.families.skew_group.build_skew_group_from_params).
+        if alg.get("family") == "SkewGroupAlgebra":
+            return _skew_group_from_spec(alg)
         raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
                            "this GUI submits kind 'quiver' only")
     if kind != "quiver":
@@ -159,6 +164,28 @@ def _skew_gentle_from_spec(alg):
                              field=field)
 
 
+def _skew_group_from_spec(alg):
+    """Build the skew group algebra A⋊G from a GUI ``family: SkewGroupAlgebra`` block
+    (flattened params: vertices, arrows, relations, generators). Byte-identical to the
+    server build -- both delegate to the shared library builder
+    quiverlab.families.skew_group.build_skew_group_from_params (Plan 74)."""
+    from quiverlab.errors import QuiverlabError
+    from quiverlab.families.skew_group import build_skew_group_from_params
+    params = dict(alg.get("params") or {})
+    # canonical generator-order normalization (mirror the server schema): sort the
+    # generators list by a stable JSON key so two orderings build the same algebra.
+    gens = params.get("generators")
+    if isinstance(gens, list):
+        import json as _json
+        params["generators"] = sorted(
+            gens, key=lambda g: _json.dumps(g, sort_keys=True, default=str))
+    field = _field_from_spec(alg.get("field"))
+    try:
+        return build_skew_group_from_params(params, field)
+    except QuiverlabError as exc:
+        raise RequestError(str(exc)) from exc
+
+
 def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
@@ -212,6 +239,14 @@ def _parse_compute(spec):
             raise RequestError("congruences budget must be a positive integer (got %r)"
                                % (spec,))
         return "congruences", (int(rng) if rng else None)
+    # tau_cluster carries a PAIR BUDGET, not a degree range (Plan 66): 'tau_cluster' or
+    # 'tau_cluster:512'. The budget is not a homological degree, so it skips MAX_DEGREE.
+    # Server twin: quiverlab.hpc.spec parses the same form.
+    if name == "tau_cluster":
+        if rng and not rng.isdigit():
+            raise RequestError("tau_cluster budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "tau_cluster", (int(rng) if rng else None)
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
@@ -261,6 +296,13 @@ def _parse_compute(spec):
             raise RequestError("%s budget must be a positive integer (got %r)"
                                % (name, spec))
         return name, (int(rng) if rng else None)
+    # skew_group_hh carries a TOP-DEGREE budget, not a lo..hi range (Plan 74):
+    # 'skew_group_hh' / 'skew_group_hh:3'. Skips MAX_DEGREE like split_extension.
+    if name == "skew_group_hh":
+        if rng and not rng.isdigit():
+            raise RequestError("skew_group_hh budget must be a positive integer (got %r)"
+                               % (spec,))
+        return "skew_group_hh", (int(rng) if rng else None)
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. Skips MAX_DEGREE like tau_tilting.
     if name == "exceptional_sequences":
@@ -1037,6 +1079,16 @@ def compute_one(spec):
             from quiverlab.hochschild.arrow_removal import arrow_removal_block
             block = arrow_removal_block(A, top=top if top is not None else 6)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "skew_group_hh":
+            # Skew-group HH decomposition (Plan 74 / R8): an ALGEBRA-level TOP-DEGREE
+            # budget kind on a SkewGroupAlgebra input. Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared builder
+            # (hochschild.skew_group.skew_group_hh_block); the Stefan conjugacy-class
+            # decomposition is cross-checked against the DIRECT engine, the modular case
+            # reports direct-only, a bad action -> clean error field (never a crash).
+            from quiverlab.hochschild.skew_group import skew_group_hh_block
+            block = skew_group_hh_block(A, top if top is not None else 3)
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "radical_filtration":
             # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET
             # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
@@ -1266,6 +1318,24 @@ def compute_one(spec):
             except quiverlab.QuiverlabError as exc:
                 block = {"kind": "congruences", "error": str(exc),
                          "references": list(_CONG_KEYS)}
+            block["citations"] = _citation_pairs(block["references"])
+        elif name == "tau_cluster":
+            # tau-cluster morphism category W(A) + picture group (Plan 66 / R29):
+            # algebra-level, pair budget (not degree). SAME shared library builder
+            # (tautilting.cluster_morphism.tau_cluster_block) + references -> citations as the
+            # server twin (quiverlab.hpc.spec._dispatch), so the cross-runner contract holds
+            # byte-for-byte -- INCLUDING the char-caveat / tau-tilting-infinite error path: a
+            # QuiverlabError refusal is caught into the SAME {"kind","error","references"} shape
+            # spec.py returns (the congruences-branch pattern). Objects = #wide (ties P64), the
+            # Hanson-Igusa classifying-space cube complex + K(pi,1) verdict + the picture group,
+            # certified complete iff A is tau-tilting-finite. Honest complete-iff block.
+            from quiverlab.tautilting.cluster_morphism import _REFERENCES as _TCL_KEYS
+            from quiverlab.tautilting.cluster_morphism import tau_cluster_block
+            try:
+                block = tau_cluster_block(A, budget=top if top is not None else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "tau_cluster", "error": str(exc),
+                         "references": list(_TCL_KEYS)}
             block["citations"] = _citation_pairs(block["references"])
         elif name == "hh1_lie":
             # HH^1 as a Lie algebra (Plan 70 / R11): algebra-level, DIM budget (not
@@ -1499,6 +1569,11 @@ def _synthetic_reproduce_lines(family, params, field_ref):
                 "BrauerGraph, BrauerGraphAlgebra",
                 f"G = BrauerGraph(edges={edges!r}, cyclic_order={cyclic!r})",
                 f"A = BrauerGraphAlgebra(G, {mult!r}, field={field_ref})"]
+    if family == "SkewGroupAlgebra":
+        # Rebuild A|xG from the flattened params via the shared library builder (the
+        # base quiver + the explicit group action). Byte-identical to the server twin.
+        return ["from quiverlab.families.skew_group import build_skew_group_from_params",
+                f"A = build_skew_group_from_params({dict(params)!r}, {field_ref})"]
     return [f"# built via the webapp family {family!r}; see docs"]
 
 
@@ -1600,6 +1675,9 @@ def python_snippet():
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              # Plan 64: the congruences kind carries a pair budget (%d = budget).
              "congruences": "A.congruence_lattice(budget=%d)",
+             # Plan 66: the tau_cluster kind carries a pair budget (%d = budget); the block
+             # also builds A.picture_group(budget=...) with the same budget.
+             "tau_cluster": "A.tau_cluster_category(budget=%d)",
              # Plan 70: HH^1 as a Lie algebra, a scalar algebra-only kind, no %d.
              "hh1_lie": "A.hh1_lie_structure()",
              # Plan 78: deformations is a scalar algebra-only kind, no %d.
@@ -1609,6 +1687,10 @@ def python_snippet():
              # Plan 72: split_extension / arrow_removal carry a top-degree budget (%d = top).
              "split_extension": "A.split_extension_cohomology(%d)",
              "arrow_removal": "A.arrow_removal(top=%d)",
+             # Plan 74: skew_group_hh carries a top-degree budget (%d = top). A is the
+             # built A|xG; stefan_decomposition takes its base + action.
+             "skew_group_hh": ("stefan_decomposition(base, action, %d)  "
+                               "# from quiverlab.hochschild.skew_group"),
              # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
              # tmpl % top fills both %d).
              "silting": "A.silting_exploration(radius=%d, budget=%d)",
@@ -1753,6 +1835,10 @@ ETA_MODEL = {
                 # runs the principal-congruence fixed points + the kappa/CLO build -- a bit
                 # heavier than tau_tilting alone.
                 "congruences": 3.0,
+                # Plan 66: tau_cluster BFSes the exchange graph, builds the wide poset AND a
+                # reduction / sub-g-fan per object (the closed-star enumeration + the
+                # picture-group Ext scan) -- heavier than congruences.
+                "tau_cluster": 4.0,
                 # Plan 70: hh1_lie runs the Der/Inn Leibniz null space (d^2 unknowns /
                 # d^3 equations, ~ d^5.4 over QQ) + the bracket/series/Killing; budget-
                 # capped honestly at dim 48. The same cost class as tau_tilting.
@@ -1770,6 +1856,10 @@ ETA_MODEL = {
                 # arrow_removal runs HH_* + HH^* of A and B. Both are CS-dominated,
                 # around the tau_tilting cost class.
                 "split_extension": 2.0, "arrow_removal": 1.5,
+                # Plan 74: skew_group_hh runs the twisted-bar HH of the base A per
+                # conjugacy class + the Z(g)-transport + a DIRECT HH of A|xG (dim
+                # |G|*dim A). Bar-dominated on the |G|*dim A algebra, tau_tilting class.
+                "skew_group_hh": 2.0,
                 # Plan 67: silting = a bounded-radius BFS of the silting quiver via K^b
                 # Hom + minimal approximations + cone/reduce per step; the hyper-Hom passes
                 # dominate. Budget-capped honestly (complete only for local).

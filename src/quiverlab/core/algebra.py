@@ -474,6 +474,16 @@ class Algebra:
         from quiverlab.modules.opposite import opposite_algebra
         return opposite_algebra(self)
 
+    def skew_group(self, action):
+        """The skew group algebra ``A rtimes G`` (smash product ``A # kG``) for an
+        explicit finite ``GroupAction`` acting by algebra automorphisms; a
+        first-class structure-constant Algebra of dimension ``|G|*dim A`` (Plan 74).
+        Characteristic-agnostic; the Stefan HH decomposition
+        (``quiverlab.hochschild.skew_group.stefan_decomposition``) needs
+        ``char k does not divide |G|``."""
+        from quiverlab.families.skew_group import skew_group_algebra
+        return skew_group_algebra(self, action)
+
     def hom(self, M, N):
         """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.hom import hom_dim
@@ -623,6 +633,27 @@ class Algebra:
         tau-tilting-finite."""
         from quiverlab.tautilting.congruence import wide_subcategories
         return wide_subcategories(self, budget=budget)
+
+    def tau_cluster_category(self, budget=512):
+        """The tau-cluster morphism category ``W(A)`` (Plan 66 / R29; Buan-Marsh IMRN 2021 +
+        Hanson-Igusa Comm. Alg. 2021): objects = the tau-perpendicular wide subcategories
+        (``object_count == wide_subcategories(A).size``), morphisms = support tau-rigid pairs
+        of the source graded by rank, the Hanson-Igusa classifying-space cube-complex
+        ``face_vector`` (``f_0 = #wide``, ``f_k = #(rank-k morphisms)``) + Euler characteristic
+        + the ``g``-fan sphere ``g_fan_face_vector``, and the theorem-anchored ``K(pi,1)``
+        verdict (Nakayama / hereditary Dynkin). Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import tau_cluster_category
+        return tau_cluster_category(self, budget=budget)
+
+    def picture_group(self, budget=512):
+        """The picture-group presentation ``pi_1(|W(A)|)`` as DATA (Plan 66 / R29;
+        Igusa-Todorov-Weyman arXiv:1609.02636; Hanson-Igusa): generators = the bricks,
+        relations = the rank-2 wides (typed commutation / atom via ``Ext^1``), and the
+        abelianization by exact Smith normal form. Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import picture_group
+        return picture_group(self, budget=budget)
 
     def wall_chamber_structure(self, budget_pairs=512):
         """The wall-and-chamber structure of ``A`` via bricks (Plan 63 / R25): the chambers

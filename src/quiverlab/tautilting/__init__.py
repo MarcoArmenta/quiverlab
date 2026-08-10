@@ -15,6 +15,9 @@ from quiverlab.tautilting.rigid import g_matrix, g_vector, is_tau_rigid
 from quiverlab.tautilting.silting import silting_count, two_term_silting
 from quiverlab.tautilting.stability import (is_theta_semistable, is_theta_stable,
                                             wall_and_chamber_fan)
+from quiverlab.tautilting.cluster_morphism import (PictureGroup, TauClusterCategory,
+                                                   picture_group, tau_cluster_block,
+                                                   tau_cluster_category)
 from quiverlab.tautilting.congruence import (CongruenceLattice, TorsionLattice,
                                              WideSubcategoryPoset, congruence_lattice,
                                              congruences_block, torsion_lattice,
@@ -35,5 +38,7 @@ __all__ = [
     "tau_tilting_block",
     "TorsionLattice", "CongruenceLattice", "WideSubcategoryPoset",
     "torsion_lattice", "congruence_lattice", "wide_subcategories", "congruences_block",
+    "TauClusterCategory", "PictureGroup", "tau_cluster_category", "picture_group",
+    "tau_cluster_block",
     "Wall", "wall_of_brick", "wall_chamber_structure",
 ]

@@ -12,7 +12,11 @@ import pytest
 RUNNER_PATH = (pathlib.Path(__file__).resolve().parents[2]
                / "docs" / "gui" / "runner.py")
 
-pytestmark = [pytest.mark.oracle_crossengine]
+# NO oracle-class marker: tests/gui/ is EXTRAS-GATED, so an oracle_* mark there would make
+# the audited class counts environment-dependent (Plan-32 ruling, enforced by
+# tests/release/test_oracle_classes.py::test_no_oracle_markers_in_extras_gated_dirs).
+# These cross-runner twins are contract & infrastructure. The `deep` bucket marker below
+# is a BUCKET marker, not an oracle class, and is explicitly allowed.
 
 # The plan's OBSTRUCTED benchmark point: dim-4 `QuantumCI(-1)`, HH^2 = 5, measured at
 # 43.5 s -- while dim-20 kZ_10/J^2 with HH^2 = 0 is 0.024 s. That inversion is the whole

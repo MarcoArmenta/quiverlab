@@ -456,6 +456,35 @@ never hide behind one:
     Both runners share the library core builder (``quiverlab.modules.barcode.barcode_block``),
     so the Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
     is request-derived (the ``module`` block canonicalizes through the Plan-25 key; no new
+    top-level request field).
+  * 2026-08-08 (``skew_group_hh_z2dual`` ADDED, Plan 74 / R8): a NEW fixture for the
+    ``SkewGroupAlgebra`` construction family + the ``skew_group_hh`` ALGEBRA-level
+    TOP-DEGREE budget kind. Z/2 on k[x]/(x^2) (σ: x ↦ −x, arrow scalar −1) over QQ,
+    ``compute == ["skew_group_hh:3"]`` -- the Ştefan conjugacy-class decomposition
+    ``dims == direct_dims == [1,1,1,1]``, ``agrees == true``, the per-class summands
+    (identity ``inv [1,1,1,1]`` + σ-twisted ``inv [0,0,0,0]``). Pure ADDITION: every
+    pre-existing entry was verified byte-identical BEFORE the append (the goldens JSON
+    round-trips through ``json.dumps(indent=1)`` + newline byte-for-byte, so the new key
+    is appended LAST and no existing bytes move). Both runners share the library builder
+    (``hochschild.skew_group.skew_group_hh_block``) and the family builder
+    (``families.skew_group.build_skew_group_from_params``), so the Pyodide twin agrees
+    (``tests/gui/test_skew_group_runner_twin_p74.py``). ``canonical_key`` is
+    request-derived (family params; the SkewGroupAlgebra ``generators`` list is
+    order-normalized in the schema so two orderings collide, the top-degree budget rides
+    in the ``compute`` string -- no new top-level request field).
+  * 2026-08-08 (``tau_cluster_kA2`` ADDED, Plan 66 / R29): a NEW algebra-only PAIR-budget
+    kind. kA2 (1 -> 2, no relations) over QQ, ``compute == ["tau_cluster:512"]`` -- the
+    shared block reports the tau-cluster morphism category W(A): ``object_count == 5`` (=
+    #wide), classifying-space ``face_vector == [5, 11, 5]`` (f_0 = #wide, H1), g-fan sphere
+    ``g_fan_face_vector == [1, 5, 5]``, ``euler_characteristic == -1``, ``is_kpi1 == true``
+    (hereditary Dynkin), and the picture group (3 generators, 1 atom relation,
+    ``abelianization_rank == 2``). Pure ADDITION: all 40 pre-existing entries were verified
+    byte-identical BEFORE the append (the generator round-trips the file bytes, then re-dumps
+    ``indent=1`` order-preserving). Both runners share the library builder
+    (``tautilting.cluster_morphism.tau_cluster_block``), so the Pyodide twin agrees
+    (``tests/gui/test_tau_cluster_runner_twin.py``). ``canonical_key`` is request-derived
+    (schema-1 algebra-only, the pair budget rides in the ``compute`` string, no ``module``
+    block).
     top-level request field).  * 2026-08-10 (``deformations_radsq3`` ADDED, Plan 78 / R13): a NEW algebra-only DIM
     BUDGET kind (the ``hh1_lie`` precedent, but with the plan's OWN ``DEFORM_MAXDIM = 32``
     -- NOT P70's 48, because the cost law is different: the obstruction bracket tracks

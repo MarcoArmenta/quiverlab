@@ -72,6 +72,10 @@ ALL_KINDS = {
     "hh_lie_module",
     # Plan 72 (2026-08-08): split-extension LES + certified arrow removal.
     "split_extension", "arrow_removal",
+    # Plan 74 (2026-08-08): skew-group HH decomposition (Ştefan conjugacy classes).
+    "skew_group_hh",
+    # Plan 66 (2026-08-08): tau-cluster morphism category W(A) + picture group.
+    "tau_cluster",
 }
 
 

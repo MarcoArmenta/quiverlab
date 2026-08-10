@@ -11,6 +11,7 @@ DATA (ints or exact strings like ``"1/2"``) — never evaluated, never floats; t
 exact parse into the chosen field happens later, loudly, in the runner."""
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from fractions import Fraction
@@ -68,6 +69,21 @@ class FamilyAlgebraSpec(BaseModel):
         for key, val in v.items():
             _reject_float_params(val, repr(key))
         return v
+
+    @model_validator(mode="after")
+    def _normalize_generators(self):
+        # Canonical-key generator-ORDER normalization (Plan 74): the SkewGroupAlgebra
+        # `generators` list ORDER is presentation, not mathematics. Sort it by a stable
+        # JSON key so two orderings of the same action produce the SAME cache key (the
+        # library builder re-canonicalizes independently, so the built algebra is
+        # order-invariant regardless). Full up-to-iso group normalization is out of
+        # v1 scope (a different generating SET keys differently -- documented).
+        if self.family == "SkewGroupAlgebra":
+            gens = self.params.get("generators")
+            if isinstance(gens, list):
+                self.params["generators"] = sorted(
+                    gens, key=lambda g: json.dumps(g, sort_keys=True, default=str))
+        return self
 
 
 class QuiverAlgebraSpec(BaseModel):
@@ -428,6 +444,14 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"congruences budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
+    # tau_cluster (Plan 66) carries a PAIR BUDGET, not a degree range: 'tau_cluster' or
+    # 'tau_cluster:512' -- the tau-cluster morphism category + cube complex + picture group
+    # live on the exchange graph, sized by the pair budget (like tau_tilting / congruences).
+    if s == "tau_cluster" or s.startswith("tau_cluster:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"tau_cluster budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_cluster", lo=None, hi=(int(b) if b else None))
     # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
     # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
     # so it skips the degree grammar (like tau_tilting).
@@ -483,6 +507,14 @@ def parse_compute_item(s: str) -> ComputeItem:
             if b and not b.isdigit():
                 raise SchemaError(f"{_kind} budget must be a positive integer (got {s!r})")
             return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
+    # skew_group_hh (Plan 74) carries a TOP-DEGREE budget: 'skew_group_hh' or
+    # 'skew_group_hh:3'. The Stefan conjugacy-class HH decomposition is assembled to
+    # degree hi (a single cap, not a 'name:0..N' range) -- server and GUI/hpc agree.
+    if s == "skew_group_hh" or s.startswith("skew_group_hh:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"skew_group_hh budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_group_hh", lo=None, hi=(int(b) if b else None))
     # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
     # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget is not a homological
     # degree, so it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this form.

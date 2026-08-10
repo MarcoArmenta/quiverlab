@@ -882,6 +882,60 @@ REGISTRY: dict = {r.key: r for r in [
        "with HH_* a module over HH^*; the Lie-module-over-HH^1 structure Plan 71 computes "
        "is one facet, and gentle algebras are its literature anchor.",
        "hochschild", "lie"),
+    _r("stefan_hopf_galois", "StefanHopfGalois1995", "foundation",
+       "Hochschild cohomology on Hopf Galois extensions",
+       "Stefan: the spectral sequence for a Hopf-Galois extension; for H = kG a group "
+       "algebra it decomposes along the conjugacy classes of G -- the origin of the "
+       "skew-group HH conjugacy-class decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("shepler_witherspoon_group_actions", "SheplerWitherspoonGroupActions", "foundation",
+       "Group actions on algebras and the graded Lie structure of Hochschild cohomology",
+       "Shepler-Witherspoon: the additive conjugacy-class decomposition of HH^*(A rtimes G) "
+       "with the Z(g)-invariants -- the load-bearing anchor for quiverlab's Stefan "
+       "decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+    _r("cibils_marcos_smash", "CibilsMarcosSmash2006", "foundation",
+       "Skew category, Galois covering and smash product of a k-category",
+       "Cibils-Marcos: the smash-product / skew-category construction, the free action, "
+       "and the Galois covering -- the constructor + free-action anchor for A rtimes G "
+       "(Plan 74).",
+       "family", "skew_group"),
+    _r("marcos_mv_invariants", "MarcosMartinezVillaMartinsInvariants", "foundation",
+       "Hochschild cohomology of skew group rings and invariants",
+       "Marcos-Martinez-Villa-Martins: the ring monomorphism HH^*(A)^G into HH^*(A rtimes G) "
+       "-- the identity-summand self-certificate for the skew-group decomposition (Plan 74).",
+       "hochschild", "skew_group"),
+
+    _r("buan_marsh_wide", "BuanMarsh2021wide", "foundation",
+       "A category of wide subcategories",
+       "Buan-Marsh: DEFINES the tau-cluster morphism category W(A) -- objects are the "
+       "tau-perpendicular wide subcategories, morphisms are support tau-rigid pairs of the source "
+       "with target the tau-perpendicular category (via the Jasso reduction), morphisms factor as "
+       "signed tau-exceptional sequences. Plan 66's category-structure ground truth.",
+       "tau-tilting", "wide", "category"),
+    _r("hanson_igusa", "HansonIgusa2021", "foundation",
+       "tau-cluster morphism categories and picture groups",
+       "Hanson-Igusa: the classifying space of W(A) is a cube complex (one n-cube per support "
+       "tau-tilting object); it is a K(pi,1) for Nakayama algebras; pi_1 is the picture group. "
+       "Plan 66's cube-complex face vector, the Nakayama K(pi,1) verdict, and the picture group.",
+       "tau-tilting", "picture-group", "cube-complex"),
+    _r("igusa_todorov_weyman", "IgusaTodorovWeyman2016", "foundation",
+       "Picture groups of finite type and cohomology in type A_n",
+       "Igusa-Todorov-Weyman: the picture group PRESENTATION -- one generator x(beta) per brick "
+       "(positive real Schur root), relations per rank-2 configuration (commutation for k x k, the "
+       "atom/pentagon relation for connected rank-2 wides); the CW complex with cells in "
+       "bijection with cluster-tilting objects (Catalan-many). Plan 66's presentation ground truth.",
+       "tau-tilting", "picture-group"),
+    _r("igusa_todorov_cat0", "IgusaTodorov2022cat0", "foundation",
+       "Which cluster morphism categories are CAT(0)",
+       "Igusa-Todorov: the cluster morphism category is a CAT(0) category for hereditary algebras "
+       "of finite (Dynkin) or tame type with only small tubes, so its classifying space is locally "
+       "CAT(0) hence a K(pi,1). Plan 66's specific anchor for the HEREDITARY-DYNKIN K(pi,1) verdict "
+       "(distinct from the ITW type-A_n presentation paper), and the honest-scope context for why the "
+       "general tau-tilting-finite case is delicate (CAT(0) is proven only for hereditary "
+       "finite/tame type, not the general algebra).",
+       "tau-tilting", "picture-group", "cube-complex", "cat0"),
+
     # --- Plan 78: R13 L-infinity / Maurer-Cartan formal deformations ---
     _r("rrb_linfty_bardzell", "RedondoRossiBertone2022linfty", "foundation",
        "L-infinity-structure on Bardzell's complex for monomial algebras",
