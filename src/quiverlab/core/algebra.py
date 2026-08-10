@@ -264,6 +264,20 @@ class Algebra:
         fn = cs_cohomology_dims if side == "coh" else cs_homology_dims
         return fn(self, top, max_cells=max_cells, trace=rec, coefficients=coefficients)
 
+    def incidence_cohomology(self, top, field=None):
+        """``HH^*(kP)`` via the ORDER COMPLEX, for an algebra built as an incidence
+        algebra: ``HH^n(kP) = H^n(Delta(P); k)`` (Cibils 1989, generalizing
+        Gerstenhaber-Schack 1983 from face posets to arbitrary finite posets; Plan 75 / R9).
+
+        Far smaller than the general route -- the cochain complex is indexed by CHAINS of
+        ``P`` rather than by the enveloping algebra ``(kP)^e`` -- and it reports the
+        integral torsion that makes ``HH^*`` characteristic-dependent. Refuses LOUDLY
+        unless the algebra carries poset provenance (this method never guesses that a
+        presentation is an incidence algebra).
+        """
+        from quiverlab.hochschild.simplicial import incidence_cohomology
+        return incidence_cohomology(self, top, field=field)
+
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
                               auto_cs=False, coefficients=None, relative_to=None,
                               verbose=None, trace=None):

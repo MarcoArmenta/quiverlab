@@ -301,6 +301,21 @@ REGISTRY: dict = {r.key: r for r in [
        "HH^n of an incidence algebra equals the simplicial cohomology of the "
        "poset order complex -- the incidence-vs-nerve HH oracle.",
        "hochschild", "incidence", "oracle"),
+    _r("gerstenhaber_schack_1983", "GerstenhaberSchack1983", "foundation",
+       "Simplicial cohomology is Hochschild cohomology",
+       "Gerstenhaber-Schack: HH^*(kP) is isomorphic to the simplicial cohomology of the "
+       "order complex of P AS A RING (cup product). The ring source for the "
+       "incidence-vs-nerve oracle (with Cibils 1989 / Redondo 2008). Proves the CUP "
+       "iso for the FACE POSET of a simplicial complex; Cibils 1989 extends it to an "
+       "ARBITRARY finite poset. NB: makes no bracket-vanishing claim.",
+       "hochschild", "incidence", "oracle"),
+    _r("green_hartman_marcos_solberg", "GHMS2005", "algorithm",
+       "Resolutions over Koszul algebras",
+       "Green-Hartman-Marcos-Solberg: the minimal graded A^e-resolution "
+       "P_n = A (x)_S K_n (x)_S A of a Koszul algebra with the comultiplicative "
+       "differential; K_n = the intersection of V^i (x) R (x) V^j, and dim K_n is the "
+       "n-th Koszul-dual Hilbert coefficient. The GHMS fast-HH engine (Plan 75).",
+       "hochschild", "koszul", "resolution"),
     _r("redondo_incidence", "redondo2008incidence", "family",
        "Hochschild cohomology via incidence algebras",
        "The simplicial-cohomology identification of HH^* underpinning the "

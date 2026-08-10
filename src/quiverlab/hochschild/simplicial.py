@@ -242,6 +242,88 @@ def cohomology_dims_from_integral(ih, top, characteristic):
     return out
 
 
+class IncidenceCohomology:
+    """``HH^*(kP)`` computed through the order complex (a data report; ``__bool__`` is
+    intentionally undefined, mirroring ``HHTable``)."""
+
+    __slots__ = ("algebra", "top", "dims", "face_vector", "contractible",
+                 "contractible_reason", "torsion", "char_dependent",
+                 "characteristic", "references", "note")
+
+    def __init__(self, **kw):
+        for k in self.__slots__:
+            setattr(self, k, kw.get(k))
+
+    def describe(self):
+        return f"HH^* of an incidence algebra via the order complex (top={self.top})"
+
+
+def incidence_cohomology(A, top, field=None, integral_budget=200_000):
+    """``HH^n(kP)`` for ``n = 0..top``, computed as ``H^n(Delta(P); k)``.
+
+    The theorem is Cibils 1989 for an arbitrary finite poset, generalizing
+    Gerstenhaber-Schack 1983 (who proved the RING isomorphism for the face poset of a
+    simplicial complex). Requires the ``_poset`` provenance -- see :func:`order_complex_of`
+    for why this is never inferred from a presentation.
+
+    Reports, besides the dimensions:
+
+    - ``contractible`` with a ``contractible_reason``. The cheap SUFFICIENT certificate is
+      a global bound: if ``P`` has a global minimum OR a global maximum then ``Delta(P)``
+      is a CONE, hence contractible, hence ``HH^{>=1} = 0``. NOTE this uses
+      ``has_global_bound()``, NOT ``is_bounded()`` -- either bound alone already cones the
+      complex, so demanding both would miss cases the theorem covers (the plan's Task-I3
+      sketch said ``is_bounded``; the weaker hypothesis is the correct one and is strictly
+      more general). Absent a global bound we fall back to the OBSERVED
+      ``dims == [1, 0, ..., 0]``, which is honest but only says "contractible-looking up to
+      degree ``top``" -- recorded as such in the reason.
+    - ``torsion`` / ``char_dependent`` from the INTEGRAL homology, when the complex is
+      within ``integral_budget`` cells. ``char_dependent`` is True iff some integral torsion
+      factor is divisible by the working characteristic -- i.e. iff this ``HH^*`` genuinely
+      differs from the characteristic-0 answer. Over-budget leaves both ``None`` (honest),
+      never a guess.
+    """
+    P = getattr(A, "_poset", None)
+    if P is None:
+        raise QuiverlabError(
+            "incidence_cohomology needs poset provenance: HH^*(kP) = H^*(Delta(P)) only "
+            "applies when A is KNOWN to be the incidence algebra of a poset, and quiverlab "
+            "never guesses that from a presentation",
+            hint="build it with quiverlab.families.IncidenceAlgebra(covers, field=...), "
+                 "or use the general engines (engine='auto'/'cs'/'bar')")
+    dom = field if field is not None else A.domain
+    oc = OrderComplex.of(P)
+    dims = simplicial_cohomology_dims(oc, top, dom)
+
+    if P.has_global_bound():
+        contractible, reason = True, (
+            "P has a global bound (min or max), so the order complex is a cone -- "
+            "contractible, hence HH^{>=1}(kP) = 0")
+    elif dims == [1] + [0] * top:
+        contractible, reason = None, (
+            f"no global bound, but H^n vanishes for 1 <= n <= {top}: contractible-LOOKING "
+            "in the computed range only -- not a proof of contractibility")
+    else:
+        contractible, reason = False, (
+            "some H^n != 0 for n >= 1, so the order complex is NOT contractible")
+
+    torsion = char_dependent = None
+    cells = sum(oc.face_vector())
+    if cells <= integral_budget:
+        ih = integral_homology(oc, top)
+        torsion = tuple(t for _, tors in ih for t in tors)
+        ch = getattr(dom, "characteristic", 0) or 0
+        char_dependent = bool(ch) and any(f % ch == 0 for f in torsion)
+
+    return IncidenceCohomology(
+        algebra=A, top=top, dims=dims, face_vector=oc.face_vector(),
+        contractible=contractible, contractible_reason=reason,
+        torsion=torsion, char_dependent=char_dependent,
+        characteristic=getattr(dom, "characteristic", 0),
+        references=["gerstenhaber_schack_1983", "cibils_incidence", "redondo_incidence"],
+        note=reason)
+
+
 def order_complex_of(algebra):
     """The order complex of an algebra KNOWN to be an incidence algebra, via the
     ``_poset`` provenance stashed by :func:`quiverlab.families.IncidenceAlgebra`.
