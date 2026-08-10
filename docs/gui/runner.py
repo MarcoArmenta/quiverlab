@@ -1268,6 +1268,15 @@ def compute_one(spec):
                       "bv_operator": A.bv_operator}[name]
             block = method(top).blocks()
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "hh_lie_module":
+            # HH^* as a graded Lie module over HH^1 (Plan 71 / R12): a top-carrying HH
+            # kind (the gerstenhaber_brackets precedent). Shared block builder ships
+            # hh_dims, the module-axiom / inner-zero verdicts, the char-0 weight table
+            # and the indecomposable-summand decomposition table (byte-identical twin of
+            # quiverlab.hpc.spec._dispatch). Default top = 2 when no range is given.
+            from quiverlab.hochschild.lie_module import hh_lie_module_block
+            block = hh_lie_module_block(A, top if top is not None else 2)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "tau_tilting":
             # C4 tau-tilting engine (Plan 45): algebra-level, budget (not degree). SAME
             # shared library builder (tautilting.block.tau_tilting_block) + references ->
@@ -1615,6 +1624,8 @@ def python_snippet():
              "bracket": "A.gerstenhaber_brackets(%d)",
              "connes_b": "A.connes_differentials(%d)",
              "bv_operator": "A.bv_operator(%d)",
+             # Plan 71: HH^* as a Lie module over HH^1, a top-carrying HH kind (%d = top).
+             "hh_lie_module": "A.hh_lie_module(top=%d)",
              # Plan 45: the C4 tau-tilting kind carries a pair budget (%d = budget_pairs).
              "tau_tilting": "A.exchange_graph(budget_pairs=%d)",
              # Plan 64: the congruences kind carries a pair budget (%d = budget).

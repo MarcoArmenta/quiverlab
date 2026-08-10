@@ -147,6 +147,8 @@
     '  <label><input type="checkbox" id="qlgui-tame_wild"> tame / wild (Tits form)</label>' +
     // ---- Plan 70: HH^1 as a Lie algebra (Der/Inn, solvable/Levi) ----
     '  <label><input type="checkbox" id="qlgui-hh1_lie"> HH&sup1; Lie structure (Der/Inn, solvable/Levi)</label>' +
+    // ---- Plan 71: HH^* as a graded Lie module over HH^1 (weights + indecomposable summands) ----
+    '  <label><input type="checkbox" id="qlgui-hh_lie_module"> HH&bull; Lie module over HH&sup1; 0..<input type="number" id="qlgui-hh_lie_module-top" value="2" min="0"></label>' +
     // ---- Plan 45: C4 tau-tilting engine + LIVE wall-and-chamber fan ----
     '  <label><input type="checkbox" id="qlgui-tau_tilting"> &tau;-tilting + fan, budget ' +
     '<input type="number" id="qlgui-tau_tilting-budget" value="512" min="1"></label>' +
@@ -301,6 +303,8 @@
    "tame_wild",
    // Plan 70: HH^1 as a Lie algebra (scalar algebra-only kind)
    "hh1_lie",
+   // Plan 71: HH^* as a Lie module over HH^1 + degree picker (top-carrying HH kind)
+   "hh_lie_module", "hh_lie_module-top",
    // Plan 45: C4 tau-tilting engine + wall-and-chamber fan (budget picker)
    "tau_tilting", "tau_tilting-budget",
    // Plan 64: torsion lattice / Con / forcing / wide subcategories (budget picker)
@@ -946,6 +950,9 @@
      "fundamental_group", "simply_connected", "tame_wild", "hh1_lie"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
+    // Plan 71: HH^* as a Lie module over HH^1 -- a top-carrying HH kind (bracket form).
+    if (el.hh_lie_module.checked)
+      compute.push("hh_lie_module:0.." + el["hh_lie_module-top"].value);
     // Plan 45: the C4 tau-tilting kind carries a PAIR BUDGET (not a degree), so it
     // pushes "tau_tilting:<budget>" -- the single-int form both runners parse.
     if (el.tau_tilting.checked)
@@ -3062,6 +3069,79 @@
       div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
   }
 
+  // ---- Plan 71: HH^* as a graded Lie module over HH^1 (weights + summands) ----
+  function renderHhLieModule(div, b) {
+    if (b.error) {
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.error }));
+      return;
+    }
+    var yn = function (x) { return x ? "yes" : "no"; };
+    div.appendChild(h("p", { text: dataText("block-hh_lie_module-title",
+      "HH• as a Lie module over HH¹") + ": the action is the Gerstenhaber degree-1 "
+      + "bracket [D, −] = the Lie derivative (field-general over any exact field)." }));
+    div.appendChild(h("p", { text: "dim HH• = [" + (b.hh_dims || []).join(", ")
+      + "],  dim HH¹ = " + b.hh1_dim + "  (the acting Lie algebra)." }));
+    div.appendChild(h("p", { text: "module axiom ρ([D,E]) = [ρ(D),ρ(E)]: "
+      + yn(b.module_axiom_ok) + " · inner derivations act as zero: "
+      + yn(b.inner_acts_zero) + "." }));
+    // Indecomposable-summand decomposition table (per degree: HH^n = (+) M_d^m).
+    if (b.summands) {
+      div.appendChild(h("p", { text: dataText("block-hh_lie_module-decomp",
+        "Indecomposable summands") + ":" }));
+      var st = h("table"), sh = h("tr");
+      sh.appendChild(h("th", { text: "n" }));
+      sh.appendChild(h("th", { text: "HHⁿ = ⊕ Mᵈⁱᵐ" }));
+      st.appendChild(sh);
+      b.summands.forEach(function (e) {
+        var desc;
+        if (e.parts && e.parts.error) {
+          desc = e.parts.error;
+        } else {
+          desc = (e.parts || []).map(function (p) {
+            return "M" + p.dim + (p.mult > 1 ? "^" + p.mult : "")
+              + (p.label ? " (" + p.label + ")" : "");
+          }).join(" ⊕ ") || "0";
+        }
+        var r = h("tr");
+        r.appendChild(h("td", { text: String(e.n) }));
+        r.appendChild(h("td", { text: desc }));
+        st.appendChild(r);
+      });
+      div.appendChild(st);
+    }
+    // Weight / torus decomposition table (characteristic 0 only).
+    if (b.weights) {
+      div.appendChild(h("p", { text: dataText("block-hh_lie_module-weights",
+        "Weights (maximal torus)") + ":" }));
+      var wt = h("table"), wh = h("tr");
+      wh.appendChild(h("th", { text: "n" }));
+      wh.appendChild(h("th", { text: "rank" }));
+      wh.appendChild(h("th", { text: "weights (λ: dim)" }));
+      wt.appendChild(wh);
+      b.weights.forEach(function (e) {
+        var ws = (e.weights || []).map(function (pair) {
+          return "(" + (pair[0] || []).join(",") + "): " + pair[1];
+        }).join("  ");
+        var r = h("tr");
+        r.appendChild(h("td", { text: String(e.n) }));
+        r.appendChild(h("td", { text: String(e.torus_rank) }));
+        r.appendChild(h("td", { text: ws }));
+        wt.appendChild(r);
+      });
+      div.appendChild(wt);
+      if (b.torus_provenance)
+        div.appendChild(h("p", { "class": "qlgui-hint", text: b.torus_provenance }));
+    } else if (b.char0_note) {
+      div.appendChild(h("p", { "class": "qlgui-hint",
+        text: dataText("block-hh_lie_module-charp",
+          "Weights/decomposition need characteristic 0") + " — " + b.char0_note }));
+    }
+    if (b.weight_base_change_note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.weight_base_change_note }));
+    if (b.note)
+      div.appendChild(h("p", { "class": "qlgui-hint", text: b.note }));
+  }
+
   function renderTauTilting(div, b) {
     div.appendChild(h("p", { text: "Support τ-tilting pairs (Adachi–Iyama–"
       + "Reiten): each is a maximal cone of the g-vector fan; each mutation crosses a wall "
@@ -4044,6 +4124,8 @@
       renderCongruences(div, b);
     } else if (name === "hh1_lie") {
       renderHh1Lie(div, b);
+    } else if (name === "hh_lie_module") {
+      renderHhLieModule(div, b);
     } else if (name === "wall_chamber") {
       renderWallChamber(div, b);
     } else if (name === "silting") {
@@ -4645,6 +4727,7 @@
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
    el.fundamental_group, el.simply_connected, el.tame_wild,
+   el.hh_lie_module, el["hh_lie_module-top"],
    el.skew_gentle, el["skew_gentle-special"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
@@ -4726,7 +4809,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -5256,6 +5339,7 @@
     simply_connected: { cb: "simply_connected" },
     tame_wild: { cb: "tame_wild" },
     hh1_lie: { cb: "hh1_lie" },
+    hh_lie_module: { cb: "hh_lie_module", top: "hh_lie_module-top" },
     tau_tilting: { cb: "tau_tilting", top: "tau_tilting-budget", budget: true },
     congruences: { cb: "congruences", top: "congruences-budget", budget: true },
     wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },

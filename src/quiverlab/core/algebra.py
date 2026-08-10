@@ -1350,6 +1350,20 @@ class Algebra:
         Domain, past the bar window). The degree-0 insertion action is out of scope."""
         return self._product_dispatch("bracket", top, engine, max_cells)
 
+    def hh_lie_module(self, top, budget=None, max_cells=4_000_000):
+        """HH^*(A) as a graded Lie module over HH^1(A) (Plan 71 / R12): per degree
+        0..top the action matrices rho_n(D) = the Gerstenhaber degree-1 Lie derivative
+        (the field-general primitive, over any exact field), the self-certified module
+        axiom rho_n([D,E]) = [rho_n(D),rho_n(E)] and inner-acts-zero, plus -- over
+        characteristic 0 -- the weight/torus decomposition and the indecomposable
+        Lie-module summands (the latter governed independently by decompose's own char
+        guard). Builds on HH^1 = Der/Inn (Plan 70); no resolution engine. Returns a
+        frozen HHLieModule."""
+        from quiverlab.hochschild.lie_module import DEFAULT_MAXDIM, lie_module_action
+        return lie_module_action(
+            self, top, budget=DEFAULT_MAXDIM if budget is None else budget,
+            max_cells=max_cells)
+
     def connes_differentials(self, top, max_cells=4_000_000):
         """Induced Connes differentials B : HH_n -> HH_{n+1} (matrices +
         ranks) for 0 <= n < top. GF(p) via the engine (b,B); any other exact

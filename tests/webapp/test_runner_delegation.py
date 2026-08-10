@@ -420,6 +420,17 @@ never hide behind one:
     Both runners share the library builder (``invariants.hh1_lie.hh1_lie_block``), so the
     Pyodide twin agrees (``tests/gui/test_hh1_lie_runner_twin_p70.py``). ``canonical_key``
     is request-derived (schema-1 algebra-only, no ``module`` block).
+  * 2026-08-08 (``hh_lie_module_kronecker`` ADDED, Plan 71 / R12): a NEW top-carrying HH
+    kind (the ``bracket`` precedent). kK2 over QQ, ``compute == ["hh_lie_module:0..2"]``
+    -- the shared block reports HH• as a graded Lie module over HH^1: ``hh_dims ==
+    [1, 3, 0]``, ``hh1_dim == 3``, ``module_axiom_ok``/``inner_acts_zero`` true, the
+    degree-1 indecomposable-summand entry (one part ``dim == 3``, the sl2-adjoint L(2)),
+    and the char-0 weight table (a symmetric sl2-string). Pure ADDITION: all pre-existing
+    entries were verified byte-identical BEFORE the append (the generator round-trips the
+    file bytes, then re-dumps ``indent=1`` order-preserving). Both runners share the library
+    builder (``hochschild.lie_module.hh_lie_module_block``), so the Pyodide twin agrees
+    (``tests/gui/test_hh_lie_module_twin_p71.py``). ``canonical_key`` is request-derived
+    (schema-2 algebra-only, no ``module`` block).
   * 2026-08-08 (``split_extension_kA2`` + ``arrow_removal_P1`` ADDED, Plan 72 /
     R5+R6): two NEW algebra-only TOP-DEGREE budget kinds. ``split_extension_kA2`` =
     kA2 (1->2) over GF(7), ``split_extension:4`` -- the trivial-extension Hochschild
