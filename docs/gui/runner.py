@@ -43,7 +43,7 @@ _MODULE_KINDS = frozenset({
 
 _state = {"algebra": None, "request": None, "events": None, "results": None,
           "module": None, "ext_target": None, "tor_target": None,
-          "algebra_b": None, "coefficients": None}
+          "algebra_b": None, "coefficients": None, "new_arrows": None}
 
 
 class RequestError(Exception):
@@ -190,7 +190,7 @@ def run_build(request_json):
     """Parse + validate a schema-1 request, build the algebra, reset all state."""
     _state.update(algebra=None, request=None, events=[], results=[],
                   module=None, ext_target=None, tor_target=None, algebra_b=None,
-                  coefficients=None)
+                  coefficients=None, new_arrows=None)
     quiverlab.verbose = False   # the GUI renders its own report; never write trace files
     try:
         req = json.loads(request_json)
@@ -214,7 +214,8 @@ def run_build(request_json):
                       ext_target=req.get("ext_target"),
                       tor_target=req.get("tor_target"),
                       algebra_b=req.get("algebra_b"),
-                      coefficients=req.get("coefficients"))
+                      coefficients=req.get("coefficients"),
+                      new_arrows=req.get("new_arrows"))
         out = {"ok": True, "dim": A.dim, "n_vertices": len(vertices),
                "n_arrows": len(arrows), "algebra": repr(A).splitlines()[0]}
     except Exception as exc:
@@ -1089,6 +1090,18 @@ def compute_one(spec):
             from quiverlab.hochschild.skew_group import skew_group_hh_block
             block = skew_group_hh_block(A, top if top is not None else 3)
             block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "han_transport":
+            # Han transport (Plan 73 / R7): an ALGEBRA-level CERTIFICATE kind carrying
+            # the new-arrow subset F (in _state["new_arrows"], the derived_compare
+            # second-input precedent). Byte-identical to the server twin
+            # (quiverlab.hpc.spec._dispatch): SAME shared han.han_transport_block.
+            na = _state.get("new_arrows")
+            if not na:
+                raise RequestError("han_transport needs a 'new_arrows' field (the "
+                                   "subset F of arrows whose removal from A defines B)")
+            from quiverlab.invariants.han import han_transport_block
+            block = han_transport_block(A, list(na), hh_top=top)
+            block["citations"] = _citation_pairs(block["references"])
         elif name == "radical_filtration":
             # The radical filtration of mod A (Plan 57 / R37): an ALGEBRA-level BUDGET
             # kind. Byte-identical to the server twin (quiverlab.hpc.spec._dispatch):
@@ -1691,6 +1704,8 @@ def python_snippet():
              # built A|xG; stefan_decomposition takes its base + action.
              "skew_group_hh": ("stefan_decomposition(base, action, %d)  "
                                "# from quiverlab.hochschild.skew_group"),
+             # Plan 73: han_transport carries the new-arrow subset F (no %d).
+             "han_transport": "A.han_transport(F)  # F = the new-arrow subset defining B",
              # Plan 67: silting carries a RADIUS,BUDGET pair (top = (radius, budget) tuple;
              # tmpl % top fills both %d).
              "silting": "A.silting_exploration(radius=%d, budget=%d)",
@@ -1860,6 +1875,9 @@ ETA_MODEL = {
                 # conjugacy class + the Z(g)-transport + a DIRECT HH of A|xG (dim
                 # |G|*dim A). Bar-dominated on the |G|*dim A algebra, tau_tilting class.
                 "skew_group_hh": 2.0,
+                # Plan 73: han_transport = the bounded-extension legs (tensor powers +
+                # module pd + gl.dim) plus HH_*(A), HH_*(B); resolution-dominated.
+                "han_transport": 3.0,
                 # Plan 67: silting = a bounded-radius BFS of the silting quiver via K^b
                 # Hom + minimal approximations + cone/reduce per step; the hyper-Hom passes
                 # dominate. Budget-capped honestly (complete only for local).

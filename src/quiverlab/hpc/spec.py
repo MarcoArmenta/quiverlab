@@ -251,6 +251,7 @@ class ComputeRequest:
     raw_algebra: dict            # verbatim echo for the result envelope
     algebra_b: Any = None        # wave 2: the SECOND algebra for derived_compare (opt.)
     coefficients: CoefficientSpec | None = None   # v3 (Plan 52): the M in HH(A, M)
+    new_arrows: Any = None       # Plan 73: the F subset of arrows for han_transport (opt.)
 
 
 # --------------------------------------------------------------------------- #
@@ -892,13 +893,25 @@ def parse_request(data) -> ComputeRequest:
     if algebra_b is not None and "derived_compare" not in kinds:
         raise SpecError("a second algebra 'algebra_b' is only used by derived_compare; "
                         "drop it, or add a 'derived_compare' compute kind")
+    # Plan 73: the OPTIONAL new-arrow subset F for han_transport. Absent for every
+    # other request (dropped by the schema's model_dump), so canonical keys + goldens
+    # stay byte-unchanged. han_transport REQUIRES it; NOTHING ELSE may carry it.
+    new_arrows = data.get("new_arrows")
+    if new_arrows is not None:
+        new_arrows = [str(a) for a in new_arrows]
+    if "han_transport" in kinds and new_arrows is None:
+        raise SpecError("han_transport needs a 'new_arrows' field (the subset F of "
+                        "arrows whose removal from A defines the subalgebra B)")
+    if new_arrows is not None and "han_transport" not in kinds:
+        raise SpecError("a 'new_arrows' field is only used by han_transport; drop it, "
+                        "or add a 'han_transport' compute kind")
 
     return ComputeRequest(schema_version=schema_version, algebra=algebra,
                           compute=list(compute), artifacts=artifacts,
                           module=module, ext_target=ext_target,
                           tor_target=tor_target, hpc=hpc,
                           raw_algebra=data["algebra"], algebra_b=algebra_b,
-                          coefficients=coefficients)
+                          coefficients=coefficients, new_arrows=new_arrows)
 
 
 # --------------------------------------------------------------------------- #
@@ -1288,7 +1301,8 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                         results[item.kind] = _dispatch_deepen(A, item, req.hpc, progress_cb)
                         per_kind[item.kind] = _item_resources(t_item)
                         continue
-                    block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps, B)
+                    block, hh = _dispatch(A, item, events, hh_kwargs, capture_reps, B,
+                                          new_arrows=req.new_arrows)
                     results[item.kind] = block
                     per_kind[item.kind] = _item_resources(t_item)
                     if hh is not None:
@@ -1625,7 +1639,8 @@ def _dispatch_deepen(A, item: ComputeItem, hpc: HpcConfig, progress_cb) -> dict:
 # Per-invariant dispatch (block shapes mirror docs/gui/runner.py::compute_one)
 # --------------------------------------------------------------------------- #
 
-def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
+def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None,
+              new_arrows=None) -> tuple:
     kind = item.kind
     if kind in ("hh_cohomology", "hh_homology"):
         top = item.hi
@@ -1855,6 +1870,20 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None) -> tuple:
         from quiverlab.hochschild.skew_group import skew_group_hh_block
         block = skew_group_hh_block(A, budget)
         block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
+    # Han transport (Plan 73 / R7): an ALGEBRA-level CERTIFICATE kind carrying the
+    # new-arrow subset F (the derived_compare second-input precedent). Decides the
+    # bounded-extension legs (tensor-nilpotency + finite pd_{B^e} + one-sided
+    # projectivity) and labels the transport by the injection/iso LADDER. Shared
+    # han.han_transport_block; refusals -> status + error, never a 500.
+    if kind == "han_transport":
+        if not new_arrows:
+            raise ComputeError("SchemaError",
+                               "han_transport needs a 'new_arrows' field (the subset "
+                               "F of arrows whose removal from A defines B)")
+        from quiverlab.invariants.han import han_transport_block
+        block = han_transport_block(A, list(new_arrows), hh_top=item.hi)
+        block["citations"] = _citation_pairs(block["references"])
         return block, None
     # Exceptional sequences (Plan 65 / R27+R28): an ALGEBRA-level kind carrying an
     # ENUMERATION BUDGET, not a degree range (parsed like tau_tilting / ar_quiver). One
@@ -2901,6 +2930,9 @@ def _snippet(req: ComputeRequest, A) -> str:
                  lambda it: ("stefan_decomposition(base, action, "
                              f"{it.hi if it.hi is not None else 3})  "
                              "# from quiverlab.hochschild.skew_group"),
+             "han_transport":
+                 lambda it: ("# F = the new-arrow subset defining B <= A\n"
+                             "A.han_transport(F)"),
              "radical_filtration":
                  lambda it: ("A.radical_filtration(budget_modules="
                              f"{it.hi if it.hi is not None else 512})"),

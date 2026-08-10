@@ -76,6 +76,8 @@ ALL_KINDS = {
     "skew_group_hh",
     # Plan 66 (2026-08-08): tau-cluster morphism category W(A) + picture group.
     "tau_cluster",
+    # Plan 73 (2026-08-08): Han transport across a bounded extension.
+    "han_transport",
 }
 
 
