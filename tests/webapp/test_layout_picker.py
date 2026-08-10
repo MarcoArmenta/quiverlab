@@ -66,6 +66,8 @@ ALL_KINDS = {
     "exceptional_sequences",
     # Plan 70 (2026-08-08): HH^1 as a Lie algebra (Der/Inn, solvable/Levi).
     "hh1_lie",
+    # Plan 78 (2026-08-08): formal deformations / L-infinity / Maurer-Cartan.
+    "deformations",
     # Plan 71 (2026-08-08): HH^* as a Lie module over HH^1 (weights + summands).
     "hh_lie_module",
     # Plan 72 (2026-08-08): split-extension LES + certified arrow removal.

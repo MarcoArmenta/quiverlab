@@ -2894,6 +2894,7 @@ def _snippet(req: ComputeRequest, A) -> str:
                  lambda it: ("A.congruence_lattice(budget="
                              f"{it.hi if it.hi is not None else 512})"),
              "hh1_lie": lambda it: "A.hh1_lie_structure()",
+             "deformations": lambda it: "A.deformation_structure()",
              "wall_chamber":
                  lambda it: ("A.wall_chamber_structure(budget_pairs="
                              f"{it.hi if it.hi is not None else 512})"),

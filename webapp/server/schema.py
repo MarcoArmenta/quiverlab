@@ -436,6 +436,15 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"hh1_lie budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="hh1_lie", lo=None, hi=(int(b) if b else None))
+    # deformations carries a DIM BUDGET, not a degree range (Plan 78): 'deformations' or
+    # 'deformations:32'. The budget caps A.dim for the CS obstruction bracket (a coarse DoS
+    # backstop -- the real cost is HH^2/HH^3 richness x resolution size), not a homological
+    # degree, so it skips the degree grammar (the hh1_lie precedent).
+    if s == "deformations" or s.startswith("deformations:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"deformations budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="deformations", lo=None, hi=(int(b) if b else None))
     # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
     # -- the exchange-graph pair budget, not a homological degree; skips the 'name:0..N'
     # grammar -- server and GUI/hpc agree on this special form.

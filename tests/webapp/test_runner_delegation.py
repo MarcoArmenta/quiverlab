@@ -456,7 +456,24 @@ never hide behind one:
     Both runners share the library core builder (``quiverlab.modules.barcode.barcode_block``),
     so the Pyodide twin agrees (``tests/gui/test_barcode_runner_twin_p69.py``). ``canonical_key``
     is request-derived (the ``module`` block canonicalizes through the Plan-25 key; no new
-    top-level request field)."""
+    top-level request field).  * 2026-08-10 (``deformations_radsq3`` ADDED, Plan 78 / R13): a NEW algebra-only DIM
+    BUDGET kind (the ``hh1_lie`` precedent, but with the plan's OWN ``DEFORM_MAXDIM = 32``
+    -- NOT P70's 48, because the cost law is different: the obstruction bracket tracks
+    HH-RICHNESS x resolution size, not ``A.dim``). The 3-cycle ``rad^2 = 0`` algebra
+    (1->2->3->1, all paths of length 2 zero) over QQ, ``compute == ["deformations"]`` --
+    the block reports HH^2/HH^3, the obstruction verdict, the Maurer-Cartan description
+    and the ``dg_lie is True`` certificate that ``rad^2 = 0`` guarantees unconditionally.
+    The CHEAP fixture was chosen on purpose: the plan's obstructed benchmark point
+    (``QuantumCI(-1)``, HH^2 = 5) costs 85 s, which does not belong in a golden -- it is
+    pinned instead by a ``deep``-marked twin test. Pure ADDITION: the goldens file
+    round-trips ``json.dumps(indent=1)`` byte-for-byte, verified BEFORE the append, so the
+    new key is appended LAST and no existing bytes move (git: 44 insertions, 0 deletions).
+    Both runners share the library builder
+    (``hochschild.deformations.deformations_block``), so the Pyodide twin agrees
+    (``tests/gui/test_deformations_runner_twin_p78.py``). ``canonical_key`` is
+    request-derived (schema-2 algebra-only, the dim budget rides in the ``compute``
+    string -- no new top-level request field).
+"""
 import json
 import pathlib
 

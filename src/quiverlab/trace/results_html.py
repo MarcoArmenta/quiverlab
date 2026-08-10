@@ -65,6 +65,7 @@ _HEADINGS = {
     "simply_connected": "Simple connectivity",
     "tame_wild": "Representation type (tame / wild)",
     "hh1_lie": "HH¹ as a Lie algebra",
+    "deformations": "Formal deformations and Maurer–Cartan",
     "hh_lie_module": "HH• as a Lie module over HH¹",
     "dimension_vector": "Dimension vector of M",
     "rad_top_soc": "Radical, top and socle of M",
@@ -315,6 +316,54 @@ def _hh1_lie_html(b):
         out.append("<p class='ql-note'>%s</p>" % _esc(str(b["base_change_note"])))
     if b.get("note"):
         out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return out
+
+
+def _deformations_html(b):
+    """Formal deformations / L∞ / Maurer–Cartan (Plan 78): the infinitesimal space HH²,
+    the obstruction [α, α] ∈ HH³ with its witness, the nilpotent regime + MC description,
+    the dg-Lie certificate and ℓ₃ status, and the display-only presented A_α."""
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+
+    def yn(x):
+        return "yes" if x else "no" if x is not None else "not determined"
+
+    out = ["<p>Infinitesimal deformations of A are classified by HH²(A, A); the "
+           "obstruction to extending a first-order deformation α is the Gerstenhaber "
+           "square [α, α] ∈ HH³(A, A) (Gerstenhaber 1964).</p>",
+           "<p>dim HH² = <b>%s</b> (the infinitesimal directions); dim HH³ = <b>%s</b> "
+           "(where obstructions live).</p>"
+           % (_esc(str(b.get("hh2_dim"))), _esc(str(b.get("hh3_dim"))))]
+    unob = b.get("unobstructed")
+    out.append("<p>Every first-order direction unobstructed ([α, α] = 0 for all α): "
+               "<b>%s</b>.</p>" % yn(unob))
+    if b.get("obstruction_witness"):
+        out.append("<p>Obstructed witness: %s — a basis direction with [α, α] ≠ 0, so "
+                   "that first-order deformation does NOT extend to second order. The "
+                   "witness is basis-dependent (its existence is not).</p>"
+                   % _esc(str(b["obstruction_witness"])))
+    if b.get("mc_description"):
+        out.append("<p>Maurer–Cartan: %s</p>" % _esc(str(b["mc_description"])))
+    if b.get("nilpotent_regime") is not None:
+        out.append("<p>Nilpotent regime (the MC equation is a finite condition): <b>%s</b>"
+                   "%s.</p>"
+                   % (yn(b.get("nilpotent_regime")),
+                      "; certified to order %s" % _esc(str(b["mc_order_certified"]))
+                      if b.get("mc_order_certified") is not None else ""))
+    if b.get("dg_lie") is not None:
+        out.append("<p>dg-Lie certificate on the L∞ companion B(A)[1]: <b>%s</b>. "
+                   "ℓ₃ status: %s.</p>"
+                   % (yn(b.get("dg_lie")), _esc(str(b.get("l3_status")))))
+    if b.get("a_alpha"):
+        out.append("<p>Deformed algebra A_α (display only, re-certified flat — "
+                   "dim A_α = dim A): %s</p>" % _esc(str(b["a_alpha"])))
+    if b.get("ext_algebra_summary"):
+        out.append("<p>Ext-algebra handoff: %s</p>"
+                   % _esc(str(b["ext_algebra_summary"])))
+    for key in ("char0_note", "base_change_note", "window_note", "note"):
+        if b.get(key):
+            out.append("<p class='ql-note'>%s</p>" % _esc(str(b[key])))
     return out
 
 
@@ -1765,6 +1814,8 @@ def _block_html(kind, b, ctx=None):
         return _hh1_lie_html(b)
     if kind == "hh_lie_module":
         return _hh_lie_module_html(b)
+    if kind == "deformations":
+        return _deformations_html(b)
     if kind == "dimension_vector":
         return [_math(b["latex"])] if b.get("latex") else []
     if kind == "rad_top_soc":
