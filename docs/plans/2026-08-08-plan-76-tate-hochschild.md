@@ -1399,3 +1399,47 @@ them, the discriminating test).
     `XY−qYX` for generic `q`; (c) the `0..N`-only grammar already rejects nonzero `lo` (guard
     reused) → canonical key `(kind, hi)`, stated; (d) over `GF(p)` the QCI is only
     self-cert-validated (root of unity). All numbers touched were re-verified in the venv.
+- **2026-08-11 implementation (Tasks I1, I2, A1, A2, G1, G2 DELIVERED; A3 DEFERRED).**
+  Branch `plan-76-tate-hochschild`; commits 47d540a (engine), a8ddef0 (public surface),
+  23bac2a (three tiers + citations + verification). 54 tests.
+  - **The construction was DERIVED, and two of its conventions differ from this plan's
+    prose.** `T_{-n-1} = Psi(theta^*(P_n))` with `Psi` = the k-dual made a LEFT
+    `A^e`-module through the swap anti-automorphism and `theta` = the twist with
+    `theta^*(A) = D(A)`. (i) **The twist is `nu^{-1}`, not `nu`**: the identification
+    `phi(a)(m) = lambda(am)` satisfies `phi(nu^{-1}(x) a y) = x phi(a) y`, so
+    `D(A) = {}_{nu^{-1}}A_1`. (ii) **The tag rule is `(v,w) |-> (pi(w), v)`**, not the
+    plan's sketched `(pi w, pi v)`; the two agree exactly when `pi^2 = id`, so every
+    symmetric example is blind to the difference. Entries map
+    `f_a (x) f_b |-> nu(f_b) (x) f_a` (transposed); the splice joint is the exact solve
+    `Z^{(v)} = G^{-1} R^{(v)} G^{-1}`, `R^{(v)}[i][j] = lambda(nu^{-1}(f_j) f_i e_v)`,
+    off the shipped `frobenius_form_generic`.
+  - **The plan's Task-I1 control test was WRONG AS WRITTEN and is replaced.** It expected
+    a wrong `pi` to fail `assert_dd_zero`. Measured: it does NOT. The negative half is
+    carried as `A^e`-module maps in AMBIENT coordinates and the composite is taken there
+    WITHOUT reference to the tags, so `d.d = 0` is tag-BLIND and a wrong `pi` sails
+    through it while reporting wrong dimensions. The shipped battery pins that as a live
+    negative result (`test_dd_zero_alone_does_not_discriminate_pi`) and arbitrates with
+    **build-time corner typing** (tags from the socle-derived `pi` vs entries from the
+    form-derived `nu` -- a real cross-check) and **`assert_acyclic`** (on `kZ3/J2` the
+    `pi = identity` control is non-exact in every negative degree). The P75 lesson
+    repeating: a self-cert that cannot see the thing it is meant to arbitrate.
+  - Live values now pinned: `k[x]/(x^n)` `HHhat^m = n-1`/`n` for all `m in [-5,5]` over
+    `32003/2/3`; `HHhat^0 = 2` vs `HH^0 = 3` on `k[x]/(x^3)`; `kZ2/J3` `HHhat = 1` in every
+    degree; **`kZ3/J2` `HHhat[-3..3] = [0,0,0,1,1,0,0]`** (positives = `HH^{>=1}`, negatives
+    all 0 -- NOT the symmetric mirror).
+  - **Plan-doc correction:** `test_not_gorenstein_refused`'s witness (radical-square-zero on
+    `1->2->3`) IS Gorenstein (`is_gorenstein() == True`), so it exercises the DEFERRED
+    branch, not the not-Gorenstein one. Also: off self-injective input the threshold would
+    need `gorenstein_dimension(A^e)`; rather than guess, `agrees_from = None` and the
+    positive route claims nothing (so `kA2` on `auto` returns an honest empty report).
+  - **Task A3 (the Tate cup) is DEFERRED to a follow-up, by decision.** The `Z`-graded ring
+    needs a diagonal approximation on the TWO-SIDED complex -- the Plan-20/21 diagonal,
+    which lives on the Chouhy-Solotar PELT resolution, rebuilt for the `GF(p)` corner
+    complete resolution and extended past degree 0. That is plan-sized, not task-sized, and
+    shipping only the `p, q >= 1` part would be vacuous (in degrees `>= 1` the Tate cochain
+    complex IS the minimal resolution's, so "the positive cup matches Plan 35" has no
+    content). `TateHochschild.cup` is therefore always `None`, `periodicity_degree` is the
+    resolution's certified period cited as Usui's CRITERION rather than an inverse this
+    library computed, and honest-scope entry (3) on `docs/verification.md` states it.
+    Reconcile at P80.
+
