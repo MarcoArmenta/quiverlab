@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **5026 tests** (live-recounted 2026-08-10 on the Plan-75 branch — R9
+The suite is **5052 tests** (live-recounted 2026-08-10 on the Plan-75 branch — R9
 incidence-vs-nerve `HH^*` + R10 the GHMS comultiplicative Koszul resolution — cut from
 dev's P73 tip, itself recounted at the Plan-73 top-up merge onto dev's P78 tip; collected
 with the `[dev,fast,docs,web,qpa,hpc]` extras,
@@ -605,16 +605,16 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 1201 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 726 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1539 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Literature / theory pins | `-m oracle_literature` | 1207 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 731 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1554 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 247 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 3109 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 3135 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Recounted 2026-08-10 on the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10 the GHMS
 comultiplicative Koszul resolution and `engine="ghms"`), cut from dev's P73 tip; the
 Plan-75 additions (lit +17 / xeng +16 / selfcert +44 / qpa +1 / m2 +0, union +78 — suite
-4925 → **5026**, fast 2461 / deep 2307) fold into these live-collected totals. The
+4925 → **5052**, fast 2461 / deep 2333) fold into these live-collected totals. The
 previous recount was the Plan-73 top-up merge (R7 Han's conjecture transported across an
 arrow-removal subalgebra B ⊆ A — the bounded-extension certificate, the Jacobi–Zariski
 relative complex, and the five-row injection/iso ladder), which added
