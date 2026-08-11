@@ -32,4 +32,9 @@ def IncidenceAlgebra(poset_or_covers, elements=None, field=None):
             rels.append("*".join(base) + " - " + "*".join(other))
     A = Q.algebra(relations=rels, field=field)
     A._family_citations = ("incidence", "assem_book")
+    # Provenance for the Plan-75 fast path: HH^*(kP) = H^*(Delta(P); k) (Cibils 1989)
+    # only applies when we KNOW the algebra came from a poset. Stashing P here is what
+    # lets `incidence_cohomology` route to the order complex WITHOUT ever having to
+    # RECOGNIZE an arbitrary kQ/I as an incidence algebra (which it must never guess).
+    A._poset = P
     return A

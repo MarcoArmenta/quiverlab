@@ -366,5 +366,11 @@
   "block.silting.status_budget": "limitée par le budget (pas tout le carquois de silting)",
   "pick.kind.silting": "Théorie du silting",
   "inv.exceptional_sequences": "Suites exceptionnelles (classiques + τ)",
-  "pick.kind.exceptional_sequences": "Suites exceptionnelles"
+  "pick.kind.exceptional_sequences": "Suites exceptionnelles",
+  "pick.kind.incidence_cohomology": "HH* via le complexe des chaînes (incidence)",
+  "poset.title": "Ensemble ordonné (relations d'ordre)",
+  "poset.covers_label": "paires de couverture",
+  "poset.covers_ph": "1<2, 2<3",
+  "poset.elements_label": "éléments isolés",
+  "poset.cycle_error": "ces relations de couverture contiennent un cycle orienté : ce n'est pas un ensemble ordonné"
 }

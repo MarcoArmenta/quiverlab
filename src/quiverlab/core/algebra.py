@@ -264,6 +264,20 @@ class Algebra:
         fn = cs_cohomology_dims if side == "coh" else cs_homology_dims
         return fn(self, top, max_cells=max_cells, trace=rec, coefficients=coefficients)
 
+    def incidence_cohomology(self, top, field=None):
+        """``HH^*(kP)`` via the ORDER COMPLEX, for an algebra built as an incidence
+        algebra: ``HH^n(kP) = H^n(Delta(P); k)`` (Cibils 1989, generalizing
+        Gerstenhaber-Schack 1983 from face posets to arbitrary finite posets; Plan 75 / R9).
+
+        Far smaller than the general route -- the cochain complex is indexed by CHAINS of
+        ``P`` rather than by the enveloping algebra ``(kP)^e`` -- and it reports the
+        integral torsion that makes ``HH^*`` characteristic-dependent. Refuses LOUDLY
+        unless the algebra carries poset provenance (this method never guesses that a
+        presentation is an incidence algebra).
+        """
+        from quiverlab.hochschild.simplicial import incidence_cohomology
+        return incidence_cohomology(self, top, field=field)
+
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
                               auto_cs=False, coefficients=None, relative_to=None,
                               verbose=None, trace=None):
@@ -285,9 +299,21 @@ class Algebra:
         from quiverlab.trace.events import Dispatch
         from quiverlab.trace.recorder import Trace, resolve_verbose
 
-        if engine not in ("auto", "bar", "fast", "cs"):
+        if engine not in ("auto", "bar", "fast", "cs", "ghms"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+                                 hint="choose 'auto', 'bar', 'fast', 'cs', or 'ghms'")
+        if engine == "ghms":
+            # Plan 75 / R10: the closed-form GHMS route for a CERTIFIED-KOSZUL algebra.
+            # Domain-general (unlike the GF(p)-only syzygy engine) and it never searches
+            # for syzygies. The Koszul gate is three-valued and refuses loudly; `auto` is
+            # deliberately NOT routed here, so every existing result stays byte-identical.
+            from quiverlab.hochschild.koszul_ghms import (
+                _GHMS_CITATIONS, ghms_cohomology_dims, ghms_homology_dims)
+            fn = ghms_cohomology_dims if True else ghms_homology_dims
+            return HHTable(dims=fn(self, top), kind="cohomology",
+                           algebra_repr=repr(self),
+                           engine="GHMS comultiplicative Koszul resolution",
+                           references=_GHMS_CITATIONS)
         self._check_coefficients(engine, coefficients)
         if relative_to is not None:
             table = self._relative_route("coh", top, max_cells, coefficients, relative_to)
@@ -360,9 +386,21 @@ class Algebra:
         from quiverlab.trace.events import Dispatch
         from quiverlab.trace.recorder import Trace, resolve_verbose
 
-        if engine not in ("auto", "bar", "fast", "cs"):
+        if engine not in ("auto", "bar", "fast", "cs", "ghms"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+                                 hint="choose 'auto', 'bar', 'fast', 'cs', or 'ghms'")
+        if engine == "ghms":
+            # Plan 75 / R10: the closed-form GHMS route for a CERTIFIED-KOSZUL algebra.
+            # Domain-general (unlike the GF(p)-only syzygy engine) and it never searches
+            # for syzygies. The Koszul gate is three-valued and refuses loudly; `auto` is
+            # deliberately NOT routed here, so every existing result stays byte-identical.
+            from quiverlab.hochschild.koszul_ghms import (
+                _GHMS_CITATIONS, ghms_cohomology_dims, ghms_homology_dims)
+            fn = ghms_cohomology_dims if False else ghms_homology_dims
+            return HHTable(dims=fn(self, top), kind="homology",
+                           algebra_repr=repr(self),
+                           engine="GHMS comultiplicative Koszul resolution",
+                           references=_GHMS_CITATIONS)
         self._check_coefficients(engine, coefficients)
         if relative_to is not None:
             table = self._relative_route("hom", top, max_cells, coefficients, relative_to)

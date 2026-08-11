@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-4925_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-5026_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 4925 tests over the
+Every shipped feature is unit tested (the suite is 5026 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -365,6 +365,20 @@ ported and wired in:
   characteristic-agnostic) as a no-code **input** — with the **Ştefan conjugacy-class Hochschild
   decomposition** `HH^n(A⋊G) ≅ ⊕_{[g]} HH^n(A, {}_gA)^{Z(g)}` (over `char k ∤ |G|`)
   cross-checked degreewise against the direct engine.
+- **Incidence algebras: `HH^*` IS the cohomology of the order complex (R9).** For a finite
+  poset `P`, `HH^n(kP) = H^n(Δ(P); k)` (Gerstenhaber–Schack; Cibils for an arbitrary finite
+  poset), computed on the *combinatorial* cochain complex of the nerve instead of the
+  enveloping algebra — `A.incidence_cohomology(top)`, with a no-code **poset input mode**
+  (type the cover relations, see the Hasse diagram, read `HH^*`). One exact **integer** Smith
+  normal form answers **every characteristic at once** and says *why* they differ: `RP²`'s
+  `H₁ = ℤ/2` is exactly what makes `HH^*(GF₂) = [1,1,1]` while `HH^*(QQ) = [1,0,0]`. The
+  theorem's hypothesis is never guessed — an algebra without poset provenance refuses loudly.
+- **Fast Koszul `HH` off the GHMS resolution (R10).** For a Koszul algebra, the
+  comultiplicative minimal bimodule resolution `P_n = A ⊗_S K_n ⊗_S A` on the Koszul kernels
+  `K_n` — `engine="ghms"` on both Hochschild methods, a third independent oracle class
+  agreeing degreewise with the minimal-syzygy engine and with bar/CS. Koszulity is a **hard
+  three-valued gate**: not-Koszul refuses *naming the `Ext`-algebra obstruction*, and
+  "unknown" refuses too.
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**

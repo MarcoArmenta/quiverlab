@@ -776,8 +776,8 @@ def _parse_hpc(data) -> HpcConfig:
                               or prime < 2):
         raise SpecError("hpc.prime must be a prime integer >= 2")
     engine = data.get("engine")
-    if engine is not None and engine not in ("auto", "bar", "fast", "cs"):
-        raise SpecError("hpc.engine must be one of auto/bar/fast/cs")
+    if engine is not None and engine not in ("auto", "bar", "fast", "cs", "ghms"):
+        raise SpecError("hpc.engine must be one of auto/bar/fast/cs/ghms")
     return HpcConfig(
         checkpoint_dir=ckpt,
         time_limit_s=_opt_int("time_limit_s"),
@@ -1335,6 +1335,13 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
 
         if req.artifacts.tikz and hasattr(A, "tikz"):
             tikz_src = A.tikz()
+            # Plan 75: for an incidence algebra the reader also wants the POSET whose
+            # order complex carries HH^* -- appended (never substituted) beside the
+            # quiver picture, and only when the poset provenance is actually there.
+            if getattr(A, "_poset", None) is not None:
+                from quiverlab.viz.tikz import tikz_order_complex
+                inc = results.get("incidence_cohomology") or {}
+                tikz_src += "\n" + tikz_order_complex(A._poset, inc.get("face_vector"))
 
         used_keys: list = []
         for payload in results.values():
@@ -2180,6 +2187,23 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None,
         block = tame_wild_block(A)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # HH^* of an incidence algebra through the ORDER COMPLEX (Plan 75 / R9): an
+    # algebra-level kind carrying a DEGREE RANGE (the generic 'name:0..N' grammar), NOT a
+    # budget. Shared builder (hochschild.simplicial.incidence_cohomology_block): the
+    # Gerstenhaber-Schack/Cibils theorem HH^n(kP) = H^n(Delta(P); k), computed by the exact
+    # integer SNF simplicial engine -- so it also reports the face vector, the integral
+    # torsion and whether THIS characteristic differs from char 0. An algebra with no poset
+    # provenance returns {"error": ...}, never a 500 (quiverlab never GUESSES that a kQ/I is
+    # an incidence algebra). Byte-identical Pyodide twin (docs/gui/runner.py).
+    if kind == "incidence_cohomology":
+        from quiverlab.hochschild.simplicial import incidence_cohomology_block
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..3'")
+        block = incidence_cohomology_block(A, top)
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
 
 
@@ -2908,6 +2932,8 @@ def _snippet(req: ComputeRequest, A) -> str:
         lines += _module_construction(req.tor_target, "N", A)
     _snip = {"hh_cohomology": lambda it: f"A.hochschild_cohomology({it.hi})",
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
+             # Plan 75: the order-complex route (needs the IncidenceAlgebra provenance).
+             "incidence_cohomology": lambda it: f"A.incidence_cohomology({it.hi})",
              "cyclic_homology": lambda it: f"A.cyclic_homology({it.hi})",
              "ss_hochschild": lambda it: f"A.hochschild_bB_ss({it.hi})",
              "radical_filtration_ss":

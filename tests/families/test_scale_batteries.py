@@ -221,6 +221,15 @@ def test_incidence_boolean_b3(field):
     A = IncidenceAlgebra(_boolean_b3_covers(), field=field)
     assert A.dim == 27
     assert cs_cohomology_dims(A, 10).dims == [1] + [0] * 10
+    # Plan 75 / R9: the SAME numbers now come from the THEOREM as well -- HH^*(kP) =
+    # H^*(Delta(P); k) (``gerstenhaber_schack_1983`` for the ring iso on face posets,
+    # ``cibils_incidence`` for arbitrary finite posets). This promotes the pin from a
+    # computed coincidence to a theorem instance: B_3 is bounded, so its order complex is
+    # a CONE, hence contractible, hence HH^{>=1} = 0. The CS line above is KEPT on purpose
+    # -- it is the independent general-engine cross-oracle for the theorem.
+    fast = A.incidence_cohomology(10)
+    assert fast.dims == list(cs_cohomology_dims(A, 10).dims) == [1] + [0] * 10
+    assert fast.contractible is True
 
 
 # =========================================================================== #

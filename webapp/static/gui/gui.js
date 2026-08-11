@@ -85,6 +85,10 @@
     '<div class="qlgui-row qlpick-src" id="qlgui-invariants">' +
     '  <label><input type="checkbox" id="qlgui-hhc" checked> HH^0..<select id="qlgui-hhc-top"></select></label>' +
     '  <label><input type="checkbox" id="qlgui-hhh"> HH_0..<select id="qlgui-hhh-top"></select></label>' +
+    // Plan 75 / R9: HH^* of an INCIDENCE algebra straight off the order complex of the
+    // poset (Gerstenhaber-Schack / Cibils). Needs the poset panel below -- without that
+    // provenance the block says so, it never guesses that a drawn kQ/I is an incidence algebra.
+    '  <label><input type="checkbox" id="qlgui-incidence_cohomology"> HH^* via order complex (incidence) 0..<input type="number" id="qlgui-incidence_cohomology-top" value="3" min="0"></label>' +
     // ---- Plan 35: HH product surface (cup / cap / bracket / connes_b) ----
     '  <label><input type="checkbox" id="qlgui-cup"> cup 0..<input type="number" id="qlgui-cup-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cap"> cap 0..<input type="number" id="qlgui-cap-top" value="2" min="0"></label>' +
@@ -174,6 +178,22 @@
     '<input type="number" id="qlgui-exceptional_sequences-budget" value="4096" min="1"></label>' +
     '  <label><input type="checkbox" id="qlgui-trace" checked> worked-steps report</label>' +
     '</div>' +
+    // ---- Plan 75: the poset input mode (order relations -> the IncidenceAlgebra family) ----
+    // An ALGEBRA input mode, not a module one: when it is on, the request's algebra block
+    // is the SHIPPED IncidenceAlgebra family built from these covers (so every kind --
+    // HH, Cartan, gl.dim, ... -- is computed for kP), and `elements` is emitted only for
+    // elements that appear in NO cover, so a covers-only poset keys byte-identically to
+    // the typed family request (Plan-25 canonical_key).
+    '<fieldset id="qlgui-poset" class="qlgui-fieldset">' +
+    '  <legend><label><input type="checkbox" id="qlgui-poset-enable"> <span id="qlgui-poset-title">Poset (order relations)</span></label></legend>' +
+    '  <div class="qlgui-row">' +
+    '    <label style="flex:1 1 300px"><span id="qlgui-poset-covers-label">cover pairs</span> ' +
+    '<input type="text" id="qlgui-poset-covers" placeholder="1&lt;2, 2&lt;3" size="26"></label>' +
+    '    <label><span id="qlgui-poset-elements-label">isolated elements</span> ' +
+    '<input type="text" id="qlgui-poset-elements" placeholder="4, 5" size="10"></label>' +
+    '  </div>' +
+    '  <div id="qlgui-poset-preview"></div>' +
+    '</fieldset>' +
     // ---- Plan 26: no-code module panel ----
     '<fieldset id="qlgui-module" class="qlgui-fieldset">' +
     '  <legend><label><input type="checkbox" id="qlgui-mod-enable" class="qlpick-src"> Module M (no code)</label></legend>' +
@@ -310,6 +330,11 @@
    "fundamental_group", "simply_connected",
    // Plan 62: Tits-form tame/wild certificate (scalar kind)
    "tame_wild",
+   // Plan 75: HH^* via the order complex + the poset input mode (covers / isolated
+   // elements / live Hasse preview)
+   "incidence_cohomology", "incidence_cohomology-top",
+   "poset-enable", "poset-covers", "poset-elements", "poset-preview", "poset-title",
+   "poset-covers-label", "poset-elements-label",
    // Plan 70: HH^1 as a Lie algebra (scalar algebra-only kind)
    "hh1_lie",
    "deformations",
@@ -878,6 +903,12 @@
     el["n-wrap"].style.display = gf ? "" : "none";
   });
 
+  // ---------- Plan 75: poset panel labels (localized like the potential box) ----------
+  el["poset-title"].textContent = dataText("poset-title", "Poset (order relations)");
+  el["poset-covers-label"].textContent = dataText("poset-covers-label", "cover pairs");
+  el["poset-elements-label"].textContent = dataText("poset-elements-label", "isolated elements");
+  el["poset-covers"].placeholder = dataText("poset-covers-ph", "1<2, 2<3");
+
   // ---------- potential (GitHub #3 / Plan-44) ----------
   el["potential-label"].textContent = dataText("potential-label", "Potential W (optional)");
   el.potential.placeholder = dataText("potential-ph", "a*b*c - d*e*f  (builds the Jacobian algebra)");
@@ -926,6 +957,120 @@
       });
     }).catch(function () { /* presets are a convenience; the editor still works */ });
 
+  // ---------- Plan 75: the poset input mode ----------
+  // A whole-number token is emitted as a NUMBER, so a poset typed here produces exactly
+  // the params the catalog's IncidenceAlgebra prefill produces -- same Plan-25 cache key,
+  // no new algebra `kind`, no schema change.
+  function posetToken(s) {
+    var t = String(s).trim();
+    return /^-?\d+$/.test(t) ? parseInt(t, 10) : t;
+  }
+  function posetKey(x) { return String(x); }
+  function posetSort(a, b) {      // the library sorts poset elements by str; match it
+    return posetKey(a) < posetKey(b) ? -1 : posetKey(a) > posetKey(b) ? 1 : 0;
+  }
+  // "1<2, 2<3" (comma / semicolon / newline separated) -> [[1, 2], [2, 3]].
+  function posetCovers() {
+    return (el["poset-covers"].value || "").split(/[,;\n]+/)
+      .map(function (s) { return s.trim(); })
+      .filter(function (s) { return s.indexOf("<") > 0; })
+      .map(function (s) {
+        var p = s.split("<");
+        return [posetToken(p[0]), posetToken(p[1])];
+      })
+      .filter(function (c) { return c[0] !== "" && c[1] !== ""; });
+  }
+  function posetExtras() {
+    return (el["poset-elements"].value || "").split(/[,;\s]+/)
+      .filter(function (s) { return s.length; }).map(posetToken);
+  }
+  // The algebra block for the typed poset, or null when nothing is typed. `elements` is
+  // null UNLESS some element appears in no cover: that normalization is what makes a
+  // covers-only poset key byte-identically to the typed IncidenceAlgebra family request
+  // (an isolated point is a genuinely different poset, so it SHOULD key differently).
+  function posetAlgebra(field) {
+    var covers = posetCovers(), extras = posetExtras();
+    if (!covers.length && !extras.length) return null;
+    var inCover = {};
+    covers.forEach(function (c) { inCover[posetKey(c[0])] = c[0]; inCover[posetKey(c[1])] = c[1]; });
+    var isolated = extras.filter(function (x) { return !(posetKey(x) in inCover); });
+    var elements = null;
+    if (isolated.length) {
+      elements = Object.keys(inCover).map(function (k) { return inCover[k]; })
+        .concat(isolated).sort(posetSort);
+    }
+    return { kind: "family", family: "IncidenceAlgebra",
+             params: { poset_or_covers: covers, elements: elements }, field: field };
+  }
+  // The live Hasse preview: rank = the longest cover chain below the element (the same
+  // ranked layout viz.tikz.tikz_hasse draws in the report). A directed cycle is NAMED
+  // here -- the library raises on it too, but the user should see it before Compute.
+  function renderPosetPreview() {
+    var host = el["poset-preview"];
+    host.innerHTML = "";
+    if (!el["poset-enable"].checked) return;
+    var covers = posetCovers(), nodes = [], seen = {};
+    function add(x) { if (!(posetKey(x) in seen)) { seen[posetKey(x)] = true; nodes.push(x); } }
+    covers.forEach(function (c) { add(c[0]); add(c[1]); });
+    posetExtras().forEach(add);
+    if (!nodes.length) return;
+    nodes.sort(posetSort);
+    var rank = {}, i;
+    nodes.forEach(function (x) { rank[posetKey(x)] = 0; });
+    for (i = 0; i <= nodes.length; i++) {
+      var moved = false;
+      covers.forEach(function (c) {
+        if (rank[posetKey(c[1])] < rank[posetKey(c[0])] + 1) {
+          rank[posetKey(c[1])] = rank[posetKey(c[0])] + 1;
+          moved = true;
+        }
+      });
+      if (!moved) break;
+      if (i === nodes.length) {                 // still relaxing after |P| rounds
+        host.appendChild(h("p", { "class": "qlgui-error", text: dataText(
+          "poset-cycle-error",
+          "these cover relations contain a directed cycle, so they are not a poset") }));
+        return;
+      }
+    }
+    var byRank = {}, maxRank = 0;
+    nodes.forEach(function (x) {
+      var r = rank[posetKey(x)];
+      maxRank = Math.max(maxRank, r);
+      (byRank[r] = byRank[r] || []).push(x);
+    });
+    var widest = 1;
+    for (var r in byRank) widest = Math.max(widest, byRank[r].length);
+    var pad = 26, dx = 74, dy = 58;
+    var w = pad * 2 + (widest - 1) * dx, hgt = pad * 2 + maxRank * dy;
+    var pos = {};
+    for (r in byRank) {
+      byRank[r].sort(posetSort);
+      var row = byRank[r], off = (widest - row.length) * dx / 2;
+      row.forEach(function (x, j) {
+        pos[posetKey(x)] = [pad + off + j * dx, pad + (maxRank - parseInt(r, 10)) * dy];
+      });
+    }
+    var svg = sv("svg", { viewBox: "0 0 " + w + " " + hgt, role: "img",
+                          style: "max-width:" + w + "px;width:100%;display:block" });
+    covers.forEach(function (c) {                 // covers behind the nodes
+      var a = pos[posetKey(c[0])], b = pos[posetKey(c[1])];
+      if (!a || !b) return;
+      svg.appendChild(sv("line", { x1: a[0], y1: a[1], x2: b[0], y2: b[1],
+                                   stroke: "#666", "stroke-width": "2" }));
+    });
+    nodes.forEach(function (x) {
+      var p = pos[posetKey(x)];
+      svg.appendChild(sv("circle", { cx: p[0], cy: p[1], r: 13, fill: "#fff",
+                                     stroke: "#3f51b5", "stroke-width": "2" }));
+      var t = sv("text", { x: p[0], y: p[1] + 4, "font-size": "11",
+                           "text-anchor": "middle", fill: "#1c1c1c" });
+      t.textContent = posetKey(x);
+      svg.appendChild(t);
+    });
+    host.appendChild(svg);
+  }
+
   // ---------- request ----------
   function buildRequest() {
     var arrows = {};
@@ -963,6 +1108,10 @@
      "deformations"].forEach(function (k) {
       if (el[k].checked) compute.push(k);
     });
+    // Plan 75: HH^* of an incidence algebra via the order complex -- a DEGREE-RANGE
+    // kind (the generic "name:0..N" grammar both runners parse), not a budget.
+    if (el.incidence_cohomology.checked)
+      compute.push("incidence_cohomology:0.." + el["incidence_cohomology-top"].value);
     // Plan 71: HH^* as a Lie module over HH^1 -- a top-carrying HH kind (bracket form).
     if (el.hh_lie_module.checked)
       compute.push("hh_lie_module:0.." + el["hh_lie_module-top"].value);
@@ -1087,6 +1236,17 @@
                       params: { vertices: req.algebra.vertices, arrows: req.algebra.arrows,
                                 relations: req.algebra.relations, special: special },
                       field: field };
+    }
+    // Plan 75: the poset input mode REPLACES the drawn quiver with the SHIPPED
+    // IncidenceAlgebra family, so every checked kind is computed for kP -- and
+    // incidence_cohomology gets the poset provenance its theorem needs. Only attached
+    // when the panel is on AND something is typed, so an ordinary request's cache key
+    // is unchanged. Deliberately LAST of the two algebra-rewriting modes: if the
+    // skew-gentle kind is also checked, the typed poset wins (the panel the user filled
+    // in describes the whole algebra, and kP is never a split gentle algebra).
+    if (el["poset-enable"].checked) {
+      var palg = posetAlgebra(field);
+      if (palg) req.algebra = palg;
     }
     if (module) req.module = module;
     if (extTarget) req.ext_target = extTarget;
@@ -4439,6 +4599,45 @@
           + ". Injection bound dim HH_m(B) <= dim HH_m(A) held: " + String(b.injection_bound_ok) + "." }));
         if (b.note) div.appendChild(h("p", { "class": "qlgui-note", text: b.note }));
       }
+    } else if (name === "incidence_cohomology") {
+      // Plan 75 / R9: HH^*(kP) read off the ORDER COMPLEX of the poset
+      // (Gerstenhaber–Schack / Cibils). The dims table, the face vector of Δ(P), the
+      // contractibility certificate (three-valued) and the characteristic verdict.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: "HH^n(kP) = H^n(Δ(P); k): the Hochschild "
+          + "cohomology of the incidence algebra IS the simplicial cohomology of the "
+          + "order complex Δ(P), whose p-simplices are the chains x_0 < … < x_p." }));
+        var ichead = h("tr"), icrow = h("tr");
+        ichead.appendChild(h("th", { text: "n" }));
+        icrow.appendChild(h("th", { text: "dim HH^n" }));
+        (b.dims || []).forEach(function (d, n) {
+          ichead.appendChild(h("td", { text: String(n) }));
+          icrow.appendChild(h("td", { text: String(d) }));
+        });
+        div.appendChild(h("table", {}, ichead, icrow));
+        div.appendChild(h("p", { text: "Face vector of Δ(P) (entry p = number of "
+          + "p-simplices): (" + (b.face_vector || []).join(", ") + "); Euler "
+          + "characteristic " + b.euler_characteristic + "." }));
+        div.appendChild(h("p", { text: b.contractible === true
+          ? "Contractible (proved): " + b.contractible_reason + "."
+          : b.contractible === false
+            ? "Not contractible: " + b.contractible_reason + "."
+            : "Contractibility not proved — " + b.contractible_reason + "." }));
+        if (b.char_dependent === true) {
+          div.appendChild(h("p", { text: "Characteristic-DEPENDENT: the integral homology "
+            + "of Δ(P) has torsion divisible by " + b.characteristic + " (invariant "
+            + "factors " + (b.torsion || []).join(", ") + "), so this HH^* differs from "
+            + "the characteristic-0 answer." }));
+        } else if (b.char_dependent === false && b.characteristic) {
+          // Only worth saying in positive characteristic — in characteristic 0
+          // "agrees with characteristic 0" is vacuous, not a computed fact.
+          div.appendChild(h("p", { text: "Characteristic-independent: no torsion of "
+            + "Δ(P) is divisible by " + b.characteristic + ", so these dimensions "
+            + "agree with the characteristic-0 ones." }));
+        }
+      }
     } else if (name === "radical_filtration_ss") {
       // Plan 42: the radical-filtration spectral sequence — same honest shape as
       // ss_hochschild (abutment table over the certified window + grid + prose).
@@ -4926,13 +5125,21 @@
    el.fundamental_group, el.simply_connected, el.tame_wild,
    el.hh_lie_module, el["hh_lie_module-top"],
    el.skew_gentle, el["skew_gentle-special"],
-   el.han_transport, el["han_transport-arrows"]]
+   el.han_transport, el["han_transport-arrows"],
+   el.incidence_cohomology, el["incidence_cohomology-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
   el["mod-enable"].addEventListener("change", function () {
     renderModulePanel(); scheduleProbe();
   });
+  // Plan 75: the poset panel redraws its Hasse preview on every keystroke and re-probes
+  // (turning it on changes WHICH algebra the request is about, so the estimate moves).
+  [el["poset-enable"], el["poset-covers"], el["poset-elements"]].forEach(function (x) {
+    x.addEventListener("input", function () { renderPosetPreview(); scheduleProbe(); });
+    x.addEventListener("change", function () { renderPosetPreview(); scheduleProbe(); });
+  });
+  renderPosetPreview();
   [el["mod-mode"], el["mod-side"]].forEach(function (x) {
     x.addEventListener("change", function () { renderModulePanel(); scheduleProbe(); });
   });
@@ -5004,7 +5211,7 @@
   // QLGUI-THEMES-BEGIN
   var THEMES =
   [
-    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh", "han_transport"]},
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh", "han_transport", "incidence_cohomology"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "deformations", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
@@ -5537,6 +5744,7 @@
     fundamental_group: { cb: "fundamental_group" },
     simply_connected: { cb: "simply_connected" },
     tame_wild: { cb: "tame_wild" },
+    incidence_cohomology: { cb: "incidence_cohomology", top: "incidence_cohomology-top" },
     hh1_lie: { cb: "hh1_lie" },
     deformations: { cb: "deformations" },
     hh_lie_module: { cb: "hh_lie_module", top: "hh_lie_module-top" },

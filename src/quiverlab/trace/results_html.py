@@ -64,6 +64,8 @@ _HEADINGS = {
     "fundamental_group": "Fundamental group π₁(Q, I)",
     "simply_connected": "Simple connectivity",
     "tame_wild": "Representation type (tame / wild)",
+    "incidence_cohomology": ("Hochschild cohomology of an incidence algebra "
+                             "(= simplicial cohomology of the order complex)"),
     "hh1_lie": "HH¹ as a Lie algebra",
     "deformations": "Formal deformations and Maurer–Cartan",
     "hh_lie_module": "HH• as a Lie module over HH¹",
@@ -1510,6 +1512,60 @@ def _tame_wild_html(b):
     return out
 
 
+def _incidence_cohomology_html(b):
+    """``HH^*(kP)`` read off the ORDER COMPLEX (Plan 75 / R9).
+
+    States the theorem it used, then the dims table, the face vector of ``Delta(P)`` with
+    its Euler characteristic, the THREE-VALUED contractibility certificate (proved by a
+    global bound / disproved / merely observed in the computed range) and -- the reason
+    the integer route exists at all -- whether the answer is characteristic-DEPENDENT,
+    naming the integral torsion that makes it so. An algebra with no poset provenance
+    prints the loud refusal instead of numbers."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Incidence cohomology not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    out = ["<p>For a finite poset <i>P</i> and any field <i>k</i>, the Hochschild "
+           "cohomology of the incidence algebra <i>kP</i> is the simplicial cohomology "
+           "of the order complex (nerve) &Delta;(<i>P</i>), whose <i>p</i>-simplices are "
+           "the chains <i>x</i><sub>0</sub> &lt; … &lt; <i>x</i><sub>p</sub> "
+           "(Gerstenhaber–Schack 1983; Cibils 1989 for an arbitrary finite poset):</p>",
+           _math(b.get("latex") or r"HH^{n}(kP) \cong H^{n}(\Delta(P); k)"),
+           _dims_table("dim HH^n", b.get("dims") or [])]
+    fv = b.get("face_vector") or []
+    out.append("<p>Face vector of &Delta;(<i>P</i>) (entry <i>p</i> = the number of "
+               "<i>p</i>-simplices, i.e. chains with <i>p</i>+1 elements): (%s); Euler "
+               "characteristic &sum;(&minus;1)<sup>p</sup>f<sub>p</sub> = %s.</p>"
+               % (_esc(", ".join(str(f) for f in fv)),
+                  _esc(str(b.get("euler_characteristic")))))
+    contractible = b.get("contractible")
+    reason = _esc(str(b.get("contractible_reason") or ""))
+    if contractible is True:
+        out.append("<p>&Delta;(<i>P</i>) is <b>contractible</b> (proved): %s.</p>" % reason)
+    elif contractible is False:
+        out.append("<p>&Delta;(<i>P</i>) is <b>not contractible</b>: %s.</p>" % reason)
+    else:
+        out.append("<p>Contractibility <b>not proved</b> — %s.</p>" % reason)
+    if b.get("char_dependent") is True:
+        out.append("<p>This answer is <b>characteristic-dependent</b>: the integral "
+                   "homology of &Delta;(<i>P</i>) has torsion divisible by %s (invariant "
+                   "factors %s), so these dimensions differ from the characteristic-0 "
+                   "ones. One integer Smith normal form settles every characteristic at "
+                   "once — which is why this route, and not the general engine, can say "
+                   "so.</p>" % (_esc(str(b.get("characteristic"))),
+                                _esc(", ".join(str(t) for t in (b.get("torsion") or [])))))
+    elif b.get("char_dependent") is False and b.get("characteristic"):
+        # Only worth saying in positive characteristic: in characteristic 0 "agrees with
+        # characteristic 0" is vacuous, and printing it would read as a computed fact.
+        out.append("<p>No torsion of &Delta;(<i>P</i>) is divisible by %s, so these "
+                   "dimensions agree with the characteristic-0 ones.</p>"
+                   % _esc(str(b["characteristic"])))
+    covers = b.get("covers") or []
+    if covers:
+        out.append("<p>Cover relations of <i>P</i>: %s.</p>"
+                   % _esc("; ".join("%s < %s" % (a, c) for a, c in covers)))
+    return out
+
+
 def _radical_filtration_html(b):
     """The radical filtration of mod A (Plan 57 / R37): the completeness verdict, the
     nilpotency index + rad^inf certificate, and the layer profile (sum_ij dim rad^n).
@@ -2026,6 +2082,8 @@ def _block_html(kind, b, ctx=None):
         return _simply_connected_html(b)
     if kind == "tame_wild":
         return _tame_wild_html(b)
+    if kind == "incidence_cohomology":
+        return _incidence_cohomology_html(b)
     if kind == "hh1_lie":
         return _hh1_lie_html(b)
     if kind == "hh_lie_module":

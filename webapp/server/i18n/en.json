@@ -366,5 +366,11 @@
   "block.silting.status_budget": "budget-capped (not the whole silting quiver)",
   "pick.kind.silting": "Silting theory",
   "inv.exceptional_sequences": "Exceptional sequences (classical + τ)",
-  "pick.kind.exceptional_sequences": "Exceptional sequences"
+  "pick.kind.exceptional_sequences": "Exceptional sequences",
+  "pick.kind.incidence_cohomology": "HH* via the order complex (incidence)",
+  "poset.title": "Poset (order relations)",
+  "poset.covers_label": "cover pairs",
+  "poset.covers_ph": "1<2, 2<3",
+  "poset.elements_label": "isolated elements",
+  "poset.cycle_error": "these cover relations contain a directed cycle, so they are not a poset"
 }

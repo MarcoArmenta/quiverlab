@@ -1918,5 +1918,79 @@
   },
   "canonical_key": "76793f840dccb9fd2ff01dc2d0620d29b947c6d1e9a4bcc421892efa65d6da27",
   "result_json": "{\"algebra\": {\"arrows\": {\"a\": [2, 1], \"al\": [5, 1], \"b\": [3, 2], \"be\": [1, 5], \"c\": [4, 3], \"d\": [1, 4]}, \"field\": {\"kind\": \"GF\", \"n\": 1, \"p\": 32003}, \"kind\": \"quiver\", \"relations\": [\"al*be\", \"d*c*b*a - be*al\"], \"vertices\": [1, 2, 3, 4, 5]}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"CLMS: B subset A left/right bounded (A/B tensor-nilpotent, finite pd over B^e, one-sided B-projective) implies B satisfies Han iff A does (Thm 4.6). Examples 5.3 (bounded) / 5.5 (not bounded) are the P73 oracles.\", \"arxiv\": \"2101.02597\", \"arxiv_url\": \"https://arxiv.org/abs/2101.02597\", \"bibtex_key\": \"CLMSbounded2022\", \"doi\": \"10.1016/j.jalgebra.2022.01.022\", \"doi_url\": \"https://doi.org/10.1016/j.jalgebra.2022.01.022\", \"formatted\": \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Han's conjecture for bounded extensions. Journal of Algebra.\", \"key\": \"clms_bounded_extensions\", \"topic\": \"Algorithms\"}, {\"annotation\": \"CLMS: the Jacobi-Zariski long nearly exact sequence relating HH_*(A), HH_*(B), HH_*(A|B) ('exact twice in three') -- the computational tool + self-cert gate for the P73 Han transport.\", \"arxiv\": \"2009.05017\", \"arxiv_url\": \"https://arxiv.org/abs/2009.05017\", \"bibtex_key\": \"CLMSjacobiZariski2022\", \"doi\": \"10.1112/blms.12516\", \"doi_url\": \"https://doi.org/10.1112/blms.12516\", \"formatted\": \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Jacobi-Zariski long nearly exact sequences for associative algebras. Bulletin of the London Mathematical Society 54.\", \"key\": \"clms_jacobi_zariski\", \"topic\": \"Foundations\"}, {\"annotation\": \"Kaygun: the classical noncommutative Jacobi-Zariski sequence (B subset A with A/B flat) -- the origin CLMS credit for the noncommutative case; CLMS 2009.05017 is the 'long nearly exact / exact twice in three' refinement P73 computes with.\", \"arxiv\": \"1103.4377\", \"arxiv_url\": \"https://arxiv.org/abs/1103.4377\", \"bibtex_key\": \"Kaygun2012\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Kaygun, Atabey (2012). Jacobi-Zariski Exact Sequence for Hochschild Homology and Cyclic (Co)Homology. Homology, Homotopy and Applications 14, 65-78.\", \"key\": \"kaygun_jacobi_zariski\", \"topic\": \"Foundations\"}, {\"annotation\": \"Finite global dimension iff finite Hochschild homology dimension -- the conjecture the zoo scans probe.\", \"arxiv\": \"math/0408402\", \"arxiv_url\": \"https://arxiv.org/abs/math/0408402\", \"bibtex_key\": \"Han2006\", \"doi\": \"10.1112/S002461070602299X\", \"doi_url\": \"https://doi.org/10.1112/S002461070602299X\", \"formatted\": \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\", \"key\": \"han_conjecture\", \"topic\": \"Foundations\"}, {\"annotation\": \"The standard reference for bound quivers and the representation theory quiverlab implements.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"ASS2006\", \"doi\": \"10.1017/CBO9780511614309\", \"doi_url\": \"https://doi.org/10.1017/CBO9780511614309\", \"formatted\": \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\", \"key\": \"assem_book\", \"topic\": \"Foundations\"}], \"reproduce\": \"from quiverlab import Quiver, GF\\n\\nQ = Quiver(vertices=[1, 2, 3, 4, 5], arrows={\\\"al\\\": (5, 1), \\\"be\\\": (1, 5), \\\"d\\\": (1, 4), \\\"c\\\": (4, 3), \\\"b\\\": (3, 2), \\\"a\\\": (2, 1)})\\nA = Q.algebra(relations=['al*be', 'd*c*b*a - be*al'], field=GF(32003))\\n# F = the new-arrow subset defining B <= A\\nA.han_transport(F)\", \"results\": {\"han_transport\": {\"citations\": [[\"CLMSbounded2022\", \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Han's conjecture for bounded extensions. Journal of Algebra.\"], [\"CLMSjacobiZariski2022\", \"Cibils, Claude; Lanzilotta, Marcelo; Marcos, Eduardo N.; Solotar, Andrea (2022). Jacobi-Zariski long nearly exact sequences for associative algebras. Bulletin of the London Mathematical Society 54.\"], [\"Kaygun2012\", \"Kaygun, Atabey (2012). Jacobi-Zariski Exact Sequence for Hochschild Homology and Cyclic (Co)Homology. Homology, Homotopy and Applications 14, 65-78.\"], [\"Han2006\", \"Han, Yang (2006). Hochschild (co)homology dimension. Journal of the London Mathematical Society. Second Series 73, 657-668.\"], [\"ASS2006\", \"Assem, Ibrahim; Simson, Daniel; Skowro'nski, Andrzej (2006). Elements of the Representation Theory of Associative Algebras. Volume 1: Techniques of Representation Theory. Cambridge University Press 65.\"]], \"dim_A\": 47, \"dim_B\": 20, \"dim_quotient\": 27, \"han_A\": true, \"han_B\": true, \"injection_bound_ok\": true, \"injection_from\": 2, \"kind\": \"han_transport\", \"new_arrows\": [\"a\"], \"note\": \"HH_*(B) ~= HH_*(A) (iso) => full iff B |= Han <=> A |= Han (Thm 4.6); injection bound dim HH_m(B) <= dim HH_m(A) held: True; EQUALITY (bounded => iso)\", \"one_sided\": {\"projective\": true, \"side\": \"right\"}, \"pd_Be\": {\"gldim_B\": 2, \"route\": \"gldim\", \"status\": \"finite\", \"value\": null}, \"references\": [\"clms_bounded_extensions\", \"clms_jacobi_zariski\", \"kaygun_jacobi_zariski\", \"han_conjecture\", \"assem_book\"], \"status\": \"complete\", \"tensor_nilpotent\": {\"index\": 2, \"route\": \"J_interrupter\", \"status\": \"nilpotent\"}, \"transport\": \"bounded\"}}}"
+ },
+ "incidence_cohomology_b3": {
+  "body": {
+   "schema": 1,
+   "algebra": {
+    "kind": "family",
+    "family": "IncidenceAlgebra",
+    "params": {
+     "poset_or_covers": [
+      [
+       0,
+       1
+      ],
+      [
+       0,
+       2
+      ],
+      [
+       0,
+       4
+      ],
+      [
+       1,
+       3
+      ],
+      [
+       1,
+       5
+      ],
+      [
+       2,
+       3
+      ],
+      [
+       2,
+       6
+      ],
+      [
+       3,
+       7
+      ],
+      [
+       4,
+       5
+      ],
+      [
+       4,
+       6
+      ],
+      [
+       5,
+       7
+      ],
+      [
+       6,
+       7
+      ]
+     ],
+     "elements": null
+    },
+    "field": {
+     "kind": "QQ"
+    }
+   },
+   "compute": [
+    "incidence_cohomology:0..3"
+   ],
+   "artifacts": {
+    "pdf": false,
+    "tikz": false
+   }
+  },
+  "result_json": "{\"algebra\": {\"family\": \"IncidenceAlgebra\", \"field\": {\"kind\": \"QQ\", \"n\": 1, \"p\": null}, \"kind\": \"family\", \"params\": {\"elements\": null, \"poset_or_covers\": [[0, 1], [0, 2], [0, 4], [1, 3], [1, 5], [2, 3], [2, 6], [3, 7], [4, 5], [4, 6], [5, 7], [6, 7]]}}, \"json_guide\": [], \"meta\": {}, \"quiverlab_version\": \"0.3.0\", \"references\": [{\"annotation\": \"Gerstenhaber-Schack: HH^*(kP) is isomorphic to the simplicial cohomology of the order complex of P AS A RING (cup product). The ring source for the incidence-vs-nerve oracle (with Cibils 1989 / Redondo 2008). Proves the CUP iso for the FACE POSET of a simplicial complex; Cibils 1989 extends it to an ARBITRARY finite poset. NB: makes no bracket-vanishing claim.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"GerstenhaberSchack1983\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Gerstenhaber, Murray; Schack, Samuel D. (1983). Simplicial cohomology is Hochschild cohomology. J. Pure Appl. Algebra 30, 143-156.\", \"key\": \"gerstenhaber_schack_1983\", \"topic\": \"Foundations\"}, {\"annotation\": \"HH^n of an incidence algebra equals the simplicial cohomology of the poset order complex -- the incidence-vs-nerve HH oracle.\", \"arxiv\": null, \"arxiv_url\": null, \"bibtex_key\": \"cibils1989incidence\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Cibils, Claude (1989). Cohomology of incidence algebras and simplicial complexes. Journal of Pure and Applied Algebra 56, 221-232.\", \"key\": \"cibils_incidence\", \"topic\": \"Families\"}, {\"annotation\": \"The simplicial-cohomology identification of HH^* underpinning the incidence-vs-nerve oracle (with Cibils 1989).\", \"arxiv\": \"math/0611542\", \"arxiv_url\": \"https://arxiv.org/abs/math/0611542\", \"bibtex_key\": \"redondo2008incidence\", \"doi\": null, \"doi_url\": null, \"formatted\": \"Redondo, Mar'ia Julia (2008). Hochschild cohomology via incidence algebras. Journal of the London Mathematical Society. Second Series 77, 465-480.\", \"key\": \"redondo_incidence\", \"topic\": \"Families\"}], \"reproduce\": \"import quiverlab as ql\\nfrom quiverlab.fields import QQ\\nA = ql.IncidenceAlgebra(field=QQ, poset_or_covers=[[0, 1], [0, 2], [0, 4], [1, 3], [1, 5], [2, 3], [2, 6], [3, 7], [4, 5], [4, 6], [5, 7], [6, 7]], elements=None)\\nA.incidence_cohomology(3)\", \"results\": {\"incidence_cohomology\": {\"char_dependent\": false, \"characteristic\": 0, \"citations\": [[\"GerstenhaberSchack1983\", \"Gerstenhaber, Murray; Schack, Samuel D. (1983). Simplicial cohomology is Hochschild cohomology. J. Pure Appl. Algebra 30, 143-156.\"], [\"cibils1989incidence\", \"Cibils, Claude (1989). Cohomology of incidence algebras and simplicial complexes. Journal of Pure and Applied Algebra 56, 221-232.\"], [\"redondo2008incidence\", \"Redondo, Mar'ia Julia (2008). Hochschild cohomology via incidence algebras. Journal of the London Mathematical Society. Second Series 77, 465-480.\"]], \"complex_dimension\": 3, \"contractible\": true, \"contractible_reason\": \"P has a global bound (min or max), so the order complex is a cone -- contractible, hence HH^{>=1}(kP) = 0\", \"covers\": [[\"0\", \"1\"], [\"0\", \"2\"], [\"0\", \"4\"], [\"1\", \"3\"], [\"1\", \"5\"], [\"2\", \"3\"], [\"2\", \"6\"], [\"3\", \"7\"], [\"4\", \"5\"], [\"4\", \"6\"], [\"5\", \"7\"], [\"6\", \"7\"]], \"dims\": [1, 0, 0, 0], \"elements\": [\"0\", \"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"], \"euler_characteristic\": 1, \"face_vector\": [8, 19, 18, 6], \"kind\": \"incidence_cohomology\", \"latex\": \"HH^{n}(kP) \\\\;\\\\cong\\\\; H^{n}(\\\\Delta(P); k)\", \"note\": \"P has a global bound (min or max), so the order complex is a cone -- contractible, hence HH^{>=1}(kP) = 0\", \"references\": [\"gerstenhaber_schack_1983\", \"cibils_incidence\", \"redondo_incidence\"], \"top\": 3, \"torsion\": []}}}",
+  "canonical_key": "bd63f05479795da0eb2c1d3f278a9018db89dc0bfff689cf7a1a1348f2ab54e6"
  }
 }

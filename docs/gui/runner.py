@@ -94,6 +94,12 @@ def _algebra_from_spec(alg):
         # quiverlab.families.skew_group.build_skew_group_from_params).
         if alg.get("family") == "SkewGroupAlgebra":
             return _skew_group_from_spec(alg)
+        # IncidenceAlgebra (Plan 75): the poset input mode's constructor -- cover pairs
+        # (+ optional isolated elements) straight into the shipped library family, which
+        # is what stashes the `_poset` provenance the order-complex route requires.
+        # Byte-identical to the server build (both call quiverlab.IncidenceAlgebra).
+        if alg.get("family") == "IncidenceAlgebra":
+            return _incidence_from_spec(alg)
         raise RequestError("algebra kind 'family' is the server tier (Plan 09); "
                            "this GUI submits kind 'quiver' only")
     if kind != "quiver":
@@ -164,6 +170,29 @@ def _skew_gentle_from_spec(alg):
                              field=field)
 
 
+def _incidence_from_spec(alg):
+    """Build the incidence algebra kP from a GUI ``family: IncidenceAlgebra`` block
+    (params ``poset_or_covers`` + optional ``elements``) -- the Plan-75 poset input mode.
+    Byte-identical to the server build: both call ``quiverlab.IncidenceAlgebra``, which
+    validates the cover data (a directed cycle raises, surfaced here as a clean
+    RequestError) and stashes the poset provenance."""
+    from quiverlab.errors import QuiverlabError
+    params = alg.get("params") or {}
+    covers = params.get("poset_or_covers")
+    if not isinstance(covers, list) or not all(
+            isinstance(c, (list, tuple)) and len(c) == 2 for c in covers):
+        raise RequestError("IncidenceAlgebra.poset_or_covers must be a list of cover "
+                           "pairs [a, b], meaning a < b is a cover")
+    elements = params.get("elements")
+    if elements is not None and not isinstance(elements, list):
+        raise RequestError("IncidenceAlgebra.elements must be a list or null")
+    field = _field_from_spec(alg.get("field"))
+    try:
+        return quiverlab.IncidenceAlgebra([list(c) for c in covers], elements, field=field)
+    except QuiverlabError as exc:
+        raise RequestError(str(exc)) from exc
+
+
 def _skew_group_from_spec(alg):
     """Build the skew group algebra A⋊G from a GUI ``family: SkewGroupAlgebra`` block
     (flattened params: vertices, arrows, relations, generators). Byte-identical to the
@@ -204,6 +233,12 @@ def run_build(request_json):
         _src = alg.get("params") if alg.get("kind") == "family" else alg
         vertices = _src.get("vertices") or []
         arrows = _src.get("arrows") or {}
+        # Plan 75: the IncidenceAlgebra family's params are POSET data (covers), not a
+        # quiver, so the summary counts come off the BUILT Hasse quiver instead of the
+        # request -- reporting 0 vertices / 0 arrows for a real algebra would be a lie.
+        if not vertices and getattr(A, "quiver", None) is not None:
+            vertices = list(A.quiver.vertices)
+            arrows = dict(A.quiver.arrows)
         # Module blocks (Plan 26) ride alongside the algebra; the module itself is
         # built lazily in compute_one, so a relation-violating matrix surfaces as a
         # per-computation error (rendered on the page), never a build crash.
@@ -1445,6 +1480,22 @@ def compute_one(spec):
             from quiverlab.skewgentle.block import skew_gentle_block
             block = skew_gentle_block(A, budget=(top or 512))
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "incidence_cohomology":
+            # HH^* of an incidence algebra through the order complex (Plan 75 / R9).
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # library block builder (hochschild.simplicial.incidence_cohomology_block)
+            # -- the Gerstenhaber-Schack/Cibils theorem HH^n(kP) = H^n(Delta(P); k) via
+            # the exact integer SNF simplicial engine, plus the face vector, the
+            # integral torsion and the char-dependence verdict -- + `references` ->
+            # citations. A DEGREE-RANGE kind. An algebra without poset provenance
+            # returns an {"error": ...} block, never a raise.
+            from quiverlab.hochschild.simplicial import incidence_cohomology_block
+            if top is None:
+                raise RequestError(
+                    "incidence_cohomology needs a degree range, e.g. "
+                    "'incidence_cohomology:0..3'")
+            block = incidence_cohomology_block(A, top)
+            block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
         _state["results"].append(dict(block, invariant=spec))
@@ -1608,7 +1659,8 @@ def python_snippet():
     header = ("from quiverlab import Quiver\nfrom quiverlab.fields import QQ"
               if field_name == "QQ" else "from quiverlab import Quiver, %s" % field_name)
     if alg.get("kind") == "family":
-        # A `family` block (server tier -- the twin refuses to BUILD it, but the
+        # A `family` block (server tier for most families -- the twin BUILDS only
+        # SkewGentle / SkewGroup / Incidence and refuses the rest, but the
         # reproduce string mirrors quiverlab.hpc.spec._snippet's family branch so the
         # cross-runner snippet contract holds). Real constructors, never a crashing
         # ql.<Family>(field=..., **params) form for the five construction families.
@@ -1674,6 +1726,9 @@ def python_snippet():
              "simply_connected": "A.is_simply_connected()",
              # Tits-form tame/wild certificate (Plan 62 / R19): a scalar kind, no %d.
              "tame_wild": "A.tame_wild_certificate()",
+             # Plan 75 / R9: the order-complex route to HH^* of an incidence algebra --
+             # a degree-range kind (%d = top). Needs the IncidenceAlgebra provenance.
+             "incidence_cohomology": "A.incidence_cohomology(%d)",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -1902,6 +1957,12 @@ ETA_MODEL = {
                 # simple-connectivity convex sweep -- the convex sweep dominates
                 # (simply_connected class), sized above the cheap scalars.
                 "tame_wild": 3.0,
+                # Plan 75: incidence_cohomology enumerates the CHAINS of the poset and
+                # runs one integer Smith normal form -- combinatorics on a complex far
+                # smaller than the enveloping algebra the general HH engines resolve, so
+                # it sizes BELOW every hh_* route (this is the whole point of the fast
+                # path). Sized with the cheap structural scalars.
+                "incidence_cohomology": 0.3,
                 # Plan 65: exceptional_sequences KNITS the AR quiver + runs the braid-orbit
                 # BFS (classical) and the exchange-graph BFS (tau); knit- and BFS-dominated,
                 # the heavier ar_quiver/tame_wild cost class.

@@ -511,7 +511,19 @@ never hide behind one:
     order-preserving). ``new_arrows`` is dropped from ``model_dump`` when absent, so
     every existing request's ``canonical_key`` is byte-unchanged; both runners share
     ``invariants.han.han_transport_block``, so the Pyodide twin agrees
-    (``tests/gui/test_han_runner_twin_p73.py``)."""
+    (``tests/gui/test_han_runner_twin_p73.py``).
+  * 2026-08-10 (``incidence_cohomology_b3`` ADDED, Plan 75 -- HH^* of an incidence
+    algebra via the ORDER COMPLEX): a NEW fixture for the ``incidence_cohomology``
+    degree-range kind on the Boolean lattice ``B_3`` over QQ (``dims == [1,0,0,0]``,
+    face vector ``(8,19,18,6)``, contractible by the global bound). Pure ADDITION: the
+    48 existing entries were verified byte-identical BEFORE the append (indent=1,
+    order-preserving; git reported 74 insertions, 0 deletions). The poset input mode
+    emits the SHIPPED ``IncidenceAlgebra`` family with ``elements`` normalized to
+    ``null`` when the covers name every element, so NO new request field and NO new
+    algebra ``kind`` exists and every pre-P75 request keys byte-unchanged; both runners
+    share ``hochschild.simplicial.incidence_cohomology_block``, so the Pyodide twin
+    agrees (``tests/webapp/test_incidence_p75.py``,
+    ``tests/gui/test_incidence_runner_twin.py``)."""
 import json
 import pathlib
 
