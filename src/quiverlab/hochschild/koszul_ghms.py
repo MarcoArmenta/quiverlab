@@ -346,6 +346,28 @@ class GHMSResolution:
         if not src or not tgt:
             self._diffs[n] = []
             return []
+        names = sorted(A.quiver.arrows)
+        arrow_vec = {a: A._basis_vec(A.basis_labels.index(a)) for a in names}
+        one = list(A.unit)
+        if n == 1:
+            # DEGREE 1 IS SPECIAL: the two splittings land in K_0 = S, which is indexed by
+            # VERTICES, not by the (single, empty) length-0 path. Solving against the
+            # path-coordinate basis here would be degenerate -- and it silently was, until
+            # the multi-vertex cohomology exposed it (HH^0 of the diamond came out 3
+            # instead of Z(A) = 1; homology had masked it because that quiver is acyclic,
+            # so C_1 = 0 and the bad d_1 never contributed a rank).
+            #   d_1(1 (x) a (x) 1) = a (x) [t(a)] (x) 1  -  1 (x) [s(a)] (x) a
+            # (the minus is (-1)^1, the same augmentation-pinned sign as everywhere else,
+            # and it is exactly what makes mu . d_1 = 0).
+            verts = [c[0] for _v, c in self.basis[0]]
+            D = [[[] for _ in range(len(src))] for _ in range(len(tgt))]
+            for j, (_w, (sv, tv)) in enumerate(src):
+                a_name = sorted(A.quiver.arrows)[j]
+                av = arrow_vec[a_name]
+                D[verts.index(tv)][j].append((dom.one(), av, one))
+                D[verts.index(sv)][j].append((dom.neg(dom.one()), one, av))
+            self._diffs[n] = D
+            return D
         prev_paths, now_paths = self._paths[n - 1], self._paths[n]
         idx_prev = {w: i for i, w in enumerate(prev_paths)}
         tgt_vecs = [vec for vec, _c in tgt]
@@ -354,7 +376,13 @@ class GHMSResolution:
         names = sorted(A.quiver.arrows)
         arrow_vec = {a: A._basis_vec(A.basis_labels.index(a)) for a in names}
         one = list(A.unit)
-        sign = dom.neg(dom.one()) if (n % 2 == 0) else dom.one()   # -(-1)^n
+        # THE SIGN IS (-1)^n on the RIGHT-splitting term, and it is pinned by the
+        # AUGMENTATION, not by d.d = 0. At n = 1 the resolution must satisfy
+        # mu . d_1 = 0, i.e. d_1(1(x)a(x)1) = a(x)1 - 1(x)a; (-1)^1 = -1 delivers that,
+        # while -(-1)^n would give +1 and a d_1 with mu . d_1 = 2a != 0 (visible as
+        # HH_0 = 2 instead of 3 on the exterior algebra). Both conventions ALTERNATE, so
+        # d.d = 0 cannot tell them apart -- see the sign tests.
+        sign = dom.one() if (n % 2 == 0) else dom.neg(dom.one())    # (-1)^n
         D = [[[] for _ in range(len(src))] for _ in range(len(tgt))]
         for j, (w, _corner) in enumerate(src):
             # LEFT splitting: slice by FIRST arrow
@@ -426,6 +454,9 @@ class GHMSResolution:
         """
         A, dom = self.algebra, self.algebra.domain
         top = self.top if top is None else top
+        return self._dd_zero_range(A, dom, top)
+
+    def _dd_zero_range(self, A, dom, top):
         for n in range(2, top + 1):
             dn, dn1 = self.differential(n), self.differential(n - 1)
             if not dn or not dn1:
@@ -447,3 +478,147 @@ class GHMSResolution:
                             "convention is wrong",
                             hint="the sign is -(-1)^n on the RIGHT splitting term")
         return True
+
+
+# --------------------------------------------------------------------------- #
+# the HH collapse: engine="ghms"
+# --------------------------------------------------------------------------- #
+def _basis_corners(A):
+    """``(source, target)`` of every basis element of ``A``, read off its path label."""
+    arrows = A.quiver.arrows
+    out = []
+    for lab in A.basis_labels:
+        s = str(lab)
+        if s.startswith("e_"):
+            v = s[2:]
+            match = [x for x in A.quiver.vertices if str(x) == v]
+            out.append((match[0], match[0]) if match else (v, v))
+        else:
+            parts = s.split("*")
+            out.append((arrows[parts[0]][0], arrows[parts[-1]][1]))
+    return out
+
+
+def _corner_indices(corners, src, tgt):
+    """Indices of the ``A``-basis spanning ``e_src A e_tgt``."""
+    return [i for i, (s, t) in enumerate(corners) if s == src and t == tgt]
+
+
+def _collapse_complex(res, top, *, side):
+    """The corner-typed collapse of ``P_.`` (Plan-16 convention).
+
+    ``side="hom"``: ``A (x)_{A^e} P_n``. A generator ``w`` with corner ``(v, w)`` gives the
+    free bimodule ``A e_v (x) e_w A``, and ``A (x)_{A^e} (A e_v (x) e_w A) = e_w A e_v``, so
+    a differential term ``(c, u, v)`` -- meaning ``a (x) w (x) b |-> c (u a) (x) w' (x)
+    (b v)`` -- sends ``m |-> c * v m u``. That is the ``b . w . a`` order.
+
+    ``side="coh"``: ``Hom_{A^e}(P_n, A) = e_v A e_w`` (the SWAPPED tag), and the same term
+    contributes ``f |-> c * u f v`` -- the ``a . w . b`` order. The two orders are the
+    covariance flip, not a free choice.
+
+    Returns ``(dims, matrices)`` where ``matrices[n]`` is ``d_n : C_n -> C_{n-1}`` for
+    ``hom`` and ``delta^n : C^n -> C^{n+1}`` for ``coh``.
+    """
+    A, dom = res.algebra, res.algebra.domain
+    corners = _basis_corners(A)
+    layout, dims = [], []
+    for n in range(top + 2):
+        slots, off = [], 0
+        for j, (_vec, (v, w)) in enumerate(res.basis[n] if n < len(res.basis) else []):
+            idxs = _corner_indices(corners, w, v) if side == "hom" else \
+                _corner_indices(corners, v, w)
+            slots.append((j, idxs, off))
+            off += len(idxs)
+        layout.append(slots)
+        dims.append(off)
+
+    mats = {}
+    for n in range(1, top + 2):
+        D = res.differential(n)
+        if not D:
+            mats[n] = []
+            continue
+        if side == "hom":
+            # d_n : C_n -> C_{n-1}.  m lives in generator j's corner (degree n) and is
+            # carried to generator i's corner (degree n-1) by  m |-> c * v m u.
+            rows, cols = dims[n - 1], dims[n]
+            row_slots = {i: (idxs, off) for i, idxs, off in layout[n - 1]}
+            col_slots = {j: (idxs, off) for j, idxs, off in layout[n]}
+        else:
+            # delta^{n-1} : C^{n-1} -> C^n.  m lives in generator i's corner (degree n-1)
+            # and is carried to generator j's corner (degree n) by  m |-> c * u m v.
+            # NOTE the direction: cohomology runs UP, so the roles of i and j swap
+            # relative to the homology assembly. Using the homology layout with the
+            # a.w.b action would build a different linear map whose rank is NOT rank
+            # delta (it silently gave HH^0 = 3 instead of Z(A) = 2 on the exterior algebra).
+            rows, cols = dims[n], dims[n - 1]
+            row_slots = {j: (idxs, off) for j, idxs, off in layout[n]}
+            col_slots = {i: (idxs, off) for i, idxs, off in layout[n - 1]}
+        if rows == 0 or cols == 0:
+            mats[n] = []
+            continue
+        M = [[dom.zero()] * cols for _ in range(rows)]
+        for i in range(len(D)):
+            for j in range(len(D[0])):
+                if not D[i][j]:
+                    continue
+                if side == "hom":
+                    cidx, coff = col_slots[j]
+                    ridx, roff = row_slots[i]
+                else:
+                    cidx, coff = col_slots[i]
+                    ridx, roff = row_slots[j]
+                rpos = {b: r for r, b in enumerate(ridx)}
+                for col, b in enumerate(cidx):
+                    m = A._basis_vec(b)
+                    for (c, u, v) in D[i][j]:
+                        img = A.multiply(v, A.multiply(m, u)) if side == "hom" else \
+                            A.multiply(u, A.multiply(m, v))
+                        for r, coeff in enumerate(img):
+                            if dom.is_zero(coeff) or r not in rpos:
+                                continue
+                            cur = M[roff + rpos[r]][coff + col]
+                            M[roff + rpos[r]][coff + col] = dom.add(cur, dom.mul(c, coeff))
+        mats[n] = M
+    return dims, mats
+
+
+def _rank_of(M, dom):
+    if not M or not M[0]:
+        return 0
+    from quiverlab.fields.linalg import rank as _r
+    return _r(M, dom)
+
+
+def ghms_homology_dims(A, top, window=4):
+    """``[dim HH_0, ..., dim HH_top]`` via the GHMS resolution -- Domain-general and fast.
+
+    ``dim HH_n = dim C_n - rank d_n - rank d_{n+1}``.
+    """
+    res = GHMSResolution(A, top=top + 1, window=window)
+    dom = A.domain
+    dims, mats = _collapse_complex(res, top, side="hom")
+    out = []
+    for n in range(top + 1):
+        out.append(dims[n] - _rank_of(mats.get(n, []), dom) - _rank_of(mats.get(n + 1, []), dom))
+    return out
+
+
+def ghms_cohomology_dims(A, top, window=4):
+    """``[dim HH^0, ..., dim HH^top]`` via ``Hom_{A^e}(P_., A)``.
+
+    ``delta^n : C^n -> C^{n+1}`` is the transpose-side of the same terms with the ``a.w.b``
+    order, so ``dim HH^n = dim C^n - rank delta^n - rank delta^{n-1}``.
+    """
+    res = GHMSResolution(A, top=top + 1, window=window)
+    dom = A.domain
+    dims, mats = _collapse_complex(res, top, side="coh")
+    # delta^n : C^n -> C^{n+1} is carried by d_{n+1}; its matrix from _collapse_complex is
+    # stored under key n+1 with rows C^n and cols C^{n+1} -- transpose the roles.
+    def r(n):
+        M = mats.get(n + 1, [])
+        return _rank_of(M, dom)
+    out = []
+    for n in range(top + 1):
+        out.append(dims[n] - r(n) - (r(n - 1) if n else 0))
+    return out

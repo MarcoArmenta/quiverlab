@@ -299,9 +299,21 @@ class Algebra:
         from quiverlab.trace.events import Dispatch
         from quiverlab.trace.recorder import Trace, resolve_verbose
 
-        if engine not in ("auto", "bar", "fast", "cs"):
+        if engine not in ("auto", "bar", "fast", "cs", "ghms"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+                                 hint="choose 'auto', 'bar', 'fast', 'cs', or 'ghms'")
+        if engine == "ghms":
+            # Plan 75 / R10: the closed-form GHMS route for a CERTIFIED-KOSZUL algebra.
+            # Domain-general (unlike the GF(p)-only syzygy engine) and it never searches
+            # for syzygies. The Koszul gate is three-valued and refuses loudly; `auto` is
+            # deliberately NOT routed here, so every existing result stays byte-identical.
+            from quiverlab.hochschild.koszul_ghms import (
+                _GHMS_CITATIONS, ghms_cohomology_dims, ghms_homology_dims)
+            fn = ghms_cohomology_dims if True else ghms_homology_dims
+            return HHTable(dims=fn(self, top), kind="cohomology",
+                           algebra_repr=repr(self),
+                           engine="GHMS comultiplicative Koszul resolution",
+                           references=_GHMS_CITATIONS)
         self._check_coefficients(engine, coefficients)
         if relative_to is not None:
             table = self._relative_route("coh", top, max_cells, coefficients, relative_to)
@@ -374,9 +386,21 @@ class Algebra:
         from quiverlab.trace.events import Dispatch
         from quiverlab.trace.recorder import Trace, resolve_verbose
 
-        if engine not in ("auto", "bar", "fast", "cs"):
+        if engine not in ("auto", "bar", "fast", "cs", "ghms"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+                                 hint="choose 'auto', 'bar', 'fast', 'cs', or 'ghms'")
+        if engine == "ghms":
+            # Plan 75 / R10: the closed-form GHMS route for a CERTIFIED-KOSZUL algebra.
+            # Domain-general (unlike the GF(p)-only syzygy engine) and it never searches
+            # for syzygies. The Koszul gate is three-valued and refuses loudly; `auto` is
+            # deliberately NOT routed here, so every existing result stays byte-identical.
+            from quiverlab.hochschild.koszul_ghms import (
+                _GHMS_CITATIONS, ghms_cohomology_dims, ghms_homology_dims)
+            fn = ghms_cohomology_dims if False else ghms_homology_dims
+            return HHTable(dims=fn(self, top), kind="homology",
+                           algebra_repr=repr(self),
+                           engine="GHMS comultiplicative Koszul resolution",
+                           references=_GHMS_CITATIONS)
         self._check_coefficients(engine, coefficients)
         if relative_to is not None:
             table = self._relative_route("hom", top, max_cells, coefficients, relative_to)

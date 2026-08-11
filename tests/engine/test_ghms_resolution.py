@@ -62,7 +62,7 @@ def test_ghms_multi_vertex(build, ranks):
 def test_dd_zero_catches_a_NON_ALTERNATING_sign(mode):
     """NON-VACUITY of the self-cert. Writing d_n = L_n + s_n R_n, and using L.L = R.R = 0
     plus the comultiplicative identity, composition leaves (s_n + s_{n-1})*L_{n-1}R_n. So
-    d.d = 0 holds IFF the signs ALTERNATE. Replacing the shipped -(-1)^n by a CONSTANT
+    d.d = 0 holds IFF the signs ALTERNATE. Replacing the shipped (-1)^n by a CONSTANT
     sign must therefore be caught -- if it were not, `assert_dd_zero` would be decoration.
     """
     orig = G.GHMSResolution.differential
@@ -75,30 +75,47 @@ def test_dd_zero_catches_a_NON_ALTERNATING_sign(mode):
 
 
 @selfcert
-def test_dd_zero_is_BLIND_to_a_global_sign_flip():
-    """THE HONEST LIMIT, recorded as a test rather than left implicit.
+def test_dd_zero_is_blind_to_a_global_flip_but_the_AUGMENTATION_is_not():
+    """THE SIGN STORY, corrected and pinned in both directions.
 
-    Flipping the sign of the right-splitting term in EVERY degree keeps the signs
-    alternating, so d.d = 0 still holds -- the self-cert cannot see it. That is not a
-    defect: a global flip is the generator rescaling w_n |-> (-1)^n w_n, an ISOMORPHISM of
-    complexes, so it cannot change homology either, and the cross-engine HH anchors cannot
-    pin it any more than this can. The overall sign is a CONVENTION (chosen to match the
-    published GHMS formula); what is genuinely arbitrated is the ALTERNATION, above.
+    Flipping the right-splitting sign in EVERY degree keeps the signs alternating, so
+    `d.d = 0` genuinely cannot see it -- asserted below. But the sign is NOT a free
+    convention, because degree 1 is not governed by `d.d`: the resolution must satisfy
+    `mu . d_1 = 0`, i.e. `d_1(1(x)a(x)1) = a(x)1 - 1(x)a`. The shipped `(-1)^n` gives that
+    minus; a global flip gives `a(x)1 + 1(x)a`, whose augmentation is `2a != 0`, and that
+    is visible downstream as a WRONG `HH_0`.
+
+    This is exactly how the bug was caught during implementation: an earlier `-(-1)^n`
+    passed every `d.d = 0` check and still produced `HH_0 = 2` for the exterior algebra
+    instead of the correct 3. So `d.d = 0` pins the ALTERNATION and the AUGMENTATION pins
+    the GLOBAL SIGN -- neither alone is sufficient, and the plan's claim that `assert_dd_zero`
+    pins the sign was only half the story.
     """
+    from quiverlab.hochschild.koszul_ghms import ghms_homology_dims
     orig = G.GHMSResolution.differential
     try:
         G.GHMSResolution.differential = _patched(orig, "global_flip")
         res = GHMSResolution(ExteriorAlgebra(2, field=QQ), top=4)
-        assert res.assert_dd_zero(4) is True          # undetected, and provably harmless
+        assert res.assert_dd_zero(4) is True          # d.d is BLIND to it ...
+        flipped_hh0 = ghms_homology_dims(ExteriorAlgebra(2, field=QQ), 2)[0]
     finally:
         G.GHMSResolution.differential = orig
+    assert flipped_hh0 != 3                            # ... but HH_0 is NOT
+    assert ghms_homology_dims(ExteriorAlgebra(2, field=QQ), 2)[0] == 3
 
 
 def _patched(orig, mode):
+    """Rewrite the RIGHT-splitting sign of every differential to a chosen convention.
+
+    A right term is the one whose LEFT coefficient is the unit (``d`` puts the arrow on the
+    right there). ``shipped`` must track the real convention -- ``(-1)^n``, pinned by the
+    augmentation -- or the "constant" modes would silently stay alternating and the
+    non-vacuity test would prove nothing.
+    """
     def f(self, n):
         D = orig(self, n)
         one = list(self.algebra.unit)
-        shipped = -1 if (n % 2 == 0) else 1           # the shipped -(-1)^n
+        shipped = 1 if (n % 2 == 0) else -1           # the shipped (-1)^n
         want = {"global_flip": -shipped, "constant_minus": -1, "constant_plus": 1}[mode]
         r = want // shipped
         return [[[(c * r if u == one else c, u, v) for (c, u, v) in cell] for cell in row]

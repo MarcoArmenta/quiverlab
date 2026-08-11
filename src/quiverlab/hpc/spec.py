@@ -776,8 +776,8 @@ def _parse_hpc(data) -> HpcConfig:
                               or prime < 2):
         raise SpecError("hpc.prime must be a prime integer >= 2")
     engine = data.get("engine")
-    if engine is not None and engine not in ("auto", "bar", "fast", "cs"):
-        raise SpecError("hpc.engine must be one of auto/bar/fast/cs")
+    if engine is not None and engine not in ("auto", "bar", "fast", "cs", "ghms"):
+        raise SpecError("hpc.engine must be one of auto/bar/fast/cs/ghms")
     return HpcConfig(
         checkpoint_dir=ckpt,
         time_limit_s=_opt_int("time_limit_s"),
