@@ -132,7 +132,23 @@ def test_poset_request_keys_like_the_typed_family():
     differently under ``canonical_key``'s sort_keys JSON, which is exactly why the
     normalization is mandatory."""
     covers = [[1, 2], [2, 3]]
-    assert _key(_request(covers, 3, elements=None)) == _key(_request(covers, 3))
+    # The catalog's IncidenceAlgebra prefill is the SOURCE OF TRUTH for the "typed family"
+    # shape: read its parameter defaults live rather than restating them, so this cannot
+    # pass by comparing the panel's shape to itself.
+    from webapp.server.catalog import _FAMILY_META
+    params = _FAMILY_META["IncidenceAlgebra"]["params"]
+    assert set(params) == {"poset_or_covers", "elements"}
+    assert params["elements"]["example"] is None, (
+        "the catalog default for `elements` is what the panel must normalize TO; if it "
+        "ever stops being null, the panel's normalization has to move with it")
+    typed = {"schema": 1,
+             "algebra": {"kind": "family", "family": "IncidenceAlgebra",
+                         "params": {"poset_or_covers": covers,
+                                    "elements": params["elements"]["example"]},
+                         "field": {"kind": "QQ"}},
+             "compute": ["incidence_cohomology:0..3"],
+             "artifacts": {"pdf": False, "tikz": False}}
+    assert _key(typed) == _key(_request(covers, 3))
     # A genuine isolated element 4 (in NO cover) is a DIFFERENT poset -> a different key.
     assert _key(_request(covers, 3, elements=[1, 2, 3, 4])) != _key(_request(covers, 3))
     # ... and an explicit list that merely repeats the covers' elements is NOT what the
@@ -147,6 +163,59 @@ def test_isolated_element_changes_the_mathematics():
     import quiverlab as ql
     A = ql.IncidenceAlgebra([[1, 2], [2, 3]], elements=[1, 2, 3, 4])
     assert A.incidence_cohomology(2).dims == [2, 0, 0]
+
+
+# --------------------------------------------------------------------------- #
+# tiering: the fast path must actually be REACHABLE through the service
+# --------------------------------------------------------------------------- #
+
+def _cfg():
+    import os
+    import tempfile
+    from webapp.server.config import Config
+    os.environ.setdefault("QLWEB_DATA_DIR", tempfile.mkdtemp())
+    return Config.from_env()
+
+
+def test_a_large_poset_is_not_refused_by_the_estimator():
+    """The default estimator sizes on `dim ** 3` (the bar-resolution model). For the
+    order-complex route that is the WRONG driver -- the algebra is never resolved -- and
+    it refused exactly the inputs the fast path exists for: the 7-vertex torus face poset
+    is `dim kP = 168` and classified `reject`, while the library answers it in 0.02s.
+    An incidence-ONLY request is now sized on the poset instead."""
+    from webapp.server.estimator import classify
+    cfg = _cfg()
+    # a 42-element face poset (the torus), dim kP = 168
+    covers = [[str(i), str(i + 1)] for i in range(41)]
+    r = ComputeRequest.model_validate(_request(covers, 2))
+    c = classify(168, r, cfg)
+    assert c["tier"] != "reject", c
+    # ... and a small poset stays INSTANT (B_3 computes in 0.02s; nothing should queue it)
+    small = ComputeRequest.model_validate(_request([[1, 2], [2, 3]], 2))
+    assert classify(27, small, cfg)["tier"] == "instant"
+
+
+def test_a_high_degree_alone_does_not_refuse_a_poset_request():
+    """`incidence_cohomology:0..30` is free past the top dimension of Delta(P) (the dims
+    are 0), so degree must not drive the tier the way a bar-resolution degree does."""
+    from webapp.server.estimator import classify
+    cfg = _cfg()
+    r = ComputeRequest.model_validate(_request([[1, 2], [2, 3]], 30))
+    assert classify(27, r, cfg)["tier"] == "instant"
+
+
+def test_a_mixed_request_is_still_sized_the_old_way():
+    """The exemption is for incidence-ONLY requests: add a real Hochschild kind and the
+    algebra dimension drives the size again, because that one genuinely resolves."""
+    from webapp.server.estimator import classify, _incidence_only_dim
+    cfg = _cfg()
+    body = _request(_B3_COVERS, 3)
+    body["compute"] = ["incidence_cohomology:0..3", "hh_cohomology:0..3"]
+    r = ComputeRequest.model_validate(body)
+    assert _incidence_only_dim(r, 27) == 27
+    plain = dict(body, compute=["hh_cohomology:0..3"])
+    assert (classify(27, r, cfg)["estimate"]["cells"]
+            == classify(27, ComputeRequest.model_validate(plain), cfg)["estimate"]["cells"])
 
 
 def test_existing_requests_are_untouched():

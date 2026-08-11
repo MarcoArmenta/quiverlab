@@ -109,11 +109,17 @@ def _max_degree(req: ComputeRequest) -> int:
         # Plan 78: `deformations` carries a DIM BUDGET (DEFORM_MAXDIM, the plan's OWN cap
         # of 32 -- NOT P70's 48, a different cost law), not a homological degree. Its real
         # routing is HH-RICHNESS via `_deformations_dim` below, not `hi`, so it skips too.
+        # Plan 75: `incidence_cohomology`'s `hi` IS a homological degree -- but of the
+        # order complex Delta(P), not of a bar resolution: the algebra is never resolved,
+        # and past the top dimension of Delta(P) every further degree is free (the dims
+        # are 0). Tiering on it would refuse a perfectly cheap `incidence_cohomology:0..30`
+        # on degree alone, so it skips too; its real sizing is `_incidence_only_dim` below.
         if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver",
                          "left_right_parts", "tilted_check", "recognizer_ladder",
                          "silting", "exceptional_sequences", "congruences",
                          "hh1_lie", "split_extension", "arrow_removal",
-                         "skew_group_hh", "tau_cluster", "deformations"):
+                         "skew_group_hh", "tau_cluster", "deformations",
+                         "incidence_cohomology"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)
@@ -186,6 +192,47 @@ def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
                _module_dim(req.tor_target), _coefficient_dim(req), _algebra_b_dim(req),
                _extension_dim(req, algebra_dim), _deformations_dim(req, algebra_dim))
+
+
+def _incidence_only_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Effective size of a request whose ONLY computation is ``incidence_cohomology``
+    (Plan 75 / R9). Every other request gets ``algebra_dim`` back unchanged, so nothing
+    else re-classifies.
+
+    The order-complex route **never resolves the algebra**: it enumerates the chains of
+    the poset and reduces integer boundary matrices sized by the number of chains. So
+    ``dim kP`` -- which is QUADRATIC in the number of poset elements -- is the wrong cost
+    driver, and the default ``dim ** 3`` bar model refuses exactly the inputs the fast
+    path exists for: the 7-vertex torus face poset is ``dim kP = 168`` and classifies
+    ``reject`` outright, while the library answers it in 0.02 s. Sizing on ``|P|`` (the
+    elements named by the cover data, plus any explicit ``elements`` list) is the honest
+    request-derived proxy and stays monotone in the input.
+
+    KNOWN LIMITATION, stated rather than hidden (the ``ar_quiver``/``tau_tilting``
+    precedent above): ``|P| ** 3`` is a HEURISTIC, not a bound -- the chain count of a
+    tall poset can exceed it -- and this function deliberately does not build the poset
+    to find out (the estimator must not compute). The wall-clock and memory caps remain
+    the real net.
+    """
+    try:
+        kinds = {parse_compute_item(r).kind for r in req.compute}
+    except Exception:
+        return algebra_dim
+    if kinds != {"incidence_cohomology"}:
+        return algebra_dim
+    alg = req.algebra
+    params = getattr(alg, "params", None) or {}
+    covers = params.get("poset_or_covers")
+    if not isinstance(covers, list):
+        return algebra_dim
+    elems = set()
+    for c in covers:
+        if isinstance(c, (list, tuple)) and len(c) == 2:
+            elems.update(str(x) for x in c)
+    explicit = params.get("elements")
+    if isinstance(explicit, list):
+        elems.update(str(x) for x in explicit)
+    return max(1, len(elems)) if elems else algebra_dim
 
 
 def _deformations_dim(req: ComputeRequest, algebra_dim: int) -> int:
@@ -265,6 +312,9 @@ def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
     memory ESTIMATE (see :func:`estimate_bytes`); ``mem_human`` is its binary-unit
     rendering."""
     max_deg = _max_degree(req)
+    # Plan 75: an incidence-ONLY request is sized on the poset, not on dim kP -- the
+    # order-complex route never resolves the algebra (see _incidence_only_dim).
+    dim = _incidence_only_dim(req, dim)
     ops = estimate_ops(dim, max_deg, req.algebra.field.kind)
     minutes = max(1, -(-ops // _OPS_PER_MINUTE))          # ceil division, ≥ 1
     mem = estimate_bytes(dim, max_deg, req.algebra.field.kind)

@@ -72,14 +72,15 @@ def test_isolated_elements_reach_the_client_build():
     assert b["dims"] == [2, 0, 0]               # two components -> H^0 = k^2
 
 
-def test_reproduce_line_names_the_public_call():
+def test_reproduce_snippet_names_the_public_call():
+    """The copy-paste bridge must name the LIBRARY call, so a user can leave the GUI
+    with runnable code (and so the snippet can never drift from the kind)."""
     m = _runner()
     assert json.loads(m.run_build(json.dumps(_body(_DIAMOND))))["ok"]
-    json.loads(m.compute_one("incidence_cohomology:0..3"))
-    src = json.loads(m.reproduce())["code"] if hasattr(m, "reproduce") else ""
-    if src:
-        assert "IncidenceAlgebra" in src
-        assert "incidence_cohomology(3)" in src
+    assert json.loads(m.compute_one("incidence_cohomology:0..3"))["ok"]
+    src = m.python_snippet()
+    assert "ql.IncidenceAlgebra(" in src and "poset_or_covers=" in src
+    assert "A.incidence_cohomology(3)" in src
 
 
 # --------------------------------------------------------------------------- #

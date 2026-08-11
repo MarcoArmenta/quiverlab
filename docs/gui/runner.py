@@ -1659,7 +1659,8 @@ def python_snippet():
     header = ("from quiverlab import Quiver\nfrom quiverlab.fields import QQ"
               if field_name == "QQ" else "from quiverlab import Quiver, %s" % field_name)
     if alg.get("kind") == "family":
-        # A `family` block (server tier -- the twin refuses to BUILD it, but the
+        # A `family` block (server tier for most families -- the twin BUILDS only
+        # SkewGentle / SkewGroup / Incidence and refuses the rest, but the
         # reproduce string mirrors quiverlab.hpc.spec._snippet's family branch so the
         # cross-runner snippet contract holds). Real constructors, never a crashing
         # ql.<Family>(field=..., **params) form for the five construction families.

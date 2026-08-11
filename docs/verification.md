@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **5023 tests** (live-recounted 2026-08-10 on the Plan-75 branch — R9
+The suite is **5026 tests** (live-recounted 2026-08-10 on the Plan-75 branch — R9
 incidence-vs-nerve `HH^*` + R10 the GHMS comultiplicative Koszul resolution — cut from
 dev's P73 tip, itself recounted at the Plan-73 top-up merge onto dev's P78 tip; collected
 with the `[dev,fast,docs,web,qpa,hpc]` extras,
@@ -614,7 +614,7 @@ They overlap by design, so the union is smaller than their sum.
 Recounted 2026-08-10 on the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10 the GHMS
 comultiplicative Koszul resolution and `engine="ghms"`), cut from dev's P73 tip; the
 Plan-75 additions (lit +17 / xeng +16 / selfcert +44 / qpa +1 / m2 +0, union +78 — suite
-4925 → **5023**, fast 2458 / deep 2307) fold into these live-collected totals. The
+4925 → **5026**, fast 2461 / deep 2307) fold into these live-collected totals. The
 previous recount was the Plan-73 top-up merge (R7 Han's conjecture transported across an
 arrow-removal subalgebra B ⊆ A — the bounded-extension certificate, the Jacobi–Zariski
 relative complex, and the five-row injection/iso ladder), which added

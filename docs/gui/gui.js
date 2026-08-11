@@ -1241,7 +1241,9 @@
     // IncidenceAlgebra family, so every checked kind is computed for kP -- and
     // incidence_cohomology gets the poset provenance its theorem needs. Only attached
     // when the panel is on AND something is typed, so an ordinary request's cache key
-    // is unchanged.
+    // is unchanged. Deliberately LAST of the two algebra-rewriting modes: if the
+    // skew-gentle kind is also checked, the typed poset wins (the panel the user filled
+    // in describes the whole algebra, and kP is never a split gentle algebra).
     if (el["poset-enable"].checked) {
       var palg = posetAlgebra(field);
       if (palg) req.algebra = palg;
