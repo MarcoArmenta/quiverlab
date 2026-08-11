@@ -393,6 +393,10 @@ def _parse_compute(spec):
     return name, top
 
 
+_TATE_REFERENCES = ("bergh_jorgensen_tate", "wang_singular_hh", "keller_singular_hh",
+                    "usui_tate_periodic")
+
+
 def _citation_pairs(keys):
     from quiverlab.trace.provenance import resolve_references
     return [list(p) for p in resolve_references(tuple(keys))]
@@ -1496,6 +1500,28 @@ def compute_one(spec):
                     "'incidence_cohomology:0..3'")
             block = incidence_cohomology_block(A, top)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "tate_hochschild":
+            # Tate-Hochschild (singular Hochschild) cohomology (Plan 76 / R3).
+            # Byte-identical to the server twin (quiverlab.hpc.spec._dispatch): SAME
+            # library block builder (hochschild.tate.tate_hochschild_block) -- HHhat^m
+            # for every m in [-top, top], NEGATIVE degrees included, off a complete
+            # resolution of A over A^e -- + `references` -> citations. A DEGREE-RANGE
+            # kind. Degrees a route cannot know are null, never a wrong number
+            # (HHhat^0 is the stable centre, NOT HH^0, so it is native-only). A
+            # non-Gorenstein algebra, or the DEFERRED Gorenstein-but-not-self-injective
+            # native request, returns an {"error": ...} block, never a raise.
+            from quiverlab.hochschild.tate import tate_hochschild_block
+            if top is None:
+                raise RequestError(
+                    "tate_hochschild needs a degree range, e.g. "
+                    "'tate_hochschild:0..3'")
+            from quiverlab.errors import QuiverlabError as _QErr
+            try:
+                block = tate_hochschild_block(A, top)
+            except _QErr as exc:
+                block = {"kind": "tate_hochschild", "error": str(exc),
+                         "references": list(_TATE_REFERENCES)}
+            block["citations"] = _citation_pairs(block["references"])
         else:
             raise RequestError("unknown invariant %r" % (name,))
         _state["results"].append(dict(block, invariant=spec))
@@ -1729,6 +1755,9 @@ def python_snippet():
              # Plan 75 / R9: the order-complex route to HH^* of an incidence algebra --
              # a degree-range kind (%d = top). Needs the IncidenceAlgebra provenance.
              "incidence_cohomology": "A.incidence_cohomology(%d)",
+             # Plan 76 / R3: Tate-Hochschild -- the block reports HHhat^{-top..top}
+             # (negative degrees included). A degree-range kind (%d = top).
+             "tate_hochschild": "A.tate_hochschild(%d)",
              # Derived fingerprint (Plan 43): a scalar kind, no %d (top defaults to 4).
              "derived_fingerprint": "derived_fingerprint(A)  # from quiverlab.derived",
              # HH product surface (Plan 35): same four calls as the server snippet
@@ -1963,6 +1992,12 @@ ETA_MODEL = {
                 # it sizes BELOW every hh_* route (this is the whole point of the fast
                 # path). Sized with the cheap structural scalars.
                 "incidence_cohomology": 0.3,
+                # Plan 76: tate_hochschild builds the minimal A^e-resolution to
+                # top+2 AND splices its Nakayama-twisted dual, then collapses BOTH
+                # halves -- roughly three times the work of the hh_cohomology route
+                # it shares the resolution with, and it also runs the periodicity
+                # certificate. Sized above hh_cohomology accordingly.
+                "tate_hochschild": 3.0,
                 # Plan 65: exceptional_sequences KNITS the AR quiver + runs the braid-orbit
                 # BFS (classical) and the exchange-graph BFS (tau); knit- and BFS-dominated,
                 # the heavier ar_quiver/tame_wild cost class.

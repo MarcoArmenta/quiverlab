@@ -372,5 +372,11 @@
   "poset.covers_label": "pares de cubierta",
   "poset.covers_ph": "1<2, 2<3",
   "poset.elements_label": "elementos aislados",
-  "poset.cycle_error": "estas relaciones de cubierta contienen un ciclo dirigido, así que no son un conjunto ordenado"
+  "poset.cycle_error": "estas relaciones de cubierta contienen un ciclo dirigido, así que no son un conjunto ordenado",
+  "pick.kind.tate_hochschild": "Cohomología de Tate–Hochschild",
+  "block.tate_hochschild.title": "Cohomología de Tate–Hochschild",
+  "block.tate_hochschild.positive": "Grados positivos",
+  "block.tate_hochschild.negative": "Grados negativos",
+  "block.tate_hochschild.agrees": "Coincide con HH ordinaria desde el grado",
+  "block.tate_hochschild.period": "Período eventual"
 }

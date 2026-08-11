@@ -372,5 +372,11 @@
   "poset.covers_label": "paires de couverture",
   "poset.covers_ph": "1<2, 2<3",
   "poset.elements_label": "éléments isolés",
-  "poset.cycle_error": "ces relations de couverture contiennent un cycle orienté : ce n'est pas un ensemble ordonné"
+  "poset.cycle_error": "ces relations de couverture contiennent un cycle orienté : ce n'est pas un ensemble ordonné",
+  "pick.kind.tate_hochschild": "Cohomologie de Tate–Hochschild",
+  "block.tate_hochschild.title": "Cohomologie de Tate–Hochschild",
+  "block.tate_hochschild.positive": "Degrés positifs",
+  "block.tate_hochschild.negative": "Degrés négatifs",
+  "block.tate_hochschild.agrees": "Coïncide avec HH ordinaire à partir du degré",
+  "block.tate_hochschild.period": "Période éventuelle"
 }

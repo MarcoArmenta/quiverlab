@@ -58,6 +58,8 @@ ALL_KINDS = {
     "tilted_check",
     # Plan 62 (2026-08-08): Tits-form tame/wild certificate.
     "tame_wild",
+    # Plan 76 (2026-08-11): Tate-Hochschild cohomology in every integer degree.
+    "tate_hochschild",
     # Plan 54 (2026-08-07): the Batalin-Vilkovisky operator Delta.
     "bv_operator",
     # Plan 69 (2026-08-07): the persistence/TDA barcode module-side kind.

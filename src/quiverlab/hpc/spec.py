@@ -2204,7 +2204,33 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None,
         block = incidence_cohomology_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
         return block, None
+    # Tate-Hochschild (singular Hochschild) cohomology (Plan 76 / R3): HHhat^m for every
+    # m in [-top, top] -- NEGATIVE degrees included -- off a complete resolution of A
+    # over A^e. A DEGREE-RANGE kind (the generic 'name:0..N' grammar); the block reports
+    # the symmetric window. Degrees a route cannot know are null, never a wrong number:
+    # HHhat^0 is the STABLE centre and is NOT HH^0, so it is filled on the native route
+    # only, while `ordinary_pos` always carries the ordinary HH^* anchor. A
+    # non-Gorenstein algebra, or the DEFERRED Gorenstein-but-not-self-injective native
+    # request, returns {"error": ...}, never a 500. Byte-identical Pyodide twin
+    # (docs/gui/runner.py).
+    if kind == "tate_hochschild":
+        from quiverlab.hochschild.tate import tate_hochschild_block
+        top = item.hi
+        if top is None:
+            raise ComputeError("SchemaError",
+                               f"{kind} needs a degree range, e.g. '{kind}:0..3'")
+        try:
+            block = tate_hochschild_block(A, top)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": kind, "error": str(exc),
+                     "references": list(_TATE_REFERENCES)}
+        block["citations"] = _citation_pairs(block["references"])
+        return block, None
     raise ComputeError("SchemaError", f"unsupported computation {kind!r}")
+
+
+_TATE_REFERENCES = ("bergh_jorgensen_tate", "wang_singular_hh", "keller_singular_hh",
+                    "usui_tate_periodic")
 
 
 def _citation_pairs(keys) -> list:
@@ -2934,6 +2960,8 @@ def _snippet(req: ComputeRequest, A) -> str:
              "hh_homology": lambda it: f"A.hochschild_homology({it.hi})",
              # Plan 75: the order-complex route (needs the IncidenceAlgebra provenance).
              "incidence_cohomology": lambda it: f"A.incidence_cohomology({it.hi})",
+             # Plan 76: Tate-Hochschild -- the block reports HHhat^{-top..top}.
+             "tate_hochschild": lambda it: f"A.tate_hochschild({it.hi})",
              "cyclic_homology": lambda it: f"A.cyclic_homology({it.hi})",
              "ss_hochschild": lambda it: f"A.hochschild_bB_ss({it.hi})",
              "radical_filtration_ss":

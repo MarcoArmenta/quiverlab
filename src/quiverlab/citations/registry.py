@@ -309,6 +309,37 @@ REGISTRY: dict = {r.key: r for r in [
        "iso for the FACE POSET of a simplicial complex; Cibils 1989 extends it to an "
        "ARBITRARY finite poset. NB: makes no bracket-vanishing claim.",
        "hochschild", "incidence", "oracle"),
+    _r("wang_singular_hh", "Wang2015singular", "foundation",
+       "Singular Hochschild cohomology and Gerstenhaber algebra structure",
+       "Wang: the DEFINITIONAL origin of singular (= Tate) Hochschild cohomology "
+       "HH_sg^i(A,A) = Hom_{D_sg(A (x) A^op)}(A, A[i]) for every i in Z, with its "
+       "Gerstenhaber (and, for symmetric A, BV) structure. The object Plan 76 computes.",
+       "hochschild", "tate", "foundation"),
+    _r("keller_singular_hh", "Keller2018singular", "foundation",
+       "Singular Hochschild cohomology via the singularity category",
+       "Keller: singular Hochschild cohomology is isomorphic, as a graded algebra, to "
+       "the Hochschild cohomology of the dg singularity category. The "
+       "singularity-category identification (building on Wang) -- context for Plan 76, "
+       "not its computational recipe.",
+       "hochschild", "tate", "foundation"),
+    _r("usui_tate_periodic", "Usui2021tate", "foundation",
+       "Tate-Hochschild cohomology rings for eventually periodic Gorenstein algebras",
+       "Usui: for a GORENSTEIN algebra, eventual periodicity is equivalent to the "
+       "existence of an INVERTIBLE homogeneous element of the Tate-Hochschild "
+       "cohomology ring; also that eventually periodic algebras need NOT be Gorenstein "
+       "(so such an algebra has no complete resolution and no Tate ring -- the honest "
+       "refusal). The source of Plan 76's periodicity certificate.",
+       "hochschild", "tate", "periodicity"),
+    _r("bergh_jorgensen_tate", "BerghJorgensen2013tate", "foundation",
+       "Tate-Hochschild homology and cohomology of Frobenius algebras",
+       "Bergh-Jorgensen: the computational reference for Plan 76 -- the definition via "
+       "a complete resolution over A^e; the THRESHOLD (Gorenstein dimension d of the "
+       "enveloping algebra => HHhat^n = Ext^n_{A^e}(A,B) for n >= d+1, so n >= 1 when A "
+       "is self-injective); the Frobenius duality dim HHhat^n(L,L) = "
+       "dim HHhat^{-(n+1)}(L, {}_{nu^2}L_1), symmetric when nu^2 = id; and the explicit "
+       "quantum-complete-intersection computation (1,2,1 in degrees 0,1,2 and 0 "
+       "elsewhere, q not a root of unity).",
+       "hochschild", "tate", "oracle"),
     _r("green_hartman_marcos_solberg", "GHMS2005", "algorithm",
        "Resolutions over Koszul algebras",
        "Green-Hartman-Marcos-Solberg: the minimal graded A^e-resolution "

@@ -372,5 +372,11 @@
   "poset.covers_label": "覆盖关系对",
   "poset.covers_ph": "1<2, 2<3",
   "poset.elements_label": "孤立元素",
-  "poset.cycle_error": "这些覆盖关系含有有向圈，因此不是偏序集"
+  "poset.cycle_error": "这些覆盖关系含有有向圈，因此不是偏序集",
+  "pick.kind.tate_hochschild": "Tate–Hochschild 上同调",
+  "block.tate_hochschild.title": "Tate–Hochschild 上同调",
+  "block.tate_hochschild.positive": "正次数",
+  "block.tate_hochschild.negative": "负次数",
+  "block.tate_hochschild.agrees": "从此次数起与普通 HH 一致",
+  "block.tate_hochschild.period": "最终周期"
 }

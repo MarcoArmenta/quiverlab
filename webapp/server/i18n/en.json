@@ -372,5 +372,11 @@
   "poset.covers_label": "cover pairs",
   "poset.covers_ph": "1<2, 2<3",
   "poset.elements_label": "isolated elements",
-  "poset.cycle_error": "these cover relations contain a directed cycle, so they are not a poset"
+  "poset.cycle_error": "these cover relations contain a directed cycle, so they are not a poset",
+  "pick.kind.tate_hochschild": "Tate–Hochschild cohomology",
+  "block.tate_hochschild.title": "Tate–Hochschild cohomology",
+  "block.tate_hochschild.positive": "Positive degrees (ĤHⁿ, n ≥ 0)",
+  "block.tate_hochschild.negative": "Negative degrees (ĤH⁻ⁿ)",
+  "block.tate_hochschild.agrees": "Agrees with ordinary HH from degree",
+  "block.tate_hochschild.period": "Eventual period"
 }
