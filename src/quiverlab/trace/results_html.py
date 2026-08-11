@@ -66,6 +66,7 @@ _HEADINGS = {
     "tame_wild": "Representation type (tame / wild)",
     "incidence_cohomology": ("Hochschild cohomology of an incidence algebra "
                              "(= simplicial cohomology of the order complex)"),
+    "tate_hochschild": "Tate\u2013Hochschild cohomology (all integer degrees)",
     "hh1_lie": "HH¹ as a Lie algebra",
     "deformations": "Formal deformations and Maurer–Cartan",
     "hh_lie_module": "HH• as a Lie module over HH¹",
@@ -1512,6 +1513,68 @@ def _tame_wild_html(b):
     return out
 
 
+def _signed_dims_row(label, degrees, dims):
+    """One row of the Tate table.  A degree the ROUTE does not know prints an em dash,
+    never a number -- the null cells are the honest part of this block."""
+    head = "".join("<th>%s</th>" % _esc(d) for d in degrees)
+    body = "".join("<td>%s</td>" % ("&mdash;" if v is None else _esc(str(v)))
+                   for v in dims)
+    return ("<table class='ql-dims'><tr><th>%s</th>%s</tr><tr><td></td>%s</tr></table>"
+            % (_esc(label), head, body))
+
+
+def _tate_hochschild_html(b):
+    """Tate-Hochschild cohomology in EVERY integer degree (Plan 76 / R3).
+
+    Two degree rows -- the nonnegative and the negative half -- plus the ordinary HH
+    anchor kept VISIBLY SEPARATE: degree 0 of the anchor is HH^0 = dim Z(A) and is never
+    labelled HHhat^0, because the Tate degree 0 is the STABLE centre, a proper quotient
+    of it.  A cell the chosen route cannot know prints an em dash and the note says
+    which route was used and what it does not see."""
+    if b.get("error"):
+        return ["<p class='ql-note'>Tate&ndash;Hochschild cohomology not computed: %s</p>"
+                % _esc(str(b["error"]))]
+    top = int(b.get("top") or 0)
+    pos = list(b.get("pos_dims") or [])
+    neg = b.get("neg_dims")
+    out = ["<p>For a complete resolution <i>T</i> of <i>A</i> over its enveloping "
+           "algebra <i>A</i><sup>e</sup>, the Tate&ndash;Hochschild (singular "
+           "Hochschild) cohomology is defined in <b>every</b> integer degree, negative "
+           "as well as positive (Wang 2015; Bergh&ndash;Jorgensen 2013):</p>",
+           _math(r"\widehat{HH}^{\,m}(A) \;=\; H^{m}\!\left("
+                 r"\operatorname{Hom}_{A^{e}}(\mathbb{T},\,A)\right),"
+                 r"\qquad m \in \mathbb{Z}"),
+           _signed_dims_row("dim HH\u0302^m", ["m = %d" % m for m in range(top + 1)],
+                            pos)]
+    if neg:
+        out.append(_signed_dims_row(
+            "dim HH\u0302^m", ["m = %d" % (-j) for j in range(1, top + 1)], list(neg)))
+    else:
+        out.append("<p>No negative degree is claimed on this route.</p>")
+    agrees = b.get("agrees_from")
+    if agrees is not None:
+        out.append("<p>Above the Gorenstein dimension of <i>A</i><sup>e</sup> the Tate "
+                   "theory coincides with the ordinary one "
+                   "(Bergh&ndash;Jorgensen): here "
+                   "HH&#770;<sup>m</sup> = HH<sup>m</sup> for every m &ge; %s.</p>"
+                   % _esc(str(agrees)))
+    ordinary = list(b.get("ordinary_pos") or [])
+    if ordinary:
+        out.append("<p>Ordinary Hochschild cohomology HH<sup>&bull;</sup>, the "
+                   "agreement anchor &mdash; its degree 0 is "
+                   "HH<sup>0</sup> = dim Z(<i>A</i>), which is <b>not</b> "
+                   "HH&#770;<sup>0</sup>:</p>")
+        out.append(_dims_table("dim HH^n", ordinary))
+    if b.get("period") is not None:
+        out.append("<p>The minimal <i>A</i><sup>e</sup>-resolution is periodic of "
+                   "period %s. For a Gorenstein algebra this is Usui's criterion for an "
+                   "invertible homogeneous element of the Tate&ndash;Hochschild ring, "
+                   "in that degree.</p>" % _esc(str(b["period"])))
+    if b.get("note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
+    return out
+
+
 def _incidence_cohomology_html(b):
     """``HH^*(kP)`` read off the ORDER COMPLEX (Plan 75 / R9).
 
@@ -2084,6 +2147,8 @@ def _block_html(kind, b, ctx=None):
         return _tame_wild_html(b)
     if kind == "incidence_cohomology":
         return _incidence_cohomology_html(b)
+    if kind == "tate_hochschild":
+        return _tate_hochschild_html(b)
     if kind == "hh1_lie":
         return _hh1_lie_html(b)
     if kind == "hh_lie_module":

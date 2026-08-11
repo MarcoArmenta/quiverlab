@@ -89,6 +89,11 @@
     // poset (Gerstenhaber-Schack / Cibils). Needs the poset panel below -- without that
     // provenance the block says so, it never guesses that a drawn kQ/I is an incidence algebra.
     '  <label><input type="checkbox" id="qlgui-incidence_cohomology"> HH^* via order complex (incidence) 0..<input type="number" id="qlgui-incidence_cohomology-top" value="3" min="0"></label>' +
+    // Plan 76 / R3: Tate-Hochschild (singular Hochschild) cohomology -- HHhat^m for
+    // every m in [-top, top], NEGATIVE degrees included, off a complete resolution of A
+    // over A^e. Needs A self-injective over GF(p) for the full ring; otherwise the block
+    // says honestly which degrees it does NOT know (HHhat^0 is native-only).
+    '  <label><input type="checkbox" id="qlgui-tate_hochschild"> Tate-Hochschild HH^m, |m| <= <input type="number" id="qlgui-tate_hochschild-top" value="3" min="0"></label>' +
     // ---- Plan 35: HH product surface (cup / cap / bracket / connes_b) ----
     '  <label><input type="checkbox" id="qlgui-cup"> cup 0..<input type="number" id="qlgui-cup-top" value="2" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-cap"> cap 0..<input type="number" id="qlgui-cap-top" value="2" min="0"></label>' +
@@ -333,6 +338,8 @@
    // Plan 75: HH^* via the order complex + the poset input mode (covers / isolated
    // elements / live Hasse preview)
    "incidence_cohomology", "incidence_cohomology-top",
+   // Plan 76: Tate-Hochschild (degree-range kind, symmetric window)
+   "tate_hochschild", "tate_hochschild-top",
    "poset-enable", "poset-covers", "poset-elements", "poset-preview", "poset-title",
    "poset-covers-label", "poset-elements-label",
    // Plan 70: HH^1 as a Lie algebra (scalar algebra-only kind)
@@ -1112,6 +1119,10 @@
     // kind (the generic "name:0..N" grammar both runners parse), not a budget.
     if (el.incidence_cohomology.checked)
       compute.push("incidence_cohomology:0.." + el["incidence_cohomology-top"].value);
+    // Plan 76: the range is ALWAYS 0..N -- the shared grammar rejects a nonzero lo, and
+    // the block reports the symmetric window [-N, N] from it.
+    if (el.tate_hochschild.checked)
+      compute.push("tate_hochschild:0.." + el["tate_hochschild-top"].value);
     // Plan 71: HH^* as a Lie module over HH^1 -- a top-carrying HH kind (bracket form).
     if (el.hh_lie_module.checked)
       compute.push("hh_lie_module:0.." + el["hh_lie_module-top"].value);
@@ -4599,6 +4610,57 @@
           + ". Injection bound dim HH_m(B) <= dim HH_m(A) held: " + String(b.injection_bound_ok) + "." }));
         if (b.note) div.appendChild(h("p", { "class": "qlgui-note", text: b.note }));
       }
+    } else if (name === "tate_hochschild") {
+      // Plan 76 / R3: the Z-graded Tate-Hochschild table. TWO degree rows (m >= 0 and
+      // m < 0) plus the ORDINARY HH row kept visibly separate -- HH^0 = dim Z(A) is NOT
+      // HHhat^0, which is the stable centre. A degree the chosen route cannot know
+      // prints an em dash, never a number.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: "HHhat^m(A) = H^m(Hom_{A^e}(T, A)) for a complete "
+          + "resolution T of A over A^e, defined in every integer degree (Wang; "
+          + "Bergh-Jorgensen). Engine: " + String(b.engine) + "." }));
+        var thead = h("tr"), trow = h("tr");
+        thead.appendChild(h("th", { text: "m" }));
+        trow.appendChild(h("th", { text: "dim HHhat^m" }));
+        var cell = function (v) { return v == null ? "\u2014" : String(v); };
+        (b.pos_dims || []).forEach(function (d, n) {
+          thead.appendChild(h("td", { text: String(n) }));
+          trow.appendChild(h("td", { text: cell(d) }));
+        });
+        div.appendChild(h("table", {}, thead, trow));
+        if (b.neg_dims) {
+          var nhead = h("tr"), nrow = h("tr");
+          nhead.appendChild(h("th", { text: "m" }));
+          nrow.appendChild(h("th", { text: "dim HHhat^m" }));
+          b.neg_dims.forEach(function (d, j) {
+            nhead.appendChild(h("td", { text: String(-(j + 1)) }));
+            nrow.appendChild(h("td", { text: cell(d) }));
+          });
+          div.appendChild(h("table", {}, nhead, nrow));
+        } else {
+          div.appendChild(h("p", { text: "No negative degree is claimed on this route." }));
+        }
+        if (b.agrees_from != null)
+          div.appendChild(h("p", { text: "Agrees with ordinary HH from degree "
+            + String(b.agrees_from) + " (Bergh-Jorgensen threshold)." }));
+        if (b.ordinary_pos) {
+          var ohead = h("tr"), orow = h("tr");
+          ohead.appendChild(h("th", { text: "n" }));
+          orow.appendChild(h("th", { text: "dim HH^n (ordinary)" }));
+          b.ordinary_pos.forEach(function (d, n) {
+            ohead.appendChild(h("td", { text: String(n) }));
+            orow.appendChild(h("td", { text: cell(d) }));
+          });
+          div.appendChild(h("table", {}, ohead, orow));
+        }
+        if (b.period != null)
+          div.appendChild(h("p", { text: "Eventual period " + String(b.period)
+            + " (Usui: for a Gorenstein algebra this is an invertible homogeneous "
+            + "element of the Tate ring, in that degree)." }));
+        if (b.note) div.appendChild(h("p", { "class": "qlgui-note", text: b.note }));
+      }
     } else if (name === "incidence_cohomology") {
       // Plan 75 / R9: HH^*(kP) read off the ORDER COMPLEX of the poset
       // (Gerstenhaber–Schack / Cibils). The dims table, the face vector of Δ(P), the
@@ -5126,7 +5188,8 @@
    el.hh_lie_module, el["hh_lie_module-top"],
    el.skew_gentle, el["skew_gentle-special"],
    el.han_transport, el["han_transport-arrows"],
-   el.incidence_cohomology, el["incidence_cohomology-top"]]
+   el.incidence_cohomology, el["incidence_cohomology-top"],
+   el.tate_hochschild, el["tate_hochschild-top"]]
     .forEach(function (x) { x.addEventListener("change", scheduleProbe); });
   // Module panel: enable/mode/side rebuild the dynamic body; the kind controls
   // just re-probe. The panel itself refreshes on every render() (vertex/arrow ops).
@@ -5211,7 +5274,7 @@
   // QLGUI-THEMES-BEGIN
   var THEMES =
   [
-    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh", "han_transport", "incidence_cohomology"]},
+    {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh", "han_transport", "incidence_cohomology", "tate_hochschild"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
     {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "deformations", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
@@ -5745,6 +5808,7 @@
     simply_connected: { cb: "simply_connected" },
     tame_wild: { cb: "tame_wild" },
     incidence_cohomology: { cb: "incidence_cohomology", top: "incidence_cohomology-top" },
+    tate_hochschild: { cb: "tate_hochschild", top: "tate_hochschild-top" },
     hh1_lie: { cb: "hh1_lie" },
     deformations: { cb: "deformations" },
     hh_lie_module: { cb: "hh_lie_module", top: "hh_lie_module-top" },
