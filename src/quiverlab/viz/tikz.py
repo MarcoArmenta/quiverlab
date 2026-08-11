@@ -69,6 +69,33 @@ def tikz_hasse(poset, label=_summand_math):
     return "\n".join(lines) + "\n"
 
 
+def tikz_order_complex(poset, face_vector=None):
+    """The Hasse diagram of a ``families.poset.Poset`` plus the face vector of its ORDER
+    COMPLEX (Plan 75 / R9) -- the report's picture of the object whose cohomology IS
+    ``HH^*(kP)``.
+
+    Distinct from :func:`tikz_hasse`, which draws the Plan-49 degeneration poset (nodes
+    carrying ``summands``); here the nodes are the poset's own elements, labelled by
+    ``str``. ``face_vector`` is stated verbatim when given -- it is NOT recomputed here,
+    so this picture can never claim a count the engine did not produce."""
+    nodes = list(poset.elements)
+    index = {v: i for i, v in enumerate(nodes)}
+    pos = poset_layout(nodes, list(poset.covers))
+    lines = [r"\begin{tikzpicture}[>=stealth]"]
+    for v in nodes:
+        x, y = pos[v]
+        lines.append(r"  \node[draw, circle] (p%d) at (%s, %s) {$%s$};"
+                     % (index[v], _coord(x), _coord(y), v))
+    for lo, hi in poset.covers:
+        lines.append(r"  \draw (p%d) -- (p%d);" % (index[lo], index[hi]))
+    if face_vector is not None:
+        lines.append(r"  \node[align=left, below] at (current bounding box.south) "
+                     r"{order complex $\Delta(P)$, face vector $(%s)$};"
+                     % ", ".join(str(int(f)) for f in face_vector))
+    lines.append(r"\end{tikzpicture}")
+    return "\n".join(lines) + "\n"
+
+
 def tikz_fan(fan):
     """The wall-and-chamber fan (Plan 45) as TikZ: for n=2 the g-vector rays drawn from
     the origin (exact coordinates, integer or {p/q}); for n=3 the L1/octahedron net

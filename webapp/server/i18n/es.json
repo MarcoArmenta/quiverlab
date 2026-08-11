@@ -366,5 +366,11 @@
   "block.silting.status_budget": "limitada por presupuesto (no todo el carcaj de silting)",
   "pick.kind.silting": "Teoría de silting",
   "inv.exceptional_sequences": "Sucesiones excepcionales (clásicas + τ)",
-  "pick.kind.exceptional_sequences": "Sucesiones excepcionales"
+  "pick.kind.exceptional_sequences": "Sucesiones excepcionales",
+  "pick.kind.incidence_cohomology": "HH* vía el complejo de órdenes (incidencia)",
+  "poset.title": "Conjunto ordenado (relaciones de orden)",
+  "poset.covers_label": "pares de cubierta",
+  "poset.covers_ph": "1<2, 2<3",
+  "poset.elements_label": "elementos aislados",
+  "poset.cycle_error": "estas relaciones de cubierta contienen un ciclo dirigido, así que no son un conjunto ordenado"
 }

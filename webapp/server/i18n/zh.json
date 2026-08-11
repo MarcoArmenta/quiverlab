@@ -366,5 +366,11 @@
   "block.silting.status_budget": "受预算限制（并非整个 silting 箭图）",
   "pick.kind.silting": "Silting 理论",
   "inv.exceptional_sequences": "例外序列 (经典 + τ)",
-  "pick.kind.exceptional_sequences": "例外序列"
+  "pick.kind.exceptional_sequences": "例外序列",
+  "pick.kind.incidence_cohomology": "经由序复形的 HH*（关联代数）",
+  "poset.title": "偏序集（序关系）",
+  "poset.covers_label": "覆盖关系对",
+  "poset.covers_ph": "1<2, 2<3",
+  "poset.elements_label": "孤立元素",
+  "poset.cycle_error": "这些覆盖关系含有有向圈，因此不是偏序集"
 }

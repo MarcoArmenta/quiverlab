@@ -342,3 +342,56 @@ def order_complex_of(algebra):
             hint="build it with quiverlab.families.IncidenceAlgebra(covers, field=...), "
                  "or use the general engines (engine='auto'/'cs'/'bar')")
     return OrderComplex.of(P)
+
+
+# --------------------------------------------------------------------------- #
+# The shared no-code block (Plan 75 Task G1)
+# --------------------------------------------------------------------------- #
+
+_BLOCK_REFS = ["gerstenhaber_schack_1983", "cibils_incidence", "redondo_incidence"]
+
+
+def _covers_of(P):
+    """The cover relations of ``P`` as ``[lo, hi]`` string pairs -- what the report and the
+    GUI draw the Hasse diagram from. ``Poset.covers`` keeps the caller's order, so this is
+    deterministic for a given request without imposing an order on the element type."""
+    return [[str(a), str(b)] for a, b in P.covers]
+
+
+def incidence_cohomology_block(A, top) -> dict:
+    """The shared ``incidence_cohomology`` block, imported by BOTH runners
+    (``quiverlab.hpc.spec`` and the Pyodide twin ``docs/gui/runner``) so the payload is
+    byte-identical by construction; each runner only appends its resolved ``citations``.
+
+    An algebra with no poset provenance (a plain ``kQ/I``, or a presentation-less
+    structure-constant algebra) returns ``{"error": <the loud message>}`` -- the Plan-30
+    honest-per-entry precedent -- never a 500 and never a guessed answer.
+    """
+    try:
+        r = incidence_cohomology(A, top)
+    except QuiverlabError as exc:
+        return {"kind": "incidence_cohomology", "top": top, "error": str(exc),
+                "references": list(_BLOCK_REFS)}
+    P = A._poset
+    fv = [int(f) for f in r.face_vector]
+    return {
+        "kind": "incidence_cohomology",
+        "top": top,
+        "dims": [int(d) for d in r.dims],
+        "face_vector": fv,
+        # sum (-1)^p f_p -- a field-independent integer, and (when top reaches the top
+        # dimension of Delta(P)) the alternating sum of the dims: a free self-check the
+        # renderers state beside the table.
+        "euler_characteristic": sum((-1) ** p * f for p, f in enumerate(fv)),
+        "complex_dimension": len(fv) - 1,
+        "elements": [str(x) for x in P.elements],
+        "covers": _covers_of(P),
+        "contractible": r.contractible,
+        "contractible_reason": r.contractible_reason,
+        "torsion": ([int(t) for t in r.torsion] if r.torsion is not None else None),
+        "char_dependent": r.char_dependent,
+        "characteristic": int(r.characteristic or 0),
+        "latex": r"HH^{n}(kP) \;\cong\; H^{n}(\Delta(P); k)",
+        "note": r.note,
+        "references": list(r.references),
+    }

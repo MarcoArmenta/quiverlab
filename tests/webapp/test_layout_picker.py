@@ -78,6 +78,8 @@ ALL_KINDS = {
     "tau_cluster",
     # Plan 73 (2026-08-08): Han transport across a bounded extension.
     "han_transport",
+    # Plan 75 (2026-08-10): HH^* of an incidence algebra via the order complex.
+    "incidence_cohomology",
 }
 
 
