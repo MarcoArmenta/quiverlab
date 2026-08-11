@@ -34,6 +34,14 @@ def test_qpa_exposes_no_hh_lie_module_surface():
     hh_lie_like = sorted(
         n for n in gvar_names
         if "hochschild" in n.lower() and ("lie" in n.lower() or "module" in n.lower()))
+    # A name in NamesGVars() is NOT evidence on its own: `IsBoundGlobal("Foo")` REGISTERS
+    # "Foo" into the table as a known-but-UNBOUND name, and the QPA session is SHARED across
+    # every test in one `-m qpa` run -- so a SIBLING probe's queries land in this scan and the
+    # first draft of these probes failed each other in file order (4 of 5 red on a full run,
+    # pre-dating Plan 75). Keep only names that are actually BOUND: that makes the verdict
+    # order-independent, and boundness is what "QPA ships a surface" means anyway. Re-querying
+    # already-registered names adds nothing new to the table.
+    hh_lie_like = [n for n in hh_lie_like if bool(lg.eval(f'IsBoundGlobal("{n}")'))]
     bound = {name: bool(lg.eval(f'IsBoundGlobal("{name}")')) for name in _HH_LIE_MODULE_NAMES}
     present = [name for name, ok in bound.items() if ok]
     if not present and not hh_lie_like:
