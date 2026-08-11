@@ -25,10 +25,14 @@ def _server_block(A, top):
     return block
 
 
-def _twin_block(A, top):
-    """The Pyodide twin's builder, reached the same way the browser reaches it."""
+def _shared_builder(A, top):
+    """The library builder BOTH tiers delegate to.
+
+    This pins that the server tier adds nothing but citations on top of it.  The parity
+    that matters -- the Pyodide twin's OWN dispatch branch producing the same JSON -- is
+    exercised through `compute_one` in `tests/gui/test_tate_runner_twin_p76.py`; calling
+    the builder here and calling it the twin would be a test of nothing."""
     from quiverlab.hochschild.tate import tate_hochschild_block
-    import docs.gui.runner as runner  # noqa: F401  (import parity with the twin)
     return tate_hochschild_block(A, top)
 
 
@@ -55,14 +59,14 @@ def test_positive_route_block_is_honest_about_degree_zero():
     assert b["ordinary_pos"][0] == 3            # the ordinary anchor is still reported
 
 
-def test_runners_agree_byte_for_byte():
+def test_server_tier_adds_only_citations_to_the_shared_block():
     for A, top in ((truncated_polynomial(3, field=GF(32003)), 2),
                    (truncated_polynomial(2, field=GF(32003)), 3),
                    (truncated_polynomial(3, field=QQ), 2)):
         server = _server_block(A, top)
-        twin = _twin_block(A, top)
+        shared = _shared_builder(A, top)
         server.pop("citations", None)
-        assert json.dumps(server, sort_keys=True) == json.dumps(twin, sort_keys=True)
+        assert json.dumps(server, sort_keys=True) == json.dumps(shared, sort_keys=True)
 
 
 def test_range_must_start_at_zero():
