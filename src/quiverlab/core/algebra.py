@@ -1429,6 +1429,19 @@ class Algebra:
         (Chouhy-Solotar native diagonal, presented algebras, any Domain)."""
         return self._product_dispatch("cup", top, engine, max_cells)
 
+    def tate_hochschild(self, top, engine="auto", max_cells=4_000_000):
+        """Tate-Hochschild (singular Hochschild) cohomology HHhat^m for every
+        m in [-top, top] -- negative degrees included -- via a complete
+        resolution of A over A^e. Above the Gorenstein dimension of A^e it
+        agrees with ordinary HH^*; degree 0 does NOT (HHhat^0 is the stable
+        centre, a quotient of Z(A) = HH^0). engine: 'auto', 'native' (the
+        GF(p) splice, self-injective, knows every degree), 'duality'
+        (symmetric, any Domain, degrees |m| >= 1), 'positive' (the threshold
+        alone). A Gorenstein but non-self-injective algebra is a loud
+        DEFERRED refusal."""
+        from quiverlab.hochschild.tate import tate_hochschild
+        return tate_hochschild(self, top, engine=engine, max_cells=max_cells)
+
     def cap_products(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the cap action HH^p (x) HH_n ->
         HH_{n-p} for p <= n <= top. Same engine semantics as cup_products."""
