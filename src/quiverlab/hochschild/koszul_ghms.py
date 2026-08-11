@@ -25,7 +25,7 @@ Coordinates are on the composable paths of length ``n`` (a path basis already en
 corner grading ``e_v ... e_w``, so nothing extra is needed to respect it).
 """
 from quiverlab.errors import QuiverlabError
-from quiverlab.fields.linalg import nullspace, rref
+from quiverlab.fields.linalg import nullspace, rref, solve
 
 _GHMS_CITATIONS = ("green_hartman_marcos_solberg", "priddy", "froberg_koszul")
 
@@ -196,3 +196,254 @@ def koszul_betti(A, top):
     """``[dim K_0, ..., dim K_top]`` -- the minimal bimodule ranks, i.e. the graded Betti
     numbers, i.e. the Koszul-dual Hilbert coefficients."""
     return [len(k) for k in koszul_kernels(A, top)]
+
+
+# --------------------------------------------------------------------------- #
+# the GHMS resolution
+# --------------------------------------------------------------------------- #
+def _koszul_gate(A, window=4):
+    """The THREE-VALUED Koszulity gate (Plan-75 Scope gate 2).
+
+    Order matters. The cheap ``g_quadratic_certificate`` (Priddy PBW) is tried FIRST and,
+    when True, PROVES Koszulity -- build. Otherwise we must consult the full
+    ``ext_algebra`` verdict, because a False from the PBW certificate is INCONCLUSIVE, not
+    a disproof. Gating on ``g_quadratic`` alone would mislabel the genuinely-not-Koszul
+    preprojective ``A_3`` as merely "uncertified", which is precisely the error the plan's
+    critic caught: ``A_3``'s Ext algebra grows a NEW GENERATOR in degree 3, so it is not
+    Koszul at all, and the refusal must say so.
+    """
+    from quiverlab.modules.koszul import g_quadratic_certificate
+    try:
+        if g_quadratic_certificate(A):
+            return True, "G-quadratic (Priddy PBW): a quadratic Grobner basis proves Koszul"
+    except QuiverlabError:
+        pass
+    E = A.ext_algebra(window)
+    verdict = getattr(E, "koszul", None)
+    if verdict is True:
+        return True, "ext_algebra certifies Koszul"
+    if verdict is False:
+        obs = getattr(E, "koszul_obstruction", None)
+        raise QuiverlabError(
+            f"this algebra is NOT Koszul, so the GHMS resolution does not apply: the "
+            f"Ext-algebra obstruction is {obs}",
+            hint="the minimal bimodule resolution of a non-Koszul algebra is NOT "
+                 "A (x)_S K_n (x)_S A -- the Koszul kernels can die while the true "
+                 "resolution continues (preprojective A_3: kernels [3,4,3,0,0,0] vs true "
+                 "ranks [3,4,3,3,4,3,3]). Use engine='auto'/'cs'/'bar' instead")
+    raise QuiverlabError(
+        "Koszulity is UNDECIDED for this algebra within the Ext window, so the GHMS "
+        "resolution cannot be certified (the PBW certificate was inconclusive and the "
+        "Ext-algebra verdict is None -- not a disproof, but not a licence either)",
+        hint="raise the ext_algebra window, or use engine='auto'/'cs'/'bar'")
+
+
+def _corner_of(A, word):
+    """``(source, target)`` of an arrow word (a vertex pair)."""
+    arrows = A.quiver.arrows
+    return (arrows[word[0]][0], arrows[word[-1]][1])
+
+
+def _split_by_corner(A, basis, paths):
+    """Re-express a kernel basis as CORNER-HOMOGENEOUS vectors.
+
+    ``K_n`` is corner-graded (it lives inside ``V^{(x)n}``, whose path basis is), but an
+    ``rref`` basis can straddle corners. Restricting each vector to one corner's
+    coordinates and re-reducing recovers a corner-homogeneous basis of the SAME space --
+    which the bimodule terms ``e_v K_n e_w`` need.
+    """
+    dom = A.domain
+    if not basis or not paths:
+        return []
+    by_corner = {}
+    for idx, w in enumerate(paths):
+        by_corner.setdefault(_corner_of(A, w), []).append(idx)
+    out = []
+    for corner, idxs in sorted(by_corner.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]))):
+        rows = []
+        for vec in basis:
+            sub = [vec[i] for i in idxs]
+            if any(not dom.is_zero(x) for x in sub):
+                rows.append(sub)
+        if not rows:
+            continue
+        for red in rref(rows, dom)[0]:
+            full = [dom.zero()] * len(paths)
+            for pos, i in enumerate(idxs):
+                full[i] = red[pos]
+            out.append((full, corner))
+    return out
+
+
+class GHMSResolution:
+    """The GHMS comultiplicative minimal ``A^e``-resolution of a KOSZUL algebra.
+
+    ``P_n = A (x)_S K_n (x)_S A`` with ``rank_{A^e} P_n = dim K_n``, and
+
+        d_n(1 (x) w (x) 1) = sum_a x_a (x) w'_a (x) 1  -  (-1)^n sum_b 1 (x) w''_b (x) y_b
+
+    where ``w = sum_a x_a (x) w'_a`` under ``K_n subset V (x) K_{n-1}`` and
+    ``w = sum_b w''_b (x) y_b`` under ``K_n subset K_{n-1} (x) V``. In the path
+    coordinates used here both splittings are READ OFF directly -- ``w'_a`` is the slice of
+    ``w`` on words beginning with ``a``, ``w''_b`` the slice on words ending with ``b`` --
+    so no solve is needed to find them; a solve is used only to express those slices in the
+    ``K_{n-1}`` basis, and that solve is unique because a basis is independent (hence the
+    differential is canonical/byte-reproducible by construction, with nothing to
+    canonicalize away).
+
+    THE SIGN IS ARBITRATED, NOT ASSUMED: ``assert_dd_zero`` pins it here, and Task II3's
+    cross-engine anchors (GHMS == minimal syzygy engine over GF(p); GHMS == bar in the bar
+    window) pin it again independently. A wrong sign fails at least one.
+    """
+
+    def __init__(self, A, top=6, window=4, _skip_gate=False):
+        self.algebra = A
+        self.top = top
+        self.koszul_reason = None
+        if not _skip_gate:
+            _ok, self.koszul_reason = _koszul_gate(A, window=window)
+        self.kernels = koszul_kernels(A, top)
+        Q = A.quiver
+        self._paths = [_paths_of_length(Q, n) for n in range(top + 1)]
+        # corner-homogeneous bases; degree 0 and 1 are already corner-homogeneous
+        self.basis = []
+        for n, K in enumerate(self.kernels):
+            if n <= 1:
+                verts = sorted(Q.vertices, key=str)
+                if n == 0:
+                    self.basis.append([(vec, (v, v)) for vec, v in zip(K, verts)])
+                else:
+                    names = sorted(Q.arrows)
+                    self.basis.append([(vec, (Q.arrows[a][0], Q.arrows[a][1]))
+                                       for vec, a in zip(K, names)])
+            else:
+                self.basis.append(_split_by_corner(A, K, self._paths[n]))
+        self._diffs = {}
+
+    def rank(self, n):
+        """``dim K_n`` -- the ``A^e``-rank of ``P_n``."""
+        return len(self.basis[n]) if n < len(self.basis) else 0
+
+    def term(self, n):
+        """The corner types ``[(v, w), ...]`` of ``P_n``'s generators."""
+        return [corner for _v, corner in self.basis[n]] if n < len(self.basis) else []
+
+    # ------------------------------------------------------------ differential
+    def differential(self, n):
+        """``d_n`` as a matrix of ``A^e`` entries.
+
+        ``D[i][j]`` is a list of ``(coeff, u, v)`` terms meaning the bimodule map
+        ``a (x) w_j (x) b  |->  coeff * (u a) (x) w_i (x) (b v)``; ``u`` and ``v`` are
+        coordinate vectors in ``A`` (an arrow, or the unit).
+        """
+        if n in self._diffs:
+            return self._diffs[n]
+        A = self.algebra
+        dom = A.domain
+        if n <= 0 or n > self.top:
+            return []
+        src, tgt = self.basis[n], self.basis[n - 1]
+        if not src or not tgt:
+            self._diffs[n] = []
+            return []
+        prev_paths, now_paths = self._paths[n - 1], self._paths[n]
+        idx_prev = {w: i for i, w in enumerate(prev_paths)}
+        tgt_vecs = [vec for vec, _c in tgt]
+        # columns of the K_{n-1} basis, for the coordinate solve
+        Mprev = [[tgt_vecs[j][r] for j in range(len(tgt_vecs))] for r in range(len(prev_paths))]
+        names = sorted(A.quiver.arrows)
+        arrow_vec = {a: A._basis_vec(A.basis_labels.index(a)) for a in names}
+        one = list(A.unit)
+        sign = dom.neg(dom.one()) if (n % 2 == 0) else dom.one()   # -(-1)^n
+        D = [[[] for _ in range(len(src))] for _ in range(len(tgt))]
+        for j, (w, _corner) in enumerate(src):
+            # LEFT splitting: slice by FIRST arrow
+            for a in names:
+                slice_vec = [dom.zero()] * len(prev_paths)
+                hit = False
+                for wi, word in enumerate(now_paths):
+                    if word[0] == a and not dom.is_zero(w[wi]):
+                        slice_vec[idx_prev[word[1:]]] = w[wi]
+                        hit = True
+                if not hit:
+                    continue
+                c = solve(Mprev, slice_vec, dom)
+                if c is None:
+                    raise QuiverlabError(
+                        "K_n is not contained in V (x) K_{n-1}: the comultiplicative "
+                        "structure fails, so this presentation is not Koszul in the way "
+                        "the GHMS theorem requires",
+                        hint="internal invariant -- please report this algebra")
+                for i in range(len(tgt)):
+                    if not dom.is_zero(c[i]):
+                        D[i][j].append((c[i], arrow_vec[a], one))
+            # RIGHT splitting: slice by LAST arrow
+            for b in names:
+                slice_vec = [dom.zero()] * len(prev_paths)
+                hit = False
+                for wi, word in enumerate(now_paths):
+                    if word[-1] == b and not dom.is_zero(w[wi]):
+                        slice_vec[idx_prev[word[:-1]]] = w[wi]
+                        hit = True
+                if not hit:
+                    continue
+                c = solve(Mprev, slice_vec, dom)
+                if c is None:
+                    raise QuiverlabError(
+                        "K_n is not contained in K_{n-1} (x) V: the comultiplicative "
+                        "structure fails (see the left-splitting note)",
+                        hint="internal invariant -- please report this algebra")
+                for i in range(len(tgt)):
+                    if not dom.is_zero(c[i]):
+                        D[i][j].append((dom.mul(sign, c[i]), one, arrow_vec[b]))
+        self._diffs[n] = D
+        return D
+
+    # ------------------------------------------------------------- self-certs
+    def _expand(self, terms):
+        """Expand a list of ``(coeff, u, v)`` into ``A (x) A^op`` coordinates."""
+        A, dom = self.algebra, self.algebra.domain
+        m = A.dim
+        acc = {}
+        for c, u, v in terms:
+            for i in range(m):
+                if dom.is_zero(u[i]):
+                    continue
+                for j in range(m):
+                    if dom.is_zero(v[j]):
+                        continue
+                    key = (i, j)
+                    acc[key] = dom.add(acc.get(key, dom.zero()),
+                                       dom.mul(c, dom.mul(u[i], v[j])))
+        return {k: x for k, x in acc.items() if not dom.is_zero(x)}
+
+    def assert_dd_zero(self, top=None):
+        """``d_{n-1} . d_n = 0`` for every ``n`` in range -- the sign arbiter.
+
+        Composition of ``(u, v)`` then ``(u', v')`` is ``(u' u, v v')``: the first map
+        left-multiplies by ``u`` and right-multiplies by ``v``, the second then applies
+        ``u'`` on the left and ``v'`` on the right, and left/right actions commute.
+        """
+        A, dom = self.algebra, self.algebra.domain
+        top = self.top if top is None else top
+        for n in range(2, top + 1):
+            dn, dn1 = self.differential(n), self.differential(n - 1)
+            if not dn or not dn1:
+                continue
+            for k in range(len(dn[0])):
+                for i in range(len(dn1)):
+                    terms = []
+                    for j in range(len(dn)):
+                        for (c1, u1, v1) in dn[j][k]:
+                            for (c2, u2, v2) in dn1[i][j]:
+                                terms.append((dom.mul(c2, c1),
+                                              A.multiply(u2, u1),
+                                              A.multiply(v1, v2)))
+                    bad = self._expand(terms)
+                    if bad:
+                        raise QuiverlabError(
+                            f"GHMS d_{n-1} . d_{n} != 0 at entry ({i}, {k}): {len(bad)} "
+                            "nonzero A (x) A^op coordinates -- the comultiplicative sign "
+                            "convention is wrong",
+                            hint="the sign is -(-1)^n on the RIGHT splitting term")
+        return True
