@@ -480,6 +480,15 @@ planned together even if delivered in slices.
   onto the canvas as a fresh quiver+relations input the canvas ingests — is a new
   schema surface (the GUI-deferral ledger, metaplan §1.2); P80 reconciles it with the
   P52 two-sided-editor / P60 / P72 GUI-deferral cluster.
+- [ ] **P75 GHMS is an ENGINE OPTION, not a GUI kind (deliberate; GUI-deferral ledger,
+  metaplan §1.2).** `engine="ghms"` adds **no new user-visible computation** — its HH dims
+  are byte-identical to the shipped `auto`/`cs` route on every Koszul input (that identity
+  IS the R10 oracle). It is an *acceleration* plus a third oracle class, so it is surfaced
+  through the API / HPC `engine=` option and named in the worked-steps resolution line, and
+  the GUI's HH kinds keep `engine="auto"` (which P75 deliberately does NOT route to GHMS —
+  byte stability of every shipped result, pinned by a test). P80 reconciles this with the
+  P52 / P60 / P72 / P78 GUI-deferral cluster. The R9 half of Plan 75 (`incidence_cohomology`
+  + the poset input mode) IS fully clickable — no deferral there.
 - [ ] **HH cohomology ring structure + support varieties**: after Tier-1 item 1,
   finite generation over the even part; support varieties per module.
 - [ ] **BV structure** for symmetric/Frobenius algebras: Connes B is ported
