@@ -1342,6 +1342,15 @@ def run(req, artifact_dir, progress_cb: Callable[[dict], None] | None = None,
                 from quiverlab.viz.tikz import tikz_order_complex
                 inc = results.get("incidence_cohomology") or {}
                 tikz_src += "\n" + tikz_order_complex(A._poset, inc.get("face_vector"))
+            # Plan 77: when the generalized-Koszulity profile was computed, append the
+            # generation-degree staircase (the visual of Berger's 2-N alternation and of
+            # the single almost-Koszul break) beside the quiver picture. Every number is
+            # read VERBATIM off the block -- the picture cannot claim a degree the engine
+            # did not produce.
+            kz = results.get("koszul")
+            if kz and not kz.get("error"):
+                from quiverlab.viz.tikz import tikz_koszul
+                tikz_src += "\n" + tikz_koszul(kz)
 
         used_keys: list = []
         for payload in results.values():
@@ -2024,6 +2033,26 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None,
         from quiverlab.modules.ext_algebra import ext_algebra_block
         block = ext_algebra_block(A, top)
         block["citations"] = _citation_pairs(block["references"])
+        return block, None
+    # Generalized Koszulity (Plan 77): the ladder BEYOND the quadratic case -- Berger
+    # N-Koszul, Cassidy-Shelton K2 (with an explicit certified window),
+    # Brenner-Butler-King (p,q)-almost-Koszul, Herscovich's scoped multi-Koszul, and the
+    # INTERNAL (path-length) generation degrees of Ext(k,k). Parsed exactly like
+    # ext_algebra (an algebra-level kind whose optional range gives the top degree,
+    # default 8) and hosted in the same GUI panel. Both runners share the block builder
+    # (modules.nkoszul.koszul_profile_block), so they are byte-identical.
+    # A QuiverlabError refusal (a presentation-less algebra carries no path basis, so
+    # neither the Yoneda engine nor an internal degree exists) is caught into an `error`
+    # field so the service returns a clean typed 4xx; a non-QuiverlabError bug is NOT
+    # swallowed -- it surfaces loudly (the fail-fast house rule, the silting precedent).
+    if kind == "koszul":
+        top = item.hi if item.hi is not None else 8
+        from quiverlab.modules.nkoszul import koszul_profile_block
+        try:
+            block = koszul_profile_block(A, top)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "koszul", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
         return block, None
     # Derived fingerprint (Plan 43): a scalar kind on the algebra block (schema v1).
     # The optional range gives the top HH/HC degree (default 4). Both runners share
@@ -3022,6 +3051,8 @@ def _snippet(req: ComputeRequest, A) -> str:
              "dimension": lambda it: "A.dim",
              "ext_algebra":
                  lambda it: f"A.ext_algebra({it.hi if it.hi is not None else 6})",
+             "koszul":
+                 lambda it: f"A.koszul_profile({it.hi if it.hi is not None else 8})",
              "recognizers": lambda it: ("[A.is_semisimple(), A.is_hereditary(), "
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),

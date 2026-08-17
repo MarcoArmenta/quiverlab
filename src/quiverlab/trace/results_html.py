@@ -54,6 +54,7 @@ _HEADINGS = {
     "center": "Centre",
     "dimension": "Dimension",
     "ext_algebra": "Yoneda Ext-algebra and Koszulity",
+    "koszul": "Generalized Koszulity (N-Koszul, K₂, almost-Koszul)",
     "recognizers": "Structural recognizers and type",
     "derived_fingerprint": "Derived fingerprint",
     "strings": "Strings and bands",
@@ -283,6 +284,106 @@ def _ext_algebra_html(b):
     out.append("<p>Minimal generators of E(A): %s. Minimal relations: %s.</p>"
                % (_by_degree(gens), _by_degree(rels)))
     return out
+
+
+def _koszul_html(b):
+    """The generalized-Koszulity profile (Plan 77): Plan 27's quadratic verdict, the
+    internal generation-degree table (the visual of Berger's 2-N alternation), and the
+    four sub-verdicts, each carrying its own certified window.
+
+    Every verdict is three-valued.  A ``True`` that holds only through the window is
+    printed AS a through-the-window claim -- the renderer never upgrades it.
+    """
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+    cdeg = b.get("certified_through_degree")
+    complete = b.get("complete")
+    out = []
+    if b.get("latex"):
+        out.append(_math(b["latex"]))
+
+    # (a) the quadratic verdict -- Plan 27's, verbatim, named as the overlap it is.
+    quad, obstruction = b.get("quadratic_koszul"), b.get("quadratic_obstruction")
+    if quad is True:
+        qv = "A is <b>Koszul</b>"
+    elif quad is False:
+        qv = "A is <b>not Koszul</b>"
+        if obstruction:
+            qv += (" — obstruction at degree %s (%s)"
+                   % (_esc(str(obstruction[0])), _esc(str(obstruction[1]))))
+    else:
+        qv = "Koszulity is <b>undecided</b> through degree %s" % _esc(str(cdeg))
+    out.append("<p>Quadratic Koszulity (the Plan-27 verdict, reported verbatim): "
+               "%s.</p>" % qv)
+
+    # (b) the internal generation degrees -- the 2-N alternation made visible.
+    gd = b.get("generation_degrees") or {}
+    if gd:
+        keys = sorted(gd, key=lambda k: int(k))
+        width = max(len(gd[k]) for k in keys)
+        head = "".join("<th>%s</th>" % n for n in range(width))
+        rows = []
+        for k in keys:
+            row = gd[k]
+            cells = "".join("<td>%s</td>" % (_esc(str(row[n])) if n < len(row) else "—")
+                            for n in range(width))
+            rows.append("<tr><th>&#8467;(S<sub>%s</sub>)</th>%s</tr>"
+                        % (_esc(str(k)), cells))
+        out.append("<p>Internal (path-length) generation degrees &#8467;<sub>i</sub>(n) "
+                   "of the minimal projective resolution of each simple. A linear "
+                   "(Koszul) strand is &#8467;(n) = n; an em dash marks a resolution "
+                   "that has already terminated.</p>")
+        out.append("<table class='ql-grid'><tr><th>n</th>%s</tr>%s</table>"
+                   % (head, "".join(rows)))
+
+    # (c) the four sub-verdicts.
+    n_koszul = b.get("n_koszul") or {}
+    k2 = b.get("k2") or {}
+    almost = b.get("almost_koszul") or {}
+    multi = b.get("multi_koszul") or {}
+    N = b.get("n_homogeneous")
+    items = []
+    items.append("N-homogeneous: %s" % (
+        "no — the defining relations are not homogeneous of a single degree"
+        if N is None else "yes, every defining relation has length N = %s" % _esc(str(N))))
+    if N is not None and N >= 2:
+        items.append("Berger's expected internal degrees &#948;(n) for N = %s: %s"
+                     % (_esc(str(N)),
+                        _esc(", ".join(str(d) for d in
+                                       (n_koszul.get("berger_expected") or [])[:9]))))
+    items.append("N-Koszul (Berger): %s — %s"
+                 % (_yes_no_unknown(n_koszul.get("verdict")),
+                    _esc(str(n_koszul.get("reason") or ""))))
+    items.append("K&#8322; (Cassidy–Shelton, E(A) generated in cohomological degrees "
+                 "1 and 2): %s — the Yoneda generators sit in degrees [%s]; %s"
+                 % (_yes_no_unknown(k2.get("verdict")),
+                    _esc(", ".join(str(d) for d in (k2.get("generator_degrees") or []))),
+                    _esc(str(k2.get("reason") or ""))))
+    if almost.get("verdict") is True:
+        items.append("(p, q)-almost-Koszul (Brenner–Butler–King): <b>yes</b>, "
+                     "(p, q) = (%s, %s) — %s"
+                     % (_esc(str(almost.get("p"))), _esc(str(almost.get("q"))),
+                        _esc(str(almost.get("reason") or ""))))
+    else:
+        items.append("(p, q)-almost-Koszul (Brenner–Butler–King): <b>no</b> — %s"
+                     % _esc(str(almost.get("reason") or "")))
+    items.append("multi-Koszul (Herscovich): %s%s"
+                 % ("connected graded, so the setting applies; "
+                    if multi.get("applicable") else "not applicable — ",
+                    _esc(str(multi.get("status") or ""))))
+    out.append("<ul>%s</ul>" % "".join("<li>%s</li>" % it for it in items))
+
+    if complete is False:
+        out.append("<p class='ql-note'>gl.dim A is not exact-finite, so E(A) is only "
+                   "computed through degree %s. Every verdict above that is not "
+                   "decisive is certified THROUGH THAT DEGREE and is not an "
+                   "unconditional claim; a generator or a pattern break could still "
+                   "appear beyond it.</p>" % _esc(str(cdeg)))
+    return out
+
+
+def _yes_no_unknown(v):
+    return "<b>yes</b>" if v is True else "<b>no</b>" if v is False else "<b>not decided</b>"
 
 
 def _hh1_lie_html(b):
@@ -2103,6 +2204,8 @@ def _block_html(kind, b, ctx=None):
         return [_math(r"\dim_k A = %s" % _num(b.get("value")))]
     if kind == "ext_algebra":
         return _ext_algebra_html(b)
+    if kind == "koszul":
+        return _koszul_html(b)
     if kind == "tau_tilting":
         return _tau_tilting_html(b)
     if kind == "congruences":

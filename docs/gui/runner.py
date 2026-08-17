@@ -1256,6 +1256,22 @@ def compute_one(spec):
             from quiverlab.modules.ext_algebra import ext_algebra_block
             block = ext_algebra_block(A, top if top is not None else 6)
             block["citations"] = _citation_pairs(block["references"])
+        elif name == "koszul":
+            # Generalized Koszulity (Plan 77): Berger N-Koszul, Cassidy-Shelton K2
+            # with an explicit certified window, Brenner-Butler-King
+            # (p,q)-almost-Koszul, Herscovich's scoped multi-Koszul, and the INTERNAL
+            # (path-length) generation degrees of Ext(k,k). Byte-identical to the
+            # server twin (quiverlab.hpc.spec._dispatch): SAME library block builder
+            # (modules.nkoszul.koszul_profile_block), same default top, same
+            # `references`->citations, and the SAME QuiverlabError catch so a
+            # presentation-less algebra yields a typed error block, never a traceback.
+            from quiverlab.errors import QuiverlabError
+            from quiverlab.modules.nkoszul import koszul_profile_block
+            try:
+                block = koszul_profile_block(A, top if top is not None else 8)
+            except QuiverlabError as exc:
+                block = {"kind": "koszul", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "recognizers":
             # Recognizer batch + type detection (Plan 38). Byte-identical to the
             # server twin: SAME library block builder + `references`->citations.
@@ -1739,6 +1755,8 @@ def python_snippet():
              # Plan 38: Koszulity / Ext-algebra + the recognizer batch. Both are
              # scalar kinds (no %d) so the reproduce snippet never leaves a literal.
              "ext_algebra": "A.ext_algebra()",
+             # Plan 77: the generalized-Koszulity profile, a scalar kind (no %d).
+             "koszul": "A.koszul_profile()",
              "recognizers": ("[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), "
                              "A.dynkin_type(), A.form_type()]"),
              # Quasi-hereditary structure (Plan 47): a scalar kind, no %d.
@@ -1910,6 +1928,9 @@ ETA_MODEL = {
                 # Plan 38: ext_algebra walks a resolution + Yoneda products;
                 # recognizers is cheap structural combinatorics + a reduction system.
                 "ext_algebra": 2.0, "recognizers": 0.1,
+                # Plan 77: koszul runs ext_algebra AND resolves every simple again for
+                # the internal degrees, so it sits just above ext_algebra.
+                "koszul": 2.2,
                 # Plan 42: the (b, B) spectral sequence builds the same exponential
                 # bar (b, B) bicomplex cyclic homology uses, plus the page algebra.
                 "ss_hochschild": 2.0,
