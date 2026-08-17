@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **5185 tests** (live-recounted 2026-08-17 on the Plan-77 branch — R36 the
+The suite is **5197 tests** (live-recounted 2026-08-17 on the Plan-77 branch — R36 the
 generalized Koszulity ladder (Berger N-Koszul, Cassidy–Shelton K₂, Brenner–Butler–King
 `(p,q)`-almost-Koszul, the internal generation degrees of `Ext•(k,k)`) — cut from dev's
 P76 tip; the previous recount was the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10
@@ -611,16 +611,16 @@ They overlap by design, so the union is smaller than their sum.
 |---|---|---:|---|
 | Literature / theory pins | `-m oracle_literature` | 1246 | the engine reproduces a value/identity that exists outside the library |
 | Cross-engine agreement | `-m oracle_crossengine` | 743 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1596 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Self-certifying certificates | `-m oracle_selfcert` | 1608 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 248 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 3229 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 3241 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Recounted 2026-08-17 on the Plan-77 branch (R36 — the generalized Koszulity ladder:
 Berger N-Koszul, Cassidy–Shelton K₂ through an explicit certified window,
 Brenner–Butler–King `(p,q)`-almost-Koszul, Herscovich's scoped multi-Koszul, and the
 internal generation degrees of `Ext•(k,k)`), cut from dev's P76 tip; the Plan-77
-additions (lit +37 / xeng +8 / selfcert +28 / qpa +1 / m2 +0, union +74 — suite
-5087 → **5185**, fast 2509 / deep 2417) fold into these live-collected totals. The
+additions (lit +37 / xeng +8 / selfcert +40 / qpa +1 / m2 +0, union +86 — suite
+5087 → **5197**, fast 2518 / deep 2420) fold into these live-collected totals. The
 previous recount was the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10 the GHMS
 comultiplicative Koszul resolution and `engine="ghms"`), which added
 lit +17 / xeng +16 / selfcert +44 / qpa +1 / m2 +0, union +78 (suite 4925 → 5087). The
