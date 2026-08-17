@@ -204,3 +204,203 @@ def berger_degree(n, N):
     ``(N/2)*n`` for ``n`` even, ``(N/2)*(n-1) + 1`` for ``n`` odd -- written in exact
     integer form so no division is ever inexact."""
     return (n // 2) * N if n % 2 == 0 else (n // 2) * N + 1
+
+
+def _yoneda(A, top, yoneda):
+    """The Plan-27 ``YonedaPresentation``, computed once and threaded by the profile."""
+    return yoneda if yoneda is not None else A.ext_algebra(top)
+
+
+def _all_generation_degrees(A, length, max_term_dim=200_000):
+    """``{vertex: generation_degrees(...)}`` for every simple, sharing one cache."""
+    _require_length_graded(A, "generation_degrees")
+    cache = {}
+    return {v: _generation_degrees(A, v, length, max_term_dim, cache)
+            for v in A.quiver.vertices}
+
+
+# ---------------------------------------------------------------------------
+# K2 (Cassidy-Shelton)
+# ---------------------------------------------------------------------------
+def k2_certificate(A, top=8, *, yoneda=None):
+    """Cassidy-Shelton K2: is ``E(A) = Ext(k,k)`` generated as an algebra in
+    cohomological degrees 1 and 2?
+
+    Decided from the shipped Plan-27 ``generators_by_degree`` through the EXPLICIT
+    certified window ``W = certified_through_degree``.  Three-valued:
+
+    * ``False`` -- a genuine Yoneda generator sits in degree ``>= 3`` INSIDE ``W``.
+      Decisive regardless of completeness (the obstruction is exhibited).
+    * ``True`` -- the generators sit in degrees ``{1, 2}`` AND the window is complete
+      (``gl.dim A`` finite and exact, so ``E(A)`` is finite-dimensional and fully
+      computed).
+    * ``None`` -- the generators sit in degrees ``{1, 2}`` through ``W`` but the
+      window is NOT complete: honest inconclusive, a generator could still appear
+      beyond ``W``.  Never reported as an unconditional ``True``.
+
+    K2 needs only HOMOLOGICAL data, so unlike the N-Koszul / almost-Koszul
+    recognizers it does not require ``A`` to be length-graded.
+    """
+    Y = _yoneda(A, top, yoneda)
+    degrees = sorted(Y.generators_by_degree)
+    window = Y.certified_through_degree
+    complete = Y.is_finite_dimensional is True
+    beyond = [d for d in degrees if d >= 3]
+    if beyond:
+        verdict = False
+        reason = ("a Yoneda generator sits in cohomological degree "
+                  + str(beyond[0]) + ", inside the certified window "
+                  + str(window) + ": E(A) is NOT generated in degrees 1 and 2")
+    elif complete:
+        verdict = True
+        reason = ("gl.dim A is finite and exact, so E(A) is finite-dimensional and "
+                  "completely computed through degree " + str(window)
+                  + "; its generators sit in degrees "
+                  + (str(degrees) if degrees else "{} (semisimple: vacuously K2)"))
+    else:
+        verdict = None
+        reason = ("K2 holds through degree " + str(window)
+                  + ", but gl.dim A is not exact-finite, so a Yoneda generator "
+                    "could still appear beyond the window: inconclusive, not a "
+                    "claim of K2")
+    return {"verdict": verdict, "window": window, "complete": complete,
+            "generator_degrees": degrees, "reason": reason}
+
+
+# ---------------------------------------------------------------------------
+# N-Koszul (Berger)
+# ---------------------------------------------------------------------------
+def n_koszul_certificate(A, top=8, *, yoneda=None):
+    """Berger's N-Koszul recognizer: is the minimal resolution of every simple PURE,
+    with ``P_n`` generated in the single internal degree ``delta(n)``?
+
+    ``N = 2`` DEFERS TO PLAN 27 verbatim (``ext_algebra(top).koszul``) -- Plan 77
+    adds no second opinion in the quadratic case, and the hereditary ``kQ`` lands in
+    this branch too (``n_homogeneous_degree`` returns 2 vacuously).
+
+    For ``N >= 3`` the verdict is cross-checked against Berger's Ext-algebra
+    characterization (N-Koszul iff the Yoneda algebra is generated in degrees 0, 1, 2
+    -- i.e. iff K2), which is a genuinely independent reading of the same algebra:
+    the purity side reads INTERNAL degrees off the minimal resolution, the K2 side
+    reads HOMOLOGICAL generator degrees off the Yoneda engine.  ``k2_agrees`` records
+    whether they agree; a disagreement is surfaced, never smoothed over.
+    """
+    Y = _yoneda(A, top, yoneda)
+    window = Y.certified_through_degree
+    complete = Y.is_finite_dimensional is True
+    out = {"n_homogeneous": None, "verdict": None, "window": window,
+           "complete": complete, "berger_expected": [], "internal_degrees": {},
+           "internal_degree_sets": {}, "pure": None, "impurity": None,
+           "k2_agrees": None, "reason": ""}
+
+    N = n_homogeneous_degree(A)
+    out["n_homogeneous"] = N
+    if N is None:
+        out["reason"] = ("relations are not homogeneous of a single degree, so A is "
+                         "not N-homogeneous and Berger's N-Koszul property does not "
+                         "apply; see the K2 and multi-Koszul fields")
+        return out
+    out["berger_expected"] = [berger_degree(n, N) for n in range(window + 1)]
+
+    if N == 2:
+        out["verdict"] = Y.koszul
+        out["reason"] = ("N=2: quadratic Koszulity is Plan 27's "
+                         "g_quadratic_certificate/Froberg verdict, reported verbatim "
+                         "(a hereditary kQ is quadratic-trivially); Plan 77 adds no "
+                         "second opinion in the quadratic case")
+        return out
+
+    if not _koszul._is_length_graded(A):
+        # Unreachable for N >= 3 (a single relation degree IS homogeneous), kept as
+        # an explicit honest branch rather than an implicit assumption.
+        out["reason"] = _NOT_GRADED
+        return out
+
+    try:
+        per_simple = _all_generation_degrees(A, max(window, 1))
+    except DepthLimitError as exc:
+        out["reason"] = ("the minimal resolution could not be built through the "
+                         "window: " + str(exc))
+        return out
+    except _NonPure as exc:
+        out["pure"] = False
+        out["verdict"] = False
+        out["impurity"] = {"degree": exc.degree, "internal_degrees": exc.degrees}
+        out["reason"] = ("a generator column of d_" + str(exc.degree) + " mixes "
+                         "internal degrees " + str(exc.degrees)
+                         + ": the resolution is not graded-pure")
+        return out
+
+    out["internal_degree_sets"] = {v: [list(s) for s in gd]
+                                   for v, gd in per_simple.items()}
+    flat, pure, impurity, mismatch = {}, True, None, None
+    for v, gd in per_simple.items():
+        row = []
+        for n, s in enumerate(gd):
+            if not s:
+                break                            # the resolution terminated
+            if len(s) != 1:
+                pure = False
+                impurity = {"simple": v, "degree": n, "internal_degrees": s}
+                break
+            row.append(s[0])
+            if s[0] != berger_degree(n, N) and mismatch is None:
+                mismatch = {"simple": v, "degree": n, "internal_degree": s[0],
+                            "berger": berger_degree(n, N)}
+        flat[v] = row
+        if impurity is not None:
+            break
+    out["internal_degrees"] = flat
+    out["pure"] = pure and mismatch is None
+    out["impurity"] = impurity
+
+    k2 = k2_certificate(A, top, yoneda=Y)
+    k2_holds = k2["verdict"] is not False        # no degree->=3 generator inside W
+    out["k2_agrees"] = (k2_holds == out["pure"])
+
+    if impurity is not None:
+        out["verdict"] = False
+        out["reason"] = ("P_" + str(impurity["degree"]) + " of S_"
+                         + str(impurity["simple"]) + " is generated in multiple "
+                         "internal degrees " + str(impurity["internal_degrees"])
+                         + " rather than the single Berger degree delta("
+                         + str(impurity["degree"]) + ") = "
+                         + str(berger_degree(impurity["degree"], N))
+                         + ": the resolution is not pure")
+    elif mismatch is not None:
+        out["verdict"] = False
+        out["reason"] = ("P_" + str(mismatch["degree"]) + " of S_"
+                         + str(mismatch["simple"]) + " is generated in internal "
+                         "degree " + str(mismatch["internal_degree"])
+                         + ", not Berger's delta(" + str(mismatch["degree"]) + ") = "
+                         + str(mismatch["berger"]) + " for N=" + str(N)
+                         + ": the 2-N alternation breaks")
+    elif not out["k2_agrees"]:
+        # Purity holds through the window yet the Yoneda algebra has a generator in
+        # degree >= 3 -- Berger's N>=3 equivalence says these cannot both hold. Report
+        # the disagreement instead of picking a side.
+        out["verdict"] = False
+        out["reason"] = ("the two N-Koszul certificates DISAGREE through the window: "
+                         "the resolution is pure with Berger's degrees, but "
+                         + k2["reason"] + " -- Berger's N>=3 characterization "
+                         "(N-Koszul iff E(A) is generated in degrees 0,1,2) makes "
+                         "this a genuine inconsistency, reported rather than resolved")
+    elif complete:
+        out["verdict"] = True
+        out["reason"] = ("every simple has a pure minimal resolution with Berger's "
+                         "internal degrees delta(n) for N=" + str(N)
+                         + ", and gl.dim A is finite and exact, so the pattern is "
+                           "complete: A is N-Koszul")
+    elif k2["verdict"] is True:
+        out["verdict"] = True
+        out["reason"] = ("the resolution is pure with Berger's degrees and E(A) is "
+                         "completely generated in degrees 0,1,2 (Berger's N>=3 "
+                         "characterization): A is N-Koszul")
+    else:
+        out["verdict"] = None
+        out["reason"] = ("the Berger pattern delta(n) for N=" + str(N)
+                         + " holds through degree " + str(window)
+                         + ", but gl.dim A is not exact-finite and K2 is only "
+                           "window-certified, so N-Koszulity is certified THROUGH "
+                           "THE WINDOW only, never claimed unconditionally")
+    return out
