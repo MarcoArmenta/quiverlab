@@ -270,7 +270,7 @@ def k2_certificate(A, top=8, *, yoneda=None):
 # ---------------------------------------------------------------------------
 # N-Koszul (Berger)
 # ---------------------------------------------------------------------------
-def n_koszul_certificate(A, top=8, *, yoneda=None):
+def n_koszul_certificate(A, top=8, *, yoneda=None, per_simple=None):
     """Berger's N-Koszul recognizer: is the minimal resolution of every simple PURE,
     with ``P_n`` generated in the single internal degree ``delta(n)``?
 
@@ -317,7 +317,8 @@ def n_koszul_certificate(A, top=8, *, yoneda=None):
         return out
 
     try:
-        per_simple = _all_generation_degrees(A, max(window, 1))
+        if per_simple is None:
+            per_simple = _all_generation_degrees(A, max(window, 1))
     except DepthLimitError as exc:
         out["reason"] = ("the minimal resolution could not be built through the "
                          "window: " + str(exc))
@@ -451,7 +452,7 @@ def _first_jump(degrees):
     return None
 
 
-def almost_koszul_certificate(A, top=8, *, yoneda=None):
+def almost_koszul_certificate(A, top=8, *, yoneda=None, per_simple=None):
     """Brenner-Butler-King ``(p,q)``-almost-Koszul, as a SIGNATURE recognizer.
 
     BBK: ``A`` is concentrated in degrees ``0..p`` and a linear complex of projectives
@@ -495,7 +496,8 @@ def almost_koszul_certificate(A, top=8, *, yoneda=None):
     p = _top_degree(A)
     out["p"] = p
     try:
-        per_simple = _all_generation_degrees(A, max(window, 1))
+        if per_simple is None:
+            per_simple = _all_generation_degrees(A, max(window, 1))
     except DepthLimitError as exc:
         out["reason"] = ("the minimal resolution could not be built through the "
                          "window: " + str(exc))
@@ -598,7 +600,7 @@ def _is_connected_graded(A):
     return len(A.quiver.vertices) == 1 and _koszul._is_length_graded(A)
 
 
-def multi_koszul_certificate(A, top=8, *, yoneda=None):
+def multi_koszul_certificate(A, top=8, *, yoneda=None, per_simple=None):
     """Herscovich's multi-Koszul property (arXiv:1305.1678), honestly scoped.
 
     Multi-Koszul is defined for a locally finite-dimensional nonnegatively graded
@@ -641,7 +643,8 @@ def multi_koszul_certificate(A, top=8, *, yoneda=None):
         return out
     out["applicable"] = True
     try:
-        per_simple = _all_generation_degrees(A, max(k2["window"], 1))
+        if per_simple is None:
+            per_simple = _all_generation_degrees(A, max(k2["window"], 1))
         out["generation_degrees"] = {v: _flatten_pure(gd)
                                      for v, gd in per_simple.items()}
     except (DepthLimitError, QuiverlabError, _NonPure) as exc:
@@ -699,6 +702,21 @@ def koszul_profile(A, top=8):
     The Yoneda presentation is computed ONCE and threaded into every sub-certificate.
     """
     Y = A.ext_algebra(top)
+    # The generation-degree table is the HEADLINE primitive, so it must be present
+    # whenever it is DEFINED (A length-graded) -- independently of which branch the
+    # N-Koszul recognizer takes. It used to be read back off n_koszul["internal_degrees"],
+    # which the N = 2 branch never fills because it returns early to defer to Plan 27:
+    # every QUADRATIC algebra -- including every Dynkin preprojective, i.e. exactly the
+    # showcase almost-Koszul examples -- therefore rendered an EMPTY table in the GUI,
+    # the report and the TikZ staircase, while the data existed. Computed once here and
+    # threaded into every sub-certificate (the `yoneda` precedent), so it is also
+    # computed once rather than three times.
+    per_simple = None
+    if _koszul._is_length_graded(A):
+        try:
+            per_simple = _all_generation_degrees(A, max(Y.certified_through_degree, 1))
+        except (DepthLimitError, QuiverlabError, _NonPure):
+            per_simple = None            # the sub-certificates report the reason
     record = {
         "top": top,
         "quadratic_koszul": Y.koszul,
@@ -706,16 +724,20 @@ def koszul_profile(A, top=8):
         "quadratic_obstruction": (list(Y.koszul_obstruction)
                                   if Y.koszul_obstruction else None),
         "n_homogeneous": n_homogeneous_degree(A),
-        "n_koszul": n_koszul_certificate(A, top, yoneda=Y),
+        "n_koszul": n_koszul_certificate(A, top, yoneda=Y, per_simple=per_simple),
         "k2": k2_certificate(A, top, yoneda=Y),
-        "almost_koszul": almost_koszul_certificate(A, top, yoneda=Y),
-        "multi_koszul": multi_koszul_certificate(A, top, yoneda=Y),
+        "almost_koszul": almost_koszul_certificate(A, top, yoneda=Y,
+                                                   per_simple=per_simple),
+        "multi_koszul": multi_koszul_certificate(A, top, yoneda=Y,
+                                                 per_simple=per_simple),
         "certified_through_degree": Y.certified_through_degree,
         "complete": Y.is_finite_dimensional is True,
         "length_graded": _koszul._is_length_graded(A),
         "references": list(_REFERENCES),
     }
-    record["generation_degrees"] = dict(record["n_koszul"]["internal_degrees"])
+    record["generation_degrees"] = (
+        {v: _flatten_pure(gd) for v, gd in per_simple.items()} if per_simple is not None
+        else dict(record["n_koszul"]["internal_degrees"]))
     record["latex"] = _profile_latex(record)
     return record
 

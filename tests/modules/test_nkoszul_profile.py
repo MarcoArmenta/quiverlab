@@ -99,3 +99,32 @@ def test_profile_kA4_J3_is_finite_gldim_3_koszul():
     assert b["n_koszul"]["verdict"] is True and b["complete"] is True
     assert b["k2"]["verdict"] is True
     assert b["n_koszul"]["internal_degrees"]["1"] == [0, 1, 3]
+
+
+@selfcert
+@pytest.mark.parametrize("typ,expected", [
+    ("A3", [0, 1, 2, 4, 5, 6, 8]),
+    ("A4", [0, 1, 2, 5, 6, 7, 10]),
+])
+def test_a_QUADRATIC_algebra_still_gets_its_generation_degree_table(typ, expected):
+    # REGRESSION. The generation-degree table is the HEADLINE primitive, so it must be
+    # present whenever it is DEFINED (A length-graded), independently of which branch the
+    # N-Koszul recognizer takes. It used to be read back off n_koszul["internal_degrees"],
+    # which the N = 2 branch never fills -- it returns early to defer to Plan 27 -- so
+    # EVERY quadratic algebra, including every Dynkin preprojective (exactly the showcase
+    # almost-Koszul examples), rendered an EMPTY table in the GUI, the report and the
+    # TikZ staircase while the data existed. Caught by the report-renderer test, whose
+    # staircase drew nothing.
+    b = koszul_profile_block(PreprojectiveAlgebra(typ, field=QQ), top=6)
+    assert b["n_homogeneous"] == 2                     # the defer-to-Plan-27 branch
+    assert b["generation_degrees"]                     # ... and the table is STILL there
+    for v in b["generation_degrees"]:
+        assert b["generation_degrees"][v] == expected
+    # and it is the SAME data the almost-Koszul classifier read
+    assert b["almost_koszul"]["break_hom_degree"] == 3
+
+
+@selfcert
+def test_every_simple_appears_in_the_table_not_just_the_first():
+    b = koszul_profile_block(PreprojectiveAlgebra("A4", field=QQ), top=6)
+    assert sorted(b["generation_degrees"]) == ["1", "2", "3", "4"]
