@@ -227,6 +227,62 @@ REGISTRY: dict = {r.key: r for r in [
        "The quadratic-dual conventions (A^! = kQ^op/R^perp) behind quiverlab's "
        "Koszul dual and the E(A) = (A^!)^op cross-check (Plan 27).",
        "koszul"),
+    # --- Plan 77: generalized Koszulity (N-Koszul / K2 / almost-Koszul / multi-Koszul) ---
+    _r("berger_nonquadratic", "Berger2001nonquadratic", "foundation",
+       "Koszulity for nonquadratic algebras",
+       "Berger's N-Koszul property for N-homogeneous algebras: the minimal "
+       "resolution of the trivial module is PURE, generated in the single internal "
+       "degree delta(n) = (N/2)n (n even) / (N/2)(n-1)+1 (n odd) -- the 2-N "
+       "alternation quiverlab's n_koszul_certificate checks. For N >= 3 the "
+       "property is equivalent to the Yoneda algebra being generated in degrees "
+       "0, 1, 2 (Plan 77).",
+       "koszul", "nkoszul"),
+    _r("cassidy_shelton", "CassidyShelton2008", "foundation",
+       "Generalizing the notion of Koszul algebra",
+       "The K2 property: E(A) = Ext(k,k) is generated as an algebra in "
+       "cohomological degrees 1 and 2. K2 generalizes BOTH Koszul and N-Koszul and "
+       "allows relations in several degrees -- quiverlab's k2_certificate, decided "
+       "through an explicit certified window (Plan 77).",
+       "koszul", "nkoszul"),
+    _r("brenner_butler_king", "BrennerButlerKing2002", "foundation",
+       "Periodic algebras which are almost Koszul",
+       "(p,q)-almost-Koszul: A is concentrated in degrees 0..p and a linear complex "
+       "of projectives resolves the simple up to an error in internal degree p+q. "
+       "The Dynkin preprojective algebras are (h-2, 2)-Koszul (h = Coxeter number) "
+       "and periodic of period 2(h-1) -- quiverlab's almost_koszul_certificate "
+       "reproduces the (p,q) label via p = top degree, q = e - p (Plan 77).",
+       "koszul", "nkoszul", "preprojective"),
+    _r("herscovich_multikoszul", "Herscovich2013multikoszul", "foundation",
+       "On the multi-Koszul property for connected algebras",
+       "Multi-Koszul for locally finite-dimensional nonnegatively graded CONNECTED "
+       "(A_0 = k) algebras, generalizing N-Koszul to relations in several degrees. "
+       "Prop. 3.30: a finitely generated multi-Koszul algebra with a "
+       "finite-dimensional relation space has Yoneda algebra generated in degrees "
+       "1 and 2, i.e. is K2 -- the transfer quiverlab reports for multi-vertex "
+       "kQ/I, whose A_0 = k^{Q_0} is semisimple, not connected (Plan 77).",
+       "koszul", "nkoszul"),
+    _r("herscovich_ainfty_ext", "Herscovich2019onepoint", "foundation",
+       "Applications of one-point extensions to compute the A-infinity-(co)module "
+       "structure of several Ext (resp., Tor) groups",
+       "The A-infinity structure on the Yoneda algebra of a multi-Koszul algebra. "
+       "CONTEXT for Plan 77's multi-Koszul scope -- quiverlab computes no "
+       "A-infinity structure.",
+       "koszul", "nkoszul"),
+    _r("chouhy_degenerations", "Chouhy2019degenerations", "foundation",
+       "On geometric degenerations and Gerstenhaber formal deformations",
+       "For finite-dimensional associative algebras the N-Koszul property is "
+       "preserved under the degeneration relation, for every N >= 2. CONTEXT for "
+       "the robustness of Plan 77's N-Koszul verdict -- quiverlab computes no "
+       "degenerations.",
+       "koszul", "nkoszul", "deformation"),
+    _r("green_marcos_martinezvilla_zhang", "GreenMarcosMartinezVillaZhang2004",
+       "foundation",
+       "D-Koszul algebras",
+       "N-Koszul (delta-Koszul) theory over a SEMISIMPLE base A_0 = k^{Q_0} -- the "
+       "several-vertex foundation that legitimizes Plan 77's N-Koszul recognizer on "
+       "multi-vertex kQ/I, where Berger's connected-graded setting does not apply "
+       "verbatim.",
+       "koszul", "nkoszul"),
     # --- Plan 29: literature-oracle batteries ---
     _r("happel_trace", "Happel1997", "foundation",
        "The trace of the Coxeter matrix and Hochschild cohomology",
