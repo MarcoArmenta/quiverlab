@@ -565,3 +565,169 @@ def almost_koszul_certificate(A, top=8, *, yoneda=None):
                        "definition -- the finite linear complex with a single error "
                        "term and the 2(h-1) periodicity -- is NOT verified here")
     return out
+
+
+# ---------------------------------------------------------------------------
+# Multi-Koszul (Herscovich) -- connected-graded only, transfer = K2
+# ---------------------------------------------------------------------------
+def _flatten_pure(degrees):
+    """The prefix of ``generation_degrees`` output in which every term is generated in
+    ONE internal degree, as plain ints (the table the GUI/report render)."""
+    row = []
+    for s in degrees:
+        if not s or len(s) != 1:
+            break
+        row.append(s[0])
+    return row
+
+
+def _is_connected_graded(A):
+    """Herscovich's hypothesis in quiverlab's world: ``A_0 = k``, i.e. a LOCAL
+    (single-vertex) length-graded ``kQ/I``.  Multi-vertex ``kQ/I`` has
+    ``A_0 = k^{Q_0}`` semisimple, not connected."""
+    _koszul._require_presentation(A, "multi_koszul_certificate")
+    return len(A.quiver.vertices) == 1 and _koszul._is_length_graded(A)
+
+
+def multi_koszul_certificate(A, top=8, *, yoneda=None):
+    """Herscovich's multi-Koszul property (arXiv:1305.1678), honestly scoped.
+
+    Multi-Koszul is defined for a locally finite-dimensional nonnegatively graded
+    CONNECTED algebra (``A_0 = k``), generalizing Berger's N-Koszul to algebras whose
+    relations live in SEVERAL degrees.  In quiverlab that is exactly the LOCAL
+    (single-vertex) length-graded ``kQ/I``; a multi-vertex ``kQ/I`` has
+    ``A_0 = k^{Q_0}`` semisimple and is outside the stated scope, so the recognizer
+    refuses and points at K2.
+
+    **The transfer is PINNED:** Herscovich Prop. 3.30 -- "the Yoneda algebra of a
+    finitely generated multi-Koszul algebra with a finite dimensional space of
+    relations is generated in degrees 1 and 2, so a K2 algebra".  Multi-Koszul
+    implies K2, and K2 IS defined over a semisimple base, so K2 is the property
+    quiverlab offers for every ``kQ/I``.
+
+    **The multi-Koszul DECISION is scoped OUT, never guessed.** Multi-Koszul is not a
+    single definition to evaluate: Herscovich builds it in Section 3.2 out of
+    Tor/Ext-vanishing conditions on the minimal graded BIMODULE resolution, which is a
+    homological engine of its own rather than a recognizer over the shipped surfaces.
+    So ``verdict`` is always ``None`` and ``status`` says so; what v1 reports on
+    connected input is the generation-degree table and the K2 verdict that
+    multi-Koszul implies.  (Herscovich's headline examples -- the Yang-Mills and
+    super-Yang-Mills algebras -- are infinite-dimensional, outside quiverlab's
+    finite-dimensional engine, so f.d. local multi-Koszul examples are genuinely
+    sparse.)
+    """
+    Y = _yoneda(A, top, yoneda)
+    k2 = k2_certificate(A, top, yoneda=Y)
+    out = {"applicable": False, "verdict": None, "k2": k2,
+           "generation_degrees": {}, "status": "", "reason": ""}
+    if not _is_connected_graded(A):
+        out["reason"] = (
+            "multi-Koszul is a connected-graded (A_0 = k) notion (Herscovich, "
+            "arXiv:1305.1678); this algebra has "
+            + str(len(A.quiver.vertices)) + " vertices, so A_0 = k^{Q_0} is "
+            "semisimple, not connected. For multi-vertex kQ/I the transferable "
+            "property is K2 (multi-Koszul implies K2, Herscovich Prop. 3.30) -- see "
+            "the k2 field")
+        out["status"] = out["reason"]
+        return out
+    out["applicable"] = True
+    try:
+        per_simple = _all_generation_degrees(A, max(k2["window"], 1))
+        out["generation_degrees"] = {v: _flatten_pure(gd)
+                                     for v, gd in per_simple.items()}
+    except (DepthLimitError, QuiverlabError, _NonPure) as exc:
+        out["generation_degrees"] = {}
+        out["reason"] = "generation degrees unavailable: " + str(exc)
+    out["status"] = (
+        "the multi-Koszul DECISION requires Tor/Ext vanishing of the minimal graded "
+        "bimodule resolution per Herscovich Section 3.2 -- out of this plan's scope; "
+        "K2 (Prop. 3.30, which multi-Koszul implies) and the generation degrees ARE "
+        "reported, and no verdict is guessed")
+    if not out["reason"]:
+        out["reason"] = ("A is connected graded (A_0 = k), so Herscovich's setting "
+                         "applies; the decision itself is scoped out -- see status")
+    return out
+
+
+# ---------------------------------------------------------------------------
+# The assembled profile
+# ---------------------------------------------------------------------------
+_REFERENCES = ["berger_nonquadratic", "cassidy_shelton", "brenner_butler_king",
+               "herscovich_multikoszul", "green_marcos_martinezvilla_zhang",
+               "chouhy_degenerations", "priddy", "froberg_koszul"]
+
+
+def _profile_latex(record):
+    """A compact one-line summary of what the algebra IS, honestly hedged."""
+    claims = []
+    n_koszul, k2, almost = record["n_koszul"], record["k2"], record["almost_koszul"]
+    N = record["n_homogeneous"]
+    if record["quadratic_koszul"] is True:
+        claims.append(r"\text{Koszul}")
+    if N is not None and N >= 3:
+        label = r"\text{" + str(N) + r"-Koszul}"
+        if n_koszul["verdict"] is True:
+            claims.append(label)
+        elif n_koszul["verdict"] is None and n_koszul["pure"]:
+            claims.append(label[:-1] + r" through degree " + str(n_koszul["window"]) + "}")
+    if k2["verdict"] is True:
+        claims.append(r"K_2")
+    elif k2["verdict"] is None:
+        claims.append(r"K_2\ \text{through degree " + str(k2["window"]) + "}")
+    if almost["verdict"] is True:
+        claims.append("(" + str(almost["p"]) + "," + str(almost["q"])
+                      + r")\text{-almost-Koszul}")
+    if not claims:
+        return r"A\ \text{is not Koszul, not }K_2\text{, and not almost-Koszul}"
+    return r"A\ \text{is }" + r",\ ".join(claims)
+
+
+def koszul_profile(A, top=8):
+    """The assembled generalized-Koszulity record: Plan 27's quadratic verdict (the
+    NAMED overlap, verbatim) plus Plan 77's N-Koszul, K2, almost-Koszul and
+    multi-Koszul certificates and the generation-degree table.
+
+    The Yoneda presentation is computed ONCE and threaded into every sub-certificate.
+    """
+    Y = A.ext_algebra(top)
+    record = {
+        "top": top,
+        "quadratic_koszul": Y.koszul,
+        "quadratic_reason": Y._koszul_reason,
+        "quadratic_obstruction": (list(Y.koszul_obstruction)
+                                  if Y.koszul_obstruction else None),
+        "n_homogeneous": n_homogeneous_degree(A),
+        "n_koszul": n_koszul_certificate(A, top, yoneda=Y),
+        "k2": k2_certificate(A, top, yoneda=Y),
+        "almost_koszul": almost_koszul_certificate(A, top, yoneda=Y),
+        "multi_koszul": multi_koszul_certificate(A, top, yoneda=Y),
+        "certified_through_degree": Y.certified_through_degree,
+        "complete": Y.is_finite_dimensional is True,
+        "length_graded": _koszul._is_length_graded(A),
+        "references": list(_REFERENCES),
+    }
+    record["generation_degrees"] = dict(record["n_koszul"]["internal_degrees"])
+    record["latex"] = _profile_latex(record)
+    return record
+
+
+def koszul_profile_block(A, top=8):
+    """The no-code ``koszul`` block, shared byte-identically by the server/HPC runner
+    and the Pyodide twin (each adds only its own ``citations``).  Vertex-keyed maps are
+    stringified so the block round-trips through JSON unchanged."""
+    record = koszul_profile(A, top)
+    n_koszul = dict(record["n_koszul"])
+    n_koszul["internal_degrees"] = {str(v): list(row) for v, row
+                                    in n_koszul["internal_degrees"].items()}
+    n_koszul["internal_degree_sets"] = {str(v): [list(s) for s in rows] for v, rows
+                                        in n_koszul["internal_degree_sets"].items()}
+    multi = dict(record["multi_koszul"])
+    multi["generation_degrees"] = {str(v): list(row) for v, row
+                                   in multi["generation_degrees"].items()}
+    block = dict(record)
+    block["kind"] = "koszul"
+    block["n_koszul"] = n_koszul
+    block["multi_koszul"] = multi
+    block["generation_degrees"] = {str(v): list(row) for v, row
+                                   in record["generation_degrees"].items()}
+    return block

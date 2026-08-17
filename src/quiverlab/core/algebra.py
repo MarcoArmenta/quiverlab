@@ -649,6 +649,15 @@ class Algebra:
         from quiverlab.modules.ext_algebra import ext_algebra
         return ext_algebra(self, top)
 
+    def koszul_profile(self, top=8):
+        """The generalized-Koszulity profile (Plan 77): Plan 27's quadratic Koszul
+        verdict together with Berger's N-Koszul certificate, Cassidy-Shelton K2
+        (through an explicit certified window), the Brenner-Butler-King
+        (p,q)-almost-Koszul classifier, Herscovich's scoped multi-Koszul record, and
+        the internal (path-length) generation degrees of Ext(k,k)."""
+        from quiverlab.modules.nkoszul import koszul_profile
+        return koszul_profile(self, top)
+
     def chain_complex(self, terms, dmats, check=True):
         """A bounded chain complex of A-modules (Plan 39): ``terms`` is
         ``{degree: Module}`` and ``dmats`` is ``{n: d_n}`` with

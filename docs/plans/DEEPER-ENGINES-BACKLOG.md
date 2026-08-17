@@ -661,6 +661,51 @@ planned together even if delivered in slices.
   descent self-cert + the downstream bracket arbiter remain the correctness gates until
   the general operator lands.
 
+- [ ] **The bibliography parser silently DROPS the last field of an entry (20
+  pre-existing entries affected).** Found while adding the Plan-77 citations, and
+  worth fixing on its own. `citations/bibliography.py::_bib_fields` captures an
+  entry body with `@\w+\{KEY,(.*?\n)\}` — which STRIPS the entry's closing brace —
+  and then requires every field to be followed by `,\n` or `\n}`. The last field of
+  an entry therefore matches nothing and is dropped, so an entry ending
+  `year = {2004}` (no trailing comma) formats as **"Green, … (). D-Koszul
+  algebras."** — a visibly broken year on the /literature page and in every report
+  footer. Measured live: **27 of 187 entries** lost their last field; Plan 77 fixed
+  its own 7 by giving them a trailing comma (the existing house style — `Priddy1970`
+  already has one), leaving **20 pre-existing**: `qpa`, `gap4`, `sagemath`,
+  `quiverlab` (→ `year`/`note`), `ButlerRingel1987`, `AvellaAlaminosGeiss2008`,
+  `WaldWaschbusch1985`, `GeissDeLaPena1999`, `CrawleyBoevey1989` (→ `volume`),
+  `SuarezAlvarez2023`, `BerghJorgensen2013tate` (→ **doi**),
+  `ArtensteinLanzilottaSolotar2020`, `Wang2015singular`, `Keller2018singular`,
+  `Usui2021tate` (→ **arXiv note**), `Schroll2018`, `HeZhouZhu2020`,
+  `Chen2022skewgentle`, `Amiot2021skewgentle`, `GarciaLavoue2026` (→ `year`).
+  **Why it was NOT fixed inside Plan 77:** repairing the parser (a one-line
+  lookahead change) would change the FORMATTED string of those 20 entries, and
+  result blocks embed citation payloads — so it churns every frozen runner golden
+  whose block cites one of them (the Plan-74 lesson: a bib change broke the
+  `hh_lie_module_kronecker` golden, and it passed in isolation). That re-freeze is a
+  deliberate standalone change with its own gate, not a silent rider on a feature
+  plan. Fix = make the entry regex keep the closing brace (`(.*?\n)(?=\})`) or add
+  `|\s*$` to the field lookahead, then re-freeze the affected goldens in one commit.
+
+- [ ] **The multi-Koszul DECISION (Herscovich §3.2) — a bimodule Tor/Ext-vanishing
+  engine.** Named deferral from **Plan 77**, recorded so it is scope, not a gap.
+  Herscovich's multi-Koszul is **not a single definition to evaluate**: §3.2 of
+  arXiv:1305.1678 builds it out of vanishing/finiteness conditions on the **Tor/Ext
+  groups of the minimal graded BIMODULE resolution** of `A` — a homological engine of
+  its own, not a recognizer over the shipped module surfaces (which is all Plan 77
+  built). So `multi_koszul_certificate(...)["verdict"]` is **always `None`** and its
+  `status` says exactly why. What P77 DOES ship on connected (local, `A₀ = k`,
+  length-graded) input is the **generation-degree table** plus the **K₂ verdict**,
+  which multi-Koszul IMPLIES — **Prop. 3.30**, quoted: *"the Yoneda algebra of a
+  finitely generated multi-Koszul algebra with a finite dimensional space of relations
+  is generated in degrees 1 and 2, so a 𝒦₂ algebra."* On multi-vertex input the
+  recognizer refuses loudly (`A₀ = k^{Q₀}` is semisimple, not connected) and points at
+  K₂, the transferable property. **No verdict is ever guessed.** Closing this item
+  means building the bimodule Tor/Ext-vanishing decision; note that Herscovich's
+  headline examples (Yang–Mills, super-Yang–Mills) are **infinite-dimensional**, so
+  the f.d. examples that would exercise it are genuinely sparse — that scarcity is
+  itself part of why it was deferred rather than guessed.
+
 ## Done (this backlog's history)
 
 - [x] Plan 12 (2026-07-22): straddling ambiguities + `right_decomposition` + CS
