@@ -4,7 +4,8 @@ resolutions (Plan 77 / R36). Validated against Berger's closed form on k[x]/(x^N
 delta(n) = (N/2) n (n even) / (N/2)(n-1)+1 (n odd)."""
 import pytest
 
-from quiverlab import Quiver, TruncatedPathAlgebra, truncated_polynomial
+from quiverlab import (PreprojectiveAlgebra, Quiver, TruncatedPathAlgebra,
+                       truncated_polynomial)
 from quiverlab.errors import QuiverlabError
 from quiverlab.fields import QQ
 from quiverlab.modules.nkoszul import (berger_degree, generation_degrees,
@@ -88,3 +89,28 @@ def test_internal_degrees_are_bounded_below_by_the_homological_degree():
         for n, s in enumerate(gd):
             if s:
                 assert min(s) >= n
+
+
+@selfcert
+@pytest.mark.parametrize("field_name", ["QQ", "GF2", "GF3", "GF32003"])
+def test_internal_degrees_are_FIELD_INDEPENDENT(field_name):
+    # The acceptance claim "over any exact Domain", pinned rather than asserted in prose.
+    # Internal degrees are integer PATH LENGTHS -- field-free combinatorics -- so the
+    # whole recognizer ladder must return the same answer over QQ and over GF(p) for
+    # every p, including the small primes where a careless implementation would divide.
+    # (Contrast the Plan-75 incidence route, where the answer genuinely IS
+    # characteristic-dependent: RP^2 over GF(2) differs from QQ. Here it must NOT be.)
+    from quiverlab.fields import GF
+    from quiverlab.modules.nkoszul import koszul_profile_block
+    field = {"QQ": QQ, "GF2": GF(2), "GF3": GF(3), "GF32003": GF(32003)}[field_name]
+    A = truncated_polynomial(3, field=field)
+    assert [s[0] for s in generation_degrees(A, 1, 6)] == [0, 1, 3, 4, 6, 7, 9]
+    b = koszul_profile_block(A, 6)
+    assert b["n_homogeneous"] == 3
+    assert b["k2"]["generator_degrees"] == [1, 2]
+
+    P = PreprojectiveAlgebra("A3", field=field)
+    pb = koszul_profile_block(P, 6)
+    assert (pb["almost_koszul"]["p"], pb["almost_koszul"]["q"]) == (2, 2)
+    assert pb["almost_koszul"]["verdict"] is True
+    assert pb["generation_degrees"]["1"] == [0, 1, 2, 4, 5, 6, 8]
