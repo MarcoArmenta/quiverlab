@@ -126,3 +126,37 @@ def test_hereditary_has_no_break():
     c = almost_koszul_certificate(linear_path_algebra(3, field=QQ), top=5)
     assert c["verdict"] is None and c["break_hom_degree"] is None
     assert c["seam_obstruction_degree"] is None   # kA3 is Koszul: no obstruction
+
+
+@selfcert
+def test_disagreeing_q_readings_are_refused_not_averaged():
+    # The gate that makes q>=2 non-decorative, exercised on a REAL algebra (it was dead
+    # code until an adversarial pass found this witness). kA_6 / (a1a2a3, a3a4a5) is a
+    # cubic monomial whose two relations OVERLAP: its top degree is p = 3 and its first
+    # non-linear jump is at n* = 2 to internal degree e = 3, so
+    #     q = e - p = 0    but    n* - 1 = 1.
+    # BBK's definition puts the error of internal degree p+q at homological step q+1, so
+    # these two readings of q MUST agree for the almost-Koszul signature to hold. They do
+    # not, so the recognizer refuses and SAYS the readings disagree -- it does not split
+    # the difference, and it does not fall through to the q<2 message, which would have
+    # named the wrong reason.
+    from quiverlab import Quiver
+    verts = list(range(1, 7))
+    arrows = {f"a{i}": (i, i + 1) for i in range(1, 6)}
+    A = Quiver(verts, arrows).algebra(relations=["a1*a2*a3", "a3*a4*a5"], field=QQ)
+    c = almost_koszul_certificate(A, top=6)
+    assert c["p"] == 3 and c["break_hom_degree"] == 2 and c["break_internal_degree"] == 3
+    assert c["q"] == 0 and c["linear_steps"] == 1 and c["q"] != c["linear_steps"]
+    assert c["verdict"] is None
+    assert "disagree" in c["reason"]
+
+
+@selfcert
+def test_semisimple_algebra_has_no_break_and_no_top_degree():
+    # The degenerate edge: no arrows at all. p = 0, every simple is projective, so the
+    # resolution terminates at once and there is nothing to break.
+    from quiverlab import Quiver
+    A = Quiver([1, 2], {}).algebra(relations=[], field=QQ)
+    c = almost_koszul_certificate(A, top=4)
+    assert _top_degree(A) == 0 and c["p"] == 0
+    assert c["verdict"] is None and c["break_hom_degree"] is None

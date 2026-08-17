@@ -144,3 +144,49 @@ def test_tikz_artifact_carries_the_generation_degree_staircase():
     assert out["results"]["koszul"]["n_homogeneous"] == 3
     if src:
         assert "ell = n" in src or r"\ell" in src
+
+
+def test_no_koszul_request_is_rejected_outright():
+    # The Plan-75 defect class, checked rather than assumed: the estimator sizes every
+    # request by a bar-style dim**3 * (deg+1) model, and for a kind whose real cost law
+    # differs that can refuse a request the library answers instantly (P75's torus poset
+    # was classified `reject` while the library took 0.02s). `koszul` is NOT in the
+    # _max_degree skip tuple ON PURPOSE -- unlike P75's order-complex degree, its `hi` IS
+    # a homological degree, since the minimal resolution of every simple is walked to it,
+    # so tiering on it is correct. What must NOT happen is an outright refusal, so that
+    # is what is pinned here (instant or queued are both fine; only `reject` is a bug).
+    from webapp.server.config import Config
+    from webapp.server.estimator import classify
+
+    cfg = Config.from_env()
+    loop = {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+            "relations": ["x*x*x"], "field": {"kind": "QQ"}}
+
+    def pre(t):
+        return {"kind": "family", "family": "PreprojectiveAlgebra",
+                "params": {"type_or_quiver": t}, "field": {"kind": "QQ"}}
+
+    for dim, alg, compute in [(3, loop, ["koszul:0..8"]), (3, loop, ["koszul:0..20"]),
+                              (10, pre("A3"), ["koszul:0..6"]),
+                              (35, pre("A5"), ["koszul:0..6"]),
+                              (60, pre("D5"), ["koszul:0..8"])]:
+        req = WebRequest.model_validate({"schema": 1, "algebra": alg, "compute": compute})
+        tier = classify(dim, req, cfg)["tier"]
+        assert tier in ("instant", "queued", "big"), (dim, compute, tier)
+
+
+def test_koszul_tiers_exactly_like_its_ext_algebra_sibling():
+    # koszul is an ALGEBRA-level kind sized on A.dim like ext_algebra; at equal degree
+    # the two must land in the same tier, so the new kind introduces no special routing.
+    from webapp.server.config import Config
+    from webapp.server.estimator import classify
+
+    cfg = Config.from_env()
+    loop = {"kind": "quiver", "vertices": [1], "arrows": {"x": [1, 1]},
+            "relations": ["x*x*x"], "field": {"kind": "QQ"}}
+    for dim in (3, 10, 35):
+        a = WebRequest.model_validate({"schema": 1, "algebra": loop,
+                                       "compute": ["koszul:0..6"]})
+        b = WebRequest.model_validate({"schema": 1, "algebra": loop,
+                                       "compute": ["ext_algebra:0..6"]})
+        assert classify(dim, a, cfg)["tier"] == classify(dim, b, cfg)["tier"]

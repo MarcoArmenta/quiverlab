@@ -290,8 +290,8 @@ def n_koszul_certificate(A, top=8, *, yoneda=None):
     complete = Y.is_finite_dimensional is True
     out = {"n_homogeneous": None, "verdict": None, "window": window,
            "complete": complete, "berger_expected": [], "internal_degrees": {},
-           "internal_degree_sets": {}, "pure": None, "impurity": None,
-           "k2_agrees": None, "reason": ""}
+           "internal_degree_sets": {}, "pure": None, "berger_pattern": None,
+           "impurity": None, "k2_agrees": None, "reason": ""}
 
     N = n_homogeneous_degree(A)
     out["n_homogeneous"] = N
@@ -323,7 +323,7 @@ def n_koszul_certificate(A, top=8, *, yoneda=None):
                          "window: " + str(exc))
         return out
     except _NonPure as exc:
-        out["pure"] = False
+        out["pure"] = out["berger_pattern"] = False
         out["verdict"] = False
         out["impurity"] = {"degree": exc.degree, "internal_degrees": exc.degrees}
         out["reason"] = ("a generator column of d_" + str(exc.degree) + " mixes "
@@ -351,12 +351,21 @@ def n_koszul_certificate(A, top=8, *, yoneda=None):
         if impurity is not None:
             break
     out["internal_degrees"] = flat
-    out["pure"] = pure and mismatch is None
+    # Two DISTINCT facts, kept apart on purpose. `pure` is Berger's purity alone --
+    # every P_n generated in ONE internal degree -- and `berger_pattern` additionally
+    # requires that degree to BE delta(n). The overlapping-cubic witness
+    # kA_6/(a1a2a3, a3a4a5) is exactly why: its resolution IS pure ([0,1,3,5] are all
+    # singletons) and still breaks the 2-N alternation at n=3, so collapsing the two
+    # into one flag would report "not pure" about a resolution that is.
+    out["pure"] = pure
+    out["berger_pattern"] = pure and mismatch is None
     out["impurity"] = impurity
 
     k2 = k2_certificate(A, top, yoneda=Y)
     k2_holds = k2["verdict"] is not False        # no degree->=3 generator inside W
-    out["k2_agrees"] = (k2_holds == out["pure"])
+    # Berger's N>=3 equivalence is N-Koszul <=> K2, and N-Koszul is the FULL condition
+    # (pure AND at delta(n)), so the cross-check compares against berger_pattern.
+    out["k2_agrees"] = (k2_holds == out["berger_pattern"])
 
     if impurity is not None:
         out["verdict"] = False
