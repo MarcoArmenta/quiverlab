@@ -404,3 +404,164 @@ def n_koszul_certificate(A, top=8, *, yoneda=None):
                            "window-certified, so N-Koszulity is certified THROUGH "
                            "THE WINDOW only, never claimed unconditionally")
     return out
+
+
+# ---------------------------------------------------------------------------
+# (p,q)-almost-Koszul (Brenner-Butler-King)
+# ---------------------------------------------------------------------------
+def _top_degree(A):
+    """``p`` = the top graded degree of ``A``: the longest path in its own basis.
+
+    ``A.basis_labels`` IS the irreducible-path basis, so for a length-graded ``A``
+    the concentration ``A = A_0 (+) ... (+) A_p`` is read off directly and no Groebner
+    completion is involved.  (``koszul._algebra_graded_matrices`` would re-complete the
+    reduction system under its default ``degree_bound=8``, which is too small for
+    ``Pi(A5)``/``Pi(D4)`` -- it raises ``AdmissibilityError`` there.  The basis-label
+    route is total on every finite-dimensional ``A``.)"""
+    _koszul._require_presentation(A, "_top_degree")
+    arrows, idems = _grammar(A)
+    return max([0] + [_label_length(lab, arrows, idems) for lab in A.basis_labels])
+
+
+def _first_jump(degrees):
+    """``(n_star, e)`` -- the first homological degree whose internal degree exceeds it,
+    and that internal degree.  ``None`` when the strand stays linear (``l(n) == n``)
+    for every computed term: a Koszul resolution has no break.  Raises ``ValueError``
+    when the breaking term is generated in SEVERAL internal degrees (``e`` ambiguous).
+    """
+    for n, s in enumerate(degrees):
+        if not s:
+            return None                          # the resolution terminated, linear
+        if s == [n]:
+            continue
+        if len(s) != 1:
+            raise ValueError("P_" + str(n) + " is generated in several internal "
+                             "degrees " + str(s) + ", so the break degree e is "
+                             "ambiguous")
+        return n, s[0]
+    return None
+
+
+def almost_koszul_certificate(A, top=8, *, yoneda=None):
+    """Brenner-Butler-King ``(p,q)``-almost-Koszul, as a SIGNATURE recognizer.
+
+    BBK: ``A`` is concentrated in degrees ``0..p`` and a linear complex of projectives
+    resolves the simple up to an error given by the degree ``p+q`` part.  Pointwise on
+    the minimal resolution that reads: ``l_i(n) = n`` (a linear strand) for ``n <= q``,
+    then the first break at ``n = q+1`` to internal degree ``e = p+q``.  The engine
+    recovers ``p`` as the top degree of ``A`` and the break ``(n*, e)`` from the
+    internal degrees, giving TWO readings of BBK's ``q`` -- ``q = e - p`` and
+    ``q = n* - 1`` -- which must AGREE (they do on every Dynkin preprojective and on
+    every ``k[x]/x^N``); a disagreement is reported, never averaged away.
+
+    ``verdict=True`` requires: a linear prefix, a first break with ``(n*, e)`` agreeing
+    across the simples that break, the two ``q`` readings agreeing, and ``q >= 2``.
+    ``verdict=None`` when there is NO break (the resolution is linear -- the algebra is
+    genuinely Koszul, e.g. ``Pi(A2)`` or ``k[x]/x^2``, and a Koszul algebra needs no
+    "error"), when ``q == 1`` (BBK's degenerate Koszul-type boundary -- the whole
+    ``k[x]/x^N`` family, which is N-Koszul and is caught by
+    :func:`n_koszul_certificate`), or when the data disagree across simples.
+
+    **Scoped OUT, stated:** this does NOT verify BBK's full definition -- neither the
+    existence of the finite linear complex of projectives with a single error term nor
+    the ``2(h-1)`` periodicity.  What is reported is the ``(p,q)`` label plus the
+    single-break structure, which is what BBK's definition checks pointwise, plus the
+    WINDOW-OBSERVED spacing of the internal-degree jumps -- which is NOT BBK's bimodule
+    period ``2(h-1)`` and is never claimed to be (for ``Pi(A3)``, ``h = 4`` and BBK's
+    period is 6, while the observed jump spacing is 3).
+    """
+    Y = _yoneda(A, top, yoneda)
+    window = Y.certified_through_degree
+    obstruction = Y.koszul_obstruction
+    out = {"verdict": None, "p": None, "q": None, "break_hom_degree": None,
+           "break_internal_degree": None, "linear_steps": None,
+           "jump_degrees": [], "jump_spacing": None, "window": window,
+           "complete": Y.is_finite_dimensional is True,
+           "seam_obstruction_degree": obstruction[0] if obstruction else None,
+           "reason": ""}
+
+    if not _koszul._is_length_graded(A):
+        out["reason"] = _NOT_GRADED
+        return out
+    p = _top_degree(A)
+    out["p"] = p
+    try:
+        per_simple = _all_generation_degrees(A, max(window, 1))
+    except DepthLimitError as exc:
+        out["reason"] = ("the minimal resolution could not be built through the "
+                         "window: " + str(exc))
+        return out
+    except _NonPure as exc:
+        out["reason"] = ("a generator column of d_" + str(exc.degree) + " mixes "
+                         "internal degrees " + str(exc.degrees)
+                         + ": the break degree is not well defined")
+        return out
+
+    breaks = {}
+    for v, gd in per_simple.items():
+        try:
+            jump = _first_jump(gd)
+        except ValueError as exc:
+            out["reason"] = "S_" + str(v) + ": " + str(exc)
+            return out
+        if jump is not None:
+            breaks[v] = jump
+
+    if not breaks:
+        out["reason"] = ("the minimal resolution of every simple stays linear "
+                         "(l(n) = n) through degree " + str(window)
+                         + ": there is no almost-Koszul error term -- the algebra is "
+                           "Koszul in this range, and a Koszul algebra needs none "
+                           "(see the quadratic and K2 verdicts)")
+        return out
+
+    n_stars = {n for (n, _e) in breaks.values()}
+    es = {e for (_n, e) in breaks.values()}
+    if len(n_stars) != 1 or len(es) != 1:
+        out["reason"] = ("the simples break in different places -- (n*, e) = "
+                         + str(sorted(breaks.items()))
+                         + " -- so there is no single (p,q) label")
+        return out
+    witness = sorted(breaks)[0]
+    n_star, e = breaks[witness]
+    q = e - p
+    out.update({"break_hom_degree": n_star, "break_internal_degree": e,
+                "q": q, "linear_steps": n_star - 1})
+
+    # The window-observed jump spacing: the homological degrees at which the excess
+    # l(n) - n increases. Recorded; never claimed to be BBK's period 2(h-1).
+    jumps, previous = [], 0
+    for n, s in enumerate(per_simple[witness]):
+        if not s or len(s) != 1:
+            break
+        excess = s[0] - n
+        if excess > previous:
+            jumps.append(n)
+        previous = excess
+    out["jump_degrees"] = jumps
+    spacings = {b - a for a, b in zip(jumps, jumps[1:])}
+    out["jump_spacing"] = spacings.pop() if len(spacings) == 1 else None
+
+    if q != n_star - 1:
+        out["reason"] = ("the two readings of BBK's q disagree: e - p = " + str(q)
+                         + " but n* - 1 = " + str(n_star - 1)
+                         + "; BBK's definition puts the error of internal degree p+q "
+                           "at homological step q+1, so this is not the "
+                           "almost-Koszul signature")
+        return out
+    if q < 2:
+        out["reason"] = ("q = e - p = " + str(q) + " < 2: the error sits at internal "
+                         "degree p+1, BBK's degenerate Koszul-type boundary, not a "
+                         "genuine almost-Koszul break (an N-homogeneous algebra here "
+                         "is N-Koszul -- see the n_koszul field)")
+        return out
+    out["verdict"] = True
+    out["reason"] = ("A is concentrated in degrees 0.." + str(p)
+                     + " and the minimal resolution of every simple is linear for "
+                     + str(n_star - 1) + " steps and then breaks once, at homological "
+                       "degree " + str(n_star) + " to internal degree " + str(e)
+                     + " = p + q: the (p, q) = (" + str(p) + ", " + str(q)
+                     + ")-almost-Koszul signature (Brenner-Butler-King). The full BBK "
+                       "definition -- the finite linear complex with a single error "
+                       "term and the 2(h-1) periodicity -- is NOT verified here")
+    return out
