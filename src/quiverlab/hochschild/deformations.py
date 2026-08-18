@@ -200,7 +200,7 @@ def _obstruction_data(A, *, max_cells=4_000_000):
 
 def self_bracket_class(data, coords):
     """The HH^3 class of [alpha, alpha] for alpha = sum coords_i * alpha_i, as a
-    coordinate vector over the recorded HH^3 basis: sum_{i,j} coords_i coords_j B[i][j].
+    coordinate vector over the recorded HH^3 basis: sum_{i,j} coords_i coords_j ``B[i][j]``.
     Basis-dependent; the LOAD-BEARING fact is only whether it is zero (a lift to second
     order exists iff this class vanishes -- the DGLA recursion delta mu_2 = -1/2[a,a])."""
     dom, B, n = data["dom"], data["B"], data["hh2_dim"]

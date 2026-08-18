@@ -5,6 +5,62 @@ All notable changes to quiverlab are documented here. The format follows
 [Semantic Versioning](https://semver.org) (0.x during battle-testing; 1.0 at JOSS
 acceptance).
 
+## [1.0.0] — 2026-08-17
+
+The **computability-expansion program**: 33 implementation plans (P51–P79) over the 36
+adjudicated research records R1–R37, each spec'd, implemented, adversarially reviewed and
+merged with its oracles on the verification page. Everything below is reachable with **no
+code**, on all three tiers (browser / server / HPC CLI), in four languages.
+
+### Added
+
+- **Hochschild, deepened.** The Gerstenhaber bracket beyond the bar window (R1);
+  HH **with coefficients** in an arbitrary bimodule (R4) and the BV operator (R2);
+  **Tate–Hochschild** cohomology in every INTEGER degree via the complete-resolution
+  splice (R3); the HH¹ **Lie algebra** and HH• as a graded Lie **module** over it
+  (R11/R12); L∞ **deformation** theory (R13); Han's conjecture transported across a
+  bounded extension (R7); split extensions and arrow removal (R5/R6); skew-group
+  decompositions (R8); incidence algebras via the **order complex** (R9) and the GHMS
+  comultiplicative **Koszul** resolution as a third independent oracle (R10).
+- **Recognizers and classification.** The φdim/ψdim invariants and fractional
+  Calabi–Yau dimension (R23/R24); left/right parts (R15); π₁ and simple connectivity
+  (R14); the radical filtration and infinite radical (R37); Coxeter spectral analysis
+  (R20); the tilted / quasi-tilted / shod / laura / **ada ladder** (R16–R19); the
+  Tits-form tame/wild certificate (R21).
+- **τ-tilting and beyond.** Torsion-lattice congruences and forcing (R25); exceptional
+  sequences (R26); the τ-cluster morphism category and its classifying space (R29);
+  silting with an honest generation boundary (R30); skew-gentle algebras (R28);
+  wall-and-chamber structures (R27); persistence/TDA barcodes (R33).
+- **Generalized Koszulity** (R36): the **internal generation degrees** of `Ext•(k,k)`,
+  Berger's N-Koszul alternation, Cassidy–Shelton **K₂** through an explicit certified
+  window, and the Brenner–Butler–King **(p,q)-almost-Koszul** classifier.
+- **Amiot–Keller cluster categories** (R31): the certified acyclic slice — the finite
+  fundamental domain, cluster-tilting objects as support τ-tilting pairs (AIR), the
+  cluster-tilted End-algebra as a Jacobian algebra, and a 2-Calabi–Yau certificate.
+
+### Changed
+
+- The suite grew to **5338 tests** (fast 2585 / deep 2493 / qpa 249 / m2 11), of which
+  **3315** are pinned by at least one oracle class — literature/theory, cross-engine,
+  self-certifying, live QPA, or live Macaulay2 — with the class counts **audited against
+  live collection** by the release gate.
+- Every new surface carries its **honest scope** on the verification page: what is
+  computed, what is cited, and what is refused.
+
+### Fixed
+
+- A **three-tier compute-grammar parity gap**: `skew_gentle:<budget>` was accepted by the
+  HPC CLI and the browser twin but rejected by the webapp schema. Fixed, and the audit
+  that found it is now a standing gate over every budget-carrying kind.
+
+### Deferred (explicitly, never silently)
+
+See the **v1.0.0 deferral ledger** on the verification page: the Tate cup, the
+multi-Koszul decision, the Ginzburg dg engine, the char-0 Bardzell `ℓ₃`, the P72
+coefficient-cup/bimodule-Ext engines, the general LZZ `B_σ`, two GUI surfaces whose
+mathematics is already reachable, and two measured open defects (the bibliography
+parser's dropped last field; the P45 `mutate` root cause).
+
 ## [0.3.0] — 2026-08-06
 
 ### Added

@@ -487,6 +487,17 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"wall_chamber budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="wall_chamber", lo=None, hi=(int(b) if b else None))
+    # skew_gentle carries a tau-tilting PAIR BUDGET, not a degree range (Plan 68):
+    # 'skew_gentle' or 'skew_gentle:512'. This site was MISSING the special form until the
+    # P80 parity audit: hpc.spec and the Pyodide twin both accepted 'skew_gentle:512'
+    # while this one rejected it as unparseable, so the three tiers disagreed about what a
+    # valid request is. (The GUI only ever emitted the bare form, so no deployed GUI path
+    # was broken -- but a hand-written API request was.)
+    if s == "skew_gentle" or s.startswith("skew_gentle:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"skew_gentle budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_gentle", lo=None, hi=(int(b) if b else None))
     # cluster_category (Plan 79 / R31) carries the EXCHANGE-GRAPH PAIR BUDGET, not a
     # degree: 'cluster_category' or 'cluster_category:512'. The cluster-tilting count
     # rides the same tau-tilting BFS as wall_chamber, so it takes the same special form

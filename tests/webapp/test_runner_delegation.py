@@ -551,7 +551,17 @@ never hide behind one:
     grammar sites -- so every pre-P79 request keys byte-unchanged; both runners share
     ``cluster.category.cluster_category_block``, so the Pyodide twin agrees
     (``tests/webapp/test_cluster_category_kind_p79.py``,
-    ``tests/gui/test_cluster_runner_twin_p79.py``)."""
+    ``tests/gui/test_cluster_runner_twin_p79.py``).
+  * 2026-08-17 (ALL 51 entries RE-FROZEN, P80 -- the v1.0.0 version bump): every
+    ``result_json`` embeds ``quiverlab_version``, so bumping 0.3.0 -> 1.0.0 legitimately
+    drifts all of them. This is the metaplan's "goldens under the version-drift gate".
+    The re-freeze was TRANSFORM-GATED, not blind: for each entry the version substitution
+    ALONE had to reproduce the new bytes (``old.replace('"quiverlab_version": "0.3.0"',
+    '"quiverlab_version": "1.0.0"') == got``), and any entry differing beyond that would
+    have aborted the whole re-freeze -- so a real result drift could not hide behind the
+    bump. 51 re-frozen, 0 suspicious. Every ``canonical_key`` was asserted UNMOVED in the
+    same pass: the keys pin ``_V = "0.1.0.dev0"`` explicitly, so cache identity is
+    independent of the library version by construction."""
 import json
 import pathlib
 

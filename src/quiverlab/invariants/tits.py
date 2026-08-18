@@ -73,7 +73,7 @@ class UnitForm:
         return UnitForm(len(idx), sub, tuple(self.labels[i] for i in idx))
 
     def underlying_graph(self) -> dict:
-        """Adjacency: i ~ j iff gram[i][j] != 0 (i != j)."""
+        """Adjacency: i ~ j iff ``gram[i][j] != 0`` (i != j)."""
         g = self.gram
         n = self.n
         return {i: {j for j in range(n) if j != i and g[i][j] != 0} for i in range(n)}

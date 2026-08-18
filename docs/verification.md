@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **5292 tests** (live-recounted 2026-08-17 on the Plan-77 branch — R36 the
+The suite is **5338 tests** (live-recounted 2026-08-17 on the Plan-77 branch — R36 the
 generalized Koszulity ladder (Berger N-Koszul, Cassidy–Shelton K₂, Brenner–Butler–King
 `(p,q)`-almost-Koszul, the internal generation degrees of `Ext•(k,k)`) — cut from dev's
 P76 tip; the previous recount was the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10
@@ -623,6 +623,8 @@ Brenner–Butler–King `(p,q)`-almost-Koszul, Herscovich's scoped multi-Koszul,
 internal generation degrees of `Ext•(k,k)`), cut from dev's P76 tip; the Plan-77
 additions (lit +25 / xeng +8 / selfcert +43 / qpa +1 / m2 +0, union +70 — suite
 5201 → **5292**, fast 2539 / deep 2493) fold into these live-collected totals. The
+**P80 release gate** then added the three-tier compute-grammar parity gate (46 unmarked
+contract tests, so no oracle class moved): suite **5338**, fast **2585**. The
 previous recount was the Plan-77 branch (R36 generalized Koszulity), which added
 lit +37 / xeng +8 / selfcert +44 / qpa +1, union +90 (suite 5087 → 5201). The
 previous recount was the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10 the GHMS
@@ -1966,7 +1968,7 @@ verified precision and listed below as such.
   (kA_n, the rad²=0 linear Nakayama), where the dim-vector prefilter never enters the
   positive-only branch. Never a silent wrong part or support. (d) **The "product of tilted
   algebras" property is REPORTED, not certified here.** `A_λ`/`A_ρ` are a product of
-  quasi-tilted algebras in general (tilted for ada — ACT [5](2.3) / ACLV Thm A); P55 ships the
+  quasi-tilted algebras in general (tilted for ada — ACT [5, §2.3] / ACLV Thm A); P55 ships the
   connected-component factors and pins the per-factor *tiltedness* with a
   `skipif(not hasattr(Algebra, "is_tilted"))`-guarded test (`test_support_components_are_tilted_PIN`)
   that GENUINELY auto-activates into a real assert the moment **P60** ships `Algebra.is_tilted`
@@ -2218,6 +2220,82 @@ verified precision and listed below as such.
   K(π,1); the picture-group relation **WORDS** are transcribed from ITW/HI (the slope order is
   orientation-dependent), and P66 pins only the transcription-independent invariants (the
   counts, the type split, the brick-membership of each relation, the abelianization).
+
+### v1.0.0 deferral ledger (P51–P79, reconciled at the P80 release gate)
+
+The v1.0.0 program (P51–P79, the 33 implementation plans over records R1–R37) shipped
+every record's **mathematics**. What follows is the complete list of what it did **not**
+ship, reconciled here so nothing is a silent gap. Each entry names what is missing, what
+IS available instead, and the theorem or engine that would be needed to close it. All of
+them are also live entries in `docs/plans/DEEPER-ENGINES-BACKLOG.md`.
+
+**Carried — engine-sized, each needs machinery beyond one plan:**
+
+- **The Tate cup product** (Plan 76 / R3). `TateHochschild.cup` is always `None`. The
+  Z-graded ring needs a diagonal approximation on the TWO-SIDED complete complex — the
+  Plan-20/21 diagonal rebuilt for the GF(p) corner complete resolution and extended past
+  degree 0, which is plan-sized. Shipping only the positive part would have been
+  **vacuous**: in degrees ≥ 1 the Tate cochain complex IS the minimal resolution's, so
+  "the positive cup matches Plan 35" has no content. `periodicity_degree` is the
+  resolution's certified period cited as **Usui's criterion**, never an inverse computed.
+- **The multi-Koszul DECISION** (Plan 77 / R36). `multi_koszul_certificate(...)["verdict"]`
+  is always `None`. Herscovich's multi-Koszul is not a single definition to evaluate: §3.2
+  builds it from Tor/Ext-vanishing on the minimal graded BIMODULE resolution — a
+  homological engine, not a recognizer over shipped surfaces. What v1.0.0 reports instead
+  is the **generation-degree table** and the **K₂ verdict that multi-Koszul implies**
+  (Prop. 3.30, pinned). Its canonical examples (Yang–Mills) are infinite-dimensional and
+  outside the f.d. engine regardless.
+- **The Ginzburg dg engine** (Plan 79 / R31): `Γ(Q,W)`, `D^b(Γ)`, the direct
+  orbit-category `Hom_C`, general non-acyclic `C_{(Q,W)}`, and DWZ potential mutation /
+  right-equivalence. v1.0.0 ships the certified ACYCLIC slice on BMRRT's finite
+  fundamental domain; `End_C(T) = Jac(Q_T,W_T)` is cited, with the FZ quiver step and the
+  Jacobian presentation verified per instance.
+- **The char-0 Bardzell `ℓ₃` / higher L∞ brackets** (Plan 78). Needs the full
+  homotopy-transfer machinery (an explicit contracting homotopy of Bardzell's complex plus
+  the tree-summed transferred bracket, RRB arXiv:2008.08122). v1.0.0 ships the
+  unconditional **rad²=0 dg-Lie certificate** (`ℓ_{≥3} ≡ 0`) and the induced-`ℓ₂` ≡
+  CS-bracket model-independence **theorem statement** (cited, explicitly NOT a computed
+  self-certificate).
+- **The P72 split-extension deferrals DD-A2 / DD-A3.** A literal coefficient-cup
+  recomputation of the CMRS connecting map (Plan 35's cup is coefficient-`A` only, so
+  pairing different coefficient bimodules needs a new coefficient-cup surface; `δ` today
+  is the CS-Hom-complex snake, cited as the cup and validated by exactness plus
+  assembled ≡ direct), and a standalone tensor-power + bimodule-`Ext` engine for the CMRS
+  graded decomposition.
+- **The general LZZ twisted Connes operator `B_σ`** (Plan 54): the exterior class
+  (`ν` of order 2) still refuses loudly rather than returning a BV structure it cannot
+  certify.
+
+**Carried — GUI surfaces whose mathematics is already reachable:**
+
+- **The `deformations` `A_α`-adopt flow** (Plan 78) — the deformed algebra ships
+  **display-only**; loading it back onto the canvas as a fresh input is a new schema
+  surface. The metaplan flagged this one as needing Marco's sign-off to carry rather than
+  build: **signed off 2026-08-17 — carried, documented.**
+- **The P52 explicit two-sided bimodule matrix editor.** The library and the server both
+  ACCEPT the explicit `{dim, left_maps, right_maps}` coefficient form; only the canvas
+  editor is missing, because the Plan-26 module editor is one-sided (a right action per
+  arrow) while a bimodule needs both actions per generator. The builtin named bimodules
+  (regular / dual / twisted / `A/soc`) are a pick-list today. The backlog had provisionally
+  assigned this editor to P80; **Marco's release-gate decision (2026-08-17) is to carry it
+  documented**, since the mathematics is already reachable through the pick-list builtins
+  and the explicit API form.
+- **`engine="ghms"` is an ENGINE OPTION, not a GUI kind** (Plan 75) — deliberate, not an
+  omission: it adds no new user-visible computation, its HH dims being byte-identical to
+  the shipped routes. Its value is as a third independent oracle class.
+
+**Open defects carried with their blast radius measured:**
+
+- **The bibliography parser drops the LAST field of a `.bib` entry** (found at Plan 77).
+  27 of 187 entries measured; Plan 77 and Plan 79 fixed their own by adding a trailing
+  comma, leaving **20 pre-existing** (e.g. `Usui2021tate` loses its arXiv id,
+  `SuarezAlvarez2023` its doi). Not fixed in-band because repairing the parser re-formats
+  those citation strings, and result blocks EMBED citation payloads, so it churns every
+  frozen runner golden that cites one — a standalone change with its own gate.
+- **The P45 `mutate` root cause** (owned by Plan 65 Task 0) is still open: Plan 79's
+  Task-0 probe MEASURED that `D₄` reports `status="error"` even post-P65, so the Plan-63
+  n-regularity recovery remains load-bearing rather than transitional. Both `D₄` (50) and
+  `D₅` (182) are certified only through that recovery.
 
 ### v0.2.0 GUI-deferral ledger
 

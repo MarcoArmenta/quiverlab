@@ -53,9 +53,9 @@ and the splice joint d_0 : T_0 = P_0 -> T_-1 is the composite P_0 ->>  A  >-> T_
 the augmentation with the injective envelope.  Its matrix is an exact solve: the
 u-block of the image of the generator eps_{v,v} is Z^{(v)} . eps_{dual tag of u} with
 
-    Z^{(v)} = G^{-1} R^{(v)} G^{-1},   R^{(v)}[i][j] = lambda( nu^{-1}(f_j) f_i e_v ),
+    Z^{(v)} = G^{-1} R^{(v)} G^{-1},   ``R^{(v)}[i][j]`` = lambda( nu^{-1}(f_j) f_i e_v ),
 
-G[i][j] = lambda(f_i f_j) the (nondegenerate) Gram matrix of the form.
+``G[i][j]`` = lambda(f_i f_j) the (nondegenerate) Gram matrix of the form.
 
 ARBITRATION -- WHAT ACTUALLY PINS THE CONVENTIONS.  d.d = 0 is NOT sufficient here and
 must not be trusted as the arbiter: the negative half is carried as B-module maps in
