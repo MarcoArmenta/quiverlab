@@ -117,6 +117,8 @@
     '  <label><input type="checkbox" id="qlgui-center"> center</label>' +
     // ---- Plan 38: Yoneda Ext-algebra + Koszulity, and the recognizer batch ----
     '  <label><input type="checkbox" id="qlgui-ext_algebra"> Ext-algebra / Koszul 0..<input type="number" id="qlgui-ext_algebra-top" value="6" min="0"></label>' +
+    // ---- Plan 77: generalized Koszulity (N-Koszul / K2 / almost-Koszul) ----
+    '  <label><input type="checkbox" id="qlgui-koszul"> Koszulity profile (N-Koszul / K\u2082 / almost) 0..<input type="number" id="qlgui-koszul-top" value="8" min="0"></label>' +
     '  <label><input type="checkbox" id="qlgui-recognizers"> recognizers + type</label>' +
     '  <label><input type="checkbox" id="qlgui-derived_fingerprint"> derived fingerprint</label>' +
     // Plan-43: derived comparison of THIS algebra with a second algebra B.
@@ -319,6 +321,8 @@
    "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
    // Plan 38: Ext-algebra/Koszul (with a degree picker) + the recognizer batch
    "ext_algebra", "ext_algebra-top", "recognizers", "homological_profile",
+   // Plan 77: the generalized-Koszulity profile (with a top-degree picker)
+   "koszul", "koszul-top",
    // Plan 53: fractional Calabi-Yau (self-injective; scalar kind)
    "fractional_cy",
    // Plan 43: derived fingerprint (scalar kind)
@@ -1108,6 +1112,8 @@
       compute.push("radical_filtration_ss:0.." + el["radical_filtration_ss-top"].value);
     if (el.ext_algebra.checked)
       compute.push("ext_algebra:0.." + el["ext_algebra-top"].value);
+    if (el.koszul.checked)
+      compute.push("koszul:0.." + el["koszul-top"].value);
     ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "center",
      "recognizers", "homological_profile", "fractional_cy", "derived_fingerprint",
      "strings", "string_homological", "toupie", "quasi_hereditary",
@@ -4159,6 +4165,79 @@
       };
       div.appendChild(h("p", { text: "Minimal generators of E(A): " + byDeg(b.generators_by_degree)
         + "; minimal relations: " + byDeg(b.relations_by_degree) + "." }));
+    } else if (name === "koszul") {
+      // Plan 77 / R36: the generalized-Koszulity ladder beyond the quadratic case.
+      // Every verdict is three-valued and window-honest: a True that holds only
+      // through the certified window is LABELLED as such, never printed bare.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        var kzv = function (v, yes, no, unknown) {
+          return v === true ? yes : v === false ? no : unknown;
+        };
+        if (b.latex)
+          div.appendChild(h("p", { "class": "arithmatex", text: "\\[ " + b.latex + " \\]" }));
+        // (a) the quadratic verdict, Plan 27's, named as the overlap it is.
+        div.appendChild(h("p", { text: "Quadratic Koszulity (Plan 27): "
+          + kzv(b.quadratic_koszul, "A is Koszul",
+                "A is not Koszul" + (b.quadratic_obstruction
+                  ? " \u2014 obstruction at degree " + b.quadratic_obstruction[0]
+                    + " (" + b.quadratic_obstruction[1] + ")" : ""),
+                "undecided through degree " + b.certified_through_degree) + "." }));
+        // (b) the generation-degree table -- the visual of the 2-N alternation.
+        var gd = b.generation_degrees || {};
+        var gks = Object.keys(gd).sort(function (a, c) { return (+a) - (+c); });
+        if (gks.length) {
+          var maxn = 0;
+          gks.forEach(function (k) { maxn = Math.max(maxn, gd[k].length); });
+          var ghead = h("tr");
+          ghead.appendChild(h("th", { text: "n" }));
+          for (var gi = 0; gi < maxn; gi++) ghead.appendChild(h("th", { text: String(gi) }));
+          var gtab = h("table", {}, ghead);
+          gks.forEach(function (k) {
+            var gr = h("tr");
+            gr.appendChild(h("th", { text: "\u2113(S_" + k + ")" }));
+            for (var gj = 0; gj < maxn; gj++)
+              gr.appendChild(h("td", { text: gj < gd[k].length ? String(gd[k][gj]) : "\u2014" }));
+            gtab.appendChild(gr);
+          });
+          div.appendChild(h("p", { text: "Internal (path-length) generation degrees "
+            + "\u2113_i(n) of the minimal resolution of each simple \u2014 a linear "
+            + "(Koszul) strand is \u2113(n) = n; the entry \u2014 marks a terminated "
+            + "resolution:" }));
+          div.appendChild(h("table", {}, gtab));
+        }
+        // (c) the four sub-verdicts, each carrying its own window.
+        var nk = b.n_koszul || {}, k2 = b.k2 || {}, ak = b.almost_koszul || {},
+            mk = b.multi_koszul || {};
+        var W = " (through degree " + b.certified_through_degree + ")";
+        var ul = h("ul");
+        ul.appendChild(h("li", { text: "N-homogeneous: "
+          + (b.n_homogeneous === null || b.n_homogeneous === undefined
+             ? "no (relations are not homogeneous of a single degree)"
+             : "yes, N = " + b.n_homogeneous) }));
+        ul.appendChild(h("li", { text: "N-Koszul (Berger): "
+          + kzv(nk.verdict, "yes", "no", "not decided" + (b.complete ? "" : W))
+          + " \u2014 " + (nk.reason || "") }));
+        ul.appendChild(h("li", { text: "K\u2082 (Cassidy\u2013Shelton): "
+          + kzv(k2.verdict, "yes", "no", "not decided" + (k2.complete ? "" : W))
+          + " \u2014 generators of E(A) in cohomological degrees ["
+          + (k2.generator_degrees || []).join(", ") + "]" }));
+        ul.appendChild(h("li", { text: "(p,q)-almost-Koszul (Brenner\u2013Butler\u2013King): "
+          + (ak.verdict === true
+             ? "yes, (p, q) = (" + ak.p + ", " + ak.q + ")"
+             : "no \u2014 " + (ak.reason || "")) }));
+        ul.appendChild(h("li", { text: "multi-Koszul (Herscovich): "
+          + (mk.applicable ? "connected graded, so the setting applies; "
+                           : "not applicable \u2014 ") + (mk.status || "") }));
+        div.appendChild(ul);
+        if (b.complete === false) {
+          div.appendChild(h("p", { text: "gl.dim A is not exact-finite, so every "
+            + "\"yes\" above that is not decisive holds THROUGH degree "
+            + b.certified_through_degree + " only \u2014 it is not an unconditional "
+            + "claim." }));
+        }
+      }
     } else if (name === "recognizers") {
       // Plan 38: the recognizer flags + Dynkin/Euclidean type + form type.
       var RLBL = { is_semisimple: "semisimple", is_radical_square_zero: "radical square zero",
@@ -5183,6 +5262,7 @@
    el.ss_hochschild, el["ss_hochschild-top"], el.cartan,
    el.coxeter_polynomial, el.coxeter_spectral, el.global_dimension, el.center,
    el.ext_algebra, el["ext_algebra-top"], el.recognizers,
+   el.koszul, el["koszul-top"],
    el.homological_profile, el.fractional_cy, el.strings, el.quasi_hereditary,
    el.fundamental_group, el.simply_connected, el.tame_wild,
    el.hh_lie_module, el["hh_lie_module-top"],
@@ -5277,7 +5357,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh", "han_transport", "incidence_cohomology", "tate_hochschild"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "deformations", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "koszul", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "deformations", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -5666,6 +5746,7 @@
     {"id": "center", "title": "Center of the algebra Z(A)", "category": "invariants", "keywords": ["center", "centre", "centro", "中心", "Z(A)", "zentrum"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["center"]}},
     {"id": "recognizers", "title": "Recognizers & Dynkin type", "category": "invariants", "keywords": ["recognizers", "type", "dynkin", "tipo", "reconocedores", "reconnaisseurs", "hereditary", "nakayama", "识别", "类型", "gentle", "string"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers"]}},
     {"id": "ext_algebra", "title": "Ext-algebra & Koszulity", "category": "invariants", "keywords": ["ext", "koszul", "yoneda", "ext-algebra", "koszulity", "代数", "koszulidad", "koszulité"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["ext_algebra:0..3"]}},
+    {"id": "koszul", "title": "Generalized Koszulity (N-Koszul, K\u2082, almost)", "category": "invariants", "keywords": ["koszul", "n-koszul", "k2", "almost koszul", "berger", "cassidy", "shelton", "brenner", "butler", "king", "multi-koszul", "generation degrees", "koszulidad", "koszulit\u00e9", "\u4ee3\u6570"], "example": {"vertices": [1], "arrows": {"x": [1, 1]}, "relations": ["x*x*x"], "field": {"kind": "QQ"}, "compute": ["koszul:0..8"]}},
     {"id": "derived_fingerprint", "title": "Derived fingerprint", "category": "derived", "keywords": ["derived", "fingerprint", "derivada", "dérivée", "导出", "invariant", "huella", "empreinte"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["derived_fingerprint"]}},
     {"id": "quasi_hereditary", "title": "Quasi-hereditary structure (Δ/∇)", "category": "invariants", "keywords": ["quasi-hereditary", "standard", "costandard", "delta", "nabla", "bgg", "cuasi-hereditaria", "quasi-héréditaire", "准遗传"], "example": {"vertices": [1, 2, 3], "arrows": {"a": [1, 2], "b": [2, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["quasi_hereditary"]}},
     {"id": "strings", "title": "Gentle strings & bands", "category": "gentle", "keywords": ["gentle", "string", "band", "gentil", "aimable", "cuerda", "corde", "banda", "bande", "surface", "superficie", "triangulation", "字符串", "温和", "avella", "geiss"], "example": {"vertices": [1, 2, 3, 4], "arrows": {"m1": [2, 1], "m2": [2, 3], "m3": [4, 1], "m4": [4, 3]}, "relations": [], "field": {"kind": "GF", "p": 7, "n": 1}, "compute": ["recognizers", "strings"]}},
@@ -5791,6 +5872,7 @@
     derived_compare: { cb: "derived_compare" },
     han_transport: { cb: "han_transport" },
     ext_algebra: { cb: "ext_algebra", top: "ext_algebra-top" },
+    koszul: { cb: "koszul", top: "koszul-top" },
     cartan: { cb: "cartan" },
     coxeter_polynomial: { cb: "coxeter_polynomial" },
     coxeter_spectral: { cb: "coxeter_spectral" },

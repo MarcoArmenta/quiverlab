@@ -191,3 +191,42 @@ def _esc_tex(s):
     """Minimal TeX escaping for a wall label (dim-vector string or brick name)."""
     return str(s).replace("\\", r"\textbackslash{}").replace("_", r"\_").replace(
         "{", r"\{").replace("}", r"\}").replace("$", r"\$")
+def tikz_koszul(b):
+    """The Plan-77 generalized-Koszulity staircase: the internal generation degree
+    l_i(n) plotted against the homological degree n, with the diagonal l = n drawn
+    faint.  A Koszul strand hugs the diagonal; Berger's 2-N alternation climbs in
+    steps 1, N-1, 1, N-1, ...; an almost-Koszul algebra runs ON the diagonal and then
+    leaves it exactly once, at the break.
+
+    Every number is taken VERBATIM from the block -- nothing is recomputed here, so the
+    picture cannot claim a degree the engine did not produce.  The certified window is
+    labelled, never hidden.  Returns an honest note when the block carries no table.
+    """
+    gd = (b or {}).get("generation_degrees") or {}
+    lines = [r"\begin{tikzpicture}[>=stealth, scale=0.6]"]
+    if not gd:
+        lines.append(r"  \node {no generation-degree table recorded};")
+        lines.append(r"\end{tikzpicture}")
+        return "\n".join(lines) + "\n"
+    keys = sorted(gd, key=lambda k: int(k))
+    width = max((len(gd[k]) for k in keys), default=0)
+    top = max((max(gd[k]) for k in keys if gd[k]), default=0)
+    lines.append(r"  \draw[->] (0,0) -- (%d,0) node[right] {$n$};" % (width + 1))
+    lines.append(r"  \draw[->] (0,0) -- (0,%d) node[above] {$\ell$};" % (top + 1))
+    lines.append(r"  \draw[gray!40] (0,0) -- (%d,%d) node[right, gray] "
+                 r"{$\ell = n$};" % (min(width, top), min(width, top)))
+    marks = ["*", "square*", "triangle*", "diamond*"]
+    for idx, k in enumerate(keys):
+        row = gd[k]
+        if not row:
+            continue
+        pts = " -- ".join("(%d,%d)" % (n, d) for n, d in enumerate(row))
+        lines.append(r"  \draw[thick, mark=%s] %s;" % (marks[idx % len(marks)], pts))
+        lines.append(r"  \node[right, font=\small] at (%d,%d) {$S_{%s}$};"
+                     % (len(row) - 1, row[-1], k))
+    cdeg = (b or {}).get("certified_through_degree")
+    if cdeg is not None:
+        lines.append(r"  \node[below, font=\small] at (%d,-0.6) "
+                     r"{certified through degree %s};" % (max(width // 2, 1), cdeg))
+    lines.append(r"\end{tikzpicture}")
+    return "\n".join(lines) + "\n"

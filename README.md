@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-5087_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-5201_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 5087 tests over the
+Every shipped feature is unit tested (the suite is 5201 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -379,6 +379,19 @@ ported and wired in:
   agreeing degreewise with the minimal-syzygy engine and with bar/CS. Koszulity is a **hard
   three-valued gate**: not-Koszul refuses *naming the `Ext`-algebra obstruction*, and
   "unknown" refuses too.
+- **Generalized Koszulity beyond the quadratic case (R36).** The **internal
+  (path-length) generation degrees** of `Ext•(k,k)`, read off the shipped minimal
+  resolutions — the datum that distinguishes `k[x]/x³`, `k[x]/x⁴` and `k[x]/x⁵`, whose
+  *homological* Yoneda generators are identical. On top of it: **Berger's N-Koszul**
+  2-N alternation certificate (`δ(n)` reproduced exactly for `N = 2..5`),
+  **Cassidy–Shelton K₂** decided through an *explicit certified window* (three-valued,
+  honestly inconclusive beyond it, decisive `False` on a degree-≥3 Yoneda generator),
+  and the **Brenner–Butler–King `(p,q)`-almost-Koszul** classifier, which labels exactly
+  the algebras a Koszul route refuses — reproducing BBK's `(h−2, 2)` on the Dynkin
+  preprojectives `Π(A₃)/Π(A₄)/Π(A₅)/Π(D₄)`. The quadratic case defers to the Plan-27
+  verdict verbatim; multi-Koszul is offered only where Herscovich defines it
+  (connected/local), refusing multi-vertex input with a pointer to K₂. Clickable as
+  `koszul`.
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**

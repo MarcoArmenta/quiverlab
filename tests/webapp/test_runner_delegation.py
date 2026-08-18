@@ -523,7 +523,21 @@ never hide behind one:
     algebra ``kind`` exists and every pre-P75 request keys byte-unchanged; both runners
     share ``hochschild.simplicial.incidence_cohomology_block``, so the Pyodide twin
     agrees (``tests/webapp/test_incidence_p75.py``,
-    ``tests/gui/test_incidence_runner_twin.py``)."""
+    ``tests/gui/test_incidence_runner_twin.py``).
+  * 2026-08-17 (``koszul_kx3`` ADDED, Plan 77 -- generalized Koszulity): a NEW fixture
+    for the ``koszul`` algebra-level kind on ``k[x]/(x^3)`` over QQ (``n_homogeneous ==
+    3``; internal generation degrees ``[0,1,3,4,6,7,9,10,12]`` = Berger's ``delta(n)``;
+    K2 generators in degrees ``[1,2]``; ``almost_koszul`` refused with ``q = 1``).
+    Pure ADDITION: the 49 existing entries were verified byte-identical BEFORE the
+    append (indent=1, order-preserving; git reported 28 insertions, 0 deletions), and
+    the whole delegation suite was run green BEFORE generating it. ``koszul`` adds NO
+    request field -- it is a new compute-list STRING parsed by the generic ``name:0..N``
+    grammar (the ``ext_algebra`` sibling), so every pre-P77 request keys byte-unchanged;
+    both runners share ``modules.nkoszul.koszul_profile_block``, so the Pyodide twin
+    agrees (``tests/webapp/test_koszul_p77.py``, ``tests/gui/test_koszul_runner_twin.py``).
+    NB: this golden's ``citations`` payload depends on the Plan-77 bib entries carrying
+    a TRAILING COMMA on their last field -- without it the parser drops that field (see
+    the named backlog item; 20 pre-existing entries are still affected)."""
 import json
 import pathlib
 

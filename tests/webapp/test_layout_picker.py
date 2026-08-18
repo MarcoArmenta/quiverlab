@@ -30,6 +30,8 @@ ALL_KINDS = {
     "coxeter_spectral",
     "global_dimension", "homological_profile", "center", "recognizers",
     "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint",
+    # Plan 77 (2026-08-17): generalized Koszulity (N-Koszul / K2 / almost-Koszul).
+    "koszul",
     "tau_tilting", "silting", "dimension_vector", "rad_top_soc", "tau", "tau_minus",
     "projective_dimension", "injective_dimension", "projective_resolution",
     "injective_resolution", "decompose", "almost_split", "tilting_check",
