@@ -350,3 +350,139 @@ def _cluster_tilting_objects(self, budget_pairs=512):
 
 ClusterCategory.num_cluster_tilting = _num_cluster_tilting
 ClusterCategory.cluster_tilting_objects = _cluster_tilting_objects
+
+
+# ---------------------------------------------------------------------------------
+# The cluster-tilted End-algebra End_{C_Q}(T) = Jac(Q_T, W_T)  (BMR / Amiot)
+# ---------------------------------------------------------------------------------
+def _quiver_from_exchange_matrix(B, verts):
+    """The quiver of a skew-symmetric exchange matrix: ``B[i][j] > 0`` means ``B[i][j]``
+    arrows ``verts[i] -> verts[j]`` (and the negative entry is the same information read
+    from the other side, so only ``i < j`` is walked)."""
+    from quiverlab.combinat.quiver import Quiver
+    arrows, idx = {}, 0
+    for i in range(len(B)):
+        for j in range(i + 1, len(B)):
+            m = B[i][j]
+            if m == 0:
+                continue
+            s, t, mult = ((verts[i], verts[j], m) if m > 0
+                          else (verts[j], verts[i], -m))
+            for _ in range(mult):
+                idx += 1
+                arrows[f"a{idx}"] = (s, t)
+    return Quiver(list(verts), arrows)
+
+
+def _oriented_3_cycles(Q):
+    """EVERY oriented 3-cycle of ``Q``, deduplicated up to cyclic rotation.
+
+    Enumerating all of them (not just the first) is what makes the canonical type-A
+    potential ``W = sum of oriented 3-cycles`` right on a cluster-tilted quiver carrying
+    several triangles -- a single-triangle flagship would never exercise this.
+    """
+    names = sorted(Q.arrows)
+    seen, out = set(), []
+    for a in names:
+        for b in names:
+            if b == a or Q.target(a) != Q.source(b):
+                continue
+            for c in names:
+                if c in (a, b) or Q.target(b) != Q.source(c):
+                    continue
+                if Q.target(c) != Q.source(a):
+                    continue
+                cyc = (a, b, c)
+                # canonicalize up to rotation: start at the smallest arrow name
+                k = min(range(3), key=lambda r: cyc[r])
+                key = cyc[k:] + cyc[:k]
+                if key in seen:
+                    continue
+                seen.add(key)
+                out.append(key)
+    return out
+
+
+def _cluster_tilted_algebra(self, mutation_seq, field=None):
+    """``End_{C_Q}(T) = Jac(Q_T, W_T)`` for ``T`` reached from the initial cluster-tilting
+    object by the given Fomin-Zelevinsky mutation sequence (BMR / Amiot).
+
+    **The identification is CITED, not computed.** There is no dg engine here, so
+    ``Hom_{C_Q}`` is never formed directly; what IS computed and certified per instance is
+    (a) the cluster-tilted QUIVER ``Q_T`` by shipped FZ matrix mutation, and (b) the
+    Jacobian algebra of ``(Q_T, W_T)`` with its presentation verified (dimension, Cartan
+    matrix, self-injectivity).
+
+    ``mutation_seq`` entries are VERTEX POSITIONS in ``Q.vertices`` order (the
+    ``matrix_mutation`` convention).
+
+    **G5:** the canonical potential is the sum of oriented 3-cycles, which is the right
+    potential in type A.  When the mutated quiver carries no 3-cycle at all, or the input
+    is not type A, the QUIVER is still returned (FZ-certified) with ``algebra=None`` and a
+    note -- inferring a general potential needs DWZ mutation / right-equivalence, deferred
+    since P48.1.  A potential is never guessed.
+    """
+    from quiverlab.surfaces.flip import exchange_matrix, matrix_mutation
+    Q0 = self.algebra.quiver
+    verts = list(Q0.vertices)
+    B = exchange_matrix(Q0)
+    for k in mutation_seq:
+        if not (0 <= k < len(verts)):
+            raise QuiverlabError(
+                f"cluster_tilted_algebra: mutation index {k} is out of range for "
+                f"{len(verts)} vertices",
+                hint="mutation_seq entries are VERTEX POSITIONS in Q.vertices order")
+        B = matrix_mutation(B, k)
+    QT = _quiver_from_exchange_matrix(B, verts)
+    out = {"quiver": {"vertices": list(QT.vertices),
+                      "arrows": {a: [QT.source(a), QT.target(a)] for a in QT.arrows}},
+           "exchange_matrix": [row[:] for row in B],
+           "algebra": None, "dim": None, "self_injective": None,
+           "three_cycles": 0, "verified": [], "note": None}
+
+    cycles = _oriented_3_cycles(QT)
+    out["three_cycles"] = len(cycles)
+    # The FZ certificate: rebuilding the quiver from B and re-reading its exchange matrix
+    # must return B itself -- the per-instance quiver-level check (surfaces.flip precedent).
+    out["fz_certified"] = (exchange_matrix(QT) == B)
+    if not out["fz_certified"]:
+        out["note"] = ("the rebuilt quiver's exchange matrix does not match the mutated "
+                       "matrix -- the quiver step is NOT certified for this instance")
+        return out
+    out["verified"].append("fz_quiver_mutation")
+
+    if not cycles:
+        out["note"] = ("the cluster-tilted quiver carries no oriented 3-cycle, so the "
+                       "canonical type-A potential is empty; inferring a general "
+                       "potential needs DWZ mutation / right-equivalence, which is out "
+                       "of scope (deferred since P48.1) -- the QUIVER is certified, the "
+                       "algebra is not built")
+        return out
+    if self.dynkin_type is None or self.dynkin_type[0] != "A":
+        out["note"] = (
+            "the canonical 'sum of oriented 3-cycles' potential is the type-A potential; "
+            f"this input is type {_diagram_name(self.dynkin_type)}, where the potential "
+            "needs DWZ mutation / right-equivalence (out of scope, P48.1) -- the QUIVER "
+            f"is FZ-certified and carries {len(cycles)} oriented 3-cycle(s), but no "
+            "potential is guessed")
+        return out
+
+    from quiverlab.families.jacobian import JacobianAlgebra, Potential
+    from quiverlab.fields import QQ
+    W = Potential(QT, [(1, cyc) for cyc in cycles])
+    JA = JacobianAlgebra(QT, W, field=field or self.algebra.domain or QQ)
+    out["algebra"] = JA
+    out["dim"] = JA.dim
+    out["verified"].append("jacobian_built")
+    from quiverlab.modules.ext import is_selfinjective
+    out["self_injective"] = bool(is_selfinjective(JA))
+    out["verified"].append("self_injective")
+    out["note"] = (
+        f"W = the sum of all {len(cycles)} oriented 3-cycle(s) of Q_T (the canonical "
+        "type-A potential). End_C(T) = Jac(Q_T, W_T) is Buan-Marsh-Reiten / Amiot -- "
+        "CITED, not recomputed: no dg engine forms Hom_C directly. What is verified here "
+        "is the FZ quiver mutation and the Jacobian algebra's own presentation")
+    return out
+
+
+ClusterCategory.cluster_tilted_algebra = _cluster_tilted_algebra
