@@ -367,6 +367,7 @@
   "pick.kind.silting": "Silting theory",
   "inv.exceptional_sequences": "Exceptional sequences (classical + τ)",
   "pick.kind.exceptional_sequences": "Exceptional sequences",
+  "pick.kind.cluster_category": "Cluster category",
   "pick.kind.koszul": "Generalized Koszulity (N-Koszul, K₂, almost)",
   "pick.kind.incidence_cohomology": "HH* via the order complex (incidence)",
   "poset.title": "Poset (order relations)",

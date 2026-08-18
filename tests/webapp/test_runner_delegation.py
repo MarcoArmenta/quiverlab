@@ -537,7 +537,21 @@ never hide behind one:
     agrees (``tests/webapp/test_koszul_p77.py``, ``tests/gui/test_koszul_runner_twin.py``).
     NB: this golden's ``citations`` payload depends on the Plan-77 bib entries carrying
     a TRAILING COMMA on their last field -- without it the parser drops that field (see
-    the named backlog item; 20 pre-existing entries are still affected)."""
+    the named backlog item; 20 pre-existing entries are still affected).
+  * 2026-08-17 (``cluster_category_kA3`` ADDED, Plan 79 -- the Amiot-Keller cluster
+    category): a NEW fixture for the ``cluster_category`` ALGEBRA-ONLY, BUDGET-carrying
+    kind on ``kA3`` over QQ (``num_indec == 9`` = the almost-positive roots;
+    ``num_cluster_tilting.count == 14`` = Catalan(4), certified natively;
+    ``cluster_tilted.dim == 6`` for the ``mu_1`` mutation = ``kZ3/J^2``; the 2-CY AR
+    formula holding on all 36 ordered pairs). Pure ADDITION: the 50 existing entries were
+    verified byte-identical BEFORE the append (indent=1, order-preserving; git reported 32
+    insertions, 0 deletions) and the whole delegation suite was run green first.
+    ``cluster_category`` adds NO request field -- it is a compute-list STRING on the
+    budget grammar (the ``wall_chamber`` precedent), parsed identically in all THREE
+    grammar sites -- so every pre-P79 request keys byte-unchanged; both runners share
+    ``cluster.category.cluster_category_block``, so the Pyodide twin agrees
+    (``tests/webapp/test_cluster_category_kind_p79.py``,
+    ``tests/gui/test_cluster_runner_twin_p79.py``)."""
 import json
 import pathlib
 

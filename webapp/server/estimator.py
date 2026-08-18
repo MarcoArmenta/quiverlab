@@ -194,6 +194,84 @@ def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
                _extension_dim(req, algebra_dim), _deformations_dim(req, algebra_dim))
 
 
+# The cluster numbers of the Dynkin types -- the SIZE of the exchange-graph BFS a
+# cluster_category request will run. Tabulated (not derived) so a wrong closed form
+# cannot silently mis-size a job; unknown types fall back to the pair budget.
+_CLUSTER_NUMBER = {
+    ("A", 1): 2, ("A", 2): 5, ("A", 3): 14, ("A", 4): 42, ("A", 5): 132,
+    ("A", 6): 429, ("A", 7): 1430, ("A", 8): 4862,
+    ("D", 4): 50, ("D", 5): 182, ("D", 6): 672, ("D", 7): 2508,
+    ("E", 6): 833, ("E", 7): 4160, ("E", 8): 25080,
+}
+
+
+def _cluster_diagram_type(alg):
+    """The Dynkin type of a QUIVER request's own diagram, or ``None``.
+
+    Pure combinatorics on the vertices/arrows the request already carries -- no algebra is
+    built, so the estimator still does not compute. A family spec (whose quiver is not in
+    the request) returns ``None`` and the caller falls back to the pair budget.
+    """
+    if getattr(alg, "kind", None) != "quiver":
+        return None
+    try:
+        from quiverlab.combinat.quiver import Quiver
+        from quiverlab.invariants.dynkin_type import dynkin_type
+        Q = Quiver(list(alg.vertices),
+                   {a: (v[0], v[1]) for a, v in dict(alg.arrows).items()})
+        return dynkin_type(Q)
+    except Exception:                       # a malformed quiver is the schema's problem
+        return None
+
+
+# How much exchange-graph work one cluster-tilting object costs, in ``dim**3`` units.
+# CALIBRATED against measured BFS times on this tree: A3 (14 objects) 0.4 s, A4 (42) 9 s,
+# A5 (132) 160 s, D5 (182) ~842 s. With ``ops = 50 * dim**3`` and an instant threshold of
+# 2e6 ops the instant tier ends at dim 34, so the multiplier must put A4 below and A5
+# above -- any value in [325, 935] does; 500 sits in the middle of that window.
+_CLUSTER_WORK_PER_OBJECT = 500
+
+
+def _cluster_category_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Effective size of a request that asks for ``cluster_category`` (Plan 79 / R31).
+    Every other request gets ``algebra_dim`` back unchanged, so nothing else
+    re-classifies.
+
+    The cost driver is the tau-tilting EXCHANGE-GRAPH BFS, which is NOT bounded by the
+    algebra dimension: ``E6`` has ``dim kQ = 36`` -- comfortably instant under the
+    ``dim ** 3`` bar model -- but 833 cluster-tilting objects and a BFS measured in
+    MINUTES, while ``D5`` ran ~842 s. Sizing on the CLUSTER NUMBER of the underlying
+    Dynkin diagram is the honest request-derived proxy; a non-Dynkin or unclassifiable
+    diagram falls back to the requested pair budget, the only bound the BFS respects
+    there.
+
+    The value returned is a DIMENSION-LIKE proxy fed to the same ``dim ** 3`` model, so
+    it is deliberately the cube root of the intended work. What matters is that a big
+    cluster number routes OFF the instant tier, not that the number is a bound.
+    KNOWN LIMITATION, stated rather than hidden (the ``ar_quiver``/``tau_tilting``
+    precedent): this is a HEURISTIC; the wall-clock and memory caps remain the real net.
+    """
+    budget = None
+    seen = False
+    for raw in req.compute:
+        item = parse_compute_item(raw)
+        if item.kind == "cluster_category":
+            seen = True
+            budget = item.hi if item.hi is not None else 512
+    if not seen:
+        return algebra_dim
+    dt = _cluster_diagram_type(req.algebra)
+    expected = None
+    if dt is not None and dt[0] in ("A", "D", "E"):
+        expected = _CLUSTER_NUMBER.get((dt[0], dt[1]))
+    size = expected if expected is not None else (budget or 512)
+    work = max(size, 1) * _CLUSTER_WORK_PER_OBJECT
+    proxy = 1
+    while proxy ** 3 < work:
+        proxy += 1
+    return max(algebra_dim, proxy)
+
+
 def _incidence_only_dim(req: ComputeRequest, algebra_dim: int) -> int:
     """Effective size of a request whose ONLY computation is ``incidence_cohomology``
     (Plan 75 / R9). Every other request gets ``algebra_dim`` back unchanged, so nothing
@@ -315,6 +393,10 @@ def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
     # Plan 75: an incidence-ONLY request is sized on the poset, not on dim kP -- the
     # order-complex route never resolves the algebra (see _incidence_only_dim).
     dim = _incidence_only_dim(req, dim)
+    # Plan 79: a cluster_category request is sized on the EXCHANGE-GRAPH size (the cluster
+    # number of the Dynkin type, else the pair budget), not on dim kQ -- E6 is dim 36 but
+    # runs a minutes-long BFS over 833 cluster-tilting objects.
+    dim = _cluster_category_dim(req, dim)
     ops = estimate_ops(dim, max_deg, req.algebra.field.kind)
     minutes = max(1, -(-ops // _OPS_PER_MINUTE))          # ceil division, ≥ 1
     mem = estimate_bytes(dim, max_deg, req.algebra.field.kind)

@@ -282,6 +282,22 @@ def _num_cluster_tilting(self, budget_pairs=512):
     out = {"count": None, "certified": False, "status": None,
            "dynkin_type": dt_name, "expected_count": self._cluster_number(),
            "budget_pairs": budget_pairs, "note": None}
+    # Decide INFINITENESS off the type certificate BEFORE running the BFS. For a
+    # HEREDITARY algebra tau-tilting-finite <=> representation-finite (support
+    # tau-tilting = support tilting there), so a non-Dynkin diagram means infinitely many
+    # cluster-tilting objects as a THEOREM -- and this class is hereditary by
+    # construction (G1/G2). Running the BFS first would grind all the way to the pair
+    # budget on an algebra already known infinite, and would make the refusal look like a
+    # budget stop rather than the certificate it is: exactly the G3a/G3b conflation the
+    # split exists to prevent.
+    if self.is_representation_finite is False:
+        out["status"] = "infinite"
+        out["note"] = (
+            f"C_Q has infinitely many cluster-tilting objects: the diagram {dt_name} is "
+            "NOT Dynkin, so by Gabriel mod kQ is representation-infinite and (kQ being "
+            "hereditary) it is tau-tilting-infinite too -- the exchange graph does not "
+            "close. No BFS was run")
+        return out
     eg = _exchange_graph_of(self.algebra, budget_pairs)
     self._eg = eg
     out["status"] = eg.status

@@ -55,6 +55,7 @@ _HEADINGS = {
     "dimension": "Dimension",
     "ext_algebra": "Yoneda Ext-algebra and Koszulity",
     "koszul": "Generalized Koszulity (N-Koszul, K₂, almost-Koszul)",
+    "cluster_category": "Cluster category (Amiot–Keller, acyclic slice)",
     "recognizers": "Structural recognizers and type",
     "derived_fingerprint": "Derived fingerprint",
     "strings": "Strings and bands",
@@ -379,6 +380,67 @@ def _koszul_html(b):
                    "decisive is certified THROUGH THAT DEGREE and is not an "
                    "unconditional claim; a generator or a pattern break could still "
                    "appear beyond it.</p>" % _esc(str(cdeg)))
+    return out
+
+
+def _cluster_category_html(b):
+    """The cluster-category slice (Plan 79): the fundamental domain, the cluster-tilting
+    count WITH its certification provenance, the cluster-tilted End-algebra and the
+    module-window 2-CY certificate.
+
+    An UNCERTIFIED count is rendered as a refusal carrying its reason -- never as a
+    number -- and the 2-CY verdict always states that the shifted pairs are cited.
+    """
+    if b.get("error"):
+        return ["<p class='ql-note'>%s</p>" % _esc(str(b["error"]))]
+    dt = b.get("dynkin_type") or "not a Dynkin diagram"
+    out = ["<p>%s for the acyclic quiver Q (type %s, n = %s). Its indecomposables are "
+           "ind(mod kQ) &#8852; {P_v[1]} &mdash; the almost-positive roots "
+           "(Buan&ndash;Marsh&ndash;Reineke&ndash;Reiten&ndash;Todorov).</p>"
+           % (_math_inline(r"C_Q = D^b(\operatorname{mod} kQ)/\tau^{-1}[1]"),
+              _esc(str(dt)), _esc(str(b.get("n"))))]
+    if b.get("num_indec") is not None:
+        out.append("<p>Indecomposable objects: <b>%s</b>.</p>"
+                   % _esc(str(b["num_indec"])))
+    ct = b.get("num_cluster_tilting") or {}
+    if ct:
+        if ct.get("certified"):
+            out.append("<p>Cluster-tilting objects: <b>%s</b> &mdash; equivalently the "
+                       "support &tau;-tilting pairs (Adachi&ndash;Iyama&ndash;Reiten), "
+                       "each read as T = M &oplus; P[1]. %s.</p>"
+                       % (_esc(str(ct.get("count"))), _esc(str(ct.get("note") or ""))))
+        else:
+            extra = ("" if not ct.get("expected_count") else
+                     " The known cluster number for this type is %s."
+                     % _esc(str(ct["expected_count"])))
+            out.append("<p class='ql-note'>Cluster-tilting count <b>not certified</b> "
+                       "&mdash; %s.%s</p>"
+                       % (_esc(str(ct.get("note") or "")), extra))
+    tl = b.get("cluster_tilted") or {}
+    if tl and not tl.get("error"):
+        if tl.get("dim") is not None:
+            out.append("<p>Cluster-tilted algebra End(T) for the mutation %s: dimension "
+                       "%s, %s, built from the sum of %s oriented 3-cycle(s). The "
+                       "identification End(T) = Jac(Q_T, W_T) is Buan&ndash;Marsh&ndash;"
+                       "Reiten / Amiot &mdash; cited, not recomputed.</p>"
+                       % (_esc(str(tl.get("mutation"))), _esc(str(tl["dim"])),
+                          "self-injective" if tl.get("self_injective")
+                          else "not self-injective",
+                          _esc(str(tl.get("three_cycles")))))
+        else:
+            out.append("<p class='ql-note'>Cluster-tilted quiver certified, algebra not "
+                       "built &mdash; %s.</p>" % _esc(str(tl.get("note") or "")))
+    cy = b.get("two_cy") or {}
+    if cy and not cy.get("error"):
+        out.append("<p>2-Calabi&ndash;Yau: <b>%s</b> on the module window &mdash; the "
+                   "Auslander&ndash;Reiten formula holds on all %s ordered pairs (%s "
+                   "mismatches). The shifted P_v[1] pairs hold by BMRRT, <b>cited, not "
+                   "computed</b>.</p>"
+                   % ("verified" if cy.get("verdict") else "not verified",
+                      _esc(str(cy.get("pairs_checked"))),
+                      _esc(str(cy.get("mismatches")))))
+    if b.get("note"):
+        out.append("<p class='ql-note'>%s</p>" % _esc(str(b["note"])))
     return out
 
 
@@ -2206,6 +2268,8 @@ def _block_html(kind, b, ctx=None):
         return _ext_algebra_html(b)
     if kind == "koszul":
         return _koszul_html(b)
+    if kind == "cluster_category":
+        return _cluster_category_html(b)
     if kind == "tau_tilting":
         return _tau_tilting_html(b)
     if kind == "congruences":
