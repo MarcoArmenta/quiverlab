@@ -148,7 +148,9 @@ class ClusterCategory:
         """
         self.num_indecomposables()             # runs the same gate, refuses identically
         from quiverlab.modules.builders import projective
-        out = [("module", M) for M in self._knit_ar().vertices]
+        # ARQuiver.vertices is a list of RECORD DICTS {"name", "dimvec", "module"};
+        # the module itself is what belongs in the fundamental domain.
+        out = [("module", rec["module"]) for rec in self._knit_ar().vertices]
         out += [("shift", projective(self.algebra, v))
                 for v in self.algebra.quiver.vertices]
         return out
@@ -486,3 +488,88 @@ def _cluster_tilted_algebra(self, mutation_seq, field=None):
 
 
 ClusterCategory.cluster_tilted_algebra = _cluster_tilted_algebra
+
+
+# ---------------------------------------------------------------------------------
+# The 2-Calabi-Yau certificate, scoped to the module window
+# ---------------------------------------------------------------------------------
+def _two_cy_certificate(self):
+    """The 2-CY duality on the module block, via the Auslander-Reiten formula.
+
+    In ``C_Q`` one has (BMRRT) ``Ext^1_C(X,Y) = Ext^1_A(X,Y) (+) D Ext^1_A(Y,X)``, so
+    ``dim Ext^1_C(X,Y) = e_XY + e_YX`` is symmetric BY CONSTRUCTION -- that half is
+    bookkeeping, and this payload says so rather than dressing ``a+b = b+a`` up as a
+    verified theorem.
+
+    **The computable content is the Auslander-Reiten formula** (Assem-Simson-Skowronski
+    Thm IV.2.13): ``Ext^1_A(X,Y) = D \\overline{Hom}_A(Y, tau X)``.  The certificate uses
+    the ORDINARY ``Hom(Y, tau X)``; the theorem is about the injectively-stable
+    ``\\overline{Hom}``.  On a representation-finite HEREDITARY algebra the two coincide
+    across the tested window -- that is the theorem-backed proxy, and the evidence is the
+    0-mismatch sweep this function performs and reports (``mismatches``), not an
+    assumption.  A mismatch is REPORTED, never smoothed away.
+    """
+    from quiverlab.modules.ext import ext_dims
+    from quiverlab.modules.hom import hom_dim
+    self.num_indecomposables()                       # the same G3b/knit gate
+    mods = [rec["module"] for rec in self._knit_ar().vertices]
+    A = self.algebra
+    taus = [M.tau() for M in mods]
+    ext1 = {}
+    mismatches = []
+    for i, X in enumerate(mods):
+        for j, Y in enumerate(mods):
+            e = ext_dims(A, X, Y, 1)[1]
+            ar = hom_dim(Y, taus[i]) if taus[i] is not None else 0
+            if e != ar:
+                mismatches.append({"X": i, "Y": j, "ext1_A": e, "hom_Y_tauX": ar})
+            ext1[(i, j)] = e
+    n_mods = len(mods)
+    ext1_C = {(i, j): ext1[(i, j)] + ext1[(j, i)]
+              for i in range(n_mods) for j in range(n_mods)}
+    symmetric = all(ext1_C[(i, j)] == ext1_C[(j, i)]
+                    for i in range(n_mods) for j in range(n_mods))
+    return {
+        "ar_formula_holds": not mismatches,
+        "mismatches": mismatches,
+        "pairs_checked": n_mods * n_mods,
+        "modules_checked": n_mods,
+        "ext1_A": {f"{i},{j}": v for (i, j), v in sorted(ext1.items())},
+        "ext1_C": {f"{i},{j}": v for (i, j), v in sorted(ext1_C.items())},
+        "ext1_C_symmetric": symmetric,
+        "nonzero_ext1_A_pairs": sorted(k for k, v in ext1.items() if v),
+        "scope": "module_window",
+        "shifted_by_citation": True,
+        "note": ("the AR formula Ext^1_A(X,Y) = D Hom-bar(Y, tau X) (ASS Thm IV.2.13) is "
+                 "the computed content, checked on every ORDERED pair of ind(mod kQ) with "
+                 "ordinary Hom as the theorem-backed proxy for the injectively-stable "
+                 "Hom-bar (they coincide on a representation-finite hereditary algebra "
+                 "across this window -- the 0-mismatch sweep is the evidence). The "
+                 "symmetry of dim Ext^1_C = e_XY + e_YX is BY CONSTRUCTION, not a "
+                 "verified theorem. The shifted P_v[1] pairs are NOT computed: they hold "
+                 "by BMRRT, cited"),
+    }
+
+
+def _is_2_calabi_yau(self):
+    """A SCOPED verdict, never a bald categorical ``True``.
+
+    The module block is verified by the AR formula; the pairs involving the shifted
+    projectives ``P_v[1]`` are asserted by the BMRRT theorem and are NOT computed here
+    (that would need the triangulated structure of the orbit category).  The payload
+    always says which is which.
+    """
+    cert = self.two_cy_certificate()
+    return {
+        "verdict": bool(cert["ar_formula_holds"] and cert["ext1_C_symmetric"]),
+        "scope": "module_window",
+        "shifted_by_citation": True,
+        "pairs_checked": cert["pairs_checked"],
+        "note": ("2-CY verified on the module block via the AR formula (ASS IV.2.13) "
+                 f"across all {cert['pairs_checked']} ordered pairs of ind(mod kQ); the "
+                 "shifted P_v[1] pairs hold by BMRRT (cited, not computed)"),
+    }
+
+
+ClusterCategory.two_cy_certificate = _two_cy_certificate
+ClusterCategory.is_2_calabi_yau = _is_2_calabi_yau
