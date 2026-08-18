@@ -59,6 +59,24 @@ CATALOG = (
                "Symmetric special-biserial algebra of a ribbon graph with vertex "
                "multiplicities (dim = sum_v m_v*val(v)^2). Non-scalar constructor: "
                "not offered by the scalar form-builder."),
+    FamilyInfo("ToupieAlgebra", "ToupieAlgebra([l1,..,la], relations=...)",
+               "general", ("alsolotar_toupie", "assem_book"),
+               "Toupie: unique source/sink, a parallel branches; admissible I. "
+               "Non-scalar (list-arg) constructor: surfaced as a GUI preset."),
+    FamilyInfo("SkewGentleAlgebra",
+               "SkewGentleAlgebra(quiver=Q, relations=I, special=Sp)",
+               "general", ("he_zhou_zhu", "chen_skew_gentle", "amiot_skew_gentle",
+                           "garcia_lavoue", "assem_book"),
+               "Idempotent-split skew-gentle algebra kQ^/I^ of a triple (Q, I, Sp) "
+               "(Chen sec 3; dim-certified vs the associated gentle algebra, HZZ Lemma "
+               "1.5; characteristic-free). Non-scalar constructor: not offered by the "
+               "scalar form-builder."),
+    FamilyInfo("CommutativeLadder", "CommutativeLadder(n, base_orientation='forward')",
+               "general", ("escolar_hiraoka", "botnan_crawley_boevey", "assem_book"),
+               "Commutative ladder CL(n) = A_n [] A_2 (box product, commuting squares); "
+               "the TDA persistence-ladder algebra, rep-finite iff n <= 4 "
+               "(Escolar-Hiraoka). Scalar vertex names 'i_j'; surfaced as a GUI preset "
+               "(the base_orientation arg is not a scalar form field)."),
     FamilyInfo("zoo", "zoo(dim_max=12)",
                "iterator", ("han_conjecture", "chouhy_solotar"),
                "Iterator over the curated exact zoo of open (Han-conjecture) algebras."),

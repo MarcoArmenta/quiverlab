@@ -86,3 +86,81 @@ def test_two_term_silting_from_presentation():
     cx, rep = two_term_silting_from_presentation(A.simple(1))
     assert set(cx.degrees()) <= {0, 1} and cx.is_perfect()
     assert rep.rigid                                 # a 2-term silting object is rigid
+
+
+@selfcert
+def test_regular_object_is_tilting_over_nonunimodular_cartan():
+    # Plan 67 Task 0 regression. The g-matrix must live in K0(K^b proj) = (+)_v Z[P_v],
+    # the PROJECTIVE basis -- NOT the composition-factor basis: the regular object
+    # A = (+)_v P_v is a tilting complex over EVERY algebra (AI Ex 2.2). The old _chi
+    # g-matrix gave det(Cartan) and FAILED here (det C = 0 / 2) -- a systematic
+    # false-negative on non-unimodular Cartan. The kA_n suite above only exercises
+    # UNIMODULAR Cartan (hereditary, det C = 1), where _chi and g_proj COINCIDE
+    # (det _chi = det C . det g_proj = 1 . det g_proj) -- which is exactly why the bug
+    # survived P43's green suite.
+    import sympy as sp
+    from quiverlab import GF, NakayamaAlgebra, Quiver
+    from quiverlab.fields import QQ
+    # Example 2.47: 1 <=> 2 with ab = ba = 0; det Cartan = 0 (NON-unimodular).
+    A = Quiver([1, 2], {"a": (1, 2), "b": (2, 1)}).algebra(
+        relations=["a*b", "b*a"], field=QQ)
+    assert int(sp.Matrix(A.cartan_matrix()).det()) == 0            # non-unimodular
+    T = [ChainComplex.stalk(A.projective(v), 0) for v in A.quiver.vertices]
+    rep = is_tilting_complex(T)
+    assert rep.is_tilting is True and rep.generates is True and rep.det in (1, -1)
+    # self-injective Nakayama kZ3/J2: det Cartan = 2.
+    B = NakayamaAlgebra([2, 2, 2], cyclic=True, field=GF(32003))
+    assert int(sp.Matrix(B.cartan_matrix()).det()) == 2
+    TB = [ChainComplex.stalk(B.projective(v), 0) for v in B.quiver.vertices]
+    repB = is_tilting_complex(TB)
+    assert repB.is_tilting is True and repB.det in (1, -1)
+
+
+@selfcert
+def test_generation_is_certified_only_on_two_term_regular_and_apr():
+    # Plan 67 fix round (MAJOR H1): the tilting verifier's generation is honest
+    # THREE-VALUED. It is CERTIFIED (`is_tilting is True`) only where a completion theorem
+    # reaches -- a 2-term self-orthogonal K0-basis object is 2-term silting (IJY/AIR) and,
+    # two-sided rigid, tilting. That covers the regular object A (width 0) and the APR tilt
+    # (width 1). Both must carry generation == "certified".
+    A = _a2()
+    regular = [ChainComplex.stalk(A.projective(v), 0) for v in A.quiver.vertices]
+    r = is_tilting_complex(regular)
+    assert r.is_tilting is True and r.generation == "certified"
+    apr = [ChainComplex.stalk(A.projective(1), 0),
+           ChainComplex.from_projective_resolution(A.simple(1), length=2)]
+    ra = is_tilting_complex(apr)
+    assert ra.is_tilting is True and ra.generation == "certified"
+    # a missing summand is not a K0-basis at all: generation == "no", is_tilting False.
+    rm = is_tilting_complex([ChainComplex.stalk(A.projective(1), 0)])
+    assert rm.generation == "no" and rm.generates is False and rm.is_tilting is False
+
+
+@selfcert
+def test_wide_rigid_k0_basis_is_unknown_not_hard_true():
+    # Plan 67 fix round (MAJOR H1): a WIDE (non-2-term) two-sided-RIGID K0-basis complex is
+    # Rickard-OPEN -- "rigid + (#summands = rk K0) => tilting" is exactly Rickard's rank
+    # QUESTION (unresolved; thick subcategories are not K0-classified -- Krah phantom). The
+    # verifier must NOT return a possibly-unsound hard True from bare K0; it returns the
+    # honest "unknown" (generation == "k0_necessary_only"), even though THIS particular
+    # object does in fact generate (provable by brutal-truncation triangles -- an argument
+    # K0 alone cannot run). The pre-fix P43 surface returned a hard True here.
+    # Λ = k[1->2->3]/(a*b), gl.dim 2; res(S1) = [P3 -> P2 -> P1] is a genuine width-2
+    # perfect complex; T = res(S1) (+) P1 (+) P2 is rigid with det(g_proj) = 1.
+    from quiverlab import GF
+    L = Quiver([1, 2, 3], {"a": (1, 2), "b": (2, 3)}).algebra(
+        relations=["a*b"], field=GF(32003))
+    res_S1 = ChainComplex.from_projective_resolution(L.simple(1), length=2)
+    T = [res_S1, ChainComplex.stalk(L.projective(1), 0),
+         ChainComplex.stalk(L.projective(2), 0)]
+    assert res_S1.degrees() == [0, 1, 2]                 # genuinely width-2 (non-2-term)
+    rep = is_tilting_complex(T)
+    assert rep.rigid is True and rep.generates is True and rep.det in (1, -1)
+    assert rep.generation == "k0_necessary_only"
+    assert rep.is_tilting == "unknown"                   # NOT a hard True
+    # CONSISTENCY (the whole point of H1): the silting verifier gives the SAME "unknown"
+    # on this same input -- the tilting rung and the K0-basis-only rung are reconciled.
+    from quiverlab.derived.silting import is_silting_object
+    srep = is_silting_object(T)
+    assert srep.is_silting == "unknown"
+    assert srep.is_presilting is True and srep.k0_basis is True

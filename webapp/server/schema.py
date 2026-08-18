@@ -11,6 +11,7 @@ DATA (ints or exact strings like ``"1/2"``) — never evaluated, never floats; t
 exact parse into the chosen field happens later, loudly, in the runner."""
 from __future__ import annotations
 
+import json
 import re
 from dataclasses import dataclass
 from fractions import Fraction
@@ -68,6 +69,21 @@ class FamilyAlgebraSpec(BaseModel):
         for key, val in v.items():
             _reject_float_params(val, repr(key))
         return v
+
+    @model_validator(mode="after")
+    def _normalize_generators(self):
+        # Canonical-key generator-ORDER normalization (Plan 74): the SkewGroupAlgebra
+        # `generators` list ORDER is presentation, not mathematics. Sort it by a stable
+        # JSON key so two orderings of the same action produce the SAME cache key (the
+        # library builder re-canonicalizes independently, so the built algebra is
+        # order-invariant regardless). Full up-to-iso group normalization is out of
+        # v1 scope (a different generating SET keys differently -- documented).
+        if self.family == "SkewGroupAlgebra":
+            gens = self.params.get("generators")
+            if isinstance(gens, list):
+                self.params["generators"] = sorted(
+                    gens, key=lambda g: json.dumps(g, sort_keys=True, default=str))
+        return self
 
 
 class QuiverAlgebraSpec(BaseModel):
@@ -130,7 +146,7 @@ MODULE_KINDS = frozenset({
     "dimension_vector", "rad_top_soc", "ext", "tor", "tau", "tau_minus",
     "projective_resolution", "injective_resolution",
     "projective_dimension", "injective_dimension", "decompose", "almost_split",
-    "tilting_check", "orbit_geometry",
+    "tilting_check", "orbit_geometry", "barcode",
 })
 # Module kinds that consume a degree range (`kind:0..n`); the rest are scalars.
 MODULE_RANGE_KINDS = frozenset({"ext", "tor", "projective_resolution",
@@ -232,6 +248,59 @@ class ModuleSpec(BaseModel):
         return self
 
 
+# The Hochschild compute kinds that may carry a coefficient bimodule (Plan 52).
+HH_COEFFICIENT_KINDS = frozenset({"hh_cohomology", "hh_homology"})
+
+
+class CoefficientBuiltin(BaseModel):
+    """A zero-typing coefficient pick-list: a NAMED A-bimodule (the library's
+    ``Bimodule.regular/dual/twisted_by_nakayama/mod_socle``)."""
+    kind: Literal["regular", "dual", "twisted_nakayama", "quotient_socle"]
+
+
+class CoefficientSpec(BaseModel):
+    """A Hochschild coefficient A-bimodule M (Plan 52, schema v3): either a
+    ``builtin`` named bimodule (delivered in the GUI) or the explicit form
+    ``{dim, left_maps, right_maps}`` -- one exact-entry matrix per generator per
+    side (accepted server-side; its canvas EDITOR is ledger-deferred to P80, DD5).
+    Matrix entries are exact DATA (ints / exact strings, never floats)."""
+    builtin: CoefficientBuiltin | None = None
+    dim: int | None = None
+    left_maps: dict[str, list[list[Any]]] | None = None
+    right_maps: dict[str, list[list[Any]]] | None = None
+
+    @model_validator(mode="after")
+    def _one_form(self):
+        if self.builtin is not None:
+            if (self.dim is not None or self.left_maps is not None
+                    or self.right_maps is not None):
+                raise SchemaError("coefficients: give either a 'builtin' pick-list OR "
+                                  "'dim'+'left_maps'+'right_maps', not both")
+            return self
+        if self.dim is None or self.left_maps is None or self.right_maps is None:
+            raise SchemaError("coefficients: needs a 'builtin' pick-list OR the explicit "
+                              "'dim' + 'left_maps' + 'right_maps'")
+        if not isinstance(self.dim, int) or isinstance(self.dim, bool) or self.dim < 0:
+            raise SchemaError("coefficients: 'dim' must be a non-negative integer")
+        for name, maps in (("left_maps", self.left_maps), ("right_maps", self.right_maps)):
+            for arrow, mat in maps.items():
+                width = None
+                for row in mat:
+                    if not isinstance(row, list):
+                        raise SchemaError(f"coefficients {name}[{arrow!r}] must be a matrix")
+                    if width is None:
+                        width = len(row)
+                    elif len(row) != width:
+                        raise SchemaError(f"coefficients {name}[{arrow!r}] is not rectangular")
+                    for x in row:
+                        if not _valid_entry(x):
+                            raise SchemaError(
+                                f"coefficients {name}[{arrow!r}] has a non-exact entry "
+                                f"{x!r}; entries must be integers or exact strings "
+                                "like '1/2' (never floats)")
+        return self
+
+
 class ComputeRequest(BaseModel):
     schema_version: int = Field(1, alias="schema")
     algebra: AlgebraSpec
@@ -240,7 +309,9 @@ class ComputeRequest(BaseModel):
     module: ModuleSpec | None = None          # v2 (Plan 26)
     ext_target: ModuleSpec | None = None      # v2: the N in Ext^n(M, N), a RIGHT A-module
     tor_target: ModuleSpec | None = None      # v2 (Plan 30): the N in Tor^A_n(M, N)
+    coefficients: CoefficientSpec | None = None   # v3 (Plan 52): the M in HH(A, M)
     algebra_b: AlgebraSpec | None = None      # wave 2: the SECOND algebra for derived_compare
+    new_arrows: list[str] | None = None       # Plan 73: the F subset for han_transport
 
     @model_validator(mode="before")
     @classmethod
@@ -262,8 +333,8 @@ class ComputeRequest(BaseModel):
     @field_validator("schema_version")
     @classmethod
     def _schema_known(cls, v: int) -> int:
-        if v not in (1, 2):
-            raise SchemaError(f"unsupported schema version {v}; this server speaks v1/v2")
+        if v not in (1, 2, 3):
+            raise SchemaError(f"unsupported schema version {v}; this server speaks v1/v2/v3")
         return v
 
     @field_validator("compute")
@@ -280,9 +351,20 @@ class ComputeRequest(BaseModel):
         """The module block is a v2 feature; and any module compute kind needs a
         ``module`` (and, for ``ext``/``tor``, an ``ext_target``/``tor_target``)."""
         if (self.module is not None or self.ext_target is not None
-                or self.tor_target is not None) and self.schema_version != 2:
+                or self.tor_target is not None) and self.schema_version < 2:
             raise SchemaError("a 'module'/'ext_target'/'tor_target' block requires "
-                              "schema 2")
+                              "schema >= 2")
+        # Plan 52: a coefficients block is schema v3 and only rides the Hochschild
+        # compute kinds (HH^*/HH_* with coefficients); every kind must be one.
+        if self.coefficients is not None:
+            if self.schema_version < 3:
+                raise SchemaError("a 'coefficients' block requires schema 3")
+            bad = sorted({parse_compute_item(s).kind for s in self.compute}
+                         - HH_COEFFICIENT_KINDS)
+            if bad:
+                raise SchemaError(
+                    f"a 'coefficients' block only applies to Hochschild kinds "
+                    f"(hh_cohomology / hh_homology); got {bad}")
         kinds = {parse_compute_item(s).kind for s in self.compute}
         if kinds & MODULE_KINDS and self.module is None:
             need = sorted(kinds & MODULE_KINDS)
@@ -314,6 +396,14 @@ class ComputeRequest(BaseModel):
             raise SchemaError("a second algebra 'algebra_b' is only used by "
                               "derived_compare; drop it, or add a 'derived_compare' "
                               "compute kind")
+        # Plan 73: han_transport needs the new-arrow subset F; nothing else may carry
+        # it (same canonical-key guard as algebra_b above).
+        if "han_transport" in kinds and self.new_arrows is None:
+            raise SchemaError("han_transport needs a 'new_arrows' field (the subset F "
+                              "of arrows whose removal from A defines the subalgebra B)")
+        if self.new_arrows is not None and "han_transport" not in kinds:
+            raise SchemaError("a 'new_arrows' field is only used by han_transport; "
+                              "drop it, or add a 'han_transport' compute kind")
         return self
 
     def model_dump(self, *args, **kwargs):
@@ -323,7 +413,8 @@ class ComputeRequest(BaseModel):
         request -- and every Plan-26 ext request -- is unchanged; only genuine Tor and
         derived_compare requests carry the extra blocks)."""
         d = super().model_dump(*args, **kwargs)
-        for k in ("module", "ext_target", "tor_target", "algebra_b"):
+        for k in ("module", "ext_target", "tor_target", "coefficients", "algebra_b",
+                  "new_arrows"):
             if d.get(k) is None:
                 d.pop(k, None)
         # An ABSENT quiver potential must serialize away too, so every existing
@@ -355,6 +446,81 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"tau_tilting budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="tau_tilting", lo=None, hi=(int(b) if b else None))
+    # congruences (Plan 64) carries a PAIR BUDGET, not a degree range: 'congruences' or
+    # 'congruences:512' -- the torsion lattice / Con / forcing / wide poset live on the
+    # exchange graph, so it skips the 'name:0..N' grammar (server and GUI/hpc agree).
+    if s == "congruences" or s.startswith("congruences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"congruences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="congruences", lo=None, hi=(int(b) if b else None))
+    # tau_cluster (Plan 66) carries a PAIR BUDGET, not a degree range: 'tau_cluster' or
+    # 'tau_cluster:512' -- the tau-cluster morphism category + cube complex + picture group
+    # live on the exchange graph, sized by the pair budget (like tau_tilting / congruences).
+    if s == "tau_cluster" or s.startswith("tau_cluster:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"tau_cluster budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tau_cluster", lo=None, hi=(int(b) if b else None))
+    # hh1_lie carries a DIM BUDGET, not a degree range (Plan 70): 'hh1_lie' or
+    # 'hh1_lie:48'. The budget caps A.dim for the Der solve, not a homological degree,
+    # so it skips the degree grammar (like tau_tilting).
+    if s == "hh1_lie" or s.startswith("hh1_lie:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"hh1_lie budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="hh1_lie", lo=None, hi=(int(b) if b else None))
+    # deformations carries a DIM BUDGET, not a degree range (Plan 78): 'deformations' or
+    # 'deformations:32'. The budget caps A.dim for the CS obstruction bracket (a coarse DoS
+    # backstop -- the real cost is HH^2/HH^3 richness x resolution size), not a homological
+    # degree, so it skips the degree grammar (the hh1_lie precedent).
+    if s == "deformations" or s.startswith("deformations:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"deformations budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="deformations", lo=None, hi=(int(b) if b else None))
+    # wall_chamber carries a PAIR BUDGET too (Plan 63): 'wall_chamber' or 'wall_chamber:512'
+    # -- the exchange-graph pair budget, not a homological degree; skips the 'name:0..N'
+    # grammar -- server and GUI/hpc agree on this special form.
+    if s == "wall_chamber" or s.startswith("wall_chamber:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"wall_chamber budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="wall_chamber", lo=None, hi=(int(b) if b else None))
+    # skew_gentle carries a tau-tilting PAIR BUDGET, not a degree range (Plan 68):
+    # 'skew_gentle' or 'skew_gentle:512'. This site was MISSING the special form until the
+    # P80 parity audit: hpc.spec and the Pyodide twin both accepted 'skew_gentle:512'
+    # while this one rejected it as unparseable, so the three tiers disagreed about what a
+    # valid request is. (The GUI only ever emitted the bare form, so no deployed GUI path
+    # was broken -- but a hand-written API request was.)
+    if s == "skew_gentle" or s.startswith("skew_gentle:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"skew_gentle budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_gentle", lo=None, hi=(int(b) if b else None))
+    # cluster_category (Plan 79 / R31) carries the EXCHANGE-GRAPH PAIR BUDGET, not a
+    # degree: 'cluster_category' or 'cluster_category:512'. The cluster-tilting count
+    # rides the same tau-tilting BFS as wall_chamber, so it takes the same special form
+    # and skips the 'name:0..N' grammar -- all three tiers agree on it.
+    if s == "cluster_category" or s.startswith("cluster_category:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(
+                f"cluster_category budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="cluster_category", lo=None, hi=(int(b) if b else None))
+    # silting carries a RADIUS,BUDGET pair, not a degree range (Plan 67): 'silting' or
+    # 'silting:3,64'. lo = radius, hi = vertex budget; neither is a homological degree, so
+    # it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this special form.
+    if s == "silting" or s.startswith("silting:"):
+        _, _, rb = s.partition(":")
+        radius = budget = None
+        if rb:
+            parts = rb.split(",")
+            if len(parts) != 2 or not all(p.isdigit() for p in parts):
+                raise SchemaError("silting suffix must be 'radius,budget' with positive "
+                                  f"integers (got {s!r})")
+            radius, budget = int(parts[0]), int(parts[1])
+        return ComputeItem(kind="silting", lo=radius, hi=budget)
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget is not a homological degree, so it skips the
     # 'name:0..N' grammar -- server and GUI/hpc agree on this special form.
@@ -363,6 +529,56 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"ar_quiver budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="ar_quiver", lo=None, hi=(int(b) if b else None))
+    # split_extension / arrow_removal (Plan 72) carry a TOP-DEGREE budget, not a lo..hi
+    # range: 'split_extension' / 'split_extension:6'. The budget is a single cap, not a
+    # 'name:0..N' range -- server and GUI/hpc agree on this special form.
+    for _kind in ("split_extension", "arrow_removal"):
+        if s == _kind or s.startswith(_kind + ":"):
+            _, _, b = s.partition(":")
+            if b and not b.isdigit():
+                raise SchemaError(f"{_kind} budget must be a positive integer (got {s!r})")
+            return ComputeItem(kind=_kind, lo=None, hi=(int(b) if b else None))
+    # skew_group_hh (Plan 74) carries a TOP-DEGREE budget: 'skew_group_hh' or
+    # 'skew_group_hh:3'. The Stefan conjugacy-class HH decomposition is assembled to
+    # degree hi (a single cap, not a 'name:0..N' range) -- server and GUI/hpc agree.
+    if s == "skew_group_hh" or s.startswith("skew_group_hh:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"skew_group_hh budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="skew_group_hh", lo=None, hi=(int(b) if b else None))
+    # exceptional_sequences carries an ENUMERATION BUDGET, not a degree range (Plan 65):
+    # 'exceptional_sequences' or 'exceptional_sequences:512'. The budget is not a homological
+    # degree, so it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this form.
+    if s == "exceptional_sequences" or s.startswith("exceptional_sequences:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(
+                f"exceptional_sequences budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="exceptional_sequences", lo=None,
+                           hi=(int(b) if b else None))
+    # left_right_parts carries a MODULE BUDGET, not a degree range (Plan 55): the budget caps
+    # the knitted indecomposable universe, so it skips the 'name:0..N' grammar too -- server
+    # and GUI/hpc agree on this special form.
+    if s == "left_right_parts" or s.startswith("left_right_parts:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"left_right_parts budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="left_right_parts", lo=None, hi=(int(b) if b else None))
+    # tilted_check carries the KNIT budget (budget_modules), not a degree range (Plan 60): the
+    # transversal cap budget_sections stays an internal default. Server and GUI/hpc agree.
+    if s == "tilted_check" or s.startswith("tilted_check:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"tilted_check budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="tilted_check", lo=None, hi=(int(b) if b else None))
+    # recognizer_ladder carries a MODULE BUDGET, not a degree range (Plan 61): the budget caps
+    # the knitted indecomposable universe, so it skips the 'name:0..N' grammar too -- server
+    # and GUI/hpc agree on this special form.
+    if s == "recognizer_ladder" or s.startswith("recognizer_ladder:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(f"recognizer_ladder budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="recognizer_ladder", lo=None, hi=(int(b) if b else None))
     m = _RANGE.match(s)
     if not m:
         raise SchemaError(f"unparseable compute item {s!r}")

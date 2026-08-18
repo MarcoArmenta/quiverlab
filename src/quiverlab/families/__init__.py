@@ -1,5 +1,8 @@
 from quiverlab.families.basic import linear_path_algebra, truncated_polynomial  # noqa: F401
 from quiverlab.families.brauer import BrauerGraph, BrauerGraphAlgebra  # noqa: F401
+from quiverlab.families.commutative_ladder import (  # noqa: F401
+    CommutativeLadder, is_commutative_ladder, persistence_line,
+)
 from quiverlab.families.dynkin import dynkin_quiver  # noqa: F401
 from quiverlab.families.exterior import ExteriorAlgebra  # noqa: F401
 from quiverlab.families.incidence import IncidenceAlgebra  # noqa: F401
@@ -11,7 +14,14 @@ from quiverlab.families.preprojective import PreprojectiveAlgebra  # noqa: F401
 from quiverlab.families.quantum import QuantumCI  # noqa: F401
 from quiverlab.families.radical_square_zero import RadicalSquareZero  # noqa: F401
 from quiverlab.families.repetitive import repetitive_slice  # noqa: F401
+from quiverlab.families.skew_gentle import (  # noqa: F401
+    SkewGentleAlgebra, SkewGentleTriple, is_skew_gentle_triple,
+)
 from quiverlab.families.tensor import TensorProduct  # noqa: F401
+from quiverlab.families.toupie import (  # noqa: F401
+    ToupieAlgebra, is_toupie, toupie_branch_count, toupie_direct_arrow_count,
+    toupie_sl_a_lower_bound,
+)
 from quiverlab.families.trivial_extension import TrivialExtension  # noqa: F401
 from quiverlab.families.truncated import TruncatedPathAlgebra  # noqa: F401
 from quiverlab.families.discover import (  # noqa: F401

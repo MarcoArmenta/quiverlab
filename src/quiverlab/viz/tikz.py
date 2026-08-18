@@ -69,6 +69,33 @@ def tikz_hasse(poset, label=_summand_math):
     return "\n".join(lines) + "\n"
 
 
+def tikz_order_complex(poset, face_vector=None):
+    """The Hasse diagram of a ``families.poset.Poset`` plus the face vector of its ORDER
+    COMPLEX (Plan 75 / R9) -- the report's picture of the object whose cohomology IS
+    ``HH^*(kP)``.
+
+    Distinct from :func:`tikz_hasse`, which draws the Plan-49 degeneration poset (nodes
+    carrying ``summands``); here the nodes are the poset's own elements, labelled by
+    ``str``. ``face_vector`` is stated verbatim when given -- it is NOT recomputed here,
+    so this picture can never claim a count the engine did not produce."""
+    nodes = list(poset.elements)
+    index = {v: i for i, v in enumerate(nodes)}
+    pos = poset_layout(nodes, list(poset.covers))
+    lines = [r"\begin{tikzpicture}[>=stealth]"]
+    for v in nodes:
+        x, y = pos[v]
+        lines.append(r"  \node[draw, circle] (p%d) at (%s, %s) {$%s$};"
+                     % (index[v], _coord(x), _coord(y), v))
+    for lo, hi in poset.covers:
+        lines.append(r"  \draw (p%d) -- (p%d);" % (index[lo], index[hi]))
+    if face_vector is not None:
+        lines.append(r"  \node[align=left, below] at (current bounding box.south) "
+                     r"{order complex $\Delta(P)$, face vector $(%s)$};"
+                     % ", ".join(str(int(f)) for f in face_vector))
+    lines.append(r"\end{tikzpicture}")
+    return "\n".join(lines) + "\n"
+
+
 def tikz_fan(fan):
     """The wall-and-chamber fan (Plan 45) as TikZ: for n=2 the g-vector rays drawn from
     the origin (exact coordinates, integer or {p/q}); for n=3 the L1/octahedron net
@@ -112,5 +139,94 @@ def tikz_fan(fan):
                 seen.add(key)
                 lines.append(r"  \draw[->, thick] (0,0) -- (%s, %s);"
                              % (_coord(x), _coord(y)))
+    lines.append(r"\end{tikzpicture}")
+    return "\n".join(lines) + "\n"
+
+
+def tikz_wall_chamber(b):
+    """The Plan-63 wall-and-chamber structure as TikZ (the report's static twin of the GUI
+    SVG): the chamber g-vector rays drawn faint, plus each brick-wall D(B) overlaid as a
+    labelled dark ray/line (n=2 the exact extreme rays; n=3 the pre-projected octahedron-net
+    facet rays). Float-free (pgf evaluates {p/q}). An honest note when the region is
+    budget-capped only for the chambers, but walls are still drawn if present; a
+    render='table' (n not in {2,3}) block returns the honest no-drawing note."""
+    n = b.get("n")
+    lines = [r"\begin{tikzpicture}[>=stealth, scale=2]"]
+    if b.get("render") not in ("fan2d", "fan3d") or not b.get("chambers"):
+        lines.append(r"  \node {fan not drawn (n not in \{2,3\}, or nothing found)};")
+        lines.append(r"\end{tikzpicture}")
+        return "\n".join(lines) + "\n"
+    use3 = (n == 3)
+    seen = set()
+    for ch in b["chambers"]:
+        rays = (ch.get("net2d") or []) if use3 else ch.get("rays", [])
+        for ray in rays:
+            if ray is None:
+                continue
+            x, y = Fraction(ray[0]), Fraction(ray[1])
+            if (x, y) in seen or (x == 0 and y == 0):
+                continue
+            seen.add((x, y))
+            lines.append(r"  \draw[->, gray!50] (0,0) -- (%s, %s);"
+                         % (_coord(x), _coord(y)))
+    for w in (b.get("walls") or []):
+        wrays = (w.get("net2d") or []) if use3 else (w.get("rays") or [])
+        bd = w.get("brick_dimvec") or {}
+        lab = w.get("brick_name") or (",".join(str(bd[k]) for k in sorted(bd, key=str)))
+        for ray in wrays:
+            if ray is None:
+                continue
+            x, y = Fraction(ray[0]), Fraction(ray[1])
+            if x == 0 and y == 0:
+                continue
+            lines.append(r"  \draw[->, very thick] (0,0) -- (%s, %s);"
+                         % (_coord(x), _coord(y)))
+            lines.append(r"  \node[font=\tiny] at (%s, %s) {$%s$};"
+                         % (_coord(x), _coord(y), _esc_tex(lab)))
+    lines.append(r"\end{tikzpicture}")
+    return "\n".join(lines) + "\n"
+
+
+def _esc_tex(s):
+    """Minimal TeX escaping for a wall label (dim-vector string or brick name)."""
+    return str(s).replace("\\", r"\textbackslash{}").replace("_", r"\_").replace(
+        "{", r"\{").replace("}", r"\}").replace("$", r"\$")
+def tikz_koszul(b):
+    """The Plan-77 generalized-Koszulity staircase: the internal generation degree
+    l_i(n) plotted against the homological degree n, with the diagonal l = n drawn
+    faint.  A Koszul strand hugs the diagonal; Berger's 2-N alternation climbs in
+    steps 1, N-1, 1, N-1, ...; an almost-Koszul algebra runs ON the diagonal and then
+    leaves it exactly once, at the break.
+
+    Every number is taken VERBATIM from the block -- nothing is recomputed here, so the
+    picture cannot claim a degree the engine did not produce.  The certified window is
+    labelled, never hidden.  Returns an honest note when the block carries no table.
+    """
+    gd = (b or {}).get("generation_degrees") or {}
+    lines = [r"\begin{tikzpicture}[>=stealth, scale=0.6]"]
+    if not gd:
+        lines.append(r"  \node {no generation-degree table recorded};")
+        lines.append(r"\end{tikzpicture}")
+        return "\n".join(lines) + "\n"
+    keys = sorted(gd, key=lambda k: int(k))
+    width = max((len(gd[k]) for k in keys), default=0)
+    top = max((max(gd[k]) for k in keys if gd[k]), default=0)
+    lines.append(r"  \draw[->] (0,0) -- (%d,0) node[right] {$n$};" % (width + 1))
+    lines.append(r"  \draw[->] (0,0) -- (0,%d) node[above] {$\ell$};" % (top + 1))
+    lines.append(r"  \draw[gray!40] (0,0) -- (%d,%d) node[right, gray] "
+                 r"{$\ell = n$};" % (min(width, top), min(width, top)))
+    marks = ["*", "square*", "triangle*", "diamond*"]
+    for idx, k in enumerate(keys):
+        row = gd[k]
+        if not row:
+            continue
+        pts = " -- ".join("(%d,%d)" % (n, d) for n, d in enumerate(row))
+        lines.append(r"  \draw[thick, mark=%s] %s;" % (marks[idx % len(marks)], pts))
+        lines.append(r"  \node[right, font=\small] at (%d,%d) {$S_{%s}$};"
+                     % (len(row) - 1, row[-1], k))
+    cdeg = (b or {}).get("certified_through_degree")
+    if cdeg is not None:
+        lines.append(r"  \node[below, font=\small] at (%d,-0.6) "
+                     r"{certified through degree %s};" % (max(width // 2, 1), cdeg))
     lines.append(r"\end{tikzpicture}")
     return "\n".join(lines) + "\n"

@@ -31,9 +31,15 @@ class SympyExactDomain(Domain):
 
     characteristic = 0
 
-    def __init__(self, sdom):
+    def __init__(self, sdom, *, algebraically_closed=False):
         self.sdom = sdom
         self.name = f"CC (computing exactly in {sdom})"
+        # Additive alg-closed DECLARATION flag (Plan 61): True only when the caller declares
+        # C-intent (ComplexField.make_domain). QQi builds a SympyExactDomain too but keeps the
+        # default False -- Q(i) is not algebraically closed, and the two share this class, so
+        # the flag (not the type) is the sound predicate. dim HH^1 etc. are char-0
+        # field-independent (flat base change), so this flag never changes a computed number.
+        self.is_algebraically_closed = bool(algebraically_closed)
 
     def coerce(self, x):
         expr = CC.parse_entry(x)
@@ -131,7 +137,11 @@ class ComplexField:
                 "transcendental entries are out of scope for v1 (spec §4.2)",
                 hint="stick to rationals, i, radicals and roots of unity E(n)",
             )
-        return SympyExactDomain(sdom)
+        # field=CC is the user's declaration of C-intent: mark the working domain
+        # algebraically closed (Plan 61's ACLV-Theorem-B gate). The number computed on this
+        # exact subfield equals the C answer by flat base change; the flag controls a theorem's
+        # validity, not a value. QQi's make_domain deliberately keeps the default False.
+        return SympyExactDomain(sdom, algebraically_closed=True)
 
 
 CC = ComplexField()

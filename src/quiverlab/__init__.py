@@ -1,11 +1,12 @@
 """quiverlab: quivers with relations and Hochschild theory, exactly."""
 
-__version__ = "0.3.0"
+__version__ = "1.0.0"
 
 # Worked-steps traces are ON by default (spec D9). Flip per-call via
 # A.hochschild_cohomology(..., verbose=False) or globally via quiverlab.verbose.
 verbose = True
 
+from quiverlab.cluster import ClusterCategory
 from quiverlab.errors import (  # noqa: E402,F401
     QuiverlabError, ExactnessError, FieldError, RelationError,
     AdmissibilityError, NotFiniteDimensionalError, DepthLimitError,
@@ -24,7 +25,25 @@ from quiverlab.families import (  # noqa: E402,F401
     OnePointExtension, repetitive_slice, JacobianAlgebra, Potential, cyclic_derivative,
 )
 from quiverlab.families import BrauerGraph, BrauerGraphAlgebra  # noqa: E402,F401
+from quiverlab.families import (  # noqa: E402,F401
+    CommutativeLadder, is_commutative_ladder, persistence_line,
+)
+from quiverlab.families import (  # noqa: E402,F401
+    ToupieAlgebra, is_toupie, toupie_branch_count, toupie_direct_arrow_count,
+    toupie_sl_a_lower_bound,
+)
+from quiverlab.families import (  # noqa: E402,F401
+    SkewGentleAlgebra, SkewGentleTriple, is_skew_gentle_triple,
+)
 from quiverlab.citations import bibliography  # noqa: E402,F401
+from quiverlab.hochschild.coefficients import Bimodule  # noqa: E402,F401
+from quiverlab.hochschild.split_extension import (  # noqa: E402,F401
+    split_extension, split_extension_cohomology, split_extension_homology,
+    hh1_grading_witness, SplitExtReport,
+)
+from quiverlab.hochschild.arrow_removal import (  # noqa: E402,F401
+    inert_arrows, remove_arrows, add_arrows, arrow_removal, ArrowRemovalReport,
+)
 from quiverlab.invariants.sweep import sweep  # noqa: E402,F401
 from quiverlab.modules.complexes import ChainComplex, ChainMap  # noqa: E402,F401
 from quiverlab.specseq import (  # noqa: E402,F401
@@ -53,9 +72,21 @@ __all__ = [
     "IncidenceAlgebra", "QuantumCI", "ExteriorAlgebra", "PreprojectiveAlgebra",
     "TrivialExtension", "TensorProduct", "zoo", "families",
     "BrauerGraph", "BrauerGraphAlgebra",
+    "CommutativeLadder", "is_commutative_ladder", "persistence_line",
+    "ToupieAlgebra", "is_toupie", "toupie_branch_count",
+    "toupie_direct_arrow_count", "toupie_sl_a_lower_bound",
+    "SkewGentleAlgebra", "SkewGentleTriple", "is_skew_gentle_triple",
     "OnePointExtension", "repetitive_slice", "JacobianAlgebra", "Potential",
+    # Plan 79: the Amiot-Keller cluster category (certified acyclic slice)
+    "ClusterCategory",
     "cyclic_derivative",
     "bibliography",
+    "Bimodule",
+    # Plan 72 -- split-extension LES + certified arrow removal
+    "split_extension", "split_extension_cohomology", "split_extension_homology",
+    "hh1_grading_witness", "SplitExtReport",
+    "inert_arrows", "remove_arrows", "add_arrows", "arrow_removal",
+    "ArrowRemovalReport",
     "sweep",
     "ChainComplex", "ChainMap",
     "FilteredComplex", "DoubleComplex", "SpectralSequence",

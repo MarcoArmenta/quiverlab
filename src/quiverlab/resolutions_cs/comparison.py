@@ -25,9 +25,11 @@ GF(p); this bar TRANSPORT is delivered only inside the bar-comparison WINDOW (a 
 at degree n needs bar cochains up to degree 2n+1).  Both the CUP (resolutions_cs.cup,
 Plan 20) and the CAP (resolutions_cs.cap, Plan 21) additionally have a native CS route
 -- the homology-side b*w*a collapse of the SAME lifted diagonal -- that carries them
-PAST the window with no bar object at all; cup_of_cs_classes / cap_of_cs_classes route
-to it automatically past the window.  The bracket stays transported/window-bounded (it
-would need the CS brace/circle machinery).
+PAST the window with no bar object at all; cup_of_cs_classes / cap_of_cs_classes /
+bracket_of_cs_classes route to it automatically past the window.  The Gerstenhaber
+BRACKET goes native too (Plan 51) by the Negron-Witherspoon / Volkov homotopy lifting
+psi (resolutions_cs.bracket / resolutions_cs.homotopy_lifting): the lifting REPLACES
+the brace/circle machinery, so no bar object is needed at any degree over any Domain.
 
 Bases.  The bar side uses the engine's cochain basis engine.scan3.cochain_basis
 (pairs (w, s), interior word w in R^n, output slot s), matching tt_calculus.  The
@@ -46,10 +48,11 @@ from quiverlab.fields.primefield import PrimeField
 _WINDOW_MSG = (
     "this operation is transported through the bar comparison and delivered only "
     "within the bar-comparison window (a degree-n operation needs bar cochains up to "
-    "degree 2n+1): the Gerstenhaber bracket needs the CS brace/circle machinery to go "
-    "native (not built in quiverlab v1). The CUP and CAP products ARE delivered "
-    "natively past the window -- call cup_of_cs_classes / cap_of_cs_classes with "
-    "engine='auto' (the default) or engine='native'.")
+    "degree 2n+1). The CUP, the CAP, and (Plan 51) the Gerstenhaber BRACKET are ALL "
+    "delivered natively past the window on the Chouhy-Solotar resolution (the homotopy "
+    "lifting replaces the brace/circle machinery) -- call cup_of_cs_classes / "
+    "cap_of_cs_classes / bracket_of_cs_classes with engine='auto' (the default) or "
+    "engine='native'.")
 
 
 class CSClass:
@@ -558,18 +561,45 @@ class Comparison:
         self._ensure(p + q)
         return self.transport_class_bar_to_cs([int(x) % self.p for x in cup], p + q)
 
-    def bracket_of_cs_classes(self, u, v):
-        """Psi*( [Phi*(u), Phi*(v)]_bar ): the CS-side Gerstenhaber bracket, via
-        engine.tt_calculus.gerstenhaber_bracket_cochain.  Returns a CS cochain at
-        degree u.degree+v.degree-1.
+    def bracket_of_cs_classes(self, u, v, engine="auto"):
+        """The CS-side Hochschild Gerstenhaber bracket [u, v] at degree
+        u.degree+v.degree-1.  Two routes, selected by ``engine`` exactly as
+        ``cup_of_cs_classes`` / ``cap_of_cs_classes`` do (Plan 51):
 
-        Scope note: UNLIKE the cup (Plan 20) and the cap (Plan 21), the bracket stays
-        transported and window-bounded (it raises NotImplementedError past self.window).
-        Going native would need the CS brace/circle machinery, which quiverlab v1 does
-        not build -- this is by design, not a gap.  The native past-window routes live in
-        cup_of_cs_classes / cap_of_cs_classes."""
-        from quiverlab.engine import tt_calculus as TT
+        * ``"transport"`` (and ``"auto"`` in-window, i.e. max(p, q) <= self.window):
+          Psi*( [Phi*(u), Phi*(v)]_bar ) -- transport representatives to the bar, take
+          the classical Gerstenhaber bracket there (engine.tt_calculus.
+          gerstenhaber_bracket_cochain), and pull the result back through Phi#.  This is
+          window-bounded (a degree-n operation needs bar cochains up to degree 2n+1);
+          ``"transport"`` keeps that refusal at any degree, so past the window it raises
+          NotImplementedError.
+        * ``"native"`` (and ``"auto"`` PAST the window): the native CS bracket assembled
+          from two Negron-Witherspoon / Volkov homotopy liftings on the SAME lifted
+          diagonal (resolutions_cs.bracket.native_bracket, Plan 51) -- no bar object is
+          ever built, so it works at ANY degree over any exact Domain; in-window it is
+          cohomologous to the transported route (the permanent anchor oracle, which fixes
+          the sign, tests/resolutions_cs/test_native_bracket.py).
+
+        ``"auto"`` is byte-for-byte the transported behavior (and all its cross-checks)
+        wherever the transport does NOT refuse -- exactly max(p, q) <= self.window -- and
+        routes native only where the transport used to raise.  The stale
+        "needs the CS brace/circle machinery" note is retired: the homotopy lifting IS
+        the brace-free native route (Plan 51 DD3)."""
+        if engine not in ("auto", "native", "transport"):
+            raise ValueError(
+                "engine must be one of 'auto', 'native', 'transport'; got "
+                f"{engine!r}")
         p, q = u.degree, v.degree
+        if engine == "native" or (engine == "auto" and max(p, q) > self.window):
+            # native CS route: no bar object; any degree.  native_bracket needs S up to
+            # p+q-1 and Delta to p+q-1; ensure p+q+1 (the conservative margin matching
+            # the cup route, comparison.py cup_of_cs_classes).
+            from quiverlab.resolutions_cs.bracket import native_bracket
+            self._ensure(p + q + 1)
+            return native_bracket(self._res, u.vec, p, v.vec, q)
+        # transported route (engine == "transport", or "auto" in-window): byte-for-byte
+        # the original behavior, INCLUDING the window refusal via _check_window.
+        from quiverlab.engine import tt_calculus as TT
         self._check_window(p, q)
         gu, gv = self._bar_cochain_of(u), self._bar_cochain_of(v)
         br = TT.gerstenhaber_bracket_cochain(self.E, p, q, gu, gv)  # bar (p+q-1)-cochain

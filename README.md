@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-3506_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-5338_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 3506 tests over the
+Every shipped feature is unit tested (the suite is 5338 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -272,6 +272,26 @@ ported and wired in:
   (`A.cup_products`, `A.cap_products`, `A.gerstenhaber_brackets`,
   `A.connes_differentials`) — exact structure-constant tables on the recorded HH
   basis, with worked-steps reports; plus **cyclic homology** (Connes' mixed complex).
+  The **Gerstenhaber bracket goes native on the Chouhy–Solotar resolution — past the
+  bar window, over any exact field** (Negron–Witherspoon / Volkov homotopy liftings),
+  completing the TT calculus surface (cup and cap went native earlier).
+- **HH¹ as a Lie algebra (R11).** The outer-derivation algebra `Der/Inn` with the
+  commutator bracket over **any exact field** (`A.hh1_lie_structure` — derived /
+  lower-central series, solvable / nilpotent / abelian / perfect, computed from the
+  algebra's own structure constants, independent of the window-bounded bracket engine),
+  and over **characteristic 0** the solvable radical, Levi decomposition, sl₂-count and
+  toral rank behind a hard char gate; the `k[x]/(x^n)` **solvable-vs-Jacobson–Witt**
+  dichotomy (`W₁` at `n = char = p`) and `HH¹(Kronecker) ≅ sl₂` (char ≠ 2), plus the
+  RSS Ext-quiver solvability certificate — clickable in the no-code GUI.
+- **HH• as a graded Lie module over HH¹ (R12).** The Gerstenhaber degree-1 action (the
+  field-general Lie derivative `L_D f = D∘f − Σ f(…,Da_i,…)`, over any exact field —
+  `A.hh_lie_module`), its weight/torus decomposition over **characteristic 0** and the
+  indecomposable Lie-module summands; the Kronecker `HH¹(kK₂) ≅ sl₂` acting irreducibly
+  on `HH^1` (the toupie adjoint `L(2)`), the `k[x]/(x^n)` truncated-Witt grading (a
+  Virasoro-subquotient analogue) — clickable in the no-code GUI.
+- **Hochschild (co)homology with arbitrary bimodule coefficients** (`D(A)`, twisted
+  `{}_1A_ν`, `A/soc`, any no-code bimodule) and **relative HH over the vertices** —
+  `coefficients=` on the Hochschild kinds, `relative_to="vertices"` for `HH_•(A|kQ₀,M)`.
 - **Spectral sequences** — filtered & double complexes, exact `E_r` pages with
   canonical representatives + a convergence certificate (`E_∞` totals == total
   homology), and four presets (Cartan–Eilenberg change-of-rings, Grothendieck,
@@ -285,6 +305,13 @@ ported and wired in:
   crosscheck); **Koszulity** and the Yoneda Ext-algebra clickable in the no-code
   GUI; and, over GF(p), the **Nakayama** automorphism with the **Frobenius** and
   **symmetric** tests (loud `FieldError` off a prime field).
+- **Recognizer batteries (R34 + R35).** The **homological string-algebra test**
+  (Suárez-Álvarez: among representation-finite algebras, string ⇔ the middle term of
+  every extension of indecomposables has ≤ 2 summands — a three-valued semi-decision
+  that is a *discriminating* oracle against the syntactic recognizer, raising loudly on
+  a k̄-sound contradiction), and **toupie algebras** (`ToupieAlgebra` constructor +
+  connected-acyclic graph-shape recognizer + the `a`-Kronecker `HH^• = [1, a²−1, 0, …]`
+  closed form + the char-0 `sl_a ⊆ HH¹` inclusion), both clickable in the no-code GUI.
 - **Modules, scalar invariants, and the exact spectral layer.** Right A-modules
   with exact **Ext**, **Hom**, and minimal **projective resolutions**; the scalar
   invariants **Loewy length**, **center**, and **complexity** (GF(p); the last a
@@ -292,16 +319,88 @@ ported and wired in:
   inputs); and the
   exact **spectral radius** / **Mahler measure** of the Coxeter polynomial as
   sympy algebraic numbers — no floats, ever.
+- **Certified Coxeter spectral analysis (R20).** `A.coxeter_spectral()` — the exact
+  cyclotomic **Φ_n** factorization, a cyclotomic / quasi-unipotent verdict and the
+  finite Coxeter **order** (Φ^m = I, verified by exact matrix power), the exact count
+  of roots outside the unit circle, and the spectral radius & Mahler measure as
+  **certified algebraic numbers** (minimal polynomial + rational isolating interval,
+  never a float), with the class-conditional **Lehmer-class note** (documentation only).
 - **Homological dimensions (C6).** Public **syzygy/cosyzygy** operators,
   **finitistic / dominant / Gorenstein dimensions**, the **Igusa–Todorov φ/ψ**
   functions, and **Ω/τ-periodicity certificates** — the C6 homological-dimensions
   family, each result carrying the `GlobalDimension`-style certified-value-or-honest-bound
   honesty (never a bare number when unresolved, `is_gorenstein` three-valued
   True/None), and clickable end-to-end via the no-code `homological_profile`.
+- **Homological invariants II (C6, P53).** **φdim / ψdim as algebra invariants**
+  (exact for representation-finite input via the ⊕-of-all-indecomposables theorem, a
+  certified lower bound otherwise — never a claimed sup), the **φ-spectrum and its gaps**
+  (Barrios–Mata–Rama), **Lat-Igusa-Todorov finitistic certificates** (a proof-carrying
+  certified `findim` upper bound from a decidable family, or an honest "no known decision
+  procedure"), and the **stable fractional Calabi–Yau dimension** of self-injective
+  algebras (`S = Ω∘ν`, `Σ = Ω⁻¹`, Ivanov–Volkov, certified at the weak-on-generators
+  tier) — clickable via `homological_profile` (new φdim/ψdim/spectrum/LIT rows) and the
+  new `fractional_cy` compute kind.
 - **Auslander–Reiten theory.** The AR translates τ / τ⁻ and the Nakayama functor
   ν / ν⁻ as named functors, **almost-split sequences** `0 → τM → E → M → 0` with the
   middle term built and certified (exact, non-split, indecomposable ends), irreducible
   maps and `rad(M,N)/rad²`, stable Hom, and **AR-quiver knitting** — complete for a
+- **The radical filtration of `mod A` (Liu–Chaio, R37+R21).** Exact `rad^n(X,Y)`
+  layer dimensions on the knitted indecomposables, the **nilpotency index** of
+  `rad(mod A)`, and the `rad^∞ = 0 ⇔ representation-finite` (Auslander) certificate;
+  **Liu's left/right degrees** of irreducible maps, sectional paths, the
+  postprojective/preinjective/regular partition, directing modules and the
+  **representation-directed** recognizer — the R21+R37 axis, certified on the
+  representation-finite domain (self-injective input and rep-infinite windows refuse
+  or label honestly), clickable via the no-code `radical_filtration` /
+  `ar_invariants` kinds.
+- **The persistence / TDA bridge (R33).** Barcodes as **interval decompositions** of
+  `A_n` and zigzag persistence modules (Gabriel / Botnan–Crawley-Boevey; **field-robust
+  over `GF(2)`** — interval modules are bricks), and **AR-quiver-indexed generalized
+  persistence diagrams** for commutative ladders `CL(n) = A_n □ A_2` (`n ≤ 4`,
+  representation-finite; Escolar–Hiraoka; `n ≥ 5` a loud refusal) — representation theory
+  first, the `barcode` no-code compute kind. Exact only: the filtration parameter is the
+  discrete vertex index (no float thresholds, no `∞`).
+- **Skew group algebras `A⋊G` (R8).** A base `kQ/I` and an **explicit** finite group acting
+  by quiver automorphisms build the smash product `A⋊G = A#kG` (dimension `|G|·dim A`,
+  characteristic-agnostic) as a no-code **input** — with the **Ştefan conjugacy-class Hochschild
+  decomposition** `HH^n(A⋊G) ≅ ⊕_{[g]} HH^n(A, {}_gA)^{Z(g)}` (over `char k ∤ |G|`)
+  cross-checked degreewise against the direct engine.
+- **Incidence algebras: `HH^*` IS the cohomology of the order complex (R9).** For a finite
+  poset `P`, `HH^n(kP) = H^n(Δ(P); k)` (Gerstenhaber–Schack; Cibils for an arbitrary finite
+  poset), computed on the *combinatorial* cochain complex of the nerve instead of the
+  enveloping algebra — `A.incidence_cohomology(top)`, with a no-code **poset input mode**
+  (type the cover relations, see the Hasse diagram, read `HH^*`). One exact **integer** Smith
+  normal form answers **every characteristic at once** and says *why* they differ: `RP²`'s
+  `H₁ = ℤ/2` is exactly what makes `HH^*(GF₂) = [1,1,1]` while `HH^*(QQ) = [1,0,0]`. The
+  theorem's hypothesis is never guessed — an algebra without poset provenance refuses loudly.
+- **Fast Koszul `HH` off the GHMS resolution (R10).** For a Koszul algebra, the
+  comultiplicative minimal bimodule resolution `P_n = A ⊗_S K_n ⊗_S A` on the Koszul kernels
+  `K_n` — `engine="ghms"` on both Hochschild methods, a third independent oracle class
+  agreeing degreewise with the minimal-syzygy engine and with bar/CS. Koszulity is a **hard
+  three-valued gate**: not-Koszul refuses *naming the `Ext`-algebra obstruction*, and
+  "unknown" refuses too.
+- **Generalized Koszulity beyond the quadratic case (R36).** The **internal
+  (path-length) generation degrees** of `Ext•(k,k)`, read off the shipped minimal
+  resolutions — the datum that distinguishes `k[x]/x³`, `k[x]/x⁴` and `k[x]/x⁵`, whose
+  *homological* Yoneda generators are identical. On top of it: **Berger's N-Koszul**
+  2-N alternation certificate (`δ(n)` reproduced exactly for `N = 2..5`),
+  **Cassidy–Shelton K₂** decided through an *explicit certified window* (three-valued,
+  honestly inconclusive beyond it, decisive `False` on a degree-≥3 Yoneda generator),
+  and the **Brenner–Butler–King `(p,q)`-almost-Koszul** classifier, which labels exactly
+  the algebras a Koszul route refuses — reproducing BBK's `(h−2, 2)` on the Dynkin
+  preprojectives `Π(A₃)/Π(A₄)/Π(A₅)/Π(D₄)`. The quadratic case defers to the Plan-27
+  verdict verbatim; multi-Koszul is offered only where Herscovich defines it
+  (connected/local), refusing multi-vertex input with a pointer to K₂. Clickable as
+  `koszul`.
+- **Amiot–Keller cluster categories (R31).** The certified acyclic (Dynkin) slice:
+  `#indec(C_Q) = #ind(mod kQ) + n` — the almost-positive roots — the cluster-tilting
+  objects **as** support τ-tilting pairs (Adachi–Iyama–Reiten, so the shipped exchange
+  graph IS the cluster exchange graph and its count IS the cluster number), the
+  cluster-tilted End-algebra as a Jacobian algebra via Fomin–Zelevinsky mutation, and a
+  2-Calabi–Yau certificate on the module window. Every count carries its provenance: an
+  uncertified enumeration is refused with its reason, and a budget stop on a
+  representation-FINITE algebra is never dressed up as infiniteness. Clickable via
+  `cluster_category`.
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**
@@ -314,6 +413,12 @@ ported and wired in:
   invariant, not complete), and a `BrauerGraphAlgebra` constructor from a ribbon
   graph — with the algebra-only `strings` no-code block (census + bands + rep-type
   + AG).
+- **Skew-gentle algebras (R32).** The triple `(Q, I, Sp)` recognizer, the
+  characteristic-free idempotent-split constructor `SkewGentleAlgebra` (He–Zhou–Zhu /
+  Chen — dim-certified against the associated gentle algebra), special-string module
+  re-gluing, support τ-tilting via the engine (the orbifold model as the cross-check
+  oracle), and the brick-finite ⇔ representation-finite certificate (Demonet–Iyama–Jasso
+  ∘ Garcia–Lavoué, char ≠ 2) — with the no-code `skew_gentle` block.
 - **Tilting and constructions (C7).** tilting/cotilting + Bongartz completion,
   minimal add(M)-approximations, one-point extensions, repetitive slices,
   Jacobian algebras from a potential, and Gabriel-quiver recovery of any
@@ -335,6 +440,12 @@ ported and wired in:
   dual, and recollements from an idempotent (the corner `eAe`, the quotient `A/AeA`,
   and the six functors) — each certified per instance or refusing loudly;
   `quasi_hereditary` is clickable in the no-code GUI. **White space in QPA.**
+- **Fundamental group and simple connectivity (coverings).** The presentation
+  fundamental group π₁(Q,I) with exact abelianization by ℤ Smith normal form, the
+  Hurewicz `Hom(π₁,k⁺) ↪ HH¹` check, and a strongly-simply-connected recognizer (the
+  separation condition, Skowroński) with a witness on failure — three-valued and
+  honest per Adian–Rabin (`None` when undecidable); the intrinsic π₁ is refused loudly.
+  Clickable via `fundamental_group` / `simply_connected`. **White space in QPA.**
 - **τ-tilting engine (C4, Adachi–Iyama–Reiten).** Support τ-tilting pairs via
   mutation, the exchange graph + torsion-class lattice with brick labels, 2-term
   silting, King θ-stability, maximal green sequences, and the AIR four-way count
@@ -342,6 +453,59 @@ ported and wired in:
   for `kA_n`) — every enumeration budget-capped with the honest
   complete-iff-τ-tilting-finite contract — and the **LIVE wall-and-chamber picture
   drawn no-code in the browser for n = 2, 3** — the C4 flagship.
+- **The lattice theory of torsion classes (Demonet–Iyama–Reading–Reiten–Thomas).**
+  The finite lattice `tors A` as an abstract lattice, the congruence lattice
+  `Con(tors A)`, the forcing order on bricks, canonical join representations, and the
+  **wide-subcategory poset** (Enomoto's core label order = κ order) — one click via the
+  `congruences` compute kind, certified complete iff `A` is τ-tilting-finite. kA₂ =
+  the pentagon N₅ / M₃; kA₃ = the 14-element `Con` / NC(A₃) wide poset.
+- **The τ-cluster morphism category `W(A)` (Buan–Marsh; Hanson–Igusa, P66).** Its
+  objects (= the wide subcategories), its rank-graded morphisms, the **cube-complex
+  classifying space** with the `K(π,1)` verdict for Nakayama / hereditary-Dynkin algebras,
+  and the **picture-group presentation** (generators = bricks, relations per rank-2 wide,
+  abelianization by exact SNF) — one click via `tau_cluster`, certified complete iff
+  τ-tilting-finite. kA₂ = 3 generators + 1 pentagon relation, face vector `(5,11,5)`; kA₃ =
+  6 generators, 4 atom + 2 commutation, `(14,49,49,14)` — distinct from kZ₃/rad²'s
+  `(14,48,48,14)` on the same coarse counts.
+- **Wall-and-chamber structure via bricks (Brüstle–Smith–Treffinger, P63).** The wall
+  `D(B)` of every brick as an **exact rational inequality system** over the submodule
+  dim-vectors (`D(B) = {θ : θ·dim B = 0 and θ·dim N ≤ 0 for every N ⊆ B}`), the chambers
+  as g-vector cones, walls grouped one-per-brick, certified complete **iff
+  τ-tilting-finite** (else an honest bounded region) — with a **LIVE 2D/3D fan drawing
+  for rank ≤ 3** that overlays each labeled brick-wall, clickable no-code via
+  `wall_chamber`.
+- **Silting theory (Aihara–Iyama, P67).** A silting-object verifier in `K^b(proj A)`
+  (presilting `Hom_{D^b}(T,T[n>0]) = 0` on the exact positive window + honest
+  three-valued generation — certified on the tilting / 2-term / local classes, `"unknown"`
+  where K₀ alone cannot decide), single silting mutation `μ_X^±` via one approximation
+  triangle (the mutant re-verifies silting, `μ^-∘μ^+ = id`), a bounded-radius exploration
+  with loud truncation (the silting quiver can be infinite — no general BFS; complete only
+  for local), and the co-t-structure dictionary — cross-checked against P45's τ-tilting
+  (2-term slice) and Oppermann's `End(μT)` quiver rule, no-code in the browser.
+- **Exceptional sequences (R27+R28).** The classical hereditary theory — an
+  orthogonality recognizer, **braid mutation** `σ_i` (universal-extension / kernel /
+  cokernel constructions), the Crawley-Boevey / Ringel **braid-orbit transitivity**
+  certificate, and the Dynkin closed-form counts `#CES = n!·hⁿ/|W|` (`A_n = (n+1)^{n-1}`,
+  `D_4 = 162`) — and **Buan–Marsh τ-exceptional sequences** via the **Jasso
+  τ-perpendicular reduction** and the ordered-support-τ-tilt bijection
+  `#signed = n!·#sτt` (materialised + cross-checked). Hereditary-only / Dynkin-only for
+  the classical side, τ-tilting-finite-only for the τ side, loud otherwise. Clickable via
+  `exceptional_sequences`.
+- **Split-extension LES + certified arrow removal (R5+R6, P72).** The
+  Cibils–Marcos–Redondo–Solotar **trivial-extension Hochschild long exact sequence** —
+  `HH^•(T(B))` assembled from the flanks `HH^•(L,D(B))` / `HH^•(L,B)` and the snake
+  connecting map, cross-checked against the direct answer, with the grading-derivation
+  witness `HH^1(T(B)) ≠ 0` (and `= k ⊕ HH^1(B)` on directed `B`); and the
+  Cibils–Lanzilotta–Marcos–Solotar **certified arrow removal** — deleting inert arrows
+  (in no relation) gives a clean `HH_n(A) ≅ HH_n(B)` for `n ≥ 2`, with the honest
+  cohomology Ext-correction. Clickable via `split_extension` / `arrow_removal`.
+- **Left/right parts of the module category (Assem–Coelho–Trepode, P55).** The
+  left/right parts `L_A`, `R_A` via the closed-under-predecessors pd/id ≤ 1 sweep on
+  the knitted AR quiver, the finite complement `ind A ∖ (L_A ∪ R_A)` (the laura datum —
+  non-empty even for ada), the Ext-injectives of `add L_A` (and dual Ext-projectives of
+  `add R_A`), and the left/right support algebras `A_λ`, `A_ρ` (products of tilted
+  algebras) as presented induced-convex-subquiver algebras — the recognizer-ladder
+  substrate, no-code in the browser (representation-finite scope, loud otherwise).
 - **Algebra families and citations.** A curated catalog of named families
   (`NakayamaAlgebra`, `QuantumCI`, `ExteriorAlgebra`, `IncidenceAlgebra`,
   `PreprojectiveAlgebra`, `TrivialExtension`, `TensorProduct`, …) with `families()`

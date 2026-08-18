@@ -1,0 +1,31 @@
+# quiverlab v0.1.0 showcase II: the modular truncated polynomial
+#   A = GF(3)[x]/(x^3)  --  char divides the exponent: HH nonzero in every
+#   degree, HH^1 = the Jacobson-Witt algebra, brackets non-trivial to the
+#   top of the certified window.
+schema: 1
+algebra:
+  kind: quiver
+  vertices: [1]
+  arrows:
+    x: [1, 1]
+  relations: ["x*x*x"]
+  field:
+    kind: GF
+    p: 3
+    n: 1
+compute:
+  - dimension
+  - cartan
+  - center
+  - global_dimension
+  - coxeter_polynomial
+  - hh_cohomology:0..12
+  - hh_homology:0..12
+  - cyclic_homology:0..8
+  - connes_b:0..8
+  - cup:0..9
+  - cap:0..9
+  - bracket:0..8
+artifacts:
+  pdf: true
+  tikz: true

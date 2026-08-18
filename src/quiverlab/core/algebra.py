@@ -115,6 +115,26 @@ class Algebra:
         return Algebra(dom, newT, new_unit, basis_labels=None,
                        _quiver=self.quiver, _relations=self.relations)
 
+    def _unit_adapting_change(self):
+        """The change-of-basis matrix P used by ``unit_adapted`` (columns = new
+        basis in old coords: new basis vector 0 is 1_A). Identity if already
+        unit-adapted. Exposed so a coefficient bimodule built in A's OWN basis can
+        be re-expressed in the unit-adapted basis the bar complex works in
+        (Plan 52; see hochschild.coefficients.Bimodule.change_of_basis)."""
+        dom = self.domain
+        m = self.dim
+        eye = [[dom.one() if r == c else dom.zero() for c in range(m)] for r in range(m)]
+        if self.is_unit_adapted:
+            return eye
+        j = next(i for i, c in enumerate(self.unit) if not dom.is_zero(c))
+        P = eye
+        for r in range(m):
+            P[r][j] = self.unit[r]
+        if j != 0:
+            for r in range(m):
+                P[r][0], P[r][j] = P[r][j], P[r][0]
+        return P
+
     def unit_adapted(self):
         """Return an isomorphic copy whose basis vector 0 is 1_A (spec §5, component 4)."""
         if self.is_unit_adapted:
@@ -122,12 +142,7 @@ class Algebra:
         dom = self.domain
         m = self.dim
         j = next(i for i, c in enumerate(self.unit) if not dom.is_zero(c))
-        P = [[dom.one() if r == c else dom.zero() for c in range(m)] for r in range(m)]
-        for r in range(m):
-            P[r][j] = self.unit[r]
-        if j != 0:
-            for r in range(m):
-                P[r][0], P[r][j] = P[r][j], P[r][0]
+        P = self._unit_adapting_change()
         out = self.change_of_basis(P)
         labels = None
         if self.basis_labels is not None:
@@ -141,11 +156,45 @@ class Algebra:
         out.is_unit_adapted = True
         return out
 
-    def _use_fast_engine(self, engine):
+    def _use_fast_engine(self, engine, coefficients=None):
+        # The fast GF(p) bar-basis accelerator is hard-wired to the regular bimodule
+        # (Plan 52): a coefficient never routes fast.
+        if coefficients is not None:
+            return False
         from quiverlab.fields.primefield import PrimeField
         return engine == "fast" or (
             engine == "auto" and isinstance(self.domain, PrimeField)
         )
+
+    def _check_coefficients(self, engine, coefficients):
+        """Loud scope-boundary checks for a coefficient bimodule (Plan 52): it must
+        be built over THIS algebra, and the fast engine refuses it."""
+        if coefficients is None:
+            return
+        if getattr(coefficients, "algebra", None) is not self:
+            raise QuiverlabError(
+                "the coefficient bimodule was built over a different algebra",
+                hint="build the coefficient with the SAME algebra you call HH on")
+        if engine == "fast":
+            raise QuiverlabError(
+                "engine='fast' cannot carry a coefficient bimodule (the GF(p) "
+                "bar-basis accelerator is hard-wired to the regular bimodule M = A)",
+                hint="use engine='bar' (any field) or engine='cs' (presented)")
+
+    def _relative_route(self, side, top, max_cells, coefficients, relative_to):
+        """Relative HH over B (Plan 52): only B = kQ_0 (``relative_to="vertices"``)
+        in v1, via the E-relative reduced bar complex; any other B is refused
+        loudly. Returns an HHTable (references/coefficients stamped by the caller)."""
+        if relative_to != "vertices":
+            raise QuiverlabError(
+                f"relative HH over B is implemented only for B = kQ_0 in v1 "
+                f"(got relative_to={relative_to!r})",
+                hint='pass relative_to="vertices" for the separable vertex subalgebra; '
+                     "a general / non-separable subalgebra B is the recorded follow-up")
+        from quiverlab.hochschild.relative import (relative_cohomology_dims,
+                                                   relative_homology_dims)
+        fn = relative_cohomology_dims if side == "coh" else relative_homology_dims
+        return fn(self, top, coefficients=coefficients, max_cells=max_cells)
 
     # -- citations ------------------------------------------------------------
     def _engine_citations(self):
@@ -195,7 +244,7 @@ class Algebra:
         return engine == "auto" and auto_cs and self._auto_cs_routes()
 
 
-    def _cs_depth_fallback(self, side, rec, top, max_cells, cause):
+    def _cs_depth_fallback(self, side, rec, top, max_cells, cause, coefficients=None):
         """The Marco-2026-07-26 dispatch amendment: engine='auto' no longer DIES at
         the bar/fast depth wall when the algebra carries a quiver presentation -- it
         reroutes to the Chouhy-Solotar engine (recorded in the dispatch trace, never
@@ -213,10 +262,25 @@ class Algebra:
         from quiverlab.resolutions_cs.homology import (cs_cohomology_dims,
                                                        cs_homology_dims)
         fn = cs_cohomology_dims if side == "coh" else cs_homology_dims
-        return fn(self, top, max_cells=max_cells, trace=rec)
+        return fn(self, top, max_cells=max_cells, trace=rec, coefficients=coefficients)
+
+    def incidence_cohomology(self, top, field=None):
+        """``HH^*(kP)`` via the ORDER COMPLEX, for an algebra built as an incidence
+        algebra: ``HH^n(kP) = H^n(Delta(P); k)`` (Cibils 1989, generalizing
+        Gerstenhaber-Schack 1983 from face posets to arbitrary finite posets; Plan 75 / R9).
+
+        Far smaller than the general route -- the cochain complex is indexed by CHAINS of
+        ``P`` rather than by the enveloping algebra ``(kP)^e`` -- and it reports the
+        integral torsion that makes ``HH^*`` characteristic-dependent. Refuses LOUDLY
+        unless the algebra carries poset provenance (this method never guesses that a
+        presentation is an incidence algebra).
+        """
+        from quiverlab.hochschild.simplicial import incidence_cohomology
+        return incidence_cohomology(self, top, field=field)
 
     def hochschild_cohomology(self, top, max_cells=4_000_000, engine="auto",
-                              auto_cs=False, verbose=None, trace=None):
+                              auto_cs=False, coefficients=None, relative_to=None,
+                              verbose=None, trace=None):
         """Dimensions of HH^0..HH^top, exact. engine: 'auto' (fast over GF(p),
         bar otherwise), 'bar' (pure, any field), 'fast' (GF(p) only, loud otherwise),
         'cs' (Chouhy-Solotar, any admissible presentation over any field). Set
@@ -235,9 +299,28 @@ class Algebra:
         from quiverlab.trace.events import Dispatch
         from quiverlab.trace.recorder import Trace, resolve_verbose
 
-        if engine not in ("auto", "bar", "fast", "cs"):
+        if engine not in ("auto", "bar", "fast", "cs", "ghms"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+                                 hint="choose 'auto', 'bar', 'fast', 'cs', or 'ghms'")
+        if engine == "ghms":
+            # Plan 75 / R10: the closed-form GHMS route for a CERTIFIED-KOSZUL algebra.
+            # Domain-general (unlike the GF(p)-only syzygy engine) and it never searches
+            # for syzygies. The Koszul gate is three-valued and refuses loudly; `auto` is
+            # deliberately NOT routed here, so every existing result stays byte-identical.
+            from quiverlab.hochschild.koszul_ghms import (
+                _GHMS_CITATIONS, ghms_cohomology_dims, ghms_homology_dims)
+            fn = ghms_cohomology_dims if True else ghms_homology_dims
+            return HHTable(dims=fn(self, top), kind="cohomology",
+                           algebra_repr=repr(self),
+                           engine="GHMS comultiplicative Koszul resolution",
+                           references=_GHMS_CITATIONS)
+        self._check_coefficients(engine, coefficients)
+        if relative_to is not None:
+            table = self._relative_route("coh", top, max_cells, coefficients, relative_to)
+            table.references = self.citations()
+            if coefficients is not None:
+                table.coefficients = coefficients.describe()
+            return table
         want = resolve_verbose(verbose, quiverlab.verbose)
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
@@ -247,8 +330,9 @@ class Algebra:
                     route="chouhy-solotar",
                     reason="general Chouhy-Solotar resolution over the admissible presentation",
                     n_relations=len(self.relations or ())))
-            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
-        elif self._use_fast_engine(engine):
+            table = cs_cohomology_dims(self, top, max_cells=max_cells, trace=rec,
+                                       coefficients=coefficients)  # CS fills rec
+        elif self._use_fast_engine(engine, coefficients):
             from quiverlab.engine.adapter import engine_cohomology_dims
             if rec is not None:
                 rec.append(Dispatch(
@@ -263,7 +347,7 @@ class Algebra:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("coh", rec, top, max_cells,
-                                                "fast GF(p) bar basis")
+                                                "fast GF(p) bar basis", coefficients=coefficients)
         else:
             if rec is not None:
                 rec.append(Dispatch(
@@ -272,13 +356,15 @@ class Algebra:
                     n_relations=len(self.relations or ())))
             try:
                 table = hochschild_cohomology_dims(self, top, max_cells=max_cells,
-                                                   trace=rec)
+                                                   trace=rec, coefficients=coefficients)
             except DepthLimitError:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("coh", rec, top, max_cells,
-                                                "bar oracle")
+                                                "bar oracle", coefficients=coefficients)
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
+        if coefficients is not None:
+            table.coefficients = coefficients.describe()   # provenance (only when non-None)
         if want and trace is None and rec is not None:
             from quiverlab.trace.provenance import references_for, resolve_references
             from quiverlab.trace.writer import write_trace
@@ -289,18 +375,39 @@ class Algebra:
         return table
 
     def hochschild_homology(self, top, max_cells=4_000_000, engine="auto",
-                            auto_cs=False, verbose=None, trace=None):
+                            auto_cs=False, coefficients=None, relative_to=None,
+                            verbose=None, trace=None):
         """Dimensions of HH_0..HH_top, exact. Same engine semantics as cohomology
-        (including 'cs', auto_cs, verbose, and the trace event sink)."""
+        (including 'cs', auto_cs, coefficients, relative_to, verbose, and the trace
+        event sink)."""
         import quiverlab
         from quiverlab.hochschild.bar import hochschild_homology_dims
         from quiverlab.hochschild.table import HHTable
         from quiverlab.trace.events import Dispatch
         from quiverlab.trace.recorder import Trace, resolve_verbose
 
-        if engine not in ("auto", "bar", "fast", "cs"):
+        if engine not in ("auto", "bar", "fast", "cs", "ghms"):
             raise QuiverlabError(f"unknown engine {engine!r}",
-                                 hint="choose 'auto', 'bar', 'fast', or 'cs'")
+                                 hint="choose 'auto', 'bar', 'fast', 'cs', or 'ghms'")
+        if engine == "ghms":
+            # Plan 75 / R10: the closed-form GHMS route for a CERTIFIED-KOSZUL algebra.
+            # Domain-general (unlike the GF(p)-only syzygy engine) and it never searches
+            # for syzygies. The Koszul gate is three-valued and refuses loudly; `auto` is
+            # deliberately NOT routed here, so every existing result stays byte-identical.
+            from quiverlab.hochschild.koszul_ghms import (
+                _GHMS_CITATIONS, ghms_cohomology_dims, ghms_homology_dims)
+            fn = ghms_cohomology_dims if False else ghms_homology_dims
+            return HHTable(dims=fn(self, top), kind="homology",
+                           algebra_repr=repr(self),
+                           engine="GHMS comultiplicative Koszul resolution",
+                           references=_GHMS_CITATIONS)
+        self._check_coefficients(engine, coefficients)
+        if relative_to is not None:
+            table = self._relative_route("hom", top, max_cells, coefficients, relative_to)
+            table.references = self.citations()
+            if coefficients is not None:
+                table.coefficients = coefficients.describe()
+            return table
         want = resolve_verbose(verbose, quiverlab.verbose)
         rec = trace if trace is not None else (Trace() if want else None)
         if self._route_to_cs(engine, auto_cs):
@@ -310,8 +417,9 @@ class Algebra:
                     route="chouhy-solotar",
                     reason="general Chouhy-Solotar resolution over the admissible presentation",
                     n_relations=len(self.relations or ())))
-            table = cs_homology_dims(self, top, max_cells=max_cells, trace=rec)  # CS fills rec
-        elif self._use_fast_engine(engine):
+            table = cs_homology_dims(self, top, max_cells=max_cells, trace=rec,
+                                     coefficients=coefficients)  # CS fills rec
+        elif self._use_fast_engine(engine, coefficients):
             from quiverlab.engine.adapter import engine_homology_dims
             if rec is not None:
                 rec.append(Dispatch(
@@ -326,7 +434,7 @@ class Algebra:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("hom", rec, top, max_cells,
-                                                "fast GF(p) bar basis")
+                                                "fast GF(p) bar basis", coefficients=coefficients)
         else:
             if rec is not None:
                 rec.append(Dispatch(
@@ -335,13 +443,15 @@ class Algebra:
                     n_relations=len(self.relations or ())))
             try:
                 table = hochschild_homology_dims(self, top, max_cells=max_cells,
-                                                 trace=rec)
+                                                 trace=rec, coefficients=coefficients)
             except DepthLimitError:
                 if engine != "auto" or self.quiver is None:
                     raise
                 table = self._cs_depth_fallback("hom", rec, top, max_cells,
-                                                "bar oracle")
+                                                "bar oracle", coefficients=coefficients)
         table.references = self.citations()   # FROZEN contract (family+engine keys); Task 11 must NOT change it
+        if coefficients is not None:
+            table.coefficients = coefficients.describe()   # provenance (only when non-None)
         if want and trace is None and rec is not None:
             from quiverlab.trace.provenance import references_for, resolve_references
             from quiverlab.trace.writer import write_trace
@@ -402,6 +512,16 @@ class Algebra:
         from quiverlab.modules.opposite import opposite_algebra
         return opposite_algebra(self)
 
+    def skew_group(self, action):
+        """The skew group algebra ``A rtimes G`` (smash product ``A # kG``) for an
+        explicit finite ``GroupAction`` acting by algebra automorphisms; a
+        first-class structure-constant Algebra of dimension ``|G|*dim A`` (Plan 74).
+        Characteristic-agnostic; the Stefan HH decomposition
+        (``quiverlab.hochschild.skew_group.stefan_decomposition``) needs
+        ``char k does not divide |G|``."""
+        from quiverlab.families.skew_group import skew_group_algebra
+        return skew_group_algebra(self, action)
+
     def hom(self, M, N):
         """dim Hom_A(M, N) for right A-modules M, N (spec §3.6)."""
         from quiverlab.modules.hom import hom_dim
@@ -426,12 +546,126 @@ class Algebra:
         return knit_ar_quiver(self, budget_modules=budget_modules,
                               budget_dim=budget_dim)
 
+    def split_extension_cohomology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension (trivial-extension) Hochschild-cohomology LES,
+        assembling ``HH^•(T(A))`` from the flanks ``HH^•(L, D(A))`` / ``HH^•(L, A)``
+        and the snake connecting map, cross-checked against the direct ``HH^•(T(A))``
+        (Plan 72 / R5, CMRS ``math/0102194``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_cohomology
+        return split_extension_cohomology(self, top, M=M, max_cells=max_cells)
+
+    def split_extension_homology(self, top, M=None, max_cells=4_000_000):
+        """The split-extension Hochschild-HOMOLOGY twin (the dual SES
+        ``0 → M → L → A → 0`` in ``HH_•(L, −)``). Returns a ``SplitExtReport``."""
+        from quiverlab.hochschild.split_extension import split_extension_homology
+        return split_extension_homology(self, top, M=M, max_cells=max_cells)
+
+    def inert_arrows(self):
+        """The inert arrows of ``A`` — arrows in no minimal relation of ``I`` (CLMS
+        Def. 3.1, Plan 72 / R6). Structure-constant-only ⇒ loud."""
+        from quiverlab.hochschild.arrow_removal import inert_arrows
+        return inert_arrows(self)
+
+    def arrow_removal(self, arrows=None, top=6, *, side="both"):
+        """The certified arrow-removal HH reduction (CLMS ``1812.07655``, Plan 72 /
+        R6): build ``B = A ∖ (inert arrows)`` and report the clean ``HH_{≥2}``
+        homology isomorphism (Thm 3.2) + the cohomology Ext-correction (Thm 4.2).
+        ``arrows=None`` removes ALL inert arrows. Returns an ``ArrowRemovalReport``."""
+        from quiverlab.hochschild.arrow_removal import arrow_removal
+        return arrow_removal(self, arrows=arrows, top=top, side=side)
+
+    def barcode(self, M, *, budget=512, budget_modules=256):
+        """The barcode / generalized persistence diagram of a persistence module ``M``
+        (Plan 69 / R33). ``A_n``/zigzag: the interval decomposition (Gabriel /
+        Botnan-Crawley-Boevey), field-robust over any exact domain. ``CL(n<=4)``: the
+        AR-quiver-indexed generalized persistence diagram (Escolar-Hiraoka), char-scoped.
+        Returns a :class:`~quiverlab.modules.barcode.Barcode`; refuses loudly on a
+        non-A_n/non-CL quiver, ``CL(n>=5)``, or a char-undecidable input."""
+        from quiverlab.modules.barcode import barcode
+        return barcode(M, budget=budget, budget_modules=budget_modules)
+    def enveloping(self):
+        """The enveloping algebra ``A^e = A (x) A^op`` as a first-class bound quiver
+        Algebra (product quiver, ``present_from_pi``-certified ``dim = (dim A)^2``,
+        Plan 73 / R7). The first first-class enveloping algebra in quiverlab -- the
+        Hochschild engines only handle ``A^e`` internally."""
+        from quiverlab.families.extension import enveloping_algebra
+        return enveloping_algebra(self)
+
+    def bounded_extension(self, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16):
+        """Decide whether ``B subset A`` (removing ``new_arrows``) is a **bounded**
+        extension (CLMS ``2101.02597`` Def. 2.3, Plan 73 / R7): ``A/B`` tensor
+        nilpotent + finite ``pd_{B^e}`` + one-sided ``B``-projective. Returns a
+        ``BoundedCertificate`` (honest ``None`` when a leg is undecided)."""
+        from quiverlab.invariants.han import bounded_extension
+        return bounded_extension(self, new_arrows, side=side, nilp_cap=nilp_cap,
+                                 pd_cap=pd_cap)
+
+    def han_transport(self, new_arrows, *, side="auto", nilp_cap=8, pd_cap=16,
+                      hh_top=None):
+        """Transport Han's conjecture across ``B subset A`` (CLMS Thm 3.1/4.6, Plan
+        73 / R7). Labels the claim by the exact row of the injection/isomorphism
+        LADDER (bounded => iso; (i)+(ii) => ordinary injection; (i) => mixed-coeff
+        injection). Returns a ``HanTransport``; the self-cert gate is the injection
+        bound ``dim HH_m(B) <= dim HH_m(A)``, equality only under ``"bounded"``."""
+        from quiverlab.invariants.han import han_transport
+        return han_transport(self, new_arrows, side=side, nilp_cap=nilp_cap,
+                             pd_cap=pd_cap, hh_top=hh_top)
+
+    def relative_homology(self, new_arrows, top):
+        """``HH_*(A|B)`` (``B`` = ``A`` minus ``new_arrows``) via the CLMS normalized
+        relative bar complex (Plan 73 / R7); finite when ``A/B`` is tensor-nilpotent
+        (Cor. 2.4). Returns an ``HHTable``."""
+        from quiverlab.families.extension import arrow_removal_subalgebra
+        from quiverlab.hochschild.jacobi_zariski import relative_homology
+        return relative_homology(arrow_removal_subalgebra(self, new_arrows), top)
+
+    def radical_filtration(self, budget_modules=256, budget_dim=4096):
+        """The radical filtration of ``mod A`` (Plan 57 / R37): exact
+        ``dim rad^n(X, Y)`` layer dimensions on the knitted indecomposables, the
+        nilpotency index of ``rad(mod A)``, and the ``rad^inf = 0 <=>
+        representation-finite`` certificate (Auslander). Returns a
+        :class:`~quiverlab.modules.radical.RadicalFiltration`; certified iff the knit
+        closes (rep-finite), else an honest window/refusal with no verdict."""
+        from quiverlab.modules.radical import radical_filtration
+        return radical_filtration(self, budget_modules=budget_modules,
+                                  budget_dim=budget_dim)
+
+    def ar_invariants(self, budget_modules=256, budget_dim=4096):
+        """The Auslander-Reiten component invariants (Plan 57 / R21): Liu left/right
+        degrees of irreducible maps, sectional paths, the
+        postprojective/preinjective/regular partition, directing modules, the
+        representation-directed recognizer (``Gamma_A`` acyclic) and the
+        generalized-standard flag. Returns an
+        :class:`~quiverlab.modules.ar_invariants.ARInvariants`; certified iff the knit
+        closes (rep-finite), else an honest off-scope refusal."""
+        from quiverlab.modules.ar_invariants import ar_invariants
+        return ar_invariants(self, budget_modules=budget_modules,
+                             budget_dim=budget_dim)
+
     def ext_algebra(self, top=6):
         """The Yoneda / Ext-algebra E(A) = Ext^*_A(A/J, A/J) as a graded
         quiver-with-relations presentation over R = k^{Q_0}, through degree `top`
         (or complete through gl.dim when finite); a YonedaPresentation (Plan 27)."""
         from quiverlab.modules.ext_algebra import ext_algebra
         return ext_algebra(self, top)
+
+    def cluster_category(self):
+        """The Amiot-Keller cluster category ``C_A = D^b(mod A)/tau^-1[1]`` of this
+        algebra (Plan 79), as a certified finite model: the fundamental domain
+        ``ind(mod A) |_| {P_v[1]}``, the cluster-tilting objects (= support tau-tilting
+        pairs, AIR), the cluster-tilted End-algebra, and the 2-Calabi-Yau certificate.
+        HEREDITARY and ACYCLIC only -- refuses loudly otherwise."""
+        from quiverlab.cluster import ClusterCategory
+        return ClusterCategory(self)
+
+    def koszul_profile(self, top=8):
+        """The generalized-Koszulity profile (Plan 77): Plan 27's quadratic Koszul
+        verdict together with Berger's N-Koszul certificate, Cassidy-Shelton K2
+        (through an explicit certified window), the Brenner-Butler-King
+        (p,q)-almost-Koszul classifier, Herscovich's scoped multi-Koszul record, and
+        the internal (path-length) generation degrees of Ext(k,k)."""
+        from quiverlab.modules.nkoszul import koszul_profile
+        return koszul_profile(self, top)
 
     def chain_complex(self, terms, dmats, check=True):
         """A bounded chain complex of A-modules (Plan 39): ``terms`` is
@@ -466,6 +700,117 @@ class Algebra:
         from quiverlab.tautilting.mutation import exchange_graph
         return exchange_graph(self, budget_pairs=budget_pairs)
 
+    def torsion_lattice(self, budget=512):
+        """The finite lattice ``tors A`` (Plan 64 / R26, DIRRT): order, join/meet
+        (``is_lattice`` self-cert), join-/meet-irreducibles, canonical join representations,
+        and the SD/modular/distributive flags -- extracted from the P45 oriented exchange
+        graph. Certified complete iff ``A`` is tau-tilting-finite (else an honest
+        ``is_complete=False`` value, no partial-lattice lie)."""
+        from quiverlab.tautilting.congruence import torsion_lattice
+        return torsion_lattice(self, budget=budget)
+
+    def congruence_lattice(self, budget=512):
+        """``Con(tors A)`` (Plan 64 / R26, DIRRT): the congruence lattice via principal
+        cover-congruences, its join-irreducible congruences (= the bricks), the forcing order
+        on bricks, and ``|Con(tors A)|``. Distributive by Funayama-Nakayama. Certified
+        complete iff ``A`` is tau-tilting-finite."""
+        from quiverlab.tautilting.congruence import congruence_lattice
+        return congruence_lattice(self, budget=budget)
+
+    def wide_subcategories(self, budget=512):
+        """The wide-subcategory poset (Plan 64 / R26, Enomoto 2201.00595): computed from
+        ``tors A`` via the core label order AND the kappa order (asserted to coincide),
+        isomorphic to ``(wide A, subseteq)``. Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.congruence import wide_subcategories
+        return wide_subcategories(self, budget=budget)
+
+    def tau_cluster_category(self, budget=512):
+        """The tau-cluster morphism category ``W(A)`` (Plan 66 / R29; Buan-Marsh IMRN 2021 +
+        Hanson-Igusa Comm. Alg. 2021): objects = the tau-perpendicular wide subcategories
+        (``object_count == wide_subcategories(A).size``), morphisms = support tau-rigid pairs
+        of the source graded by rank, the Hanson-Igusa classifying-space cube-complex
+        ``face_vector`` (``f_0 = #wide``, ``f_k = #(rank-k morphisms)``) + Euler characteristic
+        + the ``g``-fan sphere ``g_fan_face_vector``, and the theorem-anchored ``K(pi,1)``
+        verdict (Nakayama / hereditary Dynkin). Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import tau_cluster_category
+        return tau_cluster_category(self, budget=budget)
+
+    def picture_group(self, budget=512):
+        """The picture-group presentation ``pi_1(|W(A)|)`` as DATA (Plan 66 / R29;
+        Igusa-Todorov-Weyman arXiv:1609.02636; Hanson-Igusa): generators = the bricks,
+        relations = the rank-2 wides (typed commutation / atom via ``Ext^1``), and the
+        abelianization by exact Smith normal form. Certified complete iff ``A`` is
+        tau-tilting-finite."""
+        from quiverlab.tautilting.cluster_morphism import picture_group
+        return picture_group(self, budget=budget)
+
+    def wall_chamber_structure(self, budget_pairs=512):
+        """The wall-and-chamber structure of ``A`` via bricks (Plan 63 / R25): the chambers
+        (g-vector cones of the support tau-tilting pairs), the walls ``D(B)`` (one per brick,
+        each an EXACT rational inequality system over the submodule dim-vectors -- BST 2019 /
+        King 1994), the chamber<->wall adjacency, the four counts, and a 2D/3D drawing for
+        rank <= 3. Certified COMPLETE iff ``A`` is brick-finite <=> tau-tilting-finite (DIJ);
+        otherwise a BOUNDED region with honest truncation and no count. Char 0 / char > dim
+        (QQ default; loud off scope)."""
+        from quiverlab.tautilting.wallchamber import wall_chamber_structure
+        return wall_chamber_structure(self, budget=budget_pairs)
+    def silting_report(self):
+        """The silting-object verdict for the regular object ``A = (+)_v P_v`` in
+        ``K^b(proj A)`` (Plan 67 / Aihara-Iyama): presilting on the exact positive window
+        + three-valued generation (:class:`~quiverlab.derived.silting.SiltingReport`)."""
+        from quiverlab.derived.silting import is_silting_object
+        from quiverlab.modules.complexes import ChainComplex
+        return is_silting_object([ChainComplex.stalk(self.projective(v), 0)
+                                  for v in self.quiver.vertices])
+
+    def silting_exploration(self, radius=3, budget=64):
+        """A bounded-radius exploration of the silting quiver from the regular object
+        (Plan 67 / AI Thm 1.2 -- NO general BFS): loud ``status``, certified complete only
+        for local (:class:`~quiverlab.derived.silting.SiltingExploration`)."""
+        from quiverlab.derived.silting import bounded_silting_exploration
+        return bounded_silting_exploration(self, radius=radius, budget=budget)
+    def exceptional_sequences(self, budget=100_000, transitive="auto"):
+        """The complete classical exceptional sequences of this **hereditary** algebra
+        (Plan 65 / R28): the backward-orthogonality enumeration, the braid-orbit
+        transitivity certificate, and the Dynkin closed-form count ``n! h^n / |W|``.
+        Hereditary + representation-finite scope; loud refusal otherwise. Returns an
+        :class:`~quiverlab.modules.exceptional.ExcSeqReport`."""
+        from quiverlab.modules.exceptional import exceptional_sequences
+        return exceptional_sequences(self, budget=budget, transitive=transitive)
+
+    def is_exceptional_sequence(self, seq):
+        """True iff ``seq`` is a classical exceptional sequence over this **hereditary**
+        algebra (Plan 65 / R28): each term a rigid brick, no backward Hom/Ext (``i<j`` =>
+        ``Hom(E_j,E_i)=Ext^1(E_j,E_i)=0``). Loud non-hereditary refusal."""
+        from quiverlab.modules.exceptional import is_exceptional_sequence
+        return is_exceptional_sequence(self, seq)
+
+    def tau_exceptional_objects(self, budget=512):
+        """The length-1 signed tau-exceptional objects (Plan 65 / R27): the indecomposable
+        tau-rigid modules (sign +1) + one shifted projective ``P_v[1]`` per vertex (sign -1).
+        tau-tilting-finite scope; loud refusal otherwise. A list of
+        :class:`~quiverlab.tautilting.exceptional.TauExcObject`."""
+        from quiverlab.tautilting.exceptional import tau_exceptional_objects
+        return tau_exceptional_objects(self, budget=budget)
+
+    def tau_exceptional_sequences(self, budget=4096, want_sequences=True):
+        """The complete signed tau-exceptional sequences of this **tau-tilting-finite**
+        algebra (Plan 65 / R27; Buan-Marsh): the ordered-support-tau-tilt bijection count
+        ``signed_count = n! * #sTt`` plus the materialised reduction towers (the H1
+        cross-check). Loud refusal off a complete exchange graph (M1). Returns a
+        :class:`~quiverlab.tautilting.exceptional.TauExcReport`."""
+        from quiverlab.tautilting.exceptional import tau_exceptional_sequences
+        return tau_exceptional_sequences(self, budget=budget, want_sequences=want_sequences)
+
+    def is_tau_exceptional_sequence(self, seq):
+        """True iff ``seq`` is a signed tau-exceptional sequence over this algebra
+        (Plan 65 / R27): a reduction tower, or an ambient ``(inner, ..., outer)`` sequence
+        recognized by the Jasso reduction recursion."""
+        from quiverlab.tautilting.exceptional import is_tau_exceptional_sequence
+        return is_tau_exceptional_sequence(self, seq)
+
     def is_tilting_module(self, T, n=1):
         """A :class:`~quiverlab.modules.tilting.TiltingReport` for whether the module
         ``T`` is an ``n``-tilting module over this algebra (Plan 44 / C7): pd <= n,
@@ -479,6 +824,26 @@ class Algebra:
         (pd<=1, Ext^1(T,T)=0): ``is_tilting_module(direct_sum(T, E))`` is True (Plan 44)."""
         from quiverlab.modules.tilting import bongartz_completion
         return bongartz_completion(T)
+
+    def tilted_check(self, budget_modules=256, budget_sections=4096):
+        """A :class:`~quiverlab.modules.tilted.TiltedReport` deciding whether this algebra
+        is tilted -- ``A = End_H(T)`` for a hereditary ``H`` and a tilting ``H``-module
+        ``T`` (Plan 60 / R17) -- by the Liu-Skowronski faithful-section criterion on the
+        AR quiver, certified by Ringel's slice theorem. Theorem gates (hereditary =>
+        tilted; non-semisimple self-injective => not; gl.dim > 2 => not) then a rep-finite
+        exhaustive search; two budgets: the knit cap ``budget_modules`` and the transversal
+        cap ``budget_sections`` (a product of orbit sizes). Char 0 / char > dim."""
+        from quiverlab.modules.tilted import tilted_check
+        return tilted_check(self, budget_modules=budget_modules,
+                            budget_sections=budget_sections)
+
+    def is_tilted(self, budget_modules=256, budget_sections=4096) -> bool:
+        """``True`` iff this algebra is tilted (Plan 60); the Boolean shorthand for
+        ``bool(self.tilted_check(...))``. An honest ``unknown`` verdict (rep-infinite
+        non-hereditary / budget-tripped) returns ``False`` -- read ``tilted_check`` for the
+        status when the distinction matters."""
+        return bool(self.tilted_check(budget_modules=budget_modules,
+                                      budget_sections=budget_sections))
 
     # -- quasi-hereditary structure + recollements (Plan 47) ------------------
     def standard_modules(self, order=None):
@@ -563,6 +928,51 @@ class Algebra:
         from quiverlab.modules.homdims import finitistic_dimension_bounds
         return finitistic_dimension_bounds(self, bound=bound)
 
+    def phi_dim(self, **kw):
+        """The Igusa-Todorov phi-dimension ``phidim(A) = sup{ phi(M) }`` as an ALGEBRA
+        invariant (Plan 53 / R23a): EXACT for representation-finite ``A`` (direct sum of
+        all indecomposables via add-monotonicity), a certified LOWER bound when the AR
+        knit caps, the exact ``0`` for self-injective ``A``. A :class:`~quiverlab.modules.homdims.PhiDim`."""
+        from quiverlab.modules.homdims import phi_dim
+        return phi_dim(self, **kw)
+
+    def psi_dim(self, **kw):
+        """The Igusa-Todorov psi-dimension ``psidim(A) = sup{ psi(M) }`` as an ALGEBRA
+        invariant (Plan 53 / R23a); same rep-finite/honest-degrade contract as
+        :meth:`phi_dim`. A :class:`~quiverlab.modules.homdims.PsiDim`."""
+        from quiverlab.modules.homdims import psi_dim
+        return psi_dim(self, **kw)
+
+    def phi_spectrum(self, **kw):
+        """The phi-spectrum ``{ phi(X) : X indecomposable }`` + its gaps (Plan 53 / R23b;
+        Barrios-Mata-Rama). Rep-finite only; a partial spectrum claims no gaps. A
+        :class:`~quiverlab.modules.homdims.PhiSpectrum`."""
+        from quiverlab.modules.homdims import phi_spectrum
+        return phi_spectrum(self, **kw)
+
+    def finitistic_certificate(self, bound=32):
+        """A Lat-Igusa-Todorov finitistic certificate (Plan 53 / R23c): a proof-carrying
+        certified finite ``findim`` upper bound from a decidable LIT family (self-injective
+        / Iwanaga-Gorenstein / finite-phidim), or an honest ``None`` (no known decision
+        procedure in general). A :class:`~quiverlab.modules.homdims.LITCertificate`."""
+        from quiverlab.modules.homdims import lit_finitistic_certificate
+        return lit_finitistic_certificate(self, bound=bound)
+
+    def fractional_calabi_yau_dimension(self, **kw):
+        """The stable-category fractional Calabi-Yau dimension ``(m, ell)`` of a
+        self-injective algebra (Plan 53 / R24): ``S = Omega.nu``, ``Sigma = Omega^{-1}``,
+        certified at the weak-on-generators tier (Ivanov-Volkov criterion; bounded search
+        + loud budget). RAISES for non-self-injective ``A``. A
+        :class:`~quiverlab.modules.fractional_cy.FractionalCY`."""
+        from quiverlab.modules.fractional_cy import fractional_calabi_yau
+        return fractional_calabi_yau(self, **kw)
+
+    def is_fractionally_calabi_yau(self, **kw):
+        """True iff the stable category of this self-injective algebra CERTIFIES a
+        fractional Calabi-Yau dimension (Plan 53 / R24). RAISES for non-self-injective."""
+        from quiverlab.modules.fractional_cy import is_fractionally_calabi_yau
+        return is_fractionally_calabi_yau(self, **kw)
+
     # -- invariants -----------------------------------------------------------
     def cartan_matrix(self):
         """Integer Cartan matrix from the quiver presentation (any field)."""
@@ -578,6 +988,17 @@ class Algebra:
         """Characteristic polynomial of the Coxeter matrix, as an exact sympy Poly."""
         from quiverlab.invariants.cartan import coxeter_polynomial
         return coxeter_polynomial(self)
+
+    def coxeter_spectral(self):
+        """Certified Coxeter spectral report (Plan 58 / R20): exact ZZ[x] cyclotomic
+        factorization with Phi_n labels, cyclotomic / quasi-unipotent verdict, finite
+        Coxeter order (Phi^m = I) or None with an honest reason, exact outside-unit-
+        circle root count, and the spectral radius / Mahler measure as CERTIFIED
+        ALGEBRAIC NUMBERS (minimal polynomial + rational isolating interval) -- never a
+        float. Any field that refuses on this input is captured per-field, never a
+        crash."""
+        from quiverlab.invariants.coxeter_spectral import coxeter_spectral
+        return coxeter_spectral(self)
 
     def euler_form(self, d, e):
         """Euler bilinear form <d, e> = d C^{-1} e^T on integer dimension vectors
@@ -610,12 +1031,99 @@ class Algebra:
         from quiverlab.invariants.dynkin_type import dynkin_type
         return dynkin_type(self.quiver)
 
+    # -- coverings: pi1 + simple connectivity (Plan 56 / R14, R16) -----------
+    def fundamental_group(self, base=None):
+        """The presentation fundamental group pi1(Q, I): a finite presentation
+        (generators = non-tree arrows, relators from the minimal relations of I)
+        with its abelianization pi1^ab by exact integer Smith normal form. Loud
+        refusal on presentation-less input. NOT the intrinsic (grading) group."""
+        from quiverlab.invariants.coverings import fundamental_group
+        return fundamental_group(self, base=base)
+
+    def intrinsic_fundamental_group(self):
+        """The intrinsic fundamental group (inverse limit over connected gradings):
+        ALWAYS refused loudly -- not bounded-computable (Cibils-Redondo-Solotar).
+        Use fundamental_group() for the presentation group instead."""
+        from quiverlab.invariants.coverings import intrinsic_fundamental_group
+        return intrinsic_fundamental_group(self)
+
+    def minimal_relation_counts(self):
+        """{(src, tgt): count} of the minimal relations of I per ordered vertex pair
+        (= dim_k e_tgt (I/(rad.I + I.rad)) e_src, the Tits-form r_ij). Loud on
+        presentation-less input; empty for a hereditary algebra (Plan 56 / P62)."""
+        from quiverlab.invariants.coverings import minimal_relation_counts
+        return minimal_relation_counts(self)
+
+    def is_simply_connected(self, strong="auto", convex_budget=20000):
+        """Three-valued simple-connectivity verdict: True only via decidable
+        sufficient criteria (tree / no-bypass Le Meur / separation), False via a
+        decidable witness (disconnected / oriented cycle / nontrivial pi1^ab), else
+        None (inconclusive, honest per Adian-Rabin). Carries the R16
+        strongly-simply-connected certificate (the P62 gate). Loud on
+        presentation-less input (Plan 56)."""
+        from quiverlab.invariants.coverings import is_simply_connected
+        return is_simply_connected(self, strong=strong, convex_budget=convex_budget)
+
+    def separation_condition(self):
+        """The separation condition at every vertex a: the distinct indecomposable
+        summands of rad P_a have supports in distinct connected components of Q_a
+        (Q minus a and its transitive predecessor closure). Triangular only (loud
+        otherwise); a decompose char-caveat is caught as an undecided verdict
+        (Plan 56 / R16)."""
+        from quiverlab.invariants.coverings import separation_condition
+        return separation_condition(self)
+
+    def is_strongly_simply_connected(self, convex_budget=20000):
+        """The R16 recognizer: separation for every full convex subcategory
+        (Skowronski 1993). Three-valued (None on char/budget events), witness on
+        failure. Triangular only (loud otherwise). The clean certificate P62 reads
+        (Plan 56)."""
+        from quiverlab.invariants.coverings import is_strongly_simply_connected
+        return is_strongly_simply_connected(self, convex_budget=convex_budget)
+
     def positive_roots(self):
         """Positive roots of the Tits form (= dimension vectors of the
         indecomposables, Gabriel) for a hereditary Dynkin algebra; loud on
         affine/wild/non-hereditary input (Plan 38 / C2)."""
         from quiverlab.invariants.roots import positive_roots
         return positive_roots(self)
+
+    # -- combinatorial Tits form + tame/wild certificate (Plan 62 / R19) ------
+    def tits_form_combinatorial(self, d):
+        """The COMBINATORIAL Tits form q_A(d) = sum d_i^2 - sum_{arrows i->j} d_i
+        d_j + sum_{(i,j)} r_ij d_i d_j, r_ij = minimal_relation_counts (P56); it
+        truncates the Euler form at Ext^2 and is defined for every admissible
+        presentation (they coincide iff gl.dim <= 2). Distinct from tits_form
+        (Plan 38's homological Euler form). Field-free exact int (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import tits_form_combinatorial
+        return tits_form_combinatorial(self, d)
+
+    def is_weakly_positive(self, budget=3_000_000):
+        """Exact weak-positivity FormVerdict of the combinatorial Tits form
+        (Ovsienko's box-6, branch-and-bound; positive-definite / isotropic-radical
+        fast certificates). None only on budget, never a guessed True. A False
+        carries the exact witness d >= 0 with q(d) <= 0 (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import as_unit_form, is_weakly_positive
+        return is_weakly_positive(as_unit_form(self), budget=budget)
+
+    def is_weakly_nonnegative(self, budget=3_000_000):
+        """Exact weak-nonnegativity FormVerdict of the combinatorial Tits form,
+        decided by the classified hypercritical list (primary) + a sound witness
+        finder. A False is a FOUND witness d >= 0 with q(d) < 0; a True rests on the
+        positive-semidefinite certificate or recorded list completeness; else honest
+        None -- never a guessed True (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import as_unit_form, is_weakly_nonnegative
+        return is_weakly_nonnegative(as_unit_form(self), budget=budget)
+
+    def tame_wild_certificate(self, convex_budget=20000, search_budget=3_000_000):
+        """The Tits-form representation-type certificate: rep-finite / tame / wild
+        gated on the P56 strong-simple-connectivity certificate over a
+        characteristic-0 field (Bongartz 1984; Brustle-de la Pena-Skowronski 2011).
+        The form is always computed; off scope the verdict is None (P56's None
+        propagates, never a fabricated tame/wild) (Plan 62 / R19)."""
+        from quiverlab.invariants.tits import tame_wild_certificate
+        return tame_wild_certificate(self, convex_budget=convex_budget,
+                                     search_budget=search_budget)
 
     # -- geometry of representations (Plan 49 / C8) ---------------------------
     def orbit_dimension(self, M):
@@ -652,6 +1160,86 @@ class Algebra:
         silent partial poset)."""
         from quiverlab.modules.degeneration import degeneration_order
         return degeneration_order(self, d, budget=budget)
+
+    def left_right_parts(self, budget=256, budget_dim=64):
+        """The left/right parts L_A, R_A of the module category, their intersection and
+        the finite complement ind A \\ (L_A u R_A), the Ext-injectives of add L_A (and dual
+        Ext-projectives of add R_A), and the left/right support algebras A_lambda, A_rho
+        (Plan 55 / R15, Assem-Coelho-Trepode). Returns a LeftRightAtlas; complete iff A is
+        representation-finite and not self-injective, else a loud status (never a partial
+        atlas). ``budget_dim`` caps the knitted per-module dimension (default 64): a
+        rep-infinite input the fast certificate misses trips a loud status="budget" in
+        bounded time rather than hanging -- raise it for a rep-finite algebra with larger
+        indecomposables."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget, budget_dim=budget_dim)
+
+    def left_part(self, budget=256):
+        """The left part L_A = { M in ind A : pd L <= 1 for every predecessor L of M }
+        (Plan 55) -- the ``left`` records of :meth:`left_right_parts`."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget).left
+
+    def right_part(self, budget=256):
+        """The right part R_A (successors, id <= 1) -- the ``right`` records of
+        :meth:`left_right_parts` (Plan 55)."""
+        from quiverlab.modules.left_right import left_right_parts
+        return left_right_parts(self, budget=budget).right
+
+    def support_algebras(self, budget=256):
+        """The left/right support algebras (A_lambda, A_rho) as presented induced-convex-
+        subquiver Algebras (Plan 55) -- ``(left_support, right_support)`` of
+        :meth:`left_right_parts`."""
+        from quiverlab.modules.left_right import left_right_parts
+        atlas = left_right_parts(self, budget=budget)
+        return atlas.left_support, atlas.right_support
+
+    # -- the recognizer ladder (Plan 61 / R18) --------------------------------
+    def recognizer_ladder(self, budget=256):
+        """Classify this algebra against the Assem-school recognizer ladder --
+        quasi-tilted / shod / weakly-shod / laura / ada (Plan 61 / R18) -- off ONE
+        :meth:`left_right_parts` atlas + :meth:`global_dimension` (+ one AR knit for the
+        weakly-shod sweep). Returns a :class:`~quiverlab.modules.recognizers_ladder.RecognizerLadder`
+        with the five witnessed/certified rungs, the finite laura complement, and -- for ada
+        algebras over an algebraically closed field -- the ACLV-Theorem-B simple-connectedness
+        verdict off ``HH^1``. Complete iff representation-finite and not self-injective, else a
+        loud status (never a partial ladder)."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget)
+
+    def is_quasi_tilted(self, budget=256):
+        """True iff this algebra is quasi-tilted -- (QT1) gl.dim <= 2 and (QT2) every
+        indecomposable has pd <= 1 or id <= 1 (Happel-Reiten-Smalo); the ``quasi_tilted`` rung
+        of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("quasi_tilted")
+
+    def is_shod(self, budget=256):
+        """True iff this algebra is shod -- every indecomposable has pd <= 1 or id <= 1
+        (Coelho-Lanzilotta), equivalently ``ind A = L_A u R_A``; the ``shod`` rung of
+        :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("shod")
+
+    def is_weakly_shod(self, budget=256):
+        """True iff this algebra is weakly shod -- the lengths of irreducible-morphism paths
+        from an injective to a projective are bounded (Coelho-Lanzilotta); the ``weakly_shod``
+        rung of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("weakly_shod")
+
+    def is_laura(self, budget=256):
+        """True iff this algebra is laura -- ``ind A \\ (L_A u R_A)`` is finite (Assem-Coelho);
+        trivially True in representation-finite scope, with the finite complement reported by
+        :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("laura")
+
+    def is_ada(self, budget=256):
+        """True iff this algebra is ada -- every indecomposable projective and injective lies
+        in ``L_A u R_A`` (ACLV Def 2.1); the ``ada`` rung of :meth:`recognizer_ladder`."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        return recognizer_ladder(self, budget=budget).verdict("ada")
 
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
@@ -823,19 +1411,23 @@ class Algebra:
                 hint="choose 'auto', 'bar', or 'cs'")
         is_gfp = isinstance(self.domain, PrimeField)
         presented = self.quiver is not None and self.relations is not None
-        if engine == "cs" or (engine == "auto" and not is_gfp):
+
+        def _cs_tables():
+            # Plan 51: the bracket has its OWN CS-native builder (homotopy liftings);
+            # cup/cap keep cs_product_tables. Both any-Domain, past-window.
             if kind == "bracket":
-                raise QuiverlabError(
-                    "the Gerstenhaber bracket is served over GF(p) only "
-                    "(bar window; no CS-native brace machinery in v1)",
-                    hint="construct the algebra over GF(p)")
+                from quiverlab.resolutions_cs.products import cs_bracket_tables
+                return cs_bracket_tables(self, top, max_cells)
+            from quiverlab.resolutions_cs.products import cs_product_tables
+            return cs_product_tables(self, kind, top, max_cells)
+
+        if engine == "cs" or (engine == "auto" and not is_gfp):
             if not presented:
                 raise QuiverlabError(
                     f"{kind} tables off GF(p) need a quiver presentation "
                     "(the CS route); this algebra has structure constants only",
                     hint="build the algebra via Quiver.algebra, or use GF(p)")
-            from quiverlab.resolutions_cs.products import cs_product_tables
-            return cs_product_tables(self, kind, top, max_cells)
+            return _cs_tables()
         if not is_gfp:            # engine == "bar" explicitly, off GF(p)
             raise QuiverlabError(
                 f"engine='bar' {kind} tables need GF(p) (the tt facade)",
@@ -843,10 +1435,9 @@ class Algebra:
         try:
             return gfp_product_tables(self, kind, top, max_cells)
         except DepthLimitError:
-            if engine != "auto" or not presented or kind == "bracket":
+            if engine != "auto" or not presented:
                 raise
-            from quiverlab.resolutions_cs.products import cs_product_tables
-            return cs_product_tables(self, kind, top, max_cells)
+            return _cs_tables()
 
     def cup_products(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the cup product HH^p (x) HH^q ->
@@ -856,6 +1447,19 @@ class Algebra:
         (Chouhy-Solotar native diagonal, presented algebras, any Domain)."""
         return self._product_dispatch("cup", top, engine, max_cells)
 
+    def tate_hochschild(self, top, engine="auto", max_cells=4_000_000):
+        """Tate-Hochschild (singular Hochschild) cohomology HHhat^m for every
+        m in [-top, top] -- negative degrees included -- via a complete
+        resolution of A over A^e. Above the Gorenstein dimension of A^e it
+        agrees with ordinary HH^*; degree 0 does NOT (HHhat^0 is the stable
+        centre, a quotient of Z(A) = HH^0). engine: 'auto', 'native' (the
+        GF(p) splice, self-injective, knows every degree), 'duality'
+        (symmetric, any Domain, degrees |m| >= 1), 'positive' (the threshold
+        alone). A Gorenstein but non-self-injective algebra is a loud
+        DEFERRED refusal."""
+        from quiverlab.hochschild.tate import tate_hochschild
+        return tate_hochschild(self, top, engine=engine, max_cells=max_cells)
+
     def cap_products(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the cap action HH^p (x) HH_n ->
         HH_{n-p} for p <= n <= top. Same engine semantics as cup_products."""
@@ -863,10 +1467,27 @@ class Algebra:
 
     def gerstenhaber_brackets(self, top, engine="auto", max_cells=4_000_000):
         """Structure-constant tables of the Gerstenhaber bracket HH^p (x)
-        HH^q -> HH^{p+q-1} for pairs p, q >= 1 with p+q-1 <= top. GF(p) only
-        and window-bounded (the result records the served window); the
-        degree-0 insertion action is out of scope."""
+        HH^q -> HH^{p+q-1} for pairs p, q >= 1 with p+q-1 <= top. Same engine
+        semantics as cup_products/cap_products (Plan 51): 'auto' (GF(p) -> bar/tt
+        in-window, records the served window; else CS-native for presented algebras,
+        with the CS depth fallback), 'bar' (GF(p) tt facade, loud otherwise), 'cs'
+        (Chouhy-Solotar homotopy-lifting bracket, presented algebras, any exact
+        Domain, past the bar window). The degree-0 insertion action is out of scope."""
         return self._product_dispatch("bracket", top, engine, max_cells)
+
+    def hh_lie_module(self, top, budget=None, max_cells=4_000_000):
+        """HH^*(A) as a graded Lie module over HH^1(A) (Plan 71 / R12): per degree
+        0..top the action matrices rho_n(D) = the Gerstenhaber degree-1 Lie derivative
+        (the field-general primitive, over any exact field), the self-certified module
+        axiom rho_n([D,E]) = [rho_n(D),rho_n(E)] and inner-acts-zero, plus -- over
+        characteristic 0 -- the weight/torus decomposition and the indecomposable
+        Lie-module summands (the latter governed independently by decompose's own char
+        guard). Builds on HH^1 = Der/Inn (Plan 70); no resolution engine. Returns a
+        frozen HHLieModule."""
+        from quiverlab.hochschild.lie_module import DEFAULT_MAXDIM, lie_module_action
+        return lie_module_action(
+            self, top, budget=DEFAULT_MAXDIM if budget is None else budget,
+            max_cells=max_cells)
 
     def connes_differentials(self, top, max_cells=4_000_000):
         """Induced Connes differentials B : HH_n -> HH_{n+1} (matrices +
@@ -874,6 +1495,49 @@ class Algebra:
         Domain via the generic mixed complex — no engine choice to make."""
         from quiverlab.hochschild.products import connes_b_tables
         return connes_b_tables(self, top, max_cells=max_cells)
+
+    def bv_operator(self, top, engine="auto", max_cells=4_000_000):
+        """The Batalin-Vilkovisky operator Delta: HH^n -> HH^{n-1} for
+        1 <= n <= top, on the recorded HH basis, exact (Plan 54).
+
+        Delta is Connes' B carried across the sigma-twisted Frobenius duality
+        HH^n(A) ~= D(HH_n(A, {}_1A_nu)); its defect from being a cup-derivation is
+        the Gerstenhaber bracket (the BV relation). Requires a Frobenius algebra
+        whose Nakayama automorphism is semisimple (symmetric algebras included as
+        the nu-inner Tradler anchor); a loud typed refusal otherwise (non-Frobenius,
+        or Frobenius with a non-semisimple nu -- the general Bian-Itagaki-Kou-Lyu-
+        Zhou construction is out of v1 scope). Returns a ``BVOperator`` whose
+        ``.blocks()`` serializes identically for every serving tier.
+
+        engine: 'auto' (the GF(p) bar/tt route in v1); 'bar' is the explicit GF(p)
+        route (loud off GF(p)); 'cs' is reserved for the P51 past-window / off-GF(p)
+        enhancer (loud 'not available until P51' -- never a silent fallback). v1 is
+        GF(p) and in-window (the bracket arbiter that certifies correctness is
+        GF(p)-window-bounded); off GF(p) or past window refuses loudly."""
+        from quiverlab.fields.primefield import PrimeField
+        from quiverlab.hochschild.bv.hypothesis import classify_bv
+        from quiverlab.hochschild.bv.transport import (
+            bv_matrices_semisimple, bv_matrices_symmetric)
+        if engine not in ("auto", "bar", "cs"):
+            raise QuiverlabError(
+                f"unknown engine {engine!r} for the BV operator",
+                hint="choose 'auto', 'bar', or 'cs'")
+        if engine == "cs":
+            raise QuiverlabError(
+                "engine='cs' BV operator (native past-window / off-GF(p)) is not "
+                "available until P51 lands -- no silent fallback",
+                hint="use engine='auto' over GF(p) in the bar window")
+        if not isinstance(self.domain, PrimeField):
+            raise QuiverlabError(
+                "BV operator v1 is GF(p) only (the bracket arbiter that certifies "
+                f"it is GF(p)-window-bounded); this algebra is over {self.domain.name}",
+                hint="compute over GF(p), or wait for the P51 CS enhancer")
+        h = classify_bv(self)
+        if not h.applies:
+            raise QuiverlabError(h.refusal)
+        if h.route == "symmetric":
+            return bv_matrices_symmetric(self, top, max_cells=max_cells)
+        return bv_matrices_semisimple(self, top, max_cells=max_cells)
 
     def hochschild_bB_ss(self, top, max_cells=4_000_000):
         """The Hochschild ``(b, B)`` spectral sequence (Plan 42): the first-quadrant
@@ -932,6 +1596,54 @@ class Algebra:
         Every symmetric algebra is weakly symmetric; the converse can fail."""
         from quiverlab.invariants.frobenius import is_weakly_symmetric_generic
         return is_weakly_symmetric_generic(self)
+
+    def hh1_lie_structure(self, budget=None, require_char0=False):
+        """HH^1(A) = Der(A)/Inn(A) as a Lie algebra (Plan 70 / R11): dimension,
+        bracket structure constants, derived / lower-central series, and the
+        solvable / nilpotent / abelian / perfect verdicts over ANY exact field;
+        over characteristic 0 also the solvable radical, Levi decomposition,
+        sl2-count and toral rank. Field-general via the algebra's own structure
+        constants -- no resolution. Loud over budget."""
+        from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, hh1_lie_structure
+        return hh1_lie_structure(
+            self, budget=DEFAULT_MAXDIM if budget is None else budget,
+            require_char0=require_char0)
+
+    def is_solvable_hh1(self, budget=None):
+        """Is HH^1(A) a solvable Lie algebra? Any exact field (Plan 70)."""
+        from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, is_solvable_hh1
+        return is_solvable_hh1(self, budget=DEFAULT_MAXDIM if budget is None else budget)
+
+    def is_nilpotent_hh1(self, budget=None):
+        """Is HH^1(A) a nilpotent Lie algebra? Any exact field (Plan 70)."""
+        from quiverlab.invariants.hh1_lie import DEFAULT_MAXDIM, is_nilpotent_hh1
+        return is_nilpotent_hh1(self, budget=DEFAULT_MAXDIM if budget is None else budget)
+
+    def deformation_structure(self, budget=None, engine="auto"):
+        """The char-0 formal-deformation report (Plan 78 / R13): infinitesimal HH^2, the
+        primary obstruction [alpha,alpha] in HH^3, the MRRS nilpotent-regime verdict, the
+        order-by-order Maurer-Cartan description on the Hochschild DGLA C(A), the rad^2=0
+        dg-Lie certificate, and a display-only presented deformed algebra A_alpha with its
+        Ext-algebra summary. Over char p the field-general HH^2/HH^3 block is returned
+        behind the char-0 caveat. Returns a frozen Deformations."""
+        from quiverlab.hochschild.deformations import (
+            DEFORM_MAXDIM, deformation_structure)
+        return deformation_structure(
+            self, budget=DEFORM_MAXDIM if budget is None else budget, engine=engine)
+
+    def obstruction_map(self, engine="auto"):
+        """The primary deformation obstruction alpha |-> [alpha,alpha] in HH^3 -- the
+        targeted (2,2) CS Gerstenhaber self-bracket (Plan 78). Field-general; the
+        `unobstructed` verdict + a basis-dependent witness. Returns a frozen Obstruction."""
+        from quiverlab.hochschild.deformations import obstruction_map
+        return obstruction_map(self, engine=engine)
+
+    def deformed_algebra(self, direction, t="1"):
+        """Build the presented deformed algebra A_alpha = kQ/I_alpha for a RADICAL
+        2-cocycle direction and value t, re-certified admissible + flat (Plan 78 / RRRV).
+        Loud on a unit / non-admissible / non-flat direction. Returns an Algebra."""
+        from quiverlab.hochschild.deformations import deformed_algebra
+        return deformed_algebra(self, direction, t=t)
 
     def tor(self, M, N, n):
         """dim Tor_n^A(M, N) for a RIGHT A-module M and a LEFT A-module N (Plan 29).

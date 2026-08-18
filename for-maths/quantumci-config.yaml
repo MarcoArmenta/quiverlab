@@ -1,0 +1,31 @@
+# quiverlab v0.1.0 showcase: the quantum complete intersection
+#   A = k<x,y> / (x^2, y^2, xy + 2 yx)   over GF(32003), dim 4
+# Everything the v0.1.0 surface computes, products pushed to high degree.
+schema: 1
+algebra:
+  kind: family
+  family: QuantumCI
+  params:
+    q: 2
+    a: 2
+    b: 2
+  field:
+    kind: GF
+    p: 32003
+    n: 1
+compute:
+  - dimension
+  - cartan
+  - center
+  - global_dimension
+  - coxeter_polynomial
+  - hh_cohomology:0..12
+  - hh_homology:0..12
+  - cyclic_homology:0..5
+  - connes_b:0..5
+  - cup:0..6
+  - cap:0..6
+  - bracket:0..4
+artifacts:
+  pdf: true
+  tikz: true

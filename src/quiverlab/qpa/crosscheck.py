@@ -70,6 +70,27 @@ def crosscheck_symmetric(algebra) -> CrosscheckReport:
     return CrosscheckReport("symmetric", ours, qpa, ours == qpa)
 
 
+def crosscheck_dim(algebra) -> CrosscheckReport:
+    """``algebra.dim`` vs QPA ``Dimension(A)`` for a PLAIN presented ``kQ/I`` (Plan 68
+    skew-gentle split oracle: QPA has no skew-gentle surface, so the split algebra is
+    crosschecked as an ordinary presented algebra)."""
+    session.require_gap()
+    base = scripts.quiver_and_algebra_script(algebra)
+    ours = int(algebra.dim)
+    qpa = int(session.run(base + "\nDimension(A);"))
+    return CrosscheckReport("dim", ours, qpa, ours == qpa)
+
+
+def crosscheck_selfinjective(algebra) -> CrosscheckReport:
+    """``algebra.is_selfinjective()`` vs QPA ``IsSelfinjectiveAlgebra(A)`` for a plain
+    presented ``kQ/I`` (Plan 68 / Chen Cor 1.2c)."""
+    session.require_gap()
+    base = scripts.quiver_and_algebra_script(algebra)
+    ours = bool(algebra.is_selfinjective())
+    qpa = bool(session.run(base + "\nIsSelfinjectiveAlgebra(A);"))
+    return CrosscheckReport("is_selfinjective", ours, qpa, ours == qpa)
+
+
 def crosscheck_trivial_extension(algebra) -> CrosscheckReport:
     """Our certified double-quiver ``TrivialExtension(algebra)`` vs QPA's native
     ``TrivialExtensionOfQuiverAlgebra`` (Plan 31). Compares the 5-tuple
@@ -505,6 +526,190 @@ def crosscheck_koszul_derived(algebra, top: int) -> CrosscheckReport:
     return CrosscheckReport("koszul_derived", ours, qpa_derived, agree)
 
 
+def crosscheck_tits_weak(algebra) -> CrosscheckReport:
+    """The combinatorial Tits FORM layer (Plan 62 / R19): our weak positivity /
+    weak nonnegativity of q_A vs QPA's ``IsWeaklyPositiveUnitForm`` /
+    ``IsWeaklyNonnegativeUnitForm`` of ``TitsUnitFormOfAlgebra(A)`` -- two wholly
+    independent implementations of the same field-free integer decision. ``ours``
+    and ``qpa`` are ``[weakly_positive, weakly_nonnegative]`` boolean pairs.
+
+    QPA HAS a Tits-form + weak-positivity/nonnegativity surface (verified live,
+    QPA 1.37): TitsUnitFormOfAlgebra / IsWeaklyPositiveUnitForm /
+    IsWeaklyNonnegativeUnitForm. It has NO representation-type (tame/wild) VERDICT
+    verb, so the Plan-62 VERDICT layer has no QPA oracle -- only the form layer does
+    (this cross-check). Scope: QQ or prime GF(p) (the fields QPA supports); the form
+    is field-free so the verdict is the same on any base field.
+
+    Our None (budget) has no QPA analogue and would fail the equality -- callers
+    pass forms the box/PSD/list decides exactly (not a budget corner)."""
+    session.require_gap()
+    from quiverlab.invariants.tits import (as_unit_form, is_weakly_nonnegative,
+                                           is_weakly_positive)
+    f = as_unit_form(algebra)
+    ours = [is_weakly_positive(f).holds, is_weakly_nonnegative(f).holds]
+    base = scripts.quiver_and_algebra_script(algebra)
+    qwp = str(session.run(
+        base + "\nIsWeaklyPositiveUnitForm(TitsUnitFormOfAlgebra(A));")) == "true"
+    qwnn = str(session.run(
+        base + "\nIsWeaklyNonnegativeUnitForm(TitsUnitFormOfAlgebra(A));")) == "true"
+    qpa = [qwp, qwnn]
+    return CrosscheckReport("tits_weak", ours, qpa, ours == qpa)
+
+
+@dataclass
+class Hh1LieReport:
+    """QPA/GAP cross-check of HH^1(A) as a Lie algebra (Plan 70). GAP's core Lie
+    library (``LieAlgebraByStructureConstants`` + ``IsLieSolvable`` /
+    ``LieDerivedSeries`` / ``SemiSimpleType``) recomputes our verdicts from the
+    shipped HH^1 structure constants. QPA itself has NO HH^1-Lie surface -- this is
+    GAP's own Lie machinery, a genuine independent oracle."""
+    ours_solvable: bool
+    gap_solvable: bool
+    ours_derived_dims: list
+    gap_derived_dims: list
+    ours_semisimple_type: object
+    gap_semisimple_type: object
+    agree: bool
+
+    def assert_agree(self):
+        if not self.agree:
+            raise AssertionError(
+                "GAP Lie cross-check DISAGREES on HH^1-Lie: "
+                f"solvable ours={self.ours_solvable} gap={self.gap_solvable}; "
+                f"derived-dims ours={self.ours_derived_dims} gap={self.gap_derived_dims}; "
+                f"type ours={self.ours_semisimple_type} gap={self.gap_semisimple_type}")
+        return self
+
+
+def crosscheck_hh1_lie(algebra) -> Hh1LieReport:
+    """Feed the computed HH^1 = Der/Inn structure constants to GAP's Lie library and
+    cross-check ``IsLieSolvable``, ``LieDerivedSeries`` dims (solvable case), and
+    ``SemiSimpleType`` (semisimple char-0 case; ``sl2 -> "A1"``).
+
+    Conventions confirmed live against the installed GAP: GAP's ``LieDerivedSeries``
+    STOPS at the perfect part (a single term ``[L]`` for perfect L), so the
+    derived-series dims are compared only when L is solvable (both reach 0);
+    ``SemiSimpleType`` returns ``fail`` off a semisimple algebra, so it is read only
+    when our ``radical_dim == 0``."""
+    session.require_gap()
+    L = algebra.hh1_lie_structure()
+    m = L.dim
+    if m == 0:
+        raise QuiverlabError(
+            "HH^1(A) = 0: there is no Lie algebra to cross-check with GAP")
+    dom = algebra.domain
+    ring = "Rationals" if dom.characteristic == 0 else f"GF({dom.characteristic})"
+    c = L.constants
+    lines = [f'T := EmptySCTable({m}, 0, "antisymmetric");;']
+    for i in range(m):
+        for j in range(i + 1, m):
+            terms = [f"{c[i][j][k]},{k + 1}" for k in range(m) if c[i][j][k] != "0"]
+            if terms:
+                lines.append(f"SetEntrySCTable(T, {i + 1}, {j + 1}, [{','.join(terms)}]);;")
+    lines.append(f"LL := LieAlgebraByStructureConstants({ring}, T);;")
+    session.run("\n".join(lines))
+    gap_solvable = str(session.run("IsLieSolvable(LL);")) == "true"
+    gap_ds = [int(x) for x in session.run("List(LieDerivedSeries(LL), Dimension);")]
+    gap_type = None
+    if dom.characteristic == 0 and L.semisimple:
+        gap_type = str(session.run("SemiSimpleType(LL);"))
+    ok = (gap_solvable == L.solvable)
+    if L.solvable:                                    # GAP's series reaches 0 too
+        ok = ok and (gap_ds == L.derived_series_dims)
+    if gap_type is not None:
+        # GAP's SemiSimpleType is SPACE-separated ("A1 A1"); our levi_type is "+"-joined
+        # ("A1+A1"). Compare as the canonical sorted multiset of simple factors so the
+        # multi-factor semisimple path (sl2 (+) sl2 (+) ...) does not spuriously disagree.
+        ok = ok and (_norm_lie_type(gap_type) == _norm_lie_type(L.levi_type))
+    return Hh1LieReport(L.solvable, gap_solvable, L.derived_series_dims, gap_ds,
+                        L.levi_type, gap_type, ok)
+
+
+def _norm_lie_type(s):
+    """The canonical sorted multiset of simple factors from either "A1+A1" (our
+    ``levi_type``) or "A1 A1" (GAP ``SemiSimpleType``) or "A1" (a single factor)."""
+    import re
+    return tuple(sorted(f for f in re.split(r"[+\s]+", str(s).strip()) if f))
+
+
+@dataclass
+class HhLieModuleReport:
+    """QPA/GAP cross-check of HH^n as a Lie module over HH^1 (Plan 71). QPA has NO
+    Hochschild-Lie-module surface, so the oracle is GAP's own MeatAxe: our action
+    matrices ``rho_n(D)`` are fed to ``GModuleByMats`` and ``MTX.CompositionFactors``
+    gives an INDEPENDENT count of the irreducible constituents. For the SEMISIMPLE
+    (reductive-HH^1) case -- the substantive ``k[x,y]/(x,y)^2`` ``gl2`` case and the
+    ``kK2`` ``sl2`` sentinel -- composition factors coincide with the indecomposable
+    summands, so their dimension multisets must agree with ours per degree."""
+    per_degree: list          # [(n, ours_dims, gap_dims, agree)]
+    agree: bool
+
+    def assert_agree(self):
+        if not self.agree:
+            bad = [(n, o, g) for n, o, g, ok in self.per_degree if not ok]
+            raise AssertionError(
+                "GAP MeatAxe cross-check DISAGREES on the HH-Lie-module decomposition "
+                f"(degree, ours, gap): {bad}")
+        return self
+
+
+def _gap_module_factor_dims(gens_flat, dn, p):
+    """Dimensions (sorted, with multiplicity) of the irreducible constituents of the
+    ``GF(p)`` module generated by the flattened ``d_n x d_n`` matrices ``gens_flat``,
+    via GAP MeatAxe ``MTX.CompositionFactors`` (a genuine independent decomposition)."""
+    mats = [[[int(g[i * dn + j]) for j in range(dn)] for i in range(dn)] for g in gens_flat]
+
+    def gmat(m):
+        return "[" + ",".join("[" + ",".join(str(x) for x in row) + "]" for row in m) + "]"
+
+    matlist = "[" + ",".join(gmat(m) for m in mats) + "]"
+    # NB 'mod' is a GAP keyword -> name the module 'gmod'.
+    script = "\n".join([
+        f"gmats := {matlist} * One(GF({p}));;",
+        f"gmod := GModuleByMats(gmats, GF({p}));;",
+        "SortedList(List(MTX.CompositionFactors(gmod), c -> c.dimension));",
+    ])
+    return [int(x) for x in session.run(script)]
+
+
+def crosscheck_hh_lie_module(algebra, top: int) -> HhLieModuleReport:
+    """Feed the Plan-71 action matrices ``rho_n(D)`` of ``HH^n`` (as a Lie module over
+    ``HH^1``) to GAP's MeatAxe and compare the irreducible-constituent dimension
+    multiset (per degree) with our indecomposable-summand dims. Needs ``GF(p)`` (MeatAxe
+    is over a finite field) and a SEMISIMPLE action (the reductive ``gl2``/``sl2`` cases,
+    where composition factors == indecomposable summands); other degrees are skipped."""
+    session.require_gap()
+    from quiverlab.fields.primefield import PrimeField
+    from quiverlab.hochschild.lie_module import lie_module_action
+    dom = algebra.domain
+    if not isinstance(dom, PrimeField):
+        raise QuiverlabError(
+            "crosscheck_hh_lie_module needs GF(p): GAP MeatAxe module decomposition is "
+            "over a finite field",
+            hint="compute over GF(p) (p > dim HH^n keeps the reductive modules semisimple)")
+    p = dom.p
+    L = lie_module_action(algebra, top)
+    rows = []
+    ok = True
+    for entry in L.action:
+        n, dn = entry["n"], entry["dim"]
+        if dn == 0 or not entry["gens"]:
+            continue
+        parts = L.summands[n]
+        if not isinstance(parts, list):                 # a per-degree decompose refusal
+            continue
+        ours = sorted(d for part in parts for d in [part["dim"]] * part["mult"])
+        gap = sorted(_gap_module_factor_dims(entry["gens"], dn, p))
+        agree = (ours == gap)
+        rows.append((n, ours, gap, agree))
+        ok = ok and agree
+    if not rows:
+        raise QuiverlabError(
+            "crosscheck_hh_lie_module: no non-trivial HH^n module to cross-check "
+            "(HH^1 = 0, or every HH^n = 0)")
+    return HhLieModuleReport(rows, ok)
+
+
 def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
     """Dispatch. what="hochschild"|"module_ext" (Plan 08); "symmetric" (Plan 29);
     "trivial_extension" (Plan 31); "tau"|"tau_minus"|"proj_resolution"|
@@ -519,6 +724,10 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_symmetric(algebra, *args, **kwargs)
     if what == "trivial_extension":
         return crosscheck_trivial_extension(algebra, *args, **kwargs)
+    if what == "dim":
+        return crosscheck_dim(algebra, *args, **kwargs)
+    if what == "is_selfinjective":
+        return crosscheck_selfinjective(algebra, *args, **kwargs)
     if what == "tau":
         return crosscheck_tau(algebra, *args, minus=False, **kwargs)
     if what == "tau_minus":
@@ -551,6 +760,8 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
         return crosscheck_quadratic(algebra, *args, **kwargs)
     if what == "koszul_derived":
         return crosscheck_koszul_derived(algebra, *args, **kwargs)
+    if what == "tits_weak":
+        return crosscheck_tits_weak(algebra, *args, **kwargs)
     # An unrecognized `what` is a usage error, NOT "QPA unavailable".
     raise QuiverlabError(f"unknown cross-check {what!r}",
                          hint='use "hochschild", "module_ext", "symmetric", '
@@ -560,4 +771,5 @@ def crosscheck(algebra, what: str, *args, **kwargs) -> CrosscheckReport:
                               '"proj_resolution", "inj_resolution", '
                               '"inj_dimension", "decompose", "indecomposable", '
                               '"ext_algebra_dims", "ext_generator_degrees", '
-                              '"ext_quiver", "quadratic", or "koszul_derived"')
+                              '"ext_quiver", "quadratic", "koszul_derived", '
+                              'or "tits_weak"')

@@ -365,6 +365,30 @@ planned together even if delivered in slices.
 
 ## Tier 2 — natural extensions (v1 non-goals worth revisiting, roughly ordered)
 
+- [ ] **Rep-infinite tilted recognizer via the local cut criterion** (added by Plan 60,
+  R17). P60 (`modules/tilted.py`) decides tiltedness on the **representation-finite**
+  complete knit (plus the hereditary/self-injective/`gl.dim>2` theorem gates); a
+  rep-infinite non-hereditary `gl.dim ≤ 2` algebra returns an honest `verdict="unknown"`
+  (`status="budget"`). The documented extension is **Liu, arXiv:1409.2054 Thm 2.6**: `A`
+  is tilted iff `Γ_A` contains a **faithful cut** `Δ` with `Hom_A(X, τY)=0` — a
+  *finite/local* object (weakly convex), checkable in a bounded AR-neighbourhood **without
+  the full knit**. Plus **Thm 2.7's tilted-quotient algebras** `B = A/ann(Δ)` (a genuine
+  extension: tilted quotients of a non-tilted `A`; P60 accepts only faithful `Δ`, so
+  `ann(Δ)=0` and `B=A`). Deferred from P60 v1; P80 reconciles.
+- [ ] **Complete the skew-gentle symmetric / loop-traversal string enumeration**
+  (Plan 68 fix round, 2026-08-08): the string layer `classify` / `skew_gentle_module`
+  is currently a **loop-free `A^g`-walk census**, a documented STRICT SUBSET of the
+  indecomposables at the module level (headline 5 of 6, mesh 8 of 11). The missing
+  modules are the **symmetric / loop-traversal** (mixed-eigenvalue) ones — e.g. the
+  projective `P_1` of the headline, on which the split idempotent mixes the `+/-`
+  eigenvalues along a path — which the theory DOES describe (Garcia–Lavoué Table 1 / the
+  clan classification), so the incompleteness is in the implementation's loop-free
+  enumeration, NOT the theory. Implement the symmetric-string / loop-traversal walks so
+  the STRING layer classifies ALL indecomposables (today `skew_gentle_indecomposables`
+  is authoritative via the P41 AR quiver, and the count stays AR-authoritative). This
+  also lets route 2 of the certificate (the associated-gentle band census) extend to
+  SPECIAL bands (W4), upgrading it from a one-sided rep-infinite check to a full
+  agreement oracle.
 - [x] **Native deep-degree CS cup/cap** (added by Plan 14) — **DONE (cup),
   Plan 20, 2026-07-24, branch `plan-20-native-cs-cup`**
   (`2026-07-24-plan-20-native-cs-cup.md`). A comparison-lifted diagonal
@@ -415,6 +439,56 @@ planned together even if delivered in slices.
   native CS Yoneda coproduct, N-Koszul certifier, Ext(M,M) for arbitrary M.
   Original item: generators/relations of `Ext_A(⊕S, ⊕S)` from Plan-05 module
   resolutions + deep CS; Koszulity checks.
+- [ ] **P72 split-extension deferrals (DD-A2 / DD-A3, for P80).** Two honest-scope
+  deferrals recorded at the Plan-72 merge (split-extension LES + arrow removal):
+  (DD-A2) a LITERAL coefficient-cup recomputation of the CMRS Thm-4.1 connecting map
+  `δ = 1_M ⌣ (−) ± (−) ⌣ 1_M` — Plan-35's cup is coefficient-`A` only, so pairing the
+  DIFFERENT coefficient bimodules `Hom(M,M)`/`B`/`M` needs a new coefficient-cup surface
+  (`δ` currently computed as the CS-Hom-complex snake, cited as the cup, validated by
+  exactness + assembled≡direct); (DD-A3) a standalone `M^{⊗_B p}` tensor-power +
+  bimodule-`Ext` engine realizing the CMRS Cor-3.2 graded decomposition
+  `HH^n(L,X)=⊕_{p+q=n} Ext^q_{B^e}(M^{⊗_B p},X)` term-by-term — the genuine `⊗_B`
+  ACCELERATION (the LES-over-`L` route surfaces only the `p=0` leading piece today).
+- [ ] **P74 skew-group covering-reduction HH transport (deferred, for a P74-followup).**
+  Plan 74 ships the free-action DETECTION (`is_free_action`) and the genuine free-orbit
+  ORACLE (`Z/2`-swap on the 2-cycle Nakayama → `presented_form = k[x]/(x²)`, HH matches
+  the orbit algebra), but NOT the general Galois-`G`-covering HH reduction
+  `HH^•(A⋊G) ≅ HH^•(A/G)`-style transport (Cibils–Marcos math/0312214) for an arbitrary
+  free action. The Ştefan conjugacy-class decomposition already delivers the HH answer
+  within scope (`char k ∤ |G|`), so the covering route is a redundancy/acceleration, not a
+  gap. A followup can add the orbit-algebra `A/G` builder + the covering HH iso for free
+  actions (and, beyond that, the modular `char | |G|` bracket-twisted route of
+  Shepler–Witherspoon 1905.09613, out of the Ştefan scope entirely).
+- [ ] **P78 char-0 Bardzell `ℓ₃`/`ℓ_n` on `B(A)[1]` (the L∞ higher brackets, for P80).**
+  The Plan-78 feasibility spike (Task 4 Step 1) FROZE the general `ℓ₃`: RRB's
+  homotopy-transfer `ℓ₃` (`rrb_linfty_bardzell`, arXiv:2008.08122) needs the FULL L∞
+  transfer machinery — the explicit contracting homotopy of Bardzell's complex + the
+  tree-summed transferred bracket — beyond one plan. v1 shipped only (a) the **rad²=0
+  dg-Lie certificate** (`ℓ_{≥3}≡0`, unconditional, `dg_lie_certificate`) and (b) the
+  induced-`ℓ₂` ≡ CS-bracket **model-independence theorem statement** (§4, cited, NOT a
+  computed self-cert — no `B(A)` `ℓ₂` adapter is built). Deferred (P80 reconciles): the
+  char-0 Bardzell `B(A)` L∞ adapter (reuse the field-free `MonomialPresentation`
+  combinatorics + the ±1 differential over ℚ), the monomial `ℓ₃` validated against RRB's
+  truncated computations, the induced-`ℓ₂` computed crossengine self-cert (needs the
+  adapter, M1 ruling), and `ℓ₄` (NEVER claimed zero — "ℓ_n=0 for n≥5" is only a
+  sufficient collapse condition; honest L∞). `l3_bracket` returns `status="deferred"`
+  today. The deformation FUNCTOR (HH²/obstruction/MC/`A_α`) is complete on the DGLA
+  `C(A)` via CS-over-ℚ — this deferral is the small-model enrichment only.
+- [ ] **P78 GUI `A_α`-adopt flow (schema-heavy, for P80, needs Marco's sign-off).** v1
+  ships the presented deformed algebra `A_α` as **display-only** (quiver + deformed
+  relations rendered in the `deformations` block). The **adopt** flow — load `A_α` back
+  onto the canvas as a fresh quiver+relations input the canvas ingests — is a new
+  schema surface (the GUI-deferral ledger, metaplan §1.2); P80 reconciles it with the
+  P52 two-sided-editor / P60 / P72 GUI-deferral cluster.
+- [ ] **P75 GHMS is an ENGINE OPTION, not a GUI kind (deliberate; GUI-deferral ledger,
+  metaplan §1.2).** `engine="ghms"` adds **no new user-visible computation** — its HH dims
+  are byte-identical to the shipped `auto`/`cs` route on every Koszul input (that identity
+  IS the R10 oracle). It is an *acceleration* plus a third oracle class, so it is surfaced
+  through the API / HPC `engine=` option and named in the worked-steps resolution line, and
+  the GUI's HH kinds keep `engine="auto"` (which P75 deliberately does NOT route to GHMS —
+  byte stability of every shipped result, pinned by a test). P80 reconciles this with the
+  P52 / P60 / P72 / P78 GUI-deferral cluster. The R9 half of Plan 75 (`incidence_cohomology`
+  + the poset input mode) IS fully clickable — no deferral there.
 - [ ] **HH cohomology ring structure + support varieties**: after Tier-1 item 1,
   finite generation over the even part; support varieties per module.
 - [ ] **BV structure** for symmetric/Frobenius algebras: Connes B is ported
@@ -530,6 +604,129 @@ planned together even if delivered in slices.
   2026-08-06): v1 takes algebra B as a Dynkin type string or a preset pick;
   a free-form second canvas (and `derived_compare` on the index/family page)
   is the successor.
+- [ ] **Knit budget promptness** (P53 critic find, 2026-08-07): thread a hard
+  step cap into `knit_ar_quiver`'s inner almost-split loop so a `budget_modules`
+  cap terminates PROMPTLY on representation-infinite input. Today the budget
+  bounds the discovered-module COUNT but not the per-module almost-split work, so
+  `phi_dim`/`psi_dim`/`phi_spectrum` on a rep-infinite algebra (e.g. the
+  2-Kronecker) can run minutes before the budget trips (critic measured >5 min at
+  `budget_modules=12`). P53 documents the limitation (loud small-budget advice in
+  the docstrings + the verification honest-scope entry); this backlog item is the
+  actual fix (a `max_steps`/deadline in the BFS inner loop, honest `status="budget"`
+  on trip).
+- [ ] **A second odd-exponent bracket fixture** (Plan 51 critic find, 2026-08-07):
+  the odd-exponent bracket sign `(−1)^{(p-1)(q-1)}` is currently pinned by a SINGLE
+  non-vacuous anchor — QuantumCI (2,4) → HH⁵ (Δ₅, ~2 min, `slow`). k[x]/x² and
+  k[x]/x³ are sign-blind at (2,2) (odd-squared brackets vanish). Add a second,
+  ideally cheaper, algebra with a nonzero `[HH^even, HH^even]` bracket (a richer
+  even-degree HH — a preprojective / higher-QCI / group-algebra candidate) so the
+  odd-exponent sign has redundant coverage.
+- [ ] **Native Gerstenhaber bracket on minimal / Bardzell resolutions** (Plan 51
+  follow-up, 2026-08-07): the CS-native bracket (`resolutions_cs/homotopy_lifting.py`
+  + `bracket.py`) needs a diagonal Δ, which quiverlab ships only on the CS resolution.
+  A presentation-less **structure-constants** algebra therefore gets no native bracket
+  off GF(p) today (it keeps only the in-window GF(p) transported bracket). Closing that
+  gap needs a diagonal on the minimal `A^e` resolution (rides on **Plan 75 — GHMS
+  comultiplicative minimal resolution**, which is exactly Oke's own Koszul carrier) and
+  a smaller monomial diagonal on the Bardzell resolution. Both engines accept
+  structure-constants input, so the follow-up is what makes the native bracket reach
+  presentation-less algebras. Deps: Plan 75 GHMS / a Bardzell diagonal.
+- [ ] **P52 explicit two-sided bimodule matrix editor** (deferred to P80, DD5):
+  the Plan-52 coefficient GUI ships the BUILTIN named bimodules
+  (regular / dual / twisted `{}_1A_ν` / `A/soc`) as a pick-list. The EXPLICIT
+  `{dim, left_maps, right_maps}` form (one exact-entry matrix per generator per
+  side) is accepted by the library + server, but its CANVAS matrix editor is
+  deferred: the Plan-26 module editor is one-sided (a right-module action per
+  arrow), whereas a bimodule needs BOTH a left and a right action per generator.
+  P80 adds the two-sided grid editor.
+- [ ] **General LZZ twisted Connes operator `B_σ`** (Plan 54 fix-round find,
+  2026-08-08): the semisimple-ν BV route carries the NAIVE twisted Connes operator
+  `B_σ = s∘N`, whose descent to twisted homology is a per-instance certified property
+  (the paracyclic defect `(1 − T)` must vanish EXACTLY on the cycle reps), NOT a
+  consequence of semisimplicity. It holds on the diagonal-ν `QuantumCI(q)` instances
+  but FAILS on the **weakly-symmetric "exterior class"** — `ExteriorAlgebra(2) = Λ(k²)`
+  over GF(5)/GF(7), ν = diag(1,−1,−1,1) = −id of order 2 — where `B_σ` of a degree-2
+  cycle is a cycle only MODULO boundaries; P54 currently REFUSES this class loudly
+  (`bv_operator` raises the descent self-cert). LZZ (arXiv:1405.5325) guarantees
+  `HH^*(Λ(k²))` is a BV algebra; the close-out is the **general LZZ operator** — a
+  per-class correction solve `b·w = (1 − T)·z`, `B̃z = Bz − w`, making `B_σ` a genuine
+  chain map to homology (analogous to the Plan-20 diagonal lift-solve). A fix-round
+  bounded probe confirmed no cheap strengthening of `s∘N` (the `(1 − t)`-corrected
+  forms, sign-normalization variants, or the norm over the paracyclic orbit of order
+  `r(n+1)`) works: the only variant passing the exterior chain-level descent
+  (`s(1−t)N = s(1−T)`) gives the WRONG bracket there and zeroes the QuantumCI Δ. NB: a
+  strict chain-map well-definedness gate (`B` carries boundaries to boundaries) is NOT
+  a viable interim narrowing — the naive `B_σ` fails it even on the served QuantumCI
+  route (a boundary can map to a cycle with nonzero homology class), so the cycle-leg
+  descent self-cert + the downstream bracket arbiter remain the correctness gates until
+  the general operator lands.
+
+- [ ] **The bibliography parser silently DROPS the last field of an entry (20
+  pre-existing entries affected).** Found while adding the Plan-77 citations, and
+  worth fixing on its own. `citations/bibliography.py::_bib_fields` captures an
+  entry body with `@\w+\{KEY,(.*?\n)\}` — which STRIPS the entry's closing brace —
+  and then requires every field to be followed by `,\n` or `\n}`. The last field of
+  an entry therefore matches nothing and is dropped, so an entry ending
+  `year = {2004}` (no trailing comma) formats as **"Green, … (). D-Koszul
+  algebras."** — a visibly broken year on the /literature page and in every report
+  footer. Measured live: **27 of 187 entries** lost their last field; Plan 77 fixed
+  its own 7 by giving them a trailing comma (the existing house style — `Priddy1970`
+  already has one), leaving **20 pre-existing**: `qpa`, `gap4`, `sagemath`,
+  `quiverlab` (→ `year`/`note`), `ButlerRingel1987`, `AvellaAlaminosGeiss2008`,
+  `WaldWaschbusch1985`, `GeissDeLaPena1999`, `CrawleyBoevey1989` (→ `volume`),
+  `SuarezAlvarez2023`, `BerghJorgensen2013tate` (→ **doi**),
+  `ArtensteinLanzilottaSolotar2020`, `Wang2015singular`, `Keller2018singular`,
+  `Usui2021tate` (→ **arXiv note**), `Schroll2018`, `HeZhouZhu2020`,
+  `Chen2022skewgentle`, `Amiot2021skewgentle`, `GarciaLavoue2026` (→ `year`).
+  **Why it was NOT fixed inside Plan 77:** repairing the parser (a one-line
+  lookahead change) would change the FORMATTED string of those 20 entries, and
+  result blocks embed citation payloads — so it churns every frozen runner golden
+  whose block cites one of them (the Plan-74 lesson: a bib change broke the
+  `hh_lie_module_kronecker` golden, and it passed in isolation). That re-freeze is a
+  deliberate standalone change with its own gate, not a silent rider on a feature
+  plan. Fix = make the entry regex keep the closing brace (`(.*?\n)(?=\})`) or add
+  `|\s*$` to the field lookahead, then re-freeze the affected goldens in one commit.
+
+- [ ] **The multi-Koszul DECISION (Herscovich §3.2) — a bimodule Tor/Ext-vanishing
+  engine.** Named deferral from **Plan 77**, recorded so it is scope, not a gap.
+  Herscovich's multi-Koszul is **not a single definition to evaluate**: §3.2 of
+  arXiv:1305.1678 builds it out of vanishing/finiteness conditions on the **Tor/Ext
+  groups of the minimal graded BIMODULE resolution** of `A` — a homological engine of
+  its own, not a recognizer over the shipped module surfaces (which is all Plan 77
+  built). So `multi_koszul_certificate(...)["verdict"]` is **always `None`** and its
+  `status` says exactly why. What P77 DOES ship on connected (local, `A₀ = k`,
+  length-graded) input is the **generation-degree table** plus the **K₂ verdict**,
+  which multi-Koszul IMPLIES — **Prop. 3.30**, quoted: *"the Yoneda algebra of a
+  finitely generated multi-Koszul algebra with a finite dimensional space of relations
+  is generated in degrees 1 and 2, so a 𝒦₂ algebra."* On multi-vertex input the
+  recognizer refuses loudly (`A₀ = k^{Q₀}` is semisimple, not connected) and points at
+  K₂, the transferable property. **No verdict is ever guessed.** Closing this item
+  means building the bimodule Tor/Ext-vanishing decision; note that Herscovich's
+  headline examples (Yang–Mills, super-Yang–Mills) are **infinite-dimensional**, so
+  the f.d. examples that would exercise it are genuinely sparse — that scarcity is
+  itself part of why it was deferred rather than guessed.
+
+- [ ] **The generalized cluster category `C_{(Q,W)}` beyond the acyclic slice — the
+  Ginzburg dg engine.** Named deferral from **Plan 79**, the OUT half of its frozen scope.
+  P79 ships the certified module-category slice for ACYCLIC `Q` (BMRRT's finite
+  fundamental domain). What it does not ship, and what each piece would need:
+  (a) the **Ginzburg dg algebra `Γ(Q,W)`** and `D^b(Γ)` — a differential-graded engine;
+  `derived/` is `K^b(proj)` only (P43/P67). (b) The **direct orbit-category `Hom_C`** as
+  `⊕_i Hom_{D^b}(X, F^i Y)` — same dependency; today `End_C(T) = Jac(Q_T, W_T)` is CITED
+  (BMR/Amiot), and only the Jacobian side is computed and certified. (c) **General
+  non-acyclic Jacobi-finite `(Q,W)`**: when `(Q,W)` is not mutation-equivalent to an
+  acyclic quiver there is no finite mod-`A` model, so `#indec` and the exchange graph of
+  `C_{(Q,W)}` are refused (G7). Closing this needs a mutation-class decision procedure as
+  well as the dg engine. (d) **DWZ potential mutation / right-equivalence** — already
+  deferred at P48.1; P79 certifies the mutated QUIVER and builds a potential only where
+  it is the canonical sum of 3-cycles (type A), never guessing one. (e) **Rep-infinite
+  (tame/wild) hereditary** `#indec` / exchange graph: infinite by Gabriel, so only
+  bounded-window enumeration could ever apply.
+  **Also recorded here: the P45 `mutate` root cause is still open.** Plan 79's Task-0
+  probe MEASURED that `D₄` continues to report `status="error"` on the current tree even
+  though P65 has merged, so the Plan-63 n-regularity recovery is still load-bearing for
+  the `D₄`/`D₅` cluster-tilting counts. (`D₅` is now certified at 182 through that
+  recovery, which the P79 plan doc had not anticipated.)
 
 ## Done (this backlog's history)
 

@@ -20,6 +20,12 @@ identity battery (Gerstenhaber/cup-associativity/cap-Leibniz/Connes-B^2=0), plus
 the literature pins in tests/hochschild/test_products_literature.py. The
 verification page (Task 13) records this honest-scope entry.
 
+Plan 51 (2026-08-07) extends the Gerstenhaber bracket to a CS-native route
+(homotopy liftings, any exact field, past the bar window) but does NOT change the
+QPA scope: QPA 1.37 still exposes no Hochschild product/bracket surface, so this
+probe stays an honest skip (it FAILS if QPA ever adds one). The bracket's covering
+oracles are the in-window native == transported anchor + the identity batteries.
+
 qpa-marked: skips locally, mandatory under QUIVERLAB_REQUIRE_QPA=1.
 """
 import pytest
@@ -52,6 +58,15 @@ def test_qpa_exposes_no_hochschild_product_surface():
     gvar_names = [str(n) for n in lg.eval("NamesGVars()")]
     hochschild_like = sorted(n for n in gvar_names
                              if "hochschild" in n.lower() or "cup" in n.lower())
+    # A name in NamesGVars() is NOT evidence on its own: `IsBoundGlobal("Foo")` REGISTERS
+    # "Foo" into the table as a known-but-UNBOUND name, and the QPA session is SHARED across
+    # every test in one `-m qpa` run -- so a SIBLING probe's queries land in this scan and the
+    # first draft of these probes failed each other in file order (4 of 5 red on a full run,
+    # pre-dating Plan 75). Keep only names that are actually BOUND: that makes the verdict
+    # order-independent, and boundness is what "QPA ships a surface" means anyway. Re-querying
+    # already-registered names adds nothing new to the table.
+    hochschild_like = [n for n in hochschild_like
+                       if bool(lg.eval(f'IsBoundGlobal("{n}")'))]
 
     # (2) None of the named Hochschild-product entry points are bound (callable).
     bound = {name: bool(lg.eval(f'IsBoundGlobal("{name}")'))

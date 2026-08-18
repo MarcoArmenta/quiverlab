@@ -72,7 +72,54 @@ def _max_degree(req: ComputeRequest) -> int:
         # ar_quiver/tau_tilting budget can be mislabelled "instant" even though the knit
         # may run long before it hits the budget cap. The wall-clock/memory caps still
         # bound it once running; a budget-aware sizing heuristic is the open backlog fix.
-        if item.kind in ("tau_tilting", "ar_quiver"):
+        # SAME limitation for the Plan-59 `string_homological` kind: it KNITS the AR
+        # quiver identically (measured >7 min churn at the default knit budget on the
+        # small rep-INFINITE 2-Kronecker), yet it is a scalar kind with no budget in
+        # `hi`, so it is sized purely on the algebra dimension (below) -- a small
+        # rep-infinite algebra can likewise be mislabelled "instant" until the
+        # wall-clock cap bounds the knit. (`toupie` is a small HH + graph scan, not
+        # knit-heavy, so it is not in this caveat.)
+        # Plan 69: the `barcode` kind on a COMMUTATIVE LADDER also KNITS the AR quiver
+        # (knit-heavy), but -- UNLIKE ar_quiver/string_homological -- it is NOT left in
+        # this caveat: `classify` catches it via `_barcode_knit_heavy` and upgrades it
+        # instant->queued (reason="knit_heavy"). A plain A_n/zigzag barcode only
+        # decomposes (module-sized) and stays instant-eligible.
+        # wall_chamber's `hi` is a PAIR BUDGET too (Plan 63), sized on sizing_dim like
+        # tau_tilting -- not a degree.
+        # Plan 60: `tilted_check` is likewise knit-heavy with a MODULE budget in `hi`.
+        # Plan 61: `recognizer_ladder` carries a MODULE BUDGET too (not a degree), so it
+        # joins the skip tuple beside left_right_parts.
+        # Plan 67: `silting` carries a RADIUS,BUDGET pair in (lo, hi) -- enumeration
+        # bounds, not homological degrees -- so it joins the skip tuple (sized on A.dim).
+        # Plan 65: `exceptional_sequences` carries an ENUMERATION BUDGET (not a degree).
+        # Plan 64: `congruences` carries a PAIR BUDGET (like tau_tilting), not a degree.
+        # Plan 70: `hh1_lie` carries a DIM BUDGET (caps A.dim for the Der solve), not a
+        # homological degree -- sized on the algebra dimension (sizing_dim), so a big
+        # algebra routes off the instant tier while the dim-220 Nakayama examples get an
+        # honest budget refusal (the tau_tilting/products-omission precedent).
+        # Plan 72: `split_extension` / `arrow_removal` carry a TOP-DEGREE budget in hi;
+        # they are sized on the algebra dim (split_extension on 2*dim via sizing_dim's
+        # extension-awareness below), NOT tiered by hi-as-degree, so they skip too.
+        # Plan 74: `skew_group_hh` carries a TOP-DEGREE budget in hi; the smash A|xG is
+        # dim |G|*dim A, so it is sized on the algebra dim (sizing_dim), not tiered by
+        # hi-as-degree -- it skips too (the split_extension/arrow_removal precedent).
+        # Plan 66: `tau_cluster` carries a PAIR BUDGET too (the exchange graph + the wide
+        # poset + a reduction/sub-g-fan per object) -- knit-heavier than `congruences`, sized
+        # on sizing_dim (A.dim), not a degree.
+        # Plan 78: `deformations` carries a DIM BUDGET (DEFORM_MAXDIM, the plan's OWN cap
+        # of 32 -- NOT P70's 48, a different cost law), not a homological degree. Its real
+        # routing is HH-RICHNESS via `_deformations_dim` below, not `hi`, so it skips too.
+        # Plan 75: `incidence_cohomology`'s `hi` IS a homological degree -- but of the
+        # order complex Delta(P), not of a bar resolution: the algebra is never resolved,
+        # and past the top dimension of Delta(P) every further degree is free (the dims
+        # are 0). Tiering on it would refuse a perfectly cheap `incidence_cohomology:0..30`
+        # on degree alone, so it skips too; its real sizing is `_incidence_only_dim` below.
+        if item.kind in ("tau_tilting", "wall_chamber", "ar_quiver",
+                         "left_right_parts", "tilted_check", "recognizer_ladder",
+                         "silting", "exceptional_sequences", "congruences",
+                         "hh1_lie", "split_extension", "arrow_removal",
+                         "skew_group_hh", "tau_cluster", "deformations",
+                         "incidence_cohomology"):
             continue
         if item.hi is not None:
             hi = max(hi, item.hi)
@@ -87,6 +134,17 @@ def _module_dim(mspec) -> int:
     if mspec is None or mspec.builtin is not None or mspec.dims is None:
         return 0
     return sum(int(n) for n in mspec.dims.values())
+
+
+def _coefficient_dim(req) -> int:
+    """The declared dimension of an EXPLICIT coefficient bimodule (Plan 52). The bar
+    cochain basis is dim_M*(m-1)^n, so a big explicit coefficient over a SMALL algebra
+    drives a cost quadratic in dim_M and must size the job off the instant tier. A
+    builtin coefficient is bounded by dim A (already in the max), so it adds nothing."""
+    spec = getattr(req, "coefficients", None)
+    if spec is None or spec.builtin is not None or spec.dim is None:
+        return 0
+    return int(spec.dim)
 
 
 def _algebra_b_dim(req: ComputeRequest) -> int:
@@ -105,6 +163,21 @@ def _algebra_b_dim(req: ComputeRequest) -> int:
         return 0
 
 
+def _extension_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Plan 72 (DD-G1): the ``split_extension`` LES runs the CS Hom-complex over
+    ``L = T(B)`` of dimension ``2*dim B``, so a ``split_extension`` compute item
+    sizes the job on ``2*algebra_dim`` (it routes off instant like an oversized
+    family). ``arrow_removal`` runs HH of ``A`` and ``B`` (both <= dim A), so it
+    sizes on ``algebra_dim`` -- no extra term."""
+    for raw in req.compute:
+        try:
+            if parse_compute_item(raw).kind == "split_extension":
+                return 2 * algebra_dim
+        except Exception:
+            continue
+    return 0
+
+
 def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     """Effective dimension for tier classification. Module resolutions, Ext and Tor
     scale with the MODULE dimension, so a big module -- INCLUDING the Tor second
@@ -112,11 +185,169 @@ def sizing_dim(algebra_dim: int, req: ComputeRequest) -> int:
     it would be mis-classified as instant and let an oversized Tor target drive a
     multi-GB dense-matrix allocation in the sync tier. ``derived_compare`` likewise
     fingerprints a SECOND algebra ``algebra_b``, so its dimension sizes the job too.
-    Falls back to the algebra dimension when there is no explicit module / second
-    algebra, so every existing family/quiver request classifies exactly as before
-    (Plan 26/30 + wave 2)."""
+    ``split_extension`` (Plan 72) runs over the trivial extension ``2*dim B``, so it
+    sizes on ``2*algebra_dim``. Falls back to the algebra dimension when there is no
+    explicit module / second algebra, so every existing family/quiver request
+    classifies exactly as before (Plan 26/30 + wave 2)."""
     return max(algebra_dim, _module_dim(req.module), _module_dim(req.ext_target),
-               _module_dim(req.tor_target), _algebra_b_dim(req))
+               _module_dim(req.tor_target), _coefficient_dim(req), _algebra_b_dim(req),
+               _extension_dim(req, algebra_dim), _deformations_dim(req, algebra_dim))
+
+
+# The cluster numbers of the Dynkin types -- the SIZE of the exchange-graph BFS a
+# cluster_category request will run. Tabulated (not derived) so a wrong closed form
+# cannot silently mis-size a job; unknown types fall back to the pair budget.
+_CLUSTER_NUMBER = {
+    ("A", 1): 2, ("A", 2): 5, ("A", 3): 14, ("A", 4): 42, ("A", 5): 132,
+    ("A", 6): 429, ("A", 7): 1430, ("A", 8): 4862,
+    ("D", 4): 50, ("D", 5): 182, ("D", 6): 672, ("D", 7): 2508,
+    ("E", 6): 833, ("E", 7): 4160, ("E", 8): 25080,
+}
+
+
+def _cluster_diagram_type(alg):
+    """The Dynkin type of a QUIVER request's own diagram, or ``None``.
+
+    Pure combinatorics on the vertices/arrows the request already carries -- no algebra is
+    built, so the estimator still does not compute. A family spec (whose quiver is not in
+    the request) returns ``None`` and the caller falls back to the pair budget.
+    """
+    if getattr(alg, "kind", None) != "quiver":
+        return None
+    try:
+        from quiverlab.combinat.quiver import Quiver
+        from quiverlab.invariants.dynkin_type import dynkin_type
+        Q = Quiver(list(alg.vertices),
+                   {a: (v[0], v[1]) for a, v in dict(alg.arrows).items()})
+        return dynkin_type(Q)
+    except Exception:                       # a malformed quiver is the schema's problem
+        return None
+
+
+# How much exchange-graph work one cluster-tilting object costs, in ``dim**3`` units.
+# CALIBRATED against measured BFS times on this tree: A3 (14 objects) 0.4 s, A4 (42) 9 s,
+# A5 (132) 160 s, D5 (182) ~842 s. With ``ops = 50 * dim**3`` and an instant threshold of
+# 2e6 ops the instant tier ends at dim 34, so the multiplier must put A4 below and A5
+# above -- any value in [325, 935] does; 500 sits in the middle of that window.
+_CLUSTER_WORK_PER_OBJECT = 500
+
+
+def _cluster_category_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Effective size of a request that asks for ``cluster_category`` (Plan 79 / R31).
+    Every other request gets ``algebra_dim`` back unchanged, so nothing else
+    re-classifies.
+
+    The cost driver is the tau-tilting EXCHANGE-GRAPH BFS, which is NOT bounded by the
+    algebra dimension: ``E6`` has ``dim kQ = 36`` -- comfortably instant under the
+    ``dim ** 3`` bar model -- but 833 cluster-tilting objects and a BFS measured in
+    MINUTES, while ``D5`` ran ~842 s. Sizing on the CLUSTER NUMBER of the underlying
+    Dynkin diagram is the honest request-derived proxy; a non-Dynkin or unclassifiable
+    diagram falls back to the requested pair budget, the only bound the BFS respects
+    there.
+
+    The value returned is a DIMENSION-LIKE proxy fed to the same ``dim ** 3`` model, so
+    it is deliberately the cube root of the intended work. What matters is that a big
+    cluster number routes OFF the instant tier, not that the number is a bound.
+    KNOWN LIMITATION, stated rather than hidden (the ``ar_quiver``/``tau_tilting``
+    precedent): this is a HEURISTIC; the wall-clock and memory caps remain the real net.
+    """
+    budget = None
+    seen = False
+    for raw in req.compute:
+        item = parse_compute_item(raw)
+        if item.kind == "cluster_category":
+            seen = True
+            budget = item.hi if item.hi is not None else 512
+    if not seen:
+        return algebra_dim
+    dt = _cluster_diagram_type(req.algebra)
+    expected = None
+    if dt is not None and dt[0] in ("A", "D", "E"):
+        expected = _CLUSTER_NUMBER.get((dt[0], dt[1]))
+    size = expected if expected is not None else (budget or 512)
+    work = max(size, 1) * _CLUSTER_WORK_PER_OBJECT
+    proxy = 1
+    while proxy ** 3 < work:
+        proxy += 1
+    return max(algebra_dim, proxy)
+
+
+def _incidence_only_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Effective size of a request whose ONLY computation is ``incidence_cohomology``
+    (Plan 75 / R9). Every other request gets ``algebra_dim`` back unchanged, so nothing
+    else re-classifies.
+
+    The order-complex route **never resolves the algebra**: it enumerates the chains of
+    the poset and reduces integer boundary matrices sized by the number of chains. So
+    ``dim kP`` -- which is QUADRATIC in the number of poset elements -- is the wrong cost
+    driver, and the default ``dim ** 3`` bar model refuses exactly the inputs the fast
+    path exists for: the 7-vertex torus face poset is ``dim kP = 168`` and classifies
+    ``reject`` outright, while the library answers it in 0.02 s. Sizing on ``|P|`` (the
+    elements named by the cover data, plus any explicit ``elements`` list) is the honest
+    request-derived proxy and stays monotone in the input.
+
+    KNOWN LIMITATION, stated rather than hidden (the ``ar_quiver``/``tau_tilting``
+    precedent above): ``|P| ** 3`` is a HEURISTIC, not a bound -- the chain count of a
+    tall poset can exceed it -- and this function deliberately does not build the poset
+    to find out (the estimator must not compute). The wall-clock and memory caps remain
+    the real net.
+    """
+    try:
+        kinds = {parse_compute_item(r).kind for r in req.compute}
+    except Exception:
+        return algebra_dim
+    if kinds != {"incidence_cohomology"}:
+        return algebra_dim
+    alg = req.algebra
+    params = getattr(alg, "params", None) or {}
+    covers = params.get("poset_or_covers")
+    if not isinstance(covers, list):
+        return algebra_dim
+    elems = set()
+    for c in covers:
+        if isinstance(c, (list, tuple)) and len(c) == 2:
+            elems.update(str(x) for x in c)
+    explicit = params.get("elements")
+    if isinstance(explicit, list):
+        elems.update(str(x) for x in explicit)
+    return max(1, len(elems)) if elems else algebra_dim
+
+
+def _deformations_dim(req: ComputeRequest, algebra_dim: int) -> int:
+    """Effective size of a ``deformations`` request (Plan 78 / H1). Returns ``0`` when the
+    request does not ask for ``deformations``, so every other request classifies EXACTLY as
+    before.
+
+    The deformation cost is driven by the Gerstenhaber obstruction bracket ``[alpha, alpha]``
+    evaluated per ``HH^2`` basis direction, and that tracks **HH-RICHNESS x resolution size,
+    NOT the algebra dimension** -- live-measured in the plan: dim-20 ``kZ_10/J^2`` with
+    ``HH^2 = 0`` is 0.024 s, while dim-4 ``QuantumCI(-1)`` with ``HH^2 = 5`` is 43.5 s. Sizing
+    on ``A.dim`` alone would therefore route the CHEAP big algebra off the instant tier and
+    the EXPENSIVE small one onto it -- exactly backwards.
+
+    So this pre-probes the (comparatively cheap) ``HH^2`` and returns
+    ``algebra_dim * (1 + dim HH^2) ** 2`` -- monotone in both factors, and on the two measured
+    points it orders them correctly (``kZ_10/J^2`` -> 20, ``QuantumCI(-1)`` -> 144). The
+    pre-probe is worth its seconds precisely because the bracket it gates costs minutes
+    (``kZ_16/J^2`` HH is ~2.4 s at dim 32, the cap). ``DEFORM_MAXDIM`` remains a coarse
+    backstop inside the compute itself; THIS is the real routing.
+
+    DEFENSIVE, like :func:`_barcode_knit_heavy`: any failure to build or probe falls back to
+    ``algebra_dim`` (the request's real error surfaces later as a clean 4xx) because
+    ``app.py``'s ``classify(...)`` is not wrapped.
+    """
+    try:
+        if not any(parse_compute_item(r).kind == "deformations" for r in req.compute):
+            return 0
+    except Exception:
+        return 0
+    try:
+        from quiverlab.hpc.spec import build_algebra
+        A = build_algebra(req.algebra.model_dump())
+        hh2 = int(A.hochschild_cohomology(2).dims[2])
+        return int(algebra_dim * (1 + hh2) ** 2)
+    except Exception:
+        return algebra_dim
 
 
 # Heuristic throughput used to turn the op estimate into a human "minutes"
@@ -129,6 +360,26 @@ def _fits_big(ops: int, max_deg: int, cfg: Config) -> bool:
     return ops <= cfg.big_ops_threshold and max_deg <= cfg.big_max_degree
 
 
+def _barcode_knit_heavy(req: ComputeRequest) -> bool:
+    """True iff the request asks for ``barcode`` AND its algebra is a commutative ladder
+    (Plan 69 / H2). A CL barcode runs a FULL AR knit (minutes even for a small algebra),
+    so it must not be served on the instant tier -- where artifacts are discarded and
+    ``capture_reps=False`` -- and is upgraded instant->queued in :func:`classify`. An
+    A_n/zigzag barcode only ``decompose``s (module-sized) -> ``False``, so it stays
+    instant-eligible (byte-identical classification to before). Built DEFENSIVELY -- an
+    unbuildable algebra returns ``False`` (its real error surfaces later as a clean 4xx),
+    because ``app.py``'s ``classify(...)`` is not wrapped."""
+    if not any(parse_compute_item(r).kind == "barcode" for r in req.compute):
+        return False
+    try:
+        from quiverlab.hpc.spec import build_algebra
+        A = build_algebra(req.algebra.model_dump())
+        from quiverlab.families.commutative_ladder import is_commutative_ladder
+        return bool(is_commutative_ladder(A)[0])
+    except Exception:
+        return False
+
+
 def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
     """Full tier decision WITH the honest numbers the warning UX shows.
     Returns {"tier", "reason", "estimate": {"cells", "minutes", "bytes",
@@ -139,6 +390,13 @@ def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
     memory ESTIMATE (see :func:`estimate_bytes`); ``mem_human`` is its binary-unit
     rendering."""
     max_deg = _max_degree(req)
+    # Plan 75: an incidence-ONLY request is sized on the poset, not on dim kP -- the
+    # order-complex route never resolves the algebra (see _incidence_only_dim).
+    dim = _incidence_only_dim(req, dim)
+    # Plan 79: a cluster_category request is sized on the EXCHANGE-GRAPH size (the cluster
+    # number of the Dynkin type, else the pair budget), not on dim kQ -- E6 is dim 36 but
+    # runs a minutes-long BFS over 833 cluster-tilting objects.
+    dim = _cluster_category_dim(req, dim)
     ops = estimate_ops(dim, max_deg, req.algebra.field.kind)
     minutes = max(1, -(-ops // _OPS_PER_MINUTE))          # ceil division, ≥ 1
     mem = estimate_bytes(dim, max_deg, req.algebra.field.kind)
@@ -157,6 +415,15 @@ def classify(dim: int, req: ComputeRequest, cfg: Config) -> dict:
         # instant, but the canvas GUI sets ``tikz: true`` on EVERY compute, so
         # gating on it would force every GUI request to queue -- and the diagram is
         # cheap and user-drawn, unlike the report.
+        # Plan 69 (H2): a `barcode` request on a COMMUTATIVE LADDER runs a full AR knit
+        # (knit-heavy -- the same cost class as ar_quiver/string_homological), but it is
+        # a scalar module kind with no `hi` budget, so sizing_dim would size it purely on
+        # the small CL algebra dim and mislabel it instant. Unlike ar_quiver/
+        # string_homological (whose knit-heaviness the KNOWN LIMITATION above cannot
+        # catch), the CL barcode IS caught here and upgraded instant->queued; a plain
+        # A_n/zigzag barcode only decomposes (module-sized) and stays instant-eligible.
+        if _barcode_knit_heavy(req):
+            return {"tier": "queued", "reason": "knit_heavy", "estimate": est}
         if req.artifacts.pdf:
             return {"tier": "queued", "reason": "report_artifacts", "estimate": est}
         return {"tier": "instant", "reason": None, "estimate": est}

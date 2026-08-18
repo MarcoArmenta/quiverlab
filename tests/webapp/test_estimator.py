@@ -149,3 +149,46 @@ def test_big_module_routes_off_the_instant_tier(tmp_path):
                       {"dims": {"1": 400}, "maps": {"x": [[0] * 400 for _ in range(400)]}},
                       ext_target={"builtin": {"kind": "simple", "vertex": 1}})
     assert classify(sizing_dim(2, big), big, cfg)["tier"] != "instant"
+
+
+# --------------------------------------------------------------------------- #
+# Plan 69 (H2): a `barcode` request on a COMMUTATIVE LADDER runs a full AR knit
+# (knit-heavy), so it is upgraded instant->queued (reason="knit_heavy"); a plain
+# A_n/zigzag barcode only decomposes (module-sized) and stays instant-eligible.
+# --------------------------------------------------------------------------- #
+def _barcode_req(vertices, arrows, relations, module):
+    return ComputeRequest.model_validate({
+        "schema": 2,
+        "algebra": {"kind": "quiver", "vertices": vertices, "arrows": arrows,
+                    "relations": relations, "field": {"kind": "QQ"}},
+        "compute": ["barcode"], "artifacts": {"pdf": False, "tikz": False},
+        "module": module})
+
+
+def _cl3_barcode_req():
+    # is_commutative_ladder recognizes by GRAPH SHAPE only, so the commutativity
+    # relations are not needed to trigger the knit_heavy upgrade -- the CL(3) box-product
+    # graph is enough (relations=[] keeps the request a plain string-relation schema).
+    from quiverlab.families.commutative_ladder import CommutativeLadder
+    from quiverlab.fields import QQ
+    Q = CommutativeLadder(3, field=QQ).quiver
+    return _barcode_req(list(Q.vertices),
+                        {name: list(st) for name, st in Q.arrows.items()}, [],
+                        {"builtin": {"kind": "simple", "vertex": Q.vertices[0]}})
+
+
+def test_cl_barcode_is_knit_heavy_not_instant(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    req = _cl3_barcode_req()
+    out = classify(sizing_dim(18, req), req, cfg)      # CL(3) dim 18 (would-be-instant)
+    assert out["tier"] == "queued" and out["reason"] == "knit_heavy"
+
+
+def test_an_barcode_stays_instant_eligible(tmp_path):
+    cfg = Config.from_env({"QLWEB_DATA_DIR": str(tmp_path)})
+    req = _barcode_req([1, 2, 3, 4, 5],
+                       {"a": [1, 2], "b": [2, 3], "c": [3, 4], "d": [4, 5]}, [],
+                       {"dims": {"1": 1, "2": 2, "3": 1, "4": 2, "5": 1},
+                        "maps": {"a": [[1], [0]], "b": [[1, 1]],
+                                 "c": [[1], [0]], "d": [[1, 1]]}})
+    assert decide_tier(sizing_dim(15, req), req, cfg) == "instant"
