@@ -231,8 +231,8 @@ class Bimodule:
         return True
 
     def engine_actions(self, p):
-        """Row-convention int64 action tensors reduced mod p: L[j][s][t] = coeff of
-        m_t in b_j·m_s (GF(p) only; the minimal A^e engine cross-check)."""
+        """Row-convention int64 action tensors reduced mod p: ``L[j][s][t]`` = coeff of
+        ``m_t`` in ``b_j·m_s`` (GF(p) only; the minimal A^e engine cross-check)."""
         import numpy as np
         m = self.algebra.dim
         dm = self.dim_M

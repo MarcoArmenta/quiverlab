@@ -1968,7 +1968,7 @@ verified precision and listed below as such.
   (kA_n, the rad²=0 linear Nakayama), where the dim-vector prefilter never enters the
   positive-only branch. Never a silent wrong part or support. (d) **The "product of tilted
   algebras" property is REPORTED, not certified here.** `A_λ`/`A_ρ` are a product of
-  quasi-tilted algebras in general (tilted for ada — ACT [5](2.3) / ACLV Thm A); P55 ships the
+  quasi-tilted algebras in general (tilted for ada — ACT [5, §2.3] / ACLV Thm A); P55 ships the
   connected-component factors and pins the per-factor *tiltedness* with a
   `skipif(not hasattr(Algebra, "is_tilted"))`-guarded test (`test_support_components_are_tilted_PIN`)
   that GENUINELY auto-activates into a real assert the moment **P60** ships `Algebra.is_tilted`
@@ -2270,12 +2270,16 @@ them are also live entries in `docs/plans/DEEPER-ENGINES-BACKLOG.md`.
 
 - **The `deformations` `A_α`-adopt flow** (Plan 78) — the deformed algebra ships
   **display-only**; loading it back onto the canvas as a fresh input is a new schema
-  surface. **This one the metaplan flags as needing Marco's sign-off to carry.**
+  surface. The metaplan flagged this one as needing Marco's sign-off to carry rather than
+  build: **signed off 2026-08-17 — carried, documented.**
 - **The P52 explicit two-sided bimodule matrix editor.** The library and the server both
   ACCEPT the explicit `{dim, left_maps, right_maps}` coefficient form; only the canvas
   editor is missing, because the Plan-26 module editor is one-sided (a right action per
   arrow) while a bimodule needs both actions per generator. The builtin named bimodules
-  (regular / dual / twisted / `A/soc`) are a pick-list today.
+  (regular / dual / twisted / `A/soc`) are a pick-list today. The backlog had provisionally
+  assigned this editor to P80; **Marco's release-gate decision (2026-08-17) is to carry it
+  documented**, since the mathematics is already reachable through the pick-list builtins
+  and the explicit API form.
 - **`engine="ghms"` is an ENGINE OPTION, not a GUI kind** (Plan 75) — deliberate, not an
   omission: it adds no new user-visible computation, its HH dims being byte-identical to
   the shipped routes. Its value is as a third independent oracle class.
