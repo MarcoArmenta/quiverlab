@@ -65,3 +65,8 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Defence in depth: the real fix is that dist/ is gitignored so no stale wheel
+          # is ever checked out, but a single pre-existing file must never again abort the
+          # publish of the version we actually came here to release.
+          skip-existing: true

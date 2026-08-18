@@ -24,3 +24,12 @@ paper/paper.preprint.tex
 
 # agent worktrees + session config -- never commit
 .claude/
+
+# build artifacts -- NEVER commit these. Two stale v0.1.0 files were tracked under dist/,
+# and because CI runs `python -m build` into the SAME dist/ and then uploads dist/*
+# wholesale, every tagged release tried to re-publish quiverlab-0.1.0 to PyPI, got a
+# 400 "File already exists" and aborted BEFORE the real version uploaded. That is why
+# 0.3.0 and 1.0.0 never reached PyPI. (`desktop/dist/` above is a different tree.)
+/dist/
+/build/
+*.egg-info/
