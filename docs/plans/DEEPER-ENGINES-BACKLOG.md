@@ -706,6 +706,28 @@ planned together even if delivered in slices.
   the f.d. examples that would exercise it are genuinely sparse — that scarcity is
   itself part of why it was deferred rather than guessed.
 
+- [ ] **The generalized cluster category `C_{(Q,W)}` beyond the acyclic slice — the
+  Ginzburg dg engine.** Named deferral from **Plan 79**, the OUT half of its frozen scope.
+  P79 ships the certified module-category slice for ACYCLIC `Q` (BMRRT's finite
+  fundamental domain). What it does not ship, and what each piece would need:
+  (a) the **Ginzburg dg algebra `Γ(Q,W)`** and `D^b(Γ)` — a differential-graded engine;
+  `derived/` is `K^b(proj)` only (P43/P67). (b) The **direct orbit-category `Hom_C`** as
+  `⊕_i Hom_{D^b}(X, F^i Y)` — same dependency; today `End_C(T) = Jac(Q_T, W_T)` is CITED
+  (BMR/Amiot), and only the Jacobian side is computed and certified. (c) **General
+  non-acyclic Jacobi-finite `(Q,W)`**: when `(Q,W)` is not mutation-equivalent to an
+  acyclic quiver there is no finite mod-`A` model, so `#indec` and the exchange graph of
+  `C_{(Q,W)}` are refused (G7). Closing this needs a mutation-class decision procedure as
+  well as the dg engine. (d) **DWZ potential mutation / right-equivalence** — already
+  deferred at P48.1; P79 certifies the mutated QUIVER and builds a potential only where
+  it is the canonical sum of 3-cycles (type A), never guessing one. (e) **Rep-infinite
+  (tame/wild) hereditary** `#indec` / exchange graph: infinite by Gabriel, so only
+  bounded-window enumeration could ever apply.
+  **Also recorded here: the P45 `mutate` root cause is still open.** Plan 79's Task-0
+  probe MEASURED that `D₄` continues to report `status="error"` on the current tree even
+  though P65 has merged, so the Plan-63 n-regularity recovery is still load-bearing for
+  the `D₄`/`D₅` cluster-tilting counts. (`D₅` is now certified at 182 through that
+  recovery, which the P79 plan doc had not anticipated.)
+
 ## Done (this backlog's history)
 
 - [x] Plan 12 (2026-07-22): straddling ambiguities + `right_decomposition` + CS

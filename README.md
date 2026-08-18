@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
-[![Tests](https://img.shields.io/badge/tests-5201_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
+[![Tests](https://img.shields.io/badge/tests-5292_oracle--pinned-brightgreen)](https://marcoarmenta.github.io/quiverlab/verification/)
 [![PyPI](https://img.shields.io/pypi/v/quiverlab.svg)](https://pypi.org/project/quiverlab/)
 [![Python](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)](https://github.com/MarcoArmenta/quiverlab/blob/main/pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -212,7 +212,7 @@ print(bibliography(A.citations()))      # grouped, annotated references
 
 ## How quiverlab is verified
 
-Every shipped feature is unit tested (the suite is 5201 tests over the
+Every shipped feature is unit tested (the suite is 5292 tests over the
 `[dev,fast,docs,web,qpa,hpc]` extras), and the mathematics is pinned by **two classes
 of oracle** — surfaced since Plan 32 as five orthogonal, runnable marker classes
 (`oracle_literature` / `oracle_crossengine` / `oracle_selfcert` / `qpa` / `m2`), audited
@@ -392,6 +392,15 @@ ported and wired in:
   verdict verbatim; multi-Koszul is offered only where Herscovich defines it
   (connected/local), refusing multi-vertex input with a pointer to K₂. Clickable as
   `koszul`.
+- **Amiot–Keller cluster categories (R31).** The certified acyclic (Dynkin) slice:
+  `#indec(C_Q) = #ind(mod kQ) + n` — the almost-positive roots — the cluster-tilting
+  objects **as** support τ-tilting pairs (Adachi–Iyama–Reiten, so the shipped exchange
+  graph IS the cluster exchange graph and its count IS the cluster number), the
+  cluster-tilted End-algebra as a Jacobian algebra via Fomin–Zelevinsky mutation, and a
+  2-Calabi–Yau certificate on the module window. Every count carries its provenance: an
+  uncertified enumeration is refused with its reason, and a budget stop on a
+  representation-FINITE algebra is never dressed up as infiniteness. Clickable via
+  `cluster_category`.
 - **Derived category.** Reified hyper-Hom classes `Hom_{D^b}(X, Y[n])` as actual
   chain maps, the derived AR translate `τ_{D^b} = ν∘[−1]` on perfect complexes (loud
   refusal at infinite global dimension, per Happel), a **tilting-complex verifier**

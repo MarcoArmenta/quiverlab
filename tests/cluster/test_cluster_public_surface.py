@@ -1,5 +1,12 @@
 # SPDX-License-Identifier: MIT
-"""The public surface of the cluster slice (Plan 79 / R31, Task 6)."""
+"""The public surface of the cluster slice (Plan 79 / R31, Task 6).
+
+NB the filename: pytest imports test modules by BASENAME when the tests tree has no
+``__init__.py``, so a second ``test_public_surface.py`` would collide with
+``tests/specseq/test_public_surface.py`` -- which it did, as a collection ERROR that
+only appeared in a whole-tree run (each file collected fine alone) and surfaced
+through the release gate's own subprocess.
+"""
 import pytest
 
 from quiverlab.fields import QQ
