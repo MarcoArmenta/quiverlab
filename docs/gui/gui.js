@@ -176,6 +176,9 @@
     // ---- Plan 63: wall-and-chamber structure via bricks (D(B) inequality systems) ----
     '  <label><input type="checkbox" id="qlgui-wall_chamber"> wall-and-chamber D(B), budget ' +
     '<input type="number" id="qlgui-wall_chamber-budget" value="512" min="1"></label>' +
+    // ---- Plan 79: the Amiot-Keller cluster category (certified acyclic slice) ----
+    '  <label><input type="checkbox" id="qlgui-cluster_category"> cluster category, budget ' +
+    '<input type="number" id="qlgui-cluster_category-budget" value="512" min="1"></label>' +
     // ---- Plan 67: silting theory (verifier + mutation + bounded exploration) ----
     '  <label><input type="checkbox" id="qlgui-silting"> silting: verifier + mutation + exploration, radius ' +
     '<input type="number" id="qlgui-silting-radius" value="3" min="0"> budget ' +
@@ -359,6 +362,8 @@
    "tau_cluster", "tau_cluster-budget",
    // Plan 63: wall-and-chamber structure via bricks (budget picker)
    "wall_chamber", "wall_chamber-budget",
+   // Plan 79: the cluster-category slice (exchange-graph pair budget, not a degree)
+   "cluster_category", "cluster_category-budget",
    // Plan 67: silting theory (radius,budget picker)
    "silting", "silting-radius", "silting-budget",
    // Plan 65: exceptional sequences (classical + tau, budget picker)
@@ -1148,6 +1153,9 @@
     // "wall_chamber:<budget>", the single-int form both runners parse (like tau_tilting).
     if (el.wall_chamber.checked)
       compute.push("wall_chamber:" + el["wall_chamber-budget"].value);
+    // "cluster_category:<budget>" -- the exchange-graph pair budget (Plan 79).
+    if (el.cluster_category.checked)
+      compute.push("cluster_category:" + el["cluster_category-budget"].value);
     // Plan 67: silting carries a RADIUS,BUDGET pair -> "silting:<radius>,<budget>".
     if (el.silting.checked)
       compute.push("silting:" + el["silting-radius"].value + "," +
@@ -4541,6 +4549,51 @@
       renderDeformations(div, b);
     } else if (name === "hh_lie_module") {
       renderHhLieModule(div, b);
+    } else if (name === "cluster_category") {
+      // Plan 79 / R31: the Amiot-Keller cluster category, certified acyclic slice.
+      // Every number carries its provenance: an UNCERTIFIED cluster-tilting count is
+      // shown as a refusal with its reason, never as a number.
+      if (b.error) {
+        div.appendChild(h("p", { "class": "qlgui-error", text: b.error }));
+      } else {
+        div.appendChild(h("p", { text: "C_Q = D^b(mod kQ)/\u03C4\u207B\u00B9[1] for the "
+          + "acyclic quiver Q (type " + (b.dynkin_type || "not Dynkin") + ", n = " + b.n
+          + "). Its indecomposables are ind(mod kQ) \u2294 {P_v[1]} \u2014 the "
+          + "almost-positive roots." }));
+        if (b.num_indec !== null && b.num_indec !== undefined) {
+          div.appendChild(h("p", { text: "Indecomposable objects: " + b.num_indec + "." }));
+        }
+        var ct = b.num_cluster_tilting;
+        if (ct) {
+          if (ct.certified) {
+            div.appendChild(h("p", { text: "Cluster-tilting objects: " + ct.count
+              + " (= the support \u03C4-tilting pairs, Adachi\u2013Iyama\u2013Reiten). "
+              + ct.note + "." }));
+          } else {
+            div.appendChild(h("p", { text: "Cluster-tilting count NOT certified \u2014 "
+              + ct.note + "." + (ct.expected_count
+                ? " The known cluster number for this type is " + ct.expected_count + "."
+                : "") }));
+          }
+        }
+        var tl = b.cluster_tilted;
+        if (tl && !tl.error) {
+          div.appendChild(h("p", { text: "Cluster-tilted algebra End(T) for the mutation "
+            + JSON.stringify(tl.mutation) + ": "
+            + (tl.dim !== null && tl.dim !== undefined
+               ? "dim " + tl.dim + ", " + (tl.self_injective ? "self-injective" : "not self-injective")
+                 + ", built from the sum of " + tl.three_cycles + " oriented 3-cycle(s)"
+               : "the quiver is FZ-certified but no potential is built \u2014 " + tl.note) + "." }));
+        }
+        var cy = b.two_cy;
+        if (cy && !cy.error) {
+          div.appendChild(h("p", { text: "2-Calabi\u2013Yau: "
+            + (cy.verdict ? "verified" : "NOT verified") + " on the module window \u2014 "
+            + "the Auslander\u2013Reiten formula holds on all " + cy.pairs_checked
+            + " ordered pairs (" + cy.mismatches + " mismatches). The shifted P_v[1] pairs "
+            + "hold by BMRRT (cited, not computed)." }));
+        }
+      }
     } else if (name === "wall_chamber") {
       renderWallChamber(div, b);
     } else if (name === "silting") {
@@ -5357,7 +5410,7 @@
     {"id": "hochschild", "kinds": ["hh_cohomology", "hh_homology", "cup", "cap", "bracket", "split_extension", "arrow_removal", "skew_group_hh", "han_transport", "incidence_cohomology", "tate_hochschild"]},
     {"id": "cyclic", "kinds": ["cyclic_homology", "connes_b", "bv_operator", "ss_hochschild", "radical_filtration_ss"]},
     {"id": "invariants", "kinds": ["cartan", "coxeter_polynomial", "coxeter_spectral", "global_dimension", "homological_profile", "fractional_cy", "center"]},
-    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "koszul", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "deformations", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
+    {"id": "structure", "kinds": ["recognizers", "ext_algebra", "koszul", "strings", "string_homological", "toupie", "skew_gentle", "quasi_hereditary", "fundamental_group", "simply_connected", "tame_wild", "hh1_lie", "hh_lie_module", "deformations", "derived_fingerprint", "derived_compare", "tau_tilting", "congruences", "tau_cluster", "wall_chamber", "cluster_category", "silting", "exceptional_sequences", "left_right_parts", "tilted_check", "recognizer_ladder"]},
     {"id": "module_basic", "kinds": ["dimension_vector", "rad_top_soc", "decompose", "barcode", "orbit_geometry"]},
     {"id": "module_hom", "kinds": ["projective_resolution", "injective_resolution", "projective_dimension", "injective_dimension", "ext", "tor"]},
     {"id": "module_ar", "kinds": ["tau", "tau_minus", "almost_split", "tilting_check", "ar_quiver", "radical_filtration", "ar_invariants"]}
@@ -5898,6 +5951,7 @@
     congruences: { cb: "congruences", top: "congruences-budget", budget: true },
     tau_cluster: { cb: "tau_cluster", top: "tau_cluster-budget", budget: true },
     wall_chamber: { cb: "wall_chamber", top: "wall_chamber-budget", budget: true },
+    cluster_category: { cb: "cluster_category", top: "cluster_category-budget", budget: true },
     silting: { cb: "silting", top: "silting-budget", budget: true },
     exceptional_sequences: { cb: "exceptional_sequences", top: "exceptional_sequences-budget", budget: true },
     dimension_vector: { cb: "dimension_vector", mod: true },

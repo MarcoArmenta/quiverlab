@@ -649,6 +649,15 @@ class Algebra:
         from quiverlab.modules.ext_algebra import ext_algebra
         return ext_algebra(self, top)
 
+    def cluster_category(self):
+        """The Amiot-Keller cluster category ``C_A = D^b(mod A)/tau^-1[1]`` of this
+        algebra (Plan 79), as a certified finite model: the fundamental domain
+        ``ind(mod A) |_| {P_v[1]}``, the cluster-tilting objects (= support tau-tilting
+        pairs, AIR), the cluster-tilted End-algebra, and the 2-Calabi-Yau certificate.
+        HEREDITARY and ACYCLIC only -- refuses loudly otherwise."""
+        from quiverlab.cluster import ClusterCategory
+        return ClusterCategory(self)
+
     def koszul_profile(self, top=8):
         """The generalized-Koszulity profile (Plan 77): Plan 27's quadratic Koszul
         verdict together with Berger's N-Koszul certificate, Cassidy-Shelton K2

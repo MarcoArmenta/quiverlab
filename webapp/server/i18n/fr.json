@@ -367,6 +367,7 @@
   "pick.kind.silting": "Théorie du silting",
   "inv.exceptional_sequences": "Suites exceptionnelles (classiques + τ)",
   "pick.kind.exceptional_sequences": "Suites exceptionnelles",
+  "pick.kind.cluster_category": "Catégorie amassée",
   "pick.kind.koszul": "Koszulité généralisée (N-Koszul, K₂, presque)",
   "pick.kind.incidence_cohomology": "HH* via le complexe des chaînes (incidence)",
   "poset.title": "Ensemble ordonné (relations d'ordre)",

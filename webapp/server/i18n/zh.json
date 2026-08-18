@@ -367,6 +367,7 @@
   "pick.kind.silting": "Silting 理论",
   "inv.exceptional_sequences": "例外序列 (经典 + τ)",
   "pick.kind.exceptional_sequences": "例外序列",
+  "pick.kind.cluster_category": "簇范畴",
   "pick.kind.koszul": "广义 Koszul 性（N-Koszul、K₂、准 Koszul）",
   "pick.kind.incidence_cohomology": "经由序复形的 HH*（关联代数）",
   "poset.title": "偏序集（序关系）",

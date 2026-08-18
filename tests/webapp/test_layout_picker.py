@@ -32,6 +32,8 @@ ALL_KINDS = {
     "ext_algebra", "strings", "quasi_hereditary", "derived_fingerprint",
     # Plan 77 (2026-08-17): generalized Koszulity (N-Koszul / K2 / almost-Koszul).
     "koszul",
+    # Plan 79 (2026-08-17): the Amiot-Keller cluster category (certified acyclic slice).
+    "cluster_category",
     "tau_tilting", "silting", "dimension_vector", "rad_top_soc", "tau", "tau_minus",
     "projective_dimension", "injective_dimension", "projective_resolution",
     "injective_resolution", "decompose", "almost_split", "tilting_check",

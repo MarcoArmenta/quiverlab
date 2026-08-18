@@ -227,6 +227,48 @@ REGISTRY: dict = {r.key: r for r in [
        "The quadratic-dual conventions (A^! = kQ^op/R^perp) behind quiverlab's "
        "Koszul dual and the E(A) = (A^!)^op cross-check (Plan 27).",
        "koszul"),
+    # --- Plan 79: Amiot-Keller cluster categories (the certified acyclic slice) ---
+    _r("amiot_cluster_category", "Amiot2009cluster", "foundation",
+       "Cluster categories for algebras of global dimension 2 and quivers with potential",
+       "The generalized cluster category C_(Q,W) of a quiver with potential: when (Q,W) "
+       "is Jacobi-FINITE it carries a cluster-tilting object whose endomorphism algebra "
+       "IS the Jacobian algebra Jac(Q,W). quiverlab CITES this identification -- it "
+       "computes the Jacobian side and never forms Hom_C (no dg engine) -- and certifies "
+       "the algebra-level statement (Plan 79).",
+       "cluster", "potential"),
+    _r("bmrrt_cluster", "BMRRT2006", "foundation",
+       "Tilting theory and cluster combinatorics",
+       "The cluster category C_Q = D^b(kQ)/tau^-1[1] and its FUNDAMENTAL DOMAIN "
+       "ind(mod kQ) |_| {P_v[1]} -- the finite model quiverlab computes on, giving "
+       "#indec(C_Q) = #ind(mod kQ) + n (the almost-positive roots) and the reduction "
+       "Ext^1_C(X,Y) = Ext^1_A(X,Y) (+) D Ext^1_A(Y,X) behind the 2-CY certificate "
+       "(Plan 79).",
+       "cluster"),
+    _r("bmr_cluster_tilted", "BMR2007clustertilted", "foundation",
+       "Cluster-tilted algebras",
+       "End_{C_Q}(T) for a cluster-tilting object T is the cluster-tilted algebra; with "
+       "Amiot it is the Jacobian algebra of the cluster-tilted quiver-with-potential. "
+       "quiverlab certifies the QUIVER step by Fomin-Zelevinsky matrix mutation and "
+       "verifies the Jacobian algebra's presentation (Plan 79).",
+       "cluster"),
+    _r("keller_reiten_gorenstein", "KellerReiten2007", "foundation",
+       "Cluster-tilted algebras are Gorenstein and stably Calabi-Yau",
+       "Cluster-tilted algebras are Gorenstein of dimension at most one, and hereditary "
+       "iff of finite global dimension -- quiverlab's self-certificate on every "
+       "cluster-tilted algebra it builds (Plan 79).",
+       "cluster"),
+    _r("ginzburg_cy", "Ginzburg2006cy", "foundation",
+       "Calabi-Yau algebras",
+       "The Ginzburg dg algebra Gamma(Q,W) underlying the generalized cluster category. "
+       "OUT-OF-SCOPE machinery for quiverlab -- cited only to name what a general "
+       "non-acyclic C_(Q,W) would need (Plan 79 honest scope).",
+       "cluster", "potential"),
+    _r("keller_yang_mutation", "KellerYang2011", "foundation",
+       "Derived equivalences from mutations of quivers with potential",
+       "The 'Keller' half of Amiot-Keller: derived equivalences from QP mutation. "
+       "OUT-OF-SCOPE machinery (no dg engine ships) -- cited at the scope boundary "
+       "(Plan 79).",
+       "cluster", "potential"),
     # --- Plan 77: generalized Koszulity (N-Koszul / K2 / almost-Koszul / multi-Koszul) ---
     _r("berger_nonquadratic", "Berger2001nonquadratic", "foundation",
        "Koszulity for nonquadratic algebras",

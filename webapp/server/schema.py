@@ -487,6 +487,16 @@ def parse_compute_item(s: str) -> ComputeItem:
         if b and not b.isdigit():
             raise SchemaError(f"wall_chamber budget must be a positive integer (got {s!r})")
         return ComputeItem(kind="wall_chamber", lo=None, hi=(int(b) if b else None))
+    # cluster_category (Plan 79 / R31) carries the EXCHANGE-GRAPH PAIR BUDGET, not a
+    # degree: 'cluster_category' or 'cluster_category:512'. The cluster-tilting count
+    # rides the same tau-tilting BFS as wall_chamber, so it takes the same special form
+    # and skips the 'name:0..N' grammar -- all three tiers agree on it.
+    if s == "cluster_category" or s.startswith("cluster_category:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SchemaError(
+                f"cluster_category budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="cluster_category", lo=None, hi=(int(b) if b else None))
     # silting carries a RADIUS,BUDGET pair, not a degree range (Plan 67): 'silting' or
     # 'silting:3,64'. lo = radius, hi = vertex budget; neither is a homological degree, so
     # it skips the 'name:0..N' grammar -- server and GUI/hpc agree on this special form.

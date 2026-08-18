@@ -326,6 +326,16 @@ def parse_compute_item(s: str) -> ComputeItem:
                                 f"integers (got {s!r})")
             radius, budget = int(parts[0]), int(parts[1])
         return ComputeItem(kind="silting", lo=radius, hi=budget)
+    # cluster_category (Plan 79 / R31) carries the EXCHANGE-GRAPH PAIR BUDGET, not a
+    # degree: 'cluster_category' or 'cluster_category:512'. The cluster-tilting count
+    # rides the same tau-tilting BFS as wall_chamber, so it takes the same special form
+    # and skips the 'name:0..N' grammar -- all three tiers agree on it.
+    if s == "cluster_category" or s.startswith("cluster_category:"):
+        _, _, b = s.partition(":")
+        if b and not b.isdigit():
+            raise SpecError(
+                f"cluster_category budget must be a positive integer (got {s!r})")
+        return ComputeItem(kind="cluster_category", lo=None, hi=(int(b) if b else None))
     # ar_quiver carries a MODULE BUDGET, not a degree range (wave 2): 'ar_quiver' or
     # 'ar_quiver:512'. The budget caps the knitted indecomposable universe -- not a
     # homological degree -- so it bypasses the 'name:0..N' grammar (like tau_tilting).
@@ -1841,6 +1851,23 @@ def _dispatch(A, item, events, hh_kwargs, capture_reps=True, B=None,
             block = {"kind": "wall_chamber", "error": str(exc)}
         block["citations"] = _citation_pairs(block.get("references", []))
         return block, None
+    # Cluster category (Plan 79 / R31): the certified acyclic slice of the Amiot-Keller
+    # cluster category -- the fundamental domain #indec, the cluster-tilting count (= the
+    # support tau-tilting count, AIR) with its certification provenance, the cluster-tilted
+    # End-algebra, and the module-window 2-CY certificate. Both runners share
+    # cluster.category.cluster_category_block, so the blocks are byte-identical. A refusal
+    # (non-hereditary / cyclic / presentation-less) is an `error` block, never a 500; a
+    # budget or non-recoverable error stop is NOT an error block -- it is a populated
+    # num_cluster_tilting with count=None and the honest note.
+    if kind == "cluster_category":
+        budget = item.hi if item.hi is not None else 512
+        from quiverlab.cluster.category import cluster_category_block
+        try:
+            block = cluster_category_block(A, budget_pairs=budget)
+        except qerr.QuiverlabError as exc:
+            block = {"kind": "cluster_category", "error": str(exc)}
+        block["citations"] = _citation_pairs(block.get("references", []))
+        return block, None
     # AR quiver (P41, wave 2): an ALGEBRA-level kind carrying a MODULE BUDGET, not a
     # degree range ('ar_quiver' / 'ar_quiver:512', parsed like tau_tilting). Honest
     # semi-decision -- complete iff rep-finite, else status='budget' (partial, labelled)
@@ -3053,6 +3080,7 @@ def _snippet(req: ComputeRequest, A) -> str:
                  lambda it: f"A.ext_algebra({it.hi if it.hi is not None else 6})",
              "koszul":
                  lambda it: f"A.koszul_profile({it.hi if it.hi is not None else 8})",
+             "cluster_category": lambda it: "A.cluster_category()",
              "recognizers": lambda it: ("[A.is_semisimple(), A.is_hereditary(), "
                                         "A.is_gentle(), A.dynkin_type(), "
                                         "A.form_type()]"),
