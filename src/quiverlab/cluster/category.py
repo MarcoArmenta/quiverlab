@@ -231,3 +231,122 @@ def _has_oriented_cycle(quiver):
         return False
 
     return any(colour[v] == WHITE and visit(v) for v in quiver.vertices)
+
+
+# ---------------------------------------------------------------------------------
+# Cluster-tilting objects = support tau-tilting pairs (Adachi-Iyama-Reiten)
+# ---------------------------------------------------------------------------------
+def _exchange_graph_of(A, budget_pairs):
+    from quiverlab.tautilting.mutation import exchange_graph
+    return exchange_graph(A, budget_pairs=budget_pairs)
+
+
+def _cluster_tilting_methods():
+    """Attached to :class:`ClusterCategory` below; kept in one block so the AIR
+    bijection and its certification gate read together."""
+
+
+def _num_cluster_tilting(self, budget_pairs=512):
+    """The number of cluster-tilting objects of ``C_Q``, with its provenance.
+
+    **The AIR bijection is the backbone:** a support tau-tilting pair ``(M, P)`` IS the
+    cluster-tilting object ``T = M (+) P[1]`` (Adachi-Iyama-Reiten), and every
+    cluster-tilting object of ``C_Q`` decomposes uniquely so.  Hence the shipped P45
+    exchange graph IS the cluster exchange graph and its vertex count IS the cluster
+    (associahedron) number -- which is what makes this a genuine CROSS-ENGINE oracle
+    rather than a definition.
+
+    **Certification is a RUNTIME property, not a type list** -- the count is certified
+    iff, at compute time, ``status == "complete"`` OR (``status == "error"`` AND the
+    Plan-63 n-regularity recovery closes the graph).  Anything else is refused loudly and
+    the discovered vertex count is NEVER emitted as if certified.  The three refusals are
+    kept distinct because conflating them would slander a perfectly finite algebra:
+
+    * **G3a over-budget** -- a ``"budget"`` stop on a known-finite Dynkin input means
+      "rep-finite, but the cluster number exceeds the budget"; the known cluster number is
+      quoted in ``expected_count`` so the caller can size the budget.  NEVER an
+      infiniteness claim.
+    * **G3b infinite** -- claimed ONLY off the Gabriel/Dynkin type certificate.
+    * **G4 non-recoverable error** -- the BFS hit a ``mutate`` boundary and the graph is
+      not n-regular, so completeness cannot be certified either way.
+
+    ``count`` is what the ENGINE certified and is ``None`` in every refusal; the known
+    literature value never leaks into it (it lives in ``expected_count``).
+    """
+    dt = self.dynkin_type
+    dt_name = None if dt is None else _diagram_name(dt)
+    out = {"count": None, "certified": False, "status": None,
+           "dynkin_type": dt_name, "expected_count": self._cluster_number(),
+           "budget_pairs": budget_pairs, "note": None}
+    eg = _exchange_graph_of(self.algebra, budget_pairs)
+    self._eg = eg
+    out["status"] = eg.status
+    discovered = len(eg.vertices)
+
+    if eg.status == "complete":
+        out.update(count=discovered, certified=True,
+                   note="the exchange-graph BFS closed natively (status='complete')")
+        return out
+
+    if eg.status == "error":
+        from quiverlab.tautilting.wallchamber import _closed_by_n_regularity
+        if _closed_by_n_regularity(eg, self.n):
+            out.update(count=discovered, certified=True,
+                       note=("the BFS reported status='error' (a mutate boundary), but "
+                             f"the discovered graph is {self.n}-regular and was not "
+                             "budget-capped, so it IS closed under mutation -- "
+                             "completeness recovered by the Plan-63 n-regularity "
+                             "certificate"))
+            return out
+        out["note"] = (
+            f"the exchange graph did not close (status='error') and the {self.n}-"
+            "regularity recovery FAILED, so completeness is not certified; the "
+            f"{discovered} discovered pairs are NOT reported as the cluster number. "
+            "This is a mutate-boundary limitation (Plan 65 owns the root cause), NOT a "
+            "claim that C_Q is infinite")
+        return out
+
+    # status == "budget": rep-finite-but-over-budget vs genuinely infinite.
+    if self.is_representation_finite:
+        expected = self._cluster_number()
+        quoted = ("" if expected is None
+                  else f"; its cluster number is {expected}")
+        out["note"] = (
+            f"rep-finite (Dynkin {dt_name}){quoted}, which exceeds budget_pairs="
+            f"{budget_pairs} -- raise the budget. This is an OVER-BUDGET stop, NOT an "
+            "infiniteness claim")
+        return out
+    if self.is_representation_finite is False:
+        out["note"] = (
+            f"C_Q has infinitely many cluster-tilting objects: the diagram {dt_name} is "
+            "NOT Dynkin, so by Gabriel mod kQ is representation-infinite and the "
+            "exchange graph does not close")
+        return out
+    out["note"] = (
+        f"the BFS stopped at budget_pairs={budget_pairs} and the type certificate could "
+        "not classify the diagram, so neither finiteness nor infiniteness is claimed")
+    return out
+
+
+def _cluster_tilting_objects(self, budget_pairs=512):
+    """The cluster-tilting objects as ``T = M (+) P[1]`` (the AIR reading of each
+    support tau-tilting pair).  Refuses whenever :meth:`num_cluster_tilting` refuses --
+    an uncertified enumeration must not be handed out as if it were the whole set."""
+    info = self.num_cluster_tilting(budget_pairs=budget_pairs)
+    if not info["certified"]:
+        raise QuiverlabError(
+            "cluster_tilting_objects: " + str(info["note"]),
+            hint="the enumeration is not certified complete, so the list would be a "
+                 "partial set presented as the whole -- refused")
+    out = []
+    for rec in self._eg.vertices:
+        pair = rec["pair"]
+        out.append({"pair": pair, "summands": list(pair.summands),
+                    "support": sorted(pair.support), "label": rec["label"],
+                    "as_object": f"{rec['label']}: T = M (+) P[1]",
+                    "rank": len(pair.summands) + len(pair.support)})
+    return out
+
+
+ClusterCategory.num_cluster_tilting = _num_cluster_tilting
+ClusterCategory.cluster_tilting_objects = _cluster_tilting_objects
