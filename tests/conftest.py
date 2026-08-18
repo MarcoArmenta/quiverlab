@@ -47,7 +47,10 @@ def _quiet_traces(request):
 # --- Plan 08 Task 2 (ADD) --------------------------------------------------
 # Top-level dirs (relative to tests/) whose tests are heavy -> the deep leg.
 # (resolutions_cs is the Chouhy-Solotar suite; there is NO tests/chouhy_solotar dir.)
-_DEEP_DIRS = ("engine", "resolutions_cs", "modules", "families", "batch", "specseq")
+_DEEP_DIRS = ("engine", "resolutions_cs", "modules", "families", "batch", "specseq",
+              # Plan 79: the cluster-category slice rides the AR knit + the
+              # tau-tilting exchange-graph BFS, both minutes-scale on D/E types.
+              "cluster")
 # Individually heavy files that may live outside the deep dirs.
 _DEEP_FILES = ("test_complete.py", "test_deepen.py", "test_properties.py",
                "test_acceptance.py", "test_cs_", "test_bardzell", "test_minimal")
