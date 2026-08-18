@@ -42,9 +42,17 @@ import pytest
 
 from quiverlab.hpc import spec
 from quiverlab.trace import results_html
-from webapp.server.i18n import catalog
-from webapp.server.runner import run_spec
-from webapp.server.schema import ComputeRequest
+
+# tests/release is collected under EVERY marker, but the [web] extra is not installed in
+# every CI cell -- the QPA cross-check job installs [qpa] only. A module-level webapp
+# import there raises ModuleNotFoundError: pydantic during COLLECTION, which aborts the
+# whole run: the QPA job has been red on main since 2026-08-07 with no QPA test actually
+# failing. importorskip is the pattern the sibling release tests already use.
+pytest.importorskip("pydantic", reason="[web] extra not installed (QPA-only CI cell)")
+
+from webapp.server.i18n import catalog  # noqa: E402
+from webapp.server.runner import run_spec  # noqa: E402
+from webapp.server.schema import ComputeRequest  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 
