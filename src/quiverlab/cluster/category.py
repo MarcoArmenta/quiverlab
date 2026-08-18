@@ -128,6 +128,7 @@ class ClusterCategory:
         # (a) grind to the budget on an algebra we already know is infinite, and (b) make
         # the refusal look like it came from a failed enumeration rather than from the
         # certificate -- which is exactly the conflation G3a/G3b exists to prevent.
+        self._require_category_model("num_indecomposables")
         if self.is_representation_finite is False:
             raise self._refuse_infinite("num_indecomposables")
         knit = self._knit_ar()
@@ -275,6 +276,7 @@ def _num_cluster_tilting(self, budget_pairs=512):
     ``count`` is what the ENGINE certified and is ``None`` in every refusal; the known
     literature value never leaks into it (it lives in ``expected_count``).
     """
+    self._require_category_model("num_cluster_tilting")
     dt = self.dynkin_type
     dt_name = None if dt is None else _diagram_name(dt)
     out = {"count": None, "certified": False, "status": None,
@@ -424,6 +426,7 @@ def _cluster_tilted_algebra(self, mutation_seq, field=None):
     note -- inferring a general potential needs DWZ mutation / right-equivalence, deferred
     since P48.1.  A potential is never guessed.
     """
+    self._require_category_model("cluster_tilted_algebra")
     from quiverlab.surfaces.flip import exchange_matrix, matrix_mutation
     Q0 = self.algebra.quiver
     verts = list(Q0.vertices)
@@ -573,3 +576,129 @@ def _is_2_calabi_yau(self):
 
 ClusterCategory.two_cy_certificate = _two_cy_certificate
 ClusterCategory.is_2_calabi_yau = _is_2_calabi_yau
+
+
+# ---------------------------------------------------------------------------------
+# from_potential: the Jacobi-finite (Q, W) ALGEBRA-level certificate
+# ---------------------------------------------------------------------------------
+def _is_single_oriented_cycle(Q, length):
+    """True iff ``Q`` is exactly one oriented cycle through ``length`` vertices."""
+    verts = list(Q.vertices)
+    if len(verts) != length or len(Q.arrows) != length:
+        return False
+    outdeg = {v: 0 for v in verts}
+    indeg = {v: 0 for v in verts}
+    for a in Q.arrows:
+        s, t = Q.source(a), Q.target(a)
+        if s == t:
+            return False
+        outdeg[s] += 1
+        indeg[t] += 1
+    return all(outdeg[v] == 1 and indeg[v] == 1 for v in verts)
+
+
+def _reducible_hereditary_model(Q, JA):
+    """The NARROW, DOCUMENTED reducibility recognition.
+
+    ``(3-cycle, alpha beta gamma)`` has Jacobian algebra ``kZ_3/J^2`` (dim 6), which is
+    the cluster-tilted algebra of ``A_3`` -- so its cluster category IS ``C_{A_3}`` and
+    the category combinatorics may be served.  Recognition is per-instance CERTIFIED (the
+    shape of ``Q`` and ``dim Jac == 6``), never inferred.
+
+    A GENERAL mutation-equivalence-to-acyclic test is deliberately NOT attempted: deciding
+    it needs quiver-mutation-class enumeration, and guessing would let the category
+    surface answer for an algebra whose cluster category is not hereditary at all.
+    Everything else returns ``None`` and the category invariants are refused (G7).
+    """
+    if _is_single_oriented_cycle(Q, 3) and JA.dim == 6:
+        return ClusterCategory("A3", field=JA.domain)
+    return None
+
+
+@classmethod
+def _from_potential(cls, Q, W, field=None):
+    """A Jacobi-finite quiver-with-potential: the ALGEBRA-level Amiot certificate.
+
+    Builds ``Jac(Q, W)``; a Jacobi-INFINITE input propagates the shipped
+    ``NotFiniteDimensionalError`` (G6).  Certifies what Amiot / Keller-Reiten give at the
+    algebra level -- finite-dimensional, and Gorenstein of dimension at most one.
+
+    **The CATEGORY combinatorics are served only when ``(Q, W)`` is certified reducible to
+    a hereditary model** (the documented 3-cycle instance).  Otherwise ``C_{(Q,W)}`` is
+    not a hereditary cluster category, there is no finite mod-A model, and every category
+    invariant refuses loudly (G7) -- the Jacobian algebra's own module theory is still
+    served by the rest of quiverlab.
+    """
+    from quiverlab.families.jacobian import JacobianAlgebra
+    from quiverlab.fields import QQ
+    self = object.__new__(cls)
+    JA = JacobianAlgebra(Q, W, field=field or QQ)          # G6 propagates from here
+    self.jacobian = JA
+    self._potential = (Q, W)
+    self._knit = None
+    self._eg = None
+    model = _reducible_hereditary_model(Q, JA)
+    self._model = model
+    if model is None:
+        self.algebra = None
+        self.n = len(list(Q.vertices))
+        self.hereditary = False
+        self.dynkin_type = None
+    else:
+        self.algebra = model.algebra
+        self.n = model.n
+        self.hereditary = model.hereditary
+        self.dynkin_type = model.dynkin_type
+    return self
+
+
+def _jacobian_certificate(self):
+    """The algebra-level Amiot / Keller-Reiten certificate for a ``from_potential`` input:
+    finite-dimensional, and Gorenstein of dimension at most one."""
+    JA = getattr(self, "jacobian", None)
+    if JA is None:
+        raise QuiverlabError(
+            "jacobian_certificate is only defined for a from_potential input",
+            hint="this ClusterCategory was built from an acyclic quiver, not from (Q, W)")
+    g = JA.gorenstein_dimension()
+    reducible = self._model is not None
+    return {
+        "dim": JA.dim,
+        "finite_dimensional": True,                # a non-finite Jac raised at build time
+        "gorenstein": bool(g.is_gorenstein),
+        "gorenstein_dimension": max(g.left_id, g.right_id) if g.is_gorenstein else None,
+        "gorenstein_at_most_one": bool(g.is_gorenstein
+                                       and max(g.left_id, g.right_id) <= 1),
+        "self_injective": _self_injective(JA),
+        "reducible_to_hereditary": reducible,
+        "model": (None if not reducible else _diagram_name(self._model.dynkin_type)),
+        "note": ("Jac(Q,W) is finite-dimensional and Gorenstein of dimension <= 1 "
+                 "(Keller-Reiten); by Amiot, when (Q,W) is Jacobi-finite the generalized "
+                 "cluster category C_{(Q,W)} carries a cluster-tilting object whose "
+                 "endomorphism algebra IS this Jacobian algebra -- CITED, not computed. "
+                 + ("This (Q,W) is certified reducible to a hereditary model, so the "
+                    "category invariants are served through it."
+                    if reducible else
+                    "This (Q,W) is NOT certified reducible to a hereditary model, so the "
+                    "CATEGORY invariants need D^b(Gamma) and are refused (out of scope)")),
+    }
+
+
+def _self_injective(A):
+    from quiverlab.modules.ext import is_selfinjective
+    return bool(is_selfinjective(A))
+
+
+def _require_category_model(self, what):
+    if getattr(self, "algebra", None) is None:
+        raise QuiverlabError(
+            f"{what}: C_(Q,W) category invariants need D^b(Gamma) -- the generalized "
+            "cluster category of a quiver with potential that is not certified reducible "
+            "to a hereditary model is out of scope; only the Jacobian-algebra Amiot "
+            "certificate is available",
+            hint="call jacobian_certificate() for the algebra-level statement")
+
+
+ClusterCategory.from_potential = _from_potential
+ClusterCategory.jacobian_certificate = _jacobian_certificate
+ClusterCategory._require_category_model = _require_category_model

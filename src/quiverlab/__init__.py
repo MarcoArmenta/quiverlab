@@ -6,6 +6,7 @@ __version__ = "0.3.0"
 # A.hochschild_cohomology(..., verbose=False) or globally via quiverlab.verbose.
 verbose = True
 
+from quiverlab.cluster import ClusterCategory
 from quiverlab.errors import (  # noqa: E402,F401
     QuiverlabError, ExactnessError, FieldError, RelationError,
     AdmissibilityError, NotFiniteDimensionalError, DepthLimitError,
@@ -76,6 +77,8 @@ __all__ = [
     "toupie_direct_arrow_count", "toupie_sl_a_lower_bound",
     "SkewGentleAlgebra", "SkewGentleTriple", "is_skew_gentle_triple",
     "OnePointExtension", "repetitive_slice", "JacobianAlgebra", "Potential",
+    # Plan 79: the Amiot-Keller cluster category (certified acyclic slice)
+    "ClusterCategory",
     "cyclic_derivative",
     "bibliography",
     "Bimodule",
