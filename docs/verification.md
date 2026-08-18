@@ -5,7 +5,7 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **5292 tests** (live-recounted 2026-08-17 on the Plan-77 branch — R36 the
+The suite is **5338 tests** (live-recounted 2026-08-17 on the Plan-77 branch — R36 the
 generalized Koszulity ladder (Berger N-Koszul, Cassidy–Shelton K₂, Brenner–Butler–King
 `(p,q)`-almost-Koszul, the internal generation degrees of `Ext•(k,k)`) — cut from dev's
 P76 tip; the previous recount was the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10
@@ -623,6 +623,8 @@ Brenner–Butler–King `(p,q)`-almost-Koszul, Herscovich's scoped multi-Koszul,
 internal generation degrees of `Ext•(k,k)`), cut from dev's P76 tip; the Plan-77
 additions (lit +25 / xeng +8 / selfcert +43 / qpa +1 / m2 +0, union +70 — suite
 5201 → **5292**, fast 2539 / deep 2493) fold into these live-collected totals. The
+**P80 release gate** then added the three-tier compute-grammar parity gate (46 unmarked
+contract tests, so no oracle class moved): suite **5338**, fast **2585**. The
 previous recount was the Plan-77 branch (R36 generalized Koszulity), which added
 lit +37 / xeng +8 / selfcert +44 / qpa +1, union +90 (suite 5087 → 5201). The
 previous recount was the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10 the GHMS
