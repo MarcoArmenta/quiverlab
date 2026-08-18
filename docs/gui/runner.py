@@ -307,6 +307,14 @@ def _parse_compute(spec):
             raise RequestError("wall_chamber budget must be a positive integer (got %r)"
                                % (spec,))
         return "wall_chamber", (int(rng) if rng else None)
+    # cluster_category (Plan 79 / R31) carries the EXCHANGE-GRAPH PAIR BUDGET, not a
+    # degree: 'cluster_category' or 'cluster_category:512'. Server twin: quiverlab.hpc.spec
+    # and webapp.server.schema parse the same special form.
+    if name == "cluster_category":
+        if rng and not rng.isdigit():
+            raise RequestError("cluster_category budget must be a positive integer "
+                               "(got %r)" % (spec,))
+        return "cluster_category", (int(rng) if rng else None)
     # silting carries a RADIUS,BUDGET pair, not a degree range (Plan 67): 'silting' or
     # 'silting:3,64'. The top is the (radius, budget) tuple; neither is a homological
     # degree, so it skips MAX_DEGREE. Server twin: quiverlab.hpc.spec parses the same form.
@@ -1437,6 +1445,17 @@ def compute_one(spec):
             except quiverlab.QuiverlabError as exc:
                 block = {"kind": "wall_chamber", "error": str(exc)}
             block["citations"] = _citation_pairs(block.get("references", []))
+        elif name == "cluster_category":
+            # The Amiot-Keller cluster category, certified acyclic slice (Plan 79 / R31).
+            # SAME shared library builder (cluster.category.cluster_category_block) and the
+            # same references -> citations as the server twin, byte-for-byte.
+            from quiverlab.cluster.category import cluster_category_block
+            try:
+                block = cluster_category_block(A, budget_pairs=top if top is not None
+                                               else 512)
+            except quiverlab.QuiverlabError as exc:
+                block = {"kind": "cluster_category", "error": str(exc)}
+            block["citations"] = _citation_pairs(block.get("references", []))
         elif name == "silting":
             # Silting theory (Plan 67 / Aihara-Iyama): algebra-level, RADIUS,BUDGET pair
             # (not a degree). SAME shared library builder (derived.block.silting_block) +
@@ -1757,6 +1776,8 @@ def python_snippet():
              "ext_algebra": "A.ext_algebra()",
              # Plan 77: the generalized-Koszulity profile, a scalar kind (no %d).
              "koszul": "A.koszul_profile()",
+             # Plan 79: the cluster-category slice, a scalar kind (no %d).
+             "cluster_category": "A.cluster_category()",
              "recognizers": ("[A.is_semisimple(), A.is_hereditary(), A.is_gentle(), "
                              "A.dynkin_type(), A.form_type()]"),
              # Quasi-hereditary structure (Plan 47): a scalar kind, no %d.
@@ -1931,6 +1952,11 @@ ETA_MODEL = {
                 # Plan 77: koszul runs ext_algebra AND resolves every simple again for
                 # the internal degrees, so it sits just above ext_algebra.
                 "koszul": 2.2,
+                # Plan 79: cluster_category runs the AR knit AND the tau-tilting exchange
+                # graph BFS -- the BFS dominates and is NOT algebra-dim-bound (E6 has
+                # dim kQ 36 but 833 cluster-tilting objects), so it sits well above the
+                # module-level kinds.
+                "cluster_category": 6.0,
                 # Plan 42: the (b, B) spectral sequence builds the same exponential
                 # bar (b, B) bicomplex cyclic homology uses, plus the page algebra.
                 "ss_hochschild": 2.0,

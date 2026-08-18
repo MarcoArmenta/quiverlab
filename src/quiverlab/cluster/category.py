@@ -702,3 +702,75 @@ def _require_category_model(self, what):
 ClusterCategory.from_potential = _from_potential
 ClusterCategory.jacobian_certificate = _jacobian_certificate
 ClusterCategory._require_category_model = _require_category_model
+
+
+# ---------------------------------------------------------------------------------
+# The shared no-code block (both runners route through THIS, so they are byte-identical)
+# ---------------------------------------------------------------------------------
+def cluster_category_block(A, budget_pairs=512):
+    """The ``cluster_category`` compute block, shared by the server/HPC runner and the
+    Pyodide twin (each adds only its own ``citations``).
+
+    A refusal (non-hereditary, cyclic quiver, presentation-less, representation-infinite)
+    becomes an ``error`` block -- never a traceback out of the service.  A BUDGET or
+    non-recoverable ERROR stop is NOT an error block: it is a populated
+    ``num_cluster_tilting`` with ``count=None``, ``certified=False`` and the honest note,
+    because the algebra is fine and only the enumeration is bounded.
+    """
+    try:
+        C = ClusterCategory(A)
+    except QuiverlabError as exc:
+        return {"kind": "cluster_category", "error": str(exc),
+                "references": list(_REFERENCES)}
+
+    block = {"kind": "cluster_category", "n": C.n, "hereditary": C.hereditary,
+             "dynkin_type": _diagram_name(C.dynkin_type) if C.dynkin_type else None,
+             "budget_pairs": budget_pairs,
+             "num_indec": None, "num_cluster_tilting": None,
+             "cluster_tilted": None, "two_cy": None, "note": None,
+             "references": list(_REFERENCES)}
+    try:
+        block["num_indec"] = C.num_indecomposables()
+    except QuiverlabError as exc:
+        # Representation-infinite (G3b) or an uncertified knit: the CATEGORY is still a
+        # legitimate object, so this is a populated field-level refusal, not an error block.
+        block["note"] = str(exc)
+        block["num_cluster_tilting"] = C.num_cluster_tilting(budget_pairs=budget_pairs)
+        return block
+
+    block["num_cluster_tilting"] = C.num_cluster_tilting(budget_pairs=budget_pairs)
+    # The flagship mutation: mu_1 where it exists (the plan's kA3 [1] instance), else mu_0.
+    try:
+        ct = C.cluster_tilted_algebra([1 if C.n > 1 else 0])
+        block["cluster_tilted"] = {
+            "quiver": ct["quiver"], "dim": ct["dim"],
+            "self_injective": ct["self_injective"],
+            "three_cycles": ct["three_cycles"], "verified": ct["verified"],
+            "fz_certified": ct["fz_certified"], "note": ct["note"],
+            "mutation": [1 if C.n > 1 else 0]}
+    except QuiverlabError as exc:
+        block["cluster_tilted"] = {"error": str(exc)}
+    try:
+        cy = C.is_2_calabi_yau()
+        cert = C.two_cy_certificate()
+        block["two_cy"] = {"verdict": cy["verdict"],
+                           "ar_formula_holds": cert["ar_formula_holds"],
+                           "pairs_checked": cert["pairs_checked"],
+                           "mismatches": len(cert["mismatches"]),
+                           "scope": "module_window", "shifted_by_citation": True,
+                           "note": cy["note"]}
+    except QuiverlabError as exc:
+        block["two_cy"] = {"error": str(exc)}
+    return block
+
+
+def expected_cluster_number(A):
+    """The known cluster number of ``A``'s Dynkin type, or ``None`` -- exposed so the
+    webapp estimator can size a ``cluster_category`` request on the EXCHANGE-GRAPH size
+    rather than on ``dim kQ``.  The two are wildly different: ``E6`` has ``dim kQ = 36``
+    but 833 cluster-tilting objects and a minutes-long BFS, so a bare ``dim**3`` model
+    would route it to the instant tier."""
+    try:
+        return ClusterCategory(A)._cluster_number()
+    except QuiverlabError:
+        return None
