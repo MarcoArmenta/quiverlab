@@ -135,8 +135,8 @@ and wherever QPA implements a feature, an optional `pip install quiverlab[qpa]`
 backend drives GAP to recompute it and refuses to disagree silently. The two classes are
 complementary: identical corruption of two internal engines is caught by a
 literature pin or by QPA, a mistranscribed literature value by the live
-cross-engine agreement. Of the library's 5,338 automated
-tests, 3,315 are pinned by at least one such oracle, and the full suite runs on
+cross-engine agreement. Of the library's 5,421 automated
+tests, 3,335 are pinned by at least one such oracle, and the full suite runs on
 every change. Where QPA cannot reach, over `CC` and
 `GF(p^n)`, for cyclic homology, for the deep cup and cap, and for the Koszul verdict,
 the verification page names the theory oracle that stands in, and where nothing yet

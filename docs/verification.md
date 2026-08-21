@@ -5,7 +5,10 @@ the highest rigour we can bring to it — and it is honest about the edges: wher
 check is a cross-engine agreement, where it is a published number, where a live
 external oracle can reach, and where it cannot.
 
-The suite is **5338 tests** (live-recounted 2026-08-17 on the Plan-77 branch — R36 the
+The suite is **5421 tests** (live-recounted 2026-08-21 on the v1.0.1 patch branch — the
+exactness gate at the module surface, the Windows-encoding and `-O` certification fixes,
+the server build budget and PII purges, the GUI pick-list wiring, and the typed-refusal
+surface fixes. The preceding recount was 2026-08-17 on the Plan-77 branch — R36 the
 generalized Koszulity ladder (Berger N-Koszul, Cassidy–Shelton K₂, Brenner–Butler–King
 `(p,q)`-almost-Koszul, the internal generation degrees of `Ext•(k,k)`) — cut from dev's
 P76 tip; the previous recount was the Plan-75 branch (R9 incidence-vs-nerve `HH^*` + R10
@@ -547,8 +550,8 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 2585 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 2493 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `fast` | 2654 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 2507 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
 | `qpa` | 249 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `m2` | 11 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
 | `slow` | 4 | opt-in (`-m slow`); rides the deep leg |
@@ -610,12 +613,12 @@ They overlap by design, so the union is smaller than their sum.
 
 | Oracle class | Run | Tests | What agreement means |
 |---|---|---:|---|
-| Literature / theory pins | `-m oracle_literature` | 1271 | the engine reproduces a value/identity that exists outside the library |
-| Cross-engine agreement | `-m oracle_crossengine` | 751 | two independent implementations compute the same thing and match live |
-| Self-certifying certificates | `-m oracle_selfcert` | 1655 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
+| Literature / theory pins | `-m oracle_literature` | 1273 | the engine reproduces a value/identity that exists outside the library |
+| Cross-engine agreement | `-m oracle_crossengine` | 753 | two independent implementations compute the same thing and match live |
+| Self-certifying certificates | `-m oracle_selfcert` | 1673 | an internal axiom (d∘d=0, canonicality, an arbitration identity) holds by construction |
 | Live QPA / GAP | `-m qpa` | 249 | an independent external system (QPA) recomputes and agrees |
 | Live Macaulay2 | `-m m2` | 11 | an independent external system (Macaulay2) recomputes and agrees |
-| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 3315 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
+| Any oracle class (union) | `-m "oracle_literature or oracle_crossengine or oracle_selfcert or qpa or m2"` | 3335 | the test is pinned by at least one oracle (the remaining tests are contract/infrastructure) |
 Recounted 2026-08-17 on the Plan-79 branch (R31 — the Amiot–Keller cluster category,
 certified acyclic slice), cut from dev's P77 tip. The preceding recount was the Plan-77 branch (R36 — the generalized Koszulity ladder:
 Berger N-Koszul, Cassidy–Shelton K₂ through an explicit certified window,
