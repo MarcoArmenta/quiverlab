@@ -48,7 +48,7 @@ Oracle classes pinned here (registry keys in parentheses):
 """
 import pytest
 
-from quiverlab import CC, GF, Quiver, linear_path_algebra, truncated_polynomial
+from quiverlab import CC, GF, QQi, Quiver, linear_path_algebra, truncated_polynomial
 from quiverlab.families import NakayamaAlgebra, TrivialExtension
 from quiverlab.families import trivial_extension as _te_mod  # ⋉ oracle lives here
 from quiverlab.families.zoo import build_from_record, load_catalog
@@ -319,16 +319,30 @@ def test_presentationless_base_falls_back_to_lagrange_build():
     assert T.hochschild_cohomology(1, engine="bar").dims == [4, 4]   # bar still serves
 
 
-def test_cc_algebraic_base_falls_back_per_d3():
-    """D3 second fallback branch: a base that HAS a quiver but lives over CC
-    (coefficients not string-representable for Quiver.algebra) also returns the ⋉
-    build — the certificate never lets a wrong presented algebra through
-    (``assem_book``). quiver is None; is_symmetric refuses loudly; dim and the bar
-    HH oracle still serve. Distinct from the presentation-less trigger above."""
-    A = linear_path_algebra(2, field=CC)                 # quiver present, CC coefficients
+def test_cc_rational_base_now_presented_wave5_5c():
+    """Wave 5 (5c): a base over the DEFAULT field CC that computes exactly in QQ
+    (rational coefficients) now builds the PRESENTED ``T(A)`` — the rational
+    presentation flows through ``Quiver.algebra`` re-tagged to CC, certified per
+    instance by ``dim == 2*dim A``. All path-basis invariants serve T now."""
+    A = linear_path_algebra(2, field=CC)                 # quiver present, RATIONAL coeffs over CC
     assert A.quiver is not None
     T = TrivialExtension(A)
-    assert T.quiver is None                              # CC-algebraic -> ⋉ fallback (D3)
+    assert T.quiver is not None                          # presented (Wave 5, 5c), was ⋉ fallback
+    assert T.dim == 2 * A.dim == 6
+    assert T.is_symmetric() is True                      # path-basis invariant now serves
+    # char-0 field-independent: CC HH^* == the QQ pin [3,1,1,1,1]
+    assert T.hochschild_cohomology(4).dims == [3, 1, 1, 1, 1]
+
+
+def test_cc_algebraic_base_falls_back_per_d3():
+    """D3 fallback preserved: a base over a genuine algebraic CC-type extension
+    (QQ(i), sdom != QQ — coefficients not pure rationals) is NOT routed through the
+    rational presentation; it returns the ⋉ structure-constant build. quiver is None;
+    is_symmetric refuses loudly; dim still serves (``assem_book``)."""
+    A = linear_path_algebra(2, field=QQi)                # SympyExactDomain over QQ(i), not pure QQ
+    assert A.quiver is not None
+    T = TrivialExtension(A)
+    assert T.quiver is None                              # non-pure-QQ CC-type -> ⋉ fallback (D3)
     assert T.dim == 2 * A.dim == 6
     with pytest.raises(FieldError):
         T.is_symmetric()

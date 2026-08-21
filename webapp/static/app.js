@@ -24,6 +24,46 @@ function errDiv(text) {
   return div;
 }
 
+// Parse a response body that may not be JSON (a crashed 500 HTML page, an empty
+// body) without throwing -- mirrors webapp/static/gui/worker.js::postJSON.
+async function readBody(r) {
+  try { return await r.json(); } catch (err) { return null; }
+}
+
+// Turn an error response of ANY shape into one plain string, so the compute /
+// big-job / feedback forms never render "undefined: undefined". Ported from
+// webapp/static/gui/worker.js::protocolError: the server usually answers
+// {error_type, message} (see webapp/server _error_response) or the probe shape
+// {error:{type,message}}, but a Pydantic schema-validation 422 -- an incomplete
+// algebra spec is reachable from the real UI -- comes back as FastAPI's default
+// {detail:[{loc,msg},…]}, and a genuine crash may not be JSON at all (data null).
+function protocolMessage(status, data, fallback) {
+  if (data && data.error) {
+    const e = data.error;
+    if (typeof e === "string") return e;
+    return (e.type ? e.type + ": " : "") + (e.message || fallback);
+  }
+  if (data && data.error_type) {
+    return data.error_type + ": " + (data.message || fallback);
+  }
+  if (data && data.detail) {
+    const d = data.detail;
+    const msg = (typeof d === "string") ? d
+      : (Array.isArray(d) ? d.map(function (e) {
+          return ((e.loc || []).join(".") + ": " + (e.msg || "")).trim();
+        }).join("; ") : JSON.stringify(d));
+    return "ValidationError: " + msg;
+  }
+  return "HTTP " + status + ": " + (fallback || "request failed");
+}
+
+// A rejected fetch() (offline, DNS, CORS, a dropped connection) has no response
+// to read -- report the failure instead of letting the handler die silently.
+function netErr(err, fallback) {
+  return (fallback || "request failed") + ": "
+    + ((err && err.message) ? err.message : "network error");
+}
+
 // Honesty note: this gate intentionally drops every non-http(s):// href — bare
 // DOIs (10.1/x), protocol-relative (//host), uppercase schemes (HTTP://) — and the
 // server currently emits only https://… or null (see webapp/server/references.py).
@@ -970,11 +1010,18 @@ function readComputeBody() {
 
 if (form) form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const body = readComputeBody();
-  const r = await fetch("/api/compute", {method: "POST",
-    headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
   const out = document.getElementById("out");
-  const data = await r.json();
+  const body = readComputeBody();
+  let r, data;
+  try {
+    r = await fetch("/api/compute", {method: "POST",
+      headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
+    data = await readBody(r);
+  } catch (err) {
+    out.replaceChildren(errDiv(netErr(err, "compute failed")));
+    return;
+  }
+  data = data || {};
   // Over the anonymous cap but runnable as a big job: reveal the email field.
   if (r.status === 202 && data.tier === "big") {
     document.getElementById("big-warn").textContent = interp(form.dataset.bigWarn, data.estimate);
@@ -992,7 +1039,7 @@ if (form) form.addEventListener("submit", async (e) => {
     out.replaceChildren(errDiv(interp(tmpl, data.estimate, form.dataset.bigCap)));
     return;
   }
-  if (!r.ok) { out.replaceChildren(errDiv(data.error_type + ": " + data.message)); return; }
+  if (!r.ok) { out.replaceChildren(errDiv(protocolMessage(r.status, data, "compute failed"))); return; }
   renderResult(out, data.result);
   renderMath(out);
 });
@@ -1005,15 +1052,23 @@ if (bigSend && form) bigSend.addEventListener("click", async () => {
   const body = readComputeBody();
   body.email = email;
   body.lang = form.dataset.lang || "en";
-  const r = await fetch("/api/jobs/big", {method: "POST",
-    headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
   const sent = document.getElementById("big-sent");
+  let r, d;
+  try {
+    r = await fetch("/api/jobs/big", {method: "POST",
+      headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
+    d = await readBody(r);
+  } catch (err) {
+    sent.replaceChildren(errDiv(netErr(err, "request failed")));
+    return;
+  }
+  d = d || {};
   // Cache hit (Plan 25): already computed by someone -- served with NO email, NO
   // token. Skip the inbox message and go straight to the cached result page.
-  if (r.status === 200) { const d = await r.json();
-    if (d.status === "cached") { window.location = "/job/" + d.job_id; return; } }
-  if (r.status === 202) { sent.textContent = form.dataset.bigSent || "Check your inbox."; }
-  else { const d = await r.json(); sent.replaceChildren(errDiv(d.message || "error")); }
+  if (r.status === 200 && d.status === "cached") { window.location = "/job/" + d.job_id; return; }
+  if (r.status === 202) { sent.textContent = form.dataset.bigSent || "Check your inbox."; return; }
+  if (!r.ok) { sent.replaceChildren(errDiv(protocolMessage(r.status, d, "request failed"))); return; }
+  // A 2xx without a recognized tier: nothing to show (as before).
 });
 
 // Job page: while the job runs, poll its status every 2s; reload on completion
@@ -1065,17 +1120,24 @@ if (fbForm) {
       why_relevant: fd.get("why_relevant") || null,
       website: fd.get("website") || "",
     };
-    const r = await fetch("/api/feedback", {method: "POST",
-      headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
     const out = document.getElementById("fb-out");
-    const data = await r.json();
+    let r, data;
+    try {
+      r = await fetch("/api/feedback", {method: "POST",
+        headers: {"content-type": "application/json"}, body: JSON.stringify(body)});
+      data = await readBody(r);
+    } catch (err) {
+      out.replaceChildren(errDiv(netErr(err, "error")));
+      return;
+    }
+    data = data || {};
     if (r.status === 201) {
       out.textContent =
         (fbForm.dataset.thanks || "Thank you. Your reference is") + " " + data.reference;
       fbForm.reset();
       syncLit();
     } else {
-      out.replaceChildren(errDiv(data.message || "error"));
+      out.replaceChildren(errDiv(protocolMessage(r.status, data, "error")));
     }
   });
 }

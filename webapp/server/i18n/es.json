@@ -250,6 +250,7 @@
   "draw.mod_random_done": "módulo aleatorio encontrado (semilla {seed}, {tries} intentos)",
   "draw.mod_random_fail": "ningún módulo aleatorio cumplió las relaciones tras {tries} intentos — las relaciones definen un lugar delgado; prueba un primo p mayor u otras dims",
   "draw.mod_random_char0": "el relleno aleatorio con relaciones requiere un cuerpo finito GF(p): sobre ℚ o ℂ un punto aleatorio nunca cumple las relaciones exactamente",
+  "draw.mod_random_wait": "el motor aún se está cargando — vuelve a hacer clic en un momento",
   "cancel_running.button": "Cancelar el trabajo en ejecución",
   "cancel_running.cancelling": "cancelando…",
   "cancel_running.cancelled": "cancelado — reintentando…",

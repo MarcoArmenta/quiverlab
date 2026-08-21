@@ -27,6 +27,7 @@
        data-mod-random-done="{{ t('draw.mod_random_done') }}"
        data-mod-random-fail="{{ t('draw.mod_random_fail') }}"
        data-mod-random-char0="{{ t('draw.mod_random_char0') }}"
+       data-mod-random-wait="{{ t('draw.mod_random_wait') }}"
        data-potential-label="{{ t('draw.potential_label') }}"
        data-potential-ph="{{ t('draw.potential_ph') }}"
        data-potential-conflict="{{ t('draw.potential_conflict') }}"
@@ -106,6 +107,18 @@
        data-pick-kind-orbit_geometry="{{ t('pick.kind.orbit_geometry') }}"
        data-pick-kind-ext="{{ t('pick.kind.ext') }}"
        data-pick-kind-tor="{{ t('pick.kind.tor') }}"
+       {# Wave 4 (v1.0.1): nine kinds gui.js's THEMES offers that were never
+          injected -- without these the pick-list/cart/search print the raw
+          snake_case id in every language. #}
+       data-pick-kind-split_extension="{{ t('pick.kind.split_extension') }}"
+       data-pick-kind-arrow_removal="{{ t('pick.kind.arrow_removal') }}"
+       data-pick-kind-skew_group_hh="{{ t('pick.kind.skew_group_hh') }}"
+       data-pick-kind-tate_hochschild="{{ t('pick.kind.tate_hochschild') }}"
+       data-pick-kind-bv_operator="{{ t('pick.kind.bv_operator') }}"
+       data-pick-kind-fractional_cy="{{ t('pick.kind.fractional_cy') }}"
+       data-pick-kind-silting="{{ t('pick.kind.silting') }}"
+       data-pick-kind-recognizer_ladder="{{ t('pick.kind.recognizer_ladder') }}"
+       data-pick-kind-barcode="{{ t('pick.kind.barcode') }}"
        data-pick-filter="{{ t('pick.filter') }}"
        data-pick-cart-title="{{ t('pick.cart_title') }}"
        data-pick-cart-empty="{{ t('pick.cart_empty') }}"
@@ -123,7 +136,28 @@
        data-pick-coeff-regular="{{ t('pick.coeff_regular') }}"
        data-pick-coeff-dual="{{ t('pick.coeff_dual') }}"
        data-pick-coeff-twisted_nakayama="{{ t('pick.coeff_twisted_nakayama') }}"
-       data-pick-coeff-quotient_socle="{{ t('pick.coeff_quotient_socle') }}">
+       data-pick-coeff-quotient_socle="{{ t('pick.coeff_quotient_socle') }}"
+       {# Wave 4 (v1.0.1): the result-block labels gui.js localizes via
+          dataText("block-…") for the hh1_lie / deformations / hh_lie_module
+          renderers -- without these ES/FR/ZH silently fall back to English. #}
+       data-block-hh1_lie-title="{{ t('block.hh1_lie.title') }}"
+       data-block-hh1_lie-solvable="{{ t('block.hh1_lie.solvable') }}"
+       data-block-hh1_lie-nilpotent="{{ t('block.hh1_lie.nilpotent') }}"
+       data-block-hh1_lie-radical="{{ t('block.hh1_lie.radical') }}"
+       data-block-hh1_lie-levi="{{ t('block.hh1_lie.levi') }}"
+       data-block-hh1_lie-charp="{{ t('block.hh1_lie.charp') }}"
+       data-block-deformations-title="{{ t('block.deformations.title') }}"
+       data-block-deformations-unobstructed="{{ t('block.deformations.unobstructed') }}"
+       data-block-deformations-witness="{{ t('block.deformations.witness') }}"
+       data-block-deformations-mc="{{ t('block.deformations.mc') }}"
+       data-block-deformations-nilpotent="{{ t('block.deformations.nilpotent') }}"
+       data-block-deformations-dglie="{{ t('block.deformations.dglie') }}"
+       data-block-deformations-aalpha="{{ t('block.deformations.aalpha') }}"
+       data-block-deformations-ext="{{ t('block.deformations.ext') }}"
+       data-block-hh_lie_module-title="{{ t('block.hh_lie_module.title') }}"
+       data-block-hh_lie_module-decomp="{{ t('block.hh_lie_module.decomp') }}"
+       data-block-hh_lie_module-weights="{{ t('block.hh_lie_module.weights') }}"
+       data-block-hh_lie_module-charp="{{ t('block.hh_lie_module.charp') }}">
     <noscript><p><strong>The interactive canvas needs JavaScript.</strong></p></noscript>
     <p>Loading the canvas…</p>
   </div>

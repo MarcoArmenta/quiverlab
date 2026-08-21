@@ -203,3 +203,84 @@ def test_app_js_accepts_qq_field_not_only_cc_gf():
     assert m, "readComputeBody not found"
     body = m.group(1)
     assert "QQ" in body, "readComputeBody still hardcodes only the CC/GF pair"
+
+
+# --------------------------------------------------------------------------- #
+# Wave 4 (v1.0.1, 2026-08-21): the picker/i18n-injection gates.
+#
+# gui.js resolves every localized string through dataText("<key>", <fallback>),
+# which reads a data-<key> attribute off the #qlgui root and falls back to the
+# RAW argument when the attribute is absent. draw.html is the only place those
+# attributes are injected, so a kind/block gui.js reads but draw.html forgets to
+# inject renders as its raw snake_case id in ALL languages (English included).
+# These gates enumerate what gui.js actually reads and assert draw.html injects
+# each of them, in every language, with no raw catalog key leaking into the page.
+# --------------------------------------------------------------------------- #
+def _all_theme_kinds():
+    kinds = []
+    for t in _themes():
+        kinds.extend(t["kinds"])
+    return kinds
+
+
+def _block_datatext_keys():
+    """Every dataText("block-…") argument gui.js resolves off #qlgui — the block
+    labels that MUST be injected as data-block-… attributes on the draw page."""
+    src = GUI_JS.read_text(encoding="utf-8")
+    return sorted(set(re.findall(r'dataText\(\s*"(block-[a-z0-9_-]+)"', src)))
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_every_theme_kind_is_injected_and_no_raw_key_leaks(lang, tmp_path):
+    # 4a/4b: for EVERY kind in THEMES the rendered /draw must carry
+    # data-pick-kind-<k>, and the raw catalog key pick.kind.<k> must never leak.
+    prefix = "" if lang == "en" else "/" + lang
+    html = _client(tmp_path).get(prefix + "/draw").text
+    missing = [k for k in _all_theme_kinds()
+               if f"data-pick-kind-{k}" not in html]
+    assert not missing, f"{prefix}/draw is missing data-pick-kind-* for: {missing}"
+    leaked = [k for k in _all_theme_kinds() if f"pick.kind.{k}" in html]
+    assert not leaked, f"{prefix}/draw leaks the raw pick.kind key for: {leaked}"
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_every_block_datatext_key_is_injected_and_no_raw_key_leaks(lang, tmp_path):
+    # 4c: every dataText("block-…") gui.js reads must be injected as a
+    # data-block-… attribute, and the dotted catalog key must not leak.
+    prefix = "" if lang == "en" else "/" + lang
+    html = _client(tmp_path).get(prefix + "/draw").text
+    keys = _block_datatext_keys()
+    assert keys, "no dataText(\"block-…\") calls found in gui.js"
+    missing = [k for k in keys if f"data-{k}" not in html]
+    assert not missing, f"{prefix}/draw is missing data-block-* for: {missing}"
+    leaked = [k for k in keys if k.replace("-", ".") in html]
+    assert not leaked, (
+        f"{prefix}/draw leaks the raw block catalog key for: "
+        + str([k.replace('-', '.') for k in leaked]))
+
+
+@pytest.mark.parametrize("lang", LANGS)
+def test_mod_random_wait_injected_and_no_raw_key_leaks(lang, tmp_path):
+    # 4c: gui.js reads dataText("mod-random-wait", …) (engine still loading);
+    # draw.html must inject it and the raw draw.mod_random_wait must not leak.
+    prefix = "" if lang == "en" else "/" + lang
+    html = _client(tmp_path).get(prefix + "/draw").text
+    assert "data-mod-random-wait" in html, (
+        f"data-mod-random-wait absent under {prefix}/draw")
+    assert "draw.mod_random_wait" not in html
+
+
+def test_block_datatext_keys_exist_in_every_catalog():
+    # The dotted catalog form of every block dataText key must be translated.
+    for lang in LANGS:
+        cat = catalog(lang)
+        for key in _block_datatext_keys():
+            dotted = key.replace("-", ".")
+            assert dotted in cat and cat[dotted].strip(), f"{lang} missing {dotted}"
+
+
+def test_mod_random_wait_key_in_every_catalog():
+    for lang in LANGS:
+        cat = catalog(lang)
+        assert "draw.mod_random_wait" in cat and cat["draw.mod_random_wait"].strip(), (
+            f"{lang} missing draw.mod_random_wait")

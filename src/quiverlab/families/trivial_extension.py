@@ -85,15 +85,37 @@ def _is_string_representable_domain(dom):
     return isinstance(dom, (RationalField, PrimeField))
 
 
+def _is_rational_complex_domain(dom):
+    """True iff ``dom`` is a CC working domain that computes exactly in the rationals
+    (a :class:`SympyExactDomain` over sympy's ``QQ``). Such an algebra's coefficients
+    are all rational, so the presented ``kQ_T/I_T`` build works natively over this
+    domain (the coeff emitter renders exact rationals) and stays CC-tagged, certified
+    per instance by ``dim == 2*dim A``. QQ(i) (``QQ_I``) and GF(p^n) keep the
+    structure-constant fallback (Wave 5, 5c)."""
+    from quiverlab.fields.complexfield import SympyExactDomain
+    return isinstance(dom, SympyExactDomain) and bool(getattr(dom.sdom, "is_QQ", False))
+
+
 def _coeff_sign_mag(coeff):
     """(sign, magnitude_string) of an exact coefficient. QQ coefficients are
-    ``Fraction`` (may be negative); prime-field coefficients are ints in 0..p-1
-    (never negative -- the field already folds any minus)."""
+    ``Fraction`` (may be negative); a CC-over-QQ presentation (Wave 5, 5c) carries
+    sympy-QQ rationals (PythonMPQ etc., admitted by the exact-rational protocol);
+    prime-field coefficients are ints in 0..p-1 (never negative -- the field folds
+    any minus)."""
     if isinstance(coeff, Fraction):
         sign = -1 if coeff < 0 else 1
         m = abs(coeff)
         mag = str(m.numerator) if m.denominator == 1 else f"{m.numerator}/{m.denominator}"
         return sign, mag
+    if not isinstance(coeff, int):          # sympy-QQ / PythonMPQ (the CC-over-QQ path)
+        from quiverlab.fields.domain import exact_rational
+        pq = exact_rational(coeff)
+        if pq is not None:
+            q = Fraction(*pq)
+            sign = -1 if q < 0 else 1
+            m = abs(q)
+            mag = str(m.numerator) if m.denominator == 1 else f"{m.numerator}/{m.denominator}"
+            return sign, mag
     return 1, str(int(coeff))
 
 
@@ -314,14 +336,28 @@ def TrivialExtension(A):
     """The trivial extension T(A) = A |x D(A) (symmetric for every f.d. A).
 
     Presented as a genuine ``kQ_T / I_T`` algebra when A carries a path-type basis
-    over QQ or a prime field GF(p) (so all path-basis invariants serve T(A));
-    otherwise the byte-identical structure-constant fallback (D3)."""
+    over QQ, a prime field GF(p), or the DEFAULT field CC computing exactly in QQ
+    (Wave 5, 5c) -- so all path-basis invariants serve T(A). GF(p^n) / QQ(i) and
+    presentation-less bases keep the byte-identical structure-constant fallback (D3)."""
     dom = A.domain
-    if not _is_string_representable_domain(dom):
-        return _trivial_extension_structure_constants(A)
-    from quiverlab.invariants.pathbasis import path_type_basis
-    try:
-        idem, rad, src, tgt = path_type_basis(A, "TrivialExtension")
-    except FieldError:
-        return _trivial_extension_structure_constants(A)
-    return _presented_trivial_extension(A, dom, idem, rad, src, tgt)
+    if _is_string_representable_domain(dom):
+        # QQ / GF(p): the original presented route -- LOUD on a failed certificate
+        # (the Plan-31 contract; a real construction bug must not be swallowed).
+        from quiverlab.invariants.pathbasis import path_type_basis
+        try:
+            idem, rad, src, tgt = path_type_basis(A, "TrivialExtension")
+        except FieldError:
+            return _trivial_extension_structure_constants(A)
+        return _presented_trivial_extension(A, dom, idem, rad, src, tgt)
+    if _is_rational_complex_domain(dom):
+        # CC-over-QQ: rational coefficients, so present natively (re-tag is implicit --
+        # the SympyExactDomain flows through Quiver.algebra unchanged) and certify per
+        # instance. Fall back on ANY refusal (no path basis, or the dim == 2*dim A
+        # certificate unmet) -- never a fabricated, uncertified presentation.
+        from quiverlab.invariants.pathbasis import path_type_basis
+        try:
+            idem, rad, src, tgt = path_type_basis(A, "TrivialExtension")
+            return _presented_trivial_extension(A, dom, idem, rad, src, tgt)
+        except (FieldError, QuiverlabError):
+            return _trivial_extension_structure_constants(A)
+    return _trivial_extension_structure_constants(A)

@@ -20,9 +20,36 @@ from quiverlab.trace.render_json import render_json
 _SAFE_STEM = {"HH^": "HHc", "HH_": "HHh"}
 
 
-def _hash(algebra, kind, top):
-    h = hashlib.sha1(("%s|%s|%s" % (repr(algebra), kind, top)).encode("utf-8"))
+def _hash(algebra, kind, top, provenance=""):
+    h = hashlib.sha1(
+        ("%s|%s|%s|%s" % (repr(algebra), kind, top, provenance)).encode("utf-8"))
     return h.hexdigest()[:12]
+
+
+def _provenance(events, table, json_text):
+    """The salient provenance that MUST distinguish two otherwise same-named
+    reports (Wave 4, v1.0.1).
+
+    The old stem folded only ``(repr(algebra), kind, top)``, so two computations
+    that differ ONLY in the engine (or its coefficient module, or the resolution
+    ``side``, or a ``max_cells`` that reroutes) collided on one filename and the
+    second silently overwrote the first -- e.g. ``HH^(4)`` under ``engine="auto"``
+    (hanlab fast rank) vs ``engine="bar"`` (normalized bar complex) on the same
+    algebra. Those differences are NOT extra kwargs to this writer; they are
+    recorded in the objects it already holds: the ``HHTable`` carries the engine
+    and coefficient provenance, and the deterministic JSON record carries the
+    Dispatch route, the module side (its differentials), and the max_cells routing
+    outcome. Folding a digest of that JSON plus the table's provenance makes the
+    filename a function of the report BODY -- distinct bodies get distinct names,
+    identical computations keep one name (the JSON record is a pure function of the
+    events, pinned by ``test_writer_json_is_pure_function_of_events``)."""
+    parts = []
+    if table is not None:
+        parts.append("engine=" + repr(getattr(table, "engine", None)))
+        parts.append("coeff=" + repr(getattr(table, "coefficients", None)))
+        parts.append("dims=" + repr(tuple(getattr(table, "dims", ()) or ())))
+    parts.append("body=" + hashlib.sha1(json_text.encode("utf-8")).hexdigest())
+    return "|".join(parts)
 
 
 def _superseding_dispatch_index(events):
@@ -143,17 +170,20 @@ def write_trace(events, table, algebra, kind, top, references=(), out_dir=None,
     events = _authoritative_result(events, table)
     out = pathlib.Path(out_dir) if out_dir is not None else (pathlib.Path.cwd() / "quiverlab_traces")
     out.mkdir(parents=True, exist_ok=True)
-    stem = "%s_%s" % (_SAFE_STEM.get(kind, kind), _hash(algebra, kind, top))
     title = "%s of %s" % (kind, repr(algebra).splitlines()[0])
     # The JSON machine record (Plan 34): the complete event stream, deterministic and
     # schema-versioned. A pure function of the events, byte-identical for identical input.
+    # Rendered ONCE here so the stem can fold a digest of it (Wave 4): the filename must
+    # depend on the report BODY -- engine/coefficient/side/max_cells routing all live in
+    # this record -- so two distinct reports never share a name and overwrite one another.
+    json_text = render_json(events, title=title, references=references, algebra=algebra)
+    stem = "%s_%s" % (_SAFE_STEM.get(kind, kind),
+                      _hash(algebra, kind, top, _provenance(events, table, json_text)))
     # encoding="utf-8" EXPLICITLY on every artifact write: Path.write_text defaults
     # to the LOCALE codec, so on Windows (cp1252) the report's em dashes were written
     # as cp1252 bytes and could not be read back as UTF-8 -- the whole Windows CI
     # matrix failed on it. The readers all specify utf-8; the writers must too.
-    (out / (stem + ".json")).write_text(
-        render_json(events, title=title, references=references, algebra=algebra),
-        encoding="utf-8")
+    (out / (stem + ".json")).write_text(json_text, encoding="utf-8")
     html = out / (stem + ".html")
     # Marco 2026-07-31 (ADDENDUM 2): the "Reading the JSON record" appendix -- concrete
     # path recipes for every object this computation produced. Built from the same

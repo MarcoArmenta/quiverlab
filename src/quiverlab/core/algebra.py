@@ -493,14 +493,19 @@ class Algebra:
         (Plan 05 `Module.from_arrow_action`). ``side="right"`` (default) reads the
         matrices as a right A-module (arrow a: s->t acting M_s -> M_t); ``side="left"``
         builds a left A-module = right A^op-module, so the matrices are the opposite-
-        quiver representation (Plan 24)."""
+        quiver representation (Plan 24).
+
+        ``dimension_vector`` is a ``{vertex: dim}`` dict OR a vertex-ordered
+        tuple/list of dimensions (one per vertex, in ``quiver.vertices`` order)."""
         from quiverlab.modules.module import Module
         if side == "right":
-            return Module.from_arrow_action(self, dimension_vector, arrow_action, name=name)
+            dv = _normalize_dimension_vector(self, dimension_vector)
+            return Module.from_arrow_action(self, dv, arrow_action, name=name)
         if side == "left":
             from quiverlab.modules.opposite import opposite_algebra
-            m = Module.from_arrow_action(opposite_algebra(self), dimension_vector,
-                                         arrow_action, name=name)
+            op = opposite_algebra(self)
+            dv = _normalize_dimension_vector(op, dimension_vector)
+            m = Module.from_arrow_action(op, dv, arrow_action, name=name)
             return m.with_side("left")
         from quiverlab.errors import QuiverlabError
         raise QuiverlabError(f'side must be "right" or "left", got {side!r}')
@@ -685,7 +690,20 @@ class Algebra:
             A.crosscheck("module_ext", M, 4)       # Ext^0..Ext^4(M,M) vs QPA (self-Ext)
         Returns a CrosscheckReport; call .assert_agree() to fail loudly on mismatch."""
         from quiverlab.qpa.crosscheck import crosscheck as _cc
-        return _cc(self, what, *args, **kwargs)
+        try:
+            return _cc(self, what, *args, **kwargs)
+        except TypeError as e:
+            # A missing required argument (e.g. A.crosscheck() -> the default
+            # what='hochschild' still needs `top`) must be a typed refusal naming the
+            # argument, never a raw TypeError from Python's argument binding (Wave 5, 5d).
+            msg = str(e)
+            if "missing" in msg and "argument" in msg:
+                raise QuiverlabError(
+                    f"crosscheck({what!r}) is missing a required argument ({msg})",
+                    hint="pass the invariant's argument, e.g. "
+                         "A.crosscheck('hochschild', top=4) or "
+                         "A.crosscheck('module_ext', M, 4)") from e
+            raise
 
     def global_dimension(self):
         """Global dimension: exact value or a labeled certified lower bound (spec §3.5)."""
@@ -1207,39 +1225,64 @@ class Algebra:
         from quiverlab.modules.recognizers_ladder import recognizer_ladder
         return recognizer_ladder(self, budget=budget)
 
+    def _recognizer_verdict(self, rung, budget):
+        """Shared refusal-checked accessor behind the five recognizer predicates.
+
+        The ladder refuses HONESTLY (empty rungs + a status/note) for
+        representation-infinite or self-injective input, and over small ``GF(p)`` where
+        the trace-form radical is unreliable. Rather than let the raw ``KeyError`` of the
+        missing rung escape (Wave 5, 5a), raise a typed ``QuiverlabError`` carrying that
+        note -- so a caller can always tell 'provably False' (a real ``bool``) from
+        'cannot decide over this field' (this refusal). The three-valued view stays on the
+        rich :meth:`recognizer_ladder` record (``.is_complete`` / ``.status`` / ``.note``),
+        the same house style as ``koszul_profile`` / ``YonedaPresentation.koszul``."""
+        from quiverlab.modules.recognizers_ladder import recognizer_ladder
+        ladder = recognizer_ladder(self, budget=budget)
+        got = ladder.rungs.get(rung)
+        if got is None:
+            raise QuiverlabError(
+                f"cannot decide {rung!r}: the recognizer ladder did not complete for this "
+                f"algebra (status={ladder.status!r}) -- this is a refusal, NOT a False verdict",
+                hint=(ladder.note or
+                      "the ladder is certified only for representation-finite, "
+                      "non-self-injective algebras; inspect recognizer_ladder() for the "
+                      "three-valued status/note"))
+        return got.verdict
+
     def is_quasi_tilted(self, budget=256):
         """True iff this algebra is quasi-tilted -- (QT1) gl.dim <= 2 and (QT2) every
         indecomposable has pd <= 1 or id <= 1 (Happel-Reiten-Smalo); the ``quasi_tilted`` rung
-        of :meth:`recognizer_ladder`."""
-        from quiverlab.modules.recognizers_ladder import recognizer_ladder
-        return recognizer_ladder(self, budget=budget).verdict("quasi_tilted")
+        of :meth:`recognizer_ladder`. Raises a typed ``QuiverlabError`` (never a raw KeyError)
+        when the ladder refuses; the three-valued view is on :meth:`recognizer_ladder`."""
+        return self._recognizer_verdict("quasi_tilted", budget)
 
     def is_shod(self, budget=256):
         """True iff this algebra is shod -- every indecomposable has pd <= 1 or id <= 1
         (Coelho-Lanzilotta), equivalently ``ind A = L_A u R_A``; the ``shod`` rung of
-        :meth:`recognizer_ladder`."""
-        from quiverlab.modules.recognizers_ladder import recognizer_ladder
-        return recognizer_ladder(self, budget=budget).verdict("shod")
+        :meth:`recognizer_ladder`. Raises a typed ``QuiverlabError`` (never a raw KeyError)
+        when the ladder refuses; the three-valued view is on :meth:`recognizer_ladder`."""
+        return self._recognizer_verdict("shod", budget)
 
     def is_weakly_shod(self, budget=256):
         """True iff this algebra is weakly shod -- the lengths of irreducible-morphism paths
         from an injective to a projective are bounded (Coelho-Lanzilotta); the ``weakly_shod``
-        rung of :meth:`recognizer_ladder`."""
-        from quiverlab.modules.recognizers_ladder import recognizer_ladder
-        return recognizer_ladder(self, budget=budget).verdict("weakly_shod")
+        rung of :meth:`recognizer_ladder`. Raises a typed ``QuiverlabError`` (never a raw
+        KeyError) when the ladder refuses; three-valued view on :meth:`recognizer_ladder`."""
+        return self._recognizer_verdict("weakly_shod", budget)
 
     def is_laura(self, budget=256):
         """True iff this algebra is laura -- ``ind A \\ (L_A u R_A)`` is finite (Assem-Coelho);
         trivially True in representation-finite scope, with the finite complement reported by
-        :meth:`recognizer_ladder`."""
-        from quiverlab.modules.recognizers_ladder import recognizer_ladder
-        return recognizer_ladder(self, budget=budget).verdict("laura")
+        :meth:`recognizer_ladder`. Raises a typed ``QuiverlabError`` (never a raw KeyError)
+        when the ladder refuses; three-valued view on :meth:`recognizer_ladder`."""
+        return self._recognizer_verdict("laura", budget)
 
     def is_ada(self, budget=256):
         """True iff this algebra is ada -- every indecomposable projective and injective lies
-        in ``L_A u R_A`` (ACLV Def 2.1); the ``ada`` rung of :meth:`recognizer_ladder`."""
-        from quiverlab.modules.recognizers_ladder import recognizer_ladder
-        return recognizer_ladder(self, budget=budget).verdict("ada")
+        in ``L_A u R_A`` (ACLV Def 2.1); the ``ada`` rung of :meth:`recognizer_ladder`. Raises
+        a typed ``QuiverlabError`` (never a raw KeyError) when the ladder refuses; the
+        three-valued view is on :meth:`recognizer_ladder`."""
+        return self._recognizer_verdict("ada", budget)
 
     # -- recognizers (Plan 38 / C2) -------------------------------------------
     def is_semisimple(self):
@@ -1668,3 +1711,32 @@ class Algebra:
             if rels:
                 lines.append("relations: " + "; ".join(repr(r) for r in rels))
         return "\n".join(lines)
+
+
+def _normalize_dimension_vector(algebra, dimension_vector):
+    """Accept a ``{vertex: dim}`` dict OR a vertex-ordered tuple/list of dims, and
+    return the dict form ``Module.from_arrow_action`` consumes. A tuple/list is read
+    against ``algebra.quiver.vertices`` (the same order the module basis uses). Raises
+    a typed ``QuiverlabError`` -- never a raw ``AttributeError`` -- on a length mismatch,
+    a presentation-less algebra, or an unrecognized type (Wave 5, finding 5d)."""
+    if isinstance(dimension_vector, dict):
+        return dimension_vector
+    if isinstance(dimension_vector, (tuple, list)):
+        if algebra.quiver is None:
+            raise QuiverlabError(
+                "a positional (tuple/list) dimension vector needs a quiver presentation "
+                "to order the vertices; this algebra carries none",
+                hint="pass a {vertex: dim} dict, or present the algebra via "
+                     "Quiver(...).algebra(...)")
+        verts = list(algebra.quiver.vertices)
+        if len(dimension_vector) != len(verts):
+            raise QuiverlabError(
+                f"dimension vector has {len(dimension_vector)} entries but the quiver "
+                f"has {len(verts)} vertices {verts}",
+                hint="give one dimension per vertex (in quiver.vertices order), or pass "
+                     "a {vertex: dim} dict")
+        return {v: d for v, d in zip(verts, dimension_vector)}
+    raise QuiverlabError(
+        f"dimension vector must be a {{vertex: dim}} dict or a vertex-ordered "
+        f"tuple/list, got {type(dimension_vector).__name__}",
+        hint="e.g. {1: 2, 2: 1} or (2, 1)")

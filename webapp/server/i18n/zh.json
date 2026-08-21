@@ -250,6 +250,7 @@
   "draw.mod_random_done": "已找到随机模（种子 {seed}，{tries} 次抽取）",
   "draw.mod_random_fail": "经过 {tries} 次抽取仍无随机模满足关系——关系定义的轨迹过薄；请尝试更大的素数 p 或其他维数",
   "draw.mod_random_char0": "带关系的随机填充需要有限域 GF(p)：在 ℚ 或 ℂ 上随机点永远不会精确满足关系",
+  "draw.mod_random_wait": "引擎仍在加载中——请稍候再次点击",
   "cancel_running.button": "取消正在运行的任务",
   "cancel_running.cancelling": "正在取消……",
   "cancel_running.cancelled": "已取消——正在重试……",

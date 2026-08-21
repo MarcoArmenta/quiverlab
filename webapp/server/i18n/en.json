@@ -250,6 +250,7 @@
   "draw.mod_random_done": "random module found (seed {seed}, {tries} draws)",
   "draw.mod_random_fail": "no random module satisfied the relations after {tries} draws — the relations cut a thin locus; try a larger prime p or other dims",
   "draw.mod_random_char0": "random fill with relations needs a finite field GF(p): over ℚ or ℂ a random point never satisfies the relations exactly",
+  "draw.mod_random_wait": "engine still loading — click again in a moment",
   "cancel_running.button": "Cancel the running job",
   "cancel_running.cancelling": "cancelling…",
   "cancel_running.cancelled": "cancelled — retrying…",

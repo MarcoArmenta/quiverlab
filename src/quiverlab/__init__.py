@@ -14,6 +14,7 @@ from quiverlab.errors import (  # noqa: E402,F401
 )
 from quiverlab.fields import GF  # noqa: E402,F401
 from quiverlab.fields import CC, E  # noqa: E402,F401
+from quiverlab.fields import QQ  # noqa: E402,F401
 from quiverlab.fields import QQi  # noqa: E402,F401
 from quiverlab.combinat import Quiver  # noqa: E402,F401
 from quiverlab.core import Algebra  # noqa: E402,F401
@@ -65,7 +66,7 @@ __all__ = [
     "QuiverlabError", "ExactnessError", "FieldError", "RelationError",
     "AdmissibilityError", "NotFiniteDimensionalError", "DepthLimitError",
     "QpaUnavailableError",
-    "GF", "CC", "E", "QQi",
+    "GF", "CC", "E", "QQ", "QQi",
     "Quiver", "Algebra",
     "truncated_polynomial", "linear_path_algebra",
     "NakayamaAlgebra", "PathAlgebra", "TruncatedPathAlgebra", "RadicalSquareZero",

@@ -313,11 +313,21 @@ def enveloping_algebra(B):
     """
     from quiverlab.combinat.quiver import Quiver
     from quiverlab.families.tensor import TensorProduct
+    from quiverlab.families.trivial_extension import _is_string_representable_domain
 
     _require_presented(B, "enveloping_algebra")
     dom = B.domain
     Bop = B.opposite()
     T = TensorProduct(B, Bop)
+    if not _is_string_representable_domain(dom):
+        # GF(p^n) tuple / CC-sympy / QQ(i) coefficients do NOT render as the relation
+        # strings ``Quiver.algebra`` parses (D3), so the length-lex presentation path
+        # would crash in the coefficient emitter (Wave 5, 5b). ``B^e`` IS iso to
+        # ``B (x) B^op`` (the surjection of equal dimension the presented branch would
+        # certify), so return that structure-constant build directly -- same certified
+        # ``dim = (dim B)^2`` target, over every field class.
+        T._family_citations = tuple(_EXT_CITATIONS)
+        return T
     tindex = {lab: i for i, lab in enumerate(T.basis_labels)}
     verts = [(u, v) for u in B.quiver.vertices for v in Bop.quiver.vertices]
     arrows, img = {}, {}

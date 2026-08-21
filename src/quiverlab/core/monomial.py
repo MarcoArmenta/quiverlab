@@ -5,7 +5,8 @@ automaton; an infinite family is reported with an explicit arrow cycle."""
 from collections import deque
 
 from quiverlab.core.algebra import Algebra
-from quiverlab.errors import AdmissibilityError, NotFiniteDimensionalError, RelationError
+from quiverlab.errors import (
+    AdmissibilityError, NotFiniteDimensionalError, QuiverlabError, RelationError)
 
 
 def _contains_forbidden(word, forbidden):
@@ -99,6 +100,14 @@ def irreducible_paths(quiver, forbidden):
 
 def build_monomial_algebra(quiver, relations, field):
     """relations: parsed Relation objects, all monomial, lengths >= 2."""
+    if not list(quiver.vertices):
+        # The empty quiver presents the zero ring (dim 0), which has no identity and
+        # falls outside quiverlab's unital finite-dimensional Algebra model. Refuse
+        # loudly instead of leaking the raw IndexError of an empty unit (Wave 5, 5d).
+        raise QuiverlabError(
+            "a quiver needs at least one vertex to present an algebra; the empty quiver "
+            "would give the zero ring (dim 0), which has no identity element",
+            hint="add at least one vertex, e.g. Quiver([1], {}).algebra()")
     for rel in relations:
         if rel.min_length < 2:
             raise AdmissibilityError(

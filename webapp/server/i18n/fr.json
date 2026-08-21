@@ -250,6 +250,7 @@
   "draw.mod_random_done": "module aléatoire trouvé (graine {seed}, {tries} tirages)",
   "draw.mod_random_fail": "aucun module aléatoire ne satisfait les relations après {tries} tirages — les relations découpent un lieu mince ; essayez un premier p plus grand ou d'autres dims",
   "draw.mod_random_char0": "le remplissage aléatoire avec relations exige un corps fini GF(p) : sur ℚ ou ℂ un point aléatoire ne satisfait jamais les relations exactement",
+  "draw.mod_random_wait": "le moteur est encore en cours de chargement — recliquez dans un instant",
   "cancel_running.button": "Annuler le calcul en cours",
   "cancel_running.cancelling": "annulation…",
   "cancel_running.cancelled": "annulé — nouvelle tentative…",

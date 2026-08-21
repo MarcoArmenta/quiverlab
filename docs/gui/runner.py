@@ -833,12 +833,14 @@ def _module_block(name, top):
     keys = _MOD_REFS[name]
     cites = _citation_pairs(keys)
     if name == "dimension_vector":
-        return {"kind": name, "side": M.side, "citations": cites, **_mod_view(M),
+        return {"kind": name, "side": M.side, "references": list(keys),
+                "citations": cites, **_mod_view(M),
                 "latex": r"\underline{\dim}\, M = " + _dv_latex(M.dimension_vector())}
     if name == "rad_top_soc":
         # "series" = the Loewy (radical) series top-to-bottom (Plan 37), byte-identical
         # to the hpc spec core so the draw page and the report/CLI agree.
-        return {"kind": name, "side": M.side, "citations": cites,
+        return {"kind": name, "side": M.side, "references": list(keys),
+                "citations": cites,
                 "radical": _mod_repr(M.radical()), "top": _mod_repr(M.top()),
                 "socle": _mod_repr(M.socle()),
                 "series": [dict(layer) for layer in M.loewy_layers()]}
@@ -848,7 +850,7 @@ def _module_block(name, top):
         # matrices -- together with the input certificate (Marco #1).
         entry = _ar_translate(M, name, "M")
         entry.pop("name", None)
-        block = {"kind": name, "citations": cites, **entry}
+        block = {"kind": name, "references": list(keys), "citations": cites, **entry}
         # ... and the same for the SECOND module N when the request names one
         # (Marco, 2026-07-29): a tau block covers every module in the request.
         targets = _target_translates(A, name)
@@ -863,7 +865,8 @@ def _module_block(name, top):
         _, decompose = eng
         summands = [_summand_view(s, m) for (s, m) in decompose(M)]
         return {"kind": name, "side": M.side, "summands": summands,
-                "iso_classes": len(summands), "citations": cites}
+                "iso_classes": len(summands), "references": list(keys),
+                "citations": cites}
     if name == "barcode":
         # The persistence/TDA barcode (Plan 69 / R33). SAME shared core builder as the
         # hpc spec dispatch (quiverlab.modules.barcode.barcode_block) + references ->
@@ -902,7 +905,7 @@ def _module_block(name, top):
         # Plan 35 wave 3c: interpret=True captures the Yoneda exact sequence of each class.
         raw, reps = ext_dims(A, M, N, top, with_reps=True, interpret=True)
         block = {"kind": name, "top": top, "dims": [int(d) for d in raw],
-                 "target": _mod_view(N), "citations": cites,
+                 "target": _mod_view(N), "references": list(keys), "citations": cites,
                  # Marco 2026-08-03: WHICH module was resolved, by WHICH resolution
                  # (byte-identical to the hpc spec runner's stamp).
                  "resolved": {"module": "M", "side": M.side,
@@ -920,7 +923,7 @@ def _module_block(name, top):
         N = _build_module(A, _tor_target_spec(), "N")
         raw, reps = tor_dims(A, M, N, top, with_reps=True)
         block = {"kind": name, "top": top, "dims": [int(d) for d in raw],
-                 "target": _mod_view(N), "citations": cites,
+                 "target": _mod_view(N), "references": list(keys), "citations": cites,
                  "resolved": {"module": "M", "side": M.side,
                               "resolution": "minimal projective resolution"}}
         block.update(reps)
@@ -937,7 +940,7 @@ def _module_block(name, top):
                  "summands": [_summands_latex(res.term(i), letter)
                               for i in range(len(terms))],
                  "differentials": _differential_blocks(res, len(terms)),
-                 "citations": cites}
+                 "references": list(keys), "citations": cites}
         term_basis = _term_basis_blocks(res, name, M)
         if term_basis is not None:
             block["term_basis"] = term_basis
@@ -948,12 +951,14 @@ def _module_block(name, top):
         return block
     if name == "projective_dimension":
         pd = M.projective_resolution(_PD_BOUND).pd()
-        return {"kind": name, "value": pd, "finite": pd is not None, "citations": cites,
+        return {"kind": name, "value": pd, "finite": pd is not None,
+                "references": list(keys), "citations": cites,
                 "bound": _PD_BOUND, "latex": _homdim_latex("pd", pd),
                 **({} if pd is not None else {"note": _HOMDIM_UNRESOLVED})}
     if name == "injective_dimension":
         idim = M.injective_dimension(bound=_PD_BOUND)
-        return {"kind": name, "value": idim, "finite": idim is not None, "citations": cites,
+        return {"kind": name, "value": idim, "finite": idim is not None,
+                "references": list(keys), "citations": cites,
                 "bound": _PD_BOUND, "latex": _homdim_latex("id", idim),
                 **({} if idim is not None else {"note": _HOMDIM_UNRESOLVED})}
     if name == "tilting_check":
