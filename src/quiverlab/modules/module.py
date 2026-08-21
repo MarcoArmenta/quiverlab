@@ -449,11 +449,30 @@ class Module:
 
 
 def _coerce_matrix(mat, dom):
-    """Normalize plain int/rational literals into the domain; entries that are already
-    field elements (e.g. sympy MPQ over CC, ints over GF(p)) pass through the coercion
-    as a no-op or, for native non-int/Fraction elements, unchanged."""
-    return [[dom.coerce(x) if isinstance(x, (int, Fraction)) else x for x in row]
-            for row in mat]
+    """Read a user matrix into the domain's exact field, refusing inexact entries.
+
+    Literals (int, Fraction, ``'a/b'`` strings, and over CC any exact sympy
+    expression) go through the domain's own gate -- the same
+    ``dom.coerce(dom.parse_entry(...))`` pair ``Algebra.from_structure_constants``
+    uses -- so a float, a numpy float, a sympy Float, a complex or a decimal string
+    is refused LOUDLY here rather than silently computed with. That silence was the
+    v1.0.0 defect: the rank of a float matrix is not the rank of the exact matrix it
+    approximates, so rad/top/soc/Ext came back wrong instead of erroring.
+
+    Entries that are ALREADY native elements of the domain -- what the library itself
+    builds internally, including the ANP values over an algebraic extension of CC that
+    no parser can re-read -- pass through unchanged."""
+    native = type(dom.one())
+    return [[_coerce_entry(x, dom, native) for x in row] for row in mat]
+
+
+def _coerce_entry(x, dom, native):
+    """One entry of an action/differential matrix. See ``_coerce_matrix``."""
+    if isinstance(x, (int, Fraction, str)):     # a literal (bool is caught by the gate)
+        return dom.coerce(dom.parse_entry(x))
+    if type(x) is native:                       # already an element of this domain
+        return x
+    return dom.coerce(dom.parse_entry(x))       # anything else: the domain decides
 
 
 def _normalize_dv(dimvec):
