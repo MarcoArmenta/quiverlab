@@ -374,7 +374,7 @@ recompute independently and refuses to silently disagree
   (12/3), the 2-Kronecker (8/4), the dual numbers (4/2), and the commutative
   square (18/5) (`tests/qpa/test_trivial_extension_qpa.py`).
 
-The live QPA suite is `-m qpa` (242 tests). GAP is heavy to install, so it runs in a
+The live QPA suite is `-m qpa` (249 tests). GAP is heavy to install, so it runs in a
 **weekly** CI job, not on every commit — but it is **never silently green**: under
 `QUIVERLAB_REQUIRE_QPA=1` an absent or broken QPA is a hard failure of that job,
 and locally the tests skip explicitly rather than pass vacuously.
@@ -547,11 +547,11 @@ test. Markers (`pyproject.toml`): `fast`, `deep`, `slow` (implies `deep`), `qpa`
 
 | Bucket | Tests | Runs where |
 |---|---:|---|
-| `fast` | 1630 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
-| `deep` | 1676 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
-| `qpa` | 189 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
+| `fast` | 2585 | every CI cell: `{ubuntu, macos, windows} × py{3.10, 3.11, 3.12, 3.13}` |
+| `deep` | 2493 | one Linux · py3.12 cell, **twice**: numba and pure (`QUIVERLAB_NO_NUMBA=1`) |
+| `qpa` | 249 | weekly Linux · py3.12 job with GAP + QPA (`QUIVERLAB_REQUIRE_QPA=1`) |
 | `m2` | 11 | Linux · py3.12 job with Macaulay2 (`QUIVERLAB_REQUIRE_M2=1`) |
-| `slow` | 0 | opt-in (`-m slow`); rides the deep leg |
+| `slow` | 4 | opt-in (`-m slow`); rides the deep leg |
 
 The `lint` CI job runs the float-gate and release-metadata tests standalone. The
 docs site is built `--strict` in its own workflow, so any internals chapter or
@@ -2223,7 +2223,7 @@ verified precision and listed below as such.
 
 ### v1.0.0 deferral ledger (P51–P79, reconciled at the P80 release gate)
 
-The v1.0.0 program (P51–P79, the 33 implementation plans over records R1–R37) shipped
+The v1.0.0 program (P51–P79, the 29 implementation plans over records R1–R37) shipped
 every record's **mathematics**. What follows is the complete list of what it did **not**
 ship, reconciled here so nothing is a silent gap. Each entry names what is missing, what
 IS available instead, and the theorem or engine that would be needed to close it. All of

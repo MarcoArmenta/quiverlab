@@ -2,12 +2,13 @@
 
 All notable changes to quiverlab are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
-[Semantic Versioning](https://semver.org) (0.x during battle-testing; 1.0 at JOSS
-acceptance).
+[Semantic Versioning](https://semver.org). The 0.x series was the battle-testing
+line; **1.0.0 was released on 2026-08-18** with a stable public API. (The JOSS
+submission is under review — the 1.0 line did not wait on its acceptance.)
 
-## [1.0.0] — 2026-08-17
+## [1.0.0] — 2026-08-18
 
-The **computability-expansion program**: 33 implementation plans (P51–P79) over the 36
+The **computability-expansion program**: 29 implementation plans (P51–P79) over the 37
 adjudicated research records R1–R37, each spec'd, implemented, adversarially reviewed and
 merged with its oracles on the verification page. Everything below is reachable with **no
 code**, on all three tiers (browser / server / HPC CLI), in four languages.
@@ -62,6 +63,14 @@ mathematics is already reachable, and two measured open defects (the bibliograph
 parser's dropped last field; the P45 `mutate` root cause).
 
 ## [0.3.0] — 2026-08-06
+
+> **Never published to PyPI.** 0.3.0 was tagged but its upload was the casualty of
+> a committed `dist/` directory (see the 1.0.0 note above and `.gitignore`): CI
+> built into the same tracked `dist/` and uploaded `dist/*` wholesale, so every
+> release re-hit the stale `quiverlab-0.1.0` artifact, got a 400 "File already
+> exists", and aborted before the real version uploaded. PyPI has therefore only
+> ever received **0.1.0, 0.2.0, and 1.0.0**; the 0.3.0 work listed below is part
+> of the 1.0.0 line on PyPI. The root cause was fixed for the 1.0.0 release.
 
 ### Added
 

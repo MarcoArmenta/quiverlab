@@ -1,4 +1,11 @@
-# QuiverLab
+# quiverlab
+
+<!-- Naming decision (v1.0.1): the library/package name is lowercase `quiverlab`
+     everywhere it is an identifier or citation — PyPI, `import quiverlab`, the
+     docs site, mkdocs `site_name`, the JOSS paper, and CITATION.cff. The
+     CamelCase "QuiverLab" is kept ONLY as the desktop-app product brand (the
+     one-file binaries `QuiverLab-*.zip/.exe/.tar.gz` and the GUI window title);
+     those occurrences below are intentional and left as-is. -->
 
 [![CI](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml/badge.svg)](https://github.com/MarcoArmenta/quiverlab/actions/workflows/ci.yml)
 [![Docs](https://github.com/MarcoArmenta/quiverlab/actions/workflows/docs.yml/badge.svg)](https://marcoarmenta.github.io/quiverlab/)
@@ -71,11 +78,12 @@ finite-dimensionality, Hochschild (co)homology with cup products and Gerstenhabe
 brackets, the first full Chouhy–Solotar resolution, module Ext, and Cartan/Coxeter
 invariants. Floats fail loudly by design.
 
-### v0.2.0 coverage scorecard (C1–C8)
+### Coverage scorecard
 
-The [`ROADMAP.md`](docs/plans/ROADMAP.md) coverage program C1–C8 is delivered in
-v0.2.0. Nothing here over-claims: where a computation is a semi-decision, a
-verifier, or scope-limited, the surface says so and refuses loudly outside it.
+The [`ROADMAP.md`](docs/plans/ROADMAP.md) coverage program C1–C8 shipped in
+**v0.2.0** and is the representation-theory foundation the current release builds
+on. Nothing here over-claims: where a computation is a semi-decision, a verifier,
+or scope-limited, the surface says so and refuses loudly outside it.
 
 | Coverage phase | Delivered by | Honest scope |
 |---|---|---|
@@ -92,6 +100,23 @@ Two v0.2.0 plans sit beside the C-program: **P36** adds Macaulay2 as a fifth
 external oracle class, and **P47** delivers quasi-hereditary algebras and
 recollements. Every row's oracles and honest-scope notes are on the
 [verification page](https://marcoarmenta.github.io/quiverlab/verification/).
+
+### v1.0.0 — the computability-expansion program (R1–R37)
+
+**v1.0.0** (the current release) adds 29 implementation plans (P51–P79) over 37
+adjudicated research records (R1–R37), extending every axis above. All of it is
+reachable with no code, on all three tiers (browser / server / HPC CLI):
+
+| Theme | Records | What shipped |
+|---|---|---|
+| **Hochschild, deepened** | R1–R13 | the Gerstenhaber bracket beyond the bar window; HH with bimodule coefficients + the BV operator; Tate–Hochschild in every integer degree; the HH¹ Lie algebra and HH• as a graded Lie module over it; L∞ deformation theory; Han's-conjecture transport; split extensions / arrow removal; skew-group decompositions; incidence algebras via the order complex; the GHMS comultiplicative Koszul resolution as a third independent oracle |
+| **Recognizers & classification** | R14–R24, R37 | φdim/ψdim + fractional Calabi–Yau dimension; left/right parts; π₁ and simple connectivity; the radical filtration + infinite radical; Coxeter spectral analysis; the tilted / quasi-tilted / shod / laura / ada ladder; the Tits-form tame/wild certificate |
+| **τ-tilting and beyond** | R25–R33 | torsion-lattice congruences + forcing; exceptional sequences; the τ-cluster morphism category + its classifying space; silting with an honest generation boundary; skew-gentle algebras; wall-and-chamber structures; persistence/TDA barcodes |
+| **Koszulity & cluster categories** | R31, R36 | generalized Koszulity (internal generation degrees of Ext•(k,k), Berger N-Koszul, Cassidy–Shelton K₂, the (p,q)-almost-Koszul classifier); Amiot–Keller cluster categories (certified acyclic slice, cluster-tilting objects, a 2-Calabi–Yau certificate) |
+
+Every record's oracles and honest-scope notes are on the same
+[verification page](https://marcoarmenta.github.io/quiverlab/verification/); the
+full per-plan ledger is in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Get QuiverLab
 
@@ -245,10 +270,13 @@ an honest-scope section live in **[How quiverlab is verified](https://marcoarmen
 
 ## Status
 
-Engine, module, and families phase (Plans 01–06 delivered, together with the
-Plan-04 Chouhy–Solotar resolution). On top of the foundations — monomial presentations,
-exact fields, bar-complex Hochschild (co)homology — the hanlab deep engine is now
-ported and wired in:
+**v1.0.0 — released and on PyPI.** The full stack ships: exact fields; quivers
+with relations with certified finiteness; four independent bimodule resolutions
+(normalized bar, minimal corner-typed `A^e`, Bardzell, and Chouhy–Solotar); the
+module and Auslander–Reiten surface; Ext-algebras with a Koszulity verdict; the
+Tamarkin–Tsygan calculus; and a broad recognizer/classification library — all
+exact, and all reachable with no code on three tiers (browser / server / HPC
+CLI). The deeper-engine stack beneath it:
 
 - **A fast GF(p) engine** behind the field interface: `hochschild_cohomology`
   and `hochschild_homology` take `engine="auto" | "bar" | "fast"`. `auto` picks

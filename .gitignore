@@ -33,3 +33,13 @@ paper/paper.preprint.tex
 /dist/
 /build/
 *.egg-info/
+
+# Root-level scratch: browser "Save As" pages (each drops a `<name>_files/` asset
+# dir, sometimes with third-party tracker JS) and stray report/compute PDFs+HTML.
+# ~43 such files were committed at the repo root and got untracked for v1.0.1.
+# Anchored with a leading `/` to the repo ROOT ONLY, so the curated `for-maths/`
+# worked-example set (*.html/*.json/*.pdf + its README) and any docs/ HTML stay
+# tracked.
+/*.html
+/*.pdf
+/*_files/

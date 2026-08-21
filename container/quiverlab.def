@@ -17,6 +17,13 @@
 Bootstrap: docker
 From: python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
 
+# Build-time version stamp, mirroring container/Dockerfile's `ARG QUIVERLAB_VERSION`.
+# The default matches the Dockerfile; a real build overrides it, e.g.
+#     apptainer build --build-arg QUIVERLAB_VERSION=<git tag without leading v> \
+#         quiverlab.sif container/quiverlab.def
+%arguments
+    QUIVERLAB_VERSION=0.0.0-dev
+
 # Mirror the Dockerfile COPY set (NOT `.`, to keep .venv/.git out of the image).
 %files
     pyproject.toml /opt/build/pyproject.toml
@@ -79,4 +86,4 @@ From: python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4d
     org.opencontainers.image.title quiverlab
     org.opencontainers.image.source https://github.com/MarcoArmenta/quiverlab
     org.opencontainers.image.licenses MIT
-    Version 0.1.0
+    org.opencontainers.image.version {{ QUIVERLAB_VERSION }}

@@ -14,7 +14,10 @@
 - **`release.yml`** — on a `v*` tag: build, `twine check`, and publish to PyPI via
   OIDC trusted publishing (no API token).
 
-## Releasing (semver 0.x → 1.0 at JOSS acceptance)
+## Releasing (semver)
+
+The 0.x series was the battle-testing line; **1.0.0 shipped on 2026-08-18** with a
+stable public API, ahead of (not gated on) JOSS review.
 
 1. Bump `version` in `pyproject.toml` (and `__version__`); update `CHANGELOG.md`.
 2. Commit, then `git tag vX.Y.Z && git push --tags`.

@@ -22,7 +22,13 @@ name: Desktop app
 # numba path is test-gated) -- see desktop/launcher.py.
 on:
   push:
+    # `v*` tags ALWAYS rebuild: GitHub ignores the `paths` filter for tag pushes,
+    # so every release refreshes the downloadable binaries. (The P51-P80 program
+    # had left app-latest stuck at a pre-1.0.0 build because ONLY desktop/** pushes
+    # to main rebuilt it, and no release commit touches desktop/**.) Branch pushes
+    # to main stay path-filtered for cheap dev iteration.
     branches: [main]
+    tags: ["v*"]
     paths:
       - "desktop/**"
       - ".github/workflows/desktop.yml"
@@ -146,11 +152,12 @@ jobs:
         with:
           subject-path: ${{ matrix.asset }}
 
-      # main only: `app-latest` is what the README's download banner points at,
-      # so a branch dispatch builds and smokes but must never overwrite the
-      # public binaries. Ship from a branch by merging it first.
+      # main + release tags: `app-latest` is what the README's download banner
+      # points at, so a branch dispatch builds and smokes but must never overwrite
+      # the public binaries. A `v*` tag (a release) and pushes to main both refresh
+      # app-latest; ship from a branch by merging it first.
       - name: Publish on the rolling app-latest prerelease
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -39,7 +39,7 @@ finite field `GF(p^n)`, and it fails loudly on any floating-point input rather t
 returning an approximation. It is built for algebraists who need not program: a
 presentation reaches a certified table in three lines, the same computations run
 in a browser with no code, and any computation can emit a human-readable
-worked-steps document. Version 0.1.0 ships on PyPI, as a multi-arch container image, and as one-file desktop applications.
+worked-steps document. Version 1.0.0 ships on PyPI, as a multi-arch container image, and as one-file desktop applications.
 
 # Statement of need
 
@@ -135,8 +135,8 @@ and wherever QPA implements a feature, an optional `pip install quiverlab[qpa]`
 backend drives GAP to recompute it and refuses to disagree silently. The two classes are
 complementary: identical corruption of two internal engines is caught by a
 literature pin or by QPA, a mistranscribed literature value by the live
-cross-engine agreement. Of the library's 2,772 automated
-tests, 1,581 are pinned by at least one such oracle, and the full suite runs on
+cross-engine agreement. Of the library's 5,338 automated
+tests, 3,315 are pinned by at least one such oracle, and the full suite runs on
 every change. Where QPA cannot reach, over `CC` and
 `GF(p^n)`, for cyclic homology, for the deep cup and cap, and for the Koszul verdict,
 the verification page names the theory oracle that stands in, and where nothing yet

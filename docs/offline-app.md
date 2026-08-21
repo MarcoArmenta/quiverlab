@@ -69,10 +69,9 @@ GPU it is simply ignored.
 
 ## Precomputed examples
 
-The image ships a **seeded example cache**: a set of examples computed at build time,
-so opening them is instant and needs no compute at all. (The curated list is an open
-decision; the mechanism and a placeholder manifest ship now.) When you open one, the
-GUI notes it was served from the cache.
+The image ships a **seeded example cache**: a curated set of worked examples computed
+at build time, so opening them is instant and needs no compute at all. When you open
+one, the GUI notes it was served from the cache.
 
 ---
 

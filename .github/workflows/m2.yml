@@ -1,8 +1,10 @@
 name: Macaulay2 cross-check
 
 on:
-  push:
-    branches: [main, dev, plan-36-m2-oracle]
+  # Weekly + manual only. The Macaulay2 apt install is heavy, so this external-oracle
+  # job does NOT run on every push (the frozen M2-literature values are also checked
+  # in the normal suite). Trigger a one-off run from the Actions tab when touching
+  # the M2 bridge.
   workflow_dispatch:
   schedule:
     - cron: "0 6 * * 1"          # weekly (Mon 06:00 UTC); the M2 apt install is heavy

@@ -65,6 +65,8 @@ class Config:
     docs_url: str
     cache_enabled: bool
     cache_max_entries: int
+    build_max_dim: int
+    feedback_retention_days: int
 
     @property
     def big_jobs_enabled(self) -> bool:
@@ -148,6 +150,22 @@ class Config:
             # never recomputed. The LRU size cap bounds the pinned artifacts.
             cache_enabled=_int(env, "QLWEB_CACHE_ENABLED", 1) != 0,
             cache_max_entries=_int(env, "QLWEB_CACHE_MAX_ENTRIES", 1000),
+            # Pre-build size guard (Wave 3 / 3a): the algebra is constructed on the
+            # request thread BEFORE tier classification (the estimator needs A.dim),
+            # so an oversized family / quiver would drive an unbounded SYNCHRONOUS
+            # build in the app process regardless of the tier it would land in. This
+            # is the largest algebra dimension (a cheap per-family proxy, no build)
+            # the anonymous web tier will construct; a request over it is refused
+            # with a cheap 4xx BEFORE any construction (see
+            # catalog.assert_within_build_budget). ``<= 0`` disables the guard
+            # entirely -- the offline desktop app sets it to 0 ("leave it running
+            # overnight" -- it is the user's own machine, memory-capped anyway).
+            build_max_dim=_int(env, "QLWEB_BUILD_MAX_DIM", 600),
+            # Retention window (days) for feedback rows. feedback.contact is
+            # user-supplied PII (frequently an email); the sweeper purges rows past
+            # this window (Wave 3 / 3c). Defaults to the job retention window.
+            feedback_retention_days=_int(env, "QLWEB_FEEDBACK_RETENTION_DAYS",
+                                         _int(env, "QLWEB_RETENTION_DAYS", 90)),
         )
 
 
