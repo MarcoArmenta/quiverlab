@@ -267,9 +267,10 @@ class CompleteResolution:
                             if cf:
                                 acc = (acc + cf * eng.apply_block(
                                     a, b, self.diffs[n - 1][i], max(r_prev, 1))) % p
-                assert not np.any(acc % p), (
-                    f"d_{n - 1} . d_{n} != 0 on generator {j} -- the splice is not a "
-                    f"complex")
+                if np.any(acc % p):
+                    raise AssertionError(
+                        f"d_{n - 1} . d_{n} != 0 on generator {j} -- the splice is not a "
+                        f"complex")
 
     def _term_matrix(self, n):
         """Full k-linear matrix of d_n : T_n -> ambient(T_{n-1})."""
@@ -307,10 +308,11 @@ class CompleteResolution:
             if n not in ranks or (n + 1) not in ranks:
                 continue
             defect = self.term_dim(n) - ranks[n] - ranks[n + 1]
-            assert defect == 0, (
-                f"the complete resolution is NOT exact at degree {n}: "
-                f"dim T_{n} = {self.term_dim(n)}, rank d_{n} = {ranks[n]}, "
-                f"rank d_{n + 1} = {ranks[n + 1]} (homology {defect})")
+            if defect != 0:
+                raise AssertionError(
+                    f"the complete resolution is NOT exact at degree {n}: "
+                    f"dim T_{n} = {self.term_dim(n)}, rank d_{n} = {ranks[n]}, "
+                    f"rank d_{n + 1} = {ranks[n + 1]} (homology {defect})")
 
     # -- collapses --------------------------------------------------------
     def cochain_matrix(self, n):

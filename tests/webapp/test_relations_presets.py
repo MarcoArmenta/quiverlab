@@ -36,7 +36,8 @@ def _run_js(fn_name, arrows):
     """Run one generator on one `arrows` object under node; return its result."""
     driver = (_relgen_block() + "\nconsole.log(JSON.stringify(" + fn_name + "("
               + json.dumps(arrows) + ")));\n")
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False,
+                                     encoding="utf-8") as f:
         f.write(driver)
         path = f.name
     try:

@@ -847,7 +847,8 @@ def _corner_contracted_degree(eng, ctx, gens_n, tags_n, tags_nm1, p):
                             out = (out + va[s] * T[s, uu, :]) % p
                         acc = (acc + cf * out) % p
                 x = _solve_in_span(ctx.cornerA[tgp], acc, p)
-                assert x is not None, "corner contraction image left its corner (bug)"
+                if x is None:
+                    raise AssertionError("corner contraction image left its corner (bug)")
                 col[row_offs[blk]:row_offs[blk] + x.shape[0]] = x
             cols_out.append(col)
     if not cols_out:
@@ -974,7 +975,8 @@ def _corner_cohomology_degree(eng, ctx, gens_n, tags_n, tags_nm1, p):
                             outv = (outv + ua[s] * T[s, vv, :]) % p
                         acc = (acc + cf * outv) % p
                 x = _solve_in_span(ctx.cornerA[(tg[1], tg[0])], acc, p)
-                assert x is not None, "corner cochain image left its corner (bug)"
+                if x is None:
+                    raise AssertionError("corner cochain image left its corner (bug)")
                 col[row_offs[j]:row_offs[j] + x.shape[0]] = x
             cols_out.append(col)
     if not cols_out:
@@ -1173,7 +1175,8 @@ def _coeff_corner_contracted_degree(eng, cornerM, Lint, Rint, dim_M,
                         out = ((alpha @ Lint[vv]) % p @ Rint[uu]) % p   # (e_vv ▷ alpha) ◁ e_uu
                         acc = (acc + cf * out) % p
                 x = _solve_in_span(cornerM[tgp], acc, p)
-                assert x is not None, "corner M contraction image left its corner (bug)"
+                if x is None:
+                    raise AssertionError("corner M contraction image left its corner (bug)")
                 col[row_offs[blk]:row_offs[blk] + x.shape[0]] = x
             cols_out.append(col)
     if not cols_out:
@@ -1208,7 +1211,8 @@ def _coeff_corner_cohomology_degree(eng, cornerM, Lint, Rint, dim_M,
                         out = ((alpha @ Lint[uu]) % p @ Rint[vv]) % p   # (e_uu ▷ alpha) ◁ e_vv
                         acc = (acc + cf * out) % p
                 x = _solve_in_span(cornerM[(tg[1], tg[0])], acc, p)
-                assert x is not None, "corner M cochain image left its corner (bug)"
+                if x is None:
+                    raise AssertionError("corner M cochain image left its corner (bug)")
                 col[row_offs[j]:row_offs[j] + x.shape[0]] = x
             cols_out.append(col)
     if not cols_out:

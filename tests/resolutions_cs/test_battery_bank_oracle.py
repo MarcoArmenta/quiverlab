@@ -70,6 +70,7 @@ HISTORY (the pre-Plan-17 EMPIRICAL FINDING, kept for the record):
 """
 import functools
 import importlib.util
+import os
 import pathlib
 import sys
 
@@ -84,8 +85,39 @@ from quiverlab.resolutions_cs.engine_facade import CSResolution
 
 pytest.importorskip("quiverlab.groebner")
 
-BANK = pathlib.Path(
-    "/Users/marco/Desktop/HomologicalNetworks/HomologicalAlgebra/HansConjecture")
+def _resolve_bank():
+    """The READ-ONLY HanLab bank directory (never regenerated, never modified).
+
+    Resolution order, first hit wins -- so the sole external independent oracle is
+    reachable off Marco's laptop (it was hardcoded to one absolute path, so it
+    skipped on CI and every collaborator checkout while still COUNTING toward the
+    audited oracle totals):
+      1. ``QUIVERLAB_BANK_DIR`` -- the CI / collaborator escape hatch, point it at
+         wherever the bank is checked out;
+      2. a repo-relative sibling ``<repo>/../HomologicalAlgebra/HansConjecture`` --
+         the bank cloned next to the quiverlab checkout;
+      3. the original absolute path on Marco's laptop, UNCHANGED -- so his checkout
+         keeps working with no env var set.
+    A candidate wins only if it carries ``hanlab/resolutions_cs.py``; if none do,
+    the last candidate is returned so the module-level ``skipif`` below fires
+    cleanly (collection stays byte-identical on every machine -- the oracle-class
+    audit pins page counts == live collection -- and an absent bank SKIPS at runtime
+    rather than vanishing at collection)."""
+    repo_root = pathlib.Path(__file__).resolve().parents[2]
+    candidates = []
+    env = os.environ.get("QUIVERLAB_BANK_DIR")
+    if env:
+        candidates.append(pathlib.Path(env))
+    candidates.append(repo_root.parent / "HomologicalAlgebra" / "HansConjecture")
+    candidates.append(pathlib.Path(
+        "/Users/marco/Desktop/HomologicalNetworks/HomologicalAlgebra/HansConjecture"))
+    for c in candidates:
+        if (c / "hanlab" / "resolutions_cs.py").exists():
+            return c
+    return candidates[-1]
+
+
+BANK = _resolve_bank()
 
 # Collection-stable bank guard: the module must COLLECT identically on every
 # machine (the oracle-class audit gate pins page counts == live collection),

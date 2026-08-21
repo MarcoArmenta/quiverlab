@@ -250,7 +250,8 @@ def stable_hom_dim(M, N):
     # P(M,N) subset Hom(M,N), so rank(hom_cols + proj_cols) == rank(hom_cols):
     #   dim P(M,N) = rank(proj_cols); underline dim = total - dim P(M,N).
     dim_proj = lm.mat_rank(lm.cols_to_matrix(proj_cols), dom)
-    assert both == total, "stable_hom_dim: P(M,N) is not inside Hom(M,N) (bug)"
+    if both != total:
+        raise AssertionError("stable_hom_dim: P(M,N) is not inside Hom(M,N) (bug)")
     return total - dim_proj
 
 
@@ -533,7 +534,8 @@ def irreducible_maps(M, N, within):
     if not rad2:
         return dim_rad
     both = lm.mat_rank(lm.cols_to_matrix(rad_MN + rad2), dom)
-    assert both == dim_rad, "irreducible_maps: rad^2 not inside rad (bug)"
+    if both != dim_rad:
+        raise AssertionError("irreducible_maps: rad^2 not inside rad (bug)")
     dim_rad2 = lm.mat_rank(lm.cols_to_matrix(rad2), dom)
     return dim_rad - dim_rad2
 

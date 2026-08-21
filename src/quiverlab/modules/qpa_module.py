@@ -37,9 +37,10 @@ def graded_form(M):
         Et = lm.cols_to_matrix(Ev[t])               # M.dim x dim_t
         AEs = lm.matmul(M.action[a], Es, dom)       # a applied to each source basis vector
         Ca = lm.solve_columns(Et, AEs, dom)         # coords in the target basis (dim_t x dim_s)
-        assert Ca is not None, (
-            f"graded_form: arrow {a!r} image escapes the target vertex space "
-            "(module is not vertex-graded)")
+        if Ca is None:
+            raise AssertionError(
+                f"graded_form: arrow {a!r} image escapes the target vertex space "
+                "(module is not vertex-graded)")
         Ca_mat = lm.cols_to_matrix(Ca)              # dim_t x dim_s
         if all(dom.is_zero(x) for row in Ca_mat for x in row):
             continue
@@ -138,9 +139,10 @@ def module_blocks(M):
         Et = lm.cols_to_matrix(Ev[t])               # M.dim x dim_t
         AEs = lm.matmul(M.action[a], Es, dom)       # a applied to each source basis vector
         Ca = lm.solve_columns(Et, AEs, dom)         # coords in the target basis
-        assert Ca is not None, (
-            f"module_blocks: arrow {a!r} image escapes the target vertex space "
-            "(module is not vertex-graded)")
+        if Ca is None:
+            raise AssertionError(
+                f"module_blocks: arrow {a!r} image escapes the target vertex space "
+                "(module is not vertex-graded)")
         Ca_mat = lm.cols_to_matrix(Ca)              # dim_t x dim_s (column convention)
         block = []
         for row in Ca_mat:

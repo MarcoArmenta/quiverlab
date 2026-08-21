@@ -68,9 +68,10 @@ def corner_transpose(d, from_verts, to_verts, A, side="right"):
                     continue
                 rlab = reverse_label(S0i._pv_basis_labels[k])   # A^op-label at w_j
                 loc = posmap[j].get(rlab)
-                assert loc is not None, (
-                    "corner_transpose: corner element off the vertex grading "
-                    "(module-map violation)")
+                if loc is None:
+                    raise AssertionError(
+                        "corner_transpose: corner element off the vertex grading "
+                        "(module-map violation)")
                 h_i[off1op_start[j] + loc] = val
         # d^* columns for source summand i: (g_i .^op p) |-> N.action[p] @ h_i
         for p in S0op[i]._pv_basis_labels:

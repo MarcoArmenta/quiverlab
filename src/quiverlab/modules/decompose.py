@@ -260,10 +260,11 @@ def _split(M, phi, factors):
         g = _poly_mul(g, _poly_pow(fc, mult, dom), dom)
     Xcols = lm.kernel_columns(_poly_eval_matrix(f, phi, dom), dom)   # f(phi)-primary part
     Ycols = lm.kernel_columns(_poly_eval_matrix(g, phi, dom), dom)   # complementary part
-    assert Xcols and Ycols and len(Xcols) + len(Ycols) == M.dim, (
-        "Fitting split failed to give a direct-sum decomposition "
-        f"(dim ker f={len(Xcols)}, dim ker g={len(Ycols)}, dim M={M.dim}); "
-        "the coprime factorization or the minimal polynomial is inconsistent")
+    if not (Xcols and Ycols and len(Xcols) + len(Ycols) == M.dim):
+        raise AssertionError(
+            "Fitting split failed to give a direct-sum decomposition "
+            f"(dim ker f={len(Xcols)}, dim ker g={len(Ycols)}, dim M={M.dim}); "
+            "the coprime factorization or the minimal polynomial is inconsistent")
     X = submodule(M, Xcols, name=f"{M.name}(1)")
     Y = submodule(M, Ycols, name=f"{M.name}(2)")
     return X, Y
@@ -456,8 +457,9 @@ def _rep_split(gens, phi, factors, d, dom):
         g = _poly_mul(g, _poly_pow(fc, mult, dom), dom)
     Xcols = lm.kernel_columns(_poly_eval_matrix(f, phi, dom), dom)
     Ycols = lm.kernel_columns(_poly_eval_matrix(g, phi, dom), dom)
-    assert Xcols and Ycols and len(Xcols) + len(Ycols) == d, (
-        "representation Fitting split failed the direct-sum dimension identity")
+    if not (Xcols and Ycols and len(Xcols) + len(Ycols) == d):
+        raise AssertionError(
+            "representation Fitting split failed the direct-sum dimension identity")
     return ((Xcols, _restrict_gens(gens, Xcols, dom, d)),
             (Ycols, _restrict_gens(gens, Ycols, dom, d)))
 

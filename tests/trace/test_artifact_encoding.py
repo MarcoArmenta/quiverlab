@@ -251,3 +251,107 @@ def test_the_subprocess_gate_catches_the_pre_fix_pattern():
     assert _scan_subprocess_text(ast.parse(uni)), "gate missed universal_newlines=True"
     assert not _scan_subprocess_text(ast.parse(post)), "gate false-flags the encoding= fix"
     assert not _scan_subprocess_text(ast.parse(byte)), "gate flags a byte-mode call"
+
+
+# --------------------------------------------------------------------------- #
+# The TEMPFILE write side: ``tempfile.NamedTemporaryFile`` / ``TemporaryFile`` in
+# TEXT mode (and an ``os.fdopen`` of an ``mkstemp`` fd) encode through the parent's
+# LOCALE codec unless ``encoding=`` is passed -- cp1252 on Windows. That is exactly
+# what blew up 16 tests in ``tests/webapp/test_relations_presets.py`` on every
+# Windows cell: the RELGEN block of gui.js carries U+2192 ``→``, and the text-mode
+# ``NamedTemporaryFile("w", ...)`` write raised ``UnicodeEncodeError``. The read side
+# of those same tests already asked for utf-8; only the write was broken, and a
+# second, latent copy sat in ``test_derived_compare_gui.py`` (its JS slice happened
+# to be pure ASCII, so it was green by luck). This class lived in ``tests/`` -- so,
+# unlike the shipping-tree write gate at the top of the file, the scan MUST cover the
+# test tree too. A NamedTemporaryFile/TemporaryFile with NO mode defaults to the
+# BINARY ``w+b`` and needs no encoding; an explicit text mode (no ``b``) does. An
+# ``os.fdopen`` defaults to text ``r`` and always needs one.
+# --------------------------------------------------------------------------- #
+# mode positional index per factory: NamedTemporaryFile/TemporaryFile take the mode
+# first; os.fdopen takes ``(fd, mode)`` so its mode is the second positional.
+_TEMPFILE_FACTORIES = {"NamedTemporaryFile": 0, "TemporaryFile": 0, "fdopen": 1}
+_TEMPFILE_TREES = _TREES + ("tests",)
+
+
+def _mode_arg(node, mode_pos):
+    """The mode of a call as an AST node: the ``mode=`` keyword, else the mode_pos-th
+    positional, else None (mode omitted)."""
+    for k in node.keywords:
+        if k.arg == "mode":
+            return k.value
+    if len(node.args) > mode_pos:
+        return node.args[mode_pos]
+    return None
+
+
+def _scan_temp_text(tree):
+    """Each text-mode ``NamedTemporaryFile`` / ``TemporaryFile`` / ``os.fdopen`` call
+    in the AST that omits ``encoding=``, as (line, name) pairs. Binary modes carry no
+    codec and are fine; a no-mode NamedTemporaryFile/TemporaryFile is binary (``w+b``)
+    and fine; a no-mode ``fdopen`` is text (``r``) and is flagged; a computed
+    (non-literal) mode cannot be judged and is skipped."""
+    bad = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        name = (fn.attr if isinstance(fn, ast.Attribute)
+                else fn.id if isinstance(fn, ast.Name) else None)
+        if name not in _TEMPFILE_FACTORIES:
+            continue
+        if any(k.arg == "encoding" for k in node.keywords):
+            continue
+        mode = _mode_arg(node, _TEMPFILE_FACTORIES[name])
+        if mode is None:
+            if name == "fdopen":                 # fdopen(fd) defaults to text "r"
+                bad.append((node.lineno, name))
+            continue                             # (Named)TemporaryFile(): w+b -> binary
+        if not isinstance(mode, ast.Constant):
+            continue                             # computed mode: cannot judge, skip
+        if "b" in str(mode.value):
+            continue                             # binary: no codec
+        bad.append((node.lineno, name))
+    return bad
+
+
+def _temp_text_without_encoding(path):
+    return _scan_temp_text(ast.parse(path.read_text(encoding="utf-8")))
+
+
+def test_no_text_mode_tempfile_relies_on_the_locale_codec():
+    offenders = []
+    for tree in _TEMPFILE_TREES:
+        for path in sorted((_ROOT / tree).rglob("*.py")):
+            rel = path.relative_to(_ROOT).as_posix()
+            if "__pycache__" in rel:
+                continue
+            for line, name in _temp_text_without_encoding(path):
+                offenders.append("%s:%d %s()" % (rel, line, name))
+    assert not offenders, (
+        "text-mode tempfile.NamedTemporaryFile / TemporaryFile / os.fdopen without "
+        "encoding='utf-8' (the locale codec is cp1252 on Windows and mangles the "
+        "report / gui.js non-ASCII on write): " + "; ".join(offenders))
+
+
+def test_the_tempfile_gate_catches_the_pre_fix_pattern():
+    """The detector must FLAG the pre-fix text-mode forms and CLEAR the fixed /
+    binary / default-binary forms -- otherwise the gate above is a rubber stamp."""
+    pre = "tempfile.NamedTemporaryFile('w', suffix='.js', delete=False)"
+    pre_kw = "tempfile.TemporaryFile(mode='w')"
+    pre_fd = "os.fdopen(fd, 'w')"
+    pre_fd_default = "os.fdopen(fd)"
+    post = "tempfile.NamedTemporaryFile('w', suffix='.js', delete=False, encoding='utf-8')"
+    post_fd = "os.fdopen(fd, 'w', encoding='utf-8')"
+    binmode = "tempfile.NamedTemporaryFile('wb', suffix='.bin')"
+    default_bin = "tempfile.NamedTemporaryFile(suffix='.bin')"           # default w+b
+    binmode_fd = "os.fdopen(fd, 'wb')"
+    assert _scan_temp_text(ast.parse(pre)), "gate missed the pre-fix NamedTemporaryFile('w')"
+    assert _scan_temp_text(ast.parse(pre_kw)), "gate missed the mode='w' keyword form"
+    assert _scan_temp_text(ast.parse(pre_fd)), "gate missed os.fdopen(fd, 'w')"
+    assert _scan_temp_text(ast.parse(pre_fd_default)), "gate missed os.fdopen(fd) default text mode"
+    assert not _scan_temp_text(ast.parse(post)), "gate false-flags the encoding= fix"
+    assert not _scan_temp_text(ast.parse(post_fd)), "gate false-flags the fdopen encoding= fix"
+    assert not _scan_temp_text(ast.parse(binmode)), "gate flags an explicit binary tempfile"
+    assert not _scan_temp_text(ast.parse(default_bin)), "gate flags the default binary (w+b) tempfile"
+    assert not _scan_temp_text(ast.parse(binmode_fd)), "gate flags a binary fdopen"

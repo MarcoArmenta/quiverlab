@@ -271,12 +271,15 @@ class MonomialPresentation:
                 pos += 1
                 w = self._witness_at_end(tuple(prev) + tuple(uk))
                 if w is not None:
-                    assert len(w) > len(uk), ("block reducible in left decomposition", p, n)
+                    if len(w) <= len(uk):
+                        raise AssertionError(("block reducible in left decomposition", p, n))
                     cut = True
                     break
-            assert cut, ("no left decomposition for associated path", p, n)
+            if not cut:
+                raise AssertionError(("no left decomposition for associated path", p, n))
             blocks.append(tuple(uk))
-        assert pos == len(p), ("left decomposition does not exhaust the path", p, n)
+        if pos != len(p):
+            raise AssertionError(("left decomposition does not exhaust the path", p, n))
         return blocks
 
     def _witness_at_start(self, path):
@@ -305,12 +308,15 @@ class MonomialPresentation:
                 uk.insert(0, p[pos])
                 w = self._witness_at_start(tuple(uk) + tuple(prev))
                 if w is not None:
-                    assert len(w) > len(uk), ("block reducible in right decomposition", p, n)
+                    if len(w) <= len(uk):
+                        raise AssertionError(("block reducible in right decomposition", p, n))
                     cut = True
                     break
-            assert cut, ("no right decomposition for associated path", p, n)
+            if not cut:
+                raise AssertionError(("no right decomposition for associated path", p, n))
             blocks.append(tuple(uk))
-        assert pos == 0, ("right decomposition does not exhaust the path", p, n)
+        if pos != 0:
+            raise AssertionError(("right decomposition does not exhaust the path", p, n))
         return blocks[::-1]
 
     # -- tensored-down term: loops closing an associated path ----------

@@ -154,7 +154,9 @@ class TensorComplex:
                 continue
             tau, rho = self._chain(tau_word), self._chain(rho_word)
             p, q = tau.degree, rho.degree
-            assert p + q == n, f"double-PELT key {(tau_word, rho_word)} has degree {p+q}, not {n}"
+            if p + q != n:
+                raise AssertionError(
+                    f"double-PELT key {(tau_word, rho_word)} has degree {p+q}, not {n}")
             a_vec = ar.A._basis_vec(ai)
             mid_vec = ar.A._basis_vec(mi)
             c_vec = ar.A._basis_vec(ci)

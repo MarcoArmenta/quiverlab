@@ -94,7 +94,8 @@ class Algebra:
         unit = np.array(unit, dtype=np.int64)
         # find t with unit[t] == 1
         ts = np.nonzero(unit == 1)[0]
-        assert ts.size > 0, "unit must have a coordinate equal to 1"
+        if ts.size == 0:
+            raise AssertionError("unit must have a coordinate equal to 1")
         t = int(ts[0])
         self.t = t
         # Original-basis inputs, kept for vertex-idempotent detection (Plan 13:

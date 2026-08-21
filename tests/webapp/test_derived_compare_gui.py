@@ -46,7 +46,8 @@ def _dynkin_block():
 def _run_dynkin(type_str):
     driver = (_dynkin_block() + "\nconsole.log(JSON.stringify(dynkinQuiver("
               + json.dumps(type_str) + ")));\n")
-    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as f:
+    with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False,
+                                     encoding="utf-8") as f:
         f.write(driver)
         path = f.name
     try:

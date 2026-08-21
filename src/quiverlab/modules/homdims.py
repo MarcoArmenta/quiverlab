@@ -742,7 +742,8 @@ def finitistic_dimension_bounds(A, bound=32):
         upper = g.value
         # findim <= gl.dim, equality when gl.dim finite; the simple probes make lower
         # >= max_v pd(S_v) = gl.dim, so lower == upper == gl.dim here.
-        assert upper >= lower, "finitistic lower bound exceeded gl.dim (bug)"
+        if upper < lower:
+            raise AssertionError("finitistic lower bound exceeded gl.dim (bug)")
         return FinitisticBounds(lower, upper, exact=True,
                                 note="gl.dim exact and finite => findim = gl.dim")
     # gl.dim not exact-finite: consult the LIT certificate BEFORE the honest degrade

@@ -179,8 +179,9 @@ class Comparison:
         ar = self._res.ar
         vA = [int(x) % self.p for x in ar.path_vec(word)]
         d = self._A_to_Bred(vA)
-        assert len(d) == 1 and next(iter(d.values())) == 1, \
-            ("comparison block is not a single basis path (invariant violation)", word)
+        if not (len(d) == 1 and next(iter(d.values())) == 1):
+            raise AssertionError(
+                ("comparison block is not a single basis path (invariant violation)", word))
         return next(iter(d))
 
     # -- B-side (unit-adapted) arithmetic helpers for the homotopy lift ------

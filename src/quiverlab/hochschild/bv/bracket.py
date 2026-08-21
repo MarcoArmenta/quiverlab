@@ -202,7 +202,8 @@ def seven_term_residual(A, bv, cup, p, q, r):
     Cbc = C(q, r)
     Ca_bc = C(p, q + r)
     Uabc2 = np.einsum('mjk,lim->lijk', Cbc, Ca_bc)
-    assert not np.any((Uabc - Uabc2) % p_), "cup not associative (bug)"
+    if np.any((Uabc - Uabc2) % p_):
+        raise AssertionError("cup not associative (bug)")
 
     sp = 1 if p % 2 == 0 else -1
     spq = 1 if (p + q) % 2 == 0 else -1
