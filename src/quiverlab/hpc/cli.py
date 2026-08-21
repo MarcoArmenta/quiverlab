@@ -312,14 +312,22 @@ def _cmd_selftest(args) -> int:
         with tempfile.TemporaryDirectory() as d:
             d = Path(d)
             result = _run(cfg, d, result_schema=RESULT_SCHEMA)
+            # NOT `assert`: `python -O` strips assertions, and a selftest that
+            # verifies nothing while still printing "selftest OK" is worse than no
+            # selftest at all.
+            def _check(cond, msg):
+                if not cond:
+                    raise AssertionError(f"selftest check failed: {msg}")
+
             dims = result["results"]["hh_cohomology"]["dims"]
-            assert dims == [3, 2, 2, 2], dims
-            assert result["results"]["cartan"]["matrix"] == [[3]]
-            assert result["results"]["dimension"]["value"] == 3
-            assert result["result_schema"] == RESULT_SCHEMA
+            _check(dims == [3, 2, 2, 2], f"HH^0..3 = {dims}, expected [3, 2, 2, 2]")
+            _check(result["results"]["cartan"]["matrix"] == [[3]], "Cartan matrix != [[3]]")
+            _check(result["results"]["dimension"]["value"] == 3, "dim != 3")
+            _check(result["result_schema"] == RESULT_SCHEMA, "result_schema mismatch")
             out, fmt = report.render(result, d / "report.txt", fmt="txt")
             text = out.read_text(encoding="utf-8")
-            assert "quiverlab report" in text and "HH^" in text, text[:200]
+            _check("quiverlab report" in text and "HH^" in text,
+                   f"rendered report missing its header: {text[:200]}")
     except Exception as exc:  # any failure is an internal error
         _eprint(f"selftest FAILED: {type(exc).__name__}: {exc}")
         return EX_SOFTWARE

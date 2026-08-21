@@ -45,14 +45,22 @@ def test_arrow_removal_block(tmp_path):
     assert b["references"] == ["clms_arrow_removal", "han_conjecture"] and b["citations"]
 
 
-def test_unpresentable_extension_is_clean_error_not_500(tmp_path):
-    # Over CC, TrivialExtension falls back to a structure-constant build with no
-    # quiver -> the split-extension LES refuses CLEANLY (status='unsupported' + error),
-    # never a 500 (the scope guard turns the AttributeError into a typed refusal).
+def test_cc_rational_extension_now_completes(tmp_path):
+    # v1.0.1: a CC base whose coefficients are rational now yields a PRESENTED
+    # TrivialExtension (certified by dim kQ_T/I_T == 2*dim A), so the split-extension
+    # LES computes instead of refusing. Until then this returned status='unsupported'
+    # because the CC build fell back to structure constants with no quiver.
+    #
+    # The clean-refusal branch it used to cover is still exercised -- but at the
+    # library level, over a genuine algebraic extension (QQ(i)), in
+    # tests/families/test_trivial_extension_presented.py. It is deliberately NOT
+    # retested here: the spec schema's field kinds are CC/GF/QQ only, so no request
+    # this surface can express reaches the unpresentable branch any more.
     ccq = {"kind": "quiver", "vertices": [1, 2], "arrows": {"a1": [1, 2]},
            "relations": [], "field": {"kind": "CC"}}
     b = spec_run(_req(ccq, ["split_extension:4"]), tmp_path)["results"]["split_extension"]
-    assert b["status"] == "unsupported" and "error" in b
+    assert b["status"] == "complete" and "error" not in b
+    assert b["exact"] is True                      # the LES is exact, as the theory says
     assert b["references"] == ["cmrs_split", "crs_trivial_ext_hh1"]
 
 

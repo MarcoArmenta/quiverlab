@@ -85,7 +85,9 @@ class MarkedSurface:
     def triangle_count(self) -> int:
         """t = (2n + c)/3 -- an exact integer by the side-counting identity 3t = 2n + c."""
         n, c = self.arc_count(), sum(self.boundary_marked)
-        assert (2 * n + c) % 3 == 0                       # exact by the derivation
+        if (2 * n + c) % 3 != 0:                          # exact by the derivation
+            raise AssertionError(
+                f"triangle count is not integral: (2*{n} + {c}) is not divisible by 3")
         return (2 * n + c) // 3
 
     def in_v1_scope(self) -> bool:

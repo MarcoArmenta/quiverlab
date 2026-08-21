@@ -83,7 +83,8 @@ def _q(gram, d):
 # CRITICAL (Euclidean) forms -- weak-positivity cross-oracle. q(radical) = 0.
 # ---------------------------------------------------------------------------
 def _crit(name, n, gram, radical):
-    assert _q(gram, radical) == 0, (name, "radical not isotropic")
+    if _q(gram, radical) != 0:
+        raise AssertionError((name, "radical not isotropic"))
     return {"name": name, "gram": gram, "radical": tuple(radical)}
 
 
@@ -108,8 +109,10 @@ CRITICAL_FORMS = (
 # HYPERCRITICAL forms -- primary weak-nonnegativity decision. q(defect) < 0.
 # ---------------------------------------------------------------------------
 def _hyp(name, n, gram, defect):
-    assert _q(gram, defect) < 0, (name, "defect not negative")
-    assert all(x > 0 for x in defect), (name, "defect not sincere/positive")
+    if _q(gram, defect) >= 0:
+        raise AssertionError((name, "defect not negative"))
+    if not all(x > 0 for x in defect):
+        raise AssertionError((name, "defect not sincere/positive"))
     return {"name": name, "gram": gram, "defect": tuple(defect)}
 
 

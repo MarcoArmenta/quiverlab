@@ -120,3 +120,40 @@ def test_builtin_modules_round_trip_through_the_gate():
     A = _a2(fields.QQ)
     for M in (A.simple(1), A.projective(1), A.injective(2)):
         assert M.dim >= 1
+
+
+# --- native-element fast path must not become a bypass -----------------------
+
+def test_invalid_gf_pn_tuples_are_refused():
+    """`type(x) is type(dom.one())` is `tuple` over GF(p^n), so a naive native
+    fast path waves through ANY tuple -- wrong length, out of range, or belonging
+    to a different field -- reproducing the silently-wrong-dimension defect this
+    module's gate exists to prevent. `dom.coerce` validates tuples, so they must
+    never take the fallback."""
+    A = _a2(quiverlab.GF(9))
+    good = A.domain.coerce((1, 0))
+    ok = A.module({1: 1, 2: 1}, {"a1": [[0, 0], [good, 0]]})
+    assert ok.dim == 2                                   # the valid element still works
+    for bad in ((1, 0, 0), (1,), ()):                    # wrong length: not an element
+        with pytest.raises(QuiverlabError):
+            A.module({1: 1, 2: 1}, {"a1": [[0, 0], [bad, 0]]})
+    # An unreduced-but-valid element is NORMALIZED, not refused: 99 = 0 in GF(3),
+    # so (99, 99) is a legitimate way to write (0, 0). The v1.0.0 defect was storing
+    # it verbatim; coercing it is the correct behaviour.
+    M = A.module({1: 1, 2: 1}, {"a1": [[0, 0], [(99, 99), 0]]})
+    assert M.action["a1"][1][0] == (0, 0)
+
+
+def test_element_of_a_different_finite_field_is_refused():
+    """A GF(27) element must not be accepted into a GF(9) module just because both
+    are represented as tuples."""
+    A9 = _a2(quiverlab.GF(9))
+    foreign = quiverlab.GF(27).coerce((0, 1, 0))
+    with pytest.raises(QuiverlabError):
+        A9.module({1: 1, 2: 1}, {"a1": [[0, 0], [foreign, 0]]})
+
+
+def test_float_inside_a_tuple_is_refused_by_the_gate():
+    A = _a2(quiverlab.GF(9))
+    with pytest.raises(QuiverlabError):
+        A.module({1: 1, 2: 1}, {"a1": [[0, 0], [(0.5, 0.5), 0]]})

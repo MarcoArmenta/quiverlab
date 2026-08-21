@@ -448,7 +448,9 @@ class Recollement:
         if Y.dim == 0 or data is None:
             return ModuleHom(Y, M, lm.zeros(M.dim, Y.dim, dom), check=False)
         ambient, Wcols, eA_avecs, eA_idx, eA_dim, dX = data
-        assert len(me) == X.dim                      # the embedding matches the functor output
+        if len(me) != X.dim:                         # the embedding matches the functor output
+            raise AssertionError(
+                f"recollement: embedded vector has length {len(me)}, expected dim X = {X.dim}")
         act = [self._A_action(M, eA_avecs[b]) for b in range(eA_dim)]   # right-mult by p_b
         Ccols = []
         for i in range(dX):

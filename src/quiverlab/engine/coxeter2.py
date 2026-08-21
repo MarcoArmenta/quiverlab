@@ -139,12 +139,14 @@ def dynkin_quiver(typ, n=None):
         return n, arrows, n + 1
     if typ == "D":
         # chain 0->1->...->(n-3) with two extra sinks (n-2),(n-1) off vertex (n-3)
-        assert n >= 4
+        if n < 4:
+            raise AssertionError(f"D_n needs n >= 4, got {n}")
         arrows = [(i, i + 1) for i in range(n - 3)]
         arrows += [(n - 3, n - 2), (n - 3, n - 1)]
         return n, arrows, 2 * (n - 1)
     if typ == "E":
-        assert n in (6, 7, 8)
+        if n not in (6, 7, 8):
+            raise AssertionError(f"E_n needs n in (6, 7, 8), got {n}")
         # chain 0-1-2-3-...-(n-2) with a branch vertex (n-1) attached to vertex 2
         arrows = [(i, i + 1) for i in range(n - 2)]
         arrows += [(2, n - 1)]

@@ -7,7 +7,7 @@ The vertex subspace M*e_v is the image of action['e_v']; dimension_vector[v] = i
 """
 from fractions import Fraction
 
-from quiverlab.errors import QuiverlabError
+from quiverlab.errors import ExactnessError, QuiverlabError
 from quiverlab.modules import linalg_mod as lm
 
 
@@ -466,13 +466,25 @@ def _coerce_matrix(mat, dom):
     return [[_coerce_entry(x, dom, native) for x in row] for row in mat]
 
 
+# Forms every Domain can READ back through `coerce`/`parse_entry`. A value of one of
+# these types must always be re-validated, never waved through on its type alone: over
+# GF(p^n) the domain's own elements are plain tuples, so a type-only fast path would
+# accept a wrong-length, out-of-range or foreign-field tuple and hand back silently
+# wrong dimensions -- exactly the defect this gate exists to prevent, relocated.
+_PARSEABLE = (int, Fraction, str, tuple, list)
+
+
 def _coerce_entry(x, dom, native):
     """One entry of an action/differential matrix. See ``_coerce_matrix``."""
-    if isinstance(x, (int, Fraction, str)):     # a literal (bool is caught by the gate)
-        return dom.coerce(dom.parse_entry(x))
-    if type(x) is native:                       # already an element of this domain
+    if isinstance(x, bool):                     # bool is an int subclass; never a scalar
+        raise ExactnessError(f"{x!r} is a bool, not a scalar", hint="use 0 or 1")
+    if isinstance(x, (int, Fraction)):          # exact literal; coerce validates it
+        return dom.coerce(x)
+    if not isinstance(x, _PARSEABLE) and type(x) is native:
+        # A native element no parser can re-read -- an ANP over an algebraic extension
+        # of CC, where `dom.coerce(dom.parse_entry(anp))` raises FieldError by design.
         return x
-    return dom.coerce(dom.parse_entry(x))       # anything else: the domain decides
+    return dom.coerce(dom.parse_entry(x))       # everything else: the domain decides
 
 
 def _normalize_dv(dimvec):

@@ -70,7 +70,7 @@ def _run_node(fn_src, calls):
         path = f.name
     try:
         out = subprocess.run([NODE, path], capture_output=True, text=True,
-                             timeout=30)
+                             encoding="utf-8", timeout=30)
         assert out.returncode == 0, out.stderr
         return json.loads(out.stdout)
     finally:
