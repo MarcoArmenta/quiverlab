@@ -417,3 +417,66 @@ def validate_family(name: str, params: dict) -> None:
     unknown = set(params) - known
     if unknown:
         raise CatalogError(f"family {name!r} got unknown params {sorted(unknown)}")
+
+
+# --- pre-build size budget ---------------------------------------------------
+# `validate_family` checks that parameter NAMES are known; it says nothing about
+# their MAGNITUDE. That gap was the v1.0.1 audit's top server finding: the algebra
+# is constructed on the request thread before tier classification (the estimator
+# needs `A.dim`), so an oversized declaration drove an unbounded SYNCHRONOUS build
+# in the app process no matter which tier the request would eventually land in --
+# `ExteriorAlgebra(n=8)` measured 32.7s for a few-byte request, and n >= 12 is
+# effectively unbounded. The comment at the build site claimed catalog validation
+# bounded the cost; it did not.
+#
+# These estimators are deliberately CHEAP and CLOSED-FORM -- they read the declared
+# parameters and never construct anything. An unknown family (or a shape we cannot
+# size from its parameters) returns None and is allowed through: the guard exists to
+# stop the blow-ups we can name, not to become a second, drifting catalog.
+
+def _declared_dim(name: str, params: dict) -> int | None:
+    """A cheap upper-ish estimate of dim A from the DECLARED parameters, or None."""
+    def _int(key, default=None):
+        v = params.get(key, default)
+        return v if isinstance(v, int) and not isinstance(v, bool) else None
+
+    if name == "ExteriorAlgebra":                       # dim = 2^n
+        n = _int("n")
+        return None if n is None or n < 0 else 2 ** min(n, 64)
+    if name == "TruncatedPolynomial":                   # dim = a
+        return _int("a")
+    if name == "QuantumCI":                             # dim = a*b
+        a, b = _int("a"), _int("b")
+        return None if a is None or b is None else a * b
+    if name == "NakayamaAlgebra":
+        kup = params.get("kupisch")
+        if isinstance(kup, list) and all(isinstance(x, int) for x in kup):
+            return sum(kup)
+        n, ell = _int("n"), _int("l")
+        return None if n is None or ell is None else n * ell
+    if name == "PreprojectiveAlgebra":                  # grows fast in the rank
+        t = params.get("type")
+        if isinstance(t, str) and len(t) > 1 and t[1:].isdigit():
+            r = int(t[1:])
+            return r ** 3                               # coarse, monotone in the rank
+    return None
+
+
+def assert_within_build_budget(algebra_spec: dict, cfg) -> None:
+    """Refuse an oversized algebra BEFORE constructing it.
+
+    `cfg.build_max_dim <= 0` disables the guard entirely -- what the offline desktop
+    app does, since it is the user's own machine (and still memory-capped)."""
+    budget = getattr(cfg, "build_max_dim", 0)
+    if not budget or budget <= 0:
+        return
+    name = algebra_spec.get("family")
+    if not name:
+        return                                          # a drawn quiver, sized elsewhere
+    est = _declared_dim(name, algebra_spec.get("params") or {})
+    if est is not None and est > budget:
+        raise CatalogError(
+            f"{name} with these parameters has dimension about {est}, which is too "
+            f"large for the shared web tier (budget {budget}). Run it locally with "
+            f"`pip install quiverlab`, or use the downloadable desktop app, where "
+            f"nothing is refused for size.")

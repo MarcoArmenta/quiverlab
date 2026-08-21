@@ -65,6 +65,10 @@ GENERIC_ERROR_MESSAGE = "unexpected error; the incident was logged"
 _RUNNER_TAGS = frozenset({
     "CatalogError", "SchemaError", "FieldError",
     "ResultTooLarge", "DuplicateComputeItem",
+    # "TooLarge" is already the public type the reject tier returns; the pre-build
+    # size gate (v1.0.1) raises it from the sync path too, so both refusals a user
+    # can hit for the same reason look the same.
+    "TooLarge",
 })
 
 

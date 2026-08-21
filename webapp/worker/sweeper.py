@@ -18,9 +18,9 @@ from webapp.server.config import Config
 from webapp.server.store import JobStore
 
 
-def _cutoff(now_iso: str, days: int) -> str:
+def _cutoff(now_iso: str, days: int, seconds: int = 0) -> str:
     now = datetime.strptime(now_iso, "%Y-%m-%dT%H:%M:%SZ")
-    return (now - timedelta(days=days)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return (now - timedelta(days=days, seconds=seconds)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def sweep_cache_once(store: JobStore, cfg: Config) -> int:
@@ -40,4 +40,16 @@ def sweep_once(store: JobStore, cfg: Config, now_iso: str) -> list[str]:
     removed = store.purge_older_than(cutoff)
     for jid in removed:
         shutil.rmtree(cfg.artifacts_dir / jid, ignore_errors=True)
+
+    # Two tables of user-supplied PII were never swept (v1.0.1 audit):
+    #
+    #   pending_big -- a big-job request stores the requester's PLAINTEXT email until
+    #   they click the magic link. `purge_pending_big` existed but had ZERO callers,
+    #   so an address that was never confirmed lived forever. The link is dead past
+    #   its TTL anyway, so that is the natural cutoff.
+    #
+    #   feedback -- `feedback.contact` is free-text the user types, frequently an
+    #   email, and there was no DELETE for the table anywhere in the codebase.
+    store.purge_pending_big(_cutoff(now_iso, 0, cfg.big_token_ttl_seconds))
+    store.purge_feedback_older_than(_cutoff(now_iso, cfg.feedback_retention_days))
     return removed

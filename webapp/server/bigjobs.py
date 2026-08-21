@@ -205,7 +205,7 @@ def register_big_jobs(app, cfg, store, mailer=None) -> None:
         # size the job; honest build errors surface as the same sanitised payload
         # the sync endpoint uses.
         try:
-            A = _build_or_error(req.algebra)
+            A = _build_or_error(req.algebra, cfg)
             dim = A.dim
         except RunError as exc:
             return _error_response(exc.error_type, exc.message)

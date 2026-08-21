@@ -540,6 +540,17 @@ class JobStore:
         with self._conn() as conn:
             conn.execute("UPDATE jobs SET email=NULL WHERE id=?", (job_id,))
 
+    def purge_feedback_older_than(self, cutoff_iso: str) -> int:
+        """Delete feedback rows older than `cutoff_iso`; return the count.
+
+        `feedback.contact` is free text the user types and is frequently an email
+        address, so the table is PII and needs a retention window like every other
+        user-supplied store. Nothing purged it before v1.0.1."""
+        with self._conn() as conn:
+            cur = conn.execute("DELETE FROM feedback WHERE created_at < ?",
+                               (cutoff_iso,))
+            return cur.rowcount
+
     def purge_pending_big(self, cutoff_iso: str) -> int:
         """Delete unverified big-job requests older than `cutoff_iso`; return the count."""
         with self._conn() as conn:

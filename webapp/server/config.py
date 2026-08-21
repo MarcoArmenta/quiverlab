@@ -6,6 +6,9 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from functools import lru_cache
+from urllib.parse import urlsplit
+
+import logging
 from pathlib import Path
 from typing import Mapping
 
@@ -19,7 +22,10 @@ def _int(env: Mapping[str, str], key: str, default: int) -> int:
 # (deterministic), but a PRODUCTION boot with the big-job tier enabled MUST
 # override it via QLWEB_TOKEN_SECRET -- otherwise anyone can read this default and
 # forge a valid single-use token. See assert_production_secrets().
+_log = logging.getLogger(__name__)
+
 _DEFAULT_TOKEN_SECRET = "quiverlab-dev-token-secret"
+_DEFAULT_IP_HASH_SALT = "quiverlab-dev-salt"
 
 
 @dataclass(frozen=True)
@@ -114,7 +120,7 @@ class Config:
             retention_days=_int(env, "QLWEB_RETENTION_DAYS", 90),
             # Salt for hashing client IPs before storage; MUST be set in prod
             # (a fixed default only keeps dev/tests deterministic).
-            ip_hash_salt=env.get("QLWEB_IP_HASH_SALT", "quiverlab-dev-salt"),
+            ip_hash_salt=env.get("QLWEB_IP_HASH_SALT", _DEFAULT_IP_HASH_SALT),
             feedback_daily_max=_int(env, "QLWEB_FEEDBACK_DAILY_MAX", 5),
             # Empty by default: the /admin/feedback route is not registered
             # unless a token is set (see Task 12).
@@ -169,6 +175,24 @@ class Config:
         )
 
 
+def _is_production_like(cfg: Config) -> bool:
+    """True when this boot looks like a real, externally reachable deployment.
+
+    The signal is the PUBLIC BASE URL pointing somewhere other than the loopback
+    default: a real deployment sets `QLWEB_PUBLIC_BASE_URL=https://quiverlab.<domain>`
+    (deploy/PROVISIONING.md), while a dev, test or offline-desktop boot keeps
+    127.0.0.1 and is left alone -- the repo defaults are fine on your own machine and
+    refusing them there would buy no security.
+
+    Deliberately NOT keyed on `big_jobs_enabled`: SMTP being configured says the
+    big-job tier is live, not that the host is public, and a local run that exercises
+    email should not have to invent a salt. `token_secret` is the opposite case and
+    keeps its own big-jobs gate above: a forgeable magic-link token matters exactly
+    when links are being sent."""
+    host = urlsplit(cfg.public_base_url).hostname or ""
+    return host not in ("", "127.0.0.1", "localhost", "::1", "0.0.0.0")
+
+
 def assert_production_secrets(cfg: Config) -> None:
     """Refuse an insecure production boot. If the big-job tier is enabled (an SMTP
     relay is configured) while the magic-link signing secret is still the public
@@ -188,6 +212,24 @@ def assert_production_secrets(cfg: Config) -> None:
             "still the public repo default, so magic-link tokens would be forgeable. "
             "Set QLWEB_TOKEN_SECRET to a long random secret, e.g. "
             "`openssl rand -hex 32`.")
+    # The IP salt and an unbounded wall are REPORTED, not refused. There is no
+    # in-process signal that separates a real deployment from a test simulating one
+    # (the big-job tests legitimately set both an SMTP relay and a public base URL),
+    # so a hard refusal here produces false positives forever. The enforcement point
+    # that CAN tell the difference is the deploy itself: docker-compose.yml requires
+    # both secrets via ${VAR:?} and refuses to start without them
+    # (deploy/PROVISIONING.md step 7). This is the backstop that makes a hand-rolled
+    # boot say so out loud in the log.
+    if cfg.ip_hash_salt == _DEFAULT_IP_HASH_SALT:
+        _log.warning(
+            "QLWEB_IP_HASH_SALT is the public repo default: stored per-IP hashes are "
+            "precomputable by anyone who reads the source. Fine locally; set a random "
+            "salt before exposing this host.")
+    if cfg.job_wall_seconds is not None and cfg.job_wall_seconds <= 0:
+        _log.warning(
+            "QLWEB_JOB_WALL_SECONDS=0 removes the job wall clock AND the child CPU "
+            "limit. That is intended for the offline desktop app; a shared deployment "
+            "needs a positive wall (default 900).")
 
 
 @lru_cache(maxsize=1)

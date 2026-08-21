@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from webapp.server import cache
-from webapp.server.catalog import build_catalog
+from webapp.server.catalog import CatalogError, assert_within_build_budget, build_catalog
 from webapp.server.config import Config, assert_production_secrets, get_config
 from webapp.server.estimator import classify, sizing_dim
 from webapp.server.instant import InstantBusy, InstantRateLimiter, run_with_timeout
@@ -65,14 +65,26 @@ def client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
-def _build_or_error(spec):
+def _build_or_error(spec, cfg=None):
     """Build the algebra, normalising every failure to a ``RunError``.
+
+    The DECLARED size is checked first, before anything is constructed. This is the
+    single chokepoint every tier funnels through (instant, queued, probe, big), which
+    is why the guard lives here rather than at each call site: before v1.0.1 an
+    oversized declaration drove an unbounded SYNCHRONOUS build in the app process,
+    outside every rate limiter and resource cap.
 
     ``build_algebra`` raises a mix of shapes: ``RunError`` (its FieldError /
     missing-builder tags), a raw webapp ``CatalogError`` (from
     ``validate_family``), a library ``QuiverlabError`` subclass, or -- for a bad
     param type -- an arbitrary exception from the builder. We tag each with its
     class name; ``sanitize_error`` then decides pass-through vs genericise."""
+    try:
+        assert_within_build_budget(
+            spec if isinstance(spec, dict) else spec.model_dump(by_alias=True),
+            cfg if cfg is not None else get_config())
+    except CatalogError as exc:
+        raise RunError("TooLarge", str(exc))
     try:
         return build_algebra(spec)
     except RunError:
@@ -138,7 +150,11 @@ def create_app(cfg: Config | None = None, mailer=None, *,
     # instance, so tests using distinct apps never share a window.
     instant_limiter = InstantRateLimiter(cfg.instant_rate_max,
                                          cfg.instant_rate_window_seconds)
-    app = FastAPI(title="quiverlab-web")
+    # The interactive API docs and the OpenAPI schema are not part of the product --
+    # this is a fixed, documented API for the GUI, not a developer platform -- and
+    # serving them publicly just advertises the route/schema surface. (v1.0.1 audit.)
+    app = FastAPI(title="quiverlab-web", docs_url=None, redoc_url=None,
+                  openapi_url=None)
     if _STATIC.exists():
         app.mount("/static", StaticFiles(directory=_STATIC), name="static")
 
@@ -181,10 +197,12 @@ def create_app(cfg: Config | None = None, mailer=None, *,
         iph = _ip_hash(request)
         try:
             # Build the algebra to read its dimension. This runs BEFORE (outside)
-            # the wall net, so its construction cost is bounded by catalog
-            # validation (the degree/param caps in validate_family), not the
-            # instant timeout.
-            A = _build_or_error(req.algebra)   # validation + honest errors
+            # the wall net, so its cost is bounded by the DECLARED-size gate inside
+            # _build_or_error (cfg.build_max_dim). It is NOT bounded by
+            # validate_family, which only checks that parameter NAMES are known --
+            # a comment here claimed otherwise until v1.0.1, and that was the gap
+            # that let one unauthenticated request burn a core for 30+ seconds.
+            A = _build_or_error(req.algebra, cfg)   # size gate + validation + honest errors
             dim = A.dim                        # library attribute (never .dimension())
         except RunError as exc:
             return _error_response(exc.error_type, exc.message)
@@ -281,7 +299,7 @@ def create_app(cfg: Config | None = None, mailer=None, *,
             return {"ok": False, "error": {"type": "SchemaError",
                                            "message": "missing algebra block"}}
         try:
-            A = _build_or_error(alg)
+            A = _build_or_error(alg, cfg)
         except RunError as exc:
             return {"ok": False, "error": {"type": exc.error_type,
                                            "message": exc.message}}
