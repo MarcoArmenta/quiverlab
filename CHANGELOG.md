@@ -3,8 +3,91 @@
 All notable changes to quiverlab are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org). The 0.x series was the battle-testing
-line; **1.0.0 was released on 2026-08-18** with a stable public API. (The JOSS
+line; **1.0.0 was released on 2026-08-18**, **1.0.1 on 2026-08-23** with a stable public API. (The JOSS
 submission is under review — the 1.0 line did not wait on its acceptance.)
+
+## [1.0.1] — 2026-08-23
+
+A patch release from an exhaustive audit of the library, GUI, server tier, per-OS
+binaries and website. One defect returned **wrong mathematics** and is the reason this
+release exists; the rest is honesty and hygiene.
+
+### Fixed
+
+- **Floats were silently accepted at the module surface and produced WRONG dimensions.**
+  `Algebra.module(...)` coerced only `int`/`Fraction` and passed every other entry
+  through untouched, so a decimal reached the exact linear algebra unchallenged. Since
+  the rank of a float matrix is not the rank of the exact matrix it approximates,
+  `radical`/`top`/`socle`/`Ext` came back wrong rather than erroring — breaking the
+  project's headline invariant (README line 1: *exact only, floats fail loudly by
+  design*). On hereditary A₂ with an arrow block of exact rank 1:
+
+      exact  [[3/5, 9/10], [1/5, 3/10]]  ->  rad=1  top=3  soc=3
+      float  [[0.6, 0.9], [0.2, 0.3]]    ->  rad=2  top=2  soc=2
+
+  Every entry now passes the domain's own gate. `float`, `numpy` floats, `sympy.Float`,
+  `complex`, `bool` and decimal/scientific strings raise `ExactnessError`; exact
+  `'1/2'` strings (documented for the no-code panel since Plan 26) now parse instead of
+  raising a raw `TypeError`. Over GF(pⁿ) a wrong-length, empty or foreign-field tuple is
+  refused rather than stored verbatim.
+- **The Windows CI matrix had been red on the released v1.0.0 commit** — all four cells,
+  16 tests, `UnicodeEncodeError: 'charmap' codec can't encode character '→'` from a
+  text-mode `NamedTemporaryFile` with no `encoding=`. The AST gate that exists to prevent
+  exactly this scanned only `write_text`/`read_text`/`open` over the shipping tree; it now
+  covers `tempfile`, `subprocess(text=True)` and `tests/` too.
+- **Load-bearing self-certifications vanished under `python -O`.** ~22 bare `assert`s on
+  live math paths — cup associativity, the complete-resolution splice, Bardzell
+  decomposition exhaustion, minimal-resolution corner typing, Krull–Schmidt splitting,
+  rad/top/soc stability, the Tits-form certificates — are explicit raises. Worst of them,
+  `quiverlab-hpc selftest`, verified nothing under `-O` while still printing `selftest OK`.
+- **Nine computations were invisible in the no-code GUI**: `tate_hochschild`,
+  `bv_operator`, `silting`, `barcode`, `fractional_cy`, `arrow_removal`,
+  `recognizer_ladder`, `skew_group_hh`, `split_extension` rendered as raw `snake_case`
+  ids in the pick-list *in every language, English included* — wired into the engine,
+  the runners and all four catalogs, but never into the page. A gate now walks every
+  offered kind against a rendered page in all four languages.
+- **The webapp rendered the literal string `"undefined: undefined"`** on any
+  schema-validation 422, and its submit handlers turned a network failure into a silent
+  no-op.
+- **Raw exceptions on documented paths.** Five recognizer predicates (`is_shod`,
+  `is_weakly_shod`, `is_laura`, `is_ada`, `is_quasi_tilted`) leaked `KeyError` where the
+  ladder was already refusing honestly; `enveloping()` crashed over GF(pⁿ) and failed over
+  CC; `A.crosscheck()` with its own default, the empty quiver, and a tuple dimension
+  vector each raised a raw builtin.
+- **`TrivialExtension(A)` was unusable on the default field.** Over CC it fell back to a
+  presentation-less build, so `is_symmetric()` raised and Hochschild hit the depth wall on
+  a headline family. A CC base with rational coefficients now yields the presented `T(A)`,
+  certified per instance by `dim kQ_T/I_T == 2·dim A`. `QQ` is exported at top level.
+- **The server could be pinned by one unauthenticated request.** The algebra was built
+  synchronously in the request thread before any rate limiter, and `validate_family`
+  capped no parameter values — the comment claiming it did was false. `ExteriorAlgebra(n=8)`
+  cost 32.7s per few-byte request and `n=14` did not finish; both are now refused in 0.011s
+  by a declared-size budget at the single chokepoint all four tiers share.
+- **Two tables of user-supplied PII were never purged**: `purge_pending_big()` had zero
+  callers, so the plaintext email of an unconfirmed big-job request was kept forever, and
+  `feedback.contact` had no `DELETE` anywhere. Both are swept now.
+- `/docs`, `/redoc` and `/openapi.json` are no longer served publicly.
+- **Documentation honesty.** `CITATION.cff` shipped a placeholder ORCID with its own
+  `# TODO(Marco): real ORCID before release` comment still in it; the JOSS paper said
+  "Version 0.1.0 ships on PyPI"; the README's front door still headed a "v0.2.0 coverage
+  scorecard" and opened its Status section with "Plans 01–06 delivered"; the tutorial
+  "next" links 404'd on the live site; the verification page's bucket table said fast 1630
+  when live collection was 2585, and gave three different QPA numbers on one page. ~46
+  browser-capture artifacts (including third-party tracker JavaScript) were untracked from
+  the repo root.
+- `desktop.yml` now rebuilds on `v*` tags. It triggered only on `desktop/**` paths, which
+  is why the downloadable binaries sat at a pre-1.0.0 build while v1.0.0 shipped.
+
+### Notes
+
+Suite recounted live: **5421** tests (fast 2654 / deep 2507 / qpa 249 / m2 11 / slow 4);
+oracle classes literature 1273 / cross-engine 753 / self-cert 1673, union 3335. The deep
+suite passes identically on the numba and pure-Python engine paths. The hanlab bank
+oracle — 12 cross-engine tests counted in the published totals — was hardcoded to one
+laptop's path and skipped everywhere else; it now resolves via `QUIVERLAB_BANK_DIR`.
+
+Not addressed here: the desktop binaries remain unsigned (needs Apple Developer and
+Windows Trusted Signing credentials) and there is still no Intel-Mac build.
 
 ## [1.0.0] — 2026-08-18
 

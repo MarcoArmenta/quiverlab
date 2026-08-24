@@ -53,7 +53,7 @@ def _eval_cochain_on_pelt(res, eval_fn, pelt):
 def native_bracket(res, f_vec, p, g_vec, q, psi_f=None, psi_g=None):
     """The native CS Gerstenhaber bracket [f, g] of cochains f ∈ C^p, g ∈ C^q, as a
     coordinate vector over `res._basis(p+q-1, "coh")`:
-    [f,g](σ) = f(ψ_g(σ)) − (−1)^{(p-1)(q-1)} g(ψ_f(σ)) for σ ∈ S_{p+q-1}.
+    ``[f,g](σ) = f(ψ_g(σ)) − (−1)^{(p-1)(q-1)} g(ψ_f(σ))`` for σ ∈ S_{p+q-1}.
 
     Builds the two homotopy liftings ψ_f (of f, degree p) and ψ_g (of g, degree q)
     unless PREBUILT ones are supplied via `psi_f`/`psi_g` — a table builder reuses
