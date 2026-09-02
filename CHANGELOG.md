@@ -3,10 +3,10 @@
 All notable changes to quiverlab are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
 [Semantic Versioning](https://semver.org). The 0.x series was the battle-testing
-line; **1.0.0 was released on 2026-08-18**, **1.0.1 on 2026-08-23** with a stable public API. (The JOSS
+line; **1.0.0 was released on 2026-08-18**, **1.0.1 on 2026-09-02** with a stable public API. (The JOSS
 submission is under review — the 1.0 line did not wait on its acceptance.)
 
-## [1.0.1] — 2026-08-23
+## [1.0.1] — 2026-09-02
 
 A patch release from an exhaustive audit of the library, GUI, server tier, per-OS
 binaries and website. One defect returned **wrong mathematics** and is the reason this
