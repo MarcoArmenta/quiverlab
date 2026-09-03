@@ -2,7 +2,7 @@ name: QPA cross-check
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]   # dev = the maintenance branch: user-reported fixes land there, releases merge dev -> main
   workflow_dispatch:
   schedule:
     - cron: "0 6 * * 1"          # weekly (Mon 06:00 UTC); GAP install is heavy
